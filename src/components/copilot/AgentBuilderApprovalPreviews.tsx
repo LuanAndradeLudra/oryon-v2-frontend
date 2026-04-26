@@ -345,7 +345,7 @@ interface ApprovalPreviewProps {
 // ─── 1. System Prompt preview (append / replace / update) ──────────────────
 
 export function SystemPromptApprovalPreview({
-  toolName, input, onChange, auth,
+  toolName, input, onChange,
 }: ApprovalPreviewProps) {
   const isAppend  = toolName === 'append_to_agent_system_prompt'
   const isReplace = toolName === 'replace_in_agent_system_prompt'
@@ -355,8 +355,7 @@ export function SystemPromptApprovalPreview({
   const fetched = useAgentStateFetch({
     agentId,
     field: 'system_prompt',
-    token: auth?.token ?? null,
-    baseUrl: auth?.baseUrl ?? '',
+    enabled: isReplace,
   })
 
   return (
@@ -459,7 +458,7 @@ export function SystemPromptApprovalPreview({
 // ─── 2. Knowledge Doc preview (add / append / replace / update) ────────────
 
 export function KnowledgeDocApprovalPreview({
-  toolName, input, onChange, auth,
+  toolName, input, onChange,
 }: ApprovalPreviewProps) {
   const isAdd     = toolName === 'add_agent_knowledge_doc'
   const isAppend  = toolName === 'append_to_agent_knowledge_doc'
@@ -469,10 +468,10 @@ export function KnowledgeDocApprovalPreview({
   const agentId = String(input.agentId ?? '')
   const docId   = String(input.docId ?? '')
   const fetched = useAgentStateFetch({
-    agentId, docId,
+    agentId,
+    docId,
     field: 'kb_doc',
-    token: auth?.token ?? null,
-    baseUrl: auth?.baseUrl ?? '',
+    enabled: isReplace,
   })
 
   return (
