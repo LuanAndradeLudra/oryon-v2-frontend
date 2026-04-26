@@ -166,6 +166,6 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['emoji-mart', '@emoji-mart/react'],
+    include: ['emoji-mart'],
   },
 })
