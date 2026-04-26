@@ -1,0 +1,290 @@
+import { useState, useEffect, useCallback } from 'react'
+import {
+  MessageSquare,
+  Users,
+  BarChart3,
+  Settings,
+  LogOut,
+  Zap,
+  Home,
+  Send,
+  Sparkles,
+  Megaphone,
+  Workflow,
+  MessagesSquare,
+  Bot,
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Avatar } from '@/components/ui/Avatar'
+import { Sidebar, SidebarBody, SidebarLink, SidebarSectionLabel, useSidebar } from '@/components/ui/sidebar'
+import { useAuth } from '@/contexts/AuthContext'
+import { useSetupChecklist } from '@/hooks/useSetupChecklist'
+import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { useInternalChat } from '@/contexts/InternalChatContext'
+import { conversationsApi } from '@/services/api'
+
+interface NavSidebarProps {
+  totalUnread?: number
+  currentUser?: { firstName: string; lastName: string; avatarUrl?: string }
+}
+
+function LogoSection() {
+  const { open, animate } = useSidebar()
+  return (
+    <div className="flex items-center gap-3 px-3 mb-2 flex-shrink-0">
+      <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center flex-shrink-0" style={{ boxShadow: '4px 3px 16px rgba(0,0,0,0.40)' }}>
+        <Zap className="w-5 h-5 text-surface-950" fill="currentColor" />
+      </div>
+      <AnimatePresence>
+        {(!animate || open) && (
+          <motion.span
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -6 }}
+            transition={{ duration: 0.15 }}
+            className="text-sm font-bold text-surface-50 whitespace-pre overflow-hidden"
+          >
+            Oryon
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function UserFooter({
+  currentUser,
+  onLogout,
+}: {
+  currentUser?: NavSidebarProps['currentUser']
+  onLogout: () => void
+}) {
+  const { open, animate } = useSidebar()
+  const { user } = useAuth()
+
+  const name = currentUser
+    ? `${currentUser.firstName} ${currentUser.lastName}`
+    : user
+      ? `${user.firstName} ${user.lastName}`
+      : ''
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="mx-3 mb-2 border-t border-surface-800/60" />
+
+      {/* Logout */}
+      <button
+        onClick={onLogout}
+        className="w-full text-left"
+      >
+        <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-danger hover:bg-danger/10">
+          <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
+            <LogOut className="w-5 h-5" />
+          </span>
+          <AnimatePresence>
+            {(!animate || open) && (
+              <motion.span
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.15 }}
+                className="text-sm font-medium whitespace-pre overflow-hidden"
+              >
+                Sair
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
+      </button>
+
+      {/* User profile */}
+      {name && (
+        <div className="flex items-center gap-3 px-3 py-3 mt-1">
+          <Avatar
+            name={name}
+            imageUrl={currentUser?.avatarUrl}
+            size="sm"
+          />
+          <AnimatePresence>
+            {(!animate || open) && (
+              <motion.div
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.15 }}
+                className="flex flex-col min-w-0 overflow-hidden"
+              >
+                <span className="text-xs font-semibold text-surface-200 truncate whitespace-pre">
+                  {name}
+                </span>
+                {user?.email && (
+                  <span className="text-[10px] text-surface-600 truncate whitespace-pre">
+                    {user.email}
+                  </span>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
+  const [open, setOpen] = useState(false)
+  const [whatsappUnread, setWhatsappUnread] = useState(totalUnread)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const activeHref = '/' + location.pathname.split('/')[1]
+  const { user, organizationConfigured, logout } = useAuth()
+  const { checklist } = useSetupChecklist(user?.id)
+  const { vocab } = useTenantVocab()
+  const { totalUnread: internalUnread } = useInternalChat()
+
+  const refreshUnread = useCallback(() => {
+    conversationsApi.unreadTotal()
+      .then((res) => setWhatsappUnread(res.data.totalUnread ?? 0))
+      .catch(() => {})
+  }, [])
+
+  // Re-fetch unread count whenever route changes (user opens a conversation)
+  useEffect(() => {
+    refreshUnread()
+  }, [location.pathname, totalUnread, refreshUnread])
+
+  // Listen for real-time unread updates via socket
+  useEffect(() => {
+    let socket: ReturnType<typeof import('@/services/socket').connectSocket> | null = null
+    import('@/services/socket').then(({ connectSocket }) => {
+      socket = connectSocket()
+      socket.on('unread:update', (payload: { total: number }) => {
+        setWhatsappUnread(payload.total)
+      })
+      // Update unread count when new messages come in (via conversation:updated)
+      socket.on('conversation:updated', () => {
+        refreshUnread()
+      })
+    })
+    return () => {
+      socket?.off('unread:update')
+      socket?.off('conversation:updated')
+    }
+  }, [refreshUnread])
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
+
+  const geralItems = [
+    { icon: <Home className="w-4.5 h-4.5" />,          label: 'Home',       href: '/home' },
+    {
+      icon: <BarChart3 className="w-4.5 h-4.5" />,
+      label: 'Dashboard',
+      href: '/dashboard',
+      nudge: !checklist.dashboard ? 'Novo' : undefined,
+    },
+    {
+      icon: <MessageSquare className="w-4.5 h-4.5" />,
+      label: 'Conversas',
+      href: '/conversations',
+      badge: whatsappUnread > 0 ? whatsappUnread : undefined,
+    },
+    {
+      icon: <Users className="w-4.5 h-4.5" />,
+      label: vocab.contacts,
+      href: '/contacts',
+      nudge: !organizationConfigured ? 'Configurar' : undefined,
+    },
+  ]
+
+  const ferramentasItems = [
+    {
+      icon: <Send className="w-4.5 h-4.5" />,
+      label: 'Disparos',
+      href: '/campaigns',
+      nudge: !checklist.campaigns ? 'Novo' : undefined,
+    },
+    { icon: <Megaphone className="w-4.5 h-4.5" />, label: 'Marketing',   href: '/marketing' },
+    { icon: <Workflow className="w-4.5 h-4.5" />,   label: 'Automações',  href: '/automations' },
+    { icon: <Bot className="w-4.5 h-4.5" />,        label: 'Agentes IA',  href: '/agents' },
+    { icon: <Sparkles className="w-4.5 h-4.5" />,   label: 'Copilot AI', href: '/copilot',
+      nudge: !checklist.copilot ? 'Setup' : undefined },
+  ]
+
+  const internalChatItem = {
+    icon: <MessagesSquare className="w-4.5 h-4.5" />,
+    label: 'Nexus',
+    href: '/team',
+    badge: internalUnread > 0 ? internalUnread : undefined,
+  }
+
+  return (
+    <Sidebar open={open} setOpen={setOpen}>
+      <SidebarBody className="justify-between">
+        <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+          <LogoSection />
+
+          {/* GERAL */}
+          <SidebarSectionLabel label="Geral" />
+          <nav className="flex flex-col gap-0.5 px-1.5">
+            {geralItems.map((item) => (
+              <SidebarLink
+                key={item.href}
+                href={item.href}
+                icon={item.icon}
+                label={item.label}
+                active={activeHref === item.href}
+                badge={item.badge}
+                nudge={item.nudge}
+              />
+            ))}
+          </nav>
+
+          {/* Chat Interno */}
+          <nav className="flex flex-col gap-0.5 px-1.5 mb-1">
+            <SidebarLink
+              href={internalChatItem.href}
+              icon={internalChatItem.icon}
+              label={internalChatItem.label}
+              badge={internalChatItem.badge}
+              active={activeHref === '/team'}
+            />
+          </nav>
+
+          {/* FERRAMENTAS */}
+          <SidebarSectionLabel label="Ferramentas" />
+          <nav className="flex flex-col gap-0.5 px-1.5">
+            {ferramentasItems.map((item) => (
+              <SidebarLink
+                key={item.href}
+                href={item.href}
+                icon={item.icon}
+                label={item.label}
+                active={activeHref === item.href}
+                nudge={item.nudge}
+              />
+            ))}
+          </nav>
+
+          {/* CONFIGURAÇÕES */}
+          <SidebarSectionLabel label="Configurações" />
+          <nav className="flex flex-col gap-0.5 px-1.5">
+            <SidebarLink
+              href="/settings"
+              icon={<Settings className="w-4.5 h-4.5" />}
+              label="Configurações"
+              active={activeHref === '/settings'}
+              nudge={(!checklist.company || !checklist.profile) ? 'Setup' : undefined}
+            />
+          </nav>
+        </div>
+
+        {/* User footer */}
+        <UserFooter currentUser={currentUser} onLogout={handleLogout} />
+      </SidebarBody>
+    </Sidebar>
+  )
+}

@@ -1,0 +1,162 @@
+import { useState } from 'react'
+import { Sparkles, BookOpen } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+
+import { useSetupChecklist } from '@/hooks/useSetupChecklist'
+import type { CopilotAttachment } from '@/contexts/CopilotContext'
+import { GlassChatInput } from './GlassChatInput'
+
+// ─── Welcome area ─────────────────────────────────────────────────────────────
+
+export interface WelcomeAreaProps {
+  onSend: (text: string, attachments?: CopilotAttachment[]) => void
+  atLimit: boolean
+  onNew: () => void
+  onOpenKnowledge: () => void
+  userId?: string
+}
+
+export function WelcomeArea({ onSend, atLimit, onNew, onOpenKnowledge, userId }: WelcomeAreaProps) {
+  const [input, setInput] = useState('')
+  const [attachments, setAttachments] = useState<CopilotAttachment[]>([])
+  const [attachError, setAttachError] = useState<string | null>(null)
+  const { checklist, markDone } = useSetupChecklist(userId)
+
+  const handleSend = () => {
+    const text = input.trim()
+    if ((!text && attachments.length === 0) || atLimit) return
+    const snapshot = attachments
+    setInput('')
+    setAttachments([])
+    setAttachError(null)
+    onSend(text, snapshot)
+  }
+
+  const handleAttachmentsChange = (newAtts: CopilotAttachment[]) => {
+    setAttachError(null)
+    setAttachments(newAtts)
+  }
+
+  return (
+    <div className="relative flex flex-col h-full px-10 overflow-hidden">
+      {/* ── Title block — fills top, anchors to center ── */}
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <motion.div
+          className="relative z-10 w-full max-w-4xl text-center"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: 'easeOut' }}
+        >
+          <motion.div
+            className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-2xl shadow-brand-900/50 mb-7"
+            style={{ width: '53px', height: '53px' }}
+            initial={{ scale: 0.75, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.45, type: 'spring', stiffness: 280 }}
+          >
+            <Sparkles style={{ width: '26px', height: '26px' }} className="text-white" />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <h1 className="text-5xl font-semibold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-surface-50 to-surface-300/70 pb-2 leading-tight">
+              Como posso ajudar o seu<br />negócio hoje?
+            </h1>
+            <motion.div
+              className="h-px bg-gradient-to-r from-transparent via-surface-600/40 to-transparent mt-3"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: '100%', opacity: 1 }}
+              transition={{ delay: 0.55, duration: 0.9 }}
+            />
+          </motion.div>
+
+          <motion.p
+            className="text-base text-surface-400 mt-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35 }}
+          >
+            Analise leads, gerencie campanhas ou tome ações direto no CRM
+          </motion.p>
+        </motion.div>
+      </div>
+
+      {/* ── Setup nudge banner ── */}
+      <AnimatePresence>
+        {!checklist.copilot && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ delay: 0.5, duration: 0.4 }}
+            className="relative z-10 w-full max-w-2xl mx-auto mb-4"
+          >
+            <div className="flex items-start gap-4 bg-brand-950/50 border border-brand-500/20 rounded-2xl px-5 py-4">
+              <div className="w-8 h-8 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <BookOpen className="w-4 h-4 text-brand-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-surface-100">Configure sua base de conhecimento</p>
+                <p className="text-xs text-surface-400 mt-0.5 leading-relaxed">
+                  Adicione instruções, dados da empresa e documentos para que o Copilot responda com muito mais precisão.
+                </p>
+                <div className="flex items-center gap-2 mt-3">
+                  <button
+                    onClick={() => { onOpenKnowledge(); markDone('copilot') }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    <BookOpen className="w-3 h-3" />
+                    Abrir base de conhecimento
+                  </button>
+                  <button
+                    onClick={() => markDone('copilot')}
+                    className="text-xs text-surface-500 hover:text-surface-300 transition-colors px-2 py-1.5"
+                  >
+                    Já configurei
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Input + chips — pinned to bottom ── */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto pb-12 flex flex-col gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.5, ease: 'easeOut' }}
+        >
+          {atLimit ? (
+            <div className="text-center py-6 text-sm text-amber-400/80">
+              Limite de 30 conversas atingido.{' '}
+              <button onClick={onNew} className="underline hover:text-amber-300 transition-colors">
+                Exclua conversas antigas
+              </button>{' '}
+              para iniciar novas.
+            </div>
+          ) : (
+            <GlassChatInput
+              value={input}
+              onChange={setInput}
+              onSend={handleSend}
+              onAbort={() => {}}
+              isBusy={false}
+              placeholder="Pergunte sobre seus dados ou peça uma ação..."
+              autoFocus
+              attachments={attachments}
+              onAttachmentsChange={handleAttachmentsChange}
+              attachError={attachError}
+            />
+          )}
+        </motion.div>
+
+        {/* Suggestion chips removed — direct input provides cleaner UX */}
+      </div>
+    </div>
+  )
+}

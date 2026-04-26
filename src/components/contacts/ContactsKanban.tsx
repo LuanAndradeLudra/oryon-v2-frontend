@@ -1,0 +1,238 @@
+import { useCallback, useState, useMemo } from 'react'
+import { Loader2, CheckSquare, Plus, Upload, Settings2 } from 'lucide-react'
+import { KanbanCard } from './KanbanCard'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useContextMenu } from '@/hooks/useContextMenu'
+import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
+import { cn, hexToRgba } from '@/lib/utils'
+import type { Contact, ContactStage } from '@/types'
+
+interface ContactsKanbanProps {
+  contacts: Contact[]
+  onOpenPanel: (contact: Contact) => void
+  onMoveStage: (contact: Contact, stage: ContactStage) => void
+  selectedIds?: Set<string>
+  onToggleSelect?: (id: string) => void
+  onSelectAll?: (ids: string[]) => void
+  onBulkMoveStage?: (ids: string[], stage: ContactStage) => void
+  onBulkDelete?: () => void
+  onNewContact?: () => void
+  onImport?: () => void
+  onConfigCRM?: () => void
+}
+
+export function ContactsKanban({
+  contacts,
+  onOpenPanel,
+  onMoveStage,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
+  onBulkMoveStage,
+  onBulkDelete,
+  onNewContact,
+  onImport,
+  onConfigCRM,
+}: ContactsKanbanProps) {
+  const { stages, loadingStages } = useCRMConfig()
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [overKey, setOverKey] = useState<string | null>(null)
+  const hasSelection = (selectedIds?.size ?? 0) > 0
+
+  // Empty-area context menu (right-click on the kanban background).
+  const buildEmptyAreaMenu = useCallback((): ContextMenuEntry[] => {
+    const items: ContextMenuEntry[] = []
+    if (onNewContact) items.push({ label: 'Novo contato', icon: Plus, onClick: onNewContact })
+    if (onImport) items.push({ label: 'Importar contatos', icon: Upload, onClick: onImport })
+    if (onConfigCRM) {
+      if (items.length > 0) items.push({ separator: true })
+      items.push({ label: 'Configurar CRM', icon: Settings2, onClick: onConfigCRM })
+    }
+    return items
+  }, [onNewContact, onImport, onConfigCRM])
+  const { onContextMenu: onEmptyAreaContextMenu } = useContextMenu(buildEmptyAreaMenu)
+
+  // ALL hooks MUST be called before any conditional return (React rules of hooks)
+  const cardsByStage = useMemo(() => {
+    if (!stages || stages.length === 0) return {}
+    const map: Record<string, typeof contacts> = {}
+    stages.forEach((s) => { map[s.key] = [] })
+    const fallback = stages[0]?.key
+    contacts.forEach((c) => {
+      const key = c.stage ?? fallback
+      if (key && map[key]) {
+        map[key].push(c)
+      } else if (fallback && map[fallback]) {
+        map[fallback].push(c)
+      }
+    })
+    return map
+  }, [contacts, stages])
+
+  if (loadingStages || stages.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+      </div>
+    )
+  }
+
+  const draggingContact = draggingId ? contacts.find((c) => c.id === draggingId) : null
+  const isDraggingSelection =
+    draggingId !== null && (selectedIds?.has(draggingId) ?? false) && (selectedIds?.size ?? 0) > 1
+  const draggingCount = isDraggingSelection ? (selectedIds?.size ?? 0) : draggingId ? 1 : 0
+
+  const handleDrop = (stageKey: string) => {
+    if (isDraggingSelection && onBulkMoveStage && selectedIds) {
+      onBulkMoveStage(Array.from(selectedIds), stageKey as ContactStage)
+    } else if (draggingContact && draggingContact.stage !== stageKey) {
+      onMoveStage(draggingContact, stageKey as ContactStage)
+    }
+    setDraggingId(null)
+    setOverKey(null)
+  }
+
+  return (
+    <div className="flex flex-col h-full" onContextMenu={onEmptyAreaContextMenu}>
+      <div className="flex-1 overflow-x-auto kanban-scroll">
+        <div className="flex gap-3 p-4 h-full min-h-0" style={{ minWidth: stages.length * 260 }}>
+          {stages.map((stage) => {
+            const cards = cardsByStage[stage.key] ?? []
+            // During a multi-drag we light up every column — the backend
+            // filters out contacts already in the target stage, so it's ok
+            // for some of the selected contacts to match the column.
+            const isOver =
+              overKey === stage.key &&
+              !!draggingId &&
+              (isDraggingSelection || draggingContact?.stage !== stage.key)
+
+            return (
+              <div
+                key={stage.id}
+                className="flex flex-col w-64 flex-shrink-0"
+                onDragOver={(e) => { e.preventDefault(); if (overKey !== stage.key) setOverKey(stage.key) }}
+                onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverKey(null) }}
+                onDrop={() => handleDrop(stage.key)}
+              >
+                {/* Column header */}
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: stage.color }}
+                    />
+                    <span className="text-xs font-semibold" style={{ color: stage.color }}>
+                      {stage.label}
+                    </span>
+                    {stage.isTerminal && (
+                      <span className="text-[10px] text-surface-600 bg-surface-800 px-1.5 py-0.5 rounded border border-surface-700">terminal</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {onSelectAll && hasSelection && cards.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => onSelectAll(cards.map((c) => c.id))}
+                        title="Selecionar todos desta coluna"
+                        className="p-1 text-surface-500 hover:text-brand-400 hover:bg-surface-700 rounded transition-colors"
+                      >
+                        <CheckSquare className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <span
+                      className="text-xs font-medium px-2 py-0.5 rounded-full transition-all"
+                      style={{ color: stage.color, backgroundColor: hexToRgba(stage.color, isOver ? 0.2 : 0.1) }}
+                    >
+                      {cards.length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Drop zone — p-2 gives room for the bulk-select badge that
+                    sits at -top-1.5 -left-1.5 of each card; without it the
+                    overflow-y-auto clips the badge horizontally too. */}
+                <div
+                  className={cn(
+                    'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-xl transition-all duration-150 min-h-[80px] p-2',
+                    isOver
+                      ? 'bg-brand-500/5 ring-2 ring-brand-500/30 ring-inset'
+                      : 'bg-transparent'
+                  )}
+                >
+                  {cards.length === 0 ? (
+                    <div className={cn(
+                      'border-2 border-dashed rounded-xl h-20 flex items-center justify-center transition-colors',
+                      isOver ? 'border-brand-500/50 bg-brand-500/5' : 'border-surface-800'
+                    )}>
+                      <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-600')}>
+                        {isOver
+                          ? isDraggingSelection
+                            ? `Soltar ${draggingCount} contatos`
+                            : 'Soltar aqui'
+                          : 'Nenhum contato'}
+                      </span>
+                    </div>
+                  ) : (
+                    cards.map((contact) => {
+                      const isPartOfMultiDrag =
+                        isDraggingSelection &&
+                        draggingId !== contact.id &&
+                        (selectedIds?.has(contact.id) ?? false)
+                      const isDraggingThisCard = draggingId === contact.id
+                      return (
+                        <div
+                          key={contact.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = 'move'
+                            // Use timeout so the element renders as semi-transparent after drag starts
+                            setTimeout(() => setDraggingId(contact.id), 0)
+                          }}
+                          onDragEnd={() => { setDraggingId(null); setOverKey(null) }}
+                          className={cn(
+                            'relative rounded-xl transition-opacity duration-100 cursor-grab active:cursor-grabbing',
+                            isDraggingThisCard && 'opacity-40',
+                            isPartOfMultiDrag && 'opacity-30',
+                          )}
+                        >
+                          {isDraggingThisCard && isDraggingSelection && (
+                            <span
+                              className="absolute -top-2 -right-2 z-20 min-w-[22px] h-[22px] px-1.5 flex items-center justify-center rounded-full bg-brand-600 text-surface-950 text-xs font-bold shadow-lg"
+                              aria-label={`${draggingCount} contatos selecionados`}
+                            >
+                              {draggingCount}
+                            </span>
+                          )}
+                          <KanbanCard
+                            contact={contact}
+                            stages={stages}
+                            onOpenPanel={onOpenPanel}
+                            onMoveStage={onMoveStage}
+                            isSelected={selectedIds?.has(contact.id) ?? false}
+                            onToggleSelect={onToggleSelect}
+                            hasSelection={hasSelection}
+                            selectionCount={selectedIds?.size ?? 0}
+                            onDeleteSelected={onBulkDelete}
+                          />
+                        </div>
+                      )
+                    })
+                  )}
+
+                  {/* Extra drop target area when column has cards */}
+                  {isOver && cards.length > 0 && (
+                    <div className="h-12 border-2 border-dashed border-brand-500/40 rounded-xl flex items-center justify-center">
+                      <span className="text-xs text-brand-400">
+                        {isDraggingSelection ? `Soltar ${draggingCount} contatos` : 'Soltar aqui'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+
+  --color-brand-50:  #eff0ff;
+  --color-brand-100: #e1e3ff;
+  --color-brand-200: #c3c8ff;
+  --color-brand-300: #a0a8ff;
+  --color-brand-400: #8080ff;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f40ee;
+  --color-brand-700: #3d30d4;
+  --color-brand-800: #3028a8;
+  --color-brand-900: #261e7a;
+
+  --color-surface-50:  #edf4fb;
+  --color-surface-100: #d4e6f2;
+  --color-surface-200: #b0ccde;
+  --color-surface-300: #82adc8;
+  --color-surface-400: #5588b0;
+  --color-surface-500: #346585;
+  --color-surface-600: #1d3f58;
+  --color-surface-700: #112a3a;
+  --color-surface-800: #0a1a26;
+  --color-surface-900: #05101a;
+  --color-surface-950: #030b12;
+
+  --color-online: #10b981;
+  --color-away: #f59e0b;
+  --color-offline: #6b7280;
+  --color-danger: #ef4444;
+
+  /* Outbound message bubble — dark mode default */
+  --color-bubble-out: #2a3272;
+
+  /* Inbound message bubble — dark mode default */
+  --color-bubble-in: #0d1f2d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+/* Scrollbar horizontal mais grossa para filtros laterais */
+.filter-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #1d3f58 transparent;
+}
+.filter-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+.filter-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0 4px;
+}
+.filter-scroll::-webkit-scrollbar-thumb {
+  background: #1d3f58;
+  border-radius: 999px;
+}
+.filter-scroll::-webkit-scrollbar-thumb:hover {
+  background: #346585;
+}
+[data-theme="light"] .filter-scroll {
+  scrollbar-color: #cbd5e1 transparent;
+}
+[data-theme="light"] .filter-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+[data-theme="light"] .filter-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+/* Scrollbar horizontal larga para o Kanban do CRM */
+.kanban-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: #05101a;
+  border-radius: 999px;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: #346585;
+  border-radius: 999px;
+  border: 2px solid #05101a;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #1d3f58;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #346585;
+}
+
+/* ── Light theme ─────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  /* Outbound bubble — muted indigo legível sobre fundo branco */
+  --color-bubble-out: #3d44c0;
+
+  /* Inbound bubble — azul-acinzentado com contraste claro no tema claro */
+  --color-bubble-in: #cfddf0;
+
+  /* Surface scale — inverted: 950 = white, 50 = near-black */
+  --color-surface-950: #ffffff;
+  --color-surface-900: #f8fafc;
+  --color-surface-800: #f1f5f9;
+  --color-surface-700: #e2e8f0;
+  --color-surface-600: #cbd5e1;
+  --color-surface-500: #94a3b8;
+  --color-surface-400: #346585;
+  --color-surface-300: #1d3f58;
+  --color-surface-200: #0a1a26;
+  --color-surface-100: #05101a;
+  --color-surface-50:  #030b12;
+
+  /* Brand — light variants ficam invisíveis em fundo branco, usar escuros */
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #4338ca;
+  --color-brand-400: #4f46e5;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

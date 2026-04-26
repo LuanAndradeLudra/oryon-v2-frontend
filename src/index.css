@@ -1,0 +1,411 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+
+  /* ── Brand — Neutral Mono (dark mode defaults) ──────────────────────────── */
+  /* Raw light-mode values */
+  --color-brand-950-light: #fafafa;
+  --color-brand-900-light: #f5f5f5;
+  --color-brand-800-light: #e5e5e5;
+  --color-brand-600-light: #171717;
+  --color-brand-500-light: #262626;
+  --color-brand-400-light: #525252;
+  --color-brand-300-light: #404040;
+
+  /* Raw dark-mode values */
+  --color-brand-950-dark:  #0a0a0a;
+  --color-brand-900-dark:  #141414;
+  --color-brand-800-dark:  #1e1e1e;
+  --color-brand-600-dark:  #e5e5e5;
+  --color-brand-500-dark:  #d4d4d4;
+  --color-brand-400-dark:  #a3a3a3;
+  --color-brand-300-dark:  #d4d4d4;
+
+  /* ── Status — semantic tokens (dark defaults) ──────────────────────────── */
+  --color-status-pending:        #fbbf24;
+  --color-status-pending-bg:     rgba(251, 191, 36, 0.12);
+  --color-status-pending-border: rgba(251, 191, 36, 0.25);
+  --color-status-active:         #4ade80;
+  --color-status-active-bg:      rgba(74, 222, 128, 0.12);
+  --color-status-active-border:  rgba(74, 222, 128, 0.25);
+  --color-status-open:           #3b82f6;
+  --color-status-open-bg:        rgba(59, 130, 246, 0.14);
+  --color-status-open-border:    rgba(59, 130, 246, 0.30);
+  --color-status-muted:          #8a8a8a;
+  --color-status-muted-bg:       rgba(138, 138, 138, 0.12);
+  --color-status-muted-border:   rgba(138, 138, 138, 0.25);
+  --color-status-info:           #60a5fa;
+  --color-status-info-bg:        rgba(96, 165, 250, 0.12);
+  --color-status-info-border:    rgba(96, 165, 250, 0.25);
+
+  /* Active brand scale (dark defaults) */
+  --color-brand-50:  #fafafa;
+  --color-brand-100: #f5f5f5;
+  --color-brand-200: #e5e5e5;
+  --color-brand-300: #d4d4d4;
+  --color-brand-400: #a3a3a3;
+  --color-brand-500: #d4d4d4;
+  --color-brand-600: #e5e5e5;
+  --color-brand-700: #1e1e1e;
+  --color-brand-800: #141414;
+  --color-brand-900: #0a0a0a;
+  --color-brand-950: #0a0a0a;
+
+  /* Brand aliases (dark defaults) */
+  --color-brand-cta:       #e5e5e5;
+  --color-brand-cta-hover: #d4d4d4;
+  --color-brand-surface:   #1a1a1a;
+  --color-brand-text:      #a3a3a3;
+  --color-brand-icon:      #a3a3a3;
+
+  /* ── Surface — Pure Neutral (dark defaults) ──────────────────────────────── */
+  /* Raw light values */
+  --color-surface-950-light: #ffffff;
+  --color-surface-900-light: #fafafa;
+  --color-surface-800-light: #f5f5f5;
+  --color-surface-700-light: #e5e5e5;
+  --color-surface-600-light: #d4d4d4;
+  --color-surface-500-light: #858585;
+  --color-surface-400-light: #636363;
+  --color-surface-300-light: #525252;
+  --color-surface-200-light: #262626;
+  --color-surface-100-light: #171717;
+  --color-surface-50-light:  #0a0a0a;
+
+  /* Raw dark values */
+  --color-surface-950-dark:  #0a0a0a;
+  --color-surface-900-dark:  #141414;
+  --color-surface-800-dark:  #1e1e1e;
+  --color-surface-700-dark:  #2e2e2e;
+  --color-surface-600-dark:  #525252;
+  --color-surface-500-dark:  #737373;
+  --color-surface-400-dark:  #8a8a8a;
+  --color-surface-300-dark:  #a3a3a3;
+  --color-surface-200-dark:  #d4d4d4;
+  --color-surface-100-dark:  #e5e5e5;
+  --color-surface-50-dark:   #fafafa;
+
+  /* Active surface scale (dark defaults) */
+  --color-surface-50:  #fafafa;
+  --color-surface-100: #e5e5e5;
+  --color-surface-200: #d4d4d4;
+  --color-surface-300: #a3a3a3;
+  --color-surface-400: #8a8a8a;
+  --color-surface-500: #737373;
+  --color-surface-600: #525252;
+  --color-surface-700: #2e2e2e;
+  --color-surface-800: #1e1e1e;
+  --color-surface-900: #141414;
+  --color-surface-950: #0a0a0a;
+
+  /* ── Semantic — Success ───────────────────────────────────────────────────── */
+  --color-success:              #22c55e;
+  --color-success-light:        #16a34a;
+  --color-success-dark:         #22c55e;
+  --color-success-surface-light: #f0fdf4;
+  --color-success-surface-dark:  #0a1f0f;
+  --color-success-text-light:    #15803d;
+  --color-success-text-dark:     #86efac;
+
+  /* ── Semantic — Danger ───────────────────────────────────────────────────── */
+  --color-danger:               #ef4444;
+  --color-danger-light:         #dc2626;
+  --color-danger-dark:          #ef4444;
+  --color-danger-surface-light: #fef2f2;
+  --color-danger-surface-dark:  #1f0a0a;
+  --color-danger-text-light:    #b91c1c;
+  --color-danger-text-dark:     #fca5a5;
+
+  /* ── Semantic — Info ─────────────────────────────────────────────────────── */
+  --color-info:               #3b82f6;
+  --color-info-light:         #2563eb;
+  --color-info-dark:          #3b82f6;
+  --color-info-surface-light: #eff6ff;
+  --color-info-surface-dark:  #0a1628;
+  --color-info-text-light:    #1d4ed8;
+  --color-info-text-dark:     #93c5fd;
+
+  /* ── Semantic — Warning ─────────────────────────────────────────────────── */
+  --color-warning:               #f97316;
+  --color-warning-light:         #ea580c;
+  --color-warning-dark:          #f97316;
+  --color-warning-surface-light: #fff7ed;
+  --color-warning-surface-dark:  #1c0f04;
+  --color-warning-text-light:    #c2410c;
+  --color-warning-text-dark:     #fdba74;
+
+  /* ── Presence ───────────────────────────────────────────────────────────── */
+  --color-presence-online:  #22c55e;
+  --color-presence-away:    #f97316;
+  --color-presence-offline: #737373;
+  --color-presence-busy:    #ef4444;
+
+  /* Legacy aliases */
+  --color-online:  #22c55e;
+  --color-away:    #f97316;
+  --color-offline: #737373;
+
+  /* ── Message Bubbles (dark defaults) ─────────────────────────────────────── */
+  --color-bubble-out-dk:      #2e2e2e;
+  --color-bubble-out-fg-dk:   rgba(255, 255, 255, 0.92);
+  --color-bubble-out-time-dk: rgba(255, 255, 255, 0.60);
+  --color-bubble-in-dk:       #1a1a1a;
+
+  --color-bubble-out-lk:      #e5e5e5;
+  --color-bubble-out-fg-lk:   #171717;
+  --color-bubble-out-time-lk: rgba(0, 0, 0, 0.60);
+  --color-bubble-in-lk:       #f5f5f5;
+
+  /* Active bubble tokens (dark defaults) */
+  --color-bubble-out:      #2e2e2e;
+  --color-bubble-out-fg:   rgba(255, 255, 255, 0.92);
+  --color-bubble-out-time: rgba(255, 255, 255, 0.60);
+  --color-bubble-in:       #1a1a1a;
+
+  /* ── Card Janela 24h ─────────────────────────────────────────────────────── */
+  --color-card-24h-bg:     #1a1a1a;
+  --color-card-24h-border: #3a3a3a;
+
+  /* ── Copilot Icon gradient (neutral) ─────────────────────────────────────── */
+  --copilot-gradient-from: #525252;
+  --copilot-gradient-to:   #2e2e2e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Chat animations ──────────────────────────────────────────────────── */
+@keyframes msg-slide-in-left {
+  from { opacity: 0; transform: translateX(-12px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes msg-slide-in-right {
+  from { opacity: 0; transform: translateX(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes conv-slide-in {
+  from { opacity: 0; transform: translateY(-8px); max-height: 0; }
+  to   { opacity: 1; transform: translateY(0); max-height: 200px; }
+}
+
+.animate-msg-in-left {
+  animation: msg-slide-in-left 0.25s ease-out both;
+}
+.animate-msg-in-right {
+  animation: msg-slide-in-right 0.25s ease-out both;
+}
+.animate-conv-in {
+  animation: conv-slide-in 0.3s ease-out both;
+}
+
+/* Phase 16: slide-in from the right edge — used by the notifications sidebar */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Audio transcription — word-by-word fade-in. Each .transcription-word gets
+ * an inline animation-delay so words appear sequentially; `both` keeps the
+ * 0% opacity applied before the delay elapses so the text doesn't flash. */
+@keyframes transcription-word-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.transcription-word {
+  display: inline-block;
+  opacity: 0;
+  animation: transcription-word-in 0.32s ease-out both;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+/* Scrollbar horizontal mais grossa para filtros laterais */
+.filter-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #525252 transparent;
+}
+.filter-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+.filter-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0 4px;
+}
+.filter-scroll::-webkit-scrollbar-thumb {
+  background: #525252;
+  border-radius: 999px;
+}
+.filter-scroll::-webkit-scrollbar-thumb:hover {
+  background: #737373;
+}
+[data-theme="light"] .filter-scroll {
+  scrollbar-color: #d4d4d4 transparent;
+}
+[data-theme="light"] .filter-scroll::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+}
+[data-theme="light"] .filter-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+/* Scrollbar horizontal larga para o Kanban do CRM */
+.kanban-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: #141414;
+  border-radius: 999px;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: #525252;
+  border-radius: 999px;
+  border: 2px solid #141414;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: #737373;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #525252;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #737373;
+}
+
+/* ── Light theme ─────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  /* Bubbles */
+  --color-bubble-out:      #e5e5e5;
+  --color-bubble-out-fg:   #171717;
+  --color-bubble-out-time: rgba(0, 0, 0, 0.60);
+  --color-bubble-in:       #f5f5f5;
+
+  /* Surface — pure neutral light */
+  --color-surface-950: #ffffff;
+  --color-surface-900: #fafafa;
+  --color-surface-800: #f5f5f5;
+  --color-surface-700: #e5e5e5;
+  --color-surface-600: #d4d4d4;
+  --color-surface-500: #858585;
+  --color-surface-400: #636363;
+  --color-surface-300: #525252;
+  --color-surface-200: #262626;
+  --color-surface-100: #171717;
+  --color-surface-50:  #0a0a0a;
+
+  /* Brand — dark neutrals for light mode */
+  --color-brand-50:  #fafafa;
+  --color-brand-100: #f5f5f5;
+  --color-brand-200: #e5e5e5;
+  --color-brand-300: #404040;
+  --color-brand-400: #525252;
+  --color-brand-500: #262626;
+  --color-brand-600: #171717;
+  --color-brand-700: #e5e5e5;
+  --color-brand-800: #f5f5f5;
+  --color-brand-900: #fafafa;
+  --color-brand-950: #fafafa;
+
+  /* Brand aliases (light) */
+  --color-brand-cta:       #171717;
+  --color-brand-cta-hover: #262626;
+  --color-brand-surface:   #f5f5f5;
+  --color-brand-text:      #525252;
+  --color-brand-icon:      #525252;
+
+  /* Card 24h */
+  --color-card-24h-bg:     #fafafa;
+  --color-card-24h-border: #e5e5e5;
+
+  /* Semantic (light) */
+  --color-success:  #16a34a;
+  --color-danger:   #dc2626;
+  --color-info:     #2563eb;
+  --color-warning:  #ea580c;
+
+  /* Presence */
+  --color-presence-away: #ea580c;
+  --color-away: #ea580c;
+
+  /* Status — semantic tokens (light) */
+  --color-status-pending:        #b45309;
+  --color-status-pending-bg:     rgba(180, 83, 9, 0.08);
+  --color-status-pending-border: rgba(180, 83, 9, 0.20);
+  --color-status-active:         #16a34a;
+  --color-status-active-bg:      rgba(22, 163, 74, 0.08);
+  --color-status-active-border:  rgba(22, 163, 74, 0.20);
+  --color-status-muted:          #636363;
+  --color-status-muted-bg:       rgba(99, 99, 99, 0.08);
+  --color-status-muted-border:   rgba(99, 99, 99, 0.20);
+  --color-status-info:           #2563eb;
+  --color-status-info-bg:        rgba(37, 99, 235, 0.08);
+  --color-status-info-border:    rgba(37, 99, 235, 0.20);
+}
+
+/* ── Scrollbar light overrides ───────────────────────────────────────────── */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+/* ── Sidebar — sempre escura (independente do tema) ─────────────────────── */
+.nav-sidebar {
+  --color-surface-950: #0a0a0a;
+  --color-surface-900: #141414;
+  --color-surface-800: #1e1e1e;
+  --color-surface-700: #2e2e2e;
+  --color-surface-600: #525252;
+  --color-surface-500: #737373;
+  --color-surface-400: #8a8a8a;
+  --color-surface-300: #a3a3a3;
+  --color-surface-200: #d4d4d4;
+  --color-surface-100: #e5e5e5;
+  --color-surface-50:  #fafafa;
+  --color-brand-cta:     #e5e5e5;
+  --color-brand-surface: #1a1a1a;
+  --color-brand-text:    #a3a3a3;
+  --color-brand-icon:    #a3a3a3;
+  --color-brand-400:     #a3a3a3;
+  --color-brand-500:     #d4d4d4;
+  --color-brand-600:     #e5e5e5;
+}
+
+/* ── Card janela 24h ─────────────────────────────────────────────────────── */
+.card-24h {
+  background: var(--color-card-24h-bg);
+  border: 1.5px solid var(--color-card-24h-border);
+}
+
+/* ── Copilot icon ────────────────────────────────────────────────────────── */
+.copilot-icon {
+  background: linear-gradient(
+    to bottom right,
+    var(--copilot-gradient-from),
+    var(--copilot-gradient-to)
+  );
+}
