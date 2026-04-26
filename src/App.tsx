@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useState, Component, lazy, Suspense } from 'react'
+import { useState, useEffect, Component, Suspense } from 'react'
+import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
 import type { ReactNode, ErrorInfo } from 'react'
 
 // ── Error Boundary — prevents white screen on crash ─────────────────────────
@@ -44,23 +45,23 @@ import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 import { DebugPanel }         from '@/components/debug/DebugPanel'
 import { SetupWizard }        from '@/components/onboarding/SetupWizard'
 
-// Lazy-loaded pages — only downloaded when the route is visited
-const ConversationsPage = lazy(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
-const ContactsPage      = lazy(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
-const SettingsPage      = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const DashboardPage     = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
-const HomePage          = lazy(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
-const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
-const ResetPasswordPage  = lazy(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
-const RegisterPage       = lazy(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
-const CampaignsPage     = lazy(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
-const CopilotPage       = lazy(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
-const MarketingPage     = lazy(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
-const AutomationsPage   = lazy(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
-const AgentsPage        = lazy(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
-const PricingPage       = lazy(() => import('@/pages/PricingPage').then(m => ({ default: m.PricingPage })))
-const TeamChatPage      = lazy(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
-const CanvaCallbackPage = lazy(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
+// Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
+const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
+const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
+const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const HomePage          = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
+const ForgotPasswordPage = lazyRoute(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
+const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
+const RegisterPage       = lazyRoute(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
+const CampaignsPage     = lazyRoute(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
+const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
+const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
+const AutomationsPage   = lazyRoute(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
+const AgentsPage        = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
+const PricingPage       = lazyRoute(() => import('@/pages/PricingPage').then(m => ({ default: m.PricingPage })))
+const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
+const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 
@@ -198,6 +199,10 @@ function AnimatedRoutes() {
 // ── Root ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  useEffect(() => {
+    clearChunkReloadFlag()
+  }, [])
+
   return (
     <ErrorBoundary>
     <BrowserRouter>
