@@ -11,13 +11,15 @@ const AGENT_SERVER_URL = import.meta.env.VITE_AGENT_SERVER_URL as string | undef
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 /** Get a short-lived Bearer token from the backend (which accepts httpOnly cookies) for agent-server calls */
+const WS_TOKEN_CLIENT_TTL_MS = 170_000 // slightly under backend `signShortLivedToken` (3m) so we refresh before expiry
+
 let _agentTokenCache: { token: string; expiresAt: number } | null = null
 async function getAgentToken(): Promise<string> {
-  if (_agentTokenCache && Date.now() < _agentTokenCache.expiresAt - 3000) {
+  if (_agentTokenCache && Date.now() < _agentTokenCache.expiresAt - 5000) {
     return _agentTokenCache.token
   }
-  const res = await axios.get<{ token: string }>(`${API_URL}/auth/ws-token`)
-  _agentTokenCache = { token: res.data.token, expiresAt: Date.now() + 25_000 }
+  const res = await axios.get<{ token: string }>(`${API_URL}/auth/ws-token`, { withCredentials: true })
+  _agentTokenCache = { token: res.data.token, expiresAt: Date.now() + WS_TOKEN_CLIENT_TTL_MS }
   return res.data.token
 }
 
