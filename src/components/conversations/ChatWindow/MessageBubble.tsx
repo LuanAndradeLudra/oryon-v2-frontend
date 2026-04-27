@@ -97,7 +97,7 @@ function buildWaveform(seedKey: string): number[] {
 }
 
 /** Returns the trimmed Whisper transcription, or null if absent. Shared with
- *  MessageBubble so the "Transcrever" button can live in the message footer
+ *  MessageBubble so the "Ver transcrição" control can live in the footer
  *  while the transcription text renders inside the media content area. */
 function getAudioTranscription(message: Message): string | null {
   if (message.type !== 'audio') return null
@@ -128,7 +128,7 @@ function MediaContent({
   // read inside the rAF loop so it never hits React state.
   const [audioCurrentTime, setAudioCurrentTime] = useState(0)
   // Transcription visibility is controlled by the parent (MessageBubble)
-  // because the "Transcrever" toggle lives in the footer next to the
+  // because the "Ver transcrição" toggle lives in the footer next to the
   // timestamp, while the revealed text renders inside this component.
   const audioTranscription = getAudioTranscription(message)
 
@@ -380,8 +380,7 @@ function MediaContent({
           </a>
         </div>
 
-        {/* The "Transcrever" toggle lives in the MessageBubble footer next
-            to the timestamp — see the footer render in MessageBubble. */}
+        {/* The transcription toggle lives in the MessageBubble footer — see footer. */}
 
         {/* Revealed transcription — each word fades in sequentially. Using
             CSS `animation-delay` keyed by index avoids a JS timer and means
@@ -515,7 +514,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
   const isSameDirection = prevMessage?.direction === message.direction
   const gap = isSameDirection ? 'mt-0.5' : 'mt-3'
 
-  // Transcription toggle lives here so the "Transcrever" button can sit
+  // Transcription toggle lives here so the "Ver transcrição" control can sit
   // next to the timestamp in the footer; the MediaContent component
   // consumes this as a prop and renders the revealed text.
   const audioTranscription = getAudioTranscription(message)
@@ -603,13 +602,13 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         <MediaContent message={message} showTranscription={showTranscription} />
         <TextContent message={message} />
 
-        {/* Footer: [Transcrever CTA (audio only)]  ...  [time] [status]
-            The transcribe button hugs the left edge of the footer row so
-            it sits inline with the timestamp on the opposite side. It
-            only appears while the transcription is still collapsed. */}
+        {/* Footer: [Ver transcrição (audio com texto Whisper)] … [hora] [status]
+            Control only shows when Whisper text exists
+            and is still collapsed; expanding is one-way until remount. */}
         <div className="flex items-center gap-2 mt-1">
           {audioTranscription && !showTranscription && (
             <button
+              type="button"
               onClick={() => setShowTranscription(true)}
               className={cn(
                 'inline-flex items-center gap-1 text-[10px] font-medium transition-opacity',
@@ -617,7 +616,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               )}
             >
               <Sparkles className="w-2.5 h-2.5" />
-              Transcrever
+              Ver transcrição
             </button>
           )}
 
