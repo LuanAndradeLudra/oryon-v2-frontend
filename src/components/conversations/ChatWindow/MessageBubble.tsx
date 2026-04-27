@@ -8,6 +8,7 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Message } from '@/types'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
+import { feAudioLog } from '@/lib/audioMediaDebug'
 import { getAuthenticatedMediaUrl, useAuthenticatedMediaSrc } from '@/lib/mediaUrls'
 
 // Robust media download: fetch blob (works cross-origin as long as CORS is
@@ -137,6 +138,27 @@ function MediaContent({
   // tick like a JS typewriter would.
   const authMediaSrc = useAuthenticatedMediaSrc(message.mediaUrl)
 
+  useEffect(() => {
+    if (message.type !== 'audio') return
+    feAudioLog('bubble_audio_render', {
+      message_id: message.id,
+      wamid: message.wamid,
+      direction: message.direction,
+      media_path: message.mediaUrl?.slice(0, 160),
+      transcription_chars: audioTranscription?.length ?? 0,
+      has_transcription: Boolean(audioTranscription),
+      show_transcription_ui: showTranscription,
+    })
+  }, [
+    message.id,
+    message.type,
+    message.direction,
+    message.wamid,
+    message.mediaUrl,
+    audioTranscription,
+    showTranscription,
+  ])
+
   const transcriptionWords = useMemo(() => {
     if (!audioTranscription) return []
     // Split keeps spaces attached to the following word so the final
@@ -237,9 +259,17 @@ function MediaContent({
       setIsPlaying(true)
       startRafLoop()
     })
+    el.addEventListener('error', () => {
+      feAudioLog('bubble_audio_element_error', {
+        message_id: message.id,
+        src_preview: (el.src || '').slice(0, 160),
+        networkState: el.networkState,
+        error_code: el.error?.code,
+      })
+    })
     audioRef.current = el
     return el
-  }, [paintProgress, startRafLoop, stopRafLoop])
+  }, [paintProgress, startRafLoop, stopRafLoop, message.id])
 
   const toggleAudio = useCallback((src: string) => {
     const el = ensureAudio(src)
@@ -279,6 +309,11 @@ function MediaContent({
 
   useEffect(() => {
     if (message.type !== 'audio' || !authMediaSrc) return
+    feAudioLog('bubble_audio_auth_src_tick', {
+      message_id: message.id,
+      src_len: authMediaSrc.length,
+      has_token_query: authMediaSrc.includes('token='),
+    })
     const el = audioRef.current
     if (!el) return
     try {
@@ -287,12 +322,13 @@ function MediaContent({
       const playing = !el.paused
       el.src = authMediaSrc
       el.load()
+      feAudioLog('bubble_audio_src_hydrated', { message_id: message.id })
       if (playing) void el.play().catch(() => setIsPlaying(false))
     } catch {
       el.src = authMediaSrc
       el.load()
     }
-  }, [authMediaSrc, message.type])
+  }, [authMediaSrc, message.type, message.id])
 
   if (message.type === 'image' && message.mediaUrl && !imageError) {
     return (
@@ -609,7 +645,13 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           {audioTranscription && !showTranscription && (
             <button
               type="button"
-              onClick={() => setShowTranscription(true)}
+              onClick={() => {
+                feAudioLog('bubble_transcription_expand_click', {
+                  message_id: message.id,
+                  transcription_chars: audioTranscription?.length ?? 0,
+                })
+                setShowTranscription(true)
+              }}
               className={cn(
                 'inline-flex items-center gap-1 text-[10px] font-medium transition-opacity',
                 isOutbound ? 'text-bubble-out-time hover:opacity-100 opacity-80' : 'text-surface-400 hover:text-surface-200',
