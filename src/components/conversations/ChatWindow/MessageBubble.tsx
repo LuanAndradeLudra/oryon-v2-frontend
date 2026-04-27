@@ -8,12 +8,13 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Message } from '@/types'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
+import { getAuthenticatedMediaUrl, useAuthenticatedMediaSrc } from '@/lib/mediaUrls'
 
 // Robust media download: fetch blob (works cross-origin as long as CORS is
 // permissive), fall back to opening in a new tab if the browser refuses.
 async function downloadMedia(url: string, filename?: string) {
   try {
-    const res = await fetch(url)
+    const res = await fetch(url, { credentials: 'include' })
     if (!res.ok) throw new Error('fetch failed')
     const blob = await res.blob()
     const objUrl = URL.createObjectURL(blob)
@@ -25,26 +26,6 @@ async function downloadMedia(url: string, filename?: string) {
   } catch {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
-}
-
-// Converte URLs relativas em URLs completas
-function getFullMediaUrl(mediaUrl: string): string {
-  if (mediaUrl.startsWith('http')) return mediaUrl
-
-  if (mediaUrl.startsWith('/uploads/')) {
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-    const baseUrl = backendUrl.replace('/api', '')
-    return `${baseUrl}${mediaUrl}`
-  }
-
-  if (mediaUrl.startsWith('/api/media/')) {
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-    const baseUrl = backendUrl.replace('/api', '')
-    const uploadsPath = mediaUrl.replace('/api/media/', '/uploads/')
-    return `${baseUrl}${uploadsPath}`
-  }
-
-  return mediaUrl
 }
 
 interface MessageBubbleProps {
@@ -154,6 +135,8 @@ function MediaContent({
   // Split the transcription into [whitespace-preserving] words so CSS
   // per-word delays produce a fade-in cascade without re-rendering every
   // tick like a JS typewriter would.
+  const authMediaSrc = useAuthenticatedMediaSrc(message.mediaUrl)
+
   const transcriptionWords = useMemo(() => {
     if (!audioTranscription) return []
     // Split keeps spaces attached to the following word so the final
@@ -294,18 +277,34 @@ function MediaContent({
     }
   }, [stopRafLoop])
 
+  useEffect(() => {
+    if (message.type !== 'audio' || !authMediaSrc) return
+    const el = audioRef.current
+    if (!el) return
+    try {
+      const abs = new URL(authMediaSrc, window.location.href).href
+      if (el.src === abs) return
+      const playing = !el.paused
+      el.src = authMediaSrc
+      el.load()
+      if (playing) void el.play().catch(() => setIsPlaying(false))
+    } catch {
+      el.src = authMediaSrc
+      el.load()
+    }
+  }, [authMediaSrc, message.type])
+
   if (message.type === 'image' && message.mediaUrl && !imageError) {
-    const fullImageUrl = getFullMediaUrl(message.mediaUrl)
     return (
       <div className="mb-1">
         <img
-          src={fullImageUrl}
+          src={authMediaSrc}
           alt={message.mediaCaption || 'Imagem'}
           loading="lazy"
           decoding="async"
           className="rounded-lg max-w-[280px] max-h-[320px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
           onError={() => setImageError(true)}
-          onClick={() => window.open(fullImageUrl, '_blank')}
+          onClick={() => window.open(authMediaSrc, '_blank')}
         />
         {message.mediaCaption && (
           <p className="text-xs mt-1 text-current opacity-80">{message.mediaCaption}</p>
@@ -315,7 +314,6 @@ function MediaContent({
   }
 
   if (message.type === 'audio' && message.mediaUrl) {
-    const fullAudioUrl = getFullMediaUrl(message.mediaUrl)
     const hasTranscription = !!audioTranscription
 
     return (
@@ -326,7 +324,7 @@ function MediaContent({
         <div className="flex items-center gap-3">
           <button
             className="w-10 h-10 rounded-full bg-current/20 hover:bg-current/30 flex items-center justify-center transition-colors flex-shrink-0"
-            onClick={() => toggleAudio(fullAudioUrl)}
+            onClick={() => toggleAudio(authMediaSrc)}
             aria-label={isPlaying ? 'Pausar áudio' : 'Reproduzir áudio'}
           >
             {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
@@ -374,7 +372,7 @@ function MediaContent({
             </div>
           </div>
           <a
-            href={fullAudioUrl}
+            href={authMediaSrc}
             download
             className="w-8 h-8 rounded-full bg-current/20 hover:bg-current/30 flex items-center justify-center transition-colors flex-shrink-0"
           >
@@ -418,7 +416,6 @@ function MediaContent({
   }
 
   if (message.type === 'document' && message.mediaUrl) {
-    const fullDocumentUrl = getFullMediaUrl(message.mediaUrl)
     const getDocumentIcon = (url: string) => {
       const ext = url.split('.').pop()?.toLowerCase()
       if (ext === 'pdf') return '📄'
@@ -430,13 +427,13 @@ function MediaContent({
 
     return (
       <a
-        href={fullDocumentUrl}
+        href={authMediaSrc}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-3 py-2 px-1 hover:bg-current/5 rounded-lg transition-colors"
       >
         <div className="w-10 h-10 rounded-lg bg-current/10 flex items-center justify-center text-lg">
-          {getDocumentIcon(fullDocumentUrl)}
+          {getDocumentIcon(authMediaSrc)}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">
@@ -450,11 +447,10 @@ function MediaContent({
   }
 
   if (message.type === 'video' && message.mediaUrl) {
-    const fullVideoUrl = getFullMediaUrl(message.mediaUrl)
     return (
       <div className="mb-1">
         <video
-          src={fullVideoUrl}
+          src={authMediaSrc}
           controls
           className="rounded-lg max-w-[280px] max-h-[320px]"
           preload="metadata"
@@ -469,17 +465,16 @@ function MediaContent({
   }
 
   if (message.type === 'sticker' && message.mediaUrl) {
-    const fullStickerUrl = getFullMediaUrl(message.mediaUrl)
     return (
       <div className="mb-1">
         <img
-          src={fullStickerUrl}
+          src={authMediaSrc}
           alt="Figurinha"
           loading="lazy"
           decoding="async"
           className="rounded-lg max-w-[150px] max-h-[150px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
           onError={() => setImageError(true)}
-          onClick={() => window.open(fullStickerUrl, '_blank')}
+          onClick={() => window.open(authMediaSrc, '_blank')}
         />
       </div>
     )
@@ -542,21 +537,38 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       })
     }
     if (message.mediaUrl) {
-      const fullUrl = getFullMediaUrl(message.mediaUrl)
-      const copyLink = () => navigator.clipboard.writeText(fullUrl).catch(() => {})
+      const resolveUrl = () => getAuthenticatedMediaUrl(message.mediaUrl!)
+      const copyLink = () =>
+        resolveUrl().then((u) => navigator.clipboard.writeText(u)).catch(() => {})
       if (message.type === 'image') {
-        items.push({ label: 'Abrir imagem', icon: ExternalLink, onClick: () => window.open(fullUrl, '_blank', 'noopener,noreferrer') })
-        items.push({ label: 'Copiar link da imagem', icon: LinkIcon, onClick: copyLink })
-        items.push({ label: 'Baixar imagem', icon: Download, onClick: () => downloadMedia(fullUrl) })
+        items.push({
+          label: 'Abrir imagem',
+          icon: ExternalLink,
+          onClick: () => void resolveUrl().then((u) => window.open(u, '_blank', 'noopener,noreferrer')),
+        })
+        items.push({ label: 'Copiar link da imagem', icon: LinkIcon, onClick: () => void copyLink() })
+        items.push({ label: 'Baixar imagem', icon: Download, onClick: () => void resolveUrl().then(downloadMedia) })
       } else if (message.type === 'audio') {
-        items.push({ label: 'Baixar áudio', icon: Download, onClick: () => downloadMedia(fullUrl) })
-        items.push({ label: 'Copiar link do áudio', icon: LinkIcon, onClick: copyLink })
+        items.push({ label: 'Baixar áudio', icon: Download, onClick: () => void resolveUrl().then(downloadMedia) })
+        items.push({ label: 'Copiar link do áudio', icon: LinkIcon, onClick: () => void copyLink() })
       } else if (message.type === 'video') {
-        items.push({ label: 'Abrir vídeo', icon: ExternalLink, onClick: () => window.open(fullUrl, '_blank', 'noopener,noreferrer') })
-        items.push({ label: 'Baixar vídeo', icon: Download, onClick: () => downloadMedia(fullUrl) })
+        items.push({
+          label: 'Abrir vídeo',
+          icon: ExternalLink,
+          onClick: () => void resolveUrl().then((u) => window.open(u, '_blank', 'noopener,noreferrer')),
+        })
+        items.push({ label: 'Baixar vídeo', icon: Download, onClick: () => void resolveUrl().then(downloadMedia) })
       } else if (message.type === 'document') {
-        items.push({ label: 'Abrir documento', icon: ExternalLink, onClick: () => window.open(fullUrl, '_blank', 'noopener,noreferrer') })
-        items.push({ label: 'Baixar documento', icon: Download, onClick: () => downloadMedia(fullUrl, message.mediaCaption ?? undefined) })
+        items.push({
+          label: 'Abrir documento',
+          icon: ExternalLink,
+          onClick: () => void resolveUrl().then((u) => window.open(u, '_blank', 'noopener,noreferrer')),
+        })
+        items.push({
+          label: 'Baixar documento',
+          icon: Download,
+          onClick: () => void resolveUrl().then((u) => downloadMedia(u, message.mediaCaption ?? undefined)),
+        })
       }
     }
     return items

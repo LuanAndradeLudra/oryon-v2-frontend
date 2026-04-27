@@ -1155,4 +1155,21 @@ export interface WhatsappLineDependencies {
   departments: Array<{ id: string; name: string; color: string }>
 }
 
+/** Short-lived JWT for static /uploads (same as ws-token); cached ~3m server-side TTL. */
+let _uploadsAuthTokenCache: { token: string; expiresAt: number } | null = null
+const UPLOADS_AUTH_TOKEN_TTL_MS = 170_000
+
+export async function getUploadsAuthToken(): Promise<string> {
+  const skew = 5000
+  if (_uploadsAuthTokenCache && Date.now() < _uploadsAuthTokenCache.expiresAt - skew) {
+    return _uploadsAuthTokenCache.token
+  }
+  const { data } = await api.get<{ token: string }>('/auth/ws-token')
+  _uploadsAuthTokenCache = {
+    token: data.token,
+    expiresAt: Date.now() + UPLOADS_AUTH_TOKEN_TTL_MS,
+  }
+  return data.token
+}
+
 export default api
