@@ -10,9 +10,9 @@
  */
 
 function isMediaFeDebugEnabled(): boolean {
+  // always on in dev; in prod requires flag or localStorage key
   if (import.meta.env.DEV) return true
-  const v = import.meta.env.VITE_DEBUG_MEDIA
-  if (v === 'true' || v === '1') return true
+  if (import.meta.env.VITE_DEBUG_MEDIA === 'true' || import.meta.env.VITE_DEBUG_MEDIA === '1') return true
   try {
     return typeof localStorage !== 'undefined' && localStorage.getItem('oryon:debug:media') === '1'
   } catch {
@@ -23,8 +23,9 @@ function isMediaFeDebugEnabled(): boolean {
 function emit(prefix: string, event: string, payload?: Record<string, unknown>): void {
   if (!isMediaFeDebugEnabled()) return
   const label = `${prefix} ${event}`
-  if (payload && Object.keys(payload).length > 0) console.debug(label, payload)
-  else console.debug(label)
+  // use console.log (not debug) so logs appear at "Default levels" in Chrome DevTools
+  if (payload && Object.keys(payload).length > 0) console.log(label, payload)
+  else console.log(label)
 }
 
 /** URLs /uploads, player, token — imagem, áudio, vídeo, doc. */
