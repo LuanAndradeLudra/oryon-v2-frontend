@@ -23,7 +23,7 @@ import type {
 import type { SubCategory } from './SubcategoryPreview'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type ButtonRow = { type: TemplateButtonType; text: string; url: string; phoneNumber: string; flowId: string }
+type ButtonRow = { type: TemplateButtonType; text: string; url: string; phoneNumber: string; flowId: string; urlExample: string }
 
 type StepNum = 1 | 2 | 3 | 4
 
@@ -127,6 +127,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
       setButtons((editing.buttons ?? []).map((b) => ({
         type: b.type, text: b.text,
         url: b.url ?? '', phoneNumber: b.phoneNumber ?? '', flowId: b.flowId ?? '',
+        urlExample: b.urlExample ?? '',
       })))
       setVarExamples(editing.bodyVariables ?? [])
     } else {
@@ -188,7 +189,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
       FLOW:         'Ir para o flow',
       COPY_CODE:    'Copiar código',
     }
-    setButtons((prev) => [...prev, { type, text: defaults[type], url: '', phoneNumber: '', flowId: '' }])
+    setButtons((prev) => [...prev, { type, text: defaults[type], url: '', phoneNumber: '', flowId: '', urlExample: '' }])
     setShowAddButton(false)
   }
 
@@ -249,9 +250,10 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
         body,
         ...(footer.trim() ? { footer: footer.trim() } : {}),
         ...(buttons.length > 0 ? {
-          buttons: buttons.map(({ type, text, url, phoneNumber, flowId }) => ({
+          buttons: buttons.map(({ type, text, url, phoneNumber, flowId, urlExample }) => ({
             type, text: text.trim(),
             ...(type === 'URL' ? { url: url.trim() } : {}),
+            ...(type === 'URL' && /\{\{1\}\}/.test(url) && urlExample.trim() ? { urlExample: urlExample.trim() } : {}),
             ...(type === 'PHONE_NUMBER' ? { phoneNumber: phoneNumber.trim() } : {}),
             ...(type === 'FLOW' ? { flowId: flowId.trim() } : {}),
           })),
@@ -284,9 +286,10 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
     headerType: headerType || undefined, headerText: headerText || undefined,
     headerMediaUrl: headerMediaUrl || undefined,
     body: body || ' ', footer: footer || undefined,
-    buttons: buttons.map(({ type, text, url, phoneNumber, flowId }) => ({
+    buttons: buttons.map(({ type, text, url, phoneNumber, flowId, urlExample }) => ({
       type, text,
       ...(type === 'URL' ? { url } : {}),
+      ...(type === 'URL' && /\{\{1\}\}/.test(url) && urlExample ? { urlExample } : {}),
       ...(type === 'PHONE_NUMBER' ? { phoneNumber } : {}),
       ...(type === 'FLOW' ? { flowId } : {}),
     })),
@@ -569,22 +572,37 @@ function StepCategoria({
 
       <Section title="Categoria" required>
         <div className="grid grid-cols-3 gap-2">
-          {CATEGORIES.map(({ value, label, description, icon: Icon }) => (
-            <button
-              key={value}
-              onClick={() => onCategory(value)}
-              className={cn(
-                'text-left p-3 rounded-xl border transition-all',
-                category === value
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
-              )}
-            >
-              <Icon className={cn('w-4 h-4 mb-2', category === value ? 'text-brand-400' : 'text-surface-400')} />
-              <p className="text-xs font-semibold text-surface-100">{label}</p>
-              <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">{description}</p>
-            </button>
-          ))}
+          {CATEGORIES.map(({ value, label, description, icon: Icon, comingSoon }) => {
+            // Keep the existing selection visible even if the category has
+            // since been flagged comingSoon — otherwise editing an old
+            // template would silently fail to render its category.
+            const disabled = !!comingSoon && category !== value
+            return (
+              <button
+                key={value}
+                onClick={() => { if (!disabled) onCategory(value) }}
+                disabled={disabled}
+                title={disabled ? 'Em breve — esta categoria precisa de um fluxo dedicado e ainda não está disponível.' : undefined}
+                className={cn(
+                  'text-left p-3 rounded-xl border transition-all relative',
+                  category === value
+                    ? 'border-brand-500 bg-brand-500/10'
+                    : disabled
+                      ? 'border-surface-800 bg-surface-800/20 opacity-60 cursor-not-allowed'
+                      : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
+                )}
+              >
+                {comingSoon && (
+                  <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                    Em breve
+                  </span>
+                )}
+                <Icon className={cn('w-4 h-4 mb-2', category === value ? 'text-brand-400' : 'text-surface-400')} />
+                <p className="text-xs font-semibold text-surface-100">{label}</p>
+                <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">{description}</p>
+              </button>
+            )
+          })}
         </div>
 
         {/* Pricing note */}
@@ -965,7 +983,22 @@ function StepBotoes({
                   maxLength={25}
                 />
                 {btn.type === 'URL' && (
-                  <InputRow value={btn.url} onChange={(v) => updateButton(i, 'url', v)} placeholder="https://seusite.com.br/pagina" label="URL de destino" />
+                  <>
+                    <InputRow
+                      value={btn.url}
+                      onChange={(v) => updateButton(i, 'url', v)}
+                      placeholder="https://seusite.com.br/promo/{{1}} (opcional)"
+                      label="URL de destino"
+                    />
+                    {/\{\{1\}\}/.test(btn.url) && (
+                      <InputRow
+                        value={btn.urlExample}
+                        onChange={(v) => updateButton(i, 'urlExample', v)}
+                        placeholder="https://seusite.com.br/promo/abc123"
+                        label="URL de exemplo"
+                      />
+                    )}
+                  </>
                 )}
                 {btn.type === 'PHONE_NUMBER' && (
                   <InputRow value={btn.phoneNumber} onChange={(v) => updateButton(i, 'phoneNumber', v)} placeholder="+55 11 99999-9999" label="Número de telefone" />

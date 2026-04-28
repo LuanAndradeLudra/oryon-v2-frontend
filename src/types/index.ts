@@ -875,6 +875,8 @@ export interface TemplateButton {
   url?: string
   phoneNumber?: string
   flowId?: string
+  // Sample URL when `url` contains {{1}} — Meta requires it for review.
+  urlExample?: string
 }
 
 export interface WhatsAppTemplate {

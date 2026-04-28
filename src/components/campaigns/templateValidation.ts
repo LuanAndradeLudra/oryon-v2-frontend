@@ -15,6 +15,7 @@ export interface TemplateButtonState {
   url?: string
   phoneNumber?: string
   flowId?: string
+  urlExample?: string
 }
 
 export interface TemplateValidationInput {
@@ -149,8 +150,32 @@ export function validateTemplate(input: TemplateValidationInput): TemplateValida
 
     const byIndex: Record<number, string> = {}
     input.buttons.forEach((btn, i) => {
-      if (btn.type === 'URL' && btn.url && !/^https:\/\//i.test(btn.url)) {
-        byIndex[i] = 'URL precisa começar com https://.'
+      if (btn.type === 'URL' && btn.url) {
+        if (!/^https:\/\//i.test(btn.url)) {
+          byIndex[i] = 'URL precisa começar com https://.'
+          return
+        }
+        // Dynamic URL: {{1}} is allowed, but only at the very end and an
+        // example URL is required.
+        const placeholders = btn.url.match(/\{\{(\d+)\}\}/g) ?? []
+        if (placeholders.length > 0) {
+          if (placeholders.length > 1 || placeholders[0] !== '{{1}}') {
+            byIndex[i] = 'URL aceita no máximo uma variável e ela deve ser {{1}}.'
+            return
+          }
+          if (!btn.url.endsWith('{{1}}')) {
+            byIndex[i] = 'A variável {{1}} precisa ficar no final da URL (ex.: https://site.com/promo/{{1}}).'
+            return
+          }
+          if (!btn.urlExample || !btn.urlExample.trim()) {
+            byIndex[i] = 'Informe um exemplo de URL completa para a Meta revisar.'
+            return
+          }
+          if (!/^https:\/\//i.test(btn.urlExample)) {
+            byIndex[i] = 'A URL de exemplo precisa começar com https://.'
+            return
+          }
+        }
       }
       if (btn.type === 'PHONE_NUMBER' && btn.phoneNumber) {
         const stripped = btn.phoneNumber.replace(/[\s-]/g, '')

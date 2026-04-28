@@ -22,10 +22,14 @@ export const SUBCATEGORY_LABELS: Record<SubCategory, string> = {
   order_status:  'Status de entrega',
 }
 
-export const CATEGORIES: { value: TemplateCategoryType; label: string; description: string; icon: ComponentType<{ className?: string }> }[] = [
+// `comingSoon` keeps the option visible (so the operator knows the feature
+// exists) but the picker disables click. Categories that need a dedicated
+// schema we don't generate yet — AUTHENTICATION uses a Meta-controlled body
+// and an OTP button — should stay flagged until the flow is implemented.
+export const CATEGORIES: { value: TemplateCategoryType; label: string; description: string; icon: ComponentType<{ className?: string }>; comingSoon?: boolean }[] = [
   { value: 'MARKETING',      label: 'Marketing',    icon: Megaphone,   description: 'Promoções, ofertas, boas‑vindas e conteúdo de engajamento' },
   { value: 'UTILITY',        label: 'Utilidade',    icon: Wrench,      description: 'Confirmações, lembretes e alertas transacionais' },
-  { value: 'AUTHENTICATION', label: 'Autenticação', icon: ShieldCheck, description: 'Senhas de uso único (OTP) e verificações de conta' },
+  { value: 'AUTHENTICATION', label: 'Autenticação', icon: ShieldCheck, description: 'Senhas de uso único (OTP) e verificações de conta', comingSoon: true },
 ]
 
 export const SUBCATEGORIES: Record<TemplateCategoryType, { value: SubCategory; label: string; description: string }[]> = {
