@@ -616,7 +616,10 @@ function StepCategoria({
         </div>
 
         {/* Subcategory */}
-        <div className="mt-3 space-y-1.5">
+        <p className="text-[11px] text-surface-400 mt-3 mb-1.5">
+          A subcategoria escolhe um <strong className="text-surface-300">modelo inicial</strong> para o editor — ela não é enviada para a Meta.
+        </p>
+        <div className="space-y-1.5">
           {SUBCATEGORIES[category].map((sub) => (
             <button
               key={sub.value}
@@ -1045,12 +1048,13 @@ function StepBotoes({
                   {availableButtonTypes.map((bt) => {
                     const Icon = bt.icon
                     const alreadyHasType = buttons.some((b) => b.type === bt.value)
-                    const isDisabledType = (bt.value === 'COPY_CODE' && buttons.length > 0) || alreadyHasType
+                    const isDisabledType = bt.comingSoon || (bt.value === 'COPY_CODE' && buttons.length > 0) || alreadyHasType
                     return (
                       <button
                         key={bt.value}
                         onClick={() => !isDisabledType && addButtonOfType(bt.value)}
                         disabled={isDisabledType}
+                        title={bt.comingSoon ? 'Em breve — este tipo precisa de suporte dedicado e ainda não está disponível.' : undefined}
                         className={cn(
                           'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all',
                           isDisabledType ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-700'
@@ -1061,7 +1065,11 @@ function StepBotoes({
                           <p className="text-xs font-medium text-surface-200">{bt.label}</p>
                           <p className="text-[11px] text-surface-400">{bt.description}</p>
                         </div>
-                        {alreadyHasType && <span className="ml-auto text-[10px] text-surface-400">Já adicionado</span>}
+                        {bt.comingSoon ? (
+                          <span className="ml-auto text-[9px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">Em breve</span>
+                        ) : alreadyHasType ? (
+                          <span className="ml-auto text-[10px] text-surface-400">Já adicionado</span>
+                        ) : null}
                       </button>
                     )
                   })}
