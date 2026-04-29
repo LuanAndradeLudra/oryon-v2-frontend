@@ -1315,18 +1315,21 @@ function RulesTab({
   subTab: RulesSubTab
   onSubTabChange: (s: RulesSubTab) => void
 }) {
+  // Roteamento first — it's the more impactful rule type for most agents
+  // (where to send the conversation when AI shouldn't keep answering),
+  // so we surface it as the default sub-tab.
   const subTabs: Array<{ id: RulesSubTab; label: string; icon: React.ReactNode; hint: string }> = [
-    {
-      id: 'faqs',
-      label: 'Respostas rápidas',
-      icon: <MessageCircleQuestion className="w-3.5 h-3.5" />,
-      hint: 'Responde automaticamente a saudações e perguntas frequentes por palavra-chave, sem consumir créditos de IA. O agente continua disponível para o resto da conversa.',
-    },
     {
       id: 'handoff',
       label: 'Roteamento',
       icon: <Shield className="w-3.5 h-3.5" />,
       hint: 'Transfere a conversa para um atendente humano, redireciona para outro canal ou envia uma resposta final quando o agente NÃO deve continuar atendendo.',
+    },
+    {
+      id: 'faqs',
+      label: 'Respostas rápidas',
+      icon: <MessageCircleQuestion className="w-3.5 h-3.5" />,
+      hint: 'Responde automaticamente a saudações e perguntas frequentes por palavra-chave, sem consumir créditos de IA. O agente continua disponível para o resto da conversa.',
     },
   ]
 
@@ -1923,7 +1926,7 @@ export function AgentDetail({
   const [advancedMode] = useAdvancedMode()
   // Sub-tab state for the unified "Regras" tab — lifted here because the
   // outer scroll/flex layout depends on which sub-panel is active.
-  const [rulesSubTab, setRulesSubTab] = useState<RulesSubTab>('faqs')
+  const [rulesSubTab, setRulesSubTab] = useState<RulesSubTab>('handoff')
   const [deletingAgent, setDeletingAgent] = useState(false)
   const [showTest, setShowTest] = useState(false)
   const [togglingStatus, setTogglingStatus] = useState(false)

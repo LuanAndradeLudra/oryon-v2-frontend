@@ -32,47 +32,47 @@ export function SkillTemplateEditorPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 py-8">
-      <button
-        onClick={() => navigate('/admin/skill-templates')}
-        className="inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-200 mb-4 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Voltar para o catálogo
-      </button>
+        <button
+          onClick={() => navigate('/admin/skill-templates')}
+          className="inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-200 mb-4 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Voltar para o catálogo
+        </button>
 
-      <header className="mb-6">
-        <h1 className="text-xl font-semibold text-surface-100">
-          {isNew
-            ? 'Novo template'
-            : template
-              ? `Editar: ${template.name}`
-              : 'Editar template'}
-        </h1>
-        <p className="text-sm text-surface-400">
-          {isNew
-            ? 'Defina um novo molde de skill que poderá ser anexado aos agentes dos clientes.'
-            : 'Edite os campos do template. Mudanças afetam todas as instâncias atribuídas.'}
-        </p>
-      </header>
+        <header className="mb-6">
+          <h1 className="text-xl font-semibold text-surface-100">
+            {isNew
+              ? 'Novo template'
+              : template
+                ? `Editar: ${template.name}`
+                : 'Editar template'}
+          </h1>
+          <p className="text-sm text-surface-400">
+            {isNew
+              ? 'Defina um novo molde de skill que poderá ser anexado aos agentes dos clientes.'
+              : 'Edite os campos do template. Mudanças afetam todas as instâncias atribuídas.'}
+          </p>
+        </header>
 
-      {loading && (
-        <div className="flex items-center justify-center py-16 text-surface-400">
-          <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando template…
-        </div>
-      )}
-
-      {error && !loading && (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
-          <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-danger font-medium mb-1">Erro ao carregar</p>
-            <p className="text-surface-400">{error}</p>
+        {loading && (
+          <div className="flex items-center justify-center py-16 text-surface-400">
+            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando template…
           </div>
-        </div>
-      )}
+        )}
 
-      {!loading && !error && (
-        <SkillTemplateForm template={template} />
-      )}
+        {error && !loading && (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+            <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-danger font-medium mb-1">Erro ao carregar</p>
+              <p className="text-surface-400">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <SkillTemplateForm template={template} />
+        )}
       </div>
     </div>
   )

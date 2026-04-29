@@ -10,12 +10,18 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
+import { Stepper, type StepperSection } from '@/components/ui/Stepper'
+import { ToastContainer } from '@/components/ui/Toast'
 import { SchemaFieldsBuilder } from './SchemaFieldsBuilder'
+import { CategoryPills } from './CategoryPills'
+import { ScopeSelector, type ScopeValue } from './ScopeSelector'
+import { useToast } from '@/hooks/useToast'
 import { createSkillTemplate, updateSkillTemplate } from '@/services/skillTemplatesApi'
 import type {
   SkillTemplate,
@@ -24,7 +30,14 @@ import type {
   CreateSkillTemplatePayload,
 } from '@/types/skills'
 import { cn } from '@/lib/utils'
-import { AlertCircle, Beaker, Loader2, Save } from 'lucide-react'
+import {
+  Beaker, Loader2, Save, ShieldAlert, Copy, Check,
+  IdCard, Bot, Settings as SettingsIcon, PlugZap,
+  ArrowLeft, ArrowRight,
+} from 'lucide-react'
+
+type StepId = 'identity' | 'ai' | 'config' | 'n8n'
+const STEP_ORDER: StepId[] = ['identity', 'ai', 'config', 'n8n']
 
 interface Props {
   /** When provided, the form is in edit mode and pre-fills from this template. */
@@ -109,13 +122,17 @@ function slugify(text: string): string {
 export function SkillTemplateForm({ template }: Props) {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { toasts, toast, dismiss } = useToast()
   const isEdit = !!template
   const [form, setForm] = useState<FormState>(() => fromTemplate(template, user?.tenantId ?? ''))
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   // Tracks whether the user has manually touched the slug — until then,
   // typing the name keeps slug auto-synced for convenience on new templates.
   const [slugTouched, setSlugTouched] = useState(isEdit)
+  // Wizard-mode: only one step is visible at a time. Navigation between
+  // steps is handled by the Stepper (jump) and the footer Voltar/Continuar
+  // buttons. Final step's primary CTA flips to "Criar template".
+  const [currentStep, setCurrentStep] = useState<StepId>('identity')
 
   // Re-sync state when the template prop arrives later (lazy fetch).
   useEffect(() => {
@@ -137,13 +154,47 @@ export function SkillTemplateForm({ template }: Props) {
 
   const validation = useMemo(() => validateForm(form, isEdit), [form, isEdit])
 
+  // Per-section completeness — drives the green checks on the stepper. Each
+  // bullet flips to "done" the moment the section's required inputs are
+  // present, giving the operator constant feedback while filling the form.
+  const sectionStatus = useMemo(() => ({
+    identity: !!form.name.trim() && !!form.description.trim() && (isEdit || SLUG_RE.test(form.slug)) && (form.scope === 'public' || /^[0-9a-f-]{36}$/i.test(form.tenant_id)),
+    ai: LLM_NAME_RE.test(form.llm_name) && !!form.llm_description.trim() && Object.keys(form.input_schema.properties ?? {}).length > 0,
+    config: true, // optional section — always considered "done"
+    n8n: form.webhook_path.startsWith('/') && !form.webhook_path.startsWith('//') && !form.webhook_path.includes('://') && form.timeout_ms >= 1000 && form.timeout_ms <= 60_000,
+  }), [form, isEdit])
+
+  const sections: StepperSection[] = [
+    { id: 'identity', label: 'Identidade',   icon: IdCard,        complete: sectionStatus.identity },
+    { id: 'ai',       label: 'Para a IA',    icon: Bot,           complete: sectionStatus.ai },
+    { id: 'config',   label: 'Configuração', icon: SettingsIcon,  complete: sectionStatus.config },
+    { id: 'n8n',      label: 'n8n',          icon: PlugZap,       complete: sectionStatus.n8n },
+  ]
+
+  const stepIndex = STEP_ORDER.indexOf(currentStep)
+  const isFirstStep = stepIndex === 0
+  const isLastStep = stepIndex === STEP_ORDER.length - 1
+
+  function goToStep(id: StepId) {
+    setCurrentStep(id)
+    // Bring the wizard panel back into view in case the user scrolled.
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  function goPrev() {
+    if (isFirstStep) return
+    goToStep(STEP_ORDER[stepIndex - 1])
+  }
+  function goNext() {
+    if (isLastStep) return
+    goToStep(STEP_ORDER[stepIndex + 1])
+  }
+
   async function handleSubmit() {
     if (validation.error) {
-      setError(validation.error)
+      toast(validation.error, 'error')
       return
     }
     setSaving(true)
-    setError(null)
     try {
       if (isEdit && template) {
         // PATCH only the editable fields. Slug + tenant_id are immutable
@@ -161,6 +212,7 @@ export function SkillTemplateForm({ template }: Props) {
           timeout_ms: form.timeout_ms,
           mutates: form.mutates,
         })
+        toast('Template atualizado', 'success')
         navigate(`/admin/skill-templates/${updated.id}`, { replace: true })
       } else {
         const payload: CreateSkillTemplatePayload = {
@@ -179,10 +231,11 @@ export function SkillTemplateForm({ template }: Props) {
           tenant_id: form.scope === 'private' ? form.tenant_id : null,
         }
         const created = await createSkillTemplate(payload)
+        toast('Template criado', 'success')
         navigate(`/admin/skill-templates/${created.id}`, { replace: true })
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      toast(err instanceof Error ? err.message : String(err), 'error')
     } finally {
       setSaving(false)
     }
@@ -190,15 +243,28 @@ export function SkillTemplateForm({ template }: Props) {
 
   return (
     <div className="space-y-6">
-      {error && (
-        <div className="flex items-start gap-3 p-3 rounded-lg bg-danger/10 border border-danger/30 text-sm">
-          <AlertCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
-          <p className="text-danger">{error}</p>
-        </div>
-      )}
+      {/* Stepper — full-width row, used both as visual progress and as
+          direct navigation. The operator can jump to any step at any
+          time; validation is enforced only on the final submit. */}
+      <div className="px-1 py-3">
+        <Stepper sections={sections} active={currentStep} onJump={(id) => goToStep(id as StepId)} />
+      </div>
+
+      {/* Animated single-step container — only the current step's fields
+          render. Sliding transition makes the wizard feel like a flow
+          instead of a long form chopped into accordions. */}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -16 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
 
       {/* ── A. Identidade ───────────────────────────────────────────────── */}
-      <Section title="Identidade" hint="Como esse template aparece para a equipe Oryon e como ele é encontrado.">
+      {currentStep === 'identity' && (
+      <Section id="identity" title="Identidade" hint="Como esse template aparece para a equipe Oryon e como ele é encontrado.">
         <Field label="Nome amigável" required>
           <Input
             value={form.name}
@@ -209,19 +275,15 @@ export function SkillTemplateForm({ template }: Props) {
         <Field
           label="Slug técnico"
           required
-          hint="Identificador único no banco. Use {cliente_ou_categoria}__{capacidade}."
+          hint={isEdit
+            ? 'Identificador único no banco. Imutável após criação.'
+            : 'Auto-gerado a partir do nome — edite só se precisar customizar.'}
         >
-          <Input
+          <SlugField
             value={form.slug}
-            onChange={(e) => { setSlugTouched(true); update('slug', e.target.value) }}
-            placeholder="serramed__marcar_consulta"
+            onChange={(v) => { setSlugTouched(true); update('slug', v) }}
             disabled={isEdit}
           />
-          {isEdit && (
-            <p className="text-[11px] text-surface-500 mt-1">
-              Slug não pode ser alterado depois de criado.
-            </p>
-          )}
         </Field>
         <Field label="Descrição interna" required hint="Uma frase para você lembrar o que esse template faz.">
           <Textarea
@@ -232,69 +294,41 @@ export function SkillTemplateForm({ template }: Props) {
           />
         </Field>
         <Field label="Categoria">
-          <Select value={form.category} onChange={(e) => update('category', e.target.value)}>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </Select>
+          <CategoryPills
+            value={form.category}
+            onChange={(v) => update('category', v)}
+          />
         </Field>
         <Field label="Escopo">
-          <div className="flex flex-col gap-2">
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="radio"
-                checked={form.scope === 'public'}
-                onChange={() => update('scope', 'public')}
-                disabled={isEdit}
-                className="mt-1 accent-brand-500"
-              />
-              <span>
-                <span className="text-sm text-surface-100">Público</span>
-                <span className="block text-[11px] text-surface-500">
-                  Disponível para qualquer tenant ativar.
-                </span>
-              </span>
-            </label>
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="radio"
-                checked={form.scope === 'private'}
-                onChange={() => update('scope', 'private')}
-                disabled={isEdit}
-                className="mt-1 accent-brand-500"
-              />
-              <span>
-                <span className="text-sm text-surface-100">Privado a um tenant</span>
-                <span className="block text-[11px] text-surface-500">
-                  Só o tenant escolhido vê esse template.
-                </span>
-              </span>
-            </label>
-            {form.scope === 'private' && (
-              <Input
-                value={form.tenant_id}
-                onChange={(e) => update('tenant_id', e.target.value)}
-                placeholder="UUID do tenant (ex: 565df6de-fc4b-...)"
-                disabled={isEdit}
-              />
-            )}
-          </div>
-          {isEdit && (
-            <p className="text-[11px] text-surface-500 mt-1">
-              Escopo e tenant não podem ser alterados depois de criados.
-            </p>
-          )}
+          <ScopeSelector
+            value={
+              form.scope === 'private'
+                ? { kind: 'private', tenantId: form.tenant_id }
+                : { kind: 'public' }
+            }
+            onChange={(v: ScopeValue) => {
+              if (v.kind === 'public') {
+                update('scope', 'public')
+                update('tenant_id', '')
+              } else {
+                update('scope', 'private')
+                update('tenant_id', v.tenantId)
+              }
+            }}
+            disabled={isEdit}
+          />
         </Field>
-        <RowSwitch
-          label="Operação destrutiva"
-          hint="Marque se a skill altera dados externos (ex: marcar/cancelar consulta). A UI do cliente mostrará um aviso."
+        <DestructiveCallout
           checked={form.mutates}
           onChange={(v) => update('mutates', v)}
         />
       </Section>
+      )}
 
       {/* ── B. Para a IA ───────────────────────────────────────────────── */}
+      {currentStep === 'ai' && (
       <Section
+        id="ai"
         title="Para a IA"
         hint="Como a IA descobre quando usar a skill e quais campos preencher na chamada."
       >
@@ -332,9 +366,12 @@ export function SkillTemplateForm({ template }: Props) {
           />
         </Field>
       </Section>
+      )}
 
       {/* ── C. Configuração da integração ─────────────────────────────── */}
+      {currentStep === 'config' && (
       <Section
+        id="config"
         title="Configuração da integração (Oryon staff)"
         hint="Campos preenchidos por VOCÊ ao atribuir o template ao agente de um cliente. O cliente final nunca vê esses valores."
       >
@@ -350,9 +387,11 @@ export function SkillTemplateForm({ template }: Props) {
           />
         </Field>
       </Section>
+      )}
 
       {/* ── D. Conexão n8n ─────────────────────────────────────────────── */}
-      <Section title="Conexão n8n" hint="Endpoint para onde o agent-server vai postar a chamada assinada por HMAC.">
+      {currentStep === 'n8n' && (
+      <Section id="n8n" title="Conexão n8n" hint="Endpoint para onde o agent-server vai postar a chamada assinada por HMAC.">
         <Field
           label="Webhook path"
           required
@@ -388,9 +427,17 @@ export function SkillTemplateForm({ template }: Props) {
           />
         </Field>
       </Section>
+      )}
 
-      {/* ── Footer actions ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-3 pt-2">
+        </motion.div>
+      </AnimatePresence>
+
+      {/* ── Wizard footer ──────────────────────────────────────────────── */}
+      {/* Left: cancel (always). Right: prev/next when mid-flow, plus the
+          primary CTA on the last step. We expose the test shortcut and the
+          submit only on the last step so the operator knows they reviewed
+          everything before saving. */}
+      <div className="flex items-center justify-between gap-3 pt-4 border-t border-surface-800/60">
         <button
           type="button"
           onClick={() => navigate('/admin/skill-templates')}
@@ -399,30 +446,52 @@ export function SkillTemplateForm({ template }: Props) {
           Cancelar
         </button>
         <div className="flex items-center gap-2">
-          {isEdit && template && (
+          {!isFirstStep && (
             <button
               type="button"
-              onClick={() => navigate(`/admin/skill-templates/${template.id}/test`)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-100 text-sm font-medium transition-colors"
+              onClick={goPrev}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-colors"
             >
-              <Beaker className="w-4 h-4" /> Testar
+              <ArrowLeft className="w-4 h-4" /> Voltar
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={saving}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-              'bg-brand-600 text-surface-950 hover:bg-brand-500',
-              saving && 'opacity-60 cursor-not-allowed',
-            )}
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Salvando…' : isEdit ? 'Salvar alterações' : 'Criar template'}
-          </button>
+          {!isLastStep ? (
+            <button
+              type="button"
+              onClick={goNext}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-brand-600 text-surface-950 hover:bg-brand-500 active:scale-[0.98] transition-colors"
+            >
+              Continuar <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <>
+              {isEdit && template && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/admin/skill-templates/${template.id}/test`)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-100 text-sm font-medium transition-colors"
+                >
+                  <Beaker className="w-4 h-4" /> Testar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={saving}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
+                  'bg-brand-600 text-surface-950 hover:bg-brand-500 active:scale-[0.98]',
+                  saving && 'opacity-60 cursor-not-allowed',
+                )}
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {saving ? 'Salvando…' : isEdit ? 'Salvar alterações' : 'Criar template'}
+              </button>
+            </>
+          )}
         </div>
       </div>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }
@@ -465,16 +534,22 @@ function validateForm(form: FormState, isEdit: boolean): { error: string | null 
 // ─── Layout helpers ────────────────────────────────────────────────────────
 
 function Section({
+  id,
   title,
   hint,
   children,
 }: {
+  id: string
   title: string
   hint?: string
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+    <section
+      id={id}
+      data-section={id}
+      className="bg-surface-900/50 border border-surface-800 rounded-xl p-5 scroll-mt-24"
+    >
       <header className="mb-4">
         <h2 className="text-base font-semibold text-surface-100 mb-0.5">{title}</h2>
         {hint && <p className="text-sm text-surface-400">{hint}</p>}
@@ -507,22 +582,91 @@ function Field({
   )
 }
 
-function RowSwitch({
-  label,
-  hint,
+// ─── Slug field — auto-derived, copy-able in edit mode ─────────────────────
+// In create mode the slug is derived from the friendly name and shown in
+// font-mono so it visually reads as "code" rather than user-typed prose.
+// In edit mode the slug is immutable, so we render it read-only with a
+// copy button instead of a disabled input — clearer affordance.
+
+function SlugField({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string
+  onChange: (v: string) => void
+  disabled: boolean
+}) {
+  const [copied, setCopied] = useState(false)
+
+  if (disabled) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-900 border border-surface-800">
+        <code className="flex-1 font-mono text-sm text-surface-200 truncate">{value}</code>
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard?.writeText(value).catch(() => {})
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1500)
+          }}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] text-surface-300 hover:bg-surface-800 transition-colors"
+        >
+          {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          {copied ? 'copiado' : 'copiar'}
+        </button>
+      </div>
+    )
+  }
+  return (
+    <Input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="serramed__marcar_consulta"
+      className="font-mono"
+    />
+  )
+}
+
+// ─── Destructive callout — visually proportional to the risk ────────────────
+// "Operação destrutiva" used to be a plain switch row. When toggled, the
+// callout flips colour to amber and previews the exact label the customer
+// will see, so the operator can't miss the implication.
+
+function DestructiveCallout({
   checked,
   onChange,
 }: {
-  label: string
-  hint?: string
   checked: boolean
   onChange: (v: boolean) => void
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-1">
-      <div className="min-w-0">
-        <p className="text-sm text-surface-100">{label}</p>
-        {hint && <p className="text-[11px] text-surface-500 mt-0.5">{hint}</p>}
+    <div
+      className={cn(
+        'flex items-start gap-3 p-3 rounded-lg border transition-colors',
+        checked
+          ? 'bg-status-pending-bg/40 border-status-pending-border'
+          : 'bg-surface-900 border-surface-800',
+      )}
+    >
+      <ShieldAlert
+        className={cn(
+          'w-4 h-4 flex-shrink-0 mt-0.5 transition-colors',
+          checked ? 'text-status-pending' : 'text-surface-500',
+        )}
+      />
+      <div className="min-w-0 flex-1">
+        <p className={cn('text-sm font-medium', checked ? 'text-status-pending' : 'text-surface-100')}>
+          Operação destrutiva
+        </p>
+        <p className="text-[11px] text-surface-500 mt-0.5">
+          Marque se a skill altera dados externos (ex: marcar / cancelar consulta).
+        </p>
+        {checked && (
+          <p className="text-[11px] text-status-pending mt-2">
+            ⚠ O cliente verá um chip <code className="px-1 rounded bg-status-pending-bg text-status-pending">destrutiva</code> no card desta skill.
+          </p>
+        )}
       </div>
       <Switch checked={checked} onChange={onChange} />
     </div>

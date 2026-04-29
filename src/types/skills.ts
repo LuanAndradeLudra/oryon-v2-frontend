@@ -41,6 +41,10 @@ export interface SkillTemplate {
   enabled: boolean
   created_at: string
   updated_at: string
+  /** Map of tenant_id → count of agents currently using this template.
+   *  Only present on the listing endpoint; admin uses it to show
+   *  "attributed to" without an extra round-trip. */
+  instances_by_tenant?: Record<string, number>
 }
 
 /** Row shape returned by POST/PATCH /agent-skills endpoints. */

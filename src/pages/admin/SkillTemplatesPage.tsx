@@ -2,11 +2,17 @@
 // Catalogue of skills the platform offers. Oryon staff CRUDs templates here
 // and then assigns them to customer agents from /admin/skills/assign.
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Sparkles, Loader2, AlertCircle, Edit3, Beaker, Power, PowerOff, Link2, CheckCircle2, X } from 'lucide-react'
+import { Plus, Sparkles, Loader2, AlertCircle, Edit3, Beaker, Power, PowerOff, Link2, Users } from 'lucide-react'
 import { listSkillTemplates, updateSkillTemplate } from '@/services/skillTemplatesApi'
+import { listAdminOrganizations, type AdminOrganization } from '@/services/adminApi'
 import type { SkillTemplate } from '@/types/skills'
+import { CategoryIcon } from '@/components/skills/CategoryIcon'
+import { ToastContainer } from '@/components/ui/Toast'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Tooltip } from '@/components/ui/Tooltip'
+import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 
 interface AssignedState { tenantId: string; agentId: string; templateId: string }
@@ -21,11 +27,14 @@ const CATEGORY_LABELS: Record<string, string> = {
 export function SkillTemplatesPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  // The Assign screen pushes navigation state on success — pluck it once,
-  // then mirror locally so the banner survives client-side filter changes.
+  const { toasts, toast, dismiss } = useToast()
+  // The Assign screen pushes its result via navigation state — fire a toast
+  // once on mount instead of holding a banner forever (cleaner UX, fewer
+  // moving parts on the list).
   const initialAssigned = (location.state as { assigned?: AssignedState } | null)?.assigned ?? null
-  const [assignedBanner, setAssignedBanner] = useState<AssignedState | null>(initialAssigned)
+  const assignedToastFiredRef = useRef(false)
   const [templates, setTemplates] = useState<SkillTemplate[]>([])
+  const [orgs, setOrgs] = useState<AdminOrganization[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterCategory, setFilterCategory] = useState<string>('')
@@ -49,6 +58,30 @@ export function SkillTemplatesPage() {
 
   useEffect(() => { reload() }, [reload])
 
+  // Load organisations once so the cards can show "attributed to: <names>"
+  // by mapping the `instances_by_tenant` ids returned by the backend. We
+  // tolerate failure here (the cards just fall back to raw UUIDs) — this is
+  // a nice-to-have, not load-blocking.
+  useEffect(() => {
+    listAdminOrganizations()
+      .then(setOrgs)
+      .catch(() => { /* silent: cards still work without names */ })
+  }, [])
+
+  const orgNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const o of orgs) map.set(o.id, o.businessName)
+    return map
+  }, [orgs])
+
+  // Fire the "skill atribuída" toast exactly once per navigation arrival.
+  useEffect(() => {
+    if (initialAssigned && !assignedToastFiredRef.current) {
+      assignedToastFiredRef.current = true
+      toast('Skill atribuída com sucesso ao agente do cliente.', 'success')
+    }
+  }, [initialAssigned, toast])
+
   const filtered = templates.filter((t) => {
     if (filterCategory && t.category !== filterCategory) return false
     if (filterStatus === 'enabled' && !t.enabled) return false
@@ -64,8 +97,9 @@ export function SkillTemplatesPage() {
     try {
       const updated = await updateSkillTemplate(t.id, { enabled: !t.enabled })
       setTemplates((prev) => prev.map((row) => (row.id === t.id ? updated : row)))
+      toast(updated.enabled ? `${updated.name} ativada` : `${updated.name} desabilitada`, 'success')
     } catch (err) {
-      alert(err instanceof Error ? err.message : String(err))
+      toast(err instanceof Error ? err.message : String(err), 'error')
     }
   }
 
@@ -91,29 +125,12 @@ export function SkillTemplatesPage() {
           </button>
           <button
             onClick={() => navigate('/admin/skill-templates/new')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-surface-950 text-sm font-semibold transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-surface-950 text-sm font-semibold transition-colors active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" /> Novo template
           </button>
         </div>
       </header>
-
-      {/* Success banner after attach */}
-      {assignedBanner && (
-        <div className="flex items-center gap-3 p-3 mb-5 rounded-lg bg-status-active-bg/40 border border-status-active-border text-sm">
-          <CheckCircle2 className="w-5 h-5 text-status-active flex-shrink-0" />
-          <p className="text-status-active flex-1">
-            Skill atribuída com sucesso ao agente do cliente.
-          </p>
-          <button
-            onClick={() => setAssignedBanner(null)}
-            className="text-status-active hover:text-surface-100 transition-colors"
-            aria-label="Dispensar"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-5 text-sm">
@@ -168,19 +185,15 @@ export function SkillTemplatesPage() {
       )}
 
       {!loading && !error && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Sparkles className="w-10 h-10 text-surface-600 mb-3" />
-          <p className="text-surface-300 font-medium mb-1">Nenhum template encontrado</p>
-          <p className="text-sm text-surface-500 mb-4">
-            Crie o primeiro template para começar a oferecer skills aos clientes.
-          </p>
-          <button
-            onClick={() => navigate('/admin/skill-templates/new')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-surface-950 text-sm font-semibold transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Criar template
-          </button>
-        </div>
+        <EmptyState
+          icon={Sparkles}
+          title="Nenhum template encontrado"
+          hint="Crie o primeiro template para começar a oferecer skills aos clientes."
+          action={{
+            label: 'Criar template',
+            onClick: () => navigate('/admin/skill-templates/new'),
+          }}
+        />
       )}
 
       <div className="space-y-3">
@@ -188,6 +201,7 @@ export function SkillTemplatesPage() {
           <TemplateCard
             key={t.id}
             template={t}
+            orgNameById={orgNameById}
             onEdit={() => navigate(`/admin/skill-templates/${t.id}`)}
             onTest={() => navigate(`/admin/skill-templates/${t.id}/test`)}
             onAssign={() => navigate(`/admin/skills/assign?templateId=${t.id}`)}
@@ -196,6 +210,7 @@ export function SkillTemplatesPage() {
         ))}
       </div>
       </div>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }
@@ -231,18 +246,33 @@ function FilterSelect({
 
 function TemplateCard({
   template,
+  orgNameById,
   onEdit,
   onTest,
   onAssign,
   onToggle,
 }: {
   template: SkillTemplate
+  orgNameById: Map<string, string>
   onEdit: () => void
   onTest: () => void
   onAssign: () => void
   onToggle: () => void
 }) {
   const isPublic = template.tenant_id === null
+
+  // Flatten the per-tenant agent counts into a list ordered by usage so the
+  // card shows the heaviest users first. Falls back to the raw tenant UUID
+  // when the org list hasn't loaded (or the org was deleted).
+  const assignments = Object.entries(template.instances_by_tenant ?? {})
+    .map(([tenantId, agentCount]) => ({
+      tenantId,
+      name: orgNameById.get(tenantId) ?? tenantId.slice(0, 8) + '…',
+      agentCount,
+    }))
+    .sort((a, b) => b.agentCount - a.agentCount)
+  const totalAgents = assignments.reduce((sum, a) => sum + a.agentCount, 0)
+
   return (
     <div
       className={cn(
@@ -252,7 +282,11 @@ function TemplateCard({
           : 'bg-surface-900/40 border-surface-800 opacity-70',
       )}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="grid grid-cols-[44px_1fr_auto] items-start gap-4">
+        <CategoryIcon
+          category={template.category}
+          tone={template.enabled ? 'active' : 'muted'}
+        />
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="text-base font-semibold text-surface-100 truncate">
@@ -272,6 +306,31 @@ function TemplateCard({
             {template.slug} · {CATEGORY_LABELS[template.category] ?? template.category}
           </p>
           <p className="text-sm text-surface-400 line-clamp-2">{template.description}</p>
+
+          {/* Attribution strip — names of the orgs running this template + a
+              tooltip with the full breakdown. Hidden when there are zero
+              assignments to keep the card clean. */}
+          {assignments.length > 0 && (
+            <div className="mt-3 flex items-center gap-2 text-[11px] text-surface-500">
+              <Users className="w-3 h-3 flex-shrink-0" />
+              <span className="font-medium text-surface-400">Atribuído a:</span>
+              <Tooltip
+                side="top"
+                content={assignments
+                  .map((a) => `${a.name} — ${a.agentCount} ${a.agentCount === 1 ? 'agente' : 'agentes'}`)
+                  .join('\n')}
+              >
+                <span className="truncate cursor-help">
+                  {assignments.slice(0, 2).map((a) => a.name).join(', ')}
+                  {assignments.length > 2 && ` +${assignments.length - 2}`}
+                </span>
+              </Tooltip>
+              <span className="text-surface-600">·</span>
+              <span>
+                {assignments.length} {assignments.length === 1 ? 'cliente' : 'clientes'} · {totalAgents} {totalAgents === 1 ? 'agente' : 'agentes'}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5 flex-shrink-0">

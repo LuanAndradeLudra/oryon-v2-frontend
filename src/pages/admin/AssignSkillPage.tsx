@@ -13,6 +13,7 @@ import { listAdminOrganizations, type AdminOrganization } from '@/services/admin
 import { listAgents, type AgentConfig } from '@/services/agentsApi'
 import { attachSkill, listAvailableTemplates } from '@/services/agentSkillsApi'
 import { DynamicSchemaFormFields } from '@/components/admin/DynamicSchemaFormFields'
+import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import type { SkillTemplate, JsonSchemaObject } from '@/types/skills'
 import { cn } from '@/lib/utils'
 
@@ -202,14 +203,27 @@ export function AssignSkillPage() {
                   atribuídos ou colidem com tools existentes.
                 </p>
               ) : (
-                <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-                  <option value="">— escolher template —</option>
-                  {availableTemplates.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.category}){t.tenant_id ? ' · privado' : ''}
-                    </option>
-                  ))}
-                </Select>
+                <>
+                  <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+                    <option value="">— escolher template —</option>
+                    {availableTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.category}){t.tenant_id ? ' · privado' : ''}
+                      </option>
+                    ))}
+                  </Select>
+                  {/* Visual confirmation once a template is picked — same icon
+                      the customer will see in their Skills tab. */}
+                  {template && (
+                    <div className="mt-3 flex items-start gap-3 p-3 rounded-lg bg-surface-900 border border-surface-700">
+                      <CategoryIcon category={template.category} tone="active" size={36} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-surface-100">{template.name}</p>
+                        <p className="text-xs text-surface-500 line-clamp-2">{template.description}</p>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </Step>
           )}
@@ -263,7 +277,7 @@ export function AssignSkillPage() {
                 className={cn(
                   'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
                   canSubmit
-                    ? 'bg-brand-600 text-surface-950 hover:bg-brand-500'
+                    ? 'bg-brand-600 text-surface-950 hover:bg-brand-500 active:scale-[0.98]'
                     : 'bg-surface-800 text-surface-500 cursor-not-allowed',
                 )}
               >
