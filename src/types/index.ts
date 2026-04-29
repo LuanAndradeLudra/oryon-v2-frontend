@@ -62,7 +62,7 @@ export type MessageType =
 
 export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed'
 
-export type UserRole = 'business_admin' | 'admin' | 'agent' | 'supervisor'
+export type UserRole = 'super_admin' | 'business_admin' | 'admin' | 'agent' | 'supervisor'
 
 export type UserStatus = 'active' | 'pending' | 'inactive'
 

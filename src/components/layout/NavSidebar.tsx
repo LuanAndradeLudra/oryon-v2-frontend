@@ -13,6 +13,7 @@ import {
   Workflow,
   MessagesSquare,
   Bot,
+  ShieldCheck,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -223,6 +224,9 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
   }
   const internalChatVisible = isRouteVisible(internalChatItem.href)
   const settingsVisible = isRouteVisible('/settings')
+  // Oryon staff only — never shown to a customer's business_admin even if
+  // they discover the URL (the route guard + agent-server gate also block them).
+  const isOryonStaff = user?.role === 'super_admin'
 
   return (
     <Sidebar open={open} setOpen={setOpen}>
@@ -278,6 +282,21 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
                     nudge={item.nudge}
                   />
                 ))}
+              </nav>
+            </>
+          )}
+
+          {/* ORYON (super_admin only) */}
+          {isOryonStaff && (
+            <>
+              <SidebarSectionLabel label="Oryon" />
+              <nav className="flex flex-col gap-0.5 px-1.5">
+                <SidebarLink
+                  href="/admin/skill-templates"
+                  icon={<ShieldCheck className="w-4.5 h-4.5" />}
+                  label="Skills"
+                  active={activeHref === '/admin'}
+                />
               </nav>
             </>
           )}

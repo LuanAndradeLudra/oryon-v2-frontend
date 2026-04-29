@@ -31,6 +31,9 @@ import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { AgentIcon } from '@/components/agents/AgentIcons'
 import { AgentTestModal } from '@/components/agents/AgentTestModal'
+import { SkillsTab } from '@/components/agents/SkillsTab'
+import { useAdvancedMode } from '@/hooks/useAdvancedMode'
+import { isFeatureVisible } from '@/config/featureFlags'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1897,7 +1900,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
 // ─── Agent Detail ─────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'prompt' | 'tools' | 'rules' | 'knowledge' | 'metrics'
+type Tab = 'overview' | 'prompt' | 'tools' | 'skills' | 'rules' | 'knowledge' | 'metrics'
 
 export function AgentDetail({
   agent: initialAgent,
@@ -1912,6 +1915,12 @@ export function AgentDetail({
 }) {
   const [agent, setAgent] = useState<AgentConfigWithTools>(initialAgent)
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+  // Skills tab is the customer-facing surface for n8n-routed capabilities;
+  // it replaces the legacy "Ferramentas" tab in the default view. The
+  // legacy tab stays available behind Advanced Mode for power users that
+  // already configured raw HTTP tools.
+  const skillsVisible = isFeatureVisible('agentSkills')
+  const [advancedMode] = useAdvancedMode()
   // Sub-tab state for the unified "Regras" tab — lifted here because the
   // outer scroll/flex layout depends on which sub-panel is active.
   const [rulesSubTab, setRulesSubTab] = useState<RulesSubTab>('faqs')
@@ -1943,11 +1952,25 @@ export function AgentDetail({
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Visão geral', icon: <Bot className="w-3.5 h-3.5" /> },
     { id: 'prompt',   label: 'System Prompt', icon: <FileText className="w-3.5 h-3.5" /> },
-    { id: 'tools',    label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" /> },
+    ...(skillsVisible
+      ? [{ id: 'skills' as Tab, label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" /> }]
+      : []),
+    // Legacy raw-HTTP tools — only visible to users that flipped Advanced Mode.
+    ...(advancedMode
+      ? [{ id: 'tools' as Tab, label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" /> }]
+      : []),
     { id: 'rules',    label: 'Regras', icon: <Workflow className="w-3.5 h-3.5" /> },
     { id: 'knowledge', label: 'Conhecimento', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'metrics',  label: 'Métricas', icon: <BarChart3 className="w-3.5 h-3.5" /> },
   ]
+
+  // If the user lands on `tools` while Advanced Mode is off, bounce them to
+  // the new Skills tab so the panel stays in a consistent state.
+  useEffect(() => {
+    if (activeTab === 'tools' && !advancedMode) {
+      setActiveTab(skillsVisible ? 'skills' : 'overview')
+    }
+  }, [activeTab, advancedMode, skillsVisible])
 
   return (
     <div className="flex flex-col h-full">
@@ -2077,6 +2100,7 @@ export function AgentDetail({
               >
                 {activeTab === 'overview' && <OverviewTab  agent={agent} onUpdate={handleAgentUpdate} />}
                 {activeTab === 'prompt'   && <SystemPromptTab agent={agent} onUpdate={handleAgentUpdate} />}
+                {activeTab === 'skills'   && <SkillsTab agentId={agent.id} />}
                 {activeTab === 'tools'    && <ToolsTab agent={agent} onToolsChange={handleToolsChange} />}
                 {activeTab === 'rules'    && (
                   <RulesTab

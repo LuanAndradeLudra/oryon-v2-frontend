@@ -62,6 +62,14 @@ const PricingPage       = lazyRoute(() => import('@/pages/PricingPage').then(m =
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 
+// Admin (Oryon staff only) — gated by RequireSuperAdmin inside the route.
+const SkillTemplatesPage       = lazyRoute(() => import('@/pages/admin/SkillTemplatesPage').then(m => ({ default: m.SkillTemplatesPage })))
+const SkillTemplateEditorPage  = lazyRoute(() => import('@/pages/admin/SkillTemplateEditorPage').then(m => ({ default: m.SkillTemplateEditorPage })))
+const SkillTemplateTesterPage  = lazyRoute(() => import('@/pages/admin/SkillTemplateTesterPage').then(m => ({ default: m.SkillTemplateTesterPage })))
+const AssignSkillPage          = lazyRoute(() => import('@/pages/admin/AssignSkillPage').then(m => ({ default: m.AssignSkillPage })))
+
+import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
+
 // ── Route guards ──────────────────────────────────────────────────────────────
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -177,6 +185,23 @@ function AnimatedRoutes() {
           } />
           <Route path="/agents" element={
             <ProtectedRoute><AgentsPage /></ProtectedRoute>
+          } />
+
+          {/* ── Admin (Oryon staff) ──────────────────────────────────── */}
+          <Route path="/admin/skill-templates" element={
+            <ProtectedRoute><RequireSuperAdmin><SkillTemplatesPage /></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/skill-templates/new" element={
+            <ProtectedRoute><RequireSuperAdmin><SkillTemplateEditorPage /></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/skill-templates/:id" element={
+            <ProtectedRoute><RequireSuperAdmin><SkillTemplateEditorPage /></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/skill-templates/:id/test" element={
+            <ProtectedRoute><RequireSuperAdmin><SkillTemplateTesterPage /></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/skills/assign" element={
+            <ProtectedRoute><RequireSuperAdmin><AssignSkillPage /></RequireSuperAdmin></ProtectedRoute>
           } />
 
           {/* Public pricing */}

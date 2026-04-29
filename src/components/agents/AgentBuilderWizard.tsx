@@ -1337,19 +1337,17 @@ function PromptReviewModal({
   }, [open, initialPrompt])
 
   return (
-    <Modal open={open} onClose={onClose} title="Revisar System Prompt" className="max-w-3xl">
-      <div className="space-y-4">
-        <p className="text-xs text-surface-500">
-          Revise o prompt gerado e edite se necessário. Após confirmar, você volta ao builder
-          e segue para a revisão final do agente.
-        </p>
-        <PromptArtifact
-          content={draft}
-          onChange={setDraft}
-          onRegenerate={onRegenerate}
-          regenerating={regenerating}
-        />
-        <div className="flex justify-end gap-2 pt-2 border-t border-surface-800">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Revisar System Prompt"
+      // Fixed-height panel so the modal doesn't grow/shrink with prompt
+      // length. fillHeight delegates scroll to PromptArtifact (in fillHeight
+      // mode), avoiding the double scrollbar.
+      className="max-w-3xl h-[88vh]"
+      fillHeight
+      footer={
+        <div className="flex justify-end gap-2">
           <button
             type="button" onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition"
@@ -1363,7 +1361,19 @@ function PromptReviewModal({
             <Check className="w-3.5 h-3.5" /> Confirmar e continuar
           </button>
         </div>
-      </div>
+      }
+    >
+      <p className="text-xs text-surface-500 mb-4 flex-shrink-0">
+        Revise o prompt gerado e edite se necessário. Após confirmar, você volta ao builder
+        e segue para a revisão final do agente.
+      </p>
+      <PromptArtifact
+        content={draft}
+        onChange={setDraft}
+        onRegenerate={onRegenerate}
+        regenerating={regenerating}
+        fillHeight
+      />
     </Modal>
   )
 }

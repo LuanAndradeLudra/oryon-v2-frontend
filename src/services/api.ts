@@ -41,6 +41,11 @@ const api = axios.create({
   withCredentials: true, // Send httpOnly cookies with every request
 })
 
+// Re-exported so peripheral services (admin tools, internal utilities) can
+// reuse the configured axios instance — same baseURL, same cookie behavior,
+// same audit interceptors — without repeating the setup or going around it.
+export { api }
+
 // ─── Copilot turn context ─────────────────────────────────────────────────────
 // OrchestratorAgent sets this when a copilot turn is active so the interceptor
 // can mark writes as source='copilot' and attach the turn_id.

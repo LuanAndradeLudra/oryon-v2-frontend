@@ -120,7 +120,7 @@ async function getAgentToken(): Promise<string> {
   return res.data.token
 }
 
-async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   let res: Response
   const token = await getAgentToken()
   try {
@@ -151,8 +151,15 @@ async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
 
 // ─── Agent CRUD ───────────────────────────────────────────────────────────────
 
-export async function listAgents(): Promise<AgentConfig[]> {
-  return apiFetch<AgentConfig[]>('/configs')
+/**
+ * List agents in the caller's tenant. When `tenantId` is provided AND the
+ * caller is super_admin, the agent-server impersonates that tenant — used by
+ * the admin "Assign skill" screen. Non-staff callers always see only their
+ * own tenant regardless of the parameter.
+ */
+export async function listAgents(tenantId?: string): Promise<AgentConfig[]> {
+  const path = tenantId ? `/configs?tenantId=${encodeURIComponent(tenantId)}` : '/configs'
+  return apiFetch<AgentConfig[]>(path)
 }
 
 export async function getAgent(id: string): Promise<AgentConfigWithTools> {
