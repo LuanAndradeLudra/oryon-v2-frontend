@@ -438,12 +438,9 @@ function NotificationItem({
             {initialsOf(subject.name)}
           </div>
           <div
-            className={cn(
-              'absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-surface-900',
-              style.iconBg,
-            )}
+            className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-surface-900 bg-white"
           >
-            <Icon className={cn('w-2.5 h-2.5', style.iconText)} />
+            <Icon className="w-2.5 h-2.5 text-surface-950" />
           </div>
         </div>
       ) : (
@@ -1303,7 +1300,7 @@ function FilterTab({ active, onClick, count, children }: {
     >
       {children}
       {count !== undefined && count > 0 && (
-        <span className="rounded-full bg-brand-cta text-white text-[9px] font-semibold px-1.5 min-w-4 text-center">
+        <span className="rounded-full bg-brand-cta text-surface-950 text-[9px] font-semibold px-1.5 min-w-4 text-center">
           {count > 99 ? '99+' : count}
         </span>
       )}
@@ -1498,7 +1495,7 @@ export function TopBar() {
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-cta text-[9px] font-bold text-white flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-cta text-[9px] font-bold text-surface-950 flex items-center justify-center">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}

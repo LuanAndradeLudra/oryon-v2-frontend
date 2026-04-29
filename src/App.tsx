@@ -42,7 +42,6 @@ import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
-import { DebugPanel }         from '@/components/debug/DebugPanel'
 import { SetupWizard }        from '@/components/onboarding/SetupWizard'
 
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
@@ -215,7 +214,6 @@ export default function App() {
               <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
                 <AnimatedRoutes />
                 <CopilotPanel />
-                <DebugPanel />
               </div>
             </ContextMenuProvider>
           </CopilotProvider>

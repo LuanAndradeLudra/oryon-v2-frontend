@@ -13,12 +13,17 @@ export const FEATURE_FLAGS = {
   agents: true,
   copilot: false,
   settings: true,
+  settingsAdAccounts: false,
+  settingsVertical: false,
+  settingsBilling: false,
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS
 
 export const isFeatureVisible = (flag: FeatureFlag): boolean => FEATURE_FLAGS[flag]
 
+// Order matters: more specific prefixes (e.g. /settings/billing) must come
+// before broader ones (/settings) — first match wins.
 const ROUTE_FLAGS: Array<[string, FeatureFlag]> = [
   ['/home', 'home'],
   ['/dashboard', 'dashboard'],
@@ -30,6 +35,9 @@ const ROUTE_FLAGS: Array<[string, FeatureFlag]> = [
   ['/automations', 'automations'],
   ['/agents', 'agents'],
   ['/copilot', 'copilot'],
+  ['/settings/ad-accounts', 'settingsAdAccounts'],
+  ['/settings/vertical', 'settingsVertical'],
+  ['/settings/billing', 'settingsBilling'],
   ['/settings', 'settings'],
 ]
 
