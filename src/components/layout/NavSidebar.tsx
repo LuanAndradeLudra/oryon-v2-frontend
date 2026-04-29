@@ -23,6 +23,7 @@ import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import { conversationsApi } from '@/services/api'
+import { isRouteVisible } from '@/config/featureFlags'
 
 interface NavSidebarProps {
   totalUnread?: number
@@ -198,7 +199,7 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
       href: '/contacts',
       nudge: !organizationConfigured ? 'Configurar' : undefined,
     },
-  ]
+  ].filter((item) => isRouteVisible(item.href))
 
   const ferramentasItems = [
     {
@@ -212,7 +213,7 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
     { icon: <Bot className="w-4.5 h-4.5" />,        label: 'Agentes IA',  href: '/agents' },
     { icon: <Sparkles className="w-4.5 h-4.5" />,   label: 'Copilot AI', href: '/copilot',
       nudge: !checklist.copilot ? 'Setup' : undefined },
-  ]
+  ].filter((item) => isRouteVisible(item.href))
 
   const internalChatItem = {
     icon: <MessagesSquare className="w-4.5 h-4.5" />,
@@ -220,6 +221,8 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
     href: '/team',
     badge: internalUnread > 0 ? internalUnread : undefined,
   }
+  const internalChatVisible = isRouteVisible(internalChatItem.href)
+  const settingsVisible = isRouteVisible('/settings')
 
   return (
     <Sidebar open={open} setOpen={setOpen}>
@@ -228,58 +231,72 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
           <LogoSection />
 
           {/* GERAL */}
-          <SidebarSectionLabel label="Geral" />
-          <nav className="flex flex-col gap-0.5 px-1.5">
-            {geralItems.map((item) => (
-              <SidebarLink
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                label={item.label}
-                active={activeHref === item.href}
-                badge={item.badge}
-                nudge={item.nudge}
-              />
-            ))}
-          </nav>
+          {geralItems.length > 0 && (
+            <>
+              <SidebarSectionLabel label="Geral" />
+              <nav className="flex flex-col gap-0.5 px-1.5">
+                {geralItems.map((item) => (
+                  <SidebarLink
+                    key={item.href}
+                    href={item.href}
+                    icon={item.icon}
+                    label={item.label}
+                    active={activeHref === item.href}
+                    badge={item.badge}
+                    nudge={item.nudge}
+                  />
+                ))}
+              </nav>
+            </>
+          )}
 
           {/* Chat Interno */}
-          <nav className="flex flex-col gap-0.5 px-1.5 mb-1">
-            <SidebarLink
-              href={internalChatItem.href}
-              icon={internalChatItem.icon}
-              label={internalChatItem.label}
-              badge={internalChatItem.badge}
-              active={activeHref === '/team'}
-            />
-          </nav>
+          {internalChatVisible && (
+            <nav className="flex flex-col gap-0.5 px-1.5 mb-1">
+              <SidebarLink
+                href={internalChatItem.href}
+                icon={internalChatItem.icon}
+                label={internalChatItem.label}
+                badge={internalChatItem.badge}
+                active={activeHref === '/team'}
+              />
+            </nav>
+          )}
 
           {/* FERRAMENTAS */}
-          <SidebarSectionLabel label="Ferramentas" />
-          <nav className="flex flex-col gap-0.5 px-1.5">
-            {ferramentasItems.map((item) => (
-              <SidebarLink
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                label={item.label}
-                active={activeHref === item.href}
-                nudge={item.nudge}
-              />
-            ))}
-          </nav>
+          {ferramentasItems.length > 0 && (
+            <>
+              <SidebarSectionLabel label="Ferramentas" />
+              <nav className="flex flex-col gap-0.5 px-1.5">
+                {ferramentasItems.map((item) => (
+                  <SidebarLink
+                    key={item.href}
+                    href={item.href}
+                    icon={item.icon}
+                    label={item.label}
+                    active={activeHref === item.href}
+                    nudge={item.nudge}
+                  />
+                ))}
+              </nav>
+            </>
+          )}
 
           {/* CONFIGURAÇÕES */}
-          <SidebarSectionLabel label="Configurações" />
-          <nav className="flex flex-col gap-0.5 px-1.5">
-            <SidebarLink
-              href="/settings"
-              icon={<Settings className="w-4.5 h-4.5" />}
-              label="Configurações"
-              active={activeHref === '/settings'}
-              nudge={(!checklist.company || !checklist.profile) ? 'Setup' : undefined}
-            />
-          </nav>
+          {settingsVisible && (
+            <>
+              <SidebarSectionLabel label="Configurações" />
+              <nav className="flex flex-col gap-0.5 px-1.5">
+                <SidebarLink
+                  href="/settings"
+                  icon={<Settings className="w-4.5 h-4.5" />}
+                  label="Configurações"
+                  active={activeHref === '/settings'}
+                  nudge={(!checklist.company || !checklist.profile) ? 'Setup' : undefined}
+                />
+              </nav>
+            </>
+          )}
         </div>
 
         {/* User footer */}

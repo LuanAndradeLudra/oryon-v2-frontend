@@ -20,6 +20,7 @@ import {
   type NotificationSourceKind,
 } from '@/hooks/useNotifications'
 import { cn } from '@/lib/utils'
+import { isFeatureVisible, isRouteVisible } from '@/config/featureFlags'
 import {
   categoryOf,
   CATEGORY_STYLE,
@@ -123,7 +124,7 @@ const SEARCH_INDEX: SearchItem[] = [
   { type: 'settings', label: 'Notificações', description: 'Preferências de alertas', href: '/settings/notifications', Icon: BellRing, keywords: ['alertas', 'avisos', 'push', 'email'] },
   { type: 'settings', label: 'Integrações', description: 'Webhooks e APIs externas', href: '/settings/integrations', Icon: Plug, keywords: ['webhook', 'api', 'zapier', 'n8n', 'integracao', 'conectar', 'externo'] },
   { type: 'settings', label: 'Empresa', description: 'Dados, setores e configurações da organização', href: '/settings/company', Icon: Building2, keywords: ['empresa', 'organizacao', 'cnpj', 'logo', 'setores', 'departamentos', 'nome'] },
-]
+].filter((item) => isRouteVisible(item.href))
 
 // ── Notification types ─────────────────────────────────────────────────────────
 //
@@ -1478,7 +1479,7 @@ export function TopBar() {
         {/* Copilot drawer shortcut — mirrors the admin + route gate used by
              the CopilotPanel itself, so the button only shows where the drawer
              can actually render. */}
-        {(user?.role === 'admin' || user?.role === 'business_admin') && !location.pathname.startsWith('/copilot') && (
+        {isFeatureVisible('copilot') && (user?.role === 'admin' || user?.role === 'business_admin') && !location.pathname.startsWith('/copilot') && (
           <button
             onClick={() => openCopilot()}
             title="Abrir Copilot"

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Bot, Plus, Wrench, MoreHorizontal, Power, PauseCircle,
-  FileText, Trash2, Save, X, Check, Edit3, Globe, MessageSquare,
-  Instagram, Zap, Clock, AlertCircle, Copy, Eye, EyeOff,
+  FileText, Trash2, Save, X, Check, Edit3,
+  Zap, Clock, AlertCircle, Copy, Eye, EyeOff,
   ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Shield,
-  Link2, Hash, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
+  Link2, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
   Pencil, CheckCircle2, Upload, MessageCircleQuestion, BarChart3,
   Workflow, Info,
 } from 'lucide-react'
@@ -124,13 +124,61 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
     }
   }
 
-  const channels = agent.channels ?? {}
-
   const infoRows = [
     { icon: <Clock className="w-3.5 h-3.5" />, label: 'Criado', value: new Date(agent.created_at).toLocaleString('pt-BR') },
     { icon: <RefreshCw className="w-3.5 h-3.5" />, label: 'Atualizado', value: new Date(agent.updated_at).toLocaleString('pt-BR') },
-    { icon: <Wrench className="w-3.5 h-3.5" />, label: 'Ferramentas', value: `${agent.tools.length} configurada(s)` },
-    { icon: <Hash className="w-3.5 h-3.5" />, label: 'ID', value: agent.id.slice(0, 8) + '…' },
+  ]
+
+  const enabledTools = agent.tools.filter(t => t.enabled).length
+  const totalTools = agent.tools.length
+  const rulesList = agent.handoff_rules?.rules ?? []
+  const enabledRules = rulesList.filter(r => r.enabled).length
+  const totalRules = rulesList.length
+
+  const formatRelative = (iso: string | null): string => {
+    if (!iso) return 'nunca'
+    const diffMs = Date.now() - new Date(iso).getTime()
+    const m = Math.floor(diffMs / 60_000)
+    if (m < 1) return 'agora'
+    if (m < 60) return `há ${m} min`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `há ${h} h`
+    const d = Math.floor(h / 24)
+    if (d < 7) return `há ${d} d`
+    return new Date(iso).toLocaleDateString('pt-BR')
+  }
+
+  const activityRows = [
+    {
+      icon: <MessageCircleQuestion className="w-4 h-4" />,
+      label: 'Conversas atendidas',
+      value: agent.conversation_count.toLocaleString('pt-BR'),
+      highlighted: agent.conversation_count > 0,
+    },
+    {
+      icon: <Sparkles className="w-4 h-4" />,
+      label: 'Testes realizados',
+      value: agent.test_count.toLocaleString('pt-BR'),
+      highlighted: agent.test_count > 0,
+    },
+    {
+      icon: <Clock className="w-4 h-4" />,
+      label: 'Último teste',
+      value: formatRelative(agent.last_tested_at),
+      highlighted: !!agent.last_tested_at,
+    },
+    {
+      icon: <Wrench className="w-4 h-4" />,
+      label: 'Ferramentas ativas',
+      value: totalTools === 0 ? 'nenhuma' : `${enabledTools} / ${totalTools}`,
+      highlighted: enabledTools > 0,
+    },
+    {
+      icon: <Workflow className="w-4 h-4" />,
+      label: 'Regras de handoff',
+      value: totalRules === 0 ? 'nenhuma' : `${enabledRules} / ${totalRules}`,
+      highlighted: enabledRules > 0,
+    },
   ]
 
   return (
@@ -164,39 +212,32 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
         </div>
       </div>
 
-      {/* Channels */}
+      {/* Activity */}
       <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-4">
-        <p className="text-xs font-medium text-surface-500 mb-3">Canais conectados</p>
+        <p className="text-xs font-medium text-surface-500 mb-3">Atividade</p>
         <div className="space-y-2">
-          {[
-            { key: 'whatsapp', icon: <MessageSquare className="w-4 h-4" />, label: 'WhatsApp', detail: (channels as {whatsapp?: {number?: string}}).whatsapp?.number },
-            { key: 'messenger', icon: <Globe className="w-4 h-4" />, label: 'Messenger', detail: (channels as {messenger?: {page_id?: string}}).messenger?.page_id },
-            { key: 'instagram', icon: <Instagram className="w-4 h-4" />, label: 'Instagram Direct', detail: (channels as {instagram?: {username?: string}}).instagram?.username },
-          ].map(ch => {
-            const connected = !!(channels as Record<string, unknown>)[ch.key]
-            return (
-              <div key={ch.key} className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors',
-                connected ? 'border-status-active-border bg-status-active-bg' : 'border-surface-800/60 bg-surface-950/40',
-              )}>
-                <span className={connected ? 'text-status-active' : 'text-surface-600'}>{ch.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className={cn('text-sm font-medium', connected ? 'text-surface-200' : 'text-surface-500')}>{ch.label}</p>
-                  {ch.detail && <p className="text-xs text-surface-500 truncate">{ch.detail}</p>}
-                </div>
-                <span className={cn(
-                  'text-xs px-2 py-0.5 rounded-full ring-1',
-                  connected ? 'text-status-active bg-status-active-bg ring-status-active-border' : 'text-surface-600 bg-surface-800/40 ring-surface-700/20',
-                )}>
-                  {connected ? 'Conectado' : 'Não configurado'}
-                </span>
+          {activityRows.map(row => (
+            <div key={row.label} className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors',
+              row.highlighted ? 'border-status-active-border/60 bg-status-active-bg/40' : 'border-surface-800/60 bg-surface-950/40',
+            )}>
+              <span className={row.highlighted ? 'text-status-active' : 'text-surface-600'}>{row.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className={cn('text-sm font-medium', row.highlighted ? 'text-surface-200' : 'text-surface-500')}>
+                  {row.label}
+                </p>
               </div>
-            )
-          })}
+              <span className={cn(
+                'text-xs px-2 py-0.5 rounded-full ring-1 font-medium',
+                row.highlighted
+                  ? 'text-status-active bg-status-active-bg ring-status-active-border'
+                  : 'text-surface-500 bg-surface-800/40 ring-surface-700/30',
+              )}>
+                {row.value}
+              </span>
+            </div>
+          ))}
         </div>
-        <p className="text-xs text-surface-600 mt-3">
-          Configure os canais nas Configurações → WhatsApp / Meta
-        </p>
       </div>
 
       {/* Info rows */}

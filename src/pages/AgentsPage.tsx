@@ -317,7 +317,7 @@ export function AgentsPage() {
       <AnimatePresence>
         {showWizard && (
           <AgentBuilderWizard
-            open={showWizard}
+            key="agent-builder-wizard"
             onClose={() => setShowWizard(false)}
             onCreated={handleWizardComplete}
           />
