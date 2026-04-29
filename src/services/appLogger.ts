@@ -7,10 +7,25 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL  as string | undefined
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 const BASE         = SUPABASE_URL ? `${SUPABASE_URL}/rest/v1` : null
 
+// VITE_AUDIT_LOG_TO_CONSOLE=true makes the logger emit one JSON line per audit
+// event when no Supabase backend is configured. Useful for local dev (where
+// VITE_SUPABASE_* is unset) and for debugging the audit shape before A.3
+// migrates this to the backend.
+const AUDIT_LOG_TO_CONSOLE = (() => {
+  const v = import.meta.env.VITE_AUDIT_LOG_TO_CONSOLE
+  return v === true || v === 'true' || v === '1'
+})()
+
 // ─── Shared POST helper ────────────────────────────────────────────────────────
 
 function post(table: string, data: Record<string, unknown>): void {
-  if (!BASE || !SUPABASE_KEY) return
+  if (!BASE || !SUPABASE_KEY) {
+    if (AUDIT_LOG_TO_CONSOLE) {
+      // Single JSON line, no pretty-printing — pipe-friendly for jq.
+      console.log(JSON.stringify({ ts: new Date().toISOString(), table, ...data }))
+    }
+    return
+  }
   fetch(`${BASE}/${table}`, {
     method:  'POST',
     headers: {
@@ -82,6 +97,7 @@ export interface ActivityLog {
   details?:     unknown
   source?:      'ui' | 'copilot'
   turn_id?:     string | null
+  correlation_id?: string | null
 }
 
 // ─── Table-typed log methods ───────────────────────────────────────────────────
@@ -150,6 +166,7 @@ export interface UserActionLog {
   payload?:     unknown
   status_code?: number | null
   latency_ms?:  number | null
+  correlation_id?: string | null
 }
 
 export interface EntityChangeLog {
@@ -161,6 +178,7 @@ export interface EntityChangeLog {
   entity_id:    string
   operation:    'create' | 'update' | 'delete'
   changes?:     unknown
+  correlation_id?: string | null
 }
 
 export interface ArtifactLog {
