@@ -14,6 +14,8 @@ import {
   MessagesSquare,
   Bot,
   ShieldCheck,
+  Activity,
+  LineChart,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -295,7 +297,19 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
                   href="/admin/skill-templates"
                   icon={<ShieldCheck className="w-4.5 h-4.5" />}
                   label="Skills"
-                  active={activeHref === '/admin'}
+                  active={activeHref.startsWith('/admin/skill')}
+                />
+                <SidebarLink
+                  href="/admin/audit"
+                  icon={<Activity className="w-4.5 h-4.5" />}
+                  label="Auditoria"
+                  active={activeHref === '/admin/audit'}
+                />
+                <SidebarLink
+                  href="/admin/ai-observability"
+                  icon={<LineChart className="w-4.5 h-4.5" />}
+                  label="AI Observability"
+                  active={activeHref === '/admin/ai-observability'}
                 />
               </nav>
             </>

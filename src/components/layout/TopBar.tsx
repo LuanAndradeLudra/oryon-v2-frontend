@@ -63,7 +63,10 @@ type SearchItem = {
   keywords?: string[]
 }
 
-const SEARCH_INDEX: SearchItem[] = [
+// `as SearchItem[]` is here because TS narrows the literal `type: 'page'` away
+// when the array contains 80+ heterogeneous entries — cheap to keep the
+// runtime shape correct since SearchItemType is a closed union of 3 values.
+const SEARCH_INDEX = ([
   // ── Páginas principais
   { type: 'page', label: 'Home', description: 'Visão geral e atalhos rápidos', href: '/home', Icon: Home, keywords: ['início', 'painel', 'overview'] },
   { type: 'page', label: 'Conversas', description: 'Atendimento via WhatsApp', href: '/conversations', Icon: MessageSquare, keywords: ['whatsapp', 'chat', 'atendimento', 'mensagens'] },
@@ -124,7 +127,7 @@ const SEARCH_INDEX: SearchItem[] = [
   { type: 'settings', label: 'Notificações', description: 'Preferências de alertas', href: '/settings/notifications', Icon: BellRing, keywords: ['alertas', 'avisos', 'push', 'email'] },
   { type: 'settings', label: 'Integrações', description: 'Webhooks e APIs externas', href: '/settings/integrations', Icon: Plug, keywords: ['webhook', 'api', 'zapier', 'n8n', 'integracao', 'conectar', 'externo'] },
   { type: 'settings', label: 'Empresa', description: 'Dados, setores e configurações da organização', href: '/settings/company', Icon: Building2, keywords: ['empresa', 'organizacao', 'cnpj', 'logo', 'setores', 'departamentos', 'nome'] },
-].filter((item) => isRouteVisible(item.href))
+] as SearchItem[]).filter((item) => isRouteVisible(item.href))
 
 // ── Notification types ─────────────────────────────────────────────────────────
 //
