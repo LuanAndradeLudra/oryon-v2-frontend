@@ -2,13 +2,22 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useState, useEffect, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
 import type { ReactNode, ErrorInfo } from 'react'
+import * as Sentry from '@sentry/react'
 
 // ── Error Boundary — prevents white screen on crash ─────────────────────────
+// Phase D.1: also reports the captured error to Sentry (no-op when DSN unset).
+// We keep our own boundary instead of wrapping with Sentry.ErrorBoundary so the
+// existing fallback UI / reload UX remain unchanged.
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null }
   static getDerivedStateFromError(error: Error) { return { error } }
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack)
+    try {
+      Sentry.captureException(error, { contexts: { react: { componentStack: info.componentStack ?? null } } })
+    } catch {
+      // swallow — Sentry MUST NOT break the fallback path
+    }
   }
   render() {
     if (this.state.error) {
