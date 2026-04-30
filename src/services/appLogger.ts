@@ -7,6 +7,18 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL  as string | undefined
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 const BASE         = SUPABASE_URL ? `${SUPABASE_URL}/rest/v1` : null
 
+// Phase A.3 — dual-write for `activity_log` events. When the flag is on,
+// every logActivity() call ALSO POSTs to the backend's `/audit/event`
+// endpoint, which enqueues a BullMQ job that persists into the backend
+// `activity_logs` table. Supabase remains the source of truth until count-by-
+// day parity is verified across the two stores; then the Supabase write is
+// removed in a follow-up.
+const BACKEND_API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, '') ?? null
+const DUAL_WRITE = (() => {
+  const v = import.meta.env.VITE_BACKEND_AUDIT_DUAL_WRITE
+  return v === true || v === 'true' || v === '1'
+})()
+
 // VITE_AUDIT_LOG_TO_CONSOLE=true makes the logger emit one JSON line per audit
 // event when no Supabase backend is configured. Useful for local dev (where
 // VITE_SUPABASE_* is unset) and for debugging the audit shape before A.3
@@ -15,6 +27,33 @@ const AUDIT_LOG_TO_CONSOLE = (() => {
   const v = import.meta.env.VITE_AUDIT_LOG_TO_CONSOLE
   return v === true || v === 'true' || v === '1'
 })()
+
+/**
+ * POST a semantic activity event to the backend. Fire-and-forget; httpOnly
+ * cookie carries the JWT so the backend can extract tenantId / actorId.
+ * Errors are swallowed — audit must never break the UI.
+ */
+function postBackendAuditEvent(data: ActivityLog): void {
+  if (!DUAL_WRITE || !BACKEND_API) return
+  // Normalise snake_case appLogger payload to the backend DTO (camelCase).
+  const body = {
+    action: data.action,
+    entityType: data.entity_type,
+    entityId: data.entity_id ?? undefined,
+    entityName: data.entity_name ?? undefined,
+    description: data.description,
+    details: typeof data.details === 'object' && data.details !== null ? data.details : undefined,
+    source: data.source ?? undefined,
+    correlationId: data.correlation_id ?? undefined,
+    actorName: data.actor_name ?? undefined,
+  }
+  fetch(`${BACKEND_API}/audit/event`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).catch(() => { /* silent — Supabase write still happened */ })
+}
 
 // ─── Shared POST helper ────────────────────────────────────────────────────────
 
@@ -270,6 +309,10 @@ export const appLogger = {
       details: safeJson(data.details),
       source:  data.source ?? 'ui',
     })
+    // Phase A.3: dual-write semantic events to the backend so /admin/audit
+    // (Phase D.2) can drill them alongside server-originated rows. No-op
+    // unless VITE_BACKEND_AUDIT_DUAL_WRITE is on.
+    postBackendAuditEvent(data)
   },
 
   logAIGeneration(data: {
