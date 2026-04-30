@@ -76,6 +76,7 @@ const SkillTemplatesPage       = lazyRoute(() => import('@/pages/admin/SkillTemp
 const SkillTemplateEditorPage  = lazyRoute(() => import('@/pages/admin/SkillTemplateEditorPage').then(m => ({ default: m.SkillTemplateEditorPage })))
 const SkillTemplateTesterPage  = lazyRoute(() => import('@/pages/admin/SkillTemplateTesterPage').then(m => ({ default: m.SkillTemplateTesterPage })))
 const AssignSkillPage          = lazyRoute(() => import('@/pages/admin/AssignSkillPage').then(m => ({ default: m.AssignSkillPage })))
+const AuditPage                = lazyRoute(() => import('@/pages/admin/AuditPage').then(m => ({ default: m.AuditPage })))
 
 import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
 
@@ -211,6 +212,9 @@ function AnimatedRoutes() {
           } />
           <Route path="/admin/skills/assign" element={
             <ProtectedRoute><RequireSuperAdmin><AssignSkillPage /></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/audit" element={
+            <ProtectedRoute><RequireSuperAdmin><AuditPage /></RequireSuperAdmin></ProtectedRoute>
           } />
 
           {/* Public pricing */}
