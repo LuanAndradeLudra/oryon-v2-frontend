@@ -311,6 +311,12 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
                   label="AI Observability"
                   active={activeHref === '/admin/ai-observability'}
                 />
+                <SidebarLink
+                  href="/admin/ai-executions"
+                  icon={<Bot className="w-4.5 h-4.5" />}
+                  label="AI Executions"
+                  active={activeHref === '/admin/ai-executions'}
+                />
               </nav>
             </>
           )}
