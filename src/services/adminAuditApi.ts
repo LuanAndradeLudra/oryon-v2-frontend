@@ -88,3 +88,126 @@ export async function drillAiByCorrelationId(
   })
   return res.data
 }
+
+// ─── Sister audit feeds (Gap 2 — separate tabs in /admin/audit) ──────────────
+// Each of these reads a different table that has fields specific to its
+// domain, so they're surfaced as parallel feeds rather than merged into the
+// main activity_logs query.
+
+export type AuthEventType =
+  | 'login_success'
+  | 'login_failed'
+  | 'token_refresh'
+  | 'password_change'
+  | 'logout'
+  | 'account_activated'
+  | 'account_deactivated'
+  | 'password_reset_requested'
+  | 'password_reset_completed'
+
+export interface AuthEventRow {
+  id: string
+  tenantId: string
+  userId: string | null
+  event: AuthEventType
+  ip: string | null
+  userAgent: string | null
+  metadata: Record<string, unknown> | null
+  createdAt: string
+}
+
+export interface AuthEventsQuery {
+  tenantId?: string
+  userId?: string
+  event?: AuthEventType
+  since?: string
+  before?: string
+  limit?: number
+}
+
+export async function listAuthEvents(query: AuthEventsQuery = {}): Promise<{
+  data: AuthEventRow[]
+  nextCursor: string | null
+}> {
+  const res = await api.get<{ data: AuthEventRow[]; nextCursor: string | null }>(
+    '/admin/audit/auth-events',
+    { params: query },
+  )
+  return res.data
+}
+
+export type IntegrationSeverity = 'error' | 'warning' | 'info'
+export type IntegrationSource = 'meta' | 'whatsapp' | 'system'
+
+export interface IntegrationEventRow {
+  id: string
+  tenantId: string
+  source: IntegrationSource
+  severity: IntegrationSeverity
+  code: string
+  message: string
+  metadata: Record<string, unknown> | null
+  resolvedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IntegrationEventsQuery {
+  tenantId?: string
+  source?: IntegrationSource
+  severity?: IntegrationSeverity
+  code?: string
+  /** 'true' = resolved only, 'false' = unresolved only, omit = both. */
+  resolved?: 'true' | 'false'
+  since?: string
+  before?: string
+  limit?: number
+}
+
+export async function listIntegrationEvents(
+  query: IntegrationEventsQuery = {},
+): Promise<{ data: IntegrationEventRow[]; nextCursor: string | null }> {
+  const res = await api.get<{ data: IntegrationEventRow[]; nextCursor: string | null }>(
+    '/admin/audit/integration-events',
+    { params: query },
+  )
+  return res.data
+}
+
+export type AutomationRunStatus = 'running' | 'success' | 'partial' | 'failed'
+
+export interface AutomationRunRow {
+  id: string
+  tenantId: string
+  automationId: string
+  contactId: string | null
+  conversationId: string | null
+  triggerType: string
+  triggeredBy: string | null
+  status: AutomationRunStatus
+  errorMessage: string | null
+  durationMs: number | null
+  correlationId: string | null
+  startedAt: string
+  completedAt: string | null
+  actionsExecuted: Array<Record<string, unknown>>
+}
+
+export interface AutomationRunsQuery {
+  tenantId?: string
+  automationId?: string
+  status?: AutomationRunStatus
+  since?: string
+  before?: string
+  limit?: number
+}
+
+export async function listAutomationRuns(
+  query: AutomationRunsQuery = {},
+): Promise<{ data: AutomationRunRow[]; nextCursor: string | null }> {
+  const res = await api.get<{ data: AutomationRunRow[]; nextCursor: string | null }>(
+    '/admin/audit/automation-runs',
+    { params: query },
+  )
+  return res.data
+}
