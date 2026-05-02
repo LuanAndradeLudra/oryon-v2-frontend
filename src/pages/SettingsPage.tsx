@@ -20,6 +20,7 @@ import { AdAccountsSettings }  from '@/components/settings/sections/AdAccountsSe
 import { VerticalSettings }    from '@/components/settings/sections/VerticalSettings'
 import { CompanyBrain }        from '@/components/settings/sections/CompanyBrain'
 import { Notifications }       from '@/components/settings/sections/Notifications'
+import { AuditTrail }          from '@/components/settings/sections/AuditTrail'
 import type { User } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
@@ -28,6 +29,7 @@ const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health',
   'quick-replies', 'tags', 'billing', 'security', 'ad-accounts', 'vertical',
+  'audit',
 ]
 
 const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
@@ -45,6 +47,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   security:         SecuritySettings,
   'ad-accounts':    AdAccountsSettings,
   vertical:         VerticalSettings,
+  audit:            AuditTrail,
 }
 
 export function SettingsPage() {
