@@ -52,6 +52,8 @@ import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 import { SetupWizard }        from '@/components/onboarding/SetupWizard'
+import { useIsMobile }        from '@/hooks/useIsMobile'
+import { Monitor }            from 'lucide-react'
 
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
@@ -84,6 +86,7 @@ const AiObservabilityPage      = lazyRoute(() => import('@/pages/admin/AiObserva
 const AiExecutionsPage         = lazyRoute(() => import('@/pages/admin/AiExecutionsPage').then(m => ({ default: m.AiExecutionsPage })))
 
 import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
+import { AdminMobileBlock } from '@/components/common/AdminMobileBlock'
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 
@@ -103,7 +106,33 @@ function RequireAuth({ children }: { children: ReactNode }) {
 function OnboardingGate({ children }: { children: ReactNode }) {
   const { organizationConfigured } = useAuth()
   const [dismissed, setDismissed] = useState(false)
+  const isMobile = useIsMobile()
   if (!organizationConfigured && !dismissed) {
+    // SetupWizard tem multi-step de configuracao inicial (dados da empresa,
+    // numero WhatsApp, primeiros agentes). Em mobile e ilegivel — exigimos
+    // desktop para o onboarding.
+    if (isMobile) {
+      return (
+        <div className="h-screen w-screen bg-black flex flex-col items-center justify-center px-6 text-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-950/40 border border-amber-700/40 flex items-center justify-center">
+            <Monitor className="w-8 h-8 text-amber-300" />
+          </div>
+          <h1 className="text-lg font-semibold text-surface-50">Configuração inicial requer desktop</h1>
+          <p className="text-sm text-surface-400 leading-relaxed max-w-xs">
+            O assistente de configuração tem múltiplos passos com formulários e
+            integrações. Abra o Oryon no seu computador para configurar sua
+            empresa. Depois disso, o app mobile fica liberado para uso operacional.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigator.clipboard.writeText(window.location.origin).catch(() => {})}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-900 border border-surface-700 text-sm text-surface-200 hover:bg-surface-800 transition-colors"
+          >
+            Copiar link do Oryon
+          </button>
+        </div>
+      )
+    }
     return <SetupWizard onComplete={() => setDismissed(true)} />
   }
   return <>{children}</>
@@ -213,28 +242,28 @@ function AnimatedRoutes() {
 
           {/* ── Admin (Oryon staff) ──────────────────────────────────── */}
           <Route path="/admin/skill-templates" element={
-            <ProtectedRoute><RequireSuperAdmin><SkillTemplatesPage /></RequireSuperAdmin></ProtectedRoute>
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Skills"><SkillTemplatesPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
           <Route path="/admin/skill-templates/new" element={
-            <ProtectedRoute><RequireSuperAdmin><SkillTemplateEditorPage /></RequireSuperAdmin></ProtectedRoute>
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de skill"><SkillTemplateEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
           <Route path="/admin/skill-templates/:id" element={
-            <ProtectedRoute><RequireSuperAdmin><SkillTemplateEditorPage /></RequireSuperAdmin></ProtectedRoute>
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de skill"><SkillTemplateEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
           <Route path="/admin/skill-templates/:id/test" element={
-            <ProtectedRoute><RequireSuperAdmin><SkillTemplateTesterPage /></RequireSuperAdmin></ProtectedRoute>
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Test runner de skill"><SkillTemplateTesterPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
           <Route path="/admin/skills/assign" element={
-            <ProtectedRoute><RequireSuperAdmin><AssignSkillPage /></RequireSuperAdmin></ProtectedRoute>
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Atribuir skills"><AssignSkillPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
           <Route path="/admin/audit" element={
-            <ProtectedRoute><RequireSuperAdmin><AuditPage /></RequireSuperAdmin></ProtectedRoute>
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Auditoria"><AuditPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
           <Route path="/admin/ai-observability" element={
-            <ProtectedRoute><RequireSuperAdmin><AiObservabilityPage /></RequireSuperAdmin></ProtectedRoute>
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="AI Observability"><AiObservabilityPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
           <Route path="/admin/ai-executions" element={
-            <ProtectedRoute><RequireSuperAdmin><AiExecutionsPage /></RequireSuperAdmin></ProtectedRoute>
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="AI Executions"><AiExecutionsPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
 
           {/* Public pricing */}

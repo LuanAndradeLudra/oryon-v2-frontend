@@ -23,6 +23,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { ArtifactPanel } from '@/components/copilot/ArtifactPanel'
 import { KnowledgePanel } from '@/components/copilot/KnowledgePanel'
 import { ArtifactProvider, useArtifactContext } from '@/contexts/ArtifactContext'
+import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useNavigate } from 'react-router-dom'
 import type { CopilotAttachment, CopilotMessage } from '@/contexts/CopilotContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { cn } from '@/lib/utils'
@@ -324,7 +327,25 @@ function CopilotPageInner() {
 export function CopilotPage() {
   return (
     <ArtifactProvider>
-      <CopilotPageInner />
+      <CopilotPageMobileGuard />
     </ArtifactProvider>
   )
+}
+
+function CopilotPageMobileGuard() {
+  const isMobile = useIsMobile()
+  const navigate = useNavigate()
+
+  if (isMobile) {
+    return (
+      <MobileFeatureGate
+        open
+        onClose={() => navigate('/home')}
+        featureName="Copilot AI"
+        description="Copilot tem painel de sessões + chat + área de artifacts (documentos, código, slides) lado a lado. O modelo split-panel não cabe em viewport estreita. Abra no desktop para usar o assistente com tudo à mão."
+      />
+    )
+  }
+
+  return <CopilotPageInner />
 }
