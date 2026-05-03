@@ -94,8 +94,13 @@ export function ContactsKanban({
 
   return (
     <div className="flex flex-col h-full" onContextMenu={onEmptyAreaContextMenu}>
-      <div className="flex-1 overflow-x-auto kanban-scroll">
-        <div className="flex gap-3 p-4 h-full min-h-0" style={{ minWidth: stages.length * 260 }}>
+      <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none">
+        <div
+          className="flex gap-3 p-4 h-full min-h-0"
+          // Em mobile, cada coluna ocupa ~85% da viewport — usuario percebe
+          // que ha colunas alem e desliza. minWidth fixo so a partir de md.
+          style={{ minWidth: typeof window !== 'undefined' && window.innerWidth >= 768 ? stages.length * 260 : undefined }}
+        >
           {stages.map((stage) => {
             const cards = cardsByStage[stage.key] ?? []
             // During a multi-drag we light up every column — the backend
@@ -109,7 +114,7 @@ export function ContactsKanban({
             return (
               <div
                 key={stage.id}
-                className="flex flex-col w-64 flex-shrink-0"
+                className="flex flex-col w-[85vw] md:w-64 flex-shrink-0 snap-start"
                 onDragOver={(e) => { e.preventDefault(); if (overKey !== stage.key) setOverKey(stage.key) }}
                 onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverKey(null) }}
                 onDrop={() => handleDrop(stage.key)}

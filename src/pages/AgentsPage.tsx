@@ -16,6 +16,8 @@ import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { AgentBuilderWizard } from '@/components/agents/AgentBuilderWizard'
 import { AgentIcon } from '@/components/agents/AgentIcons'
 import { AgentDetail } from '@/components/agents/AgentDetail'
+import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
+import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -164,6 +166,7 @@ export function AgentsPage() {
   const [loadingList, setLoadingList] = useState(true)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
+  const banner = useDesktopRecommendedBanner('agents')
   const [statusFilter, setStatusFilter] = useState<'all' | AgentConfig['status']>('all')
   const [testedAgentIds, setTestedAgentIds] = useState<Set<string>>(new Set())
 
@@ -229,6 +232,11 @@ export function AgentsPage() {
 
   return (
     <>
+      <DesktopRecommendedBanner
+        visible={banner.visible}
+        onDismiss={banner.dismiss}
+        message="Configurar e testar agentes IA tem wizard com varios passos, prompts longos e ferramentas. No celular fica apertado — use o desktop para uma experiencia tranquila."
+      />
       <div className="flex flex-1 overflow-hidden">
         {/* ── Left: Agent list — hidden when no agents ── */}
         {hasAgents && (

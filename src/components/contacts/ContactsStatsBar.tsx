@@ -245,7 +245,9 @@ export function ContactsStatsBar({ contacts, total }: ContactsStatsBarProps) {
   }, [contacts.length > 0])
 
   return (
-    <div className="grid grid-cols-4 gap-2.5 px-4 py-2.5 border-b border-surface-800">
+    // Hidden em mobile — em 360-400px os 3 cards quebram layout. Atendente
+    // mobile nao precisa de stats; o kanban ja mostra contatos por estagio.
+    <div className="hidden md:grid grid-cols-4 gap-2.5 px-4 py-2.5 border-b border-surface-800">
       <TotalCard contacts={contacts} total={total} />
       <StageCard contacts={contacts} />
 
