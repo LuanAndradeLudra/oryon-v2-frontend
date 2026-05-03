@@ -31,6 +31,12 @@ import { isRouteVisible } from '@/config/featureFlags'
 interface NavSidebarProps {
   totalUnread?: number
   currentUser?: { firstName: string; lastName: string; avatarUrl?: string }
+  /**
+   * When true, renders fully expanded (no hover-collapse) and overrides the
+   * primitive's fixed width to fill the parent. Used by AppShell to embed the
+   * sidebar inside a mobile drawer.
+   */
+  forceExpanded?: boolean
 }
 
 function LogoSection() {
@@ -136,7 +142,7 @@ function UserFooter({
   )
 }
 
-export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
+export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false }: NavSidebarProps) {
   const [open, setOpen] = useState(false)
   const [whatsappUnread, setWhatsappUnread] = useState(totalUnread)
   const location = useLocation()
@@ -230,8 +236,16 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
   // they discover the URL (the route guard + agent-server gate also block them).
   const isOryonStaff = user?.role === 'super_admin'
 
-  return (
-    <Sidebar open={open} setOpen={setOpen}>
+  // When forceExpanded is true, the Sidebar primitive renders at fixed 228px
+  // (via inline style). The wrapper className `[&_.nav-sidebar]:!w-full`
+  // overrides that inline width so the sidebar fills its parent — used when
+  // embedded in a mobile drawer that is wider than 228px.
+  const sidebarOpen = forceExpanded ? true : open
+  const sidebarSetOpen = forceExpanded ? () => {} : setOpen
+  const sidebarAnimate = !forceExpanded
+
+  const body = (
+    <Sidebar open={sidebarOpen} setOpen={sidebarSetOpen} animate={sidebarAnimate}>
       <SidebarBody className="justify-between">
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
           <LogoSection />
@@ -343,4 +357,9 @@ export function NavSidebar({ totalUnread = 0, currentUser }: NavSidebarProps) {
       </SidebarBody>
     </Sidebar>
   )
+
+  if (forceExpanded) {
+    return <div className="h-full w-full [&_.nav-sidebar]:!w-full">{body}</div>
+  }
+  return body
 }
