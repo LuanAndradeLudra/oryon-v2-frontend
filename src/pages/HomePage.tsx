@@ -34,7 +34,7 @@ function relativeTime(date: string) {
 function HeroBanner() {
   const navigate = useNavigate()
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-white/10 px-8 py-8">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-white/10 px-5 py-6 sm:px-8 sm:py-8">
       {/* Decorative blobs */}
       <div className="pointer-events-none absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5" />
       <div className="pointer-events-none absolute -bottom-12 right-1/4 w-48 h-48 rounded-full bg-white/5" />
@@ -212,7 +212,7 @@ function getKPIs(stats: HomeStats, role: string): KPIData[] {
 
 function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {getKPIs(stats, role).map((kpi) => (
         <KPICard key={kpi.label} data={kpi} />
       ))}
@@ -222,7 +222,7 @@ function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
 
 function KPIGridSkeleton() {
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {[...Array(4)].map((_, i) => (
         <div key={i} className="bg-surface-900 border border-surface-800 rounded-2xl h-28 animate-pulse" />
       ))}
@@ -767,7 +767,7 @@ export function HomePage() {
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="px-6 py-6 flex flex-col gap-6">
+        <div className="px-4 py-5 sm:px-6 sm:py-6 flex flex-col gap-5 sm:gap-6">
 
           <HeroBanner />
 
@@ -781,11 +781,11 @@ export function HomePage() {
 
               {stats && <AIInsightsWidget stats={stats} />}
 
-              <div className="grid grid-cols-5 gap-4" style={{ minHeight: '300px' }}>
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:min-h-[300px]">
+                <div className="lg:col-span-2">
                   <QuickActions role={role} />
                 </div>
-                <div className="col-span-3">
+                <div className="lg:col-span-3">
                   <ActivityFeed logs={logs} loading={logsLoading} />
                 </div>
               </div>
