@@ -774,7 +774,9 @@ export function HomePage() {
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="px-4 py-5 sm:px-6 sm:py-6 flex flex-col gap-5 sm:gap-6">
 
-          <HeroBanner />
+          {/* HeroBanner so em desktop — em mobile ocupa muito espaco para
+              pouca informacao acionavel. */}
+          {!isMobile && <HeroBanner />}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
@@ -784,7 +786,10 @@ export function HomePage() {
 
               {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
 
-              {stats && <AIInsightsWidget stats={stats} />}
+              {/* AI Insights so em desktop — bloco grande com varias linhas
+                  longas que polui a Home em viewport estreita. Atendente ve
+                  insights via Copilot quando precisar. */}
+              {!isMobile && stats && <AIInsightsWidget stats={stats} />}
 
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:min-h-[300px]">
                 <div className="lg:col-span-2">
@@ -796,15 +801,17 @@ export function HomePage() {
               </div>
             </div>
 
-            {/* ── RIGHT: org overview ── */}
-            <div className="flex flex-col gap-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-surface-600">
-                {CONTEXT_LABELS[role]}
-              </p>
-              {stats && (role === 'admin' || role === 'business_admin') && <AdminBlock stats={stats} />}
-              {role === 'supervisor' && <SupervisorBlock />}
-              {role === 'agent' && <AgentBlock />}
-            </div>
+            {/* ── RIGHT: org overview — desktop only ── */}
+            {!isMobile && (
+              <div className="flex flex-col gap-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-surface-600">
+                  {CONTEXT_LABELS[role]}
+                </p>
+                {stats && (role === 'admin' || role === 'business_admin') && <AdminBlock stats={stats} />}
+                {role === 'supervisor' && <SupervisorBlock />}
+                {role === 'agent' && <AgentBlock />}
+              </div>
+            )}
 
           </div>
 
