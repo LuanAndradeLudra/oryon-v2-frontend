@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import axios from 'axios'
 
 import { SettingsLayout } from '@/components/settings/SettingsLayout'
+import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
+import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 
 // Sections
 import { CompanyProfile }   from '@/components/settings/sections/CompanyProfile'
@@ -32,6 +34,14 @@ const VALID_SECTIONS = [
   'audit',
 ]
 
+// Sections que sao desktop-first: configuracao pesada (assistentes IA, numeros
+// WhatsApp, brain da empresa, billing, templates, integracao Meta). Em mobile
+// mostram um banner discreto sugerindo desktop, sem bloquear.
+const DESKTOP_FIRST_SECTIONS = new Set([
+  'agents', 'numbers', 'company-brain', 'billing', 'quick-replies',
+  'ad-accounts', 'whatsapp-health',
+])
+
 const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   account:          MyAccount,
   notifications:    Notifications,
@@ -53,6 +63,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
 export function SettingsPage() {
   const { section = 'account' } = useParams<{ section: string }>()
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const banner = useDesktopRecommendedBanner(`settings/${section}`)
 
   useEffect(() => {
     axios.get<User>(`${API}/auth/me`).then((r) => setCurrentUser(r.data)).catch(() => {})
@@ -63,12 +74,17 @@ export function SettingsPage() {
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]
-  const userForNav = currentUser
-    ? { firstName: currentUser.firstName, lastName: currentUser.lastName, avatarUrl: currentUser.avatarUrl }
-    : undefined
+  const showBanner = DESKTOP_FIRST_SECTIONS.has(section) && banner.visible
 
   return (
     <SettingsLayout currentRole={currentUser?.role ?? 'admin'}>
+      {showBanner && (
+        <DesktopRecommendedBanner
+          visible
+          onDismiss={banner.dismiss}
+          message="Esta secao tem formularios e tabelas que ficam apertados no celular. Para configurar com tranquilidade, use o desktop."
+        />
+      )}
       <AnimatePresence mode="wait">
         <motion.div
           key={section}
