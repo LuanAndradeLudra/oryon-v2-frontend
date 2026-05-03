@@ -300,7 +300,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled }: MessageI
 
   if (!windowOpen) {
     return (
-      <div className="px-4 py-3 border-t border-surface-800 bg-black flex-shrink-0">
+      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
         <div className="card-24h bg-brand-800/20 border border-brand-600/30 rounded-xl px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-brand-400 flex-shrink-0" />

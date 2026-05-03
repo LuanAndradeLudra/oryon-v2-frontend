@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   ChevronDown, UserPlus, Info,
-  Tag, Check, Archive,
+  Tag, Check, Archive, ArrowLeft,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
@@ -39,6 +39,8 @@ interface ChatHeaderProps {
   onDeleteTag?: (tagId: string) => Promise<void>
   onAssign: (user: User | null) => void
   onArchive: () => void
+  /** When provided, shows a mobile-only back button on the left of the header. */
+  onBack?: () => void
 }
 
 export function ChatHeader({
@@ -46,6 +48,7 @@ export function ChatHeader({
   onStatusChange, onToggleInfo, infoOpen,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
   onAssign, onArchive,
+  onBack,
 }: ChatHeaderProps) {
   const { contact, status, whatsappNumber, assignedUser, tags = [] } = conversation
 
@@ -73,6 +76,16 @@ export function ChatHeader({
 
       {/* ── Left: contact info ────────────────────────────────── */}
       <div className="flex items-center gap-3 min-w-0">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Voltar para conversas"
+            className="md:hidden -ml-1 w-9 h-9 flex items-center justify-center rounded-lg text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors flex-shrink-0"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        )}
         <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">

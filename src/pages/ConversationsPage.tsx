@@ -13,6 +13,7 @@ import { joinConversation, leaveConversation } from '@/services/socket'
 import { useToast } from '@/hooks/useToast'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useContacts } from '@/hooks/useContacts'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { cn } from '@/lib/utils'
 import type {
@@ -34,6 +35,7 @@ export function ConversationsPage() {
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
   const { contacts: allContacts } = useContacts()
   const { toasts, toast, dismiss } = useToast()
+  const isMobile = useIsMobile()
 
   const {
     conversations, loading,
@@ -218,36 +220,53 @@ export function ConversationsPage() {
     toast('Conversa arquivada', 'warning')
   }
 
+  // Mobile back: clear active conversation, close info panel, drop ?id from URL.
+  const handleMobileBack = useCallback(() => {
+    setActiveConversation(null)
+    setInfoOpen(false)
+    setSearchParams({}, { replace: true })
+  }, [setSearchParams])
+
+  // In mobile, list and chat are alternative full-screen views — never both at
+  // once. Desktop keeps the original side-by-side layout.
+  const showList = !isMobile || !activeConversation
+  const showChat = !isMobile || !!activeConversation
+
   return (
     <>
       {/* 1 — Conversation list */}
-      <ConversationList
-        conversations={conversations}
-        loading={loading}
-        activeId={activeConversation?.id ?? null}
-        filters={filters}
-        allTags={allTags}
-        allContacts={allContacts}
-        onSelectConversation={handleSelectConversation}
-        onFiltersChange={setFilters}
-      />
+      {showList && (
+        <ConversationList
+          conversations={conversations}
+          loading={loading}
+          activeId={activeConversation?.id ?? null}
+          filters={filters}
+          allTags={allTags}
+          allContacts={allContacts}
+          onSelectConversation={handleSelectConversation}
+          onFiltersChange={setFilters}
+        />
+      )}
 
       {/* 3 — Chat window */}
-      <ChatWindow
-        conversation={activeConversation}
-        allTags={allTags}
-        allUsers={allUsers}
-        onStatusChange={handleStatusChange}
-        onToggleInfo={() => setInfoOpen((v) => !v)}
-        infoOpen={infoOpen}
-        onAddTag={handleAddTag}
-        onRemoveTag={handleRemoveTag}
-        onCreateTag={createTag}
-        onDeleteTag={deleteTag}
-        onAssign={handleAssign}
-        onTransfer={handleTransfer}
-        onArchive={handleArchive}
-      />
+      {showChat && (
+        <ChatWindow
+          conversation={activeConversation}
+          allTags={allTags}
+          allUsers={allUsers}
+          onStatusChange={handleStatusChange}
+          onToggleInfo={() => setInfoOpen((v) => !v)}
+          infoOpen={infoOpen}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+          onCreateTag={createTag}
+          onDeleteTag={deleteTag}
+          onAssign={handleAssign}
+          onTransfer={handleTransfer}
+          onArchive={handleArchive}
+          onBack={isMobile ? handleMobileBack : undefined}
+        />
+      )}
 
       {/* 4 — Contact info panel */}
       {infoOpen && activeConversation && (

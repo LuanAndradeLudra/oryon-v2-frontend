@@ -21,6 +21,8 @@ interface ChatWindowProps {
   onAssign: (convId: string, user: User | null) => void
   onTransfer: (convId: string, user: User) => void
   onArchive: (convId: string) => void
+  /** When provided, ChatHeader renders a mobile-only back button. */
+  onBack?: () => void
 }
 
 export function ChatWindow({
@@ -28,6 +30,7 @@ export function ChatWindow({
   onStatusChange, onToggleInfo, infoOpen,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
   onAssign, onTransfer, onArchive,
+  onBack,
 }: ChatWindowProps) {
   const { messages, loading, sending, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus } =
     useMessages(conversation?.id ?? null)
@@ -95,6 +98,7 @@ export function ChatWindow({
         onDeleteTag={onDeleteTag}
         onAssign={(user) => onAssign(conversation.id, user)}
         onArchive={() => onArchive(conversation.id)}
+        onBack={onBack}
       />
       <MessageList messages={messages} loading={loading} hasMore={hasMore} onLoadMore={fetchMore} />
       <MessageInput onSend={sendMessage} sending={sending} windowOpen={windowOpen} />
