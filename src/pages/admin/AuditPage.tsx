@@ -37,6 +37,8 @@ import {
 } from '@/services/adminAuditApi'
 import { AuditDrillModal } from '@/components/admin/AuditDrillModal'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
+import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { cn } from '@/lib/utils'
 
 // ─── Tab type & metadata ─────────────────────────────────────────────────────
@@ -54,9 +56,15 @@ const TABS: Array<{ id: AuditTab; label: string; icon: typeof Activity; hint: st
 
 export function AuditPage() {
   const [tab, setTab] = useState<AuditTab>('activity')
+  const banner = useDesktopRecommendedBanner('admin/audit')
 
   return (
     <div className="flex flex-col h-full bg-surface-950">
+      <DesktopRecommendedBanner
+        visible={banner.visible}
+        onDismiss={banner.dismiss}
+        message="Auditoria foi pensada para desktop — colunas largas, filtros laterais e drill modais. No celular você pode dar uma olhada rápida, mas para investigar use seu computador."
+      />
       <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-800">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-brand-700/30 flex items-center justify-center">
