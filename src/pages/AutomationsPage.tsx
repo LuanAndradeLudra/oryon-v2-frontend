@@ -10,6 +10,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { AutomationWizard } from '@/components/automations/AutomationWizard'
+import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequiredBanner'
 import { TypeBadge, TYPE_CONFIG } from '@/components/automations/TypeBadge'
 import { automationsApi } from '@/services/api'
@@ -752,6 +754,7 @@ function DeleteConfirm({ automation, onConfirm, onCancel }: {
 
 export function AutomationsPage() {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   // Gate on active WhatsApp lines — backend rejects create_automation
   // with a 400 when tenant has no line, so we block the UI to avoid
   // letting the user fill out a long wizard that would fail at submit.
@@ -972,18 +975,27 @@ export function AutomationsPage() {
         </div>
       </main>
 
-      {/* Wizard */}
-      <AnimatePresence>
-        {wizardOpen && (
-          <AutomationWizard
-            open={wizardOpen}
-            onClose={() => { setWizardOpen(false); setEditTarget(null); setWizardPreset(null) }}
-            onSaved={handleSaved}
-            editTarget={editTarget}
-            preset={wizardPreset}
-          />
-        )}
-      </AnimatePresence>
+      {/* Wizard — desktop only; mobile mostra gate */}
+      {isMobile ? (
+        <MobileFeatureGate
+          open={wizardOpen}
+          onClose={() => { setWizardOpen(false); setEditTarget(null); setWizardPreset(null) }}
+          featureName={editTarget ? 'Editar automação' : 'Criar automação'}
+          description="Wizard de automações tem múltiplos passos com gatilhos, condições e ações encadeadas. No celular fica apertado — abra no desktop para configurar com tranquilidade."
+        />
+      ) : (
+        <AnimatePresence>
+          {wizardOpen && (
+            <AutomationWizard
+              open={wizardOpen}
+              onClose={() => { setWizardOpen(false); setEditTarget(null); setWizardPreset(null) }}
+              onSaved={handleSaved}
+              editTarget={editTarget}
+              preset={wizardPreset}
+            />
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Template gallery */}
       <AnimatePresence>
