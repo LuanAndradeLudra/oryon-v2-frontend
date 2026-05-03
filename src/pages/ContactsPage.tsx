@@ -22,6 +22,7 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { tagsApi } from '@/services/api'
 import { cn } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag } from '@/types'
@@ -30,6 +31,11 @@ type ViewMode = 'table' | 'kanban'
 
 export function ContactsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
+  const isMobile = useIsMobile()
+  // In mobile, the table view is unusable (horizontal overflow + tiny rows).
+  // Force kanban regardless of user preference so they always get a usable
+  // layout. Desktop preference is preserved across viewport changes.
+  const effectiveViewMode: ViewMode = isMobile ? 'kanban' : viewMode
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -100,8 +106,8 @@ export function ContactsPage() {
       <span className="text-xs text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full border border-surface-700 font-medium">
         {total.toLocaleString('pt-BR')}
       </span>
-      {/* View toggle */}
-      <div className="flex items-center bg-surface-800 border border-surface-700 rounded-lg p-0.5">
+      {/* View toggle — desktop only; mobile is always kanban */}
+      <div className="hidden md:flex items-center bg-surface-800 border border-surface-700 rounded-lg p-0.5">
         <button
           onClick={() => setViewMode('table')}
           className={cn(
@@ -249,7 +255,7 @@ export function ContactsPage() {
         <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
 
         <div className="flex-1 overflow-hidden">
-          {viewMode === 'table' ? (
+          {effectiveViewMode === 'table' ? (
             <ContactsTable
               contacts={contacts}
               loading={loading}
