@@ -10,6 +10,7 @@ import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
 import { ContactsTable } from '@/components/contacts/ContactsTable'
 import { ContactsKanban } from '@/components/contacts/ContactsKanban'
+import { ContactsMobileList } from '@/components/contacts/ContactsMobileList'
 import { ContactDetailPanel } from '@/components/contacts/ContactDetailPanel'
 import { CRMConfigDrawer } from '@/components/contacts/CRMConfigDrawer'
 import { NewContactDrawer } from '@/components/contacts/NewContactDrawer'
@@ -258,7 +259,15 @@ export function ContactsPage() {
         <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
 
         <div className="flex-1 overflow-hidden">
-          {effectiveViewMode === 'table' ? (
+          {isMobile ? (
+            // Mobile: lista vertical pura — kanban horizontal e table viraram
+            // inutilizaveis em viewport estreita. Tap no card abre detail.
+            <ContactsMobileList
+              contacts={contacts}
+              loading={loading}
+              onOpenPanel={handleOpenPanel}
+            />
+          ) : effectiveViewMode === 'table' ? (
             <ContactsTable
               contacts={contacts}
               loading={loading}
