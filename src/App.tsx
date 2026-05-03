@@ -72,6 +72,7 @@ const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m 
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
 const TasksPage         = lazyRoute(() => import('@/pages/TasksPage').then(m => ({ default: m.TasksPage })))
+const NotificationsPage = lazyRoute(() => import('@/pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
 
 // Admin (Oryon staff only) — gated by RequireSuperAdmin inside the route.
 const SkillTemplatesPage       = lazyRoute(() => import('@/pages/admin/SkillTemplatesPage').then(m => ({ default: m.SkillTemplatesPage })))
@@ -181,6 +182,9 @@ function AnimatedRoutes() {
           } />
           <Route path="/more" element={
             <ProtectedRoute><MorePage /></ProtectedRoute>
+          } />
+          <Route path="/notifications" element={
+            <ProtectedRoute><NotificationsPage /></ProtectedRoute>
           } />
           <Route path="/campaigns" element={
             <ProtectedRoute><CampaignsPage /></ProtectedRoute>

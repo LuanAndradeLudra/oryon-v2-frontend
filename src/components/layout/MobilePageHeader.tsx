@@ -56,7 +56,7 @@ export function MobilePageHeader({
       {!hideBell && (
         <button
           type="button"
-          onClick={() => navigate('/more/notifications')}
+          onClick={() => navigate('/notifications')}
           aria-label="Notificações"
           className="relative w-9 h-9 flex items-center justify-center rounded-lg text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors flex-shrink-0"
         >
