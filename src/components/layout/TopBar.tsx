@@ -9,12 +9,10 @@ import {
   LayoutGrid, List, KanbanSquare, FileText, Inbox,
   Globe, Users2, BellRing, Plug, BookOpen,
   AlertCircle, AtSign, Megaphone as MegaphoneIcon, ShieldAlert, UserCheck,
-  Menu,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import { useTopBarActions } from '@/contexts/TopBarActionsContext'
-import { useMobileNav } from '@/contexts/MobileNavContext'
 import {
   useNotifications,
   type AppNotification,
@@ -1322,7 +1320,6 @@ export function TopBar() {
   const { open: openCopilot } = useCopilotContext()
   const { pageActions } = useTopBarActions()
   const { unreadCount } = useNotifications()
-  const { toggle: toggleMobileNav } = useMobileNav()
 
   const [query,       setQuery]       = useState('')
   const [dropOpen,    setDropOpen]    = useState(false)
@@ -1418,16 +1415,6 @@ export function TopBar() {
 
   return (
     <div className="h-12 flex-shrink-0 bg-black border-b border-surface-700/50 px-4 flex items-center gap-3">
-
-      {/* Mobile-only hamburger — opens the nav drawer (AppShell renders it). */}
-      <button
-        type="button"
-        onClick={toggleMobileNav}
-        aria-label="Abrir menu"
-        className="md:hidden -ml-1 w-9 h-9 flex items-center justify-center rounded-lg text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors flex-shrink-0"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
 
       {/* Left: page title */}
       <span className="text-sm font-semibold text-surface-100 w-32 flex-shrink-0 truncate">
