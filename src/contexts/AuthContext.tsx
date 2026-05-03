@@ -3,6 +3,8 @@ import axios from 'axios'
 import type { User } from '@/types'
 import { appLogger } from '@/services/appLogger'
 import { disconnectSocket } from '@/services/socket'
+import { isNativePlatform } from '@/config/env'
+import { setTokens, clearTokens, getRefreshToken } from '@/services/auth-storage'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -69,9 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     disconnectSocket()
+    // Sprint 5.3 — em mobile usa /auth/mobile-login que retorna tokens em
+    // body; armazenamos via auth-storage e o api.ts injeta Bearer header.
+    // Em web continua /auth/login com cookies httpOnly.
+    const endpoint = isNativePlatform() ? '/auth/mobile-login' : '/auth/login'
     const res = await axios.post<{
       user: User; requiresPasswordChange: boolean; organizationConfigured?: boolean;
-    }>(`${API}/auth/login`, { email, password }, { withCredentials: true })
+      accessToken?: string; refreshToken?: string;
+    }>(`${API}${endpoint}`, { email, password }, { withCredentials: true })
+    if (isNativePlatform() && res.data.accessToken && res.data.refreshToken) {
+      setTokens(res.data.accessToken, res.data.refreshToken)
+    }
     const s: AuthSession = {
       user: res.data.user,
       requiresPasswordChange: res.data.requiresPasswordChange,
@@ -121,8 +131,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     disconnectSocket()
     try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true })
+      // Em mobile manda refreshToken no body para invalidar; backend tambem
+      // ja aceita do cookie. Em ambos casos da pra confiar no try/catch.
+      const body = isNativePlatform()
+        ? { refreshToken: getRefreshToken() ?? undefined }
+        : {}
+      await axios.post(`${API}/auth/logout`, body, { withCredentials: true })
     } catch { /* best-effort — cookies will expire on their own */ }
+    clearTokens()
 
     appLogger.logSessionEvent({
       tenant_id: session?.user.tenantId ?? null,

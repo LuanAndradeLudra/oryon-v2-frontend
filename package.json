@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "cap:sync": "cap sync",
-    "cap:android": "cap run android"
+    "cap:android": "cap run android",
+    "prebuild:android": "node scripts/sync-mobile-version.mjs",
+    "build:android": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

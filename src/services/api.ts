@@ -34,11 +34,14 @@ import type {
   WhatsAppTemplate,
 } from '@/types'
 
+import { apiBaseUrl, isNativePlatform } from '@/config/env'
+import { getAccessToken } from './auth-storage'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: apiBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000, // 30 seconds
-  withCredentials: true, // Send httpOnly cookies with every request
+  withCredentials: true, // Send httpOnly cookies with every request (web)
 })
 
 // Re-exported so peripheral services (admin tools, internal utilities) can
@@ -574,6 +577,14 @@ api.interceptors.request.use((config) => {
   const existing = config.headers['x-correlation-id']
   if (!existing || (typeof existing === 'string' && !UUID_REGEX.test(existing))) {
     config.headers['x-correlation-id'] = newCorrelationId()
+  }
+  // Sprint 5.3 — em mobile, anexa Authorization Bearer com o token salvo em
+  // auth-storage. Em web continua via cookies httpOnly (withCredentials).
+  if (isNativePlatform()) {
+    const token = getAccessToken()
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
   }
   return config
 })
