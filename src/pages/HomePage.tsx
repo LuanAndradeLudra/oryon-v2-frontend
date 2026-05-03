@@ -11,6 +11,8 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { generateInsights } from '@/services/copilotService'
 import { cn, getInitials } from '@/lib/utils'
 import type { AuditLog, BillingPlan, Conversation, HomeStats, User, WhatsAppNumberDetailed } from '@/types'
@@ -741,6 +743,7 @@ const CONTEXT_LABELS: Record<string, string> = {
 
 export function HomePage() {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const [stats, setStats] = useState<HomeStats | null>(null)
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [logsLoading, setLogsLoading] = useState(true)
@@ -766,7 +769,9 @@ export function HomePage() {
     : undefined
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+    <div className="flex flex-col flex-1 min-h-0">
+      {isMobile && <MobilePageHeader title="Home" />}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="px-4 py-5 sm:px-6 sm:py-6 flex flex-col gap-5 sm:gap-6">
 
           <HeroBanner />
@@ -806,6 +811,7 @@ export function HomePage() {
           {/* Footer spacer */}
           <div className="h-4" />
         </div>
+      </div>
     </div>
   )
 }

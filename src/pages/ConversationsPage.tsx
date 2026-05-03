@@ -7,6 +7,7 @@ import { ConversationList } from '@/components/conversations/ConversationList/Co
 import { ChatWindow } from '@/components/conversations/ChatWindow/ChatWindow'
 import { ContactPanel } from '@/components/conversations/ContactPanel/ContactPanel'
 import { ToastContainer } from '@/components/ui/Toast'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { useConversations } from '@/hooks/useConversations'
 import { useSocket } from '@/hooks/useSocket'
 import { joinConversation, leaveConversation } from '@/services/socket'
@@ -236,16 +237,34 @@ export function ConversationsPage() {
     <>
       {/* 1 — Conversation list */}
       {showList && (
-        <ConversationList
-          conversations={conversations}
-          loading={loading}
-          activeId={activeConversation?.id ?? null}
-          filters={filters}
-          allTags={allTags}
-          allContacts={allContacts}
-          onSelectConversation={handleSelectConversation}
-          onFiltersChange={setFilters}
-        />
+        isMobile ? (
+          <div className="flex flex-col flex-1 min-h-0 w-full">
+            <MobilePageHeader title="Conversas" />
+            <div className="flex-1 min-h-0 flex">
+              <ConversationList
+                conversations={conversations}
+                loading={loading}
+                activeId={activeConversation?.id ?? null}
+                filters={filters}
+                allTags={allTags}
+                allContacts={allContacts}
+                onSelectConversation={handleSelectConversation}
+                onFiltersChange={setFilters}
+              />
+            </div>
+          </div>
+        ) : (
+          <ConversationList
+            conversations={conversations}
+            loading={loading}
+            activeId={activeConversation?.id ?? null}
+            filters={filters}
+            allTags={allTags}
+            allContacts={allContacts}
+            onSelectConversation={handleSelectConversation}
+            onFiltersChange={setFilters}
+          />
+        )
       )}
 
       {/* 3 — Chat window */}

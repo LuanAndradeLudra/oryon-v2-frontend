@@ -23,6 +23,7 @@ import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { tagsApi } from '@/services/api'
 import { cn } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag } from '@/types'
@@ -250,6 +251,8 @@ export function ContactsPage() {
   return (
     <>
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-black">
+        {isMobile && <MobilePageHeader title="Contatos" />}
+
         <ContactsStatsBar contacts={contacts} total={total} />
 
         <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
