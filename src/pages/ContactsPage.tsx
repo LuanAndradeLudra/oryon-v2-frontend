@@ -21,6 +21,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
+import { useTableSelection } from '@/hooks/useTableSelection'
 import { tagsApi } from '@/services/api'
 import { cn } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag } from '@/types'
@@ -72,33 +73,15 @@ export function ContactsPage() {
   const { toasts, toast, dismiss } = useToast()
 
   // ── Bulk selection state ───────────────────────────────────────────────
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const {
+    selectedIds,
+    selectedItems: selectedContacts,
+    toggle: toggleSelect,
+    selectAll,
+    clear: clearSelection,
+  } = useTableSelection(contacts, useCallback((c: typeof contacts[number]) => c.id, []))
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const [bulkDeleting, setBulkDeleting] = useState(false)
-
-  // Stable list of the contacts the user is about to delete — used by the
-  // confirmation modal. Recomputes only when the selection or list changes.
-  const selectedContacts = useMemo(
-    () => contacts.filter((c) => selectedIds.has(c.id)),
-    [contacts, selectedIds],
-  )
-
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
-
-  const selectAll = useCallback((ids: string[]) => {
-    setSelectedIds(new Set(ids))
-  }, [])
-
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set())
-  }, [])
 
   // Esc clears selection.
   useEffect(() => {
