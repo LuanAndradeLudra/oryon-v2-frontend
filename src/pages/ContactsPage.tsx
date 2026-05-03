@@ -25,6 +25,8 @@ import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
+import { Fab } from '@/components/common/Fab'
+import { Plus } from 'lucide-react'
 import { tagsApi } from '@/services/api'
 import { cn } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag } from '@/types'
@@ -295,6 +297,13 @@ export function ContactsPage() {
           )}
         </div>
       </div>
+
+      {/* Mobile FAB: novo contato — desktop usa o "+ Novo" do header */}
+      <Fab
+        icon={<Plus className="w-6 h-6" />}
+        label="Novo contato"
+        onClick={() => setShowNewContact(true)}
+      />
 
       {/* Bulk selection floating bar */}
       <AnimatePresence>

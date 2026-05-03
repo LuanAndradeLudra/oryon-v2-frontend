@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { SlidersHorizontal } from 'lucide-react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { SlidersHorizontal, MessageSquarePlus } from 'lucide-react'
 
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { ConversationList } from '@/components/conversations/ConversationList/ConversationList'
@@ -8,6 +8,7 @@ import { ChatWindow } from '@/components/conversations/ChatWindow/ChatWindow'
 import { ContactPanel } from '@/components/conversations/ContactPanel/ContactPanel'
 import { ToastContainer } from '@/components/ui/Toast'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
+import { Fab } from '@/components/common/Fab'
 import { useConversations } from '@/hooks/useConversations'
 import { useSocket } from '@/hooks/useSocket'
 import { joinConversation, leaveConversation } from '@/services/socket'
@@ -27,6 +28,7 @@ const CURRENT_USER = { firstName: 'Admin', lastName: 'Oryon', avatarUrl: undefin
 
 export function ConversationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
   const [infoOpen, setInfoOpen]     = useState(false)
   const [filters, setFilters]       = useState<ConversationFilters>({ status: 'all' })
@@ -310,6 +312,17 @@ export function ConversationsPage() {
       )}
 
       {/* Toast notifications */}
+      {/* Mobile FAB: nova conversa — abre /contacts para escolher um destinatario.
+          So mostra quando lista esta visivel; durante chat ativo, FAB seria
+          ruido. Picker dedicado em bottom sheet fica para PR seguinte. */}
+      {showList && !activeConversation && (
+        <Fab
+          icon={<MessageSquarePlus className="w-6 h-6" />}
+          label="Nova conversa"
+          onClick={() => navigate('/contacts')}
+        />
+      )}
+
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   )
