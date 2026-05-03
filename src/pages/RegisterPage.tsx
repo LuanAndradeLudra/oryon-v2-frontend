@@ -153,7 +153,7 @@ export function RegisterPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Nome" required>
               <input
                 type="text"
@@ -194,7 +194,7 @@ export function RegisterPage() {
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Senha" required>
               <div className="relative">
                 <input

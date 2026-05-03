@@ -4,6 +4,7 @@ import { Eye, EyeOff, Zap, Loader2, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { LoginBeams } from '@/components/ui/LoginBeams'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 const ROTATING_WORDS = ['convertem.', 'encantam.', 'fidelizam.', 'crescem.']
 
@@ -39,6 +40,10 @@ export function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  // The hero panel only shows at lg+. Skipping the mount in smaller viewports
+  // avoids running the canvas RAF animation on phones/tablets where it would
+  // be invisible anyway.
+  const isLargeScreen = useMediaQuery('(min-width: 1024px)')
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/conversations'
 
   const [email, setEmail] = useState('')
@@ -70,8 +75,9 @@ export function LoginPage() {
   return (
     <div className="min-h-screen w-screen flex overflow-hidden bg-surface-950">
 
-      {/* ── Left panel — hero + beams ── */}
-      <div className="hidden lg:flex flex-1 relative flex-col items-start justify-end pb-16 pl-16 overflow-hidden">
+      {/* ── Left panel — hero + beams (lg+ only, skipped at mount in smaller) ── */}
+      {isLargeScreen && (
+      <div className="flex flex-1 relative flex-col items-start justify-end pb-16 pl-16 overflow-hidden">
         <LoginBeams />
 
         {/* Headline */}
@@ -98,6 +104,7 @@ export function LoginPage() {
           </motion.div>
         </div>
       </div>
+      )}
 
       {/* ── Right panel — login form ── */}
       <div className="w-full lg:w-[480px] flex flex-col items-center justify-center px-8 py-12 bg-surface-950 lg:border-l lg:border-surface-800/60">
