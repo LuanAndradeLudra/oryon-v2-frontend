@@ -31,10 +31,31 @@ import type { HomeStats } from '@/types'
 import type { User } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
+import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useNavigate } from 'react-router-dom'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 export function DashboardPage() {
+  const isMobile = useIsMobile()
+  const navigate = useNavigate()
+
+  if (isMobile) {
+    return (
+      <MobileFeatureGate
+        open
+        onClose={() => navigate('/home')}
+        featureName="Dashboard"
+        description="Dashboard tem KPIs com séries temporais, donut de status, heatmap de horários de pico, tabela de agentes e charts comparativos. Otimizado para tela larga. Abra no desktop para análise completa."
+      />
+    )
+  }
+
+  return <DashboardPageDesktop />
+}
+
+function DashboardPageDesktop() {
   const { user: authUser } = useAuth()
   const { checklist, markDone } = useSetupChecklist(authUser?.id)
   const [currentUser, setCurrentUser] = useState<User | null>(null)

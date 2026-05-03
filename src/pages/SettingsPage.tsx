@@ -6,6 +6,9 @@ import axios from 'axios'
 import { SettingsLayout } from '@/components/settings/SettingsLayout'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
+import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useNavigate } from 'react-router-dom'
 
 // Sections
 import { CompanyProfile }   from '@/components/settings/sections/CompanyProfile'
@@ -34,13 +37,37 @@ const VALID_SECTIONS = [
   'audit',
 ]
 
-// Sections que sao desktop-first: configuracao pesada (assistentes IA, numeros
-// WhatsApp, brain da empresa, billing, templates, integracao Meta). Em mobile
-// mostram um banner discreto sugerindo desktop, sem bloquear.
+// Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
+// bloquear (usuario pode acessar mas com aviso).
 const DESKTOP_FIRST_SECTIONS = new Set([
-  'agents', 'numbers', 'company-brain', 'billing', 'quick-replies',
-  'ad-accounts', 'whatsapp-health',
+  'agents', 'quick-replies', 'whatsapp-health',
 ])
+
+// Sections hard-block em mobile: substitui o conteudo por MobileFeatureGate.
+// Sao telas onde o conteudo nem sequer renderiza minimamente bem
+// (formularios longos, tabelas largas, integracoes Meta com QR codes etc).
+const HARD_BLOCK_SECTIONS = new Set<string>([
+  'numbers', 'company-brain', 'billing', 'ad-accounts',
+])
+
+const HARD_BLOCK_LABELS: Record<string, { name: string; description: string }> = {
+  numbers: {
+    name: 'Números WhatsApp',
+    description: 'Configurar números WhatsApp envolve QR codes, fluxo Meta Business e tabelas largas. Abra no desktop.',
+  },
+  'company-brain': {
+    name: 'Contexto da IA',
+    description: 'O editor de contexto da IA é um formulário longo com seções aninhadas. Ilegível no celular — abra no desktop.',
+  },
+  billing: {
+    name: 'Plano & Faturamento',
+    description: 'Tabelas de planos, comparativos e fluxo de pagamento ficam apertados no celular. Abra no desktop.',
+  },
+  'ad-accounts': {
+    name: 'Contas de Anúncios',
+    description: 'Integração Meta Ads exige fluxo OAuth e tabela de pixels. Abra no desktop.',
+  },
+}
 
 const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   account:          MyAccount,
@@ -64,6 +91,8 @@ export function SettingsPage() {
   const { section = 'account' } = useParams<{ section: string }>()
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const banner = useDesktopRecommendedBanner(`settings/${section}`)
+  const isMobile = useIsMobile()
+  const navigate = useNavigate()
 
   useEffect(() => {
     axios.get<User>(`${API}/auth/me`).then((r) => setCurrentUser(r.data)).catch(() => {})
@@ -75,6 +104,8 @@ export function SettingsPage() {
 
   const SectionComponent = SECTION_COMPONENTS[section]
   const showBanner = DESKTOP_FIRST_SECTIONS.has(section) && banner.visible
+  const isHardBlocked = isMobile && HARD_BLOCK_SECTIONS.has(section)
+  const blockLabel = HARD_BLOCK_LABELS[section]
 
   return (
     <SettingsLayout currentRole={currentUser?.role ?? 'admin'}>
@@ -85,17 +116,26 @@ export function SettingsPage() {
           message="Esta secao tem formularios e tabelas que ficam apertados no celular. Para configurar com tranquilidade, use o desktop."
         />
       )}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={section}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.15, ease: 'easeInOut' }}
-        >
-          <SectionComponent />
-        </motion.div>
-      </AnimatePresence>
+      {isHardBlocked && blockLabel ? (
+        <MobileFeatureGate
+          open
+          onClose={() => navigate('/settings/account')}
+          featureName={blockLabel.name}
+          description={blockLabel.description}
+        />
+      ) : (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={section}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15, ease: 'easeInOut' }}
+          >
+            <SectionComponent />
+          </motion.div>
+        </AnimatePresence>
+      )}
     </SettingsLayout>
   )
 }
