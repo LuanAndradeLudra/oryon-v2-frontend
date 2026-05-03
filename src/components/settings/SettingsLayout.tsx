@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
 import { isRouteVisible } from '@/config/featureFlags'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 
 interface SettingsLayoutProps {
   children: ReactNode
@@ -74,6 +76,7 @@ const NAV_GROUPS = [
 
 export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayoutProps) {
   const isAdmin = currentRole === 'admin' || currentRole === 'business_admin'
+  const isMobile = useIsMobile()
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
       ...group,
@@ -88,7 +91,9 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
     .filter((group) => group.items.length > 0)
 
   return (
-    <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+    <div className="flex flex-1 overflow-hidden flex-col">
+      {isMobile && <MobilePageHeader title="Configurações" />}
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
       {/* Settings sidebar — empilhada acima em mobile, lateral em desktop */}
       <aside className="w-full md:w-60 flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-800 py-3 md:py-4 px-2 overflow-y-auto max-h-52 md:max-h-none">
         {visibleGroups.map((group) => (
@@ -115,6 +120,7 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
       <main className="flex-1 overflow-y-auto py-4 px-4 md:py-6 md:px-6">
         {children}
       </main>
+      </div>
     </div>
   )
 }
