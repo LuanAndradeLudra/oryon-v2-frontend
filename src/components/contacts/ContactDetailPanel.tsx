@@ -10,7 +10,7 @@ import { OverviewTab } from './tabs/OverviewTab'
 import { HistoryTab } from './tabs/HistoryTab'
 import { ConversationsTab } from './tabs/ConversationsTab'
 import { CampaignsTab } from './tabs/CampaignsTab'
-import type { Contact } from '@/types'
+import type { Contact, Tag } from '@/types'
 
 interface ContactDetailPanelProps {
   contactId: string
@@ -98,6 +98,35 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
     }
   }
 
+  const handleAddTag = async (tag: Tag) => {
+    if (!contact) return
+    if ((contact.tags ?? []).some((t) => t.id === tag.id)) return
+    const prev = contact
+    setContact({ ...contact, tags: [...(contact.tags ?? []), tag] })
+    try {
+      const res = await contactsApi.update(contactId, { addTagIds: [tag.id] })
+      setContact(res.data)
+      onContactUpdate?.(res.data)
+    } catch {
+      setContact(prev)
+      toast('Erro ao adicionar etiqueta.', 'error')
+    }
+  }
+
+  const handleRemoveTag = async (tagId: string) => {
+    if (!contact) return
+    const prev = contact
+    setContact({ ...contact, tags: (contact.tags ?? []).filter((t) => t.id !== tagId) })
+    try {
+      const res = await contactsApi.update(contactId, { removeTagIds: [tagId] })
+      setContact(res.data)
+      onContactUpdate?.(res.data)
+    } catch {
+      setContact(prev)
+      toast('Erro ao remover etiqueta.', 'error')
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       {loading || !contact ? (
@@ -109,9 +138,15 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
           <ContactDetailHeader contact={contact} onClose={onClose} onDelete={handleDelete} />
           <ContactDetailTabs activeTab={activeTab} onChange={setActiveTab} />
           <div className="flex-1 overflow-y-auto">
-            {activeTab === 'overview'      && <OverviewTab contact={contact} onSave={handleSave} onRefresh={() => {
-              contactsApi.get(contactId).then((r) => { setContact(r.data); onContactUpdate?.(r.data) }).catch(() => {})
-            }} />}
+            {activeTab === 'overview'      && <OverviewTab
+              contact={contact}
+              onSave={handleSave}
+              onAddTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
+              onRefresh={() => {
+                contactsApi.get(contactId).then((r) => { setContact(r.data); onContactUpdate?.(r.data) }).catch(() => {})
+              }}
+            />}
             {activeTab === 'history'       && <HistoryTab contactId={contactId} />}
             {activeTab === 'conversations' && <ConversationsTab contactId={contactId} />}
             {activeTab === 'campaigns'     && <CampaignsTab />}

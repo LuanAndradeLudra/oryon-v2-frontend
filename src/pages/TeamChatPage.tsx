@@ -17,7 +17,11 @@ import { MessageInput } from '@/components/internal-chat/MessageInput'
 import { NewChatModal } from '@/components/internal-chat/NewChatModal'
 import { CreateChannelDrawer } from '@/components/internal-chat/CreateChannelDrawer'
 import { cn, avatarColor, chatRelTime } from '@/lib/utils'
+import { isAdminTier } from '@/lib/roleHelpers'
 import type { InternalChannel, InternalMessage } from '@/types'
+import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useNavigate } from 'react-router-dom'
 import { Emoji } from '@/lib/emojiText'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
 
@@ -693,6 +697,24 @@ function EmptyState({ onNewChat }: { onNewChat: () => void }) {
 const CURRENT_USER = { firstName: 'Admin', lastName: 'Oryon', avatarUrl: undefined }
 
 export function TeamChatPage() {
+  const isMobile = useIsMobile()
+  const navigate = useNavigate()
+
+  if (isMobile) {
+    return (
+      <MobileFeatureGate
+        open
+        onClose={() => navigate('/home')}
+        featureName="Nexus (Chat interno)"
+        description="Nexus tem lista de canais + thread de mensagens + painel de info da equipe. O modelo 3-painéis fica apertado em mobile. Abra no desktop para usar o chat interno com tudo à mão."
+      />
+    )
+  }
+
+  return <TeamChatPageDesktop />
+}
+
+function TeamChatPageDesktop() {
   const { channels, activeChannelId } = useInternalChat()
   const { user } = useAuth()
   const [replyTo, setReplyTo]     = useState<InternalMessage | null>(null)
@@ -710,7 +732,9 @@ export function TeamChatPage() {
     setReplyTo(null)
   }, [activeChannelId])
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'business_admin'
+  // Includes super_admin so Oryon staff embedded in a tenant can manage
+  // internal channels alongside the tenant's own admins.
+  const isAdmin = isAdminTier(user?.role)
 
   useRegisterTopBarActions(
     <div className="flex items-center gap-2">

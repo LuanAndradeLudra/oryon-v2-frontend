@@ -80,7 +80,6 @@ export function TagPickerContent({
           <div className="flex items-center gap-2 bg-surface-900 rounded-lg px-2.5 py-1.5 flex-1">
             <Search className="w-3.5 h-3.5 text-surface-500" />
             <input
-              autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar etiqueta..."

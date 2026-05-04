@@ -38,6 +38,8 @@ export interface AgentConfig {
   handoff_rules: HandoffRules
   channels: AgentChannels
   wizard_config: Record<string, unknown>
+  /** Phase 25 — per-agent CRM operation permissions for WhatsApp agents. */
+  crm_capabilities?: AgentCrmCapabilities
   // Metrics
   test_count: number
   last_tested_at: string | null
@@ -45,6 +47,39 @@ export interface AgentConfig {
   // Timestamps
   created_at: string
   updated_at: string
+}
+
+// ─── CRM capabilities (Phase 25) ──────────────────────────────────────────────
+// Mirror of the agent-server's AgentCrmCapabilities shape (kept in lockstep
+// with agent-server/src/config/crmCapabilities/index.ts). The catalog itself
+// is duplicated client-side because the UI needs labels/descriptions/
+// categories without an extra round-trip.
+
+export type CrmCapabilityId =
+  | 'manage_conversation_status'
+  | 'assign_conversation_to_user'
+  | 'manage_conversation_tags'
+  | 'tag_contact'
+  | 'manage_contact_pipeline'
+
+export type CrmCapabilityCategory = 'conversation' | 'contact' | 'tags' | 'pipeline'
+export type ConversationStatus = 'open' | 'pending' | 'resolved' | 'abandoned'
+
+export interface CrmCapabilityConstraints {
+  allowedUserIds?: string[]
+  allowedStatuses?: ConversationStatus[]
+  allowedTagIds?: string[]
+  allowedStageKeys?: string[]
+}
+
+export interface AgentCrmCapabilityConfig {
+  id: CrmCapabilityId
+  enabled: boolean
+  constraints?: CrmCapabilityConstraints
+}
+
+export interface AgentCrmCapabilities {
+  capabilities: AgentCrmCapabilityConfig[]
 }
 
 // ─── Handoff Rule (v2) ────────────────────────────────────────────────────────
@@ -120,7 +155,7 @@ async function getAgentToken(): Promise<string> {
   return res.data.token
 }
 
-async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   let res: Response
   const token = await getAgentToken()
   try {
@@ -151,8 +186,15 @@ async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
 
 // ─── Agent CRUD ───────────────────────────────────────────────────────────────
 
-export async function listAgents(): Promise<AgentConfig[]> {
-  return apiFetch<AgentConfig[]>('/configs')
+/**
+ * List agents in the caller's tenant. When `tenantId` is provided AND the
+ * caller is super_admin, the agent-server impersonates that tenant — used by
+ * the admin "Assign skill" screen. Non-staff callers always see only their
+ * own tenant regardless of the parameter.
+ */
+export async function listAgents(tenantId?: string): Promise<AgentConfig[]> {
+  const path = tenantId ? `/configs?tenantId=${encodeURIComponent(tenantId)}` : '/configs'
+  return apiFetch<AgentConfig[]>(path)
 }
 
 export async function getAgent(id: string): Promise<AgentConfigWithTools> {
@@ -708,6 +750,7 @@ export async function updateAgent(
   fields: Partial<Pick<AgentConfig,
     | 'name' | 'icon' | 'sector' | 'objective' | 'status'
     | 'system_prompt' | 'handoff_rules' | 'channels' | 'wizard_config'
+    | 'crm_capabilities'
   >>,
 ): Promise<AgentConfig> {
   const { userId, tenantId, actorName } = readSession()

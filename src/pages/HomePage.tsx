@@ -11,8 +11,11 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { generateInsights } from '@/services/copilotService'
 import { cn, getInitials } from '@/lib/utils'
+import { WorkspaceReadinessBanner } from '@/components/common/WorkspaceReadinessBanner'
 import type { AuditLog, BillingPlan, Conversation, HomeStats, User, WhatsAppNumberDetailed } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
@@ -34,7 +37,7 @@ function relativeTime(date: string) {
 function HeroBanner() {
   const navigate = useNavigate()
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-white/10 px-8 py-8">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-white/10 px-5 py-6 sm:px-8 sm:py-8">
       {/* Decorative blobs */}
       <div className="pointer-events-none absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5" />
       <div className="pointer-events-none absolute -bottom-12 right-1/4 w-48 h-48 rounded-full bg-white/5" />
@@ -96,10 +99,11 @@ function HeroBanner() {
 // ── Personal header ────────────────────────────────────────────────────────────
 
 const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
-  business_admin: { label: 'Admin',      cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
-  admin:          { label: 'Admin',      cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
-  supervisor:     { label: 'Supervisor', cls: 'bg-status-pending-bg text-status-pending border border-status-pending-border' },
-  agent:          { label: 'Agente',     cls: 'bg-surface-700 text-surface-300 border border-surface-600' },
+  super_admin:    { label: 'Equipe Oryon', cls: 'bg-brand-700/20 text-brand-300 border border-brand-600/40' },
+  business_admin: { label: 'Admin',        cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
+  admin:          { label: 'Admin',        cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
+  supervisor:     { label: 'Supervisor',   cls: 'bg-status-pending-bg text-status-pending border border-status-pending-border' },
+  agent:          { label: 'Agente',       cls: 'bg-surface-700 text-surface-300 border border-surface-600' },
 }
 
 function PersonalHeader({ user }: { user: User }) {
@@ -212,7 +216,7 @@ function getKPIs(stats: HomeStats, role: string): KPIData[] {
 
 function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {getKPIs(stats, role).map((kpi) => (
         <KPICard key={kpi.label} data={kpi} />
       ))}
@@ -222,7 +226,7 @@ function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
 
 function KPIGridSkeleton() {
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {[...Array(4)].map((_, i) => (
         <div key={i} className="bg-surface-900 border border-surface-800 rounded-2xl h-28 animate-pulse" />
       ))}
@@ -741,6 +745,7 @@ const CONTEXT_LABELS: Record<string, string> = {
 
 export function HomePage() {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const [stats, setStats] = useState<HomeStats | null>(null)
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [logsLoading, setLogsLoading] = useState(true)
@@ -766,10 +771,14 @@ export function HomePage() {
     : undefined
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="px-6 py-6 flex flex-col gap-6">
+    <div className="flex flex-col flex-1 min-h-0">
+      {isMobile && <MobilePageHeader title="Home" />}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="px-4 py-5 sm:px-6 sm:py-6 flex flex-col gap-5 sm:gap-6">
 
-          <HeroBanner />
+          {/* HeroBanner so em desktop — em mobile ocupa muito espaco para
+              pouca informacao acionavel. */}
+          {!isMobile && <HeroBanner />}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
@@ -777,35 +786,44 @@ export function HomePage() {
             <div className="lg:col-span-2 flex flex-col gap-5">
               {user && <PersonalHeader user={user} />}
 
+              {/* Phase 29 — workspace setup checklist. Auto-hides when nothing
+                  is unmet. Sits above the KPI grid because resolving a blocker
+                  is more important than reading metrics on a half-configured
+                  tenant. */}
+              <WorkspaceReadinessBanner mode="checklist" />
+
               {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
 
               {stats && <AIInsightsWidget stats={stats} />}
 
-              <div className="grid grid-cols-5 gap-4" style={{ minHeight: '300px' }}>
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:min-h-[300px]">
+                <div className="lg:col-span-2">
                   <QuickActions role={role} />
                 </div>
-                <div className="col-span-3">
+                <div className="lg:col-span-3">
                   <ActivityFeed logs={logs} loading={logsLoading} />
                 </div>
               </div>
             </div>
 
-            {/* ── RIGHT: org overview ── */}
-            <div className="flex flex-col gap-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-surface-600">
-                {CONTEXT_LABELS[role]}
-              </p>
-              {stats && (role === 'admin' || role === 'business_admin') && <AdminBlock stats={stats} />}
-              {role === 'supervisor' && <SupervisorBlock />}
-              {role === 'agent' && <AgentBlock />}
-            </div>
+            {/* ── RIGHT: org overview — desktop only ── */}
+            {!isMobile && (
+              <div className="flex flex-col gap-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-surface-600">
+                  {CONTEXT_LABELS[role]}
+                </p>
+                {stats && (role === 'admin' || role === 'business_admin') && <AdminBlock stats={stats} />}
+                {role === 'supervisor' && <SupervisorBlock />}
+                {role === 'agent' && <AgentBlock />}
+              </div>
+            )}
 
           </div>
 
           {/* Footer spacer */}
           <div className="h-4" />
         </div>
+      </div>
     </div>
   )
 }

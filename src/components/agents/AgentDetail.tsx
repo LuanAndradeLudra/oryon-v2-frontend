@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Bot, Plus, Wrench, MoreHorizontal, Power, PauseCircle,
-  FileText, Trash2, Save, X, Check, Edit3, Globe, MessageSquare,
-  Instagram, Zap, Clock, AlertCircle, Copy, Eye, EyeOff,
+  FileText, Trash2, Save, X, Check, Edit3,
+  Zap, Clock, AlertCircle, Copy, Eye, EyeOff,
   ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Shield,
-  Link2, Hash, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
+  Link2, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
   Pencil, CheckCircle2, Upload, MessageCircleQuestion, BarChart3,
-  Workflow, Info,
+  Workflow, Info, ShieldCheck,
 } from 'lucide-react'
+import { CapabilitiesTab } from './CapabilitiesTab'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -31,6 +32,9 @@ import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { AgentIcon } from '@/components/agents/AgentIcons'
 import { AgentTestModal } from '@/components/agents/AgentTestModal'
+import { SkillsTab } from '@/components/agents/SkillsTab'
+import { useAdvancedMode } from '@/hooks/useAdvancedMode'
+import { isFeatureVisible } from '@/config/featureFlags'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -124,13 +128,61 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
     }
   }
 
-  const channels = agent.channels ?? {}
-
   const infoRows = [
     { icon: <Clock className="w-3.5 h-3.5" />, label: 'Criado', value: new Date(agent.created_at).toLocaleString('pt-BR') },
     { icon: <RefreshCw className="w-3.5 h-3.5" />, label: 'Atualizado', value: new Date(agent.updated_at).toLocaleString('pt-BR') },
-    { icon: <Wrench className="w-3.5 h-3.5" />, label: 'Ferramentas', value: `${agent.tools.length} configurada(s)` },
-    { icon: <Hash className="w-3.5 h-3.5" />, label: 'ID', value: agent.id.slice(0, 8) + '…' },
+  ]
+
+  const enabledTools = agent.tools.filter(t => t.enabled).length
+  const totalTools = agent.tools.length
+  const rulesList = agent.handoff_rules?.rules ?? []
+  const enabledRules = rulesList.filter(r => r.enabled).length
+  const totalRules = rulesList.length
+
+  const formatRelative = (iso: string | null): string => {
+    if (!iso) return 'nunca'
+    const diffMs = Date.now() - new Date(iso).getTime()
+    const m = Math.floor(diffMs / 60_000)
+    if (m < 1) return 'agora'
+    if (m < 60) return `há ${m} min`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `há ${h} h`
+    const d = Math.floor(h / 24)
+    if (d < 7) return `há ${d} d`
+    return new Date(iso).toLocaleDateString('pt-BR')
+  }
+
+  const activityRows = [
+    {
+      icon: <MessageCircleQuestion className="w-4 h-4" />,
+      label: 'Conversas atendidas',
+      value: agent.conversation_count.toLocaleString('pt-BR'),
+      highlighted: agent.conversation_count > 0,
+    },
+    {
+      icon: <Sparkles className="w-4 h-4" />,
+      label: 'Testes realizados',
+      value: agent.test_count.toLocaleString('pt-BR'),
+      highlighted: agent.test_count > 0,
+    },
+    {
+      icon: <Clock className="w-4 h-4" />,
+      label: 'Último teste',
+      value: formatRelative(agent.last_tested_at),
+      highlighted: !!agent.last_tested_at,
+    },
+    {
+      icon: <Wrench className="w-4 h-4" />,
+      label: 'Ferramentas ativas',
+      value: totalTools === 0 ? 'nenhuma' : `${enabledTools} / ${totalTools}`,
+      highlighted: enabledTools > 0,
+    },
+    {
+      icon: <Workflow className="w-4 h-4" />,
+      label: 'Regras de handoff',
+      value: totalRules === 0 ? 'nenhuma' : `${enabledRules} / ${totalRules}`,
+      highlighted: enabledRules > 0,
+    },
   ]
 
   return (
@@ -164,39 +216,32 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
         </div>
       </div>
 
-      {/* Channels */}
+      {/* Activity */}
       <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-4">
-        <p className="text-xs font-medium text-surface-500 mb-3">Canais conectados</p>
+        <p className="text-xs font-medium text-surface-500 mb-3">Atividade</p>
         <div className="space-y-2">
-          {[
-            { key: 'whatsapp', icon: <MessageSquare className="w-4 h-4" />, label: 'WhatsApp', detail: (channels as {whatsapp?: {number?: string}}).whatsapp?.number },
-            { key: 'messenger', icon: <Globe className="w-4 h-4" />, label: 'Messenger', detail: (channels as {messenger?: {page_id?: string}}).messenger?.page_id },
-            { key: 'instagram', icon: <Instagram className="w-4 h-4" />, label: 'Instagram Direct', detail: (channels as {instagram?: {username?: string}}).instagram?.username },
-          ].map(ch => {
-            const connected = !!(channels as Record<string, unknown>)[ch.key]
-            return (
-              <div key={ch.key} className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors',
-                connected ? 'border-status-active-border bg-status-active-bg' : 'border-surface-800/60 bg-surface-950/40',
-              )}>
-                <span className={connected ? 'text-status-active' : 'text-surface-600'}>{ch.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className={cn('text-sm font-medium', connected ? 'text-surface-200' : 'text-surface-500')}>{ch.label}</p>
-                  {ch.detail && <p className="text-xs text-surface-500 truncate">{ch.detail}</p>}
-                </div>
-                <span className={cn(
-                  'text-xs px-2 py-0.5 rounded-full ring-1',
-                  connected ? 'text-status-active bg-status-active-bg ring-status-active-border' : 'text-surface-600 bg-surface-800/40 ring-surface-700/20',
-                )}>
-                  {connected ? 'Conectado' : 'Não configurado'}
-                </span>
+          {activityRows.map(row => (
+            <div key={row.label} className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors',
+              row.highlighted ? 'border-status-active-border/60 bg-status-active-bg/40' : 'border-surface-800/60 bg-surface-950/40',
+            )}>
+              <span className={row.highlighted ? 'text-status-active' : 'text-surface-600'}>{row.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className={cn('text-sm font-medium', row.highlighted ? 'text-surface-200' : 'text-surface-500')}>
+                  {row.label}
+                </p>
               </div>
-            )
-          })}
+              <span className={cn(
+                'text-xs px-2 py-0.5 rounded-full ring-1 font-medium',
+                row.highlighted
+                  ? 'text-status-active bg-status-active-bg ring-status-active-border'
+                  : 'text-surface-500 bg-surface-800/40 ring-surface-700/30',
+              )}>
+                {row.value}
+              </span>
+            </div>
+          ))}
         </div>
-        <p className="text-xs text-surface-600 mt-3">
-          Configure os canais nas Configurações → WhatsApp / Meta
-        </p>
       </div>
 
       {/* Info rows */}
@@ -1271,18 +1316,21 @@ function RulesTab({
   subTab: RulesSubTab
   onSubTabChange: (s: RulesSubTab) => void
 }) {
+  // Roteamento first — it's the more impactful rule type for most agents
+  // (where to send the conversation when AI shouldn't keep answering),
+  // so we surface it as the default sub-tab.
   const subTabs: Array<{ id: RulesSubTab; label: string; icon: React.ReactNode; hint: string }> = [
-    {
-      id: 'faqs',
-      label: 'Respostas rápidas',
-      icon: <MessageCircleQuestion className="w-3.5 h-3.5" />,
-      hint: 'Responde automaticamente a saudações e perguntas frequentes por palavra-chave, sem consumir créditos de IA. O agente continua disponível para o resto da conversa.',
-    },
     {
       id: 'handoff',
       label: 'Roteamento',
       icon: <Shield className="w-3.5 h-3.5" />,
       hint: 'Transfere a conversa para um atendente humano, redireciona para outro canal ou envia uma resposta final quando o agente NÃO deve continuar atendendo.',
+    },
+    {
+      id: 'faqs',
+      label: 'Respostas rápidas',
+      icon: <MessageCircleQuestion className="w-3.5 h-3.5" />,
+      hint: 'Responde automaticamente a saudações e perguntas frequentes por palavra-chave, sem consumir créditos de IA. O agente continua disponível para o resto da conversa.',
     },
   ]
 
@@ -1856,7 +1904,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
 // ─── Agent Detail ─────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'prompt' | 'tools' | 'rules' | 'knowledge' | 'metrics'
+type Tab = 'overview' | 'prompt' | 'tools' | 'skills' | 'capabilities' | 'rules' | 'knowledge' | 'metrics'
 
 export function AgentDetail({
   agent: initialAgent,
@@ -1871,9 +1919,15 @@ export function AgentDetail({
 }) {
   const [agent, setAgent] = useState<AgentConfigWithTools>(initialAgent)
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+  // Skills tab is the customer-facing surface for n8n-routed capabilities;
+  // it replaces the legacy "Ferramentas" tab in the default view. The
+  // legacy tab stays available behind Advanced Mode for power users that
+  // already configured raw HTTP tools.
+  const skillsVisible = isFeatureVisible('agentSkills')
+  const [advancedMode] = useAdvancedMode()
   // Sub-tab state for the unified "Regras" tab — lifted here because the
   // outer scroll/flex layout depends on which sub-panel is active.
-  const [rulesSubTab, setRulesSubTab] = useState<RulesSubTab>('faqs')
+  const [rulesSubTab, setRulesSubTab] = useState<RulesSubTab>('handoff')
   const [deletingAgent, setDeletingAgent] = useState(false)
   const [showTest, setShowTest] = useState(false)
   const [togglingStatus, setTogglingStatus] = useState(false)
@@ -1902,11 +1956,26 @@ export function AgentDetail({
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Visão geral', icon: <Bot className="w-3.5 h-3.5" /> },
     { id: 'prompt',   label: 'System Prompt', icon: <FileText className="w-3.5 h-3.5" /> },
-    { id: 'tools',    label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" /> },
+    { id: 'capabilities', label: 'Capacidades', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    ...(skillsVisible
+      ? [{ id: 'skills' as Tab, label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" /> }]
+      : []),
+    // Legacy raw-HTTP tools — only visible to users that flipped Advanced Mode.
+    ...(advancedMode
+      ? [{ id: 'tools' as Tab, label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" /> }]
+      : []),
     { id: 'rules',    label: 'Regras', icon: <Workflow className="w-3.5 h-3.5" /> },
     { id: 'knowledge', label: 'Conhecimento', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'metrics',  label: 'Métricas', icon: <BarChart3 className="w-3.5 h-3.5" /> },
   ]
+
+  // If the user lands on `tools` while Advanced Mode is off, bounce them to
+  // the new Skills tab so the panel stays in a consistent state.
+  useEffect(() => {
+    if (activeTab === 'tools' && !advancedMode) {
+      setActiveTab(skillsVisible ? 'skills' : 'overview')
+    }
+  }, [activeTab, advancedMode, skillsVisible])
 
   return (
     <div className="flex flex-col h-full">
@@ -2036,6 +2105,8 @@ export function AgentDetail({
               >
                 {activeTab === 'overview' && <OverviewTab  agent={agent} onUpdate={handleAgentUpdate} />}
                 {activeTab === 'prompt'   && <SystemPromptTab agent={agent} onUpdate={handleAgentUpdate} />}
+                {activeTab === 'capabilities' && <CapabilitiesTab agent={agent} onUpdate={handleAgentUpdate} />}
+                {activeTab === 'skills'   && <SkillsTab agentId={agent.id} />}
                 {activeTab === 'tools'    && <ToolsTab agent={agent} onToolsChange={handleToolsChange} />}
                 {activeTab === 'rules'    && (
                   <RulesTab

@@ -18,7 +18,9 @@ import { PeakHoursHeatmap } from '@/components/dashboard/PeakHoursHeatmap'
 import { AgentTable }       from '@/components/dashboard/AgentTable'
 import { ActivityFeed }     from '@/components/dashboard/ActivityFeed'
 import { AiInsightsSection } from '@/components/dashboard/AiInsightsSection'
-import { MarketingFunnelSection } from '@/components/dashboard/MarketingFunnelSection'
+// import { MarketingFunnelSection } from '@/components/dashboard/MarketingFunnelSection'
+// Removido temporariamente — endpoint /api/analytics/marketing-funnel ainda nao
+// existe no backend; trazer de volta quando o endpoint for implementado.
 
 import {
   buildEmptySnapshot,
@@ -31,10 +33,13 @@ import type { HomeStats } from '@/types'
 import type { User } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 export function DashboardPage() {
+  const isMobile = useIsMobile()
   const { user: authUser } = useAuth()
   const { checklist, markDone } = useSetupChecklist(authUser?.id)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -146,7 +151,7 @@ export function DashboardPage() {
   useEffect(() => { fetchDashboard() }, [dateRange]) // eslint-disable-line react-hooks/exhaustive-deps
   const refresh = () => { fetchDashboard() }
 
-  useRegisterTopBarActions(
+  const dateAndRefreshActions = (
     <div className="flex items-center gap-2">
       <span className="text-[11px] text-surface-500 hidden sm:block">
         Atualizado às {format(lastUpdated, 'HH:mm', { locale: ptBR })}
@@ -159,16 +164,33 @@ export function DashboardPage() {
       >
         <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
       </button>
-    </div>,
-    [dateRange, loading, lastUpdated],
+    </div>
+  )
+
+  // Em desktop registra no TopBar; em mobile renderiza inline acima do conteudo.
+  useRegisterTopBarActions(
+    isMobile ? null : dateAndRefreshActions,
+    [dateRange, loading, lastUpdated, isMobile],
   )
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
+        {isMobile && <MobilePageHeader title="Dashboard" />}
+
+        {/* Strip realtime — em mobile vira scroll horizontal para caber */}
+        <div className={isMobile ? 'overflow-x-auto' : ''}>
+          <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
+        </div>
+
+        {/* Mobile-only toolbar de filtros (date range + refresh) */}
+        {isMobile && (
+          <div className="flex items-center justify-between px-3 py-2 border-b border-surface-800/60 bg-surface-950/40">
+            {dateAndRefreshActions}
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto">
-          <div className="px-6 py-6 max-w-[1440px] mx-auto space-y-5">
+          <div className="px-3 py-4 sm:px-6 sm:py-6 max-w-[1440px] mx-auto space-y-4 sm:space-y-5">
 
             {/* Setup card */}
             <AnimatePresence>
@@ -240,7 +262,7 @@ export function DashboardPage() {
                   <ActivityFeed events={snapshot.activityFeed} />
                 </div>
 
-                <MarketingFunnelSection dateRange={dateRange} />
+                {/* <MarketingFunnelSection dateRange={dateRange} /> — endpoint backend nao existe ainda */}
 
                 <div className="h-2" />
               </>

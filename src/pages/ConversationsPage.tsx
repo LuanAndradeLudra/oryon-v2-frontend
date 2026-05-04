@@ -1,23 +1,30 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { SlidersHorizontal } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { SlidersHorizontal, MessageSquarePlus } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { ConversationList } from '@/components/conversations/ConversationList/ConversationList'
 import { ChatWindow } from '@/components/conversations/ChatWindow/ChatWindow'
 import { ContactPanel } from '@/components/conversations/ContactPanel/ContactPanel'
 import { ToastContainer } from '@/components/ui/Toast'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
+import { Fab } from '@/components/common/Fab'
 import { useConversations } from '@/hooks/useConversations'
 import { useSocket } from '@/hooks/useSocket'
 import { joinConversation, leaveConversation } from '@/services/socket'
 import { useToast } from '@/hooks/useToast'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useContacts } from '@/hooks/useContacts'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { cn } from '@/lib/utils'
 import type {
   Conversation, ConversationFilters,
-  SocketMessageNew, SocketUnreadUpdate,
+  SocketAiPauseUpdated, SocketMessageNew, SocketUnreadUpdate,
   Tag, User,
 } from '@/types'
 
@@ -25,6 +32,7 @@ const CURRENT_USER = { firstName: 'Admin', lastName: 'Oryon', avatarUrl: undefin
 
 export function ConversationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
   const [infoOpen, setInfoOpen]     = useState(false)
   const [filters, setFilters]       = useState<ConversationFilters>({ status: 'all' })
@@ -34,12 +42,13 @@ export function ConversationsPage() {
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
   const { contacts: allContacts } = useContacts()
   const { toasts, toast, dismiss } = useToast()
+  const isMobile = useIsMobile()
 
   const {
     conversations, loading,
-    handleNewMessage, markAsRead,
+    handleNewMessage, handleAiPauseUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
-    addTag, removeTag, archiveConversation,
+    addTag, removeTag, archiveConversation, setAiPause,
   } = useConversations(filters)
 
   const assignedTo = filters.assignedTo ?? 'all'
@@ -123,6 +132,16 @@ export function ConversationsPage() {
         setTotalUnread((p) => p + 1)
       }
     }, [handleNewMessage, activeConversation?.id]),
+
+    // Phase 27 — AI handoff pause/resume from another tab or operator. Keeps
+    // the in-memory list in sync so opening that conversation later shows the
+    // correct banner state without a fetch.
+    onConversationAiPauseUpdated: useCallback((payload: SocketAiPauseUpdated) => {
+      handleAiPauseUpdated(payload)
+      if (activeConversation?.id === payload.conversationId) {
+        syncActive(payload.conversationId, { aiPausedUntil: payload.aiPausedUntil })
+      }
+    }, [handleAiPauseUpdated, activeConversation?.id]),
   })
 
   // ── Helpers to sync activeConversation with list state ────────────────────
@@ -146,7 +165,10 @@ export function ConversationsPage() {
 
   const handleSelectConversation = (conv: Conversation) => {
     setActiveConversation(conv)
-    setInfoOpen(true)
+    // Em desktop o ContactPanel e' uma coluna lateral persistente — abrir
+    // junto com a conversa e' o comportamento esperado. Em mobile o painel
+    // sobrepoe o chat; deve aparecer so quando o usuario aciona via menu.
+    if (!isMobile) setInfoOpen(true)
     markAsRead(conv.id)
     if (conv.unreadCount > 0) setTotalUnread((p) => Math.max(0, p - conv.unreadCount))
     setSearchParams({ id: conv.id }, { replace: true })
@@ -161,11 +183,12 @@ export function ConversationsPage() {
       const match = conversations.find((c) => c.id === urlId)
       if (match) {
         setActiveConversation(match)
-        setInfoOpen(true)
+        // Mesma logica do handleSelectConversation: so abre o painel em desktop
+        if (!isMobile) setInfoOpen(true)
         restoredRef.current = true
       }
     }
-  }, [conversations, searchParams])
+  }, [conversations, searchParams, isMobile])
 
   const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved') => {
     await updateStatus(id, status)
@@ -218,42 +241,172 @@ export function ConversationsPage() {
     toast('Conversa arquivada', 'warning')
   }
 
+  // Phase 27 — manual pause/resume of the WhatsApp AI for one conversation.
+  // The hook patches the list optimistically; we mirror onto the active
+  // conversation so the banner re-renders without waiting on the WS round-trip.
+  const handleSetAiPause = async (convId: string, pauseUntil: string | null) => {
+    try {
+      await setAiPause(convId, pauseUntil)
+      syncActive(convId, { aiPausedUntil: pauseUntil })
+      toast(pauseUntil ? 'IA pausada para esta conversa' : 'IA reativada', 'info')
+    } catch {
+      toast('Não foi possível atualizar a IA — tente de novo', 'error')
+    }
+  }
+
+  // Phase 29 — page-level handler for send-message failures bubbling up
+  // from MessageInput. Reads the human-readable `message` that the backend's
+  // TenantExceptionFilter writes into the response body and toasts it.
+  // Without this the operator typed → text disappeared → no feedback.
+  const { user } = useAuth()
+  const handleSendError = useCallback((err: unknown) => {
+    const ax = err as { response?: { data?: { message?: string | string[] } } }
+    const raw = ax?.response?.data?.message
+    const msg = Array.isArray(raw) ? raw[0] : raw
+    toast(msg || 'Não foi possível enviar a mensagem. Tente de novo.', 'error')
+  }, [toast])
+
+  // Phase 29 — pre-detect "no department" before the operator types. Admin
+  // tier bypasses (the backend allows admin users without a department).
+  const sendBlockedReason = (() => {
+    if (!user) return null
+    if (isAdminTier(user.role)) return null
+    if (user.departmentId) return null
+    return {
+      message: 'Você precisa estar vinculado a um setor para enviar mensagens. Peça a um administrador para te adicionar a um setor.',
+      ctaHref: '/settings/departments',
+      ctaLabel: 'Ver setores',
+    }
+  })()
+
+  // Mobile back: clear active conversation, close info panel, drop ?id from URL.
+  const handleMobileBack = useCallback(() => {
+    setActiveConversation(null)
+    setInfoOpen(false)
+    setSearchParams({}, { replace: true })
+  }, [setSearchParams])
+
+  // In mobile, list and chat are alternative full-screen views — never both at
+  // once. Desktop keeps the original side-by-side layout.
+  const showList = !isMobile || !activeConversation
+  const showChat = !isMobile || !!activeConversation
+
   return (
     <>
       {/* 1 — Conversation list */}
-      <ConversationList
-        conversations={conversations}
-        loading={loading}
-        activeId={activeConversation?.id ?? null}
-        filters={filters}
-        allTags={allTags}
-        allContacts={allContacts}
-        onSelectConversation={handleSelectConversation}
-        onFiltersChange={setFilters}
-      />
+      {showList && (
+        isMobile ? (
+          <div className="flex flex-col flex-1 min-h-0 w-full">
+            <MobilePageHeader title="Conversas" />
+            <div className="flex-1 min-h-0 flex">
+              <ConversationList
+                conversations={conversations}
+                loading={loading}
+                activeId={activeConversation?.id ?? null}
+                filters={filters}
+                allTags={allTags}
+                allContacts={allContacts}
+                onSelectConversation={handleSelectConversation}
+                onFiltersChange={setFilters}
+              />
+            </div>
+          </div>
+        ) : (
+          <ConversationList
+            conversations={conversations}
+            loading={loading}
+            activeId={activeConversation?.id ?? null}
+            filters={filters}
+            allTags={allTags}
+            allContacts={allContacts}
+            onSelectConversation={handleSelectConversation}
+            onFiltersChange={setFilters}
+          />
+        )
+      )}
 
       {/* 3 — Chat window */}
-      <ChatWindow
-        conversation={activeConversation}
-        allTags={allTags}
-        allUsers={allUsers}
-        onStatusChange={handleStatusChange}
-        onToggleInfo={() => setInfoOpen((v) => !v)}
-        infoOpen={infoOpen}
-        onAddTag={handleAddTag}
-        onRemoveTag={handleRemoveTag}
-        onCreateTag={createTag}
-        onDeleteTag={deleteTag}
-        onAssign={handleAssign}
-        onTransfer={handleTransfer}
-        onArchive={handleArchive}
-      />
+      {showChat && (
+        <ChatWindow
+          conversation={activeConversation}
+          allTags={allTags}
+          allUsers={allUsers}
+          onStatusChange={handleStatusChange}
+          onToggleInfo={() => setInfoOpen((v) => !v)}
+          infoOpen={infoOpen}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+          onCreateTag={createTag}
+          onDeleteTag={deleteTag}
+          onAssign={handleAssign}
+          onTransfer={handleTransfer}
+          onArchive={handleArchive}
+          onSetAiPause={handleSetAiPause}
+          onAiPauseSocketEvent={(p) => {
+            handleAiPauseUpdated(p)
+            // Mirror onto the currently-open conversation in case another
+            // tab triggered the change.
+            if (activeConversation?.id === p.conversationId) {
+              syncActive(p.conversationId, { aiPausedUntil: p.aiPausedUntil })
+            }
+          }}
+          onSendError={handleSendError}
+          sendBlockedReason={sendBlockedReason}
+          onBack={isMobile ? handleMobileBack : undefined}
+        />
+      )}
 
-      {/* 4 — Contact info panel */}
-      {infoOpen && activeConversation && (
-        <div className="fixed inset-0 z-40 md:static md:inset-auto md:z-auto md:flex md:h-full">
-          <div className="absolute inset-0 bg-black/50 md:hidden" onClick={() => setInfoOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-80 md:static md:w-auto md:h-full">
+      {/* 4 — Contact info panel
+          Mobile: drawer renderizado via createPortal(document.body) para
+          escapar de ancestrais com transform (que tornariam 'fixed' relativo
+          ao ancestral, jogando o painel pra esquerda). Mesmo padrao do
+          CRMConfigDrawer. Desktop: coluna lateral estatica.
+
+          IMPORTANTE: w-full em mobile (cobre toda a tela) — sem 88vw nem
+          calc(), que estavam sendo afetados por algum container intermediario
+          deixando o painel mais estreito que esperado. */}
+      {isMobile
+        ? createPortal(
+            <AnimatePresence>
+              {infoOpen && activeConversation && (
+                <>
+                  <motion.div
+                    key="info-bd"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                    onClick={() => setInfoOpen(false)}
+                    className="fixed inset-0 bg-black/60 z-[60]"
+                  />
+                  <motion.aside
+                    key="info-pn"
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
+                    className="fixed top-0 right-0 bottom-0 w-full sm:w-[440px] z-[61] bg-surface-900 border-l border-surface-800 shadow-2xl flex flex-col overflow-hidden"
+                  >
+                    <ContactPanel
+                      conversation={activeConversation}
+                      allTags={allTags}
+                      allUsers={allUsers}
+                      onClose={() => setInfoOpen(false)}
+                      onAddTag={(tag) => handleAddTag(activeConversation.id, tag)}
+                      onRemoveTag={(tagId) => handleRemoveTag(activeConversation.id, tagId)}
+                      onCreateTag={createTag}
+                      onDeleteTag={deleteTag}
+                      onAssign={(user) => handleAssign(activeConversation.id, user)}
+                      onTransfer={(user) => handleTransfer(activeConversation.id, user)}
+                      onArchive={() => handleArchive(activeConversation.id)}
+                    />
+                  </motion.aside>
+                </>
+              )}
+            </AnimatePresence>,
+            document.body,
+          )
+        : infoOpen && activeConversation && (
             <ContactPanel
               conversation={activeConversation}
               allTags={allTags}
@@ -267,11 +420,20 @@ export function ConversationsPage() {
               onTransfer={(user) => handleTransfer(activeConversation.id, user)}
               onArchive={() => handleArchive(activeConversation.id)}
             />
-          </div>
-        </div>
-      )}
+          )}
 
       {/* Toast notifications */}
+      {/* Mobile FAB: nova conversa — abre /contacts para escolher um destinatario.
+          So mostra quando lista esta visivel; durante chat ativo, FAB seria
+          ruido. Picker dedicado em bottom sheet fica para PR seguinte. */}
+      {showList && !activeConversation && (
+        <Fab
+          icon={<MessageSquarePlus className="w-6 h-6" />}
+          label="Nova conversa"
+          onClick={() => navigate('/contacts')}
+        />
+      )}
+
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   )

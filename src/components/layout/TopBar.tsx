@@ -20,6 +20,8 @@ import {
   type NotificationSourceKind,
 } from '@/hooks/useNotifications'
 import { cn } from '@/lib/utils'
+import { isAdminTier } from '@/lib/roleHelpers'
+import { isFeatureVisible, isRouteVisible } from '@/config/featureFlags'
 import {
   categoryOf,
   CATEGORY_STYLE,
@@ -62,7 +64,10 @@ type SearchItem = {
   keywords?: string[]
 }
 
-const SEARCH_INDEX: SearchItem[] = [
+// `as SearchItem[]` is here because TS narrows the literal `type: 'page'` away
+// when the array contains 80+ heterogeneous entries — cheap to keep the
+// runtime shape correct since SearchItemType is a closed union of 3 values.
+const SEARCH_INDEX = ([
   // ── Páginas principais
   { type: 'page', label: 'Home', description: 'Visão geral e atalhos rápidos', href: '/home', Icon: Home, keywords: ['início', 'painel', 'overview'] },
   { type: 'page', label: 'Conversas', description: 'Atendimento via WhatsApp', href: '/conversations', Icon: MessageSquare, keywords: ['whatsapp', 'chat', 'atendimento', 'mensagens'] },
@@ -123,7 +128,7 @@ const SEARCH_INDEX: SearchItem[] = [
   { type: 'settings', label: 'Notificações', description: 'Preferências de alertas', href: '/settings/notifications', Icon: BellRing, keywords: ['alertas', 'avisos', 'push', 'email'] },
   { type: 'settings', label: 'Integrações', description: 'Webhooks e APIs externas', href: '/settings/integrations', Icon: Plug, keywords: ['webhook', 'api', 'zapier', 'n8n', 'integracao', 'conectar', 'externo'] },
   { type: 'settings', label: 'Empresa', description: 'Dados, setores e configurações da organização', href: '/settings/company', Icon: Building2, keywords: ['empresa', 'organizacao', 'cnpj', 'logo', 'setores', 'departamentos', 'nome'] },
-]
+] as SearchItem[]).filter((item) => isRouteVisible(item.href))
 
 // ── Notification types ─────────────────────────────────────────────────────────
 //
@@ -437,12 +442,9 @@ function NotificationItem({
             {initialsOf(subject.name)}
           </div>
           <div
-            className={cn(
-              'absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-surface-900',
-              style.iconBg,
-            )}
+            className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-surface-900 bg-white"
           >
-            <Icon className={cn('w-2.5 h-2.5', style.iconText)} />
+            <Icon className="w-2.5 h-2.5 text-surface-950" />
           </div>
         </div>
       ) : (
@@ -1302,7 +1304,7 @@ function FilterTab({ active, onClick, count, children }: {
     >
       {children}
       {count !== undefined && count > 0 && (
-        <span className="rounded-full bg-brand-cta text-white text-[9px] font-semibold px-1.5 min-w-4 text-center">
+        <span className="rounded-full bg-brand-cta text-surface-950 text-[9px] font-semibold px-1.5 min-w-4 text-center">
           {count > 99 ? '99+' : count}
         </span>
       )}
@@ -1478,7 +1480,7 @@ export function TopBar() {
         {/* Copilot drawer shortcut — mirrors the admin + route gate used by
              the CopilotPanel itself, so the button only shows where the drawer
              can actually render. */}
-        {(user?.role === 'admin' || user?.role === 'business_admin') && !location.pathname.startsWith('/copilot') && (
+        {isFeatureVisible('copilot') && isAdminTier(user?.role) && !location.pathname.startsWith('/copilot') && (
           <button
             onClick={() => openCopilot()}
             title="Abrir Copilot"
@@ -1497,7 +1499,7 @@ export function TopBar() {
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-cta text-[9px] font-bold text-white flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-cta text-[9px] font-bold text-surface-950 flex items-center justify-center">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}

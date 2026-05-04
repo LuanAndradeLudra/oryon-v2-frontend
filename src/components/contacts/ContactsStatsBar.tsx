@@ -104,7 +104,7 @@ function TotalCard({ contacts, total }: { contacts: Contact[]; total: number }) 
   }
 
   return (
-    <div className="bg-surface-900 rounded-xl px-4 py-2.5 border border-surface-700/50 flex flex-col gap-2">
+    <div className="bg-surface-900 rounded-xl px-4 py-2.5 border border-surface-700/50 flex flex-col gap-2 w-full h-full">
       <div className="flex items-center gap-2">
         <div className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 border border-surface-700">
           <Users className="w-3 h-3 text-brand-400" />
@@ -152,7 +152,7 @@ function StageCard({ contacts }: { contacts: Contact[] }) {
   const maxCount = sorted[0]?.[1] ?? 1
 
   return (
-    <div className="bg-surface-900 rounded-xl px-4 py-2.5 border border-surface-700/50 flex flex-col gap-2">
+    <div className="bg-surface-900 rounded-xl px-4 py-2.5 border border-surface-700/50 flex flex-col gap-2 w-full h-full">
       <div className="flex items-center gap-2">
         <div className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 border border-surface-700">
           <TrendingUp className="w-3 h-3 text-brand-400" />
@@ -245,12 +245,18 @@ export function ContactsStatsBar({ contacts, total }: ContactsStatsBarProps) {
   }, [contacts.length > 0])
 
   return (
-    <div className="grid grid-cols-4 gap-2.5 px-4 py-2.5 border-b border-surface-800">
-      <TotalCard contacts={contacts} total={total} />
-      <StageCard contacts={contacts} />
+    // Em mobile so o card de Insights IA aparece (Total e Estagio sao
+    // redundantes com o kanban/lista). Em desktop, 3 cards lado-a-lado.
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 px-4 py-2.5 border-b border-surface-800 items-stretch">
+      <div className="hidden md:flex h-full">
+        <TotalCard contacts={contacts} total={total} />
+      </div>
+      <div className="hidden md:flex h-full">
+        <StageCard contacts={contacts} />
+      </div>
 
-      {/* AI insights — col-span-2 */}
-      <div className="col-span-2 bg-surface-900 rounded-xl border border-surface-700/60 px-4 py-2.5 flex flex-col gap-2 relative overflow-hidden">
+      {/* AI insights — col-span-2 em desktop, ocupa toda largura em mobile */}
+      <div className="md:col-span-2 bg-surface-900 rounded-xl border border-surface-700/60 px-4 py-2.5 flex flex-col gap-2 relative overflow-hidden">
         {/* amber accent top stripe */}
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-brand-600/60 to-transparent rounded-t-xl" />
         {/* Header */}

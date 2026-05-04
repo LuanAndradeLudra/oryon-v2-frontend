@@ -7,6 +7,7 @@ import { StageBadge } from './StageBadge'
 import { SendTemplateDrawer } from './SendTemplateDrawer'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { contactsApi } from '@/services/api'
 import type { Contact } from '@/types'
 
@@ -24,7 +25,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete }: ContactDetai
   const [lastConvId, setLastConvId] = useState<string | null>(null)
   const [templateDrawerOpen, setTemplateDrawerOpen] = useState(false)
   const handleCopyWa = () => navigator.clipboard.writeText(contact.waId)
-  const canDelete = user?.role === 'admin' || user?.role === 'business_admin'
+  const canDelete = isAdminTier(user?.role)
 
   useEffect(() => {
     contactsApi.getConversations(contact.id).then((r) => {

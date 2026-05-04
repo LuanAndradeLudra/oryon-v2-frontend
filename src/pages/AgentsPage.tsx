@@ -16,6 +16,10 @@ import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { AgentBuilderWizard } from '@/components/agents/AgentBuilderWizard'
 import { AgentIcon } from '@/components/agents/AgentIcons'
 import { AgentDetail } from '@/components/agents/AgentDetail'
+import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
+import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
+import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -164,6 +168,8 @@ export function AgentsPage() {
   const [loadingList, setLoadingList] = useState(true)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
+  const banner = useDesktopRecommendedBanner('agents')
+  const isMobile = useIsMobile()
   const [statusFilter, setStatusFilter] = useState<'all' | AgentConfig['status']>('all')
   const [testedAgentIds, setTestedAgentIds] = useState<Set<string>>(new Set())
 
@@ -229,6 +235,11 @@ export function AgentsPage() {
 
   return (
     <>
+      <DesktopRecommendedBanner
+        visible={banner.visible}
+        onDismiss={banner.dismiss}
+        message="Configurar e testar agentes IA tem wizard com varios passos, prompts longos e ferramentas. No celular fica apertado — use o desktop para uma experiencia tranquila."
+      />
       <div className="flex flex-1 overflow-hidden">
         {/* ── Left: Agent list — hidden when no agents ── */}
         {hasAgents && (
@@ -313,16 +324,25 @@ export function AgentsPage() {
         </div>
       </div>
 
-      {/* Agent Builder Wizard */}
-      <AnimatePresence>
-        {showWizard && (
-          <AgentBuilderWizard
-            open={showWizard}
-            onClose={() => setShowWizard(false)}
-            onCreated={handleWizardComplete}
-          />
-        )}
-      </AnimatePresence>
+      {/* Agent Builder Wizard — desktop only; mobile mostra gate */}
+      {isMobile ? (
+        <MobileFeatureGate
+          open={showWizard}
+          onClose={() => setShowWizard(false)}
+          featureName="Criar agente IA"
+          description="O wizard de criação de agentes tem prompts longos, configuração de ferramentas e prévia em tempo real. No celular fica apertado — abra no desktop para configurar com tranquilidade."
+        />
+      ) : (
+        <AnimatePresence>
+          {showWizard && (
+            <AgentBuilderWizard
+              key="agent-builder-wizard"
+              onClose={() => setShowWizard(false)}
+              onCreated={handleWizardComplete}
+            />
+          )}
+        </AnimatePresence>
+      )}
     </>
   )
 }

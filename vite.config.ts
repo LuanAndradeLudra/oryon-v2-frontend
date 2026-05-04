@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import path from 'path'
 import fs from 'fs'
 import https from 'https'
@@ -153,8 +154,36 @@ function designSearchPlugin(): Plugin {
   }
 }
 
+// Sentry source-map upload — only runs when SENTRY_AUTH_TOKEN is present in
+// the build environment (CI). Devs without the token still get a clean build;
+// the plugin is omitted entirely, so nothing fails. Org / project default to
+// the Oryon values but can be overridden per-environment.
+const sentryAuthToken = env.SENTRY_AUTH_TOKEN ?? ''
+const sentryOrg = env.SENTRY_ORG ?? 'oryon'
+const sentryProject = env.SENTRY_PROJECT ?? 'frontend'
+const sentryRelease = env.SENTRY_RELEASE ?? env.VITE_SENTRY_RELEASE ?? undefined
+const sentryPlugins = sentryAuthToken
+  ? [sentryVitePlugin({
+      org: sentryOrg,
+      project: sentryProject,
+      authToken: sentryAuthToken,
+      release: sentryRelease ? { name: sentryRelease } : undefined,
+      sourcemaps: { assets: './dist/**' },
+      // Don't fail the build if Sentry is unreachable — sourcemap upload is
+      // observability infra, not a release blocker.
+      errorHandler: (err) => { console.warn('[sentry-vite-plugin]', err.message) },
+    })]
+  : []
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), appleEmojiPlugin(), canvaTokenPlugin(), designSearchPlugin()],
+  plugins: [react(), tailwindcss(), appleEmojiPlugin(), canvaTokenPlugin(), designSearchPlugin(), ...sentryPlugins],
+  build: {
+    // Sourcemaps are required for Sentry to symbolicate stack traces.
+    // 'hidden' means the bundle doesn't ship a //# sourceMappingURL comment
+    // to browsers — devs without Sentry don't accidentally serve sourcemaps
+    // from the public dist.
+    sourcemap: sentryAuthToken ? 'hidden' : false,
+  },
   server: {
     port: 3005,
     host: '0.0.0.0',  // bind to both IPv4 (127.0.0.1) and IPv6 (::1)

@@ -491,7 +491,7 @@ function GeneratingView() {
       <div className="relative mb-8">
         <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.15, 0.4] }} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} className="absolute inset-0 rounded-full bg-brand-500 blur-2xl" />
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} className="relative w-16 h-16 rounded-full bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center shadow-xl">
-          <Sparkles className="w-7 h-7 text-white" />
+          <Sparkles className="w-7 h-7 text-surface-950" />
         </motion.div>
       </div>
       <h2 className="text-lg font-bold text-surface-50 mb-1">Configurando seu CRM...</h2>
@@ -556,7 +556,7 @@ function PreviewView({ config, onApply, onRetry, applying, error }: { config: AI
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /><span>{error}</span>
         </div>
       )}
-      <button onClick={onApply} disabled={applying} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white disabled:opacity-60 transition-all shadow-lg shadow-brand-900/40">
+      <button onClick={onApply} disabled={applying} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-surface-950 disabled:opacity-60 transition-all shadow-lg shadow-brand-900/40">
         {applying ? <><Loader2 className="w-4 h-4 animate-spin" /> Aplicando configuração...</> : <><ArrowRight className="w-4 h-4" /> Aplicar e começar</>}
       </button>
       {!applying && (
@@ -907,7 +907,7 @@ export function CRMOnboarding({ onDone }: { onDone: () => void }) {
             <button
               onClick={handleNext}
               disabled={!canAdvance}
-              className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-900/40"
+              className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-surface-950 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-900/40"
             >
               {isLastFormStep
                 ? <><Sparkles className="w-4 h-4" /> Gerar meu CRM</>

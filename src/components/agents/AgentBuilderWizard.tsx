@@ -25,12 +25,15 @@ function readSession() {
     }
   } catch { return { userId: null, tenantId: null, actorName: null } }
 }
-import type { AgentConfigWithTools, HandoffRule, HandoffBusinessContext } from '@/services/agentsApi'
+import type { AgentConfigWithTools, HandoffRule, HandoffBusinessContext, AgentCrmCapabilities, AgentCrmCapabilityConfig, CrmCapabilityId } from '@/services/agentsApi'
+import { CRM_CAPABILITIES_CATALOG } from './crmCapabilitiesCatalog'
+import { Switch } from '@/components/ui/Switch'
 import { HandoffRulesPanel } from '@/components/agents/HandoffRuleBuilder'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { AGENT_ICONS, AgentIcon } from '@/components/agents/AgentIcons'
+import { STEP_TEACHINGS } from './agentBuilderTeachings'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,6 +60,14 @@ interface WizardData {
   channels_whatsapp: boolean
   channels_messenger: boolean
   channels_instagram: boolean
+  /**
+   * Phase 25 — opt-in CRM operations. Configured in the Revisão step as a
+   * simple toggle list (no constraint pickers — those live in the post-
+   * creation "Capacidades" tab where the user has more context about
+   * existing tags / stages / atendentes). When a capability is toggled on
+   * here, its catalog `defaultConstraints` are applied automatically.
+   */
+  crm_capabilities: AgentCrmCapabilities
   generated_prompt: string
 }
 
@@ -70,6 +81,7 @@ const DEFAULT_DATA: WizardData = {
   handoff_rules: [],
   knowledge_docs: [],
   channels_whatsapp: true, channels_messenger: false, channels_instagram: false,
+  crm_capabilities: { capabilities: [] },
   generated_prompt: '',
 }
 
@@ -1336,19 +1348,17 @@ function PromptReviewModal({
   }, [open, initialPrompt])
 
   return (
-    <Modal open={open} onClose={onClose} title="Revisar System Prompt" className="max-w-3xl">
-      <div className="space-y-4">
-        <p className="text-xs text-surface-500">
-          Revise o prompt gerado e edite se necessário. Após confirmar, você volta ao builder
-          e segue para a revisão final do agente.
-        </p>
-        <PromptArtifact
-          content={draft}
-          onChange={setDraft}
-          onRegenerate={onRegenerate}
-          regenerating={regenerating}
-        />
-        <div className="flex justify-end gap-2 pt-2 border-t border-surface-800">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Revisar System Prompt"
+      // Fixed-height panel so the modal doesn't grow/shrink with prompt
+      // length. fillHeight delegates scroll to PromptArtifact (in fillHeight
+      // mode), avoiding the double scrollbar.
+      className="max-w-3xl h-[88vh]"
+      fillHeight
+      footer={
+        <div className="flex justify-end gap-2">
           <button
             type="button" onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition"
@@ -1362,7 +1372,19 @@ function PromptReviewModal({
             <Check className="w-3.5 h-3.5" /> Confirmar e continuar
           </button>
         </div>
-      </div>
+      }
+    >
+      <p className="text-xs text-surface-500 mb-4 flex-shrink-0">
+        Revise o prompt gerado e edite se necessário. Após confirmar, você volta ao builder
+        e segue para a revisão final do agente.
+      </p>
+      <PromptArtifact
+        content={draft}
+        onChange={setDraft}
+        onRegenerate={onRegenerate}
+        regenerating={regenerating}
+        fillHeight
+      />
     </Modal>
   )
 }
@@ -1519,6 +1541,90 @@ function Step6({
   )
 }
 
+// ─── CRM Capabilities Review (inline in Step 8) ──────────────────────────────
+// Lightweight on/off toggles for the CRM capability groups. Constraints
+// (allowlists) are deliberately NOT exposed here — those need real tag/user/
+// stage data the user typically only finalises after the agent is created.
+// The post-creation "Capacidades" tab is where fine-tuning happens.
+
+function CapabilitiesReview({
+  data, setData,
+}: {
+  data: WizardData
+  setData: React.Dispatch<React.SetStateAction<WizardData>>
+}) {
+  const map = new Map<CrmCapabilityId, AgentCrmCapabilityConfig>(
+    data.crm_capabilities.capabilities.map((c) => [c.id, c]),
+  )
+
+  const toggle = (id: CrmCapabilityId, enable: boolean) => {
+    const entry = CRM_CAPABILITIES_CATALOG.find((c) => c.id === id)
+    setData((d) => {
+      const without = d.crm_capabilities.capabilities.filter((c) => c.id !== id)
+      const nextCaps: AgentCrmCapabilityConfig[] = enable
+        ? [
+            ...without,
+            {
+              id,
+              enabled: true,
+              // Apply the catalog's conservative defaults (e.g. block 'resolved'
+              // status). User can refine later in the "Capacidades" tab.
+              ...(entry?.defaultConstraints ? { constraints: entry.defaultConstraints } : {}),
+            },
+          ]
+        : without
+      const updated: AgentCrmCapabilities = { capabilities: nextCaps }
+      return { ...d, crm_capabilities: updated }
+    })
+  }
+
+  const enabledCount = data.crm_capabilities.capabilities.filter((c) => c.enabled).length
+
+  return (
+    <div className="bg-surface-900/60 border border-surface-800 rounded-xl px-4 py-3 flex-shrink-0">
+      <div className="flex items-baseline justify-between mb-1">
+        <p className="text-[11px] text-surface-300 font-semibold uppercase tracking-wide">
+          Capacidades de CRM <span className="text-surface-600 font-normal normal-case">(opcional)</span>
+        </p>
+        {enabledCount > 0 && (
+          <span className="text-[10px] text-brand-400">{enabledCount} habilitada(s)</span>
+        )}
+      </div>
+      <p className="text-[11px] text-surface-500 mb-3">
+        Quais ações o agente pode executar dentro do CRM ao atender no WhatsApp. Você pode ajustar limites depois na aba <strong>Capacidades</strong>.
+      </p>
+      <div className="space-y-1">
+        {CRM_CAPABILITIES_CATALOG.map((entry) => {
+          const enabled = !!map.get(entry.id)?.enabled
+          return (
+            <label
+              key={entry.id}
+              className={cn(
+                'flex items-center gap-3 px-2 py-1.5 rounded-md cursor-pointer transition-colors',
+                enabled ? 'bg-brand-950/30' : 'hover:bg-surface-800/40',
+              )}
+            >
+              <span
+                className={cn(
+                  'w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0',
+                  enabled ? 'bg-brand-700/30 text-brand-300' : 'bg-surface-900 text-surface-500',
+                )}
+              >
+                {entry.icon}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-surface-200">{entry.label}</p>
+                <p className="text-[11px] text-surface-500 truncate">{entry.description}</p>
+              </div>
+              <Switch checked={enabled} onChange={(v) => toggle(entry.id, v)} />
+            </label>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Step 7: Revisão & Publicar ───────────────────────────────────────────────
 
 function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<React.SetStateAction<WizardData>> }) {
@@ -1575,6 +1681,9 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
         ))}
       </div>
 
+      <CapabilitiesReview data={data} setData={setData} />
+
+
       {/* Prompt artifact — fills remaining vertical space */}
       <div className="flex flex-col flex-1 min-h-0">
         {data.generated_prompt ? (
@@ -1606,15 +1715,42 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
   )
 }
 
+// ─── Animated background orbs ────────────────────────────────────────────────
+
+function BackgroundOrbs() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+      <motion.div
+        animate={{ x: [0, 40, -20, 0], y: [0, -30, 20, 0], scale: [1, 1.1, 0.95, 1] }}
+        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-brand-600/8 blur-3xl"
+      />
+      <motion.div
+        animate={{ x: [0, -50, 30, 0], y: [0, 40, -25, 0], scale: [1, 0.9, 1.05, 1] }}
+        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full bg-indigo-700/8 blur-3xl"
+      />
+      <motion.div
+        animate={{ x: [0, 30, -40, 0], y: [0, -20, 35, 0], scale: [1, 1.15, 0.9, 1] }}
+        transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
+        className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-brand-500/5 blur-3xl"
+      />
+      <div
+        className="absolute inset-0 opacity-[0.025]"
+        style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '40px 40px' }}
+      />
+    </div>
+  )
+}
+
 // ─── Wizard root ──────────────────────────────────────────────────────────────
 
 interface AgentBuilderWizardProps {
-  open: boolean
   onClose: () => void
   onCreated: (agent: AgentConfigWithTools) => void
 }
 
-export function AgentBuilderWizard({ open, onClose, onCreated }: AgentBuilderWizardProps) {
+export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardProps) {
   const [step, setStep] = useState(1)
   const [data, setData] = useState<WizardData>(DEFAULT_DATA)
   const [publishing, setPublishing] = useState(false)
@@ -1624,8 +1760,6 @@ export function AgentBuilderWizard({ open, onClose, onCreated }: AgentBuilderWiz
   const completedRef    = useRef(false)
 
   useEffect(() => {
-    if (!open) return
-    // New session each time the wizard opens
     sessionIdRef.current = `wiz-agent-${Date.now()}`
     completedRef.current = false
     const { userId, tenantId } = readSession()
@@ -1659,7 +1793,7 @@ export function AgentBuilderWizard({ open, onClose, onCreated }: AgentBuilderWiz
       })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [])
 
   const validate = useCallback((): string | null => {
     switch (step) {
@@ -1741,6 +1875,12 @@ export function AgentBuilderWizard({ open, onClose, onCreated }: AgentBuilderWiz
           messenger: { enabled: data.channels_messenger },
           instagram: { enabled: data.channels_instagram },
         },
+        // Phase 25 — persist CRM capabilities chosen in the wizard's review step.
+        // Skip the field entirely when the user didn't enable anything so
+        // existing tenants without capabilities aren't churned.
+        ...(data.crm_capabilities.capabilities.length > 0
+          ? { crm_capabilities: data.crm_capabilities }
+          : {}),
         wizard_config: {
           identity: {
             name:      data.name,
@@ -1848,166 +1988,263 @@ export function AgentBuilderWizard({ open, onClose, onCreated }: AgentBuilderWiz
     }
   }
 
+  const teaching = STEP_TEACHINGS[step - 1]
+  const TeachingIcon = teaching.icon
+  const progressPct = Math.round(((step - 1) / (STEP_LABELS.length - 1)) * 100)
+
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            key="agent-wizard-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 z-40"
-            onClick={!publishing ? onClose : undefined}
-          />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="fixed inset-0 z-50 bg-surface-950"
+    >
+          <div className="h-full flex overflow-hidden relative">
+            <BackgroundOrbs />
 
-          {/* Drawer — slides in from right */}
-          <motion.div
-            key="agent-wizard-drawer"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 260, mass: 0.85 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-3xl bg-surface-950 border-l border-surface-800 z-50 flex flex-col shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-surface-800/60 flex-shrink-0">
-              <div className="w-8 h-8 rounded-xl bg-brand-600/15 ring-1 ring-brand-500/25 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-4 h-4 text-brand-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-sm font-bold text-surface-100">Criar Agente de IA</h1>
-                <p className="text-xs text-surface-500">Passo {step} de {STEP_LABELS.length} — {STEP_LABELS[step - 1]}</p>
-              </div>
-              <button
-                onClick={!publishing ? onClose : undefined}
-                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition disabled:opacity-40"
-                disabled={publishing}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Step indicator */}
-            <div className="flex items-center gap-1 px-6 py-3 border-b border-surface-800/40 flex-shrink-0">
-              {STEP_LABELS.map((label, i) => {
-                const s = i + 1
-                const done = s < step
-                const current = s === step
-                return (
-                  <div key={s} className="flex items-center gap-1 flex-shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => { if (done) { setValidationError(null); setStep(s) } }}
-                      className={cn(
-                        'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all flex-shrink-0',
-                        done    ? 'bg-brand-600 text-surface-950 cursor-pointer hover:bg-brand-500'
-                        : current ? 'bg-brand-600/20 ring-2 ring-brand-500/50 text-brand-400 cursor-default'
-                        :           'bg-surface-800 text-surface-600 cursor-default',
-                      )}
-                    >
-                      {done ? <Check className="w-3 h-3" /> : s}
-                    </button>
-                    <span className={cn(
-                      'text-[10px] whitespace-nowrap',
-                      current ? 'text-surface-300 font-medium' : 'text-surface-600',
-                    )}>
-                      {label}
-                    </span>
-                    {s < STEP_LABELS.length && <div className={cn('h-px w-3 flex-shrink-0', done ? 'bg-brand-600/40' : 'bg-surface-800')} />}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Content */}
-            <div className={cn(
-              'flex-1 px-6 py-5',
-              step === 8 ? 'overflow-hidden flex flex-col' : 'overflow-y-auto',
-            )}>
-              <AnimatePresence mode="wait">
+            {/* ── LEFT TUTOR PANEL ─────────────────────────────────────── */}
+            <div className="relative z-10 w-80 flex-shrink-0 flex flex-col border-r border-surface-800/60 bg-surface-950/80 backdrop-blur-sm">
+              {/* Brand header + close */}
+              <div className="flex items-center gap-3 px-8 pt-8 pb-6 border-b border-surface-800/60 flex-shrink-0">
                 <motion.div
-                  key={step}
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.15 }}
-                  className={step === 8 ? 'flex flex-col flex-1 min-h-0' : undefined}
+                  animate={{ scale: [1, 1.08, 1] }}
+                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-900/50 flex-shrink-0"
                 >
-                  {step === 1 && <Step1 data={data} setData={setData} />}
-                  {step === 2 && <Step2 data={data} setData={setData} />}
-                  {step === 3 && <Step3 data={data} setData={setData} />}
-                  {step === 4 && <Step4 data={data} setData={setData} />}
-                  {step === 5 && <Step5 data={data} setData={setData} />}
-                  {step === 6 && <Step6KB data={data} setData={setData} />}
-                  {step === 7 && <Step6 data={data} setData={setData} />}
-                  {step === 8 && <Step7 data={data} setData={setData} />}
+                  <Zap className="w-4 h-4 text-surface-950" fill="currentColor" />
                 </motion.div>
-              </AnimatePresence>
-            </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">Studio</p>
+                  <h1 className="text-sm font-bold text-surface-50 truncate">Criar Agente IA</h1>
+                </div>
+                <button
+                  onClick={!publishing ? onClose : undefined}
+                  disabled={publishing}
+                  aria-label="Fechar"
+                  className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition disabled:opacity-40"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-            {/* Footer nav — always visible */}
-            <div className="px-6 py-4 border-t border-surface-800/60 flex items-center gap-3 flex-shrink-0">
-              <div className="flex-1">
+              {/* Teaching content — fills remaining height, scrolls if needed */}
+              <div className="flex-1 overflow-y-auto px-8 py-8">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`teach-${step}`}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -16 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-9 h-9 rounded-lg bg-brand-600/20 border border-brand-500/30 flex items-center justify-center flex-shrink-0">
+                        <TeachingIcon className="w-4.5 h-4.5 text-brand-400" />
+                      </div>
+                      <h2 className="text-base font-bold text-surface-100 leading-tight">{teaching.title}</h2>
+                    </div>
+                    <p className="text-sm text-surface-400 leading-relaxed mb-6">{teaching.description}</p>
+                    <div className="flex flex-col gap-3">
+                      {teaching.tips.map((tip, i) => {
+                        const TipIcon = tip.icon
+                        return (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.25, delay: 0.1 + i * 0.07 }}
+                            className="flex items-start gap-2.5"
+                          >
+                            <div className="w-6 h-6 rounded-md bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <TipIcon className="w-3 h-3 text-brand-400" />
+                            </div>
+                            <p className="text-xs text-surface-500 leading-relaxed">{tip.text}</p>
+                          </motion.div>
+                        )
+                      })}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Nav buttons + errors */}
+              <div className="px-8 pt-4 pb-8 border-t border-surface-800/60 flex flex-col gap-2 flex-shrink-0">
                 {step < 8 && validationError && (
-                  <p className="text-xs text-red-400 flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5" /> {validationError}
-                  </p>
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-1 text-xs text-red-400 flex items-start gap-1.5"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{validationError}</span>
+                  </motion.p>
                 )}
                 {step === 8 && publishError && (
-                  <p className="text-xs text-red-400 flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5" /> {publishError}
-                  </p>
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-1 text-xs text-red-400 flex items-start gap-1.5"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{publishError}</span>
+                  </motion.p>
+                )}
+                {step === 8 ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handlePublish('active')}
+                      disabled={publishing || !data.generated_prompt}
+                      className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-surface-950 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-900/40"
+                    >
+                      {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                      {publishing ? 'Publicando...' : 'Publicar agente'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePublish('draft')}
+                      disabled={publishing}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 border border-surface-800 transition-all disabled:opacity-50"
+                    >
+                      Salvar como rascunho
+                    </button>
+                    <button
+                      type="button"
+                      onClick={back}
+                      disabled={publishing}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-surface-500 hover:text-surface-300 transition-all disabled:opacity-50"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Voltar
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={next}
+                      disabled={step === 7 && !data.generated_prompt}
+                      className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-surface-950 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-900/40"
+                    >
+                      {step === 7 ? <><Sparkles className="w-4 h-4" /> Revisar</> : <>Continuar <ChevronRight className="w-4 h-4" /></>}
+                    </button>
+                    {step > 1 && (
+                      <button
+                        type="button"
+                        onClick={back}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 border border-surface-800 transition-all"
+                      >
+                        <ChevronLeft className="w-4 h-4" /> Voltar
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
-              {step === 8 ? (
-                <>
-                  <button
-                    type="button" onClick={back} disabled={publishing}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition disabled:opacity-50"
-                  >
-                    <ChevronLeft className="w-4 h-4" /> Voltar
-                  </button>
-                  <button
-                    type="button" onClick={() => handlePublish('draft')} disabled={publishing}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition disabled:opacity-50"
-                  >
-                    Salvar rascunho
-                  </button>
-                  <button
-                    type="button" onClick={() => handlePublish('active')} disabled={publishing || !data.generated_prompt}
-                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-surface-950 text-sm font-medium transition-all shadow-lg shadow-brand-900/30"
-                  >
-                    {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    {publishing ? 'Publicando...' : 'Publicar agente'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {step > 1 && (
-                    <button
-                      type="button" onClick={back}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition"
-                    >
-                      <ChevronLeft className="w-4 h-4" /> Voltar
-                    </button>
-                  )}
-                  <button
-                    type="button" onClick={next}
-                    disabled={step === 7 && !data.generated_prompt}
-                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 text-sm font-medium transition-all"
-                  >
-                    {step === 7 ? 'Revisar' : 'Avançar'} <ChevronRight className="w-4 h-4" />
-                  </button>
-                </>
-              )}
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+
+            {/* ── RIGHT FORM PANEL ─────────────────────────────────────── */}
+            <div className="relative z-10 flex-1 flex flex-col">
+              {/* Sticky top: progress bar + horizontal stepper */}
+              <div className="flex-shrink-0 bg-surface-950/85 backdrop-blur-md border-b border-surface-800/40">
+                {/* Progress bar */}
+                <div className="px-10 pt-5 pb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">
+                      Etapa {step} de {STEP_LABELS.length} — {STEP_LABELS[step - 1]}
+                    </p>
+                    <p className="text-[10px] font-medium text-surface-500">
+                      {progressPct}% concluído
+                    </p>
+                  </div>
+                  <div className="h-1 bg-surface-800/60 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={false}
+                      animate={{ width: `${progressPct}%` }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      className="h-full bg-gradient-to-r from-brand-600 to-brand-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Horizontal step indicator */}
+                <div className="px-10 pb-5 pt-2">
+                  <div className="flex items-start">
+                    {STEP_LABELS.map((label, i) => {
+                      const s = i + 1
+                      const isLast = s === STEP_LABELS.length
+                      const done = s < step
+                      const active = s === step
+                      return (
+                        <div key={s} className={cn('flex items-start', !isLast && 'flex-1')}>
+                          <button
+                            type="button"
+                            onClick={() => { if (done) { setValidationError(null); setStep(s) } }}
+                            disabled={!done}
+                            className={cn(
+                              'flex flex-col items-center gap-1.5 w-[88px] flex-shrink-0',
+                              done && 'cursor-pointer group',
+                              !done && 'cursor-default',
+                            )}
+                          >
+                            <div className={cn(
+                              'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold border-2 transition-all duration-300',
+                              done && 'bg-brand-600 border-brand-600 text-surface-950 group-hover:scale-110',
+                              active && 'bg-brand-600/15 border-brand-500 text-brand-400',
+                              !done && !active && 'bg-surface-900 border-surface-700 text-surface-600',
+                            )}>
+                              {done ? <Check className="w-3.5 h-3.5" /> : s}
+                            </div>
+                            <span className={cn(
+                              'text-[10px] font-medium text-center leading-tight max-w-full transition-colors duration-300',
+                              active && 'text-surface-100',
+                              done && !active && 'text-surface-500',
+                              !done && !active && 'text-surface-600',
+                            )}>{label}</span>
+                            {active && (
+                              <motion.div
+                                layoutId="active-step-dot"
+                                className="w-1 h-1 rounded-full bg-brand-500"
+                              />
+                            )}
+                          </button>
+                          {!isLast && (
+                            <div className={cn(
+                              'h-px flex-1 mt-3.5 mx-1 transition-colors duration-300',
+                              done ? 'bg-brand-600/60' : 'bg-surface-800',
+                            )} />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Scrollable form content */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="px-10 py-8">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`form-${step}`}
+                      initial={{ opacity: 0, x: 24 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -24 }}
+                      transition={{ duration: 0.25, ease: 'easeOut' }}
+                    >
+                      <div className="bg-surface-900/70 backdrop-blur-sm border border-surface-800 rounded-2xl p-6 shadow-xl">
+                        {step === 1 && <Step1 data={data} setData={setData} />}
+                        {step === 2 && <Step2 data={data} setData={setData} />}
+                        {step === 3 && <Step3 data={data} setData={setData} />}
+                        {step === 4 && <Step4 data={data} setData={setData} />}
+                        {step === 5 && <Step5 data={data} setData={setData} />}
+                        {step === 6 && <Step6KB data={data} setData={setData} />}
+                        {step === 7 && <Step6 data={data} setData={setData} />}
+                        {step === 8 && <Step7 data={data} setData={setData} />}
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+          </div>
+    </motion.div>
   )
 }

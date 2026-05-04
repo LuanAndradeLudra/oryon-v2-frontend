@@ -185,7 +185,27 @@ html, body, #root {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Edge-to-edge: WebView desenha sob status bar / nav bar — sem este bg
+   * preto, areas alem do conteudo da pagina mostrariam branco padrao do
+   * WebView, dando aquela barra "branca" no topo. */
+  background: #000;
 }
+
+/* Safe-area-insets (Capacitor edge-to-edge): essas utilities padronizam o
+ * deslocamento necessario para conteudo nao ficar atras das system bars.
+ *   pt-safe → padding-top respeitando status bar (Android/iOS notch)
+ *   pb-safe → padding-bottom respeitando home indicator / nav bar gestural
+ *   h-safe-top / h-safe-bottom → altura puramente do inset (uso em spacers)
+ * Em web, env() retorna 0px e estas viram no-op. */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pl-safe { padding-left: env(safe-area-inset-left); }
+.pr-safe { padding-right: env(safe-area-inset-right); }
+.h-safe-top { height: env(safe-area-inset-top); }
+.h-safe-bottom { height: env(safe-area-inset-bottom); }
+/* Composicao comum: pagina full-screen mobile que respeita ambos os topos
+ * e o bottom (e.g. ChatWindow em fullscreen). */
+.pb-safe-bottom-tab { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
 
 /* ── Chat animations ──────────────────────────────────────────────────── */
 @keyframes msg-slide-in-left {

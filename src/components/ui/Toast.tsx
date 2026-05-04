@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Toast, ToastType } from '@/hooks/useToast'
@@ -28,14 +29,21 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   }, [latest?.id])
 
   if (!latest) return null
+  if (typeof document === 'undefined') return null
 
   const { icon: Icon, classes } = config[latest.type]
 
-  return (
-    <div className="fixed bottom-5 right-5 z-[100] flex items-end justify-end">
+  // Renderizado via Portal em document.body para escapar de qualquer ancestor
+  // com `transform` (framer-motion no painel de contato, drawers, etc) — sem
+  // o portal, position:fixed fica preso ao motion.div e o toast some ou
+  // aparece no lugar errado em mobile.
+  return createPortal(
+    // Mobile: bottom-24 (96px) para ficar ACIMA da BottomTabBar (~56px+safe-area).
+    // Desktop (md+): bottom-5 original.
+    <div className="fixed bottom-24 md:bottom-5 right-5 z-[200] flex items-end justify-end pointer-events-none">
       <div
         className={cn(
-          'flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl min-w-[260px] max-w-[400px]',
+          'flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl min-w-[260px] max-w-[400px] pointer-events-auto',
           'transition-all duration-200',
           visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95',
           classes,
@@ -50,6 +58,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
           <X className="w-4 h-4" />
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

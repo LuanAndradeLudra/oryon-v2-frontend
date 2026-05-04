@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils'
 import { campaignsApi } from '@/services/api'
 import { CampaignWizard } from './CampaignWizard'
 import { CampaignReport } from './CampaignReport'
+import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
@@ -45,6 +47,7 @@ export function CampaignsTab() {
   const { numbers: whatsappLines, loading: waLoading } = useWorkspaceNumber()
   const hasWhatsappLine = whatsappLines.length > 0
 
+  const isMobile = useIsMobile()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | 'all'>('all')
@@ -176,11 +179,20 @@ export function CampaignsTab() {
         )}
       </div>
 
-      <CampaignWizard
-        open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        onCreated={handleCreated}
-      />
+      {isMobile ? (
+        <MobileFeatureGate
+          open={wizardOpen}
+          onClose={() => setWizardOpen(false)}
+          featureName="Criar campanha"
+          description="Wizard de campanhas envolve seleção de template, audiência e variáveis. No celular fica apertado — abra no desktop."
+        />
+      ) : (
+        <CampaignWizard
+          open={wizardOpen}
+          onClose={() => setWizardOpen(false)}
+          onCreated={handleCreated}
+        />
+      )}
 
       <AnimatePresence>
         {reportCampaign && (

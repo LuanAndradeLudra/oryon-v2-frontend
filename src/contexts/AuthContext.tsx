@@ -3,6 +3,9 @@ import axios from 'axios'
 import type { User } from '@/types'
 import { appLogger } from '@/services/appLogger'
 import { disconnectSocket } from '@/services/socket'
+import { isNativePlatform } from '@/config/env'
+import { setTokens, clearTokens, getRefreshToken } from '@/services/auth-storage'
+import { registerPushNotifications, unregisterPushNotifications, syncTokenWithBackend } from '@/services/push-registration'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -69,9 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     disconnectSocket()
+    // Sprint 5.3 — em mobile usa /auth/mobile-login que retorna tokens em
+    // body; armazenamos via auth-storage e o api.ts injeta Bearer header.
+    // Em web continua /auth/login com cookies httpOnly.
+    const endpoint = isNativePlatform() ? '/auth/mobile-login' : '/auth/login'
     const res = await axios.post<{
       user: User; requiresPasswordChange: boolean; organizationConfigured?: boolean;
-    }>(`${API}/auth/login`, { email, password }, { withCredentials: true })
+      accessToken?: string; refreshToken?: string;
+    }>(`${API}${endpoint}`, { email, password }, { withCredentials: true })
+    if (isNativePlatform() && res.data.accessToken && res.data.refreshToken) {
+      setTokens(res.data.accessToken, res.data.refreshToken)
+    }
     const s: AuthSession = {
       user: res.data.user,
       requiresPasswordChange: res.data.requiresPasswordChange,
@@ -80,6 +91,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(s)
     setSession(s)
     sessionStorage.removeItem('oryon_dismissed_banners')
+    // Sprint 5.3 — em mobile, sincroniza token de push apos login. Se o
+    // listener FCM ja recebeu token (caso o boot tenha disparado registro com
+    // sessao stale), reusa o token cacheado e POSTa no backend agora com
+    // Bearer valido. Caso contrario dispara o registro do zero.
+    if (isNativePlatform()) {
+      void syncTokenWithBackend()
+    }
     appLogger.logSessionEvent({
       tenant_id: s.user.tenantId ?? null,
       user_id:   s.user.id ?? null,
@@ -120,9 +138,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     disconnectSocket()
+    // Sprint 5.3 — desregistra push antes de limpar tokens (precisa do auth
+    // para chamar DELETE /push/token em mobile)
+    if (isNativePlatform()) {
+      try { await unregisterPushNotifications() } catch { /* best-effort */ }
+    }
     try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true })
+      // Em mobile manda refreshToken no body para invalidar; backend tambem
+      // ja aceita do cookie. Em ambos casos da pra confiar no try/catch.
+      const body = isNativePlatform()
+        ? { refreshToken: getRefreshToken() ?? undefined }
+        : {}
+      await axios.post(`${API}/auth/logout`, body, { withCredentials: true })
     } catch { /* best-effort — cookies will expire on their own */ }
+    clearTokens()
 
     appLogger.logSessionEvent({
       tenant_id: session?.user.tenantId ?? null,
@@ -183,6 +212,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isRefreshing = true
             refreshPromise = (async () => {
               try {
+                // Sprint 5.3 — em mobile usa /auth/mobile-refresh com refreshToken
+                // no body (sem cookies httpOnly). Em web continua /auth/refresh.
+                if (isNativePlatform()) {
+                  const refreshToken = getRefreshToken()
+                  if (!refreshToken) throw new Error('no refresh token')
+                  const res = await axios.post<{ accessToken: string; refreshToken: string }>(
+                    `${API}/auth/mobile-refresh`,
+                    { refreshToken },
+                    { withCredentials: false },
+                  )
+                  setTokens(res.data.accessToken, res.data.refreshToken)
+                  return 'refreshed'
+                }
                 const res = await axios.post<{
                   user: User; requiresPasswordChange: boolean; organizationConfigured?: boolean
                 }>(`${API}/auth/refresh`, {}, { withCredentials: true })
@@ -195,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return 'refreshed'
               } catch {
                 clearSession()
+                clearTokens()
                 setSession(null)
                 return null
               } finally {
@@ -225,9 +268,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const status = err?.response?.status
         if (status === 401 || status === 403) {
           clearSession()
+          clearTokens()
           setSession(null)
         }
       })
+    // Sprint 5.3 — em mobile, reativa registro de push em retornos do app
+    // (caso o token tenha sido revogado em background ou o user reinstalou).
+    // Idempotente no backend (upsert por userId+token).
+    if (isNativePlatform()) {
+      void registerPushNotifications()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

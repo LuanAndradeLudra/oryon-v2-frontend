@@ -14,10 +14,23 @@ import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 interface MessageInputProps {
-  onSend: (dto: SendMessageDto) => void
+  /**
+   * Returns a promise that rejects on send failure (e.g. backend rejected
+   * with 403 because the user has no department configured). The input
+   * preserves the typed text on rejection so the operator can retry or
+   * copy it elsewhere.
+   */
+  onSend: (dto: SendMessageDto) => Promise<unknown> | void
   sending: boolean
   windowOpen: boolean
   disabled?: boolean
+  /**
+   * When set, the input is locked with a clear explanation instead of
+   * showing the chat input area. Use to surface "you can't send messages
+   * right now" preconditions (no WhatsApp number, no department, etc.)
+   * BEFORE the operator types and clicks send.
+   */
+  blockedReason?: { message: string; ctaHref?: string; ctaLabel?: string } | null
 }
 
 // ── Quick Reply Picker ─────────────────────────────────────────────────────────
@@ -77,7 +90,7 @@ function QuickReplyPicker({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MessageInput({ onSend, sending, windowOpen, disabled }: MessageInputProps) {
+export function MessageInput({ onSend, sending, windowOpen, disabled, blockedReason }: MessageInputProps) {
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
   const [allResponses, setAllResponses] = useState<CannedResponse[]>([])
@@ -210,12 +223,21 @@ export function MessageInput({ onSend, sending, windowOpen, disabled }: MessageI
     setTimeout(() => textareaRef.current?.focus(), 0)
   }
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = text.trim()
     if (!trimmed || sending || disabled) return
-    onSend({ body: trimmed })
+    // Snapshot before clearing so we can restore on failure.
+    const previousText = text
     setText('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
+    try {
+      await onSend({ body: trimmed })
+    } catch {
+      // Send failed (e.g. backend rejected with 403 because user has no
+      // department). Restore the typed text so the operator can retry or
+      // copy it elsewhere — the toast is shown by the page-level handler.
+      setText(previousText)
+    }
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -268,13 +290,17 @@ export function MessageInput({ onSend, sending, windowOpen, disabled }: MessageI
     setTemplatePickerOpen((v) => !v)
   }
 
-  const handleSelectTemplate = (tpl: WhatsAppTemplate) => {
-    onSend({ body: tpl.body })
-    setTemplateSent(true)
+  const handleSelectTemplate = async (tpl: WhatsAppTemplate) => {
     setTemplatePickerOpen(false)
+    try {
+      await onSend({ body: tpl.body })
+      setTemplateSent(true)
+    } catch {
+      // Page-level toast already surfaced the error.
+    }
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -286,21 +312,51 @@ export function MessageInput({ onSend, sending, windowOpen, disabled }: MessageI
       return
     }
 
-    onSend({
-      file,
-      mediaCaption: file.name,
-      body: text.trim() || undefined,
-    })
-
+    const previousText = text
     setText('')
     e.target.value = ''
+    try {
+      await onSend({
+        file,
+        mediaCaption: file.name,
+        body: previousText.trim() || undefined,
+      })
+    } catch {
+      // Restore typed caption text on failure (file selection can't be
+      // restored — operator picks again). Toast comes from page-level.
+      setText(previousText)
+    }
     setShowAttachMenu(false)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
   }
 
+  // Phase 29 — pre-detected blocker (no department, no WA line, etc.).
+  // Shown before the operator types so the silent failure path is gone.
+  if (blockedReason) {
+    return (
+      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
+        <div className="bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-3 flex items-center gap-3">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-amber-200 font-semibold">Não é possível enviar mensagens agora</p>
+            <p className="text-[11px] text-amber-300/90 mt-0.5">{blockedReason.message}</p>
+          </div>
+          {blockedReason.ctaHref && blockedReason.ctaLabel && (
+            <a
+              href={blockedReason.ctaHref}
+              className="flex-shrink-0 text-xs font-semibold text-amber-200 hover:text-white bg-amber-700/30 hover:bg-amber-700/50 border border-amber-600/40 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              {blockedReason.ctaLabel}
+            </a>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   if (!windowOpen) {
     return (
-      <div className="px-4 py-3 border-t border-surface-800 bg-black flex-shrink-0">
+      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
         <div className="card-24h bg-brand-800/20 border border-brand-600/30 rounded-xl px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-brand-400 flex-shrink-0" />
@@ -359,7 +415,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled }: MessageI
   const slashQuery = text.match(/^\/(\S*)$/)?.[1] ?? ''
 
   return (
-    <div className="px-4 py-3 border-t border-surface-800 bg-black flex-shrink-0">
+    <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
       <div className="relative">
         {pickerActive && (
           <QuickReplyPicker

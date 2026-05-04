@@ -154,7 +154,10 @@ export function AgentTestModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    // z-[60] for the same reason as the shared Modal: this overlay can be
+    // opened from within the agent-builder wizard (z-50). Sharing z-50
+    // caused wizard children to show through the backdrop.
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}

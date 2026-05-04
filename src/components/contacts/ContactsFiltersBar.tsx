@@ -180,38 +180,42 @@ export function ContactsFiltersBar({ filters, onFiltersChange }: ContactsFilters
           )}
         </div>
 
-        {/* Source */}
-        <FilterSelect
-          value={filters.source ?? ''}
-          onChange={(v) => onFiltersChange({ ...filters, source: (v || undefined) as ContactSource | undefined })}
-          placeholder="Fonte"
-        >
-          {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </FilterSelect>
-
-        {/* Tags */}
-        <TagFilter
-          selected={filters.tagId ?? []}
-          onChange={(ids) => onFiltersChange({ ...filters, tagId: ids.length > 0 ? ids : undefined })}
-        />
-
-        {/* Sort */}
-        <FilterSelect
-          value={filters.sortBy ?? 'lastContactedAt'}
-          onChange={(v) => onFiltersChange({ ...filters, sortBy: v as ContactFilters['sortBy'] })}
-        >
-          {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </FilterSelect>
-
-        {/* Clear */}
-        {hasFilters && (
-          <button
-            onClick={() => onFiltersChange({ search: filters.search, sortBy: filters.sortBy })}
-            className="text-xs text-brand-400 hover:text-brand-300 px-2 py-1.5 rounded-lg hover:bg-brand-500/10 transition-all"
+        {/* Filtros desktop — em mobile so a busca aparece. Filtros avancados
+            ficam para o desktop (abrir o link no computador via "Mais"). */}
+        <div className="hidden md:flex items-center gap-2">
+          {/* Source */}
+          <FilterSelect
+            value={filters.source ?? ''}
+            onChange={(v) => onFiltersChange({ ...filters, source: (v || undefined) as ContactSource | undefined })}
+            placeholder="Fonte"
           >
-            Limpar filtros
-          </button>
-        )}
+            {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </FilterSelect>
+
+          {/* Tags */}
+          <TagFilter
+            selected={filters.tagId ?? []}
+            onChange={(ids) => onFiltersChange({ ...filters, tagId: ids.length > 0 ? ids : undefined })}
+          />
+
+          {/* Sort */}
+          <FilterSelect
+            value={filters.sortBy ?? 'lastContactedAt'}
+            onChange={(v) => onFiltersChange({ ...filters, sortBy: v as ContactFilters['sortBy'] })}
+          >
+            {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </FilterSelect>
+
+          {/* Clear */}
+          {hasFilters && (
+            <button
+              onClick={() => onFiltersChange({ search: filters.search, sortBy: filters.sortBy })}
+              className="text-xs text-brand-400 hover:text-brand-300 px-2 py-1.5 rounded-lg hover:bg-brand-500/10 transition-all"
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
       </div>
 
     </div>

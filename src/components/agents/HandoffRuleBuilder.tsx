@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useId, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Sparkles, Send, X, Plus, Trash2, Edit3, GripVertical,
   ArrowRight, Check, Loader2, Users, ExternalLink, MessageSquare,
@@ -49,8 +50,10 @@ function RuleModal({
 
   if (!open) return null
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+  // Render via portal so the modal escapes any transformed parent (e.g. the
+  // wizard's framer-motion wrapper) and stays anchored to the viewport.
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70" />
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -88,7 +91,8 @@ function RuleModal({
           {children}
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

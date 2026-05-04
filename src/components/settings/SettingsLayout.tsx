@@ -14,8 +14,12 @@ import {
   Brain,
   Bell,
   Activity,
+  ScrollText,
 } from 'lucide-react'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
+import { isRouteVisible } from '@/config/featureFlags'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 
 interface SettingsLayoutProps {
   children: ReactNode
@@ -65,48 +69,63 @@ const NAV_GROUPS = [
     items: [
       { section: 'billing',  label: 'Plano & Faturamento', icon: <CreditCard className="w-4 h-4" />, adminOnly: true },
       { section: 'security', label: 'Segurança',           icon: <ShieldCheck className="w-4 h-4" />, adminOnly: true },
+      { section: 'audit',    label: 'Auditoria',           icon: <ScrollText className="w-4 h-4" />, adminOnly: true },
     ],
   },
 ]
 
 export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayoutProps) {
+  // super_admin (Oryon staff) and business_admin (tenant owner) both should
+  // see every admin-gated section. Missing super_admin here was the reason
+  // WhatsApp + Plataforma vanished after `/auth/me` resolved.
+  const isAdmin = currentRole === 'admin'
+    || currentRole === 'business_admin'
+    || currentRole === 'super_admin'
+  const isMobile = useIsMobile()
+  const visibleGroups = NAV_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const adminOnly = 'adminOnly' in item && item.adminOnly
+        const supervisorOnly = 'supervisorOnly' in item && item.supervisorOnly
+        if (adminOnly && !isAdmin) return false
+        if (supervisorOnly && currentRole === 'agent') return false
+        return isRouteVisible(`/settings/${item.section}`)
+      }),
+    }))
+    .filter((group) => group.items.length > 0)
+
   return (
-    <div className="flex flex-1 overflow-hidden">
-      {/* Settings sidebar */}
-      <aside className="w-60 flex-shrink-0 border-r border-surface-800 py-4 px-2 overflow-y-auto">
-        {NAV_GROUPS.map((group) => (
+    <div className="flex flex-1 overflow-hidden flex-col">
+      {isMobile && <MobilePageHeader title="Configurações" />}
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+      {/* Settings sidebar — empilhada acima em mobile, lateral em desktop */}
+      <aside className="w-full md:w-60 flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-800 py-3 md:py-4 px-2 overflow-y-auto max-h-52 md:max-h-none">
+        {visibleGroups.map((group) => (
           <div key={group.label} className="mb-4">
             <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-surface-600">
               {group.label}
             </p>
             <div className="flex flex-col gap-0.5">
-              {group.items.map((item) => {
-                const adminOnly = 'adminOnly' in item && item.adminOnly
-                const supervisorOnly = 'supervisorOnly' in item && item.supervisorOnly
-                const isAdmin = currentRole === 'admin' || currentRole === 'business_admin'
-
-                if (adminOnly && !isAdmin) return null
-                if (supervisorOnly && currentRole === 'agent') return null
-
-                return (
-                  <SettingsSidebarItem
-                    key={item.section}
-                    section={item.section}
-                    label={item.label}
-                    icon={item.icon}
-                    currentRole={currentRole}
-                  />
-                )
-              })}
+              {group.items.map((item) => (
+                <SettingsSidebarItem
+                  key={item.section}
+                  section={item.section}
+                  label={item.label}
+                  icon={item.icon}
+                  currentRole={currentRole}
+                />
+              ))}
             </div>
           </div>
         ))}
       </aside>
 
       {/* Content area */}
-      <main className="flex-1 overflow-y-auto py-6 px-6">
+      <main className="flex-1 overflow-y-auto py-4 px-4 md:py-6 md:px-6">
         {children}
       </main>
+      </div>
     </div>
   )
 }

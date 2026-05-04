@@ -66,6 +66,12 @@ export function useMessages(conversationId: string | null) {
       try {
         const { data } = await messagesApi.send(conversationId, dto)
         addIncomingMessage(data)
+      } catch (err) {
+        // Re-throw so the caller (MessageInput / ChatWindow) can show a
+        // toast and decide whether to keep the typed text. The previous
+        // try/finally swallowed the error silently — user typed, message
+        // disappeared, no feedback.
+        throw err
       } finally {
         setSending(false)
       }

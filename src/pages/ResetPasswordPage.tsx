@@ -45,9 +45,12 @@ export function ResetPasswordPage() {
         className="w-full max-w-sm"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center mb-4 shadow-lg shadow-brand-600/30">
-            <Zap className="w-6 h-6 text-surface-950" fill="currentColor" />
-          </div>
+          <img
+            src="/oryon-logo.svg"
+            alt="Oryon"
+            className="w-16 h-16 mb-4 select-none"
+            draggable={false}
+          />
           <h1 className="text-xl font-bold text-surface-50">Oryon</h1>
         </div>
 

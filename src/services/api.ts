@@ -34,12 +34,20 @@ import type {
   WhatsAppTemplate,
 } from '@/types'
 
+import { apiBaseUrl, isNativePlatform } from '@/config/env'
+import { getAccessToken } from './auth-storage'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: apiBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000, // 30 seconds
-  withCredentials: true, // Send httpOnly cookies with every request
+  withCredentials: true, // Send httpOnly cookies with every request (web)
 })
+
+// Re-exported so peripheral services (admin tools, internal utilities) can
+// reuse the configured axios instance — same baseURL, same cookie behavior,
+// same audit interceptors — without repeating the setup or going around it.
+export { api }
 
 // ─── Copilot turn context ─────────────────────────────────────────────────────
 // OrchestratorAgent sets this when a copilot turn is active so the interceptor
@@ -48,6 +56,30 @@ const api = axios.create({
 let _copilotTurnId: string | null = null
 export function setCopilotTurnId(id: string | null): void {
   _copilotTurnId = id
+}
+
+// ─── Correlation ID helpers ───────────────────────────────────────────────────
+// One UUID per HTTP request, generated client-side and echoed by the server in
+// the response header. Used to drill the same request across frontend logs,
+// backend Winston, agent-server logs, and downstream HMAC calls.
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function newCorrelationId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  // Fallback for very old browsers — log analytics-only, not security-sensitive.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+  })
+}
+
+let _lastCorrelationId: string | null = null
+
+export function getLastCorrelationId(): string | null {
+  return _lastCorrelationId
 }
 
 // ─── Audit logging helpers ────────────────────────────────────────────────────
@@ -540,6 +572,36 @@ function resolveSemanticEvent(
 api.interceptors.request.use((config) => {
   config.headers['x-req-t0'] = String(Date.now())
   config.headers['x-retry-count'] = '0'
+  // Generate a fresh correlationId per request unless the caller pinned one
+  // (e.g. retries reuse the original). Server may echo or replace it.
+  const existing = config.headers['x-correlation-id']
+  if (!existing || (typeof existing === 'string' && !UUID_REGEX.test(existing))) {
+    config.headers['x-correlation-id'] = newCorrelationId()
+  }
+  // Sprint 5.3 — em mobile, anexa Authorization Bearer com o token salvo em
+  // auth-storage. Em web continua via cookies httpOnly (withCredentials).
+  if (isNativePlatform()) {
+    const token = getAccessToken()
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+  }
+  return config
+})
+
+// Mesmo interceptor de Bearer no axios global. Varios contexts (InternalChat,
+// useNotifications, hooks de paginas) usam `import axios from 'axios'` direto
+// em vez do `api` instance. No web isso funciona via cookie, mas em mobile
+// os requests saem sem Authorization e batem 401. Aqui aplicamos o token tanto
+// no `api` (acima) quanto no axios global para cobrir os call-sites legados.
+axios.interceptors.request.use((config) => {
+  if (isNativePlatform()) {
+    const token = getAccessToken()
+    if (token && !config.headers?.['Authorization']) {
+      config.headers = config.headers ?? {}
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+  }
   return config
 })
 
@@ -570,6 +632,15 @@ api.interceptors.response.use(undefined, async (error) => {
 
 api.interceptors.response.use(
   (res) => {
+    // Capture correlationId echoed by the server (or from the request header
+    // we sent if server didn't echo). Stored module-wide so consumers like
+    // AuthContext can attach it to non-axios logs (login, logout).
+    const responseCid = res.headers?.['x-correlation-id']
+    const requestCid  = res.config.headers?.['x-correlation-id']
+    const correlationId = (typeof responseCid === 'string' ? responseCid : null)
+                       ?? (typeof requestCid  === 'string' ? requestCid  : null)
+    if (correlationId) _lastCorrelationId = correlationId
+
     const method = (res.config.method ?? '').toUpperCase()
     if (!WRITE_METHODS.has(method)) return res
 
@@ -591,6 +662,7 @@ api.interceptors.response.use(
       payload,
       status_code: res.status,
       latency_ms:  t0 ? Date.now() - t0 : null,
+      correlation_id: correlationId,
     })
 
     // 2. Field diff (entity_changelog)
@@ -609,6 +681,7 @@ api.interceptors.response.use(
           entity_id:   resolvedId ?? '',
           operation:   methodToOperation(method),
           changes:     payload,
+          correlation_id: correlationId,
         })
       }
     }
@@ -632,12 +705,19 @@ api.interceptors.response.use(
         details:     semantic.details,
         source,
         turn_id:     turnId,
+        correlation_id: correlationId,
       })
     }
 
     return res
   },
   (err) => {
+    const responseCid = err.response?.headers?.['x-correlation-id']
+    const requestCid  = err.config?.headers?.['x-correlation-id']
+    const correlationId = (typeof responseCid === 'string' ? responseCid : null)
+                       ?? (typeof requestCid  === 'string' ? requestCid  : null)
+    if (correlationId) _lastCorrelationId = correlationId
+
     const method = (err.config?.method ?? '').toUpperCase()
     if (WRITE_METHODS.has(method)) {
       const t0 = parseInt(err.config?.headers?.['x-req-t0'] as string ?? '0', 10)
@@ -652,6 +732,7 @@ api.interceptors.response.use(
         latency_ms:  t0 ? Date.now() - t0 : null,
         source:      _copilotTurnId ? 'copilot' : 'ui',
         turn_id:     _copilotTurnId,
+        correlation_id: correlationId,
       })
     }
     if (err.response?.status === 401) {
@@ -707,6 +788,17 @@ export const conversationsApi = {
 
   unreadTotal() {
     return api.get<{ totalUnread: number }>('/conversations/unread-total')
+  },
+
+  /**
+   * Phase 27 — manual pause/resume of the WhatsApp AI agent for a
+   * conversation. Pass `null` to resume immediately; pass a future ISO
+   * timestamp to pause until that instant. The "indefinite" pause is
+   * sent as the maximum supported timestamp by callers (see
+   * INDEFINITE_PAUSE_ISO in the conversations UI).
+   */
+  setAiPause(id: string, pauseUntil: string | null) {
+    return api.patch<Conversation>(`/conversations/${id}/ai-pause`, { pauseUntil })
   },
 }
 
@@ -1110,7 +1202,13 @@ export const departmentsApi = {
 export const whatsappNumbersApi = {
   list() { return api.get<WhatsAppNumber[]>('/meta/numbers') },
   update(id: string, data: { label?: string }) { return api.patch<WhatsAppNumber>(`/meta/numbers/${id}`, data) },
+  // Desconectar (soft) — pausa o atendimento, mantém a row e permite
+  // reconectar pelo OAuth ressuscitando o mesmo registro.
   remove(id: string) { return api.delete(`/meta/numbers/${id}`) },
+  // Excluir permanentemente — vira tombstone no backend e libera o slot
+  // para reconexão limpa do mesmo phoneNumberId. Bloqueia (HTTP 409) se
+  // ainda houver templates / campanhas / automações / setores vinculados.
+  permanentDelete(id: string) { return api.delete(`/meta/numbers/${id}/permanent`) },
 
   // Admin-only: aggregated health view of every line + orphan counts.
   health() { return api.get<WhatsappLinesHealth>('/meta/health') },

@@ -16,13 +16,14 @@ import {
   CATEGORIES, SUBCATEGORIES, HEADER_TYPES, LANGUAGES, BUTTON_TYPES,
   CATEGORY_LABELS, SUBCATEGORY_LABELS, extractVarPositions,
 } from './constants'
+import { validateTemplate, isTemplateValid, type TemplateValidationErrors } from './templateValidation'
 import type {
   WhatsAppTemplate, TemplateHeaderType, TemplateButtonType, TemplateCategoryType,
 } from '@/types'
 import type { SubCategory } from './SubcategoryPreview'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type ButtonRow = { type: TemplateButtonType; text: string; url: string; phoneNumber: string; flowId: string }
+type ButtonRow = { type: TemplateButtonType; text: string; url: string; phoneNumber: string; flowId: string; urlExample: string }
 
 type StepNum = 1 | 2 | 3 | 4
 
@@ -35,6 +36,13 @@ interface TemplateCreatorProps {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STEP_LABELS = ['Categoria', 'Mensagem', 'Botões', 'Revisão']
+
+// Meta rejects header TEXT with emojis, formatting markers (*, _, ~) or
+// newlines. Strip them at the input layer so the operator can't paste an
+// invalid header and only learn about it after submission.
+const sanitizeHeaderText = (s: string): string =>
+  s.replace(/\p{Extended_Pictographic}/gu, '')
+   .replace(/[*_~\n\r\t]/g, '')
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -119,6 +127,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
       setButtons((editing.buttons ?? []).map((b) => ({
         type: b.type, text: b.text,
         url: b.url ?? '', phoneNumber: b.phoneNumber ?? '', flowId: b.flowId ?? '',
+        urlExample: b.urlExample ?? '',
       })))
       setVarExamples(editing.bodyVariables ?? [])
     } else {
@@ -180,7 +189,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
       FLOW:         'Ir para o flow',
       COPY_CODE:    'Copiar código',
     }
-    setButtons((prev) => [...prev, { type, text: defaults[type], url: '', phoneNumber: '', flowId: '' }])
+    setButtons((prev) => [...prev, { type, text: defaults[type], url: '', phoneNumber: '', flowId: '', urlExample: '' }])
     setShowAddButton(false)
   }
 
@@ -193,6 +202,15 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
 
   const varPositions = extractVarPositions(body)
 
+  // Run the same Meta-rule checks the backend will run, so the operator
+  // sees the actionable error inline (next to the field) rather than as a
+  // 400 banner after submit. The backend remains the authoritative gate.
+  const errors: TemplateValidationErrors = validateTemplate({
+    name, body, varExamples, headerType, headerText, headerMediaUrl, buttons,
+  })
+  const hasStep2Error = !!(errors.name || errors.body || errors.vars || errors.headerText || errors.headerMediaUrl)
+  const hasStep3Error = !!(errors.buttonsGeneral || errors.buttonByIndex)
+
   // Multi-WABA: block submit until the operator has picked a line. In
   // single-line tenants `waNumbers.length <= 1` so the condition is a
   // no-op. Mirrors the backend rule (resolveResourceNumberOrThrow).
@@ -204,8 +222,8 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
     // the explanation, here we just refuse to advance.
     if (needsExplicitLine) return false
     if (step === 1) return true
-    if (step === 2) return !!(name.trim() && body.trim() && varExamples.every(v => v.trim()))
-    if (step === 3) return buttons.every(b => b.text.trim() && (b.type !== 'URL' || b.url.trim()) && (b.type !== 'PHONE_NUMBER' || b.phoneNumber.trim()))
+    if (step === 2) return !!(name.trim() && body.trim() && varExamples.every(v => v.trim())) && !hasStep2Error
+    if (step === 3) return buttons.every(b => b.text.trim() && (b.type !== 'URL' || b.url.trim()) && (b.type !== 'PHONE_NUMBER' || b.phoneNumber.trim())) && !hasStep3Error
     return true // step 4: submit
   }
 
@@ -213,7 +231,8 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
     name.trim() && body.trim() &&
     varExamples.every((v) => v.trim()) &&
     buttons.every((b) => b.text.trim() && (b.type !== 'URL' || b.url.trim()) && (b.type !== 'PHONE_NUMBER' || b.phoneNumber.trim())) &&
-    !needsExplicitLine
+    !needsExplicitLine &&
+    isTemplateValid(errors)
   )
 
   // ── Save ───────────────────────────────────────────────────────────────────
@@ -231,9 +250,10 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
         body,
         ...(footer.trim() ? { footer: footer.trim() } : {}),
         ...(buttons.length > 0 ? {
-          buttons: buttons.map(({ type, text, url, phoneNumber, flowId }) => ({
+          buttons: buttons.map(({ type, text, url, phoneNumber, flowId, urlExample }) => ({
             type, text: text.trim(),
             ...(type === 'URL' ? { url: url.trim() } : {}),
+            ...(type === 'URL' && /\{\{1\}\}/.test(url) && urlExample.trim() ? { urlExample: urlExample.trim() } : {}),
             ...(type === 'PHONE_NUMBER' ? { phoneNumber: phoneNumber.trim() } : {}),
             ...(type === 'FLOW' ? { flowId: flowId.trim() } : {}),
           })),
@@ -266,9 +286,10 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
     headerType: headerType || undefined, headerText: headerText || undefined,
     headerMediaUrl: headerMediaUrl || undefined,
     body: body || ' ', footer: footer || undefined,
-    buttons: buttons.map(({ type, text, url, phoneNumber, flowId }) => ({
+    buttons: buttons.map(({ type, text, url, phoneNumber, flowId, urlExample }) => ({
       type, text,
       ...(type === 'URL' ? { url } : {}),
+      ...(type === 'URL' && /\{\{1\}\}/.test(url) && urlExample ? { urlExample } : {}),
       ...(type === 'PHONE_NUMBER' ? { phoneNumber } : {}),
       ...(type === 'FLOW' ? { flowId } : {}),
     })),
@@ -391,6 +412,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
               onVarExamples={setVarExamples}
               wrapSelection={wrapSelection}
               addVariable={addVariable}
+              errors={errors}
             />
           )}
           {step === 3 && (
@@ -402,6 +424,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
               addButtonOfType={addButtonOfType}
               removeButton={removeButton}
               updateButton={updateButton}
+              errors={errors}
             />
           )}
           {step === 4 && (
@@ -549,22 +572,37 @@ function StepCategoria({
 
       <Section title="Categoria" required>
         <div className="grid grid-cols-3 gap-2">
-          {CATEGORIES.map(({ value, label, description, icon: Icon }) => (
-            <button
-              key={value}
-              onClick={() => onCategory(value)}
-              className={cn(
-                'text-left p-3 rounded-xl border transition-all',
-                category === value
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
-              )}
-            >
-              <Icon className={cn('w-4 h-4 mb-2', category === value ? 'text-brand-400' : 'text-surface-400')} />
-              <p className="text-xs font-semibold text-surface-100">{label}</p>
-              <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">{description}</p>
-            </button>
-          ))}
+          {CATEGORIES.map(({ value, label, description, icon: Icon, comingSoon }) => {
+            // Keep the existing selection visible even if the category has
+            // since been flagged comingSoon — otherwise editing an old
+            // template would silently fail to render its category.
+            const disabled = !!comingSoon && category !== value
+            return (
+              <button
+                key={value}
+                onClick={() => { if (!disabled) onCategory(value) }}
+                disabled={disabled}
+                title={disabled ? 'Em breve — esta categoria precisa de um fluxo dedicado e ainda não está disponível.' : undefined}
+                className={cn(
+                  'text-left p-3 rounded-xl border transition-all relative',
+                  category === value
+                    ? 'border-brand-500 bg-brand-500/10'
+                    : disabled
+                      ? 'border-surface-800 bg-surface-800/20 opacity-60 cursor-not-allowed'
+                      : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
+                )}
+              >
+                {comingSoon && (
+                  <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                    Em breve
+                  </span>
+                )}
+                <Icon className={cn('w-4 h-4 mb-2', category === value ? 'text-brand-400' : 'text-surface-400')} />
+                <p className="text-xs font-semibold text-surface-100">{label}</p>
+                <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">{description}</p>
+              </button>
+            )
+          })}
         </div>
 
         {/* Pricing note */}
@@ -578,7 +616,10 @@ function StepCategoria({
         </div>
 
         {/* Subcategory */}
-        <div className="mt-3 space-y-1.5">
+        <p className="text-[11px] text-surface-400 mt-3 mb-1.5">
+          A subcategoria escolhe um <strong className="text-surface-300">modelo inicial</strong> para o editor — ela não é enviada para a Meta.
+        </p>
+        <div className="space-y-1.5">
           {SUBCATEGORIES[category].map((sub) => (
             <button
               key={sub.value}
@@ -617,6 +658,7 @@ function StepMensagem({
   body, onBody, footer, onFooter,
   bodyRef, varPositions, varExamples, onVarExamples,
   wrapSelection, addVariable,
+  errors,
 }: {
   name: string
   onName: (v: string) => void
@@ -638,6 +680,7 @@ function StepMensagem({
   onVarExamples: (v: string[]) => void
   wrapSelection: (w: string) => void
   addVariable: () => void
+  errors: TemplateValidationErrors
 }) {
   return (
     <div className="space-y-7">
@@ -650,9 +693,16 @@ function StepMensagem({
               value={name}
               onChange={(e) => onName(e.target.value)}
               placeholder="ex: boas_vindas_novos_clientes"
-              className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
+              className={cn(
+                'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
+                errors.name ? 'border-rose-500/60 focus:border-rose-500' : 'border-surface-700 focus:border-brand-500',
+              )}
             />
-            <p className="text-[11px] text-surface-400 mt-1">Apenas letras minúsculas, números e underscore ( _ )</p>
+            {errors.name ? (
+              <p className="text-[11px] text-rose-400 mt-1">{errors.name}</p>
+            ) : (
+              <p className="text-[11px] text-surface-400 mt-1">Apenas letras minúsculas, números e underscore ( _ )</p>
+            )}
           </div>
           <div>
             <FieldLabel>Idioma</FieldLabel>
@@ -697,10 +747,20 @@ function StepMensagem({
             </div>
             <input
               value={headerText}
-              onChange={(e) => onHeaderText(e.target.value.slice(0, 60))}
+              onChange={(e) => onHeaderText(sanitizeHeaderText(e.target.value).slice(0, 60))}
               placeholder="Texto do cabeçalho — pode conter {{1}}"
-              className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
+              className={cn(
+                'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
+                errors.headerText ? 'border-rose-500/60 focus:border-rose-500' : 'border-surface-700 focus:border-brand-500',
+              )}
             />
+            {errors.headerText ? (
+              <p className="text-[11px] text-rose-400 mt-1">{errors.headerText}</p>
+            ) : (
+              <p className="text-[11px] text-surface-400 mt-1">
+                Sem emojis, sem * _ ~ e sem quebra de linha — a Meta rejeita o template. Use o body ou o footer para isso.
+              </p>
+            )}
           </div>
         )}
         {['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && (
@@ -710,9 +770,16 @@ function StepMensagem({
               value={headerMediaUrl}
               onChange={(e) => onHeaderMediaUrl(e.target.value)}
               placeholder="https://exemplo.com/imagem.jpg"
-              className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
+              className={cn(
+                'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
+                errors.headerMediaUrl ? 'border-rose-500/60 focus:border-rose-500' : 'border-surface-700 focus:border-brand-500',
+              )}
             />
-            <p className="text-[11px] text-surface-400 mt-1">URL pública e acessível. A Meta usará esta amostra para revisar o template.</p>
+            {errors.headerMediaUrl ? (
+              <p className="text-[11px] text-rose-400 mt-1">{errors.headerMediaUrl}</p>
+            ) : (
+              <p className="text-[11px] text-surface-400 mt-1">URL pública e acessível. A Meta usará esta amostra para revisar o template.</p>
+            )}
           </div>
         )}
       </Section>
@@ -774,10 +841,19 @@ function StepMensagem({
             rows={6}
             maxLength={1024}
             placeholder="Olá, {{1}}! Sua mensagem aqui..."
-            className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+            className={cn(
+              'w-full bg-surface-800 border rounded-xl px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors resize-none',
+              errors.body ? 'border-rose-500/60 focus:border-rose-500' : 'border-surface-700 focus:border-brand-500',
+            )}
           />
           <span className="absolute bottom-2.5 right-3 text-[11px] text-surface-400">{body.length}/1024</span>
         </div>
+        {errors.body && (
+          <p className="text-[11px] text-rose-400 mt-1.5">{errors.body}</p>
+        )}
+        {errors.vars && !errors.body && (
+          <p className="text-[11px] text-rose-400 mt-1.5">{errors.vars}</p>
+        )}
 
         {/* Variable examples */}
         {varPositions.length > 0 ? (
@@ -840,6 +916,7 @@ function StepMensagem({
 function StepBotoes({
   buttons, availableButtonTypes, showAddButton, onShowAddButton,
   addButtonOfType, removeButton, updateButton,
+  errors,
 }: {
   buttons: ButtonRow[]
   availableButtonTypes: typeof BUTTON_TYPES
@@ -848,6 +925,7 @@ function StepBotoes({
   addButtonOfType: (t: TemplateButtonType) => void
   removeButton: (i: number) => void
   updateButton: (i: number, field: keyof ButtonRow, value: string) => void
+  errors: TemplateValidationErrors
 }) {
   return (
     <div className="space-y-5">
@@ -859,6 +937,13 @@ function StepBotoes({
           acima de 3 eles aparecem em <strong className="text-surface-300">lista</strong> no WhatsApp.
         </p>
       </div>
+
+      {errors.buttonsGeneral && (
+        <div className="flex items-start gap-2 px-3 py-2.5 bg-rose-500/10 border border-rose-500/40 rounded-xl">
+          <Info className="w-3.5 h-3.5 text-rose-400 mt-0.5 flex-shrink-0" />
+          <p className="text-[11px] text-rose-300 leading-relaxed">{errors.buttonsGeneral}</p>
+        </div>
+      )}
 
       {/* Button list */}
       <div className="space-y-2">
@@ -901,10 +986,28 @@ function StepBotoes({
                   maxLength={25}
                 />
                 {btn.type === 'URL' && (
-                  <InputRow value={btn.url} onChange={(v) => updateButton(i, 'url', v)} placeholder="https://seusite.com.br/pagina" label="URL de destino" />
+                  <>
+                    <InputRow
+                      value={btn.url}
+                      onChange={(v) => updateButton(i, 'url', v)}
+                      placeholder="https://seusite.com.br/promo/{{1}} (opcional)"
+                      label="URL de destino"
+                    />
+                    {/\{\{1\}\}/.test(btn.url) && (
+                      <InputRow
+                        value={btn.urlExample}
+                        onChange={(v) => updateButton(i, 'urlExample', v)}
+                        placeholder="https://seusite.com.br/promo/abc123"
+                        label="URL de exemplo"
+                      />
+                    )}
+                  </>
                 )}
                 {btn.type === 'PHONE_NUMBER' && (
                   <InputRow value={btn.phoneNumber} onChange={(v) => updateButton(i, 'phoneNumber', v)} placeholder="+55 11 99999-9999" label="Número de telefone" />
+                )}
+                {errors.buttonByIndex?.[i] && (
+                  <p className="text-[11px] text-rose-400">{errors.buttonByIndex[i]}</p>
                 )}
                 {btn.type === 'FLOW' && (
                   <InputRow value={btn.flowId} onChange={(v) => updateButton(i, 'flowId', v)} placeholder="ID do Flow no Meta Business Manager" label="Flow ID" />
@@ -945,12 +1048,13 @@ function StepBotoes({
                   {availableButtonTypes.map((bt) => {
                     const Icon = bt.icon
                     const alreadyHasType = buttons.some((b) => b.type === bt.value)
-                    const isDisabledType = (bt.value === 'COPY_CODE' && buttons.length > 0) || alreadyHasType
+                    const isDisabledType = bt.comingSoon || (bt.value === 'COPY_CODE' && buttons.length > 0) || alreadyHasType
                     return (
                       <button
                         key={bt.value}
                         onClick={() => !isDisabledType && addButtonOfType(bt.value)}
                         disabled={isDisabledType}
+                        title={bt.comingSoon ? 'Em breve — este tipo precisa de suporte dedicado e ainda não está disponível.' : undefined}
                         className={cn(
                           'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all',
                           isDisabledType ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-700'
@@ -961,7 +1065,11 @@ function StepBotoes({
                           <p className="text-xs font-medium text-surface-200">{bt.label}</p>
                           <p className="text-[11px] text-surface-400">{bt.description}</p>
                         </div>
-                        {alreadyHasType && <span className="ml-auto text-[10px] text-surface-400">Já adicionado</span>}
+                        {bt.comingSoon ? (
+                          <span className="ml-auto text-[9px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">Em breve</span>
+                        ) : alreadyHasType ? (
+                          <span className="ml-auto text-[10px] text-surface-400">Já adicionado</span>
+                        ) : null}
                       </button>
                     )
                   })}

@@ -63,13 +63,9 @@ vi.mock('@/contexts/InternalChatContext', () => ({
   useInternalChat: () => ({ messages: [] }),
 }))
 
-// Mock CopilotPanel and DebugPanel (heavy components not needed for smoke tests)
+// Mock CopilotPanel (heavy component not needed for smoke tests)
 vi.mock('@/components/copilot/CopilotPanel', () => ({
   CopilotPanel: () => null,
-}))
-
-vi.mock('@/components/debug/DebugPanel', () => ({
-  DebugPanel: () => null,
 }))
 
 // Mock AppShell to just render children

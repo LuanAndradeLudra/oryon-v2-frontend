@@ -25,6 +25,9 @@ import type {
 } from '@/types'
 import { cn } from '@/lib/utils'
 import { CampaignLeadsDrawer } from '@/components/campaigns/CampaignLeadsDrawer'
+import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useNavigate } from 'react-router-dom'
 
 const META_BLUE = '#1877f2'
 const C = { grid: '#1e293b', axis: '#475569' }
@@ -989,6 +992,24 @@ function CapiEventsSection() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function MarketingPage() {
+  const isMobile = useIsMobile()
+  const navigate = useNavigate()
+
+  if (isMobile) {
+    return (
+      <MobileFeatureGate
+        open
+        onClose={() => navigate('/home')}
+        featureName="Marketing"
+        description="Painel de Marketing tem múltiplos charts (funil, séries temporais, donut), tabelas de campanhas Meta e drilldowns. Tudo otimizado para tela larga. Abra no desktop para análise completa."
+      />
+    )
+  }
+
+  return <MarketingPageDesktop />
+}
+
+function MarketingPageDesktop() {
   const { user } = useAuth()
   const [campaigns, setCampaigns] = useState<AdCampaignMetrics[]>([])
   const [totals, setTotals]       = useState<MarketingFunnelTotals | null>(null)

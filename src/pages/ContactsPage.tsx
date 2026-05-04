@@ -10,6 +10,7 @@ import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
 import { ContactsTable } from '@/components/contacts/ContactsTable'
 import { ContactsKanban } from '@/components/contacts/ContactsKanban'
+import { ContactsMobileList } from '@/components/contacts/ContactsMobileList'
 import { ContactDetailPanel } from '@/components/contacts/ContactDetailPanel'
 import { CRMConfigDrawer } from '@/components/contacts/CRMConfigDrawer'
 import { NewContactDrawer } from '@/components/contacts/NewContactDrawer'
@@ -21,6 +22,10 @@ import { Avatar } from '@/components/ui/Avatar'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
+import { useTableSelection } from '@/hooks/useTableSelection'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
+import { Fab } from '@/components/common/Fab'
 import { tagsApi } from '@/services/api'
 import { cn } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag } from '@/types'
@@ -29,6 +34,11 @@ type ViewMode = 'table' | 'kanban'
 
 export function ContactsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
+  const isMobile = useIsMobile()
+  // In mobile, the table view is unusable (horizontal overflow + tiny rows).
+  // Force kanban regardless of user preference so they always get a usable
+  // layout. Desktop preference is preserved across viewport changes.
+  const effectiveViewMode: ViewMode = isMobile ? 'kanban' : viewMode
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -72,33 +82,15 @@ export function ContactsPage() {
   const { toasts, toast, dismiss } = useToast()
 
   // ── Bulk selection state ───────────────────────────────────────────────
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const {
+    selectedIds,
+    selectedItems: selectedContacts,
+    toggle: toggleSelect,
+    selectAll,
+    clear: clearSelection,
+  } = useTableSelection(contacts, useCallback((c: typeof contacts[number]) => c.id, []))
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const [bulkDeleting, setBulkDeleting] = useState(false)
-
-  // Stable list of the contacts the user is about to delete — used by the
-  // confirmation modal. Recomputes only when the selection or list changes.
-  const selectedContacts = useMemo(
-    () => contacts.filter((c) => selectedIds.has(c.id)),
-    [contacts, selectedIds],
-  )
-
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
-
-  const selectAll = useCallback((ids: string[]) => {
-    setSelectedIds(new Set(ids))
-  }, [])
-
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set())
-  }, [])
 
   // Esc clears selection.
   useEffect(() => {
@@ -117,8 +109,8 @@ export function ContactsPage() {
       <span className="text-xs text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full border border-surface-700 font-medium">
         {total.toLocaleString('pt-BR')}
       </span>
-      {/* View toggle */}
-      <div className="flex items-center bg-surface-800 border border-surface-700 rounded-lg p-0.5">
+      {/* View toggle — desktop only; mobile is always kanban */}
+      <div className="hidden md:flex items-center bg-surface-800 border border-surface-700 rounded-lg p-0.5">
         <button
           onClick={() => setViewMode('table')}
           className={cn(
@@ -261,12 +253,22 @@ export function ContactsPage() {
   return (
     <>
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-black">
+        {isMobile && <MobilePageHeader title="Contatos" />}
+
         <ContactsStatsBar contacts={contacts} total={total} />
 
         <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
 
         <div className="flex-1 overflow-hidden">
-          {viewMode === 'table' ? (
+          {isMobile ? (
+            // Mobile: lista vertical pura — kanban horizontal e table viraram
+            // inutilizaveis em viewport estreita. Tap no card abre detail.
+            <ContactsMobileList
+              contacts={contacts}
+              loading={loading}
+              onOpenPanel={handleOpenPanel}
+            />
+          ) : effectiveViewMode === 'table' ? (
             <ContactsTable
               contacts={contacts}
               loading={loading}
@@ -294,6 +296,13 @@ export function ContactsPage() {
           )}
         </div>
       </div>
+
+      {/* Mobile FAB: novo contato — desktop usa o "+ Novo" do header */}
+      <Fab
+        icon={<Plus className="w-6 h-6" />}
+        label="Novo contato"
+        onClick={() => setShowNewContact(true)}
+      />
 
       {/* Bulk selection floating bar */}
       <AnimatePresence>

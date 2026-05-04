@@ -20,6 +20,7 @@ const MODULE_LABELS: Record<UserModule, string> = {
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
+  super_admin:    'Equipe Oryon',
   business_admin: 'Business Admin',
   admin:      'Administrador',
   supervisor: 'Supervisor',
@@ -27,6 +28,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  super_admin:    'Equipe interna Oryon',
   business_admin: 'Super administrador do negócio',
   admin:      'Acesso total à plataforma',
   supervisor: 'Gerencia equipe e atendimentos',

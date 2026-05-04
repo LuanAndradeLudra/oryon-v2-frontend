@@ -2,13 +2,22 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useState, useEffect, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
 import type { ReactNode, ErrorInfo } from 'react'
+import * as Sentry from '@sentry/react'
 
 // ── Error Boundary — prevents white screen on crash ─────────────────────────
+// Phase D.1: also reports the captured error to Sentry (no-op when DSN unset).
+// We keep our own boundary instead of wrapping with Sentry.ErrorBoundary so the
+// existing fallback UI / reload UX remain unchanged.
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null }
   static getDerivedStateFromError(error: Error) { return { error } }
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack)
+    try {
+      Sentry.captureException(error, { contexts: { react: { componentStack: info.componentStack ?? null } } })
+    } catch {
+      // swallow — Sentry MUST NOT break the fallback path
+    }
   }
   render() {
     if (this.state.error) {
@@ -33,6 +42,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 }
 import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
+import { isOryonStaff } from '@/lib/roleHelpers'
 import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
@@ -42,8 +52,9 @@ import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
-import { DebugPanel }         from '@/components/debug/DebugPanel'
 import { SetupWizard }        from '@/components/onboarding/SetupWizard'
+import { useIsMobile }        from '@/hooks/useIsMobile'
+import { Monitor }            from 'lucide-react'
 
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
@@ -62,6 +73,20 @@ const AgentsPage        = lazyRoute(() => import('@/pages/AgentsPage').then(m =>
 const PricingPage       = lazyRoute(() => import('@/pages/PricingPage').then(m => ({ default: m.PricingPage })))
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
+const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
+const NotificationsPage = lazyRoute(() => import('@/pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
+
+// Admin (Oryon staff only) — gated by RequireSuperAdmin inside the route.
+const SkillTemplatesPage       = lazyRoute(() => import('@/pages/admin/SkillTemplatesPage').then(m => ({ default: m.SkillTemplatesPage })))
+const SkillTemplateEditorPage  = lazyRoute(() => import('@/pages/admin/SkillTemplateEditorPage').then(m => ({ default: m.SkillTemplateEditorPage })))
+const SkillTemplateTesterPage  = lazyRoute(() => import('@/pages/admin/SkillTemplateTesterPage').then(m => ({ default: m.SkillTemplateTesterPage })))
+const AssignSkillPage          = lazyRoute(() => import('@/pages/admin/AssignSkillPage').then(m => ({ default: m.AssignSkillPage })))
+const AuditPage                = lazyRoute(() => import('@/pages/admin/AuditPage').then(m => ({ default: m.AuditPage })))
+const AiObservabilityPage      = lazyRoute(() => import('@/pages/admin/AiObservabilityPage').then(m => ({ default: m.AiObservabilityPage })))
+const AiExecutionsPage         = lazyRoute(() => import('@/pages/admin/AiExecutionsPage').then(m => ({ default: m.AiExecutionsPage })))
+
+import { RequireSuperAdmin } from '@/components/admin/RequireSuperAdmin'
+import { AdminMobileBlock } from '@/components/common/AdminMobileBlock'
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 
@@ -79,9 +104,42 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 function OnboardingGate({ children }: { children: ReactNode }) {
-  const { organizationConfigured } = useAuth()
+  const { organizationConfigured, user } = useAuth()
   const [dismissed, setDismissed] = useState(false)
+  const isMobile = useIsMobile()
+  // Oryon staff (super_admin) must always reach the app shell — they may
+  // be inspecting a half-configured tenant precisely to debug what the
+  // wizard left undone. Without this bypass, super_admin gets trapped in
+  // the SetupWizard for any tenant whose onboarding isn't finished.
+  if (isOryonStaff(user?.role)) {
+    return <>{children}</>
+  }
   if (!organizationConfigured && !dismissed) {
+    // SetupWizard tem multi-step de configuracao inicial (dados da empresa,
+    // numero WhatsApp, primeiros agentes). Em mobile e ilegivel — exigimos
+    // desktop para o onboarding.
+    if (isMobile) {
+      return (
+        <div className="h-screen w-screen bg-black flex flex-col items-center justify-center px-6 text-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-950/40 border border-amber-700/40 flex items-center justify-center">
+            <Monitor className="w-8 h-8 text-amber-300" />
+          </div>
+          <h1 className="text-lg font-semibold text-surface-50">Configuração inicial requer desktop</h1>
+          <p className="text-sm text-surface-400 leading-relaxed max-w-xs">
+            O assistente de configuração tem múltiplos passos com formulários e
+            integrações. Abra o Oryon no seu computador para configurar sua
+            empresa. Depois disso, o app mobile fica liberado para uso operacional.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigator.clipboard.writeText(window.location.origin).catch(() => {})}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-900 border border-surface-700 text-sm text-surface-200 hover:bg-surface-800 transition-colors"
+          >
+            Copiar link do Oryon
+          </button>
+        </div>
+      )
+    }
     return <SetupWizard onComplete={() => setDismissed(true)} />
   }
   return <>{children}</>
@@ -155,6 +213,12 @@ function AnimatedRoutes() {
           <Route path="/contacts" element={
             <ProtectedRoute><ContactsPage /></ProtectedRoute>
           } />
+          <Route path="/more" element={
+            <ProtectedRoute><MorePage /></ProtectedRoute>
+          } />
+          <Route path="/notifications" element={
+            <ProtectedRoute><NotificationsPage /></ProtectedRoute>
+          } />
           <Route path="/campaigns" element={
             <ProtectedRoute><CampaignsPage /></ProtectedRoute>
           } />
@@ -180,6 +244,32 @@ function AnimatedRoutes() {
             <ProtectedRoute><AgentsPage /></ProtectedRoute>
           } />
 
+          {/* ── Admin (Oryon staff) ──────────────────────────────────── */}
+          <Route path="/admin/skill-templates" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Skills"><SkillTemplatesPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/skill-templates/new" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de skill"><SkillTemplateEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/skill-templates/:id" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de skill"><SkillTemplateEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/skill-templates/:id/test" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Test runner de skill"><SkillTemplateTesterPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/skills/assign" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Atribuir skills"><AssignSkillPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/audit" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Auditoria"><AuditPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/ai-observability" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="AI Observability"><AiObservabilityPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/ai-executions" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="AI Executions"><AiExecutionsPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+
           {/* Public pricing */}
           <Route path="/pricing" element={<PricingPage />} />
 
@@ -194,6 +284,15 @@ function AnimatedRoutes() {
       </motion.div>
     </AnimatePresence>
   )
+}
+
+// ── Global toast container — reads do singleton em useToast.ts ──────────────
+import { ToastContainer } from '@/components/ui/Toast'
+import { useToast } from '@/hooks/useToast'
+
+function GlobalToastContainer() {
+  const { toasts, dismiss } = useToast()
+  return <ToastContainer toasts={toasts} onDismiss={dismiss} />
 }
 
 // ── Root ──────────────────────────────────────────────────────────────────────
@@ -215,7 +314,7 @@ export default function App() {
               <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
                 <AnimatedRoutes />
                 <CopilotPanel />
-                <DebugPanel />
+                <GlobalToastContainer />
               </div>
             </ContextMenuProvider>
           </CopilotProvider>
