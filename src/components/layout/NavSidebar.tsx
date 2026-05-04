@@ -43,20 +43,24 @@ function LogoSection() {
   const { open, animate } = useSidebar()
   return (
     <div className="flex items-center gap-3 px-3 mb-2 flex-shrink-0">
-      <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center flex-shrink-0" style={{ boxShadow: '4px 3px 16px rgba(0,0,0,0.40)' }}>
-        <Zap className="w-5 h-5 text-surface-950" fill="currentColor" />
-      </div>
+      <img
+        src="/oryon-logo.svg"
+        alt="Oryon"
+        className="w-9 h-9 flex-shrink-0 select-none"
+        draggable={false}
+      />
       <AnimatePresence>
         {(!animate || open) && (
-          <motion.span
+          <motion.img
+            src="/oryon-wordmark.png"
+            alt="Oryon"
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -6 }}
             transition={{ duration: 0.15 }}
-            className="text-sm font-bold text-surface-50 whitespace-pre overflow-hidden"
-          >
-            Oryon
-          </motion.span>
+            className="h-[27px] w-auto select-none"
+            draggable={false}
+          />
         )}
       </AnimatePresence>
     </div>

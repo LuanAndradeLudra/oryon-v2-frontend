@@ -6,6 +6,9 @@ import { useNotifications } from '@/hooks/useNotifications'
 
 interface MobilePageHeaderProps {
   title: string
+  /** Quando presente, renderiza esta imagem no lugar do título textual.
+   *  Usado p.ex. em /more para mostrar o wordmark Oryon. */
+  titleImage?: string
   /** When provided, mostra um botão de voltar a esquerda em vez do espaço vazio. */
   onBack?: () => void
   /** Slot a direita, antes do sino de notificações. Use para ícone de busca,
@@ -19,6 +22,7 @@ interface MobilePageHeaderProps {
 
 export function MobilePageHeader({
   title,
+  titleImage,
   onBack,
   rightActions,
   hideBell = false,
@@ -30,9 +34,10 @@ export function MobilePageHeader({
   return (
     <header
       className={cn(
-        'flex-shrink-0 h-14 px-3 flex items-center gap-2 bg-black border-b border-surface-800/60',
+        'flex-shrink-0 pt-safe px-3 flex items-center gap-2 bg-black border-b border-surface-800/60',
         className,
       )}
+      style={{ minHeight: 'calc(3.5rem + env(safe-area-inset-top))' }}
     >
       {onBack ? (
         <button
@@ -44,12 +49,35 @@ export function MobilePageHeader({
           <ArrowLeft className="w-5 h-5" />
         </button>
       ) : (
-        <span className="w-2" />
+        <button
+          type="button"
+          onClick={() => navigate('/home')}
+          aria-label="Ir para Home"
+          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-surface-800 transition-colors flex-shrink-0"
+        >
+          <img
+            src="/oryon-logo.svg"
+            alt="Oryon"
+            className="w-7 h-7 select-none"
+            draggable={false}
+          />
+        </button>
       )}
 
-      <h1 className="flex-1 min-w-0 text-base font-semibold text-surface-50 truncate">
-        {title}
-      </h1>
+      {titleImage ? (
+        <div className="flex-1 min-w-0 flex items-center">
+          <img
+            src={titleImage}
+            alt={title}
+            className="h-[20px] w-auto select-none"
+            draggable={false}
+          />
+        </div>
+      ) : (
+        <h1 className="flex-1 min-w-0 text-base font-semibold text-surface-50 truncate">
+          {title}
+        </h1>
+      )}
 
       {rightActions}
 

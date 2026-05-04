@@ -108,7 +108,7 @@ export function MorePage() {
 
   return (
     <div className="flex flex-col h-full bg-black">
-      <MobilePageHeader title="Mais" />
+      <MobilePageHeader title="Mais" titleImage="/oryon-wordmark.png" />
       <div className="flex-1 overflow-y-auto">
         {/* User card */}
         {user && (

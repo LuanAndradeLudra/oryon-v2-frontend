@@ -52,6 +52,8 @@ export function QualificationCard({ contact, onSave }: QualificationCardProps) {
     try {
       await onSave(form)
       setEditing(false)
+    } catch (err) {
+      console.error('[QualificationCard] save failed:', err)
     } finally {
       setSaving(false)
     }

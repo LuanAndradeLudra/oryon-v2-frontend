@@ -11,6 +11,13 @@ const config: CapacitorConfig = {
   appId: 'com.oryon.app',
   appName: 'Oryon',
   webDir: 'dist',
+  // Forca o WebView a ter fundo preto (matching o tema escuro do app).
+  // Sem isso o WebView mostra branco entre o boot do app e o primeiro paint
+  // do React, dando a sensacao de "barra branca".
+  backgroundColor: '#000000',
+  android: {
+    backgroundColor: '#000000',
+  },
   ...(isDev && devUrl
     ? {
         server: {

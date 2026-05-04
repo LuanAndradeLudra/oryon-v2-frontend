@@ -198,13 +198,14 @@ function HubStep({
       <div className="w-80 flex-shrink-0 border-r border-surface-800/60 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
         {/* Brand */}
         <div className="flex items-center gap-3 mb-8">
-          <motion.div
+          <motion.img
+            src="/oryon-logo.svg"
+            alt="Oryon"
             animate={{ scale: [1, 1.08, 1] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-900/50 flex-shrink-0"
-          >
-            <Zap className="w-4 h-4 text-surface-950" fill="currentColor" />
-          </motion.div>
+            className="w-11 h-11 select-none flex-shrink-0"
+            draggable={false}
+          />
           <span className="text-sm font-bold text-surface-50">Oryon</span>
         </div>
 

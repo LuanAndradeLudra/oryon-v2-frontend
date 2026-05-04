@@ -115,9 +115,12 @@ export function RegisterPage() {
 
         {/* Brand */}
         <div className="flex flex-col items-center mb-5">
-          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center mb-3 shadow-lg shadow-brand-600/30">
-            <Zap className="w-5 h-5 text-surface-950" fill="currentColor" />
-          </div>
+          <img
+            src="/oryon-logo.svg"
+            alt="Oryon"
+            className="w-14 h-14 mb-3 select-none"
+            draggable={false}
+          />
           <h1 className="text-lg font-bold text-surface-50">Criar conta</h1>
           <p className="text-xs text-surface-400 mt-0.5">Configure sua empresa no Oryon</p>
         </div>

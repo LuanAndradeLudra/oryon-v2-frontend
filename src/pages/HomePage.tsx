@@ -786,10 +786,7 @@ export function HomePage() {
 
               {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
 
-              {/* AI Insights so em desktop — bloco grande com varias linhas
-                  longas que polui a Home em viewport estreita. Atendente ve
-                  insights via Copilot quando precisar. */}
-              {!isMobile && stats && <AIInsightsWidget stats={stats} />}
+              {stats && <AIInsightsWidget stats={stats} />}
 
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:min-h-[300px]">
                 <div className="lg:col-span-2">

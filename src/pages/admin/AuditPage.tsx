@@ -152,7 +152,7 @@ function ActivityFeedTab() {
 
   return (
     <>
-      <FilterBar
+      <FilterBar<AuditFeedQuery>
         onApply={f => { setFilters(f); void load(f, false) }}
         loading={loading}
         schema="activity"
@@ -283,7 +283,7 @@ function AuthEventsTab() {
 
   return (
     <>
-      <FilterBar onApply={f => { setFilters(f); void load(f, false) }} loading={loading} schema="auth">
+      <FilterBar<AuthEventsQuery> onApply={f => { setFilters(f); void load(f, false) }} loading={loading} schema="auth">
         {(d, set) => (
           <>
             <FilterInput label="tenantId" value={d.tenantId ?? ''} onChange={v => set('tenantId', v || undefined)} placeholder="UUID" />
@@ -372,7 +372,7 @@ function IntegrationEventsTab() {
 
   return (
     <>
-      <FilterBar onApply={f => { setFilters(f); void load(f, false) }} loading={loading} schema="integration">
+      <FilterBar<IntegrationEventsQuery> onApply={f => { setFilters(f); void load(f, false) }} loading={loading} schema="integration">
         {(d, set) => (
           <>
             <FilterInput label="tenantId" value={d.tenantId ?? ''} onChange={v => set('tenantId', v || undefined)} placeholder="UUID" />
@@ -482,7 +482,7 @@ function AutomationRunsTab() {
 
   return (
     <>
-      <FilterBar onApply={f => { setFilters(f); void load(f, false) }} loading={loading} schema="automation">
+      <FilterBar<AutomationRunsQuery> onApply={f => { setFilters(f); void load(f, false) }} loading={loading} schema="automation">
         {(d, set) => (
           <>
             <FilterInput label="tenantId" value={d.tenantId ?? ''} onChange={v => set('tenantId', v || undefined)} placeholder="UUID" />

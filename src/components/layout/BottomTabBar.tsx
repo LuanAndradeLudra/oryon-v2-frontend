@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { MessageSquare, Users, CheckCircle2, Menu } from 'lucide-react'
+import { MessageSquare, Users, BarChart3, Menu } from 'lucide-react'
 import { useEffect, useState, useCallback, type ComponentType } from 'react'
 import { cn } from '@/lib/utils'
 import { conversationsApi } from '@/services/api'
@@ -15,7 +15,7 @@ interface Tab {
 const TABS: Tab[] = [
   { href: '/conversations', label: 'Conversas', Icon: MessageSquare, matchPrefix: true },
   { href: '/contacts', label: 'Contatos', Icon: Users, matchPrefix: true },
-  { href: '/tasks', label: 'Tarefas', Icon: CheckCircle2, matchPrefix: true },
+  { href: '/dashboard', label: 'Dashboard', Icon: BarChart3, matchPrefix: true },
   { href: '/more', label: 'Mais', Icon: Menu, matchPrefix: true },
 ]
 

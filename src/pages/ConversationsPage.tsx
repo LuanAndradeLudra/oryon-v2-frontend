@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { SlidersHorizontal, MessageSquarePlus } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { ConversationList } from '@/components/conversations/ConversationList/ConversationList'
@@ -151,7 +153,10 @@ export function ConversationsPage() {
 
   const handleSelectConversation = (conv: Conversation) => {
     setActiveConversation(conv)
-    setInfoOpen(true)
+    // Em desktop o ContactPanel e' uma coluna lateral persistente — abrir
+    // junto com a conversa e' o comportamento esperado. Em mobile o painel
+    // sobrepoe o chat; deve aparecer so quando o usuario aciona via menu.
+    if (!isMobile) setInfoOpen(true)
     markAsRead(conv.id)
     if (conv.unreadCount > 0) setTotalUnread((p) => Math.max(0, p - conv.unreadCount))
     setSearchParams({ id: conv.id }, { replace: true })
@@ -166,11 +171,12 @@ export function ConversationsPage() {
       const match = conversations.find((c) => c.id === urlId)
       if (match) {
         setActiveConversation(match)
-        setInfoOpen(true)
+        // Mesma logica do handleSelectConversation: so abre o painel em desktop
+        if (!isMobile) setInfoOpen(true)
         restoredRef.current = true
       }
     }
-  }, [conversations, searchParams])
+  }, [conversations, searchParams, isMobile])
 
   const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved') => {
     await updateStatus(id, status)
@@ -289,11 +295,57 @@ export function ConversationsPage() {
         />
       )}
 
-      {/* 4 — Contact info panel */}
-      {infoOpen && activeConversation && (
-        <div className="fixed inset-0 z-40 md:static md:inset-auto md:z-auto md:flex md:h-full">
-          <div className="absolute inset-0 bg-black/50 md:hidden" onClick={() => setInfoOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-80 md:static md:w-auto md:h-full">
+      {/* 4 — Contact info panel
+          Mobile: drawer renderizado via createPortal(document.body) para
+          escapar de ancestrais com transform (que tornariam 'fixed' relativo
+          ao ancestral, jogando o painel pra esquerda). Mesmo padrao do
+          CRMConfigDrawer. Desktop: coluna lateral estatica.
+
+          IMPORTANTE: w-full em mobile (cobre toda a tela) — sem 88vw nem
+          calc(), que estavam sendo afetados por algum container intermediario
+          deixando o painel mais estreito que esperado. */}
+      {isMobile
+        ? createPortal(
+            <AnimatePresence>
+              {infoOpen && activeConversation && (
+                <>
+                  <motion.div
+                    key="info-bd"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                    onClick={() => setInfoOpen(false)}
+                    className="fixed inset-0 bg-black/60 z-[60]"
+                  />
+                  <motion.aside
+                    key="info-pn"
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
+                    className="fixed top-0 right-0 bottom-0 w-full sm:w-[440px] z-[61] bg-surface-900 border-l border-surface-800 shadow-2xl flex flex-col overflow-hidden"
+                  >
+                    <ContactPanel
+                      conversation={activeConversation}
+                      allTags={allTags}
+                      allUsers={allUsers}
+                      onClose={() => setInfoOpen(false)}
+                      onAddTag={(tag) => handleAddTag(activeConversation.id, tag)}
+                      onRemoveTag={(tagId) => handleRemoveTag(activeConversation.id, tagId)}
+                      onCreateTag={createTag}
+                      onDeleteTag={deleteTag}
+                      onAssign={(user) => handleAssign(activeConversation.id, user)}
+                      onTransfer={(user) => handleTransfer(activeConversation.id, user)}
+                      onArchive={() => handleArchive(activeConversation.id)}
+                    />
+                  </motion.aside>
+                </>
+              )}
+            </AnimatePresence>,
+            document.body,
+          )
+        : infoOpen && activeConversation && (
             <ContactPanel
               conversation={activeConversation}
               allTags={allTags}
@@ -307,9 +359,7 @@ export function ConversationsPage() {
               onTransfer={(user) => handleTransfer(activeConversation.id, user)}
               onArchive={() => handleArchive(activeConversation.id)}
             />
-          </div>
-        </div>
-      )}
+          )}
 
       {/* Toast notifications */}
       {/* Mobile FAB: nova conversa — abre /contacts para escolher um destinatario.

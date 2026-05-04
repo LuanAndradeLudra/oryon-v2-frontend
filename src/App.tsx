@@ -73,7 +73,6 @@ const PricingPage       = lazyRoute(() => import('@/pages/PricingPage').then(m =
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
-const TasksPage         = lazyRoute(() => import('@/pages/TasksPage').then(m => ({ default: m.TasksPage })))
 const NotificationsPage = lazyRoute(() => import('@/pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
 
 // Admin (Oryon staff only) — gated by RequireSuperAdmin inside the route.
@@ -206,9 +205,6 @@ function AnimatedRoutes() {
           <Route path="/contacts" element={
             <ProtectedRoute><ContactsPage /></ProtectedRoute>
           } />
-          <Route path="/tasks" element={
-            <ProtectedRoute><TasksPage /></ProtectedRoute>
-          } />
           <Route path="/more" element={
             <ProtectedRoute><MorePage /></ProtectedRoute>
           } />
@@ -282,6 +278,15 @@ function AnimatedRoutes() {
   )
 }
 
+// ── Global toast container — reads do singleton em useToast.ts ──────────────
+import { ToastContainer } from '@/components/ui/Toast'
+import { useToast } from '@/hooks/useToast'
+
+function GlobalToastContainer() {
+  const { toasts, dismiss } = useToast()
+  return <ToastContainer toasts={toasts} onDismiss={dismiss} />
+}
+
 // ── Root ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -301,6 +306,7 @@ export default function App() {
               <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
                 <AnimatedRoutes />
                 <CopilotPanel />
+                <GlobalToastContainer />
               </div>
             </ContextMenuProvider>
           </CopilotProvider>

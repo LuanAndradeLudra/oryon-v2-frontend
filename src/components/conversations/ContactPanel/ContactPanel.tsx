@@ -95,7 +95,7 @@ export function ContactPanel({
   const [archiveOpen, setArchiveOpen] = useState(false)
 
   return (
-    <aside className="w-[280px] flex-shrink-0 flex flex-col h-full bg-black border-l border-surface-800">
+    <aside className="w-full md:w-[280px] flex-shrink-0 flex flex-col h-full bg-black md:border-l md:border-surface-800">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
         <h3 className="text-sm font-semibold text-surface-100">Informações</h3>

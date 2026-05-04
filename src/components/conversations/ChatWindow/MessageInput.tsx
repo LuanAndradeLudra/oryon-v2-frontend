@@ -359,7 +359,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled }: MessageI
   const slashQuery = text.match(/^\/(\S*)$/)?.[1] ?? ''
 
   return (
-    <div className="px-4 py-3 border-t border-surface-800 bg-black flex-shrink-0">
+    <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
       <div className="relative">
         {pickerActive && (
           <QuickReplyPicker
