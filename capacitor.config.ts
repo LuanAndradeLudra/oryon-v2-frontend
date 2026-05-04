@@ -18,14 +18,17 @@ const config: CapacitorConfig = {
   android: {
     backgroundColor: '#000000',
   },
-  ...(isDev && devUrl
-    ? {
-        server: {
-          url: devUrl,
-          cleartext: true,
-        },
-      }
-    : {}),
+  // server.androidScheme=http: a WebView serve dist/ a partir de http://localhost
+  // em vez do default https://localhost. Necessario para que fetch() para backends
+  // HTTP (localhost:3000 em dev / IP da LAN) nao seja bloqueado por mixed-content
+  // (pagina HTTPS chamando API HTTP). Em prod com backend HTTPS continua OK
+  // (pagina HTTP chamando HTTPS e' permitido sem warning).
+  server: {
+    androidScheme: 'http',
+    ...(isDev && devUrl
+      ? { url: devUrl, cleartext: true }
+      : {}),
+  },
 }
 
 export default config

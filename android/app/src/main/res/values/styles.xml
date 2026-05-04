@@ -13,6 +13,11 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- windowBackground = preto. Sem isto, em modo claro do sistema, o
+             DayNight.NoActionBar usa fundo branco — o que vazaria atras da
+             status bar com edge-to-edge ativo (root cause original da barra
+             branca no topo). -->
+        <item name="android:windowBackground">@android:color/black</item>
         <!-- Edge-to-edge: status bar e nav bar transparentes para o WebView desenhar
              ate as bordas da tela. Em conjunto com StatusBar.setOverlaysWebView({overlay: true})
              e os safe-area-insets do CSS, da o visual de app fullscreen tipo WhatsApp/Instagram. -->
@@ -29,6 +34,19 @@
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <!-- SplashScreen API (Android 12+, backportada via androidx.core:core-splashscreen).
+             windowSplashScreenBackground define a cor do splash; windowSplashScreenAnimatedIcon
+             a logo centralizada. Estes atributos so funcionam quando MainActivity chama
+             SplashScreen.installSplashScreen(this) em onCreate. -->
+        <item name="windowSplashScreenBackground">@android:color/black</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/oryon_splash_logo</item>
+        <!-- postSplashScreenTheme troca o tema da activity para AppTheme.NoActionBar
+             APOS o splash terminar. -->
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <!-- Belt-and-suspenders: o Theme.SplashScreen herda ActionBar do Theme.AppCompat,
+             que renderia android:label="Oryon" como texto nativo sobreposto a WebView se
+             o postSplashScreenTheme nao chavasse a tempo. Forcamos no/title aqui tambem. -->
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 </resources>

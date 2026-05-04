@@ -6,8 +6,9 @@ import {
   ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Shield,
   Link2, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
   Pencil, CheckCircle2, Upload, MessageCircleQuestion, BarChart3,
-  Workflow, Info,
+  Workflow, Info, ShieldCheck,
 } from 'lucide-react'
+import { CapabilitiesTab } from './CapabilitiesTab'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -1903,7 +1904,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
 // ─── Agent Detail ─────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'prompt' | 'tools' | 'skills' | 'rules' | 'knowledge' | 'metrics'
+type Tab = 'overview' | 'prompt' | 'tools' | 'skills' | 'capabilities' | 'rules' | 'knowledge' | 'metrics'
 
 export function AgentDetail({
   agent: initialAgent,
@@ -1955,6 +1956,7 @@ export function AgentDetail({
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Visão geral', icon: <Bot className="w-3.5 h-3.5" /> },
     { id: 'prompt',   label: 'System Prompt', icon: <FileText className="w-3.5 h-3.5" /> },
+    { id: 'capabilities', label: 'Capacidades', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
     ...(skillsVisible
       ? [{ id: 'skills' as Tab, label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" /> }]
       : []),
@@ -2103,6 +2105,7 @@ export function AgentDetail({
               >
                 {activeTab === 'overview' && <OverviewTab  agent={agent} onUpdate={handleAgentUpdate} />}
                 {activeTab === 'prompt'   && <SystemPromptTab agent={agent} onUpdate={handleAgentUpdate} />}
+                {activeTab === 'capabilities' && <CapabilitiesTab agent={agent} onUpdate={handleAgentUpdate} />}
                 {activeTab === 'skills'   && <SkillsTab agentId={agent.id} />}
                 {activeTab === 'tools'    && <ToolsTab agent={agent} onToolsChange={handleToolsChange} />}
                 {activeTab === 'rules'    && (

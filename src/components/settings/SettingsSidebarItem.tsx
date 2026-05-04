@@ -14,7 +14,14 @@ export function SettingsSidebarItem({ section, label, icon, adminOnly, currentRo
   const { section: activeSection } = useParams()
   const isActive = activeSection === section
 
-  if (adminOnly && currentRole !== 'admin') return null
+  // Defense-in-depth duplicate of the parent's filter — accept all "admin"
+  // tiers (admin / business_admin / super_admin), not just literal 'admin'.
+  if (
+    adminOnly
+    && currentRole !== 'admin'
+    && currentRole !== 'business_admin'
+    && currentRole !== 'super_admin'
+  ) return null
 
   return (
     <Link

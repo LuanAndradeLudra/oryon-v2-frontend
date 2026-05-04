@@ -589,6 +589,22 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Mesmo interceptor de Bearer no axios global. Varios contexts (InternalChat,
+// useNotifications, hooks de paginas) usam `import axios from 'axios'` direto
+// em vez do `api` instance. No web isso funciona via cookie, mas em mobile
+// os requests saem sem Authorization e batem 401. Aqui aplicamos o token tanto
+// no `api` (acima) quanto no axios global para cobrir os call-sites legados.
+axios.interceptors.request.use((config) => {
+  if (isNativePlatform()) {
+    const token = getAccessToken()
+    if (token && !config.headers?.['Authorization']) {
+      config.headers = config.headers ?? {}
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+  }
+  return config
+})
+
 // ─── Retry interceptor — exponential backoff for transient failures ───────────
 // Retries 5xx and network errors up to 2 times with 500ms, 1000ms delays.
 
@@ -772,6 +788,17 @@ export const conversationsApi = {
 
   unreadTotal() {
     return api.get<{ totalUnread: number }>('/conversations/unread-total')
+  },
+
+  /**
+   * Phase 27 — manual pause/resume of the WhatsApp AI agent for a
+   * conversation. Pass `null` to resume immediately; pass a future ISO
+   * timestamp to pause until that instant. The "indefinite" pause is
+   * sent as the maximum supported timestamp by callers (see
+   * INDEFINITE_PAUSE_ISO in the conversations UI).
+   */
+  setAiPause(id: string, pauseUntil: string | null) {
+    return api.patch<Conversation>(`/conversations/${id}/ai-pause`, { pauseUntil })
   },
 }
 

@@ -8,6 +8,7 @@ import type { CopilotAttachment } from '@/contexts/CopilotContext'
 import { useCopilot } from '@/hooks/useCopilot'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
+import { isAdminTier } from '@/lib/roleHelpers'
 import {
   ACCEPTED_ATTACHMENT_TYPES,
   MAX_ATTACHMENT_BYTES,
@@ -523,8 +524,9 @@ export function CopilotPanel() {
   const { user } = useAuth()
   const location = useLocation()
 
-  // Copilot is exclusive to admin-level roles (tenant owner + promoted admins)
-  if (user?.role !== 'admin' && user?.role !== 'business_admin') return null
+  // Copilot is exclusive to admin-tier roles (tenant owner + promoted admins
+  // + Oryon staff who may be debugging the tenant's setup).
+  if (!isAdminTier(user?.role)) return null
 
   // Hide floating panel on the dedicated Copilot page
   if (location.pathname.startsWith('/copilot')) return null

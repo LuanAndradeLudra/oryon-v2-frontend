@@ -6,6 +6,7 @@ import { ContactInfoCard } from './ContactInfoCard'
 import { CustomFieldsCard } from './CustomFieldsCard'
 import { AttributionCard } from './AttributionCard'
 import { TagsCard } from './TagsCard'
+import { isFeatureVisible } from '@/config/featureFlags'
 import type { Contact, Tag } from '@/types'
 
 interface OverviewTabProps {
@@ -17,9 +18,14 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ contact, onSave, onAddTag, onRemoveTag, onRefresh }: OverviewTabProps) {
+  // Card "Contexto da IA" gateado por feature flag — escondido enquanto a
+  // geração automática está desligada (FF_AUTO_AI_PROFILE_ON_RESOLVE=false
+  // no backend). Para reativar, basta flippar `aiContextCard` em
+  // frontend/src/config/featureFlags.ts.
+  const showAiContext = isFeatureVisible('aiContextCard')
   return (
     <div className="flex flex-col gap-4 p-4">
-      <AIContextCard contact={contact} onRefresh={onRefresh} />
+      {showAiContext && <AIContextCard contact={contact} onRefresh={onRefresh} />}
       <AttributionCard contact={contact} />
       <ContactInsightsCard contact={contact} />
       <EngagementCard contactId={contact.id} />

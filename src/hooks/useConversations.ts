@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
-import type { Conversation, ConversationFilters, SocketMessageNew, Tag, User } from '@/types'
+import type { Conversation, ConversationFilters, SocketAiPauseUpdated, SocketMessageNew, Tag, User } from '@/types'
+
+/**
+ * Phase 27 — sentinel timestamp used by the UI to mean "pause indefinitely
+ * until the user manually resumes". Year 9999 is far enough that a paused
+ * conversation never gets implicitly auto-resumed by the inbound handler.
+ */
+export const INDEFINITE_PAUSE_ISO = '9999-12-31T23:59:59.000Z'
 
 export function useConversations(filters: ConversationFilters = {}) {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -49,6 +56,11 @@ export function useConversations(filters: ConversationFilters = {}) {
   // ── Socket handlers ────────────────────────────────────────────────────────
 
   const handleNewMessage = useCallback((payload: SocketMessageNew) => {
+    // Defensive — `conversation:updated` fan-out can carry a message-less
+    // shape (e.g. when only metadata fields like aiPausedUntil change).
+    // Without this guard, accessing payload.message.sentAt below crashes
+    // the whole conversations page.
+    if (!payload?.message) return
     setConversations((prev) => {
       const idx = prev.findIndex((c) => c.id === payload.conversationId)
       if (idx === -1) return prev
@@ -58,11 +70,21 @@ export function useConversations(filters: ConversationFilters = {}) {
         lastMessageAt: payload.message.sentAt,
         lastMessagePreview: payload.message.body || payload.message.mediaCaption || `[${payload.message.type ?? 'text'}]`,
         unreadCount: payload.unreadCount,
+        // Phase 27 — outbound human messages carry aiPausedUntil so the
+        // banner countdown updates without a separate fetch. We accept
+        // explicit null (resume) and undefined (untouched).
+        ...(payload.aiPausedUntil !== undefined ? { aiPausedUntil: payload.aiPausedUntil } : {}),
       }
       const [item] = updated.splice(idx, 1)
       return [item, ...updated]
     })
   }, [])
+
+  /** Phase 27 — handler for the dedicated 'conversation:ai-pause-updated' socket
+   *  event emitted by the backend's manual pause/resume endpoint. */
+  const handleAiPauseUpdated = useCallback((payload: SocketAiPauseUpdated) => {
+    patchConv(payload.conversationId, { aiPausedUntil: payload.aiPausedUntil })
+  }, [patchConv])
 
   const markAsRead = useCallback((conversationId: string) => {
     patchConv(conversationId, { unreadCount: 0 })
@@ -113,12 +135,40 @@ export function useConversations(filters: ConversationFilters = {}) {
     patchConv(id, { status: 'abandoned' })
   }, [patchConv])
 
+  /**
+   * Phase 27 — manually pause/resume the WhatsApp AI for one conversation.
+   * Pass `null` to resume immediately, `INDEFINITE_PAUSE_ISO` for pause
+   * indefinitely, or any future ISO timestamp.
+   *
+   * Optimistically patches the local state, then syncs with the backend.
+   * Failures roll back to the previous value so the UI never shows a
+   * state that doesn't exist server-side.
+   */
+  const setAiPause = useCallback(async (id: string, pauseUntil: string | null) => {
+    let previous: string | null | undefined
+    setConversations((prev) => {
+      const target = prev.find((c) => c.id === id)
+      previous = target?.aiPausedUntil ?? null
+      return prev.map((c) => (c.id === id ? { ...c, aiPausedUntil: pauseUntil } : c))
+    })
+    try {
+      await conversationsApi.setAiPause(id, pauseUntil)
+    } catch (err) {
+      // Rollback on failure
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, aiPausedUntil: previous ?? null } : c))
+      )
+      throw err
+    }
+  }, [])
+
   return {
     conversations,
     loading,
     error,
     refetch: fetchConversations,
     handleNewMessage,
+    handleAiPauseUpdated,
     markAsRead,
     updateStatus,
     assignUser,
@@ -126,6 +176,7 @@ export function useConversations(filters: ConversationFilters = {}) {
     addTag,
     removeTag,
     archiveConversation,
+    setAiPause,
     patchConv,
   }
 }

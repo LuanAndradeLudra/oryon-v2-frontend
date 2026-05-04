@@ -20,6 +20,13 @@ export const FEATURE_FLAGS = {
   // Skills assigned by Oryon staff are always executed; this flag only
   // governs whether the customer sees them in the UI.
   agentSkills: true,
+  // Resumo contextual gerado por IA no contato (aiSummary, painPoints,
+  // nextBestAction). Card "Contexto da IA" no topo da Visão Geral do
+  // contato, com botão para gerar/regenerar manualmente. Desligado para
+  // economizar tokens enquanto a feature não está sendo usada
+  // ativamente; combinar com FF_AUTO_AI_PROFILE_ON_RESOLVE=false no
+  // backend para zerar a geração silenciosa.
+  aiContextCard: false,
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS

@@ -22,6 +22,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
 import { Sidebar, SidebarBody, SidebarLink, SidebarSectionLabel, useSidebar } from '@/components/ui/sidebar'
 import { useAuth } from '@/contexts/AuthContext'
+import { isOryonStaff as isOryonStaffHelper } from '@/lib/roleHelpers'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useInternalChat } from '@/contexts/InternalChatContext'
@@ -238,7 +239,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   const settingsVisible = isRouteVisible('/settings')
   // Oryon staff only — never shown to a customer's business_admin even if
   // they discover the URL (the route guard + agent-server gate also block them).
-  const isOryonStaff = user?.role === 'super_admin'
+  const isOryonStaff = isOryonStaffHelper(user?.role)
 
   // When forceExpanded is true, the Sidebar primitive renders at fixed 228px
   // (via inline style). The wrapper className `[&_.nav-sidebar]:!w-full`

@@ -18,11 +18,13 @@ import { useToast } from '@/hooks/useToast'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useContacts } from '@/hooks/useContacts'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { cn } from '@/lib/utils'
 import type {
   Conversation, ConversationFilters,
-  SocketMessageNew, SocketUnreadUpdate,
+  SocketAiPauseUpdated, SocketMessageNew, SocketUnreadUpdate,
   Tag, User,
 } from '@/types'
 
@@ -44,9 +46,9 @@ export function ConversationsPage() {
 
   const {
     conversations, loading,
-    handleNewMessage, markAsRead,
+    handleNewMessage, handleAiPauseUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
-    addTag, removeTag, archiveConversation,
+    addTag, removeTag, archiveConversation, setAiPause,
   } = useConversations(filters)
 
   const assignedTo = filters.assignedTo ?? 'all'
@@ -130,6 +132,16 @@ export function ConversationsPage() {
         setTotalUnread((p) => p + 1)
       }
     }, [handleNewMessage, activeConversation?.id]),
+
+    // Phase 27 — AI handoff pause/resume from another tab or operator. Keeps
+    // the in-memory list in sync so opening that conversation later shows the
+    // correct banner state without a fetch.
+    onConversationAiPauseUpdated: useCallback((payload: SocketAiPauseUpdated) => {
+      handleAiPauseUpdated(payload)
+      if (activeConversation?.id === payload.conversationId) {
+        syncActive(payload.conversationId, { aiPausedUntil: payload.aiPausedUntil })
+      }
+    }, [handleAiPauseUpdated, activeConversation?.id]),
   })
 
   // ── Helpers to sync activeConversation with list state ────────────────────
@@ -229,6 +241,44 @@ export function ConversationsPage() {
     toast('Conversa arquivada', 'warning')
   }
 
+  // Phase 27 — manual pause/resume of the WhatsApp AI for one conversation.
+  // The hook patches the list optimistically; we mirror onto the active
+  // conversation so the banner re-renders without waiting on the WS round-trip.
+  const handleSetAiPause = async (convId: string, pauseUntil: string | null) => {
+    try {
+      await setAiPause(convId, pauseUntil)
+      syncActive(convId, { aiPausedUntil: pauseUntil })
+      toast(pauseUntil ? 'IA pausada para esta conversa' : 'IA reativada', 'info')
+    } catch {
+      toast('Não foi possível atualizar a IA — tente de novo', 'error')
+    }
+  }
+
+  // Phase 29 — page-level handler for send-message failures bubbling up
+  // from MessageInput. Reads the human-readable `message` that the backend's
+  // TenantExceptionFilter writes into the response body and toasts it.
+  // Without this the operator typed → text disappeared → no feedback.
+  const { user } = useAuth()
+  const handleSendError = useCallback((err: unknown) => {
+    const ax = err as { response?: { data?: { message?: string | string[] } } }
+    const raw = ax?.response?.data?.message
+    const msg = Array.isArray(raw) ? raw[0] : raw
+    toast(msg || 'Não foi possível enviar a mensagem. Tente de novo.', 'error')
+  }, [toast])
+
+  // Phase 29 — pre-detect "no department" before the operator types. Admin
+  // tier bypasses (the backend allows admin users without a department).
+  const sendBlockedReason = (() => {
+    if (!user) return null
+    if (isAdminTier(user.role)) return null
+    if (user.departmentId) return null
+    return {
+      message: 'Você precisa estar vinculado a um setor para enviar mensagens. Peça a um administrador para te adicionar a um setor.',
+      ctaHref: '/settings/departments',
+      ctaLabel: 'Ver setores',
+    }
+  })()
+
   // Mobile back: clear active conversation, close info panel, drop ?id from URL.
   const handleMobileBack = useCallback(() => {
     setActiveConversation(null)
@@ -291,6 +341,17 @@ export function ConversationsPage() {
           onAssign={handleAssign}
           onTransfer={handleTransfer}
           onArchive={handleArchive}
+          onSetAiPause={handleSetAiPause}
+          onAiPauseSocketEvent={(p) => {
+            handleAiPauseUpdated(p)
+            // Mirror onto the currently-open conversation in case another
+            // tab triggered the change.
+            if (activeConversation?.id === p.conversationId) {
+              syncActive(p.conversationId, { aiPausedUntil: p.aiPausedUntil })
+            }
+          }}
+          onSendError={handleSendError}
+          sendBlockedReason={sendBlockedReason}
           onBack={isMobile ? handleMobileBack : undefined}
         />
       )}

@@ -17,6 +17,7 @@ import { MessageInput } from '@/components/internal-chat/MessageInput'
 import { NewChatModal } from '@/components/internal-chat/NewChatModal'
 import { CreateChannelDrawer } from '@/components/internal-chat/CreateChannelDrawer'
 import { cn, avatarColor, chatRelTime } from '@/lib/utils'
+import { isAdminTier } from '@/lib/roleHelpers'
 import type { InternalChannel, InternalMessage } from '@/types'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -731,7 +732,9 @@ function TeamChatPageDesktop() {
     setReplyTo(null)
   }, [activeChannelId])
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'business_admin'
+  // Includes super_admin so Oryon staff embedded in a tenant can manage
+  // internal channels alongside the tenant's own admins.
+  const isAdmin = isAdminTier(user?.role)
 
   useRegisterTopBarActions(
     <div className="flex items-center gap-2">

@@ -25,7 +25,9 @@ function readSession() {
     }
   } catch { return { userId: null, tenantId: null, actorName: null } }
 }
-import type { AgentConfigWithTools, HandoffRule, HandoffBusinessContext } from '@/services/agentsApi'
+import type { AgentConfigWithTools, HandoffRule, HandoffBusinessContext, AgentCrmCapabilities, AgentCrmCapabilityConfig, CrmCapabilityId } from '@/services/agentsApi'
+import { CRM_CAPABILITIES_CATALOG } from './crmCapabilitiesCatalog'
+import { Switch } from '@/components/ui/Switch'
 import { HandoffRulesPanel } from '@/components/agents/HandoffRuleBuilder'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
@@ -58,6 +60,14 @@ interface WizardData {
   channels_whatsapp: boolean
   channels_messenger: boolean
   channels_instagram: boolean
+  /**
+   * Phase 25 — opt-in CRM operations. Configured in the Revisão step as a
+   * simple toggle list (no constraint pickers — those live in the post-
+   * creation "Capacidades" tab where the user has more context about
+   * existing tags / stages / atendentes). When a capability is toggled on
+   * here, its catalog `defaultConstraints` are applied automatically.
+   */
+  crm_capabilities: AgentCrmCapabilities
   generated_prompt: string
 }
 
@@ -71,6 +81,7 @@ const DEFAULT_DATA: WizardData = {
   handoff_rules: [],
   knowledge_docs: [],
   channels_whatsapp: true, channels_messenger: false, channels_instagram: false,
+  crm_capabilities: { capabilities: [] },
   generated_prompt: '',
 }
 
@@ -1530,6 +1541,90 @@ function Step6({
   )
 }
 
+// ─── CRM Capabilities Review (inline in Step 8) ──────────────────────────────
+// Lightweight on/off toggles for the CRM capability groups. Constraints
+// (allowlists) are deliberately NOT exposed here — those need real tag/user/
+// stage data the user typically only finalises after the agent is created.
+// The post-creation "Capacidades" tab is where fine-tuning happens.
+
+function CapabilitiesReview({
+  data, setData,
+}: {
+  data: WizardData
+  setData: React.Dispatch<React.SetStateAction<WizardData>>
+}) {
+  const map = new Map<CrmCapabilityId, AgentCrmCapabilityConfig>(
+    data.crm_capabilities.capabilities.map((c) => [c.id, c]),
+  )
+
+  const toggle = (id: CrmCapabilityId, enable: boolean) => {
+    const entry = CRM_CAPABILITIES_CATALOG.find((c) => c.id === id)
+    setData((d) => {
+      const without = d.crm_capabilities.capabilities.filter((c) => c.id !== id)
+      const nextCaps: AgentCrmCapabilityConfig[] = enable
+        ? [
+            ...without,
+            {
+              id,
+              enabled: true,
+              // Apply the catalog's conservative defaults (e.g. block 'resolved'
+              // status). User can refine later in the "Capacidades" tab.
+              ...(entry?.defaultConstraints ? { constraints: entry.defaultConstraints } : {}),
+            },
+          ]
+        : without
+      const updated: AgentCrmCapabilities = { capabilities: nextCaps }
+      return { ...d, crm_capabilities: updated }
+    })
+  }
+
+  const enabledCount = data.crm_capabilities.capabilities.filter((c) => c.enabled).length
+
+  return (
+    <div className="bg-surface-900/60 border border-surface-800 rounded-xl px-4 py-3 flex-shrink-0">
+      <div className="flex items-baseline justify-between mb-1">
+        <p className="text-[11px] text-surface-300 font-semibold uppercase tracking-wide">
+          Capacidades de CRM <span className="text-surface-600 font-normal normal-case">(opcional)</span>
+        </p>
+        {enabledCount > 0 && (
+          <span className="text-[10px] text-brand-400">{enabledCount} habilitada(s)</span>
+        )}
+      </div>
+      <p className="text-[11px] text-surface-500 mb-3">
+        Quais ações o agente pode executar dentro do CRM ao atender no WhatsApp. Você pode ajustar limites depois na aba <strong>Capacidades</strong>.
+      </p>
+      <div className="space-y-1">
+        {CRM_CAPABILITIES_CATALOG.map((entry) => {
+          const enabled = !!map.get(entry.id)?.enabled
+          return (
+            <label
+              key={entry.id}
+              className={cn(
+                'flex items-center gap-3 px-2 py-1.5 rounded-md cursor-pointer transition-colors',
+                enabled ? 'bg-brand-950/30' : 'hover:bg-surface-800/40',
+              )}
+            >
+              <span
+                className={cn(
+                  'w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0',
+                  enabled ? 'bg-brand-700/30 text-brand-300' : 'bg-surface-900 text-surface-500',
+                )}
+              >
+                {entry.icon}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-surface-200">{entry.label}</p>
+                <p className="text-[11px] text-surface-500 truncate">{entry.description}</p>
+              </div>
+              <Switch checked={enabled} onChange={(v) => toggle(entry.id, v)} />
+            </label>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Step 7: Revisão & Publicar ───────────────────────────────────────────────
 
 function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<React.SetStateAction<WizardData>> }) {
@@ -1585,6 +1680,9 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           </div>
         ))}
       </div>
+
+      <CapabilitiesReview data={data} setData={setData} />
+
 
       {/* Prompt artifact — fills remaining vertical space */}
       <div className="flex flex-col flex-1 min-h-0">
@@ -1777,6 +1875,12 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
           messenger: { enabled: data.channels_messenger },
           instagram: { enabled: data.channels_instagram },
         },
+        // Phase 25 — persist CRM capabilities chosen in the wizard's review step.
+        // Skip the field entirely when the user didn't enable anything so
+        // existing tenants without capabilities aren't churned.
+        ...(data.crm_capabilities.capabilities.length > 0
+          ? { crm_capabilities: data.crm_capabilities }
+          : {}),
         wizard_config: {
           identity: {
             name:      data.name,

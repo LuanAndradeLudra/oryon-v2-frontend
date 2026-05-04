@@ -20,6 +20,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { useAuth } from '@/contexts/AuthContext'
+import { isOryonStaff } from '@/lib/roleHelpers'
 import { isRouteVisible } from '@/config/featureFlags'
 import { cn } from '@/lib/utils'
 
@@ -89,7 +90,7 @@ function ItemRow({ item }: { item: Item }) {
 export function MorePage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const isSuperAdmin = user?.role === 'super_admin'
+  const isSuperAdmin = isOryonStaff(user?.role)
 
   const handleLogout = () => {
     logout()

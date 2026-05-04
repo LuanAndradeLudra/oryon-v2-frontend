@@ -28,9 +28,16 @@ console.log(`[dev:mobile] Servindo em ${url}`)
 console.log('[dev:mobile] Abra esse endereco no navegador do celular ou rode `npx cap run android -l --external` em outro terminal.')
 console.log('')
 
+// Aponta o app pro backend via IP da LAN — sem isso, o celular (que vai
+// carregar o bundle do dev server) tentaria localhost (= proprio celular).
+// Substitui o que antes estava em .env.local (que vazava pro `npm run dev`
+// do desktop e quebrava o login por cross-site cookies).
 const env = {
   ...process.env,
   VITE_DEV_HOST_URL: url,
+  VITE_API_URL: `http://${ip}:3000/api`,
+  VITE_WS_URL: `http://${ip}:3000`,
+  VITE_AGENT_SERVER_URL: `http://${ip}:3002`,
   CAPACITOR_DEV: '1',
 }
 

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Clock, MessageSquare, UserCheck, Search, Check, UserX,
   ArrowRightLeft, Archive, Tag as TagIcon, ExternalLink,
+  Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { TagPickerContent } from '@/components/ui/TagPicker'
@@ -10,9 +11,9 @@ import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
+import { AgentActivitySection } from './AgentActivitySection'
+import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
 import type { Conversation, Tag, User } from '@/types'
-
-const ROLE_LABEL: Record<string, string> = { admin: 'Admin', business_admin: 'Admin', agent: 'Usuário', supervisor: 'Supervisor' }
 
 function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; selectedUserId?: string; onSelect: (user: User | null) => void }) {
   const [search, setSearch] = useState('')
@@ -41,7 +42,7 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
               <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" className="flex-shrink-0" />
               <div className="min-w-0 flex-1 text-left">
                 <p className={cn('text-sm font-medium', isSelected ? 'text-brand-300' : 'text-surface-200')}>{user.firstName} {user.lastName}</p>
-                <p className="text-[11px] text-surface-500 truncate">{ROLE_LABEL[user.role] ?? user.role} · {user.email}</p>
+                <p className="text-[11px] text-surface-500 truncate">{roleLabel(user.role)} · {user.email}</p>
               </div>
               {isSelected && <Check className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />}
             </button>
@@ -78,6 +79,70 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
       </div>
     </div>
   )
+}
+
+/**
+ * Phase 27 — "Atendimento" row with live countdown when AI is paused.
+ * Mounts a 60s ticker only while paused; dormant when AI is active.
+ * Uses the same 60s precision as the chat banner — sub-minute granularity
+ * is overkill for this surface and would re-render the whole panel.
+ */
+function AiStatusInfoRow({ aiPausedUntil }: { aiPausedUntil: string | null | undefined }) {
+  const pausedUntilMs = aiPausedUntil ? new Date(aiPausedUntil).getTime() : null
+  const isPaused = pausedUntilMs !== null && pausedUntilMs > Date.now()
+  // Indefinite is anything past the year 9999 sentinel (we use a small skew
+  // in case the backend round-trip adjusted ms).
+  const isIndefinite = isPaused && pausedUntilMs! > new Date('9999-01-01').getTime()
+
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (!isPaused || isIndefinite) return
+    const id = setInterval(() => setTick((t) => t + 1), 60_000)
+    return () => clearInterval(id)
+  }, [isPaused, isIndefinite])
+
+  if (!isPaused) {
+    return (
+      <div className="flex items-start gap-3 py-2.5 border-b border-surface-800">
+        <div className="w-7 h-7 rounded-lg bg-emerald-700/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Bot className="w-3.5 h-3.5 text-emerald-300" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] text-surface-500 uppercase tracking-wide font-medium">Atendimento</p>
+          <p className="text-sm text-emerald-200 mt-0.5">Em atendimento por IA</p>
+        </div>
+      </div>
+    )
+  }
+
+  const remaining = isIndefinite
+    ? 'até reativar manualmente'
+    : `IA volta em ${formatRemainingMin(pausedUntilMs!)}`
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-surface-800">
+      <div className="w-7 h-7 rounded-lg bg-amber-700/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <UserCog className="w-3.5 h-3.5 text-amber-300" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] text-surface-500 uppercase tracking-wide font-medium">Atendimento</p>
+        <p className="text-sm text-amber-200 mt-0.5">Atendimento humano</p>
+        <p className="text-[11px] text-amber-300/80 mt-0.5">{remaining}</p>
+      </div>
+    </div>
+  )
+}
+
+function formatRemainingMin(untilMs: number): string {
+  const ms = untilMs - Date.now()
+  if (ms < 60_000) return '<1min'
+  const totalMin = Math.floor(ms / 60_000)
+  if (totalMin < 60) return `${totalMin}min`
+  const hours = Math.floor(totalMin / 60)
+  const mins = totalMin % 60
+  if (hours < 24) return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`
+  const days = Math.floor(hours / 24)
+  const remHours = hours % 24
+  return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`
 }
 
 export function ContactPanel({
@@ -126,9 +191,12 @@ export function ContactPanel({
           contact={contact}
         />
 
+        <AgentActivitySection conversationId={conversation.id} />
+
         {/* Details */}
         <div className="px-4 py-3">
           <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-2">Conversa</p>
+          <AiStatusInfoRow aiPausedUntil={conversation.aiPausedUntil} />
           <InfoRow icon={WhatsAppIcon as React.ElementType} label="Número de contato" value={contact.waId ? `+${contact.waId}` : contact.displayName} />
           <InfoRow icon={Clock}         label="Iniciada"        value={formatRelativeTime(createdAt)} />
           <InfoRow icon={MessageSquare} label="Última mensagem" value={formatRelativeTime(lastMessageAt)} />
@@ -269,9 +337,9 @@ export function ContactPanel({
                 </div>
                 <span className={cn(
                   'text-[10px] px-2 py-0.5 rounded-full font-medium',
-                  user.role === 'admin' ? 'bg-brand-600/20 text-brand-300' : 'bg-surface-700 text-surface-400'
+                  isAdminTier(user.role) ? 'bg-brand-600/20 text-brand-300' : 'bg-surface-700 text-surface-400'
                 )}>
-                  {user.role === 'admin' ? 'Admin' : user.role === 'supervisor' ? 'Supervisor' : 'Agente'}
+                  {roleLabel(user.role)}
                 </span>
               </button>
             )

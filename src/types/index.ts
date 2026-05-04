@@ -628,6 +628,13 @@ export interface Conversation {
   unreadCount: number
   assignedUser?: User
   tags?: Tag[]
+  /**
+   * Phase 27 — when null, the WhatsApp AI agent auto-replies on this
+   * conversation. When set to a future ISO timestamp, the agent is paused
+   * (manual or auto-handoff after a human outbound). UI uses this for
+   * the "Em atendimento IA" / "Você está atendendo" banner + countdown.
+   */
+  aiPausedUntil?: string | null
   createdAt: string
 }
 
@@ -1025,6 +1032,15 @@ export interface SocketMessageNew {
   message: Message
   contact: Contact
   unreadCount: number
+  /** Phase 27 — surfaced on outbound human messages so the UI's AI-handoff
+   *  banner and ContactPanel countdown update in lockstep with the new row. */
+  aiPausedUntil?: string | null
+}
+
+export interface SocketAiPauseUpdated {
+  conversationId: string
+  aiPausedUntil: string | null
+  changedBy: string
 }
 
 export interface SocketMessageStatus {

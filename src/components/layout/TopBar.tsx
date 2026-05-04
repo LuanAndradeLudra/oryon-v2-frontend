@@ -20,6 +20,7 @@ import {
   type NotificationSourceKind,
 } from '@/hooks/useNotifications'
 import { cn } from '@/lib/utils'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { isFeatureVisible, isRouteVisible } from '@/config/featureFlags'
 import {
   categoryOf,
@@ -1479,7 +1480,7 @@ export function TopBar() {
         {/* Copilot drawer shortcut — mirrors the admin + route gate used by
              the CopilotPanel itself, so the button only shows where the drawer
              can actually render. */}
-        {isFeatureVisible('copilot') && (user?.role === 'admin' || user?.role === 'business_admin') && !location.pathname.startsWith('/copilot') && (
+        {isFeatureVisible('copilot') && isAdminTier(user?.role) && !location.pathname.startsWith('/copilot') && (
           <button
             onClick={() => openCopilot()}
             title="Abrir Copilot"

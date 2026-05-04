@@ -148,7 +148,10 @@ export function LoginPage() {
         </motion.div>
 
         <div className="w-full max-w-sm">
-          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 shadow-2xl">
+          {/* Card chrome only on mobile/tablet — on desktop the right column
+              already provides the surface-950 panel, so the inner card was
+              competing with it visually. */}
+          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 shadow-2xl lg:bg-transparent lg:border-0 lg:rounded-none lg:p-0 lg:shadow-none">
             <div className="mb-5">
               <h2 className="text-2xl font-bold text-surface-50">Entrar</h2>
               <p className="text-sm text-surface-400 mt-1">Acesse sua conta para continuar</p>

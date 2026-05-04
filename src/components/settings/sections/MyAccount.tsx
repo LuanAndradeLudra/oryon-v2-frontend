@@ -16,6 +16,8 @@ import type { User } from '@/types'
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const ROLE_LABELS: Record<string, string> = {
+  super_admin: 'Equipe Oryon',
+  business_admin: 'Dono',
   admin: 'Administrador',
   supervisor: 'Supervisor',
   agent: 'Agente',

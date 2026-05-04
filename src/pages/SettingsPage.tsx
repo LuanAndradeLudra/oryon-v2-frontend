@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
 import { useParams, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import axios from 'axios'
 
 import { SettingsLayout } from '@/components/settings/SettingsLayout'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
@@ -9,6 +7,7 @@ import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 
 // Sections
 import { CompanyProfile }   from '@/components/settings/sections/CompanyProfile'
@@ -26,10 +25,6 @@ import { VerticalSettings }    from '@/components/settings/sections/VerticalSett
 import { CompanyBrain }        from '@/components/settings/sections/CompanyBrain'
 import { Notifications }       from '@/components/settings/sections/Notifications'
 import { AuditTrail }          from '@/components/settings/sections/AuditTrail'
-import type { User } from '@/types'
-
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
-
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health',
@@ -89,14 +84,15 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
 
 export function SettingsPage() {
   const { section = 'account' } = useParams<{ section: string }>()
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  // Use the AuthContext user — it's populated synchronously from the cached
+  // session at app boot, so the sidebar role is correct on the very first
+  // render. The previous code did its own GET /auth/me in a useEffect, which
+  // caused a 1-frame flash where role defaulted to 'admin' before the real
+  // 'super_admin' arrived and re-filtered the menu.
+  const { user } = useAuth()
   const banner = useDesktopRecommendedBanner(`settings/${section}`)
   const isMobile = useIsMobile()
   const navigate = useNavigate()
-
-  useEffect(() => {
-    axios.get<User>(`${API}/auth/me`).then((r) => setCurrentUser(r.data)).catch(() => {})
-  }, [])
 
   if (!VALID_SECTIONS.includes(section)) {
     return <Navigate to="/settings/account" replace />
@@ -108,7 +104,7 @@ export function SettingsPage() {
   const blockLabel = HARD_BLOCK_LABELS[section]
 
   return (
-    <SettingsLayout currentRole={currentUser?.role ?? 'admin'}>
+    <SettingsLayout currentRole={user?.role ?? 'admin'}>
       {showBanner && (
         <DesktopRecommendedBanner
           visible

@@ -42,6 +42,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 }
 import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
+import { isOryonStaff } from '@/lib/roleHelpers'
 import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
@@ -103,9 +104,16 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 function OnboardingGate({ children }: { children: ReactNode }) {
-  const { organizationConfigured } = useAuth()
+  const { organizationConfigured, user } = useAuth()
   const [dismissed, setDismissed] = useState(false)
   const isMobile = useIsMobile()
+  // Oryon staff (super_admin) must always reach the app shell — they may
+  // be inspecting a half-configured tenant precisely to debug what the
+  // wizard left undone. Without this bypass, super_admin gets trapped in
+  // the SetupWizard for any tenant whose onboarding isn't finished.
+  if (isOryonStaff(user?.role)) {
+    return <>{children}</>
+  }
   if (!organizationConfigured && !dismissed) {
     // SetupWizard tem multi-step de configuracao inicial (dados da empresa,
     // numero WhatsApp, primeiros agentes). Em mobile e ilegivel — exigimos

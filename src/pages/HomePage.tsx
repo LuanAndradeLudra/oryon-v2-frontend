@@ -15,6 +15,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { generateInsights } from '@/services/copilotService'
 import { cn, getInitials } from '@/lib/utils'
+import { WorkspaceReadinessBanner } from '@/components/common/WorkspaceReadinessBanner'
 import type { AuditLog, BillingPlan, Conversation, HomeStats, User, WhatsAppNumberDetailed } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
@@ -98,10 +99,11 @@ function HeroBanner() {
 // ── Personal header ────────────────────────────────────────────────────────────
 
 const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
-  business_admin: { label: 'Admin',      cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
-  admin:          { label: 'Admin',      cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
-  supervisor:     { label: 'Supervisor', cls: 'bg-status-pending-bg text-status-pending border border-status-pending-border' },
-  agent:          { label: 'Agente',     cls: 'bg-surface-700 text-surface-300 border border-surface-600' },
+  super_admin:    { label: 'Equipe Oryon', cls: 'bg-brand-700/20 text-brand-300 border border-brand-600/40' },
+  business_admin: { label: 'Admin',        cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
+  admin:          { label: 'Admin',        cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
+  supervisor:     { label: 'Supervisor',   cls: 'bg-status-pending-bg text-status-pending border border-status-pending-border' },
+  agent:          { label: 'Agente',       cls: 'bg-surface-700 text-surface-300 border border-surface-600' },
 }
 
 function PersonalHeader({ user }: { user: User }) {
@@ -783,6 +785,12 @@ export function HomePage() {
             {/* ── LEFT: personal section ── */}
             <div className="lg:col-span-2 flex flex-col gap-5">
               {user && <PersonalHeader user={user} />}
+
+              {/* Phase 29 — workspace setup checklist. Auto-hides when nothing
+                  is unmet. Sits above the KPI grid because resolving a blocker
+                  is more important than reading metrics on a half-configured
+                  tenant. */}
+              <WorkspaceReadinessBanner mode="checklist" />
 
               {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
 

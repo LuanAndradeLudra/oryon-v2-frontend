@@ -75,7 +75,12 @@ const NAV_GROUPS = [
 ]
 
 export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayoutProps) {
-  const isAdmin = currentRole === 'admin' || currentRole === 'business_admin'
+  // super_admin (Oryon staff) and business_admin (tenant owner) both should
+  // see every admin-gated section. Missing super_admin here was the reason
+  // WhatsApp + Plataforma vanished after `/auth/me` resolved.
+  const isAdmin = currentRole === 'admin'
+    || currentRole === 'business_admin'
+    || currentRole === 'super_admin'
   const isMobile = useIsMobile()
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
