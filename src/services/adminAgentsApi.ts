@@ -17,8 +17,26 @@ export interface AdminAgentRecord {
   handoff_rules: Record<string, unknown>
   channels: Record<string, unknown>
   wizard_config: Record<string, unknown>
+  /** Phase 28: explicit LLM model override. null = auto. */
+  preferred_model: string | null
+  /** What the auto heuristic would pick — surfaced by the GET endpoint
+   *  so the UI can render "Auto (Haiku)" / "Auto (Sonnet)" without
+   *  re-implementing the policy. */
+  auto_choice: string
   created_at?: string
   updated_at?: string
+}
+
+export const TENANT_SELECTABLE_MODELS = [
+  'claude-haiku-4-5-20251001',
+  'claude-sonnet-4-6',
+] as const
+export type TenantSelectableModel = typeof TENANT_SELECTABLE_MODELS[number]
+
+export const MODEL_LABELS: Record<string, string> = {
+  'claude-haiku-4-5-20251001': 'Haiku 4.5 (rápido, ~12x mais barato)',
+  'claude-sonnet-4-6': 'Sonnet 4.6 (raciocínio mais forte)',
+  'claude-opus-4-6': 'Opus 4.6 (raciocínio premium, caro)',
 }
 
 export interface EffectivePromptFragment {
@@ -86,6 +104,21 @@ export function updateAdminAgentSystemPrompt(
     {
       method: 'PATCH',
       body: JSON.stringify({ system_prompt: systemPrompt }),
+    },
+  )
+}
+
+/** Updates the explicit model override (super_admin only). Pass `null` to
+ *  clear the override and return the agent to the auto heuristic. */
+export function updateAdminAgentPreferredModel(
+  agentId: string,
+  preferredModel: TenantSelectableModel | null,
+): Promise<{ agent_id: string; preferred_model: string | null; auto_choice: string }> {
+  return adminFetch<{ agent_id: string; preferred_model: string | null; auto_choice: string }>(
+    `/agents/admin/agents/${encodeURIComponent(agentId)}/preferred-model`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ preferred_model: preferredModel }),
     },
   )
 }

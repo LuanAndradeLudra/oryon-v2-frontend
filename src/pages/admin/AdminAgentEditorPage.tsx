@@ -20,9 +20,15 @@ import { Textarea } from '@/components/ui/Textarea'
 import { listAdminOrganizations, type AdminOrganization } from '@/services/adminApi'
 import { listAgents, type AgentConfig } from '@/services/agentsApi'
 import {
+  getAdminAgent,
   getAdminAgentEffectivePrompt,
   updateAdminAgentSystemPrompt,
+  updateAdminAgentPreferredModel,
+  TENANT_SELECTABLE_MODELS,
+  MODEL_LABELS,
+  type AdminAgentRecord,
   type EffectivePromptResponse,
+  type TenantSelectableModel,
 } from '@/services/adminAgentsApi'
 import { cn } from '@/lib/utils'
 
@@ -50,6 +56,11 @@ export function AdminAgentEditorPage() {
   // the composed string + per-skill fragment list. We keep it as one object
   // so the two panels never go out of sync after a save/refresh.
   const [eff, setEff] = useState<EffectivePromptResponse | null>(null)
+  // Phase 28 Fase D — agent record carrying preferred_model + auto_choice.
+  // Loaded in parallel with `eff` so the model picker can render immediately.
+  const [agentRec, setAgentRec] = useState<AdminAgentRecord | null>(null)
+  const [savingModel, setSavingModel] = useState(false)
+  const [modelHint, setModelHint] = useState<string | null>(null)
   // Local edit buffer for the system_prompt — persisted only when "Salvar"
   // is clicked. Kept separate from `eff.system_prompt` so the diff view (chars
   // changed) can compare both.
@@ -118,13 +129,48 @@ export function AdminAgentEditorPage() {
   async function loadEffectivePrompt(id: string) {
     setLoadingPrompt(true)
     try {
-      const data = await getAdminAgentEffectivePrompt(id)
-      setEff(data)
-      setDraft(data.system_prompt)
+      // Two parallel requests — effective-prompt feeds both editor panels;
+      // the agent record feeds the model picker. They share the lifecycle
+      // so we keep them in the same try/finally.
+      const [eff, rec] = await Promise.all([
+        getAdminAgentEffectivePrompt(id),
+        getAdminAgent(id),
+      ])
+      setEff(eff)
+      setAgentRec(rec)
+      setDraft(eff.system_prompt)
+      setModelHint(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoadingPrompt(false)
+    }
+  }
+
+  async function handleModelChange(value: string) {
+    if (!agentRec) return
+    // Empty string from the <Select> = "Automático" → null (clear override).
+    const next: TenantSelectableModel | null =
+      value === '' ? null : (value as TenantSelectableModel)
+    setSavingModel(true)
+    setError(null)
+    setModelHint(null)
+    try {
+      const res = await updateAdminAgentPreferredModel(agentRec.id, next)
+      setAgentRec({
+        ...agentRec,
+        preferred_model: res.preferred_model,
+        auto_choice: res.auto_choice,
+      })
+      setModelHint(
+        next === null
+          ? `Modelo automático (${MODEL_LABELS[res.auto_choice] ?? res.auto_choice}) aplicado nas próximas conversas.`
+          : `Modelo fixo "${MODEL_LABELS[next] ?? next}" aplicado nas próximas conversas.`,
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSavingModel(false)
     }
   }
 
@@ -215,6 +261,43 @@ export function AdminAgentEditorPage() {
             )}
           </PickerBlock>
         </div>
+
+        {/* ── Modelo de IA (Phase 28) ──────────────────────────────────── */}
+        {agentId && agentRec && (
+          <section className="bg-surface-900/50 border border-surface-800 rounded-xl p-5 mb-6">
+            <header className="flex items-start justify-between mb-3">
+              <div>
+                <h2 className="text-sm font-semibold text-surface-100">Modelo de IA</h2>
+                <p className="text-[11px] text-surface-500 mt-0.5">
+                  Haiku 4.5 é ~10x mais barato que Sonnet. Em "Automático" o sistema promove pra Sonnet
+                  quando o agente tem capacidades CRM destrutivas (status, atribuição, funil).
+                </p>
+              </div>
+              <span className="text-[10px] font-mono uppercase tracking-wide text-surface-500">
+                preferred_model
+              </span>
+            </header>
+            <div className="flex items-center gap-3">
+              <Select
+                value={agentRec.preferred_model ?? ''}
+                onChange={(e) => handleModelChange(e.target.value)}
+                disabled={savingModel}
+                className="max-w-md"
+              >
+                <option value="">
+                  Automático — atualmente: {MODEL_LABELS[agentRec.auto_choice] ?? agentRec.auto_choice}
+                </option>
+                {TENANT_SELECTABLE_MODELS.map((m) => (
+                  <option key={m} value={m}>{MODEL_LABELS[m] ?? m}</option>
+                ))}
+              </Select>
+              {savingModel && <Loading text="Salvando…" />}
+            </div>
+            {modelHint && (
+              <p className="mt-3 text-[11px] text-status-active">{modelHint}</p>
+            )}
+          </section>
+        )}
 
         {/* ── Editor + preview ─────────────────────────────────────────── */}
         {agentId && (
