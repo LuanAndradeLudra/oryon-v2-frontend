@@ -27,6 +27,21 @@ export const FEATURE_FLAGS = {
   // ativamente; combinar com FF_AUTO_AI_PROFILE_ON_RESOLVE=false no
   // backend para zerar a geração silenciosa.
   aiContextCard: false,
+  // Botão "Perguntar à IA" / "Perguntar →" nos cards de Insights da IA.
+  // Aparece em três lugares: Home (linha de insights), Dashboard
+  // (AiInsightsSection) e CRM/Contatos (ContactsStatsBar). Quando false,
+  // o insight continua sendo exibido mas o CTA que abre o Copilot some.
+  aiInsightsAskButton: false,
+  // Painel "Análise de Conversão IA" no sidebar de contato dentro de uma
+  // conversa (botão "Analisar conversa com IA" + telas de resultado).
+  // Quando false, o painel inteiro fica oculto — análises já feitas também
+  // não aparecem para evitar UI inconsistente.
+  conversionAnalysisPanel: false,
+  // Seção "Oryon" do sidebar (Skills, Agentes cross-tenant, Auditoria,
+  // AI Observability, AI Executions). Quando false, a seção inteira some
+  // do menu lateral, mas as rotas continuam acessíveis via URL direta
+  // (mesmo padrão das outras feature flags).
+  oryonStaffSidebar: true,
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS

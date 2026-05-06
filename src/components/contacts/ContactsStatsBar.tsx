@@ -7,6 +7,7 @@ import {
 import { cn } from '@/lib/utils'
 import { generateCRMInsights, type DashboardInsight } from '@/services/copilotService'
 import { useCopilotContext } from '@/contexts/CopilotContext'
+import { isFeatureVisible } from '@/config/featureFlags'
 import type { Contact } from '@/types'
 
 // ─── Insight palette (mirrors AiInsightsSection) ──────────────────────────────
@@ -65,13 +66,17 @@ function InsightRow({ insight }: { insight: DashboardInsight }) {
       </div>
       <p className="text-xs font-semibold text-surface-100 leading-snug">{insight.title}</p>
       <p className="text-[11px] text-surface-400 leading-relaxed">{insight.body}</p>
-      <button
-        onClick={() => open(insight.question)}
-        className="flex items-center gap-1 text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors self-start mt-0.5"
-      >
-        Perguntar à IA
-        <ArrowRight className="w-2.5 h-2.5" />
-      </button>
+      {/* Hidden when aiInsightsAskButton is off — same gate used by the
+          Home / Dashboard insight cards. */}
+      {isFeatureVisible('aiInsightsAskButton') && (
+        <button
+          onClick={() => open(insight.question)}
+          className="flex items-center gap-1 text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors self-start mt-0.5"
+        >
+          Perguntar à IA
+          <ArrowRight className="w-2.5 h-2.5" />
+        </button>
+      )}
     </motion.div>
   )
 }

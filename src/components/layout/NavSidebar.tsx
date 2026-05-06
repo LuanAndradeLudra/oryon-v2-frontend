@@ -27,7 +27,7 @@ import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import { conversationsApi } from '@/services/api'
-import { isRouteVisible } from '@/config/featureFlags'
+import { isRouteVisible, isFeatureVisible } from '@/config/featureFlags'
 
 interface NavSidebarProps {
   totalUnread?: number
@@ -307,8 +307,11 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
             </>
           )}
 
-          {/* ORYON (super_admin only) */}
-          {isOryonStaff && (
+          {/* ORYON (super_admin only) — gated by `oryonStaffSidebar` flag for
+              temporary hiding. When the flag is false, the whole section
+              disappears from the menu but routes (/admin/*) still work via
+              direct URL — matches the pattern of every other flag here. */}
+          {isOryonStaff && isFeatureVisible('oryonStaffSidebar') && (
             <>
               <SidebarSectionLabel label="Oryon" />
               <nav className="flex flex-col gap-0.5 px-1.5">
@@ -317,6 +320,12 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
                   icon={<ShieldCheck className="w-4.5 h-4.5" />}
                   label="Skills"
                   active={activeHref.startsWith('/admin/skill')}
+                />
+                <SidebarLink
+                  href="/admin/agents"
+                  icon={<Bot className="w-4.5 h-4.5" />}
+                  label="Agentes (cross-tenant)"
+                  active={activeHref.startsWith('/admin/agents')}
                 />
                 <SidebarLink
                   href="/admin/audit"
