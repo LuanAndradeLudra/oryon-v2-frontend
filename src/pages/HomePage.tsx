@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import {
-  MessageSquare, Users, BarChart3, Settings, Bot,
+  MessageSquare, Users, BarChart3, Settings,
   Clock, CheckCircle2, Inbox, CreditCard, Smartphone,
   ChevronRight, X, Sparkles, UserPlus, Tag, MessageCircle,
-  AlertTriangle, Zap, Hand, Workflow,
+  Zap, Hand, Workflow, Send, TrendingUp,
 } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -17,7 +17,7 @@ import { generateInsights } from '@/services/copilotService'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { cn, getInitials } from '@/lib/utils'
 import { WorkspaceReadinessBanner } from '@/components/common/WorkspaceReadinessBanner'
-import type { AuditLog, BillingPlan, Conversation, HomeStats, User, WhatsAppNumberDetailed } from '@/types'
+import type { AuditLog, Conversation, HomeStats, User, WhatsAppNumberDetailed } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
@@ -31,70 +31,6 @@ function relativeTime(date: string) {
   const hrs = Math.floor(mins / 60)
   if (hrs < 24) return `${hrs}h atrás`
   return `${Math.floor(hrs / 24)}d atrás`
-}
-
-// ── Hero Banner ────────────────────────────────────────────────────────────────
-
-function HeroBanner() {
-  const navigate = useNavigate()
-  return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-white/10 px-5 py-6 sm:px-8 sm:py-8">
-      {/* Decorative blobs */}
-      <div className="pointer-events-none absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5" />
-      <div className="pointer-events-none absolute -bottom-12 right-1/4 w-48 h-48 rounded-full bg-white/5" />
-      <div className="pointer-events-none absolute top-0 left-1/3 w-[500px] h-40 rounded-full bg-white/3 blur-3xl" />
-
-      <div className="relative flex items-center justify-between gap-8">
-        {/* Left: content */}
-        <div className="flex-1 min-w-0">
-          <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-3 bg-brand-500/20 text-brand-300">
-            Oryon Platform
-          </span>
-          <h1 className="text-2xl font-bold text-white leading-snug">
-            Sua central de atendimento<br />inteligente com IA
-          </h1>
-          <p className="text-sm text-white/60 mt-2 max-w-lg leading-relaxed">
-            Conversas, CRM e automação conectados em um único lugar — com o Copilot sempre ao seu lado.
-          </p>
-          <div className="flex items-center gap-3 mt-5">
-            <button
-              onClick={() => navigate('/copilot')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white text-sm font-semibold rounded-xl transition-colors"
-            >
-              <Sparkles className="w-4 h-4" />
-              Explorar Copilot
-            </button>
-            <button
-              onClick={() => navigate('/conversations')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-white/60 hover:text-white text-sm font-medium transition-colors"
-            >
-              Ver conversas
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Right: floating icon grid */}
-        <div className="relative w-52 h-36 flex-shrink-0 hidden lg:block">
-          <div className="absolute top-0 right-6 w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-xl">
-            <Sparkles className="w-7 h-7 text-brand-300" />
-          </div>
-          <div className="absolute top-8 right-24 w-10 h-10 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-brand-300" />
-          </div>
-          <div className="absolute bottom-2 right-10 w-12 h-12 rounded-2xl bg-white/8 border border-white/10 flex items-center justify-center">
-            <MessageSquare className="w-6 h-6 text-emerald-300" />
-          </div>
-          <div className="absolute bottom-8 right-32 w-9 h-9 rounded-xl bg-white/6 border border-white/8 flex items-center justify-center">
-            <Users className="w-4.5 h-4.5 text-sky-300" />
-          </div>
-          <div className="absolute top-2 right-36 w-8 h-8 rounded-xl bg-white/6 border border-white/8 flex items-center justify-center">
-            <Zap className="w-4 h-4 text-amber-300" />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // ── Personal header ────────────────────────────────────────────────────────────
@@ -261,7 +197,9 @@ function AIInsightsWidget({ stats }: { stats: HomeStats }) {
     : null
 
   return (
-    <div className="bg-surface-900 border border-surface-700 shadow-sm rounded-2xl p-5">
+    // h-full + flex-col garantem que o card iguale altura com o
+    // MyPerformanceCard ao lado quando estão em col-span-6 cada.
+    <div className="bg-surface-900 border border-surface-700 shadow-sm rounded-2xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
@@ -308,6 +246,71 @@ function AIInsightsWidget({ stats }: { stats: HomeStats }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── My performance card ───────────────────────────────────────────────────────
+// Senta lado a lado com o AIInsightsWidget no grid principal (cada um span-6
+// na linha de Insights). Mostra os mesmos KPIs do "Atendimento agora" mas
+// filtrados pro usuário logado, usando os campos myXxx do HomeStats. Útil
+// pro atendente ver seu trabalho do dia sem precisar ir em Métricas.
+
+function MyPerformanceCard({ stats }: { stats: HomeStats }) {
+  // Fallback p/ 0 quando o backend não popula os campos myXxx (acontece com
+  // super_admin / users sem conversas atribuídas, ou se o endpoint
+  // /home/stats ainda não retorna esses campos). Sem isso, o template
+  // literal `${undefined}min` vira "undefinedmin" na UI.
+  const myOpen      = stats.myConversationsOpen ?? 0
+  const myResolved  = stats.myConversationsResolvedToday ?? 0
+  const mySent      = stats.myMessagesSentToday ?? 0
+  const myAvgMin    = stats.myAvgResponseMinutes ?? 0
+
+  return (
+    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-brand-400" />
+          Seu desempenho hoje
+        </h4>
+      </div>
+      <div className="flex flex-col gap-3 flex-1">
+        {[
+          {
+            label: 'Conversas abertas',
+            value: myOpen,
+            cls: 'text-surface-200',
+            icon: <MessageSquare className="w-3.5 h-3.5" />,
+          },
+          {
+            label: 'Resolvidas hoje',
+            value: myResolved,
+            cls: myResolved > 0 ? 'text-status-active' : 'text-surface-500',
+            icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+          },
+          {
+            label: 'Mensagens enviadas',
+            value: mySent,
+            cls: 'text-surface-200',
+            icon: <Send className="w-3.5 h-3.5" />,
+          },
+          {
+            label: 'Tempo médio resposta',
+            value: `${myAvgMin}min`,
+            // Mesma régua do "Atendimento agora": >10min = atenção.
+            cls: myAvgMin > 10 ? 'text-status-pending' : 'text-surface-200',
+            icon: <Clock className="w-3.5 h-3.5" />,
+          },
+        ].map((row) => (
+          <div key={row.label} className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-surface-500">
+              {row.icon}
+              <span className="text-xs">{row.label}</span>
+            </div>
+            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -434,103 +437,60 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
 
 // ── Contextual block ───────────────────────────────────────────────────────────
 
-function AdminBlock({ stats }: { stats: HomeStats }) {
+// ── Admin cards (Phase 28+ — split do antigo AdminBlock pra entrar como
+//    células do grid unificado de 12 colunas na Home). Cada card é
+//    independente: tem altura própria conforme conteúdo, mas como vão
+//    ocupar a mesma "linha" do grid principal (3 cards span-4), o grid
+//    alinha as alturas automaticamente — efeito harmônico sem flex hacks.
+
+function TeamCard({ stats }: { stats: HomeStats }) {
   const navigate = useNavigate()
-  const [billing, setBilling] = useState<BillingPlan | null>(null)
+  return (
+    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold text-surface-100">Equipe</h4>
+        <Users className="w-4 h-4 text-surface-600" />
+      </div>
+      <div className="flex flex-col gap-3 mt-1 flex-1">
+        {[
+          { label: 'Online agora',    value: stats.agentsOnline ?? 0,  cls: 'text-status-active' },
+          { label: 'Total contatos',  value: stats.totalContacts ?? 0, cls: 'text-surface-200' },
+          { label: 'Sem atendente',   value: stats.unassignedCount ?? 0, cls: (stats.unassignedCount ?? 0) > 0 ? 'text-status-pending' : 'text-surface-500' },
+        ].map((row) => (
+          <div key={row.label} className="flex items-center justify-between">
+            <span className="text-sm text-surface-400">{row.label}</span>
+            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value}</span>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => navigate('/settings/agents')}
+        className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
+      >
+        Gerenciar equipe <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  )
+}
+
+function WhatsAppNumbersCard() {
+  const navigate = useNavigate()
   const [waNumbers, setWaNumbers] = useState<WhatsAppNumberDetailed[]>([])
 
   useEffect(() => {
-    Promise.all([
-      axios.get<BillingPlan>(`${API}/billing`).catch(() => ({ data: null })),
-      axios.get<WhatsAppNumberDetailed[]>(`${API}/whatsapp/numbers`).catch(() => ({ data: [] })),
-    ]).then(([b, w]) => {
-      if (b.data) setBilling(b.data)
-      setWaNumbers(Array.isArray(w.data) ? w.data : [])
-    })
+    axios
+      .get<WhatsAppNumberDetailed[]>(`${API}/whatsapp/numbers`)
+      .then((w) => setWaNumbers(Array.isArray(w.data) ? w.data : []))
+      .catch(() => setWaNumbers([]))
   }, [])
 
-  const planPct = billing && (billing.conversationsLimit ?? 0) > 0 ? Math.round(((billing.conversationsUsed ?? 0) / (billing.conversationsLimit ?? 1)) * 100) : 0
-  const PLAN_NAMES: Record<string, string> = { starter: 'Starter', pro: 'Pro', enterprise: 'Enterprise' }
-
   return (
-    <div className="flex flex-col gap-4">
-      {/* Plan */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-surface-100">Plano atual</h4>
-          <CreditCard className="w-4 h-4 text-surface-600" />
-        </div>
-        {billing ? (
-          <>
-            <p className="text-xl font-bold text-surface-50">{PLAN_NAMES[billing.planName] ?? billing.planName}</p>
-            <p className="text-xs text-surface-500 mt-0.5 mb-4">
-              Renova em {new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(billing.renewalDate))}
-            </p>
-            <div>
-              <div className="flex justify-between text-xs text-surface-400 mb-1.5">
-                <span>{(billing.conversationsUsed ?? 0).toLocaleString('pt-BR')} conversas usadas</span>
-                <span className={planPct > 80 ? 'text-status-pending font-semibold' : ''}>{planPct}%</span>
-              </div>
-              <div className="h-2 bg-surface-800 rounded-full overflow-hidden">
-                <div
-                  className={cn('h-full rounded-full transition-all', planPct > 80 ? 'bg-status-pending' : 'bg-brand-500')}
-                  style={{ width: `${Math.min(planPct, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-surface-600 mt-1">de {(billing.conversationsLimit ?? 0).toLocaleString('pt-BR')}/mês</p>
-            </div>
-            {planPct > 80 && (
-              <div className="mt-3 flex items-center gap-1.5 text-xs text-status-pending bg-status-pending-bg border border-status-pending-border rounded-lg px-2.5 py-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                Próximo do limite — considere fazer upgrade
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="h-20 flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
-        <button
-          onClick={() => navigate('/settings/billing')}
-          className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-brand-400 hover:text-brand-300 border border-brand-600/30 hover:border-brand-500/50 rounded-xl py-2 transition-colors"
-        >
-          Ver plano completo <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold text-surface-100">Números WhatsApp</h4>
+        <Smartphone className="w-4 h-4 text-surface-600" />
       </div>
-
-      {/* Team */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-surface-100">Equipe</h4>
-          <Users className="w-4 h-4 text-surface-600" />
-        </div>
-        <div className="flex flex-col gap-3 mt-1">
-          {[
-            { label: 'Online agora',    value: stats.agentsOnline ?? 0,  cls: 'text-status-active' },
-            { label: 'Total contatos',  value: stats.totalContacts ?? 0, cls: 'text-surface-200' },
-            { label: 'Sem atendente',   value: stats.unassignedCount ?? 0, cls: (stats.unassignedCount ?? 0) > 0 ? 'text-status-pending' : 'text-surface-500' },
-          ].map((row) => (
-            <div key={row.label} className="flex items-center justify-between">
-              <span className="text-sm text-surface-400">{row.label}</span>
-              <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value}</span>
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={() => navigate('/settings/agents')}
-          className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
-        >
-          Gerenciar equipe <ChevronRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {/* WhatsApp numbers */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-surface-100">Números WhatsApp</h4>
-          <Smartphone className="w-4 h-4 text-surface-600" />
-        </div>
+      <div className="flex-1">
         {waNumbers.length === 0 ? (
           <div className="flex flex-col gap-2 py-4">
             <p className="text-xs text-surface-500">Nenhum número conectado ainda.</p>
@@ -557,66 +517,70 @@ function AdminBlock({ stats }: { stats: HomeStats }) {
             ))}
           </div>
         )}
-        <button
-          onClick={() => navigate('/settings/numbers')}
-          className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
-        >
-          Gerenciar números <ChevronRight className="w-3.5 h-3.5" />
-        </button>
       </div>
+      <button
+        onClick={() => navigate('/settings/numbers')}
+        className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
+      >
+        Gerenciar números <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  )
+}
 
-      {/* Atendimento agora */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-sm font-semibold text-surface-100">Atendimento agora</h4>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-status-active animate-pulse" />
-            <span className="text-[10px] text-status-active font-medium">Ao vivo</span>
-          </div>
+function LiveServiceCard({ stats }: { stats: HomeStats }) {
+  const navigate = useNavigate()
+  return (
+    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-semibold text-surface-100">Atendimento agora</h4>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-status-active animate-pulse" />
+          <span className="text-[10px] text-status-active font-medium">Ao vivo</span>
         </div>
-        <div className="flex flex-col gap-3">
-          {[
-            {
-              label: 'Na fila',
-              value: stats.queueCount,
-              cls: stats.queueCount > 5 ? 'text-red-400' : stats.queueCount > 2 ? 'text-status-pending' : 'text-status-active',
-              icon: <Inbox className="w-3.5 h-3.5" />,
-            },
-            {
-              label: 'Abertas',
-              value: stats.conversationsOpen,
-              cls: 'text-surface-200',
-              icon: <MessageSquare className="w-3.5 h-3.5" />,
-            },
-            {
-              label: 'Resolvidas hoje',
-              value: stats.conversationsResolvedToday,
-              cls: 'text-status-active',
-              icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-            },
-            {
-              label: 'Tempo médio',
-              value: `${stats.avgResponseMinutes}min`,
-              cls: stats.avgResponseMinutes > 10 ? 'text-status-pending' : 'text-surface-200',
-              icon: <Clock className="w-3.5 h-3.5" />,
-            },
-          ].map((row) => (
-            <div key={row.label} className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-surface-500">
-                {row.icon}
-                <span className="text-xs">{row.label}</span>
-              </div>
-              <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value}</span>
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={() => navigate('/conversations')}
-          className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
-        >
-          Ver conversas <ChevronRight className="w-3.5 h-3.5" />
-        </button>
       </div>
+      <div className="flex flex-col gap-3 flex-1">
+        {[
+          {
+            label: 'Na fila',
+            value: stats.queueCount,
+            cls: stats.queueCount > 5 ? 'text-red-400' : stats.queueCount > 2 ? 'text-status-pending' : 'text-status-active',
+            icon: <Inbox className="w-3.5 h-3.5" />,
+          },
+          {
+            label: 'Abertas',
+            value: stats.conversationsOpen,
+            cls: 'text-surface-200',
+            icon: <MessageSquare className="w-3.5 h-3.5" />,
+          },
+          {
+            label: 'Resolvidas hoje',
+            value: stats.conversationsResolvedToday,
+            cls: 'text-status-active',
+            icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+          },
+          {
+            label: 'Tempo médio',
+            value: `${stats.avgResponseMinutes}min`,
+            cls: stats.avgResponseMinutes > 10 ? 'text-status-pending' : 'text-surface-200',
+            icon: <Clock className="w-3.5 h-3.5" />,
+          },
+        ].map((row) => (
+          <div key={row.label} className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-surface-500">
+              {row.icon}
+              <span className="text-xs">{row.label}</span>
+            </div>
+            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value}</span>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => navigate('/conversations')}
+        className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs text-surface-400 hover:text-surface-200 border border-surface-700 hover:border-surface-600 rounded-xl py-2 transition-colors"
+      >
+        Ver conversas <ChevronRight className="w-3.5 h-3.5" />
+      </button>
     </div>
   )
 }
@@ -737,15 +701,6 @@ function AgentBlock() {
   )
 }
 
-// ── Section label ──────────────────────────────────────────────────────────────
-
-const CONTEXT_LABELS: Record<string, string> = {
-  business_admin: 'Visão geral da organização',
-  admin:          'Visão geral da organização',
-  supervisor:     'Fila do seu setor',
-  agent:          'Suas conversas',
-}
-
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 export function HomePage() {
@@ -775,51 +730,104 @@ export function HomePage() {
     ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl }
     : undefined
 
+  // Phase 28+ — Single 12-column grid for the whole Home page. Each card
+  // declares its own col-span so cards on the same row align in height
+  // automatically (CSS Grid behavior). On mobile (<lg) the grid collapses
+  // to a single column and everything stacks vertically.
+  //
+  // Row layout (desktop):
+  //   1. Saudação                     — col-span-12
+  //   2. WorkspaceReadinessBanner     — col-span-12  (auto-hides when no blockers)
+  //   3. 4 KPIs (sub-grid)            — col-span-12  (KPIGrid mantém grid-cols-4 interno)
+  //   4. Insights da Oryon AI         — col-span-12
+  //   5. 3 cards admin (Equipe / Whatsapp / Atendimento) — col-span-4 cada
+  //      Renderizado apenas pra admin / business_admin / super_admin.
+  //   6. Quick Actions                — col-span-8
+  //      Activity Feed                — col-span-4
+  const isAdminRole = role === 'admin' || role === 'business_admin' || role === 'super_admin'
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {isMobile && <MobilePageHeader title="Home" />}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="px-4 py-5 sm:px-6 sm:py-6 flex flex-col gap-5 sm:gap-6">
+        {/* max-w-screen-2xl + mx-auto: limita a largura útil em telas
+            muito largas (≥1536px) e centraliza, mantendo respiro visual
+            sem comprimir os cards. Mid-ground entre max-w-7xl (estreito
+            demais) e largura total (cards esticam). */}
+        <div className="px-4 py-5 sm:px-6 sm:py-6 max-w-screen-2xl mx-auto w-full">
 
-          {/* HeroBanner so em desktop — em mobile ocupa muito espaco para
-              pouca informacao acionavel. */}
-          {!isMobile && <HeroBanner />}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
-            {/* ── LEFT: personal section ── */}
-            <div className="lg:col-span-2 flex flex-col gap-5">
-              {user && <PersonalHeader user={user} />}
-
-              {/* Phase 29 — workspace setup checklist. Auto-hides when nothing
-                  is unmet. Sits above the KPI grid because resolving a blocker
-                  is more important than reading metrics on a half-configured
-                  tenant. */}
-              <WorkspaceReadinessBanner mode="checklist" />
-
-              {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
-
-              {stats && <AIInsightsWidget stats={stats} />}
-
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:min-h-[300px]">
-                <div className="lg:col-span-2">
-                  <QuickActions role={role} />
-                </div>
-                <div className="lg:col-span-3">
-                  <ActivityFeed logs={logs} loading={logsLoading} />
-                </div>
+            {/* ── Linha 1: saudação ────────────────────────────────────── */}
+            {user && (
+              <div className="lg:col-span-12">
+                <PersonalHeader user={user} />
               </div>
+            )}
+
+            {/* ── Linha 2: workspace readiness banner ──────────────────────
+                Auto-hides quando não há pendências (return null no componente).
+                Sem placeholder — KPIs encostam direto na saudação no estado OK. */}
+            <div className="lg:col-span-12">
+              <WorkspaceReadinessBanner mode="checklist" />
             </div>
 
-            {/* ── RIGHT: org overview — desktop only ── */}
-            {!isMobile && (
-              <div className="flex flex-col gap-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-surface-600">
-                  {CONTEXT_LABELS[role]}
-                </p>
-                {stats && (role === 'admin' || role === 'business_admin') && <AdminBlock stats={stats} />}
-                {role === 'supervisor' && <SupervisorBlock />}
-                {role === 'agent' && <AgentBlock />}
+            {/* ── Linha 3: 4 KPIs ───────────────────────────────────────── */}
+            <div className="lg:col-span-12">
+              {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
+            </div>
+
+            {/* ── Linha 4: Insights da Oryon AI + Seu desempenho hoje ────
+                Insights (esquerda) é narrativa em texto; Performance (direita)
+                é KPI compacto. Cada um span-6 — o grid alinha as alturas
+                automaticamente já que estão na mesma linha. */}
+            {stats && (
+              <>
+                <div className="lg:col-span-6">
+                  <AIInsightsWidget stats={stats} />
+                </div>
+                <div className="lg:col-span-6">
+                  <MyPerformanceCard stats={stats} />
+                </div>
+              </>
+            )}
+
+            {/* ── Linha 5: 3 cards admin (Equipe / WhatsApp / Atendimento) ─
+                Cada card é célula independente do grid principal. Como estão
+                na mesma linha (col-span-4 × 3), o grid alinha as alturas
+                automaticamente. */}
+            {stats && isAdminRole && !isMobile && (
+              <>
+                <div className="lg:col-span-4">
+                  <TeamCard stats={stats} />
+                </div>
+                <div className="lg:col-span-4">
+                  <WhatsAppNumbersCard />
+                </div>
+                <div className="lg:col-span-4">
+                  <LiveServiceCard stats={stats} />
+                </div>
+              </>
+            )}
+
+            {/* ── Linha 6: Quick Actions + Activity Feed ────────────────── */}
+            <div className="lg:col-span-8">
+              <QuickActions role={role} />
+            </div>
+            <div className="lg:col-span-4">
+              <ActivityFeed logs={logs} loading={logsLoading} />
+            </div>
+
+            {/* ── Roles supervisor/agent: bloco contextual de largura total
+                (refator simétrico desses fluxos fica como follow-up). */}
+            {role === 'supervisor' && !isMobile && (
+              <div className="lg:col-span-12">
+                <SupervisorBlock />
+              </div>
+            )}
+            {role === 'agent' && !isMobile && (
+              <div className="lg:col-span-12">
+                <AgentBlock />
               </div>
             )}
 
