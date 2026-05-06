@@ -144,9 +144,14 @@ import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
+/** Base URL of the agent-server. Exposed so admin-only services that need
+ *  to hit endpoints outside of /agents/builder (e.g. /agents/admin/*) can
+ *  reuse the same configuration. */
+export const AGENT_SERVER_BASE = BASE
+
 /** Cache short-lived token for agent-server auth */
 let _builderTokenCache: { token: string; expiresAt: number } | null = null
-async function getAgentToken(): Promise<string> {
+export async function getAgentToken(): Promise<string> {
   if (_builderTokenCache && Date.now() < _builderTokenCache.expiresAt - 3000) {
     return _builderTokenCache.token
   }

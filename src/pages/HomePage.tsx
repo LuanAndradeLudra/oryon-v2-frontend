@@ -14,6 +14,7 @@ import { useCopilotContext } from '@/contexts/CopilotContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { generateInsights } from '@/services/copilotService'
+import { isFeatureVisible } from '@/config/featureFlags'
 import { cn, getInitials } from '@/lib/utils'
 import { WorkspaceReadinessBanner } from '@/components/common/WorkspaceReadinessBanner'
 import type { AuditLog, BillingPlan, Conversation, HomeStats, User, WhatsAppNumberDetailed } from '@/types'
@@ -293,12 +294,16 @@ function AIInsightsWidget({ stats }: { stats: HomeStats }) {
             <div key={i} className="flex items-center gap-3 group">
               <div className="w-1.5 h-1.5 rounded-full bg-brand-400 flex-shrink-0" />
               <span className="text-sm text-surface-300 flex-1">{insight}</span>
-              <button
-                onClick={() => open(insight)}
-                className="text-[11px] text-brand-400 hover:text-brand-300 opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap"
-              >
-                Perguntar →
-              </button>
+              {/* Hidden when aiInsightsAskButton is off — same gate used by
+                  the Dashboard / CRM cards. */}
+              {isFeatureVisible('aiInsightsAskButton') && (
+                <button
+                  onClick={() => open(insight)}
+                  className="text-[11px] text-brand-400 hover:text-brand-300 opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap"
+                >
+                  Perguntar →
+                </button>
+              )}
             </div>
           ))}
         </div>

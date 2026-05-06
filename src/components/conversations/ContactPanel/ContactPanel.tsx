@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Clock, MessageSquare, UserCheck, Search, Check, UserX,
-  ArrowRightLeft, Archive, Tag as TagIcon, ExternalLink,
+  Tag as TagIcon, ExternalLink,
   Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -13,6 +13,7 @@ import { cn, formatRelativeTime } from '@/lib/utils'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
 import { AgentActivitySection } from './AgentActivitySection'
 import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
+import { isFeatureVisible } from '@/config/featureFlags'
 import type { Conversation, Tag, User } from '@/types'
 
 function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; selectedUserId?: string; onSelect: (user: User | null) => void }) {
@@ -186,10 +187,18 @@ export function ContactPanel({
           )}
         </div>
 
-        <ConversionAnalysisPanel
-          conversationId={conversation.id}
-          contact={contact}
-        />
+        {/* Hidden when conversionAnalysisPanel is off — covers both the
+            "Analisar conversa com IA" CTA and any previously-rendered
+            results, so the contact panel doesn't show a half-disabled
+            feature. */}
+        {isFeatureVisible('conversionAnalysisPanel') && (
+          <ConversionAnalysisPanel
+            conversationId={conversation.id}
+            contact={contact}
+          />
+        )}
+
+        <AgentActivitySection conversationId={conversation.id} />
 
         <AgentActivitySection conversationId={conversation.id} />
 

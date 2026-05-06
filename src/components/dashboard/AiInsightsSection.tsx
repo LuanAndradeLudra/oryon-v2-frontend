@@ -4,6 +4,7 @@ import { Sparkles, AlertTriangle, TrendingUp, Lightbulb, ArrowRight, RefreshCw }
 import { cn } from '@/lib/utils'
 import { generateDashboardInsights, type DashboardInsight } from '@/services/copilotService'
 import { useCopilotContext } from '@/contexts/CopilotContext'
+import { isFeatureVisible } from '@/config/featureFlags'
 import type { KpiMetric } from '@/types/dashboard'
 
 const TYPE_CONFIG = {
@@ -69,14 +70,17 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
         <p className="text-xs text-surface-400 leading-relaxed">{insight.body}</p>
       </div>
 
-      {/* CTA */}
-      <button
-        onClick={() => open(insight.question)}
-        className="flex items-center gap-1.5 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors self-start"
-      >
-        Perguntar à IA
-        <ArrowRight className="w-3 h-3" />
-      </button>
+      {/* CTA — gated by aiInsightsAskButton flag. When off, the insight
+          stays visible but the user can't bounce it into the Copilot. */}
+      {isFeatureVisible('aiInsightsAskButton') && (
+        <button
+          onClick={() => open(insight.question)}
+          className="flex items-center gap-1.5 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors self-start"
+        >
+          Perguntar à IA
+          <ArrowRight className="w-3 h-3" />
+        </button>
+      )}
     </motion.div>
   )
 }

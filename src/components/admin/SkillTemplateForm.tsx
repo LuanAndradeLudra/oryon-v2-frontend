@@ -66,7 +66,12 @@ interface FormState {
   mutates: boolean
   scope: 'public' | 'private'
   tenant_id: string // populated only when scope === 'private'
+  /** Operational instructions automatically injected into the system_prompt
+   *  of every agent that has this skill attached. Empty string == no fragment. */
+  prompt_fragment: string
 }
+
+const PROMPT_FRAGMENT_MAX = 2_000
 
 function fromTemplate(t: SkillTemplate | null | undefined, fallbackTenantId: string): FormState {
   if (!t) {
@@ -85,6 +90,7 @@ function fromTemplate(t: SkillTemplate | null | undefined, fallbackTenantId: str
       mutates: false,
       scope: 'public',
       tenant_id: fallbackTenantId,
+      prompt_fragment: '',
     }
   }
   const inputSchema = (t.input_schema && (t.input_schema as JsonSchemaObject).type === 'object')
@@ -108,6 +114,7 @@ function fromTemplate(t: SkillTemplate | null | undefined, fallbackTenantId: str
     mutates: t.mutates,
     scope: t.tenant_id ? 'private' : 'public',
     tenant_id: t.tenant_id ?? '',
+    prompt_fragment: t.prompt_fragment ?? '',
   }
 }
 
@@ -211,6 +218,8 @@ export function SkillTemplateForm({ template }: Props) {
           http_method: form.http_method,
           timeout_ms: form.timeout_ms,
           mutates: form.mutates,
+          // Empty string == "remove the fragment". Backend collapses to NULL.
+          prompt_fragment: form.prompt_fragment.trim().length > 0 ? form.prompt_fragment : null,
         })
         toast('Template atualizado', 'success')
         navigate(`/admin/skill-templates/${updated.id}`, { replace: true })
@@ -229,6 +238,7 @@ export function SkillTemplateForm({ template }: Props) {
           timeout_ms: form.timeout_ms,
           mutates: form.mutates,
           tenant_id: form.scope === 'private' ? form.tenant_id : null,
+          prompt_fragment: form.prompt_fragment.trim().length > 0 ? form.prompt_fragment : null,
         }
         const created = await createSkillTemplate(payload)
         toast('Template criado', 'success')
@@ -364,6 +374,50 @@ export function SkillTemplateForm({ template }: Props) {
             onChange={(s) => update('input_schema', s)}
             emptyHint="Nenhum campo. Adicione os parâmetros que a IA deve coletar do cliente."
           />
+        </Field>
+
+        {/* ── prompt_fragment ────────────────────────────────────────────
+            Texto operacional anexado AUTOMATICAMENTE ao system_prompt do
+            agente quando essa skill estiver ativa. Permite ditar boas
+            práticas de uso da skill sem precisar editar o prompt do
+            cliente. Limite duro de 2000 chars (validado no servidor). */}
+        <Field
+          label="Instruções para o agente (opcional)"
+          hint="Anexado automaticamente ao prompt de TODO agente que tem essa skill — sem o cliente precisar editar nada. Use para ditar fluxo, etapas obrigatórias, ou avisos. Máximo 2000 caracteres."
+        >
+          <Textarea
+            rows={6}
+            value={form.prompt_fragment}
+            onChange={(e) => {
+              // Limita no input pra evitar paste de 10k chars derrubar a UI;
+              // backend reforça o limite real em validatePromptFragment().
+              const v = e.target.value.slice(0, PROMPT_FRAGMENT_MAX)
+              update('prompt_fragment', v)
+            }}
+            placeholder={`Antes de chamar essa skill, sempre confirme com o paciente:
+- Nome completo
+- Data e horário escolhidos
+- Médico (se mencionado)
+
+Depois de criar a consulta, envie uma confirmação amigável com emoji ✅.`}
+          />
+          <div className={cn(
+            'mt-1.5 text-[11px] flex items-center justify-between',
+            form.prompt_fragment.length > PROMPT_FRAGMENT_MAX * 0.95
+              ? 'text-status-pending'
+              : form.prompt_fragment.length > PROMPT_FRAGMENT_MAX * 0.75
+                ? 'text-warning'
+                : 'text-surface-500',
+          )}>
+            <span>
+              {form.prompt_fragment.trim().length === 0
+                ? 'Vazio — nada será injetado no prompt do agente.'
+                : 'Será injetado no prompt do agente automaticamente.'}
+            </span>
+            <span className="font-mono tabular-nums">
+              {form.prompt_fragment.length} / {PROMPT_FRAGMENT_MAX}
+            </span>
+          </div>
         </Field>
       </Section>
       )}
