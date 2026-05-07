@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 import type { Conversation, ConversationFilters, SocketAiPauseUpdated, SocketMessageNew, Tag, User } from '@/types'
 
 /**
@@ -11,6 +12,7 @@ import type { Conversation, ConversationFilters, SocketAiPauseUpdated, SocketMes
 export const INDEFINITE_PAUSE_ISO = '9999-12-31T23:59:59.000Z'
 
 export function useConversations(filters: ConversationFilters = {}) {
+  const { user } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,13 +25,24 @@ export function useConversations(filters: ConversationFilters = {}) {
   const filtersRef = useRef(filters)
   filtersRef.current = filters
 
+  const userRef = useRef(user)
+  userRef.current = user
+
   const initialLoadDone = useRef(false)
+
+  // Tracks IDs of conversations currently in the list so we can detect
+  // new conversations that arrive via WebSocket and aren't loaded yet.
+  const loadedConvIds = useRef<Set<string>>(new Set())
+
+  // Prevents duplicate in-flight fetches for the same conversation ID.
+  const pendingFetches = useRef<Set<string>>(new Set())
 
   const fetchConversations = useCallback(async () => {
     try {
       if (!initialLoadDone.current) setLoading(true)
       const { data } = await withRetry(() => conversationsApi.list(filtersRef.current))
       setConversations(data.data)
+      loadedConvIds.current = new Set(data.data.map((c) => c.id))
       setError(null)
       initialLoadDone.current = true
     } catch {
@@ -55,12 +68,53 @@ export function useConversations(filters: ConversationFilters = {}) {
 
   // ── Socket handlers ────────────────────────────────────────────────────────
 
+  /**
+   * Fetches a single conversation by ID and prepends it to the list if it
+   * passes the currently active filters. Called when a WebSocket event
+   * references a conversation that isn't loaded yet (e.g. a first message
+   * from a brand-new contact).
+   */
+  const fetchAndPrependConversation = useCallback(async (conversationId: string) => {
+    if (pendingFetches.current.has(conversationId)) return
+    pendingFetches.current.add(conversationId)
+    try {
+      const { data: conv } = await conversationsApi.get(conversationId)
+      const f = filtersRef.current
+      const currentUser = userRef.current
+
+      // Skip if the conversation wouldn't appear under the active filters.
+      if (f.status && f.status !== 'all' && conv.status !== f.status) return
+      if (f.whatsappNumberId && conv.whatsappNumber?.id !== f.whatsappNumberId) return
+      if (f.contactId && conv.contact?.id !== f.contactId) return
+      if (f.assignedTo === 'unassigned' && conv.assignedUser) return
+      if (f.assignedTo === 'me' && currentUser && conv.assignedUser?.id !== currentUser.id) return
+
+      setConversations((prev) => {
+        if (prev.some((c) => c.id === conversationId)) return prev
+        return [conv, ...prev]
+      })
+      loadedConvIds.current.add(conversationId)
+    } catch {
+      // Silent fail — the conversation will appear on next manual refetch.
+    } finally {
+      pendingFetches.current.delete(conversationId)
+    }
+  }, [])
+
   const handleNewMessage = useCallback((payload: SocketMessageNew) => {
     // Defensive — `conversation:updated` fan-out can carry a message-less
     // shape (e.g. when only metadata fields like aiPausedUntil change).
     // Without this guard, accessing payload.message.sentAt below crashes
     // the whole conversations page.
     if (!payload?.message) return
+
+    // If the conversation isn't in the loaded list yet (new contact / first
+    // message / outside current page), fetch it and prepend it.
+    if (!loadedConvIds.current.has(payload.conversationId)) {
+      fetchAndPrependConversation(payload.conversationId)
+      return
+    }
+
     setConversations((prev) => {
       const idx = prev.findIndex((c) => c.id === payload.conversationId)
       if (idx === -1) return prev
@@ -78,7 +132,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       const [item] = updated.splice(idx, 1)
       return [item, ...updated]
     })
-  }, [])
+  }, [fetchAndPrependConversation])
 
   /** Phase 27 — handler for the dedicated 'conversation:ai-pause-updated' socket
    *  event emitted by the backend's manual pause/resume endpoint. */
