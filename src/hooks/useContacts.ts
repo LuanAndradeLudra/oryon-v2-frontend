@@ -6,15 +6,19 @@ import type { Contact, ContactFilters, Tag } from '@/types'
 export function useContacts(initialFilters: ContactFilters = {}) {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
   const [filters, setFilters] = useState<ContactFilters>(initialFilters)
 
   const fetch = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await withRetry(() => contactsApi.list(filters))
       setContacts(res.data.data)
       setTotal(res.data.total)
+    } catch {
+      setError('Não foi possível carregar os contatos. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -135,6 +139,7 @@ export function useContacts(initialFilters: ContactFilters = {}) {
   return {
     contacts,
     loading,
+    error,
     total,
     filters,
     setFilters,

@@ -59,7 +59,7 @@ export function ContactsPage() {
     : undefined
 
   const {
-    contacts, loading, total, filters, setFilters,
+    contacts, loading, error, total, filters, setFilters,
     updateContact, createContact,
     bulkUpdateStage, bulkRemove, bulkAddTag, bulkRemoveTag,
     removeContact, refetch,
@@ -260,7 +260,18 @@ export function ContactsPage() {
         <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
 
         <div className="flex-1 overflow-hidden">
-          {isMobile ? (
+          {error ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
+              <AlertTriangle className="w-8 h-8 text-red-400" />
+              <p className="text-sm">{error}</p>
+              <button
+                onClick={refetch}
+                className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          ) : isMobile ? (
             // Mobile: lista vertical pura — kanban horizontal e table viraram
             // inutilizaveis em viewport estreita. Tap no card abre detail.
             <ContactsMobileList
