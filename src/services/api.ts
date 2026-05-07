@@ -738,7 +738,7 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('oryon:session')
       // Só redireciona se estiver em uma página protegida (evita reload em páginas públicas)
-      const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password']
+      const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/activate']
       if (!publicPaths.includes(window.location.pathname)) {
         window.location.href = '/login'
       }

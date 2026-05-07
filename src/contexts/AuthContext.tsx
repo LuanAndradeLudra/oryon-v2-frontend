@@ -40,6 +40,8 @@ interface AuthContextValue {
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
+  /** Invited agent: POST /auth/activate, then same session + cookies as register. */
+  activateAccount: (token: string, password: string) => Promise<void>
   logout: () => void
   completePasswordChange: (newPassword: string, currentPassword?: string) => Promise<void>
   completeOnboarding: () => void
@@ -120,6 +122,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await axios.post<{
       user: User; requiresPasswordChange: boolean; organizationConfigured?: boolean;
     }>(`${API}/auth/register`, payload, { withCredentials: true })
+    const s: AuthSession = {
+      user: res.data.user,
+      requiresPasswordChange: res.data.requiresPasswordChange,
+      organizationConfigured: res.data.organizationConfigured ?? false,
+    }
+    saveSession(s)
+    setSession(s)
+    sessionStorage.removeItem('oryon_dismissed_banners')
+    appLogger.logSessionEvent({
+      tenant_id: s.user.tenantId ?? null,
+      user_id:   s.user.id ?? null,
+      user_role: s.user.role ?? null,
+      event_type: 'login',
+    })
+  }, [])
+
+  const activateAccount = useCallback(async (token: string, password: string) => {
+    disconnectSocket()
+    const res = await axios.post<{
+      user: User
+      requiresPasswordChange: boolean
+      organizationConfigured?: boolean
+    }>(`${API}/auth/activate`, { token, password }, { withCredentials: true })
     const s: AuthSession = {
       user: res.data.user,
       requiresPasswordChange: res.data.requiresPasswordChange,
@@ -302,6 +327,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!session,
       login,
       register,
+      activateAccount,
       logout,
       completePasswordChange,
       completeOnboarding,

@@ -64,6 +64,7 @@ const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m
 const HomePage          = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
 const ForgotPasswordPage = lazyRoute(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
+const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
 const RegisterPage       = lazyRoute(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
 const CampaignsPage     = lazyRoute(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
 const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
@@ -195,6 +196,7 @@ function AnimatedRoutes() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/activate" element={<ActivateAccountPage />} />
 
           {/* Password setup gate */}
           <Route path="/set-password" element={
