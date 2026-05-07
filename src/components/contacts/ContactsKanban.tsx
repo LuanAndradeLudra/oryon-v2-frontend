@@ -39,6 +39,13 @@ export function ContactsKanban({
   const [overKey, setOverKey] = useState<string | null>(null)
   const hasSelection = (selectedIds?.size ?? 0) > 0
 
+  console.log('[ContactsKanban] render', {
+    loadingStages,
+    stagesCount: stages.length,
+    stages: stages.map((s) => s.key),
+    contactsCount: contacts.length,
+  })
+
   // Empty-area context menu (right-click on the kanban background).
   const buildEmptyAreaMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = []
@@ -69,10 +76,29 @@ export function ContactsKanban({
     return map
   }, [contacts, stages])
 
-  if (loadingStages || stages.length === 0) {
+  if (loadingStages) {
+    console.log('[ContactsKanban] aguardando stages (loadingStages=true)')
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+      </div>
+    )
+  }
+
+  if (stages.length === 0) {
+    console.warn('[ContactsKanban] stages vazios após carregamento — tenant sem etapas configuradas?')
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
+        <Settings2 className="w-8 h-8 text-surface-600" />
+        <p className="text-sm">Nenhuma etapa configurada.</p>
+        {onConfigCRM && (
+          <button
+            onClick={onConfigCRM}
+            className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2"
+          >
+            Configurar etapas do CRM
+          </button>
+        )}
       </div>
     )
   }

@@ -31,10 +31,18 @@ export function CRMConfigProvider({ children }: { children: ReactNode }) {
   const [loadingFields, setLoadingFields] = useState(true)
 
   const refetchStages = useCallback(() => {
+    console.log('[CRMConfig] buscando stages...')
     setLoadingStages(true)
     stagesApi.list()
-      .then((r) => setStages(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setStages([]))
+      .then((r) => {
+        const data = Array.isArray(r.data) ? r.data : []
+        console.log('[CRMConfig] stages carregados:', data.length, data.map((s) => s.key))
+        setStages(data)
+      })
+      .catch((err) => {
+        console.error('[CRMConfig] falha ao carregar stages:', err?.response?.status, err?.message)
+        setStages([])
+      })
       .finally(() => setLoadingStages(false))
   }, [])
 
