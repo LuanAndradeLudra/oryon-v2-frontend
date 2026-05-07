@@ -159,11 +159,14 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   }, [s2.role])
 
   const checkEmailDuplicate = async (email: string) => {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return
     setEmailChecking(true)
     try {
-      const r = await axios.get<User[]>(`${API}/users?email=${encodeURIComponent(email)}`)
-      if (r.data.length > 0) {
+      const r = await axios.get<User[] | { data?: User[] }>(`${API}/users?email=${encodeURIComponent(normalizedEmail)}`)
+      const users = Array.isArray(r.data) ? r.data : (r.data?.data ?? [])
+      const duplicated = users.some((u) => u.email?.trim().toLowerCase() === normalizedEmail)
+      if (duplicated) {
         setErrors((e) => ({ ...e, email: 'Este email já está cadastrado.' }))
       } else {
         setErrors((e) => {
