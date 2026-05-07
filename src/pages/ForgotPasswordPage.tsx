@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Zap, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import axios from 'axios'
 
@@ -68,7 +68,7 @@ export function ForgotPasswordPage() {
             <div className="mb-7">
               <h2 className="text-2xl font-bold text-surface-50">Esqueceu a senha?</h2>
               <p className="text-sm text-surface-400 mt-1">
-                Informe seu e-mail e enviaremos um link para redefinir sua senha.
+                Digite seu e-mail e enviaremos um link para redefinir a senha.
               </p>
             </div>
 
@@ -96,10 +96,10 @@ export function ForgotPasswordPage() {
 
               <button
                 type="submit"
-                disabled={loading || !email}
+                disabled={loading || !email.trim()}
                 className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mt-1"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar link de redefinição'}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar link'}
               </button>
             </form>
 
