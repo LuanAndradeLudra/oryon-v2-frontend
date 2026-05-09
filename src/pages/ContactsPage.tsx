@@ -21,6 +21,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useContacts } from '@/hooks/useContacts'
+import { useKanbanContacts } from '@/hooks/useKanbanContacts'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -58,15 +59,46 @@ export function ContactsPage() {
     ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl }
     : undefined
 
-  const {
-    contacts, loading, error, total, filters, setFilters,
-    updateContact, createContact,
-    bulkUpdateStage, bulkRemove, bulkAddTag, bulkRemoveTag,
-    removeContact, refetch,
-  } = useContacts({
+  // Dual-hook setup: useContacts powers the table/mobile views with a flat
+  // paginated array; useKanbanContacts powers the kanban with per-column
+  // pagination + infinite scroll. Each is gated by `enabled` so only the
+  // active view fetches. Filters live inside useContacts so the same source
+  // of truth drives both — kanban consumes them as a prop.
+  const isKanbanView = effectiveViewMode === 'kanban'
+  const tableMode = useContacts({
     sortBy: 'lastContactedAt',
     sortDir: 'desc',
-  })
+  }, { enabled: !isKanbanView })
+  const { filters, setFilters } = tableMode
+  const kanbanMode = useKanbanContacts(filters, { enabled: isKanbanView })
+
+  // Active fields routed by viewMode. Keeping the same variable names as
+  // before lets the rest of the page read these without caring which view
+  // is active.
+  const contacts = isKanbanView ? kanbanMode.flatContacts : tableMode.contacts
+  const total = isKanbanView ? kanbanMode.totalAcrossStages : tableMode.total
+  const loading = isKanbanView ? kanbanMode.initialLoading : tableMode.loading
+  const error = isKanbanView ? null : tableMode.error
+  const updateContact = isKanbanView ? kanbanMode.updateContact : tableMode.updateContact
+  const createContact = isKanbanView ? kanbanMode.createContact : tableMode.createContact
+  const bulkUpdateStage = isKanbanView ? kanbanMode.bulkUpdateStage : tableMode.bulkUpdateStage
+  const bulkRemove = isKanbanView ? kanbanMode.bulkRemove : tableMode.bulkRemove
+  const bulkAddTag = isKanbanView ? kanbanMode.bulkAddTag : tableMode.bulkAddTag
+  const bulkRemoveTag = isKanbanView ? kanbanMode.bulkRemoveTag : tableMode.bulkRemoveTag
+  const removeContact = isKanbanView ? kanbanMode.removeContact : tableMode.removeContact
+  const refetch = isKanbanView ? kanbanMode.refetchAll : tableMode.refetch
+
+  // Real per-stage totals for the StatsBar's "estágio predominante" widget.
+  // Only meaningful in kanban view; in table view the bar falls back to
+  // deriving counts from `contacts`.
+  const stageCounts = useMemo<Record<string, number> | undefined>(() => {
+    if (!isKanbanView) return undefined
+    const out: Record<string, number> = {}
+    for (const [k, v] of Object.entries(kanbanMode.columns)) {
+      out[k] = v.total
+    }
+    return out
+  }, [isKanbanView, kanbanMode.columns])
 
   // Tags are fetched once when the page mounts so the BulkActionBar can
   // show the picker without a round-trip on first selection.
@@ -255,7 +287,7 @@ export function ContactsPage() {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-black">
         {isMobile && <MobilePageHeader title="Contatos" />}
 
-        <ContactsStatsBar contacts={contacts} total={total} />
+        <ContactsStatsBar contacts={contacts} total={total} stageCounts={stageCounts} />
 
         <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
 
@@ -292,7 +324,8 @@ export function ContactsPage() {
             />
           ) : (
             <ContactsKanban
-              contacts={contacts}
+              columns={kanbanMode.columns}
+              onLoadMore={kanbanMode.loadMore}
               onOpenPanel={handleOpenPanel}
               onMoveStage={handleMoveStage}
               selectedIds={selectedIds}

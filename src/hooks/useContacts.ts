@@ -3,7 +3,15 @@ import { contactsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import type { Contact, ContactFilters, Tag } from '@/types'
 
-export function useContacts(initialFilters: ContactFilters = {}) {
+export interface UseContactsOpts {
+  /** When false, no fetches happen and the hook returns its initial state.
+   *  Used by ContactsPage to skip the table-view fetch while the kanban
+   *  view is active (kanban has its own per-column hook). Default: true. */
+  enabled?: boolean
+}
+
+export function useContacts(initialFilters: ContactFilters = {}, opts: UseContactsOpts = {}) {
+  const enabled = opts.enabled !== false
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -11,6 +19,10 @@ export function useContacts(initialFilters: ContactFilters = {}) {
   const [filters, setFilters] = useState<ContactFilters>(initialFilters)
 
   const fetch = useCallback(async () => {
+    if (!enabled) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -22,7 +34,7 @@ export function useContacts(initialFilters: ContactFilters = {}) {
     } finally {
       setLoading(false)
     }
-  }, [filters])
+  }, [filters, enabled])
 
   useEffect(() => { fetch() }, [fetch])
 
