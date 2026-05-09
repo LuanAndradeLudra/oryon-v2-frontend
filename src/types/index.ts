@@ -686,6 +686,21 @@ export interface PaginatedResponse<T> {
   hasMore: boolean
 }
 
+/** Database-wide conversation totals grouped by status, computed under the
+ *  same non-status filters that produced the current page. Lets the tab
+ *  badges show the real total (e.g. "Resolvidas 287") instead of just
+ *  whatever fits in the loaded array, which would shrink with pagination. */
+export interface ConversationStatusCounts {
+  all: number
+  open: number
+  pending: number
+  resolved: number
+}
+
+export interface ConversationListResponse extends PaginatedResponse<Conversation> {
+  statusCounts: ConversationStatusCounts
+}
+
 export interface SendMessageDto {
   body?: string
   file?: File

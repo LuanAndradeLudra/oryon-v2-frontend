@@ -3,7 +3,7 @@ import { Loader2, MessageSquareOff } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
-import type { Contact, Conversation, ConversationFilters, Tag } from '@/types'
+import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag } from '@/types'
 
 // TODO: substituir por dado real da API de billing
 const USAGE_MOCK = { used: 847, total: 1000 }
@@ -13,6 +13,10 @@ interface ConversationListProps {
   loading: boolean
   loadingMore?: boolean
   hasMore?: boolean
+  /** Database-wide totals per status, computed by the backend so the tab
+   *  badges stay accurate even with pagination (otherwise they'd show only
+   *  what fits in the loaded array). */
+  statusCounts?: ConversationStatusCounts
   activeId: string | null
   filters: ConversationFilters
   allTags: Tag[]
@@ -28,6 +32,7 @@ interface ConversationListProps {
 
 export function ConversationList({
   conversations, loading, loadingMore = false, hasMore = false,
+  statusCounts,
   activeId, filters, allTags, allContacts,
   onSelectConversation, onFiltersChange, onLoadMore,
   scrollPositionRef,
@@ -86,19 +91,14 @@ export function ConversationList({
 
   const handleSelect = useCallback((conv: Conversation) => onSelectConversation(conv), [onSelectConversation])
 
-  // Counts — persist across status filter changes so all tabs always show real counts
-  const [counts, setCounts] = useState<Record<string, number>>({ all: 0, open: 0, pending: 0, resolved: 0 })
-  useEffect(() => {
-    // Only update counts when viewing 'all' (unfiltered) — this gives accurate totals
-    if (filters.status === 'all' || filters.status === undefined) {
-      setCounts({
-        all:      conversations.length,
-        open:     conversations.filter((c) => c.status === 'open').length,
-        pending:  conversations.filter((c) => c.status === 'pending').length,
-        resolved: conversations.filter((c) => c.status === 'resolved').length,
-      })
-    }
-  }, [conversations, filters.status])
+  // Tab badges read straight from the backend-provided counts. The previous
+  // implementation derived them from `conversations.length` filtered by status,
+  // which broke with pagination — once only 50 of N rows were loaded, the
+  // badges shrank with the page instead of showing the database total.
+  // Spread into a plain map so the loosely-typed FiltersBar prop accepts it.
+  const counts: Record<string, number> = statusCounts
+    ? { ...statusCounts }
+    : { all: 0, open: 0, pending: 0, resolved: 0 }
 
   return (
     <div className="flex flex-col h-full w-full sm:w-[418px] bg-black border-r border-surface-800 flex-shrink-0">

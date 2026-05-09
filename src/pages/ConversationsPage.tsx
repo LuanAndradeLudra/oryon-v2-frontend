@@ -51,7 +51,7 @@ export function ConversationsPage() {
   const listScrollPosRef = useRef(0)
 
   const {
-    conversations, loading, loadingMore, hasMore, loadMore,
+    conversations, loading, loadingMore, hasMore, loadMore, statusCounts,
     handleNewMessage, handleAiPauseUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause,
@@ -311,6 +311,7 @@ export function ConversationsPage() {
                 loadingMore={loadingMore}
                 hasMore={hasMore}
                 onLoadMore={loadMore}
+                statusCounts={statusCounts}
                 activeId={activeConversation?.id ?? null}
                 filters={filters}
                 allTags={allTags}

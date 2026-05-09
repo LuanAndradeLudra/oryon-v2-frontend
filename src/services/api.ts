@@ -19,6 +19,7 @@ import type {
   Conversation,
   ConversationAnalysisResult,
   ConversationFilters,
+  ConversationListResponse,
   HomeStats,
   MarketingFunnelTotals,
   MetaCapiEvent,
@@ -851,7 +852,7 @@ axios.interceptors.response.use(undefined, makeRefreshInterceptor(axios))
 
 export const conversationsApi = {
   list(filters: ConversationFilters = {}, page = 1, limit = 30) {
-    return api.get<PaginatedResponse<Conversation>>('/conversations', {
+    return api.get<ConversationListResponse>('/conversations', {
       params: { ...filters, page, limit },
     })
   },

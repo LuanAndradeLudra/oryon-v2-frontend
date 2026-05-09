@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Conversation, ConversationFilters, SocketAiPauseUpdated, SocketMessageNew, Tag, User } from '@/types'
+import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketMessageNew, Tag, User } from '@/types'
 
 /**
  * Phase 27 — sentinel timestamp used by the UI to mean "pause indefinitely
@@ -22,6 +22,9 @@ export function useConversations(filters: ConversationFilters = {}) {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
+  const [statusCounts, setStatusCounts] = useState<ConversationStatusCounts>({
+    all: 0, open: 0, pending: 0, resolved: 0,
+  })
   const [error, setError] = useState<string | null>(null)
 
   // Filter scoping is owned by the page — admins pick via a local
@@ -62,6 +65,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       setConversations(data.data)
       loadedConvIds.current = new Set(data.data.map((c) => c.id))
       setHasMore(data.hasMore)
+      setStatusCounts(data.statusCounts)
       setError(null)
       initialLoadDone.current = true
     } catch {
@@ -90,6 +94,7 @@ export function useConversations(filters: ConversationFilters = {}) {
         return [...prev, ...incoming]
       })
       setHasMore(data.hasMore)
+      setStatusCounts(data.statusCounts)
       pageRef.current = next
     } catch {
       // Keep the existing list; user can retry by scrolling again. No toast
@@ -270,6 +275,7 @@ export function useConversations(filters: ConversationFilters = {}) {
     loadingMore,
     hasMore,
     loadMore,
+    statusCounts,
     error,
     refetch: fetchConversations,
     handleNewMessage,
