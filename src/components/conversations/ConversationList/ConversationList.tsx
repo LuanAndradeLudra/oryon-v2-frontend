@@ -41,16 +41,25 @@ export function ConversationList({
   const prevIdsRef = useRef<Set<string>>(new Set())
   const [newConvIds, setNewConvIds] = useState<Set<string>>(new Set())
 
-  // Restore scroll position on mount BEFORE the browser paints, so the user
-  // doesn't see a flash of "top of the list" before we jump back. This is
-  // what makes "tap a conversation → press back" return to the same spot
-  // instead of always landing at the top — the previous behavior was
-  // confusing when users were scrolled deep into the list.
+  // Restore scroll position BEFORE the browser paints in two scenarios:
+  //
+  //   1. Component mount — covers mobile back-from-chat where the list
+  //      remounts (initial use case).
+  //   2. activeId changes — covers desktop, where the list never unmounts
+  //      but the parent re-renders on selection. Without this, picking a
+  //      conversation deep in the list visually jumps the scrollbar (the
+  //      browser's automatic scroll-anchoring sometimes shifts position
+  //      when the active item's styles change — bg, border, badge).
+  //
+  // The handleScroll callback below keeps the ref up to date as the user
+  // scrolls, so the value we restore here is always the user's last manual
+  // position — not stale from a previous session.
   useLayoutEffect(() => {
     if (!listRef.current || !scrollPositionRef) return
-    listRef.current.scrollTop = scrollPositionRef.current
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    if (listRef.current.scrollTop !== scrollPositionRef.current) {
+      listRef.current.scrollTop = scrollPositionRef.current
+    }
+  }, [activeId, scrollPositionRef])
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = 0
@@ -72,21 +81,25 @@ export function ConversationList({
     if (distanceFromBottom < 200) onLoadMore()
   }, [scrollPositionRef, hasMore, loadingMore, onLoadMore])
 
-  // Track newly appearing conversations
+  // Track newly appearing conversations to flash a subtle fade-in. Only
+  // animates when a small number of items appear at once — a real-time
+  // socket prepend (typically 1–2 per event) — and skips bulk additions
+  // from `loadMore` pagination (50 at a time), where the animation looked
+  // like the list was flickering when the user later clicked a row.
+  const ANIMATE_NEW_THRESHOLD = 5
   useEffect(() => {
     const currentIds = new Set(conversations.map((c) => c.id))
-    if (prevIdsRef.current.size > 0) {
-      const added = new Set<string>()
-      currentIds.forEach((id) => {
-        if (!prevIdsRef.current.has(id)) added.add(id)
-      })
-      if (added.size > 0) {
-        setNewConvIds(added)
-        const timer = setTimeout(() => setNewConvIds(new Set()), 400)
-        return () => clearTimeout(timer)
-      }
-    }
+    const previous = prevIdsRef.current
     prevIdsRef.current = currentIds
+    if (previous.size === 0) return
+    const added = new Set<string>()
+    currentIds.forEach((id) => {
+      if (!previous.has(id)) added.add(id)
+    })
+    if (added.size === 0 || added.size > ANIMATE_NEW_THRESHOLD) return
+    setNewConvIds(added)
+    const timer = setTimeout(() => setNewConvIds(new Set()), 400)
+    return () => clearTimeout(timer)
   }, [conversations])
 
   const handleSelect = useCallback((conv: Conversation) => onSelectConversation(conv), [onSelectConversation])

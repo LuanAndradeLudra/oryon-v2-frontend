@@ -163,11 +163,27 @@ export function ConversationFiltersBar({
   return (
     <div className="pl-3 pr-4 pb-2 space-y-2">
 
-      {/* ── Row 1: Status tabs ───────────────────────────────────────────────── */}
-      <div className="flex gap-0.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+      {/* ── Row 1: Status tabs ─────────────────────────────────────────────────
+          Layout strategy:
+          - Counts >= 1000 collapse to "999+" so a tenant with high volume
+            doesn't blow the badge width past what 4 tabs can fit in 418px.
+          - overflow-x-auto stays as a safety net for edge cases (long
+            translations, larger system fonts) so a tab never gets clipped.
+          - mask-image fades the right edge when content overflows, giving
+            the user a visual hint to scroll — the scrollbar itself is
+            hidden via scrollbarWidth: 'none' for a cleaner look. */}
+      <div
+        className="flex gap-0.5 overflow-x-auto pb-1"
+        style={{
+          scrollbarWidth: 'none',
+          maskImage: 'linear-gradient(to right, black 0, black calc(100% - 16px), transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to right, black 0, black calc(100% - 16px), transparent 100%)',
+        }}
+      >
         {STATUS_TABS.map(({ label, value }) => {
           const isActive = filters.status === value
           const count = counts[value]
+          const displayCount = (count ?? 0) > 999 ? '999+' : count
           const underlineColor = value === 'open' ? 'bg-status-open'
             : value === 'pending' ? 'bg-status-pending'
             : value === 'resolved' ? 'bg-status-active'
@@ -177,7 +193,7 @@ export function ConversationFiltersBar({
               key={value}
               onClick={() => set({ status: value })}
               className={cn(
-                'relative flex items-center gap-1.5 px-2.5 py-1 pb-2 text-[12.5px] font-medium transition-all whitespace-nowrap',
+                'relative flex items-center gap-1 px-2 py-1 pb-2 text-[12.5px] font-medium transition-all whitespace-nowrap',
                 isActive
                   ? 'text-surface-100'
                   : 'text-surface-400 hover:text-surface-200'
@@ -186,10 +202,10 @@ export function ConversationFiltersBar({
               {label}
               {(count ?? 0) > 0 && (
                 <span className={cn(
-                  'rounded-full px-1.5 py-0.5 text-[10.5px] font-bold leading-none min-w-[19px] text-center',
+                  'rounded-full px-1.5 py-0.5 text-[10.5px] font-bold leading-none min-w-[18px] text-center',
                   isActive ? 'bg-white text-red-700' : 'bg-white text-red-700'
                 )}>
-                  {count}
+                  {displayCount}
                 </span>
               )}
               <span className={cn(
