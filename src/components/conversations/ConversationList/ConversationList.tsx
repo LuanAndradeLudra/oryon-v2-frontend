@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useCallback, useState } from 'react'
+import { useRef, useEffect, useMemo, useCallback, useState, useLayoutEffect, type MutableRefObject } from 'react'
 import { Loader2, MessageSquareOff } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { ConversationSearch } from './ConversationSearch'
@@ -11,25 +11,70 @@ const USAGE_MOCK = { used: 847, total: 1000 }
 interface ConversationListProps {
   conversations: Conversation[]
   loading: boolean
+  loadingMore?: boolean
+  hasMore?: boolean
   activeId: string | null
   filters: ConversationFilters
   allTags: Tag[]
   allContacts: Contact[]
   onSelectConversation: (conv: Conversation) => void
   onFiltersChange: (filters: ConversationFilters) => void
+  onLoadMore?: () => void
+  /** External hold for the list's scrollTop. Lets callers (mobile chat ↔ list
+   *  switch) preserve the user's position across remounts. Without this, the
+   *  list goes back to the top whenever the wrapper unmounts. */
+  scrollPositionRef?: MutableRefObject<number>
 }
 
 export function ConversationList({
-  conversations, loading, activeId, filters, allTags, allContacts,
-  onSelectConversation, onFiltersChange,
+  conversations, loading, loadingMore = false, hasMore = false,
+  activeId, filters, allTags, allContacts,
+  onSelectConversation, onFiltersChange, onLoadMore,
+  scrollPositionRef,
 }: ConversationListProps) {
   const listRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
   const [newConvIds, setNewConvIds] = useState<Set<string>>(new Set())
 
+  // Restore scroll position on mount BEFORE the browser paints, so the user
+  // doesn't see a flash of "top of the list" before we jump back. This is
+  // what makes "tap a conversation → press back" return to the same spot
+  // instead of always landing at the top — the previous behavior was
+  // confusing when users were scrolled deep into the list.
+  useLayoutEffect(() => {
+    if (!listRef.current || !scrollPositionRef) return
+    listRef.current.scrollTop = scrollPositionRef.current
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = 0
-  }, [filters.status, filters.search, filters.assignedTo, filters.tagId, filters.contactId])
+    if (scrollPositionRef) scrollPositionRef.current = 0
+  }, [filters.status, filters.search, filters.assignedTo, filters.tagId, filters.contactId, scrollPositionRef])
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (scrollPositionRef) scrollPositionRef.current = e.currentTarget.scrollTop
+  }, [scrollPositionRef])
+
+  // Infinite scroll — fire `onLoadMore` when the sentinel near the bottom of
+  // the list enters the viewport. `rootMargin: 200px` triggers the next page
+  // a bit before the user actually hits the floor, so the new rows appear
+  // before they notice an empty space. Recreated when the callback or the
+  // load state changes so we never call into a stale closure.
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    const root = listRef.current
+    if (!sentinel || !root || !onLoadMore || !hasMore || loadingMore) return
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) onLoadMore()
+      },
+      { root, rootMargin: '200px' },
+    )
+    obs.observe(sentinel)
+    return () => obs.disconnect()
+  }, [onLoadMore, hasMore, loadingMore, conversations.length])
 
   // Track newly appearing conversations
   useEffect(() => {
@@ -91,7 +136,7 @@ export function ConversationList({
       </div>
 
       {/* List */}
-      <div ref={listRef} className="flex-1 overflow-y-auto" style={{ contain: 'layout style', willChange: 'transform' }}>
+      <div ref={listRef} onScroll={handleScroll} className="flex-1 overflow-y-auto" style={{ contain: 'layout style', willChange: 'transform' }}>
         {loading && conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 gap-2">
             <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
@@ -110,15 +155,28 @@ export function ConversationList({
             </div>
           </div>
         ) : (
-          conversations.map((conv) => (
-            <div key={conv.id} className={newConvIds.has(conv.id) ? 'animate-conv-in' : undefined}>
-              <ConversationItem
-                conversation={conv}
-                isActive={conv.id === activeId}
-                onSelect={handleSelect}
-              />
-            </div>
-          ))
+          <>
+            {conversations.map((conv) => (
+              <div key={conv.id} className={newConvIds.has(conv.id) ? 'animate-conv-in' : undefined}>
+                <ConversationItem
+                  conversation={conv}
+                  isActive={conv.id === activeId}
+                  onSelect={handleSelect}
+                />
+              </div>
+            ))}
+            {hasMore && (
+              <div
+                ref={sentinelRef}
+                className="flex items-center justify-center py-4"
+                aria-hidden="true"
+              >
+                {loadingMore && (
+                  <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

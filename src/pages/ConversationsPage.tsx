@@ -44,8 +44,14 @@ export function ConversationsPage() {
   const { toasts, toast, dismiss } = useToast()
   const isMobile = useIsMobile()
 
+  // Persists the conversation list's scrollTop across the mobile mount/unmount
+  // cycle (list ↔ chat). Without this, tapping an old conversation and then
+  // hitting back used to drop the user at the top of the list — which they
+  // reported on 2026-05-09 as "barra volta para o início".
+  const listScrollPosRef = useRef(0)
+
   const {
-    conversations, loading,
+    conversations, loading, loadingMore, hasMore, loadMore,
     handleNewMessage, handleAiPauseUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause,
@@ -302,12 +308,16 @@ export function ConversationsPage() {
               <ConversationList
                 conversations={conversations}
                 loading={loading}
+                loadingMore={loadingMore}
+                hasMore={hasMore}
+                onLoadMore={loadMore}
                 activeId={activeConversation?.id ?? null}
                 filters={filters}
                 allTags={allTags}
                 allContacts={allContacts}
                 onSelectConversation={handleSelectConversation}
                 onFiltersChange={setFilters}
+                scrollPositionRef={listScrollPosRef}
               />
             </div>
           </div>

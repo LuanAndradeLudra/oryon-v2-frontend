@@ -18,8 +18,6 @@ import { useEffect, useState } from 'react'
 import { Bot, UserCog, ChevronDown, RotateCcw, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/contexts/AuthContext'
-import { isSupervisorOrAbove } from '@/lib/roleHelpers'
 import { INDEFINITE_PAUSE_ISO } from '@/hooks/useConversations'
 
 interface Props {
@@ -36,15 +34,13 @@ const EXTEND_OPTIONS: Array<{ label: string; minutes: number }> = [
 ]
 
 export function AiHandoffBanner({ aiPausedUntil, onPause, onResume }: Props) {
-  const { user } = useAuth()
   const [busy, setBusy] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Mirrors the backend gate on PATCH /conversations/:id/ai-pause. Agents
-  // can SEE the banner (status info matters to whoever's atendendo) but
-  // can't manually pause/resume — that's a manager decision. The implicit
-  // auto-pause on outbound human messages still works for everyone.
-  const canControl = isSupervisorOrAbove(user?.role)
+  // Pause/resume controls are open to every operator role — agents need to
+  // hand the conversation back to the AI after answering manually
+  // (2026-05-09 production feedback). The backend mirrors this; department
+  // scoping there still prevents cross-line interference.
 
   const pausedUntilMs = aiPausedUntil ? new Date(aiPausedUntil).getTime() : null
   const isPaused = pausedUntilMs !== null && pausedUntilMs > Date.now()
@@ -98,18 +94,16 @@ export function AiHandoffBanner({ aiPausedUntil, onPause, onResume }: Props) {
             </p>
           </div>
         </div>
-        {canControl && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => handlePause(240)}
-            className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-emerald-200 hover:text-white hover:bg-emerald-700/40 disabled:opacity-50 transition-colors"
-            title="Pausar a IA e assumir esta conversa"
-          >
-            {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserCog className="w-3 h-3" />}
-            Intervir agora
-          </button>
-        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => handlePause(240)}
+          className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-emerald-200 hover:text-white hover:bg-emerald-700/40 disabled:opacity-50 transition-colors"
+          title="Pausar a IA e assumir esta conversa"
+        >
+          {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserCog className="w-3 h-3" />}
+          Intervir agora
+        </button>
       </div>
     )
   }
@@ -133,19 +127,17 @@ export function AiHandoffBanner({ aiPausedUntil, onPause, onResume }: Props) {
         </div>
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
-        {canControl && (
-          <>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={handleResume}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-amber-200 hover:text-white hover:bg-amber-700/40 disabled:opacity-50 transition-colors"
-              title="Reativar a IA agora"
-            >
-              {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
-              Reativar IA
-            </button>
-            <div className="relative">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={handleResume}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-amber-200 hover:text-white hover:bg-amber-700/40 disabled:opacity-50 transition-colors"
+          title="Reativar a IA agora"
+        >
+          {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+          Reativar IA
+        </button>
+        <div className="relative">
           <button
             type="button"
             disabled={busy}
@@ -182,9 +174,7 @@ export function AiHandoffBanner({ aiPausedUntil, onPause, onResume }: Props) {
               </>
             )}
           </AnimatePresence>
-            </div>
-          </>
-        )}
+        </div>
       </div>
     </div>
   )
