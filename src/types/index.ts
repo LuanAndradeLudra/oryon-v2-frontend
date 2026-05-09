@@ -680,6 +680,10 @@ export interface PaginatedResponse<T> {
   total: number
   page: number
   limit: number
+  /** True when there is at least one more page after `page` for the current
+   *  filter set. Backend computes this as `page * limit < total` so it stays
+   *  accurate even when the last page is partially filled. */
+  hasMore: boolean
 }
 
 export interface SendMessageDto {

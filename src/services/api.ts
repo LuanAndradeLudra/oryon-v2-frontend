@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { appLogger } from '@/services/appLogger'
 import type {
   AdAccount,
@@ -807,11 +807,15 @@ function clearSessionAndRedirect() {
   }
 }
 
+/** AxiosRequestConfig augmented with our retry-once marker. Stored on the
+ *  config object itself so the same interceptor doesn't re-trigger when
+ *  the retried request fails again with 401 (refresh truly failed). */
+type RetryableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean }
+
 function makeRefreshInterceptor(client: typeof axios | typeof api) {
-  return async (error: unknown) => {
-    const err = error as { response?: { status?: number }, config?: Record<string, unknown> & { _retry?: boolean, headers?: Record<string, unknown> } }
-    const original = err.config
-    if (err.response?.status !== 401 || !original || original._retry) {
+  return async (error: AxiosError) => {
+    const original = error.config as RetryableRequestConfig | undefined
+    if (error.response?.status !== 401 || !original || original._retry) {
       return Promise.reject(error)
     }
     original._retry = true
