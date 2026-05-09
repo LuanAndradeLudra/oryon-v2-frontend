@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useCallback, useState, useLayoutEffect, type MutableRefObject } from 'react'
+import { useRef, useEffect, useCallback, useState, useLayoutEffect, type MutableRefObject } from 'react'
 import { Loader2, MessageSquareOff } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { ConversationSearch } from './ConversationSearch'
@@ -33,7 +33,6 @@ export function ConversationList({
   scrollPositionRef,
 }: ConversationListProps) {
   const listRef = useRef<HTMLDivElement>(null)
-  const sentinelRef = useRef<HTMLDivElement>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
   const [newConvIds, setNewConvIds] = useState<Set<string>>(new Set())
 
@@ -53,28 +52,20 @@ export function ConversationList({
     if (scrollPositionRef) scrollPositionRef.current = 0
   }, [filters.status, filters.search, filters.assignedTo, filters.tagId, filters.contactId, scrollPositionRef])
 
+  // Infinite scroll — trigger `onLoadMore` when the user scrolls within 200px
+  // of the bottom. Replaced an IntersectionObserver-based sentinel that wasn't
+  // firing reliably in production (likely interaction with the `contain` /
+  // `willChange: transform` styles on this scroll container, or a quirk of
+  // explicit `root` in some browser engines). Plain scroll math is more
+  // deterministic and the load-more lock in useConversations handles the
+  // duplicate-fire risk that scroll handlers normally have.
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (scrollPositionRef) scrollPositionRef.current = e.currentTarget.scrollTop
-  }, [scrollPositionRef])
-
-  // Infinite scroll — fire `onLoadMore` when the sentinel near the bottom of
-  // the list enters the viewport. `rootMargin: 200px` triggers the next page
-  // a bit before the user actually hits the floor, so the new rows appear
-  // before they notice an empty space. Recreated when the callback or the
-  // load state changes so we never call into a stale closure.
-  useEffect(() => {
-    const sentinel = sentinelRef.current
-    const root = listRef.current
-    if (!sentinel || !root || !onLoadMore || !hasMore || loadingMore) return
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) onLoadMore()
-      },
-      { root, rootMargin: '200px' },
-    )
-    obs.observe(sentinel)
-    return () => obs.disconnect()
-  }, [onLoadMore, hasMore, loadingMore, conversations.length])
+    const el = e.currentTarget
+    if (scrollPositionRef) scrollPositionRef.current = el.scrollTop
+    if (!hasMore || loadingMore || !onLoadMore) return
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    if (distanceFromBottom < 200) onLoadMore()
+  }, [scrollPositionRef, hasMore, loadingMore, onLoadMore])
 
   // Track newly appearing conversations
   useEffect(() => {
@@ -166,11 +157,7 @@ export function ConversationList({
               </div>
             ))}
             {hasMore && (
-              <div
-                ref={sentinelRef}
-                className="flex items-center justify-center py-4"
-                aria-hidden="true"
-              >
+              <div className="flex items-center justify-center py-4" aria-hidden="true">
                 {loadingMore && (
                   <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
                 )}

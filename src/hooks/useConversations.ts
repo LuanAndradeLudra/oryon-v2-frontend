@@ -41,6 +41,12 @@ export function useConversations(filters: ConversationFilters = {}) {
   // see the up-to-date value without having to be recreated on every page bump.
   const pageRef = useRef(1)
 
+  // Lock that prevents duplicate `loadMore` calls during the React render gap
+  // between scroll events firing rapidly. setState is async, so checking
+  // `loadingMore` (state) inside loadMore can read a stale `false` and let
+  // multiple scroll events all start a fetch before the first re-render.
+  const loadingMoreLockRef = useRef(false)
+
   // Tracks IDs of conversations currently in the list so we can detect
   // new conversations that arrive via WebSocket and aren't loaded yet.
   const loadedConvIds = useRef<Set<string>>(new Set())
@@ -66,9 +72,13 @@ export function useConversations(filters: ConversationFilters = {}) {
   }, []) // filtersRef is always current — no serialization needed
 
   /** Append the next page to the list. Dedups by id so race conditions with
-   *  socket-prepended conversations don't produce duplicate rows. */
+   *  socket-prepended conversations don't produce duplicate rows. The lock
+   *  ref is required because rapid scroll events can fire faster than React
+   *  flushes the `loadingMore` state, which would otherwise allow several
+   *  /conversations?page=N+1 calls to race. */
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return
+    if (loadingMoreLockRef.current || !hasMore) return
+    loadingMoreLockRef.current = true
     const next = pageRef.current + 1
     setLoadingMore(true)
     try {
@@ -86,8 +96,9 @@ export function useConversations(filters: ConversationFilters = {}) {
       // here — the list is still usable, just stuck at the current page.
     } finally {
       setLoadingMore(false)
+      loadingMoreLockRef.current = false
     }
-  }, [loadingMore, hasMore])
+  }, [hasMore])
 
   // Re-fetch whenever filters change (stable callback, so we track filters explicitly)
   useEffect(() => {
