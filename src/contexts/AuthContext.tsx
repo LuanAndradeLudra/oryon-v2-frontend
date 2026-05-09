@@ -13,9 +13,14 @@ axios.defaults.withCredentials = true
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 const SESSION_KEY = 'oryon:session'
 
-// Flag to prevent concurrent refresh attempts
-let isRefreshing = false
-let refreshPromise: Promise<string | null> | null = null
+// Note — the 401 → refresh-and-retry interceptor used to live here, but
+// it was registered on `axios` global only. The `api` instance from
+// services/api.ts has its own interceptor pipeline, so any request going
+// through `api` (most of the app) bypassed the refresh and went straight
+// to the logging interceptor that redirected to /login. Result: users
+// got logged out every 15 minutes when the access token expired. The
+// refresh logic now lives in services/api.ts and is registered on BOTH
+// `api` and `axios` global from a single source.
 
 interface AuthSession {
   user: User
@@ -219,71 +224,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(updated)
     setSession(updated)
   }, [session])
-
-  // ── Refresh token interceptor (401 → try refresh → retry) ──────────────
-  useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      (res) => res,
-      async (error) => {
-        const original = error.config
-        if (error.response?.status === 401 && !original._retry) {
-          original._retry = true
-          const currentSession = loadSession()
-          if (!currentSession?.user) {
-            return Promise.reject(error)
-          }
-
-          if (!isRefreshing) {
-            isRefreshing = true
-            refreshPromise = (async () => {
-              try {
-                // Sprint 5.3 — em mobile usa /auth/mobile-refresh com refreshToken
-                // no body (sem cookies httpOnly). Em web continua /auth/refresh.
-                if (isNativePlatform()) {
-                  const refreshToken = getRefreshToken()
-                  if (!refreshToken) throw new Error('no refresh token')
-                  const res = await axios.post<{ accessToken: string; refreshToken: string }>(
-                    `${API}/auth/mobile-refresh`,
-                    { refreshToken },
-                    { withCredentials: false },
-                  )
-                  setTokens(res.data.accessToken, res.data.refreshToken)
-                  return 'refreshed'
-                }
-                const res = await axios.post<{
-                  user: User; requiresPasswordChange: boolean; organizationConfigured?: boolean
-                }>(`${API}/auth/refresh`, {}, { withCredentials: true })
-                const updated: AuthSession = {
-                  ...currentSession,
-                  user: res.data.user ?? currentSession.user,
-                }
-                saveSession(updated)
-                setSession(updated)
-                return 'refreshed'
-              } catch {
-                clearSession()
-                clearTokens()
-                setSession(null)
-                return null
-              } finally {
-                isRefreshing = false
-                refreshPromise = null
-              }
-            })()
-          }
-
-          const result = await refreshPromise
-          if (result) {
-            original.withCredentials = true
-            delete original.headers?.Authorization
-            return axios(original)
-          }
-        }
-        return Promise.reject(error)
-      }
-    )
-    return () => axios.interceptors.response.eject(interceptor)
-  }, [])
 
   // ── Validate session on app load ────────────────────────────────────────
   useEffect(() => {

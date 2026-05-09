@@ -11,10 +11,17 @@ import type { Conversation, ConversationFilters, SocketAiPauseUpdated, SocketMes
  */
 export const INDEFINITE_PAUSE_ISO = '9999-12-31T23:59:59.000Z'
 
+/** Page size used for the conversation list. Tuned for the join-heavy
+ *  query in the backend (batch tag/contact/user fetch); 50 keeps p95 well
+ *  under 300ms while filling a typical viewport without immediate load-more. */
+const PAGE_SIZE = 50
+
 export function useConversations(filters: ConversationFilters = {}) {
   const { user } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Filter scoping is owned by the page — admins pick via a local
@@ -30,6 +37,10 @@ export function useConversations(filters: ConversationFilters = {}) {
 
   const initialLoadDone = useRef(false)
 
+  // Pagination cursor — kept in a ref so the socket handlers and loadMore
+  // see the up-to-date value without having to be recreated on every page bump.
+  const pageRef = useRef(1)
+
   // Tracks IDs of conversations currently in the list so we can detect
   // new conversations that arrive via WebSocket and aren't loaded yet.
   const loadedConvIds = useRef<Set<string>>(new Set())
@@ -40,9 +51,11 @@ export function useConversations(filters: ConversationFilters = {}) {
   const fetchConversations = useCallback(async () => {
     try {
       if (!initialLoadDone.current) setLoading(true)
-      const { data } = await withRetry(() => conversationsApi.list(filtersRef.current))
+      pageRef.current = 1
+      const { data } = await withRetry(() => conversationsApi.list(filtersRef.current, 1, PAGE_SIZE))
       setConversations(data.data)
       loadedConvIds.current = new Set(data.data.map((c) => c.id))
+      setHasMore(data.hasMore)
       setError(null)
       initialLoadDone.current = true
     } catch {
@@ -51,6 +64,30 @@ export function useConversations(filters: ConversationFilters = {}) {
       setLoading(false)
     }
   }, []) // filtersRef is always current — no serialization needed
+
+  /** Append the next page to the list. Dedups by id so race conditions with
+   *  socket-prepended conversations don't produce duplicate rows. */
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return
+    const next = pageRef.current + 1
+    setLoadingMore(true)
+    try {
+      const { data } = await withRetry(() => conversationsApi.list(filtersRef.current, next, PAGE_SIZE))
+      setConversations((prev) => {
+        const seen = new Set(prev.map((c) => c.id))
+        const incoming = data.data.filter((c) => !seen.has(c.id))
+        incoming.forEach((c) => loadedConvIds.current.add(c.id))
+        return [...prev, ...incoming]
+      })
+      setHasMore(data.hasMore)
+      pageRef.current = next
+    } catch {
+      // Keep the existing list; user can retry by scrolling again. No toast
+      // here — the list is still usable, just stuck at the current page.
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [loadingMore, hasMore])
 
   // Re-fetch whenever filters change (stable callback, so we track filters explicitly)
   useEffect(() => {
@@ -219,6 +256,9 @@ export function useConversations(filters: ConversationFilters = {}) {
   return {
     conversations,
     loading,
+    loadingMore,
+    hasMore,
+    loadMore,
     error,
     refetch: fetchConversations,
     handleNewMessage,

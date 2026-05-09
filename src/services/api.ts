@@ -35,7 +35,7 @@ import type {
 } from '@/types'
 
 import { apiBaseUrl, isNativePlatform } from '@/config/env'
-import { getAccessToken } from './auth-storage'
+import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth-storage'
 
 const api = axios.create({
   baseURL: apiBaseUrl(),
@@ -735,17 +735,115 @@ api.interceptors.response.use(
         correlation_id: correlationId,
       })
     }
-    if (err.response?.status === 401) {
-      localStorage.removeItem('oryon:session')
-      // Só redireciona se estiver em uma página protegida (evita reload em páginas públicas)
-      const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/activate']
-      if (!publicPaths.includes(window.location.pathname)) {
-        window.location.href = '/login'
-      }
-    }
+    // 401 handling lives in the refresh interceptor below — don't clear
+    // the session here. Letting both interceptors fight over the same 401
+    // is what made the app log everyone out every 15 minutes (the access
+    // token TTL): this logging interceptor would redirect to /login before
+    // the refresh interceptor (registered on `axios` global) could even
+    // attempt to renew the cookie. Now there's a single owner for 401s.
     return Promise.reject(err)
   }
 )
+
+// ─── Refresh interceptor — try to refresh on 401 before giving up ────────────
+// Registered on BOTH `api` and `axios` global because legacy call-sites
+// (login, internal chat, push registration) use `import axios from 'axios'`
+// directly and would otherwise bypass any interceptor we put only on `api`.
+//
+// Single shared `isRefreshing` guard so that 30 requests failing at once
+// (typical when the access cookie expires mid-page-load) result in ONE
+// /auth/refresh call, not 30.
+
+const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password', '/activate']
+const SESSION_KEY = 'oryon:session'
+
+let isRefreshing = false
+let refreshPromise: Promise<boolean> | null = null
+
+async function attemptRefresh(): Promise<boolean> {
+  try {
+    if (isNativePlatform()) {
+      const refreshToken = getRefreshToken()
+      if (!refreshToken) return false
+      const res = await axios.post<{ accessToken: string; refreshToken: string }>(
+        `${apiBaseUrl()}/auth/mobile-refresh`,
+        { refreshToken },
+        { withCredentials: false },
+      )
+      setTokens(res.data.accessToken, res.data.refreshToken)
+      return true
+    }
+    // Web — refresh cookie is sent automatically (withCredentials).
+    // Backend may echo back a fresh `user` payload; mirror it onto the
+    // localStorage session so role/tenant changes propagate without a
+    // full reload. The React side picks it up on next render via
+    // loadSession() in AuthContext.
+    const res = await axios.post<{ user?: Record<string, unknown> }>(
+      `${apiBaseUrl()}/auth/refresh`,
+      {},
+      { withCredentials: true },
+    )
+    if (res.data?.user) {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY)
+        if (raw) {
+          const s = JSON.parse(raw) as Record<string, unknown>
+          s.user = res.data.user
+          localStorage.setItem(SESSION_KEY, JSON.stringify(s))
+        }
+      } catch { /* ignore — corrupt session, will be cleared below if next req fails */ }
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+function clearSessionAndRedirect() {
+  localStorage.removeItem(SESSION_KEY)
+  clearTokens()
+  if (!PUBLIC_PATHS.includes(window.location.pathname)) {
+    window.location.href = '/login'
+  }
+}
+
+function makeRefreshInterceptor(client: typeof axios | typeof api) {
+  return async (error: unknown) => {
+    const err = error as { response?: { status?: number }, config?: Record<string, unknown> & { _retry?: boolean, headers?: Record<string, unknown> } }
+    const original = err.config
+    if (err.response?.status !== 401 || !original || original._retry) {
+      return Promise.reject(error)
+    }
+    original._retry = true
+
+    // No session = user is on a public page or already logged out;
+    // nothing to refresh.
+    if (!localStorage.getItem(SESSION_KEY)) {
+      return Promise.reject(error)
+    }
+
+    if (!isRefreshing) {
+      isRefreshing = true
+      refreshPromise = attemptRefresh().finally(() => {
+        isRefreshing = false
+      })
+    }
+    const ok = await refreshPromise
+    if (!ok) {
+      clearSessionAndRedirect()
+      return Promise.reject(error)
+    }
+
+    // Drop any stale Authorization header so the request interceptor
+    // reapplies the freshly-rotated mobile token. On web the cookie is
+    // already set by the refresh response.
+    if (original.headers) delete original.headers.Authorization
+    return client.request(original)
+  }
+}
+
+api.interceptors.response.use(undefined, makeRefreshInterceptor(api))
+axios.interceptors.response.use(undefined, makeRefreshInterceptor(axios))
 
 export const conversationsApi = {
   list(filters: ConversationFilters = {}, page = 1, limit = 30) {
