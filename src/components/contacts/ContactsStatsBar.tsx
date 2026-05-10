@@ -149,10 +149,22 @@ function TotalCard({ contacts, total }: { contacts: Contact[]; total: number }) 
 
 // ─── Estágio predominante card ────────────────────────────────────────────────
 
-function StageCard({ contacts }: { contacts: Contact[] }) {
-  const byStage: Record<string, number> = {}
-  contacts.forEach((c) => { const s = c.stage ?? 'lead'; byStage[s] = (byStage[s] ?? 0) + 1 })
-  const sorted = Object.entries(byStage).sort((a, b) => b[1] - a[1])
+function StageCard({
+  contacts,
+  stageCounts,
+}: {
+  contacts: Contact[]
+  /** Real per-stage totals from the kanban hook. When provided, used in
+   *  place of the (lossy) per-page count derived from the contacts array. */
+  stageCounts?: Record<string, number>
+}) {
+  const byStage: Record<string, number> = stageCounts ?? {}
+  if (!stageCounts) {
+    contacts.forEach((c) => { const s = c.stage ?? 'lead'; byStage[s] = (byStage[s] ?? 0) + 1 })
+  }
+  const sorted = Object.entries(byStage)
+    .filter(([, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1])
   const top = sorted[0]
   const maxCount = sorted[0]?.[1] ?? 1
 
@@ -199,9 +211,14 @@ function StageCard({ contacts }: { contacts: Contact[] }) {
 interface ContactsStatsBarProps {
   contacts: Contact[]
   total: number
+  /** Optional real per-stage totals (from useKanbanContacts.columns[k].total).
+   *  When present, the "Estágio predominante" widget uses these counts instead
+   *  of deriving from `contacts` (which only reflects the loaded page in
+   *  paginated views). Pass `undefined` in non-paginated views. */
+  stageCounts?: Record<string, number>
 }
 
-export function ContactsStatsBar({ contacts, total }: ContactsStatsBarProps) {
+export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStatsBarProps) {
   const [insights, setInsights] = useState<DashboardInsight[]>([])
   const [loading, setLoading]   = useState(true)
   const loadedRef = useRef(false)
@@ -257,7 +274,7 @@ export function ContactsStatsBar({ contacts, total }: ContactsStatsBarProps) {
         <TotalCard contacts={contacts} total={total} />
       </div>
       <div className="hidden md:flex h-full">
-        <StageCard contacts={contacts} />
+        <StageCard contacts={contacts} stageCounts={stageCounts} />
       </div>
 
       {/* AI insights — col-span-2 em desktop, ocupa toda largura em mobile */}

@@ -216,9 +216,16 @@ html, body, #root {
   from { opacity: 0; transform: translateX(12px) scale(0.97); }
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
+/* No max-height transition here on purpose: animating max-height makes the
+   list's scrollHeight change for the full duration of the animation, which
+   confuses the browser's scroll-anchoring when items are appended via the
+   loadMore pagination — scrollTop ends up clamped to a partial scrollHeight
+   and the user lands somewhere in the middle of the list instead of staying
+   put. opacity + translateY animate purely on the compositor and don't
+   affect layout. */
 @keyframes conv-slide-in {
-  from { opacity: 0; transform: translateY(-8px); max-height: 0; }
-  to   { opacity: 1; transform: translateY(0); max-height: 200px; }
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .animate-msg-in-left {
