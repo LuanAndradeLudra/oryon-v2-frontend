@@ -200,8 +200,6 @@ export function ContactPanel({
 
         <AgentActivitySection conversationId={conversation.id} />
 
-        <AgentActivitySection conversationId={conversation.id} />
-
         {/* Details */}
         <div className="px-4 py-3">
           <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-2">Conversa</p>
