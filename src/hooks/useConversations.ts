@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
+import { getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketMessageNew, Tag, User } from '@/types'
 
@@ -109,7 +110,11 @@ export function useConversations(filters: ConversationFilters = {}) {
   useEffect(() => {
     fetchConversations()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.status, filters.assignedTo, filters.tagId, filters.search, filters.contactId, filters.whatsappNumberId])
+  }, [
+    filters.status, filters.assignedTo, filters.aiHandling,
+    filters.tagId, filters.search, filters.contactId, filters.whatsappNumberId,
+    filters.unreadOnly, filters.awaitingReply, filters.untagged,
+  ])
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -141,6 +146,11 @@ export function useConversations(filters: ConversationFilters = {}) {
       if (f.contactId && conv.contact?.id !== f.contactId) return
       if (f.assignedTo === 'unassigned' && conv.assignedUser) return
       if (f.assignedTo === 'me' && currentUser && conv.assignedUser?.id !== currentUser.id) return
+      if (f.aiHandling === 'active' && !isAiActive(conv)) return
+      if (f.aiHandling === 'paused' && isAiActive(conv)) return
+      if (f.unreadOnly && conv.unreadCount === 0) return
+      if (f.awaitingReply && !getAwaitingReply(conv)) return
+      if (f.untagged && conv.tags && conv.tags.length > 0) return
 
       setConversations((prev) => {
         if (prev.some((c) => c.id === conversationId)) return prev

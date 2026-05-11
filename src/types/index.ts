@@ -629,6 +629,13 @@ export interface Conversation {
   assignedUser?: User
   tags?: Tag[]
   /**
+   * Phase 19 SLA — timestamp of the most recent outbound message from a
+   * human agent. The conversation list compares this against lastMessageAt
+   * to surface an "awaiting reply" chip when the client's last message is
+   * newer (i.e. the customer is currently waiting).
+   */
+  lastAgentReplyAt?: string | null
+  /**
    * Phase 27 — when null, the WhatsApp AI agent auto-replies on this
    * conversation. When set to a future ISO timestamp, the agent is paused
    * (manual or auto-handoff after a human outbound). UI uses this for
@@ -664,6 +671,19 @@ export interface Message {
 export interface ConversationFilters {
   status?: ConversationStatus | 'all'
   assignedTo?: 'me' | 'unassigned' | 'all'
+  /**
+   * Filter by AI handling state (derived server-side from aiPausedUntil):
+   *   'active' → AI is replying (paused until is null or in the past)
+   *   'paused' → A human took over (paused until is in the future)
+   *   'all' / undefined → both
+   */
+  aiHandling?: 'active' | 'paused' | 'all'
+  /** Quick filters surfaced by the dropdown button next to the search input.
+   *  Each is an independent toggle; the backend AND-combines them so they
+   *  stack (e.g. unread + awaiting reply = "needs attention now"). */
+  unreadOnly?: boolean
+  awaitingReply?: boolean
+  untagged?: boolean
   tagId?: string
   contactId?: string
   search?: string

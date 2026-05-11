@@ -1,10 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { SlidersHorizontal, MessageSquarePlus } from 'lucide-react'
+import { MessageSquarePlus } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { ConversationList } from '@/components/conversations/ConversationList/ConversationList'
 import { ChatWindow } from '@/components/conversations/ChatWindow/ChatWindow'
 import { ContactPanel } from '@/components/conversations/ContactPanel/ContactPanel'
@@ -20,8 +19,6 @@ import { useContacts } from '@/hooks/useContacts'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
-import { cn } from '@/lib/utils'
 import type {
   Conversation, ConversationFilters,
   SocketAiPauseUpdated, SocketMessageNew, SocketUnreadUpdate,
@@ -37,7 +34,6 @@ export function ConversationsPage() {
   const [infoOpen, setInfoOpen]     = useState(false)
   const [filters, setFilters]       = useState<ConversationFilters>({ status: 'all' })
   const [totalUnread, setTotalUnread] = useState(0)
-  const [assignOpen, setAssignOpen] = useState(false)
 
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
   const { contacts: allContacts } = useContacts()
@@ -56,53 +52,6 @@ export function ConversationsPage() {
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause,
   } = useConversations(filters)
-
-  const assignedTo = filters.assignedTo ?? 'all'
-  const isFiltered = assignedTo !== 'all'
-
-  useRegisterTopBarActions(
-    <Dropdown
-      open={assignOpen}
-      onClose={() => setAssignOpen(false)}
-      align="right"
-      className="w-52"
-      anchor={
-        <button
-          onClick={() => setAssignOpen((v) => !v)}
-          className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
-            isFiltered || assignOpen
-              ? 'bg-brand-600/20 text-brand-300 border-brand-500/30'
-              : 'bg-surface-800 text-surface-400 border-surface-700 hover:bg-surface-700 hover:text-surface-200'
-          )}
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          {isFiltered ? (assignedTo === 'me' ? 'Minhas' : 'Sem atribuição') : 'Filtrar'}
-          {isFiltered && <span className="w-1.5 h-1.5 rounded-full bg-brand-400 flex-shrink-0" />}
-        </button>
-      }
-    >
-      <div className="px-2 pt-2 pb-2 flex flex-col gap-0.5">
-        {([
-          { label: 'Todas as conversas', value: 'all' },
-          { label: 'Minhas conversas',   value: 'me' },
-          { label: 'Sem atribuição',      value: 'unassigned' },
-        ] as const).map(({ label, value }) => (
-          <DropdownItem
-            key={value}
-            active={assignedTo === value}
-            onClick={() => {
-              setFilters((f) => ({ ...f, assignedTo: value }))
-              setAssignOpen(false)
-            }}
-          >
-            {label}
-          </DropdownItem>
-        ))}
-      </div>
-    </Dropdown>,
-    [assignOpen, assignedTo, isFiltered],
-  )
 
   // ── Socket.IO real-time ────────────────────────────────────────────────────
   useSocket({
