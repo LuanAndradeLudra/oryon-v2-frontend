@@ -11,7 +11,7 @@ import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
-import { AgentActivitySection } from './AgentActivitySection'
+import { ConversationActivitySection } from './ConversationActivitySection'
 import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
 import { isFeatureVisible } from '@/config/featureFlags'
 import type { Conversation, Tag, User } from '@/types'
@@ -198,7 +198,7 @@ export function ContactPanel({
           />
         )}
 
-        <AgentActivitySection conversationId={conversation.id} />
+        <ConversationActivitySection conversationId={conversation.id} />
 
         {/* Details */}
         <div className="px-4 py-3">

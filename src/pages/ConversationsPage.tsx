@@ -196,9 +196,23 @@ export function ConversationsPage() {
     }
   }, [conversations, searchParams, isMobile])
 
+  // Tells the ConversationActivitySection to refetch its timeline. We dispatch
+  // a CustomEvent rather than threading a ref through several layers because
+  // the panel may be unmounted (mobile drawer closed) when the action runs;
+  // the listener attaches/detaches on its own mount and a missed event is
+  // harmless (the panel does a fresh fetch on next mount). Backend doesn't
+  // emit socket events for tag/status/assign writes, so without this the
+  // operator's own actions wouldn't show up live.
+  const invalidateActivity = useCallback((convId: string) => {
+    window.dispatchEvent(
+      new CustomEvent('oryon:activity-invalidate', { detail: { conversationId: convId } }),
+    )
+  }, [])
+
   const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved') => {
     await updateStatus(id, status)
     syncActive(id, { status })
+    invalidateActivity(id)
     const msg =
       status === 'resolved' ? 'Conversa resolvida ✓'
         : status === 'pending' ? 'Conversa marcada como pendente'
@@ -209,6 +223,7 @@ export function ConversationsPage() {
   const handleAssign = async (convId: string, user: User | null) => {
     await assignUser(convId, user)
     syncActive(convId, { assignedUser: user ?? undefined })
+    invalidateActivity(convId)
     toast(
       user ? `Atribuído para ${user.firstName} ${user.lastName}` : 'Atribuição removida',
       'success'
@@ -218,6 +233,7 @@ export function ConversationsPage() {
   const handleTransfer = async (convId: string, user: User) => {
     await transferUser(convId, user)
     syncActive(convId, { assignedUser: user })
+    invalidateActivity(convId)
     toast(`Transferido para ${user.firstName} ${user.lastName}`, 'success')
   }
 
@@ -229,6 +245,7 @@ export function ConversationsPage() {
       if (existing.find((t) => t.id === tag.id)) return prev
       return { ...prev, tags: [...existing, tag] }
     })
+    invalidateActivity(convId)
     toast(`Etiqueta "${tag.name}" adicionada`, 'success')
   }
 
@@ -238,12 +255,14 @@ export function ConversationsPage() {
       if (!prev || prev.id !== convId) return prev
       return { ...prev, tags: (prev.tags ?? []).filter((t) => t.id !== tagId) }
     })
+    invalidateActivity(convId)
     toast('Etiqueta removida', 'info')
   }
 
   const handleArchive = async (convId: string) => {
     await archiveConversation(convId)
     syncActive(convId, { status: 'abandoned' })
+    invalidateActivity(convId)
     toast('Conversa arquivada', 'warning')
   }
 
@@ -254,6 +273,7 @@ export function ConversationsPage() {
     try {
       await setAiPause(convId, pauseUntil)
       syncActive(convId, { aiPausedUntil: pauseUntil })
+      invalidateActivity(convId)
       toast(pauseUntil ? 'IA pausada para esta conversa' : 'IA reativada', 'info')
     } catch {
       toast('Não foi possível atualizar a IA — tente de novo', 'error')
