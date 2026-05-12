@@ -55,6 +55,23 @@ export interface SkillTemplate {
   drift_count?: number
 }
 
+/** One row from GET /configs/:agentId/skills/:skillId/executions. Mirrors
+ *  agentSkillService.SkillExecutionRow on the agent-server. Used by the
+ *  "Histórico" section inside EditAgentSkillConfigModal to confirm a skill
+ *  actually fired + correlate failures with n8n logs via request_id. */
+export interface SkillExecutionRow {
+  id: string
+  created_at: string
+  success: boolean
+  status_code: number | null
+  duration_ms: number | null
+  error_message: string | null
+  request_id: string | null
+  conversation_id: string | null
+  tool_name: string | null
+  template_slug: string | null
+}
+
 /** Per-instance drift detail returned by GET /skill-templates/:id/instances.
  *  Mirrors agent-server/src/types/skills.ts. */
 export interface SkillTemplateInstance {

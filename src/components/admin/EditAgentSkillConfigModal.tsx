@@ -9,18 +9,20 @@
 // placeholder so the operator knows what they'd be overriding.
 
 import { useState, useMemo } from 'react'
-import { Loader2, Save, AlertCircle, Copy } from 'lucide-react'
+import { Loader2, Save, AlertCircle, Copy, CheckCircle2, History, ExternalLink } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { DynamicSchemaFormFields } from './DynamicSchemaFormFields'
-import { updateAgentSkill } from '@/services/agentSkillsApi'
+import { updateAgentSkill, listSkillExecutions } from '@/services/agentSkillsApi'
 import { listSkillTemplateInstances } from '@/services/skillTemplatesApi'
 import type {
   AgentSkillWithTemplate,
   JsonSchemaObject,
   SkillTemplateInstance,
+  SkillExecutionRow,
 } from '@/types/skills'
 import { cn } from '@/lib/utils'
 
@@ -46,6 +48,11 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
   const [otherInstances, setOtherInstances] = useState<SkillTemplateInstance[] | null>(null)
   const [loadingInstances, setLoadingInstances] = useState(false)
   const [showCopyPicker, setShowCopyPicker] = useState(false)
+  // Execution history (Phase 4.1). Same lazy pattern: only fetched when the
+  // operator expands the section, so the modal-open cost is constant.
+  const [executions, setExecutions] = useState<SkillExecutionRow[] | null>(null)
+  const [loadingExecutions, setLoadingExecutions] = useState(false)
+  const [executionsError, setExecutionsError] = useState<string | null>(null)
 
   const configSchema = (skill.template_config_schema && !Array.isArray(skill.template_config_schema))
     ? skill.template_config_schema as JsonSchemaObject
@@ -74,6 +81,25 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoadingInstances(false)
+    }
+  }
+
+  async function loadExecutions() {
+    if (executions !== null || loadingExecutions) return // already loaded or loading
+    setLoadingExecutions(true)
+    setExecutionsError(null)
+    try {
+      const rows = await listSkillExecutions(
+        skill.agent_id,
+        skill.skill_id,
+        { limit: 20 },
+        tenantId,
+      )
+      setExecutions(rows)
+    } catch (err) {
+      setExecutionsError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoadingExecutions(false)
     }
   }
 
@@ -280,8 +306,167 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
           </div>
         </div>
       </section>
+
+      {/* ── Execution history (Phase 4.1) ──────────────────────────────── */}
+      {/* Collapsible by default — opening triggers the first fetch. Once
+          loaded, the list stays in memory for the lifetime of the modal so
+          re-opening the details is instant. The Recarregar button is the
+          escape hatch when the operator just kicked a test fire and wants
+          to see it. */}
+      <section className="mt-6 pt-5 border-t border-surface-800">
+        <details className="group" onToggle={(e) => {
+          if ((e.currentTarget as HTMLDetailsElement).open) void loadExecutions()
+        }}>
+          <summary className="flex items-center justify-between cursor-pointer select-none">
+            <h3 className="text-sm font-semibold text-surface-100 inline-flex items-center gap-2">
+              <History className="w-4 h-4 text-brand-400" />
+              Histórico de execuções
+              {executions && executions.length > 0 && (
+                <span className="text-[11px] font-normal text-surface-500">
+                  ({executions.length}{executions.length >= 20 ? '+' : ''})
+                </span>
+              )}
+            </h3>
+            <span className="text-[11px] text-surface-500 group-open:hidden">
+              Clique para ver
+            </span>
+          </summary>
+
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] text-surface-500">
+                Últimas 20 chamadas registradas. Cada linha tem o request_id pra correlacionar com logs do n8n.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setExecutions(null)
+                  void loadExecutions()
+                }}
+                disabled={loadingExecutions}
+                className="text-[11px] text-brand-400 hover:text-brand-300 disabled:opacity-50"
+              >
+                Recarregar
+              </button>
+            </div>
+
+            {loadingExecutions && (
+              <div className="flex items-center gap-2 py-6 text-sm text-surface-400">
+                <Loader2 className="w-4 h-4 animate-spin" /> Carregando histórico…
+              </div>
+            )}
+
+            {executionsError && !loadingExecutions && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+                <AlertCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
+                <p className="text-danger break-words">{executionsError}</p>
+              </div>
+            )}
+
+            {!loadingExecutions && !executionsError && executions !== null && executions.length === 0 && (
+              <p className="text-sm text-surface-500 py-6 text-center">
+                Esta skill ainda não foi executada. Dispare uma mensagem ao agente que acione esta skill para ver as primeiras linhas aqui.
+              </p>
+            )}
+
+            {!loadingExecutions && !executionsError && executions && executions.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wide text-surface-500 border-b border-surface-800">
+                      <th className="text-left font-medium py-2 pr-3">Quando</th>
+                      <th className="text-left font-medium py-2 pr-3">Status</th>
+                      <th className="text-right font-medium py-2 pr-3">Latência</th>
+                      <th className="text-left font-medium py-2 pr-3">Detalhe</th>
+                      <th className="py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {executions.map((row) => (
+                      <ExecutionRow key={row.id} row={row} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </details>
+      </section>
     </Modal>
   )
+}
+
+// ─── Execution row ────────────────────────────────────────────────────────────
+
+function ExecutionRow({ row }: { row: SkillExecutionRow }) {
+  function copyRequestId() {
+    if (!row.request_id) return
+    navigator.clipboard?.writeText(row.request_id).catch(() => {})
+  }
+  return (
+    <tr className="border-b border-surface-800/60">
+      <td className="py-2 pr-3 text-surface-300 whitespace-nowrap">
+        <Tooltip content={new Date(row.created_at).toLocaleString('pt-BR')} side="top">
+          <span className="cursor-help">{formatRelativeTime(row.created_at)}</span>
+        </Tooltip>
+      </td>
+      <td className="py-2 pr-3">
+        {row.success ? (
+          <span className="inline-flex items-center gap-1 text-[11px] text-status-active">
+            <CheckCircle2 className="w-3 h-3" /> {row.status_code ?? 'ok'}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[11px] text-danger">
+            <AlertCircle className="w-3 h-3" /> {row.status_code ?? 'erro'}
+          </span>
+        )}
+      </td>
+      <td className="py-2 pr-3 text-right text-surface-400 font-mono text-[11px]">
+        {row.duration_ms !== null ? `${row.duration_ms} ms` : '—'}
+      </td>
+      <td className="py-2 pr-3 text-surface-400 text-[11px] max-w-[280px]">
+        {row.error_message ? (
+          <Tooltip content={row.error_message} side="top">
+            <span className="cursor-help text-danger truncate inline-block max-w-full align-bottom">
+              {row.error_message}
+            </span>
+          </Tooltip>
+        ) : (
+          <span className="text-surface-500">—</span>
+        )}
+      </td>
+      <td className="py-2 text-right">
+        {row.request_id && (
+          <Tooltip content="Copiar request_id (use no n8n para encontrar o run correspondente)" side="top">
+            <button
+              type="button"
+              onClick={copyRequestId}
+              className="inline-flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-mono text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              {row.request_id.slice(0, 8)}…
+            </button>
+          </Tooltip>
+        )}
+      </td>
+    </tr>
+  )
+}
+
+/** Lightweight relative-time formatter — enough for "5s ago / 3min ago / 2h ago"
+ *  without pulling in date-fns. Falls back to a date for anything older than 7d. */
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime()
+  if (!Number.isFinite(then)) return iso
+  const seconds = Math.floor((Date.now() - then) / 1000)
+  if (seconds < 60) return `${seconds}s atrás`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes} min atrás`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h atrás`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d atrás`
+  return new Date(iso).toLocaleDateString('pt-BR')
 }
 
 /** Compact one-line summary of a config object — shown after the agent name

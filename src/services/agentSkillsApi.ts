@@ -10,6 +10,7 @@ import type {
   AttachSkillPayload,
   UpdateAgentSkillPayload,
   SkillTemplate,
+  SkillExecutionRow,
 } from '@/types/skills'
 
 /**
@@ -98,4 +99,30 @@ export async function listAvailableTemplates(
   tenantId?: string,
 ): Promise<SkillTemplate[]> {
   return apiFetch<SkillTemplate[]>(`/configs/${agentId}/skills/available${tenantQs(tenantId)}`)
+}
+
+// ── Execution history (Phase 4.1) ──────────────────────────────────────────
+// Most recent skill executions for a single attached instance. Sorted DESC
+// by created_at on the server; clamped 1..100 limit. Used by the "Histórico"
+// section inside EditAgentSkillConfigModal.
+
+export interface ListExecutionsOptions {
+  limit?: number
+  offset?: number
+}
+
+export async function listSkillExecutions(
+  agentId: string,
+  skillId: string,
+  opts: ListExecutionsOptions = {},
+  tenantId?: string,
+): Promise<SkillExecutionRow[]> {
+  const params = new URLSearchParams()
+  if (opts.limit !== undefined) params.set('limit', String(opts.limit))
+  if (opts.offset !== undefined) params.set('offset', String(opts.offset))
+  if (tenantId) params.set('tenantId', tenantId)
+  const qs = params.toString()
+  return apiFetch<SkillExecutionRow[]>(
+    `/configs/${agentId}/skills/${skillId}/executions${qs ? `?${qs}` : ''}`,
+  )
 }
