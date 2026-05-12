@@ -48,6 +48,29 @@ export interface SkillTemplate {
    *  Only present on the listing endpoint; admin uses it to show
    *  "attributed to" without an extra round-trip. */
   instances_by_tenant?: Record<string, number>
+  /** Count of attached agent_skills whose stored `config` is missing a key
+   *  currently listed in `config_schema.required`. Populated by the listing
+   *  endpoint so the catalogue card can render a "⚠ N desatualizadas" badge.
+   *  Absent on single-row reads. */
+  drift_count?: number
+}
+
+/** Per-instance drift detail returned by GET /skill-templates/:id/instances.
+ *  Mirrors agent-server/src/types/skills.ts. */
+export interface SkillTemplateInstance {
+  id: string
+  agent_id: string
+  agent_name: string
+  tenant_id: string
+  config: Record<string, unknown>
+  llm_name_override: string | null
+  llm_description_override: string | null
+  enabled: boolean
+  created_at: string
+  updated_at: string
+  has_drift: boolean
+  missing_required: string[]
+  extra_keys: string[]
 }
 
 /** Row shape returned by POST/PATCH /agent-skills endpoints. */

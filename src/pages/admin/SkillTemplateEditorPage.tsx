@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
 import { getSkillTemplate } from '@/services/skillTemplatesApi'
 import type { SkillTemplate } from '@/types/skills'
 import { SkillTemplateForm } from '@/components/admin/SkillTemplateForm'
+import { SkillTemplateInstancesSection } from '@/components/admin/SkillTemplateInstancesSection'
 
 export function SkillTemplateEditorPage() {
   const { id } = useParams<{ id: string }>()
@@ -72,6 +73,14 @@ export function SkillTemplateEditorPage() {
 
         {!loading && !error && (
           <SkillTemplateForm template={template} />
+        )}
+
+        {/* Cross-tenant view of every agent_skills row using this template.
+            Only shown in edit mode — a freshly created template has no
+            instances yet. Drift badges on the rows surface configs that
+            need attention after a config_schema change. */}
+        {!loading && !error && !isNew && template && (
+          <SkillTemplateInstancesSection template={template} />
         )}
       </div>
     </div>

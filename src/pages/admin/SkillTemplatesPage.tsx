@@ -301,6 +301,18 @@ function TemplateCard({
             {template.mutates && (
               <Badge tone="danger">⚠ destrutivo</Badge>
             )}
+            {(template.drift_count ?? 0) > 0 && (
+              <Tooltip
+                side="top"
+                content="Tem instâncias cujo config está sem um campo obrigatório do schema atual. Abra o template para corrigir."
+              >
+                <span className="cursor-help">
+                  <Badge tone="pending">
+                    ⚠ {template.drift_count} {template.drift_count === 1 ? 'desatualizada' : 'desatualizadas'}
+                  </Badge>
+                </span>
+              </Tooltip>
+            )}
           </div>
           <p className="text-xs text-surface-500 font-mono mb-2 truncate">
             {template.slug} · {CATEGORY_LABELS[template.category] ?? template.category}

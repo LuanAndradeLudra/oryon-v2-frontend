@@ -22,7 +22,8 @@ import { SchemaFieldsBuilder } from './SchemaFieldsBuilder'
 import { CategoryPills } from './CategoryPills'
 import { ScopeSelector, type ScopeValue } from './ScopeSelector'
 import { useToast } from '@/hooks/useToast'
-import { createSkillTemplate, updateSkillTemplate } from '@/services/skillTemplatesApi'
+import { createSkillTemplate, updateSkillTemplate, listSkillTemplateInstances } from '@/services/skillTemplatesApi'
+import { ConfirmModal } from '@/components/ui/Modal'
 import type {
   SkillTemplate,
   JsonSchemaObject,
@@ -133,6 +134,11 @@ export function SkillTemplateForm({ template }: Props) {
   const isEdit = !!template
   const [form, setForm] = useState<FormState>(() => fromTemplate(template, user?.tenantId ?? ''))
   const [saving, setSaving] = useState(false)
+  // Cascade gate: when editing a template's config_schema and there are
+  // attached instances, the next Save click pops a confirmation first so
+  // the operator knows how many agent configs may end up flagged as
+  // "desatualizada" by the change. Null = no pending gate.
+  const [cascade, setCascade] = useState<{ instanceCount: number } | null>(null)
   // Tracks whether the user has manually touched the slug — until then,
   // typing the name keeps slug auto-synced for convenience on new templates.
   const [slugTouched, setSlugTouched] = useState(isEdit)
@@ -196,10 +202,34 @@ export function SkillTemplateForm({ template }: Props) {
     goToStep(STEP_ORDER[stepIndex + 1])
   }
 
-  async function handleSubmit() {
+  /** True when the operator changed the config_schema (deep stringify is
+   *  enough — both sides come from the same JSON-Schema editor and key order
+   *  is stable). Drives the cascade-warning gate below. */
+  function configSchemaChanged(): boolean {
+    if (!template) return false
+    return JSON.stringify(form.config_schema) !== JSON.stringify(template.config_schema)
+  }
+
+  async function handleSubmit(skipCascadeGate = false) {
     if (validation.error) {
       toast(validation.error, 'error')
       return
+    }
+    // Cascade gate — only relevant when editing AND the config_schema is
+    // changing. We fetch the live instance list (vs. relying on a stale
+    // count cached at page load) so the modal never under-reports.
+    if (!skipCascadeGate && isEdit && template && configSchemaChanged()) {
+      try {
+        const instances = await listSkillTemplateInstances(template.id)
+        if (instances.length > 0) {
+          setCascade({ instanceCount: instances.length })
+          return // wait for the operator to confirm via the modal
+        }
+      } catch (err) {
+        // Non-fatal: if we can't count instances, fall through to save.
+        // The catalogue badge will surface drift after the save anyway.
+        toast(`Não consegui checar instâncias antes de salvar: ${err instanceof Error ? err.message : String(err)}`, 'error')
+      }
     }
     setSaving(true)
     try {
@@ -530,7 +560,7 @@ Depois de criar a consulta, envie uma confirmação amigável com emoji ✅.`}
               )}
               <button
                 type="button"
-                onClick={handleSubmit}
+                onClick={() => handleSubmit()}
                 disabled={saving}
                 className={cn(
                   'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
@@ -546,6 +576,27 @@ Depois de criar a consulta, envie uma confirmação amigável com emoji ✅.`}
         </div>
       </div>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
+
+      {/* Cascade warning — fires only when editing AND the operator changed
+          config_schema AND there are attached instances. Confirmation calls
+          handleSubmit(skipCascadeGate=true) so the save proceeds without
+          re-triggering the check. */}
+      <ConfirmModal
+        open={!!cascade}
+        onClose={() => saving ? undefined : setCascade(null)}
+        onConfirm={() => {
+          setCascade(null)
+          void handleSubmit(true)
+        }}
+        title="Mudança no schema afeta instâncias atribuídas"
+        description={cascade
+          ? `Este template tem ${cascade.instanceCount} ${cascade.instanceCount === 1 ? 'instância atribuída' : 'instâncias atribuídas'}. ` +
+            `Mudar o config_schema pode deixá-las desatualizadas (badge "⚠ desatualizada" na lista de instâncias) até o config de cada agente ser corrigido. Continuar?`
+          : ''}
+        confirmLabel="Salvar mesmo assim"
+        danger
+        loading={saving}
+      />
     </div>
   )
 }

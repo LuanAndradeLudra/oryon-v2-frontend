@@ -6,6 +6,7 @@
 import { apiFetch } from './agentsApi'
 import type {
   SkillTemplate,
+  SkillTemplateInstance,
   CreateSkillTemplatePayload,
   UpdateSkillTemplatePayload,
   TesterRequest,
@@ -61,6 +62,17 @@ export async function deleteSkillTemplate(id: string): Promise<{ ok: true }> {
   return apiFetch<{ ok: true }>(`/skill-templates/${id}`, {
     method: 'DELETE',
   })
+}
+
+/**
+ * Cross-tenant list of every agent_skills row attached to a template, with
+ * per-row drift info. Super_admin only. Used by:
+ *   - The "Instâncias" section on SkillTemplateEditorPage (lists which
+ *     agents use this template and which configs are out of sync).
+ *   - The cascade-warning dialog before saving a config_schema change.
+ */
+export async function listSkillTemplateInstances(id: string): Promise<SkillTemplateInstance[]> {
+  return apiFetch<SkillTemplateInstance[]>(`/skill-templates/${id}/instances`)
 }
 
 export async function testSkillTemplate(
