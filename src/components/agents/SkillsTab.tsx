@@ -13,6 +13,7 @@
 //   left border colored when active to scan-state from across the screen.
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, Loader2, AlertCircle, RefreshCw, ShieldAlert, HelpCircle,
@@ -47,6 +48,7 @@ interface Props {
 export function SkillsTab({ agentId, tenantId }: Props) {
   const { user } = useAuth()
   const staff = isOryonStaff(user?.role)
+  const navigate = useNavigate()
   const [rows, setRows] = useState<AgentSkillWithTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -146,7 +148,31 @@ export function SkillsTab({ agentId, tenantId }: Props) {
   }
 
   // ── Empty ────────────────────────────────────────────────────────────────
+  // Two copies live here: staff sees an actionable CTA pointing at the
+  // assign flow, customers see a passive "talk to your manager" prompt
+  // (skills are configured by Oryon staff on the customer's behalf).
   if (rows.length === 0) {
+    if (staff) {
+      // Deep-link to assign with tenant + agent pre-filled so the operator
+      // doesn't have to re-pick what they just selected on /admin/agents.
+      // When tenantId isn't provided (super_admin acting in own tenant),
+      // we still pass the agent id and AssignSkillPage handles the missing
+      // tenant by waiting for the picker.
+      const params = new URLSearchParams()
+      if (tenantId) params.set('tenant', tenantId)
+      params.set('agent', agentId)
+      return (
+        <EmptyState
+          icon={Sparkles}
+          title="Nenhuma skill atribuída a este agente"
+          hint="Atribua um template do catálogo para dar uma nova capacidade a este agente."
+          action={{
+            label: 'Atribuir skill',
+            onClick: () => navigate(`/admin/skills/assign?${params.toString()}`),
+          }}
+        />
+      )
+    }
     return (
       <EmptyState
         icon={Sparkles}

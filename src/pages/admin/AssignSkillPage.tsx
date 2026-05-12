@@ -13,7 +13,7 @@
 // agent already has the template) doesn't poison the rest — the UI surfaces
 // each row's outcome inline.
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Link2, AlertCircle, Loader2, CheckCircle2, ShieldAlert, X } from 'lucide-react'
 import { Select } from '@/components/ui/Select'
@@ -35,19 +35,27 @@ import { cn } from '@/lib/utils'
 export function AssignSkillPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  // Optional `?templateId=` lets the operator land here pre-aimed at one
-  // template — handy from a "Atribuir" button on the catalogue card.
+  // Deep-link params:
+  //   ?templateId= — pre-select a template (used by the catalogue "Atribuir" CTA)
+  //   ?tenant=     — pre-select tenant (used by the SkillsTab empty state)
+  //   ?agent=      — pre-select agent (paired with ?tenant=, jumps to step 3)
   const initialTemplateId = searchParams.get('templateId') ?? ''
+  const initialTenantId = searchParams.get('tenant') ?? ''
+  const initialAgentId = searchParams.get('agent') ?? ''
 
   // ── Selections ───────────────────────────────────────────────────────────
   const [orgs, setOrgs] = useState<AdminOrganization[]>([])
   const [agents, setAgents] = useState<AgentConfig[]>([])
   const [availableTemplates, setAvailableTemplates] = useState<SkillTemplate[]>([])
-  const [tenantId, setTenantId] = useState('')
+  const [tenantId, setTenantId] = useState(initialTenantId)
   /** Order preserved so the per-agent cards render top-down in selection
    *  order — using an array (not a Set) keeps that intuitive. */
   const [agentIds, setAgentIds] = useState<string[]>([])
   const [templateId, setTemplateId] = useState(initialTemplateId)
+  /** One-shot ref: holds the URL `?agent=` until the agents list loads, then
+   *  consumed inside the agents effect. After consumption, subsequent
+   *  tenant changes always clear the selection (normal behavior). */
+  const initialAgentIdRef = useRef(initialAgentId)
   /** Per-agent config + overrides. Keyed by agent_id so adding/removing
    *  an agent from the selection doesn't disturb the others' input. */
   const [configByAgent, setConfigByAgent] = useState<Record<string, Record<string, unknown>>>({})
@@ -74,8 +82,10 @@ export function AssignSkillPage() {
   }, [])
 
   // 2) Whenever tenant changes, reload agents + reset everything below.
+  //    On the very first render with a `?agent=` deep-link, we honor it by
+  //    pre-selecting that agent once the list arrives. The ref is consumed
+  //    so any subsequent tenant change clears the selection cleanly.
   useEffect(() => {
-    setAgentIds([])
     setAvailableTemplates([])
     setConfigByAgent({})
     setNameOverrideByAgent({})
@@ -83,12 +93,22 @@ export function AssignSkillPage() {
     setBatchResults(null)
     if (!tenantId) {
       setAgents([])
+      setAgentIds([])
       return
     }
     setLoadingAgents(true)
     setError(null)
     listAgents(tenantId)
-      .then(setAgents)
+      .then((rows) => {
+        setAgents(rows)
+        const pending = initialAgentIdRef.current
+        initialAgentIdRef.current = ''
+        if (pending && rows.some((r) => r.id === pending)) {
+          setAgentIds([pending])
+        } else {
+          setAgentIds([])
+        }
+      })
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoadingAgents(false))
   }, [tenantId])
