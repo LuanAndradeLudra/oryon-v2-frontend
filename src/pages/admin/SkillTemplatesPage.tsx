@@ -105,7 +105,7 @@ export function SkillTemplatesPage() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
       <header className="flex items-start justify-between gap-6 mb-6">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
@@ -196,7 +196,7 @@ export function SkillTemplatesPage() {
         />
       )}
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filtered.map((t) => (
           <TemplateCard
             key={t.id}
@@ -276,110 +276,128 @@ function TemplateCard({
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border transition-colors',
+        'p-4 rounded-xl border transition-colors flex flex-col h-full',
         template.enabled
           ? 'bg-surface-900 border-surface-700 hover:border-surface-600'
           : 'bg-surface-900/40 border-surface-800 opacity-70',
       )}
     >
-      <div className="grid grid-cols-[44px_1fr_auto] items-start gap-4">
+      {/* Header: icon + name + badges. Description sits below so badges can
+          wrap naturally without pushing the icon. */}
+      <div className="flex items-start gap-3 mb-2">
         <CategoryIcon
           category={template.category}
           tone={template.enabled ? 'active' : 'muted'}
         />
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="text-base font-semibold text-surface-100 truncate">
-              {template.name}
-            </h3>
-            <Badge tone={template.enabled ? 'success' : 'muted'}>
-              {template.enabled ? 'ativo' : 'desabilitado'}
-            </Badge>
-            <Badge tone={isPublic ? 'brand' : 'pending'}>
-              {isPublic ? 'público' : 'privado'}
-            </Badge>
-            {template.mutates && (
-              <Badge tone="danger">⚠ destrutivo</Badge>
-            )}
-            {(template.drift_count ?? 0) > 0 && (
-              <Tooltip
-                side="top"
-                content="Tem instâncias cujo config está sem um campo obrigatório do schema atual. Abra o template para corrigir."
-              >
-                <span className="cursor-help">
-                  <Badge tone="pending">
-                    ⚠ {template.drift_count} {template.drift_count === 1 ? 'desatualizada' : 'desatualizadas'}
-                  </Badge>
-                </span>
-              </Tooltip>
-            )}
-          </div>
-          <p className="text-xs text-surface-500 font-mono mb-2 truncate">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-semibold text-surface-100 truncate">
+            {template.name}
+          </h3>
+          <p className="text-[11px] text-surface-500 font-mono truncate">
             {template.slug} · {CATEGORY_LABELS[template.category] ?? template.category}
           </p>
-          <p className="text-sm text-surface-400 line-clamp-2">{template.description}</p>
-
-          {/* Attribution strip — names of the orgs running this template + a
-              tooltip with the full breakdown. Hidden when there are zero
-              assignments to keep the card clean. */}
-          {assignments.length > 0 && (
-            <div className="mt-3 flex items-center gap-2 text-[11px] text-surface-500">
-              <Users className="w-3 h-3 flex-shrink-0" />
-              <span className="font-medium text-surface-400">Atribuído a:</span>
-              <Tooltip
-                side="top"
-                content={assignments
-                  .map((a) => `${a.name} — ${a.agentCount} ${a.agentCount === 1 ? 'agente' : 'agentes'}`)
-                  .join('\n')}
-              >
-                <span className="truncate cursor-help">
-                  {assignments.slice(0, 2).map((a) => a.name).join(', ')}
-                  {assignments.length > 2 && ` +${assignments.length - 2}`}
-                </span>
-              </Tooltip>
-              <span className="text-surface-600">·</span>
-              <span>
-                {assignments.length} {assignments.length === 1 ? 'cliente' : 'clientes'} · {totalAgents} {totalAgents === 1 ? 'agente' : 'agentes'}
-              </span>
-            </div>
-          )}
         </div>
+      </div>
 
-        <div className="flex flex-col gap-1.5 flex-shrink-0">
+      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+        <Badge tone={template.enabled ? 'success' : 'muted'}>
+          {template.enabled ? 'ativo' : 'desabilitado'}
+        </Badge>
+        <Badge tone={isPublic ? 'brand' : 'pending'}>
+          {isPublic ? 'público' : 'privado'}
+        </Badge>
+        {template.mutates && (
+          <Badge tone="danger">⚠ destrutivo</Badge>
+        )}
+        {(template.drift_count ?? 0) > 0 && (
+          <Tooltip
+            side="top"
+            content="Tem instâncias cujo config está sem um campo obrigatório do schema atual. Abra o template para corrigir."
+          >
+            <span className="cursor-help">
+              <Badge tone="pending">
+                ⚠ {template.drift_count} {template.drift_count === 1 ? 'desatualizada' : 'desatualizadas'}
+              </Badge>
+            </span>
+          </Tooltip>
+        )}
+      </div>
+
+      <p className="text-sm text-surface-400 line-clamp-2 mb-3">{template.description}</p>
+
+      {/* Attribution strip — names of the orgs running this template + a
+          tooltip with the full breakdown. Hidden when there are zero
+          assignments to keep the card clean. mt-auto pushes it to the bottom
+          so cards in the same grid row stay vertically aligned even when
+          their descriptions have different line counts. */}
+      {assignments.length > 0 && (
+        <div className="mt-auto pt-2 flex items-center gap-1.5 text-[11px] text-surface-500 flex-wrap">
+          <Users className="w-3 h-3 flex-shrink-0" />
+          <Tooltip
+            side="top"
+            content={assignments
+              .map((a) => `${a.name} — ${a.agentCount} ${a.agentCount === 1 ? 'agente' : 'agentes'}`)
+              .join('\n')}
+          >
+            <span className="truncate cursor-help text-surface-400">
+              {assignments.slice(0, 2).map((a) => a.name).join(', ')}
+              {assignments.length > 2 && ` +${assignments.length - 2}`}
+            </span>
+          </Tooltip>
+          <span className="text-surface-600">·</span>
+          <span>
+            {totalAgents} {totalAgents === 1 ? 'agente' : 'agentes'}
+          </span>
+        </div>
+      )}
+
+      {/* Action row — horizontal, fixed at the bottom of the card. Icon-only
+          for compactness; tooltips on hover spell out each action. */}
+      <div className="mt-3 pt-3 border-t border-surface-800 flex items-center gap-1">
+        <Tooltip content="Editar template" side="top">
           <button
             onClick={onEdit}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs"
+            className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs"
           >
             <Edit3 className="w-3.5 h-3.5" /> Editar
           </button>
+        </Tooltip>
+        <Tooltip content="Testar este template" side="top">
           <button
             onClick={onTest}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs"
+            className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs"
           >
             <Beaker className="w-3.5 h-3.5" /> Testar
           </button>
-          {template.enabled && (
+        </Tooltip>
+        {template.enabled && (
+          <Tooltip content="Atribuir a um agente" side="top">
             <button
               onClick={onAssign}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-brand-600/20 hover:bg-brand-600/30 text-brand-400 text-xs"
+              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-brand-600/20 hover:bg-brand-600/30 text-brand-400 text-xs"
             >
               <Link2 className="w-3.5 h-3.5" /> Atribuir
             </button>
-          )}
+          </Tooltip>
+        )}
+        <Tooltip
+          content={template.enabled ? 'Desabilitar (soft delete)' : 'Reativar template'}
+          side="top"
+        >
           <button
             onClick={onToggle}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs',
+              'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs flex-shrink-0',
               template.enabled
                 ? 'bg-surface-800 hover:bg-surface-700 text-surface-300'
                 : 'bg-status-active-bg hover:bg-status-active-bg/80 text-status-active',
             )}
           >
             {template.enabled
-              ? <><PowerOff className="w-3.5 h-3.5" /> Desabilitar</>
-              : <><Power className="w-3.5 h-3.5" /> Reativar</>}
+              ? <PowerOff className="w-3.5 h-3.5" />
+              : <Power className="w-3.5 h-3.5" />}
           </button>
-        </div>
+        </Tooltip>
       </div>
     </div>
   )
