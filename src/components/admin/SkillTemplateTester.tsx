@@ -14,6 +14,14 @@ import { cn } from '@/lib/utils'
 
 interface Props {
   template: SkillTemplate
+  /**
+   * Pre-fill the config form. Used by TestAgentSkillModal to seed the form
+   * with an attached skill's saved config so the operator can fire a test
+   * against the values the agent actually uses. Defaults to {}.
+   */
+  initialConfig?: Record<string, unknown>
+  /** Same as initialConfig, but for the inputs section. Defaults to {}. */
+  initialInputs?: Record<string, unknown>
 }
 
 /** What text would actually flow into the LLM as `tool_result` for a given
@@ -36,9 +44,9 @@ function previewToolResult(body: unknown): string {
   return tag + 'Operação não pôde ser concluída.'
 }
 
-export function SkillTemplateTester({ template }: Props) {
-  const [config, setConfig] = useState<Record<string, unknown>>({})
-  const [inputs, setInputs] = useState<Record<string, unknown>>({})
+export function SkillTemplateTester({ template, initialConfig, initialInputs }: Props) {
+  const [config, setConfig] = useState<Record<string, unknown>>(initialConfig ?? {})
+  const [inputs, setInputs] = useState<Record<string, unknown>>(initialInputs ?? {})
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<TesterResult | null>(null)

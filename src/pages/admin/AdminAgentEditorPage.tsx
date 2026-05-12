@@ -13,10 +13,11 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle, ArrowLeft, Bot, Eye, Loader2, RefreshCcw, Save,
-  ShieldCheck,
+  ShieldCheck, Sparkles,
 } from 'lucide-react'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
+import { SkillsTab } from '@/components/agents/SkillsTab'
 import { listAdminOrganizations, type AdminOrganization } from '@/services/adminApi'
 import { listAgents, type AgentConfig } from '@/services/agentsApi'
 import {
@@ -437,6 +438,28 @@ export function AdminAgentEditorPage() {
               </section>
             </div>
           ) : null
+        )}
+
+        {/* ── Skills (cross-tenant) ─────────────────────────────────────── */}
+        {/* Phase 1 of the skill-management plan: super_admin can finally
+            edit/remove a skill's config from the UI instead of running raw
+            SQL against the agent-server DB. Mounts the same SkillsTab the
+            customer uses, but with the chosen tenantId so all API calls
+            scope to the target tenant. */}
+        {agentId && tenantId && (
+          <section className="mt-6 bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+            <header className="mb-4">
+              <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-brand-400" />
+                Skills atribuídas
+              </h2>
+              <p className="text-[11px] text-surface-500">
+                Edite a configuração ou remova skills já atribuídas a este agente.
+                Para atribuir uma nova, use a tela <em>Atribuir skill</em>.
+              </p>
+            </header>
+            <SkillsTab agentId={agentId} tenantId={tenantId} />
+          </section>
         )}
       </div>
     </div>

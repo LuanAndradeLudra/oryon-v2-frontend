@@ -1,51 +1,75 @@
-// ─── SkillsTab — customer view ─────────────────────────────────────────────
-// Read-only "capabilities panel" for the agent's owner. Skills are configured
-// by Oryon staff at attach time (tokens, ids, etc are never surfaced here).
-// Customer can pause/resume each skill and otherwise just sees what the
-// agent can do during conversations.
+// ─── SkillsTab — agent's skills panel ──────────────────────────────────────
+// Read-only "capabilities panel" for the agent's owner (toggle pause/resume).
+// Skills are configured by Oryon staff at attach time (tokens, IDs, etc are
+// never surfaced to the customer here).
+//
+// Oryon staff (super_admin) sees an extra row of controls: edit-config and
+// remove. These appear only when `isOryonStaff(user.role)` is true and are
+// the entry point that replaces the previous "open psql and UPDATE" workflow
+// for fixing a skill's config after attach.
 //
 // Layout:
-//   [icon] [name + chips + description + footer]   [switch]
+//   [icon] [name + chips + description + footer]   [staff controls + switch]
 //   left border colored when active to scan-state from across the screen.
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, Loader2, AlertCircle, RefreshCw, ShieldAlert, HelpCircle,
+  Pencil, Trash2, Beaker,
 } from 'lucide-react'
-import { listAgentSkills, updateAgentSkill } from '@/services/agentSkillsApi'
+import { listAgentSkills, updateAgentSkill, detachSkill } from '@/services/agentSkillsApi'
 import type { AgentSkillWithTemplate } from '@/types/skills'
 import { Switch } from '@/components/ui/Switch'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ToastContainer } from '@/components/ui/Toast'
+import { ConfirmModal } from '@/components/ui/Modal'
+import { EditAgentSkillConfigModal } from '@/components/admin/EditAgentSkillConfigModal'
+import { TestAgentSkillModal } from '@/components/admin/TestAgentSkillModal'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import { SkillStatusBadge } from '@/components/skills/SkillStatusBadge'
 import { useToast } from '@/hooks/useToast'
+import { useAuth } from '@/contexts/AuthContext'
+import { isOryonStaff } from '@/lib/roleHelpers'
 import { cn } from '@/lib/utils'
 
 interface Props {
   agentId: string
+  /**
+   * Optional tenant override — only used when Oryon staff opens this tab
+   * cross-tenant from `/admin/agents`. Customers leave it undefined; their
+   * JWT tenantId is used by the backend.
+   */
+  tenantId?: string
 }
 
-export function SkillsTab({ agentId }: Props) {
+export function SkillsTab({ agentId, tenantId }: Props) {
+  const { user } = useAuth()
+  const staff = isOryonStaff(user?.role)
   const [rows, setRows] = useState<AgentSkillWithTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  // Staff-only modal state — kept here (not inside SkillRow) so a single
+  // modal instance is mounted at any time and refetch + toast plumb cleanly.
+  const [editing, setEditing] = useState<AgentSkillWithTemplate | null>(null)
+  const [removing, setRemoving] = useState<AgentSkillWithTemplate | null>(null)
+  const [removingPending, setRemovingPending] = useState(false)
+  const [testing, setTesting] = useState<AgentSkillWithTemplate | null>(null)
   const { toasts, toast, dismiss } = useToast()
 
   const reload = useCallback(async () => {
     setLoading(true)
     setLoadError(null)
     try {
-      setRows(await listAgentSkills(agentId))
+      setRows(await listAgentSkills(agentId, tenantId))
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
-  }, [agentId])
+  }, [agentId, tenantId])
 
   useEffect(() => { void reload() }, [reload])
 
@@ -66,7 +90,7 @@ export function SkillsTab({ agentId }: Props) {
     setTogglingId(row.skill_id)
     setRows((prev) => prev.map((r) => (r.skill_id === row.skill_id ? { ...r, enabled: next } : r)))
     try {
-      await updateAgentSkill(agentId, row.skill_id, { enabled: next })
+      await updateAgentSkill(agentId, row.skill_id, { enabled: next }, tenantId)
       toast(next ? `${row.template_name} ativada` : `${row.template_name} pausada`, 'success')
     } catch (err) {
       // Rollback the optimistic update + surface the error via toast (no
@@ -75,6 +99,21 @@ export function SkillsTab({ agentId }: Props) {
       toast(err instanceof Error ? err.message : String(err), 'error')
     } finally {
       setTogglingId(null)
+    }
+  }
+
+  async function handleRemove() {
+    if (!removing) return
+    setRemovingPending(true)
+    try {
+      await detachSkill(agentId, removing.skill_id, tenantId)
+      setRows((prev) => prev.filter((r) => r.skill_id !== removing.skill_id))
+      toast(`${removing.template_name} removida do agente`, 'success')
+      setRemoving(null)
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err), 'error')
+    } finally {
+      setRemovingPending(false)
     }
   }
 
@@ -158,7 +197,11 @@ export function SkillsTab({ agentId }: Props) {
               <SkillRow
                 row={row}
                 toggling={togglingId === row.skill_id}
+                staff={staff}
                 onToggle={() => toggle(row)}
+                onEdit={() => setEditing(row)}
+                onRemove={() => setRemoving(row)}
+                onTest={() => setTesting(row)}
               />
             </motion.div>
           ))}
@@ -166,6 +209,41 @@ export function SkillsTab({ agentId }: Props) {
       </div>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
+
+      {/* Staff-only modals — only mounted when an action is triggered. */}
+      {editing && (
+        <EditAgentSkillConfigModal
+          open
+          skill={editing}
+          tenantId={tenantId}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            toast(`${editing.template_name} atualizada`, 'success')
+            void reload()
+          }}
+        />
+      )}
+
+      <ConfirmModal
+        open={!!removing}
+        onClose={() => removingPending ? undefined : setRemoving(null)}
+        onConfirm={handleRemove}
+        title="Remover skill do agente?"
+        description={removing
+          ? `"${removing.template_name}" será removida deste agente imediatamente. Essa ação não pode ser desfeita — o histórico do agent_skills é apagado (hard delete). Para reatribuir depois, use a tela de Atribuir skill.`
+          : ''}
+        confirmLabel="Remover"
+        danger
+        loading={removingPending}
+      />
+
+      {testing && (
+        <TestAgentSkillModal
+          open
+          skill={testing}
+          onClose={() => setTesting(null)}
+        />
+      )}
     </div>
   )
 }
@@ -217,11 +295,19 @@ function StatPill({
 function SkillRow({
   row,
   toggling,
+  staff,
   onToggle,
+  onEdit,
+  onRemove,
+  onTest,
 }: {
   row: AgentSkillWithTemplate
   toggling: boolean
+  staff: boolean
   onToggle: () => void
+  onEdit: () => void
+  onRemove: () => void
+  onTest: () => void
 }) {
   const description = row.llm_description_override?.trim() || row.template_llm_description
   const disabled = toggling || !row.template_enabled
@@ -281,7 +367,41 @@ function SkillRow({
         )}
       </div>
 
-      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+        {staff && (
+          <div className="flex items-center gap-1">
+            <Tooltip content="Testar skill" side="top">
+              <button
+                type="button"
+                onClick={onTest}
+                disabled={toggling}
+                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-brand-300 hover:bg-surface-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Beaker className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
+            <Tooltip content="Editar configuração" side="top">
+              <button
+                type="button"
+                onClick={onEdit}
+                disabled={toggling}
+                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
+            <Tooltip content="Remover skill (hard delete)" side="top">
+              <button
+                type="button"
+                onClick={onRemove}
+                disabled={toggling}
+                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-danger hover:bg-danger/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
+          </div>
+        )}
         <Switch
           checked={row.enabled}
           onChange={onToggle}

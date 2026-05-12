@@ -9,6 +9,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Link2, AlertCircle, Loader2, CheckCircle2, ShieldAlert } from 'lucide-react'
 import { Select } from '@/components/ui/Select'
+import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 import { listAdminOrganizations, type AdminOrganization } from '@/services/adminApi'
 import { listAgents, type AgentConfig } from '@/services/agentsApi'
 import { attachSkill, listAvailableTemplates } from '@/services/agentSkillsApi'
@@ -32,6 +34,11 @@ export function AssignSkillPage() {
   const [agentId, setAgentId] = useState('')
   const [templateId, setTemplateId] = useState(initialTemplateId)
   const [config, setConfig] = useState<Record<string, unknown>>({})
+  // Optional overrides — same field set the EditAgentSkillConfigModal exposes.
+  // Lets staff customize how the LLM sees this skill when the template's
+  // default name/description doesn't fit a specific agent's context.
+  const [nameOverride, setNameOverride] = useState('')
+  const [descOverride, setDescOverride] = useState('')
 
   // ── Async + UX state ─────────────────────────────────────────────────────
   const [loadingOrgs, setLoadingOrgs] = useState(true)
@@ -54,6 +61,8 @@ export function AssignSkillPage() {
     setAgentId('')
     setAvailableTemplates([])
     setConfig({})
+    setNameOverride('')
+    setDescOverride('')
     if (!tenantId) {
       setAgents([])
       return
@@ -70,6 +79,8 @@ export function AssignSkillPage() {
   //    for it (already filters out attached + name-collision with tools).
   useEffect(() => {
     setConfig({})
+    setNameOverride('')
+    setDescOverride('')
     if (!agentId || !tenantId) {
       setAvailableTemplates([])
       return
@@ -114,7 +125,16 @@ export function AssignSkillPage() {
     setSubmitting(true)
     setError(null)
     try {
-      await attachSkill(agentId, { template_id: templateId, config }, tenantId)
+      await attachSkill(
+        agentId,
+        {
+          template_id: templateId,
+          config,
+          llm_name_override: nameOverride.trim() || null,
+          llm_description_override: descOverride.trim() || null,
+        },
+        tenantId,
+      )
       // Navigate back to catalogue with a banner hint via state so the user
       // gets confirmation without us building a global toast system.
       navigate('/admin/skill-templates', {
@@ -257,6 +277,46 @@ export function AssignSkillPage() {
                   Preencha {missingRequired.map((n) => `"${n}"`).join(', ')} antes de atribuir.
                 </p>
               )}
+
+              {/* ── LLM overrides (optional) ───────────────────────────── */}
+              <div className="mt-6 pt-5 border-t border-surface-800">
+                <header className="mb-3">
+                  <h3 className="text-sm font-semibold text-surface-100">
+                    Como a IA vê esta skill <span className="text-surface-500 font-normal">(opcional)</span>
+                  </h3>
+                  <p className="text-[11px] text-surface-500">
+                    Sobrescreve o nome/descrição que o modelo enxerga neste agente específico.
+                    Deixe em branco para usar o default do template.
+                  </p>
+                </header>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-surface-200 mb-1">
+                      Nome customizado
+                      <span className="text-surface-500 ml-2 font-normal">
+                        (default: <span className="font-mono">{template.llm_name}</span>)
+                      </span>
+                    </label>
+                    <Input
+                      value={nameOverride}
+                      onChange={(e) => setNameOverride(e.target.value)}
+                      placeholder={template.llm_name}
+                      maxLength={64}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-surface-200 mb-1">
+                      Descrição customizada
+                    </label>
+                    <Textarea
+                      rows={3}
+                      value={descOverride}
+                      onChange={(e) => setDescOverride(e.target.value)}
+                      placeholder={template.llm_description}
+                    />
+                  </div>
+                </div>
+              </div>
             </Step>
           )}
 
