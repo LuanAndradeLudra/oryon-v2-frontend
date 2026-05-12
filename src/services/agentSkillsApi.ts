@@ -39,6 +39,38 @@ export async function attachSkill(
   })
 }
 
+// ── Batch attach (Phase 3.1) ───────────────────────────────────────────────
+// One template → many agents in a single round-trip. Each agent has its own
+// config so a franchise/network with per-unit settings (e.g. unidade_id)
+// can be onboarded in one click.
+
+export interface BatchAttachAssignment {
+  agent_id: string
+  config?: Record<string, unknown>
+  llm_name_override?: string | null
+  llm_description_override?: string | null
+}
+
+export interface BatchAttachResult {
+  agent_id: string
+  success: boolean
+  agent_skill_id?: string
+  error?: string
+}
+
+export async function batchAttachSkill(
+  payload: { template_id: string; assignments: BatchAttachAssignment[] },
+  tenantId?: string,
+): Promise<{ results: BatchAttachResult[] }> {
+  return apiFetch<{ results: BatchAttachResult[] }>(
+    `/configs/skills/batch-attach${tenantQs(tenantId)}`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
 export async function updateAgentSkill(
   agentId: string,
   skillId: string,

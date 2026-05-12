@@ -9,13 +9,19 @@
 // placeholder so the operator knows what they'd be overriding.
 
 import { useState, useMemo } from 'react'
-import { Loader2, Save, AlertCircle } from 'lucide-react'
+import { Loader2, Save, AlertCircle, Copy } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { Select } from '@/components/ui/Select'
 import { DynamicSchemaFormFields } from './DynamicSchemaFormFields'
 import { updateAgentSkill } from '@/services/agentSkillsApi'
-import type { AgentSkillWithTemplate, JsonSchemaObject } from '@/types/skills'
+import { listSkillTemplateInstances } from '@/services/skillTemplatesApi'
+import type {
+  AgentSkillWithTemplate,
+  JsonSchemaObject,
+  SkillTemplateInstance,
+} from '@/types/skills'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -34,6 +40,12 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
   const [descOverride, setDescOverride] = useState<string>(skill.llm_description_override ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Copy-from-another-agent picker (Phase 3.2). Lazy-loaded the first time
+  // the operator opens the picker so we don't pay the round-trip on every
+  // modal mount. `null` = not yet fetched; `[]` = fetched, no other agents.
+  const [otherInstances, setOtherInstances] = useState<SkillTemplateInstance[] | null>(null)
+  const [loadingInstances, setLoadingInstances] = useState(false)
+  const [showCopyPicker, setShowCopyPicker] = useState(false)
 
   const configSchema = (skill.template_config_schema && !Array.isArray(skill.template_config_schema))
     ? skill.template_config_schema as JsonSchemaObject
@@ -48,6 +60,35 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
   }, [configSchema, config])
 
   const canSubmit = missingRequired.length === 0 && !saving
+
+  async function openCopyPicker() {
+    setShowCopyPicker(true)
+    if (otherInstances !== null) return // already loaded
+    setLoadingInstances(true)
+    try {
+      const all = await listSkillTemplateInstances(skill.template_id)
+      // Drop the current instance so the operator can't accidentally
+      // "copy from itself" (a no-op that would still toast success).
+      setOtherInstances(all.filter((i) => i.id !== skill.skill_id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoadingInstances(false)
+    }
+  }
+
+  function applyCopyFrom(sourceId: string) {
+    const src = otherInstances?.find((i) => i.id === sourceId)
+    if (!src) return
+    // Replace the local edit buffer with the source values; the operator can
+    // then tweak (e.g. change unidade_id for this specific agent) before
+    // saving. We don't auto-save — the PATCH still requires an explicit
+    // click so the operator owns the final state.
+    setConfig({ ...src.config })
+    setNameOverride(src.llm_name_override ?? '')
+    setDescOverride(src.llm_description_override ?? '')
+    setShowCopyPicker(false)
+  }
 
   async function handleSave() {
     if (!canSubmit) return
@@ -118,6 +159,67 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
         </div>
       )}
 
+      {/* ── Copy-from picker (Phase 3.2) ──────────────────────────────────── */}
+      {/* Lets the operator clone another agent's config for the same template
+          and tweak from there — useful when onboarding a new unit of a
+          franchise where most config is identical and only the per-unit
+          ID differs. */}
+      <div className="mb-4 flex items-center justify-end gap-2 text-xs">
+        {!showCopyPicker ? (
+          <button
+            type="button"
+            onClick={openCopyPicker}
+            className="inline-flex items-center gap-1.5 text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            Copiar configuração de outro agente
+          </button>
+        ) : loadingInstances ? (
+          <span className="inline-flex items-center gap-1.5 text-surface-400">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Carregando agentes…
+          </span>
+        ) : !otherInstances || otherInstances.length === 0 ? (
+          <span className="text-surface-500">
+            Nenhum outro agente tem este template atribuído.
+            <button
+              type="button"
+              onClick={() => setShowCopyPicker(false)}
+              className="ml-2 text-surface-400 hover:text-surface-200"
+            >
+              Fechar
+            </button>
+          </span>
+        ) : (
+          <div className="flex items-center gap-2 w-full">
+            <span className="text-surface-400 flex-shrink-0">Copiar de:</span>
+            <Select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) applyCopyFrom(e.target.value)
+              }}
+              className="flex-1"
+            >
+              <option value="">— escolher agente fonte —</option>
+              {otherInstances.map((i) => {
+                const cfgPreview = previewConfig(i.config)
+                return (
+                  <option key={i.id} value={i.id}>
+                    {i.agent_name}{cfgPreview ? ` · ${cfgPreview}` : ''}
+                  </option>
+                )
+              })}
+            </Select>
+            <button
+              type="button"
+              onClick={() => setShowCopyPicker(false)}
+              className="text-surface-400 hover:text-surface-200 flex-shrink-0"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* ── Config schema ─────────────────────────────────────────────────── */}
       <section className="mb-6">
         <header className="mb-3">
@@ -180,4 +282,16 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
       </section>
     </Modal>
   )
+}
+
+/** Compact one-line summary of a config object — shown after the agent name
+ *  in the copy-from dropdown so the operator can tell similar agents apart
+ *  ("Serrinha · unidade_id=3" vs "Serrinha · unidade_id=11"). */
+function previewConfig(config: Record<string, unknown>): string {
+  const entries = Object.entries(config ?? {})
+  if (entries.length === 0) return ''
+  return entries
+    .slice(0, 2)
+    .map(([k, v]) => `${k}=${typeof v === 'string' || typeof v === 'number' ? v : '…'}`)
+    .join(', ')
 }
