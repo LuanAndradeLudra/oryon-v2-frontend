@@ -1,8 +1,13 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect, type MutableRefObject } from 'react'
-import { Loader2, MessageSquareOff } from 'lucide-react'
+import {
+  Loader2, MessageSquareOff, SlidersHorizontal,
+  Mail, Hourglass, Tag as TagIcon, Check, RotateCcw,
+} from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
+import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { cn } from '@/lib/utils'
 import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag } from '@/types'
 
 // TODO: substituir por dado real da API de billing
@@ -40,6 +45,13 @@ export function ConversationList({
   const listRef = useRef<HTMLDivElement>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
   const [newConvIds, setNewConvIds] = useState<Set<string>>(new Set())
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false)
+
+  const advancedFiltersActive = !!(filters.unreadOnly || filters.awaitingReply || filters.untagged)
+  const toggleFilter = (key: 'unreadOnly' | 'awaitingReply' | 'untagged') =>
+    onFiltersChange({ ...filters, [key]: !filters[key] })
+  const clearAdvancedFilters = () =>
+    onFiltersChange({ ...filters, unreadOnly: false, awaitingReply: false, untagged: false })
 
   // Restore scroll position BEFORE the browser paints in two scenarios:
   //
@@ -125,6 +137,69 @@ export function ConversationList({
             />
           </div>
           {loading && <Loader2 className="w-4 h-4 text-brand-400 animate-spin flex-shrink-0" />}
+          <Dropdown
+            open={filterMenuOpen}
+            onClose={() => setFilterMenuOpen(false)}
+            align="right"
+            className="w-60"
+            anchor={
+              <button
+                onClick={() => setFilterMenuOpen((v) => !v)}
+                aria-label="Filtros rápidos"
+                title="Filtros rápidos"
+                className={cn(
+                  'relative flex items-center justify-center w-9 h-9 rounded-lg transition-all border flex-shrink-0',
+                  advancedFiltersActive || filterMenuOpen
+                    ? 'bg-brand-600/20 text-brand-300 border-brand-500/30'
+                    : 'bg-surface-800 text-surface-400 border-surface-700 hover:bg-surface-700 hover:text-surface-200'
+                )}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                {advancedFiltersActive && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-brand-400 ring-2 ring-black" />
+                )}
+              </button>
+            }
+          >
+            <div className="px-2 pt-2 pb-2 flex flex-col gap-0.5">
+              <p className="px-2 pt-1 pb-1.5 text-[10px] uppercase tracking-wide text-surface-500 font-semibold">
+                Filtros rápidos
+              </p>
+              {([
+                { key: 'unreadOnly',    label: 'Apenas não lidas',          icon: Mail },
+                { key: 'awaitingReply', label: 'Aguardando resposta',       icon: Hourglass },
+                { key: 'untagged',      label: 'Sem etiqueta',              icon: TagIcon },
+              ] as const).map(({ key, label, icon: Icon }) => {
+                const active = !!filters[key]
+                return (
+                  <DropdownItem
+                    key={key}
+                    icon={Icon}
+                    active={active}
+                    onClick={() => toggleFilter(key)}
+                  >
+                    <span className="flex-1">{label}</span>
+                    {active && <Check className="w-4 h-4 flex-shrink-0 text-brand-400" />}
+                  </DropdownItem>
+                )
+              })}
+
+              {advancedFiltersActive && (
+                <>
+                  <DropdownSeparator />
+                  <DropdownItem
+                    icon={RotateCcw}
+                    onClick={() => {
+                      clearAdvancedFilters()
+                      setFilterMenuOpen(false)
+                    }}
+                  >
+                    Limpar filtros rápidos
+                  </DropdownItem>
+                </>
+              )}
+            </div>
+          </Dropdown>
         </div>
       </div>
 

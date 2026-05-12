@@ -1,10 +1,15 @@
 import { memo, useCallback } from 'react'
-import { Camera, Mic, FileText, Video, MapPin, Sticker, ExternalLink, Phone, Copy } from 'lucide-react'
-import { cn, formatMessageTime, truncate } from '@/lib/utils'
+import {
+  Camera, Mic, FileText, Video, MapPin, Sticker,
+  ExternalLink, Phone, Copy,
+  Bot, UserCheck, UserX, Clock,
+} from 'lucide-react'
+import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { useContextMenu } from '@/hooks/useContextMenu'
+import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Conversation } from '@/types'
 
@@ -60,6 +65,9 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
     conversation
 
   const hasUnread = unreadCount > 0 && !isActive
+  const aiActive = isAiActive(conversation)
+  const assignment = getAssignment(conversation)
+  const awaiting = getAwaitingReply(conversation)
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
@@ -87,7 +95,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
       onClick={() => onSelect(conversation)}
       onContextMenu={onContextMenu}
       className={cn(
-        'w-full flex items-start gap-3 px-3 py-3 text-left transition-all duration-100 border-b border-surface-800/60',
+        'w-full flex items-start gap-3 px-3 py-3.5 text-left transition-all duration-100 border-b border-surface-800/60',
         isActive
           ? 'bg-brand-600/10 border-l-2 border-l-brand-500'
           : 'hover:bg-surface-800/50 border-l-2 border-l-transparent',
@@ -138,30 +146,72 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           )}
         </div>
 
-        {/* Row 4: status badge + tags + agent */}
-        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-          <Badge variant={statusVariantMap[status]}>{statusLabel[status]}</Badge>
+        {/* Row 4: categorization (left, pills) + state signals (right, ghost).
+            Two semantic groups on one line — pills for attributes that
+            classify the conversation, ghost icons+text for live state. */}
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+            <Badge variant={statusVariantMap[status]}>{statusLabel[status]}</Badge>
 
-          {tags?.slice(0, 2).map((tag) => (
-            <span
-              key={tag.id}
-              className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-              style={{ backgroundColor: tag.color + '28', color: tag.color }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
-              {tag.name}
-            </span>
-          ))}
+            {tags?.slice(0, 2).map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                style={{ backgroundColor: tag.color + '28', color: tag.color }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
+                {tag.name}
+              </span>
+            ))}
 
-          {tags && tags.length > 2 && (
-            <span className="text-[10px] text-surface-500">+{tags.length - 2}</span>
-          )}
+            {tags && tags.length > 2 && (
+              <span className="text-[10px] text-surface-500">+{tags.length - 2}</span>
+            )}
+          </div>
 
-          {assignedUser && (
-            <span className="text-[10px] text-surface-500 ml-auto truncate max-w-[60px]">
-              {assignedUser.firstName}
-            </span>
-          )}
+          <div className="flex items-center gap-3 ml-auto flex-shrink-0 pl-2">
+            {/* AI indicator — only when the bot is currently replying. The
+                assignment chip below is shown independently of this one. */}
+            {aiActive && (
+              <span
+                className="inline-flex items-center gap-1 text-[10.5px] text-brand-400"
+                title="IA respondendo nesta conversa"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                IA
+              </span>
+            )}
+
+            {/* Assignment — always shown so the operator can tell at a glance
+                whether the conversation has an owner, regardless of whether
+                the AI is the one typing right now. */}
+            {assignment === 'human' && assignedUser ? (
+              <span
+                className="inline-flex items-center gap-1 text-[10.5px] text-surface-200"
+                title={`Atribuída a ${assignedUser.firstName}${assignedUser.lastName ? ' ' + assignedUser.lastName : ''}`}
+              >
+                <UserCheck className="w-3.5 h-3.5 text-surface-300" />
+                {truncate(assignedUser.firstName, 10)}
+              </span>
+            ) : (
+              <span
+                className="inline-flex items-center text-surface-500"
+                title="Conversa sem responsável atribuído"
+              >
+                <UserX className="w-3.5 h-3.5" />
+              </span>
+            )}
+
+            {awaiting && (
+              <span
+                className="inline-flex items-center gap-1 text-[10.5px] text-amber-400 font-medium"
+                title={`Cliente aguardando resposta há ${chatRelTime(lastMessageAt)}`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                {chatRelTime(lastMessageAt)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </button>

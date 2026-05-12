@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Search, UserCircle2 } from 'lucide-react'
+import { X, Search, UserCircle2, Bot, UserCheck, UserX, Users } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
 import type { Contact, ConversationFilters, Tag } from '@/types'
@@ -146,19 +146,58 @@ interface ConversationFiltersBarProps {
   allContacts?: Contact[]
 }
 
+// Mutually-exclusive handling filter — collapses the (assignedTo × aiHandling)
+// matrix into a single radio so the UI doesn't have to expose every combination.
+// 'all' is the no-narrowing state; the four others map to one server-side filter.
+type HandlingFilterValue = 'all' | 'ai' | 'me' | 'unassigned'
+
+function resolveHandlingValue(f: ConversationFilters): HandlingFilterValue {
+  if (f.aiHandling === 'active') return 'ai'
+  if (f.assignedTo === 'me') return 'me'
+  if (f.assignedTo === 'unassigned') return 'unassigned'
+  return 'all'
+}
+
+const HANDLING_CHIPS: Array<{
+  value: HandlingFilterValue
+  label: string
+  icon: typeof Bot
+}> = [
+  { value: 'all',        label: 'Todas',           icon: Users },
+  { value: 'ai',         label: 'IA',              icon: Bot },
+  { value: 'me',         label: 'Minhas',          icon: UserCheck },
+  { value: 'unassigned', label: 'Sem atribuição',  icon: UserX },
+]
+
 export function ConversationFiltersBar({
   filters, onFiltersChange, counts = {}, allTags = [], allContacts = [],
 }: ConversationFiltersBarProps) {
+  const handlingValue = resolveHandlingValue(filters)
   const totalActiveFilters = [
-    filters.assignedTo && filters.assignedTo !== 'all',
+    handlingValue !== 'all',
     filters.tagId,
   ].filter(Boolean).length
 
   const set = (patch: Partial<ConversationFilters>) =>
     onFiltersChange({ ...filters, ...patch })
 
+  const setHandling = (v: HandlingFilterValue) => {
+    // Reset both axes first, then apply the picked one. Keeps the radio
+    // exclusive even if the previous filter touched a different field.
+    if (v === 'all')              set({ assignedTo: 'all', aiHandling: 'all' })
+    else if (v === 'ai')          set({ assignedTo: 'all', aiHandling: 'active' })
+    else if (v === 'me')          set({ assignedTo: 'me',  aiHandling: 'all' })
+    else if (v === 'unassigned')  set({ assignedTo: 'unassigned', aiHandling: 'all' })
+  }
+
   const clearAll = () =>
-    onFiltersChange({ ...filters, assignedTo: 'all', tagId: undefined, contactId: undefined })
+    onFiltersChange({
+      ...filters,
+      assignedTo: 'all',
+      aiHandling: 'all',
+      tagId: undefined,
+      contactId: undefined,
+    })
 
   return (
     <div className="pl-3 pr-4 pb-2 space-y-2">
@@ -219,6 +258,39 @@ export function ConversationFiltersBar({
         <span className="flex-shrink-0 w-3 block" />
       </div>
 
+      {/* ── Row 1.5: Atendimento (IA / Humano / Sem atribuição) ────────────────
+          Single radio over (assignedTo × aiHandling) so the operator can
+          pivot the list by who's currently replying without having to
+          combine two filters mentally. Always rendered — the four states
+          are intrinsic to the product, not tenant-configured like tags. */}
+      <div>
+        <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-1.5">
+          Atendimento
+        </p>
+        <div className="filter-scroll flex gap-1.5 overflow-x-auto pb-2">
+          {HANDLING_CHIPS.map(({ value, label, icon: Icon }) => {
+            const isActive = handlingValue === value
+            return (
+              <button
+                key={value}
+                onClick={() => setHandling(value)}
+                className={cn(
+                  'flex-shrink-0 inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium transition-all',
+                  isActive
+                    ? 'bg-brand-600 text-surface-950 border border-brand-500/30'
+                    : 'bg-surface-800 text-surface-400 hover:bg-surface-700 hover:text-surface-200',
+                )}
+              >
+                <Icon className="w-3 h-3" />
+                {label}
+              </button>
+            )
+          })}
+          {/* Spacer — garante padding direito no scroll */}
+          <span className="flex-shrink-0 w-3 block" />
+        </div>
+      </div>
+
       {/* ── Row 2: Tags ─────────────────────────────────────────────────────── */}
       {allTags.length > 0 && (
         <div>
@@ -270,10 +342,12 @@ export function ConversationFiltersBar({
       {/* ── Active filter pills ──────────────────────────────────────────────── */}
       {totalActiveFilters > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-          {filters.assignedTo && filters.assignedTo !== 'all' && (
+          {handlingValue !== 'all' && (
             <span className="flex items-center gap-1 text-[11px] bg-brand-600/15 text-brand-300 px-2 py-0.5 rounded-full border border-brand-500/20">
-              {filters.assignedTo === 'me' ? 'Minhas' : 'Sem atribuição'}
-              <button onClick={() => set({ assignedTo: 'all' })}>
+              {handlingValue === 'ai' && 'IA'}
+              {handlingValue === 'me' && 'Minhas'}
+              {handlingValue === 'unassigned' && 'Sem atribuição'}
+              <button onClick={() => setHandling('all')}>
                 <X className="w-2.5 h-2.5" />
               </button>
             </span>
