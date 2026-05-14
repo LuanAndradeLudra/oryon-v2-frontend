@@ -633,31 +633,30 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       {/* Avatar placeholder for spacing */}
       <div className="w-0 flex-shrink-0" />
 
-      {/* Bubble */}
+      {/* Bubble — handoff accent rendered as inset box-shadow on the right
+          edge so it follows the bubble's rounded corners automatically. The
+          previous absolute-positioned <span right-0> lined up with the
+          rectangular bounding box, which made the strip appear to leak past
+          the curve on the top-right when the bubble's TR corner kept the
+          full 16px radius (operator-sent messages following another
+          outbound). shadow-sm (the existing drop) is preserved in the same
+          `style` so we don't fight Tailwind's `shadow-sm` utility for
+          precedence. */}
       <div
         className={cn(
-          'relative max-w-[72%] px-3 py-2 rounded-2xl shadow-sm',
+          'relative max-w-[72%] px-3 py-2 rounded-2xl',
           isOutbound
             ? 'bg-bubble-out text-bubble-out-fg rounded-br-sm'
-            : 'bg-bubble-in text-surface-100 rounded-bl-sm',
+            : 'bg-bubble-in text-surface-100 rounded-bl-sm shadow-sm',
           !isSameDirection && isOutbound && 'rounded-br-2xl rounded-tr-sm',
           !isSameDirection && !isOutbound && 'rounded-bl-2xl rounded-tl-sm'
         )}
+        style={isOutbound ? {
+          boxShadow: `0 1px 2px 0 rgb(0 0 0 / 0.05), inset -3px 0 0 0 ${
+            message.sentByUser ? 'rgba(16,185,129,0.7)' : 'rgba(245,158,11,0.8)'
+          }`,
+        } : undefined}
       >
-        {/* Accent bar — outbound only. Right-edge strip whose color mirrors
-            the HandoffChip in the header: emerald = AI replied, amber =
-            human intervened. Same colors operator already learns from the
-            chip + the 2px stripe at the top of the chat, so the eye gets
-            the same signal without extra cognitive load. */}
-        {isOutbound && (
-          <span
-            aria-hidden
-            className={cn(
-              'absolute top-0 bottom-[13px] right-0 w-[3px] rounded-full',
-              message.sentByUser ? 'bg-emerald-500/70' : 'bg-amber-500/80',
-            )}
-          />
-        )}
         <MediaContent message={message} showTranscription={showTranscription} />
         <TextContent message={message} />
 
