@@ -658,6 +658,10 @@ export interface Message {
   /** Whisper transcription for inbound WhatsApp voice notes — null when the
    *  feature flag is off, transcription failed, or type !== 'audio'. */
   transcription?: string | null
+  /** Emoji string for reaction messages (type = 'reaction'). */
+  reactionEmoji?: string | null
+  /** wamid of the message that was reacted to (type = 'reaction'). */
+  reactionTargetWamid?: string | null
   metadata?: Record<string, unknown>
   sentAt: string
   deliveredAt?: string

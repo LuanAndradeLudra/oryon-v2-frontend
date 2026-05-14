@@ -524,6 +524,15 @@ function MediaContent({
     )
   }
 
+  if (message.type === 'reaction') {
+    const emoji = message.reactionEmoji ?? message.body ?? '👍'
+    return (
+      <div className="flex items-center gap-1.5 py-0.5">
+        <span className="text-2xl leading-none">{emoji}</span>
+      </div>
+    )
+  }
+
   // Fallback for unsupported media or error
   if (message.mediaUrl && imageError) {
     return (

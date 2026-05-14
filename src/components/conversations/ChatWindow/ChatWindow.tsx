@@ -73,6 +73,8 @@ export function ChatWindow({
     const socket = getSocket()
     const handleNew = (payload: SocketMessageNew) => {
       if (payload.conversationId === conversation.id && payload.message) {
+        // Temporary: log incoming message type to aid debugging (can be removed after reaction support is validated)
+        console.debug('[socket:message:new]', { type: payload.message.type, wamid: payload.message.wamid, payload })
         addIncomingMessage(payload.message)
       }
     }
