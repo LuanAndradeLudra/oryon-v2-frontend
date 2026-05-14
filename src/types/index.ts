@@ -626,7 +626,18 @@ export interface Conversation {
   lastMessageAt: string
   lastMessagePreview: string
   unreadCount: number
-  assignedUser?: User
+  /** Minimal shape — only the fields the conversation list/header actually
+   *  read (id, firstName, lastName for the assignee pill). The realtime
+   *  socket payload carries this shape too, so the cached row can be
+   *  patched without casting. When the backend returns a full User over
+   *  HTTP, the extra fields are silently kept (interfaces allow excess
+   *  properties); the UI just doesn't render them. */
+  assignedUser?: {
+    id: string
+    firstName: string
+    lastName: string | null
+    avatarUrl?: string | null
+  }
   tags?: Tag[]
   /**
    * Phase 19 SLA — timestamp of the most recent outbound message from a
