@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
@@ -13,6 +14,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import { useTopBarActions } from '@/contexts/TopBarActionsContext'
+import { TopBarReadinessIndicator } from './TopBarReadinessIndicator'
 import {
   useNotifications,
   type AppNotification,
@@ -49,6 +51,24 @@ const PAGE_TITLES: Record<string, string> = {
   '/copilot': 'Copilot AI',
   '/team': 'Nexus',
   '/settings': 'Configurações',
+}
+
+/** Page subtitles — short noun phrases (2-4 words) rendered next to the
+ *  title with a "·" bullet separator. Kept intentionally terse so the
+ *  pattern stays single-line even on laptop widths; the longer-form copy
+ *  belongs in section headers inside each page, not in the topbar. */
+const PAGE_SUBTITLES: Record<string, string> = {
+  '/home': 'Visão geral',
+  '/conversations': 'Chat com clientes',
+  '/dashboard': 'Métricas e indicadores',
+  '/contacts': 'CRM e pipeline',
+  '/campaigns': 'Campanhas em massa',
+  '/marketing': 'Estratégia e canais',
+  '/automations': 'Fluxos automáticos',
+  '/agents': 'Construtor de IA',
+  '/copilot': 'Assistente Oryon',
+  '/team': 'Habilidades dos agentes',
+  '/settings': 'Conta e equipe',
 }
 
 // ── Search index ───────────────────────────────────────────────────────────────
@@ -257,9 +277,12 @@ function SearchDropdown({
   const flatItems: SearchItem[] = []
   groups.forEach(({ items }) => items.forEach((i) => flatItems.push(i)))
 
+  // Dropdown is now embedded inside the search overlay (centered modal), so
+  // we render it as inline content — no absolute positioning, no own
+  // background/border/shadow (the overlay panel already supplies those).
   if (results.length === 0 && trimmed) {
     return (
-      <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface-900 border border-surface-700 rounded-xl shadow-xl z-50 py-4 text-center">
+      <div className="py-4 text-center">
         <p className="text-xs text-surface-500">Nenhum resultado para <strong className="text-surface-300">"{trimmed}"</strong></p>
         <p className="text-[11px] text-surface-600 mt-1">Tente buscar contatos diretamente na página de Contatos</p>
       </div>
@@ -267,7 +290,7 @@ function SearchDropdown({
   }
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface-900 border border-surface-700 rounded-xl shadow-xl z-50 overflow-hidden">
+    <div className="overflow-hidden">
       {!trimmed && (
         <div className="px-3 pt-2.5 pb-1">
           <span className="text-[10px] font-semibold text-surface-500 uppercase tracking-widest">
@@ -1332,8 +1355,40 @@ export function TopBar() {
   const notifRef  = useRef<HTMLDivElement>(null)
 
   // Derived
-  const segment   = '/' + location.pathname.split('/')[1]
-  const pageTitle = PAGE_TITLES[segment] ?? ''
+  const segment      = '/' + location.pathname.split('/')[1]
+  const pageTitle    = PAGE_TITLES[segment] ?? ''
+  const pageSubtitle = PAGE_SUBTITLES[segment] ?? ''
+
+  // Global "/" shortcut to pop the search palette open. Skip while the user
+  // is typing in any input/textarea so the slash stays usable as a literal
+  // character. Skip while the palette is already open so the slash typed in
+  // its input goes to the input. Matches the legacy hint kbd that the inline
+  // input used to display.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (dropOpen) return
+      if (e.key !== '/') return
+      const t = e.target as HTMLElement | null
+      const isTyping =
+        !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
+      if (isTyping) return
+      e.preventDefault()
+      setDropOpen(true)
+      // Focus is grabbed by the overlay input via autoFocus on mount.
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [dropOpen])
+
+  // Lock body scroll while the search overlay is open — same trick the Modal
+  // component uses, prevents the page underneath from jiggling when the user
+  // scrolls a long result list.
+  useEffect(() => {
+    if (!dropOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [dropOpen])
 
   // Flat list for keyboard nav (rebuilt per render — cheap)
   const flatItems: SearchItem[] = (() => {
@@ -1417,57 +1472,33 @@ export function TopBar() {
   return (
     <div className="h-12 flex-shrink-0 bg-black border-b border-surface-700/50 px-4 flex items-center gap-3">
 
-      {/* Left: page title */}
-      <span className="text-sm font-semibold text-surface-100 w-32 flex-shrink-0 truncate">
-        {pageTitle}
-      </span>
-
-      {/* Center: inline search */}
-      <div ref={searchRef} className="flex-1 max-w-md relative">
-        <div className={cn(
-          'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors',
-          dropOpen
-            ? 'bg-surface-800 border-brand-500/40 ring-2 ring-brand-500/10'
-            : 'bg-surface-800 border-surface-700/60 hover:border-surface-600',
-        )}>
-          <Search className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setDropOpen(true) }}
-            onFocus={() => setDropOpen(true)}
-            onKeyDown={handleKeyDown}
-            placeholder="Buscar páginas, ações, configurações..."
-            className="flex-1 bg-transparent text-surface-100 placeholder-surface-500 outline-none text-xs min-w-0"
-          />
-          {query ? (
-            <button
-              type="button"
-              onClick={() => { setQuery(''); inputRef.current?.focus() }}
-              className="text-surface-500 hover:text-surface-300 transition-colors flex-shrink-0"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          ) : (
-            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-surface-700 text-[10px] text-surface-400 font-medium flex-shrink-0">
-              /
-            </kbd>
-          )}
-        </div>
-
-        {dropOpen && (
-          <SearchDropdown
-            query={query}
-            activeIndex={activeIdx}
-            onSelect={handleSelect}
-            onHover={setActiveIdx}
-          />
+      {/* Left: page title + subtitle (inline with "·" bullet separator).
+          Subtitle hidden on small viewports so the row stays single-line
+          on phones. Title stays bold; bullet + subtitle use the muted
+          surface-500/600 ramp so the secondary copy doesn't compete. */}
+      <div className="flex items-baseline gap-2 min-w-0">
+        <span className="text-sm font-semibold text-surface-100 flex-shrink-0 truncate">
+          {pageTitle}
+        </span>
+        {pageSubtitle && (
+          <>
+            <span className="text-sm text-surface-600 hidden md:inline flex-shrink-0">·</span>
+            <span className="text-sm text-surface-500 hidden md:inline truncate">
+              {pageSubtitle}
+            </span>
+          </>
         )}
       </div>
 
       {/* Right: page-specific actions + global buttons */}
       <div className="ml-auto flex items-center gap-1.5">
+
+        {/* Workspace readiness indicator — pill when there's one pending
+            setup blocker, icon + dropdown when there are multiple. Replaces
+            the full-width WorkspaceReadinessBanner that used to eat ~70px
+            above every operational page. Renders nothing when there are no
+            unmet blockers, so well-configured tenants see zero chrome. */}
+        <TopBarReadinessIndicator />
 
         {/* Page actions slot */}
         {pageActions && (
@@ -1476,6 +1507,34 @@ export function TopBar() {
             <div className="w-px h-5 bg-surface-700/60 mx-0.5 flex-shrink-0" />
           </>
         )}
+
+        {/* Search trigger — collapsed pill on desktop, icon-only on mobile.
+            Clicking (or pressing "/") opens the same command palette that
+            used to live inline at the top of the bar, now as a centered
+            overlay. The pill shows the "/" hint so the shortcut is
+            discoverable without expanding the input. */}
+        <button
+          type="button"
+          onClick={() => setDropOpen(true)}
+          title="Buscar (atalho /)"
+          aria-label="Abrir busca"
+          className="hidden md:inline-flex items-center gap-2 px-3 h-8 rounded-lg border border-surface-700/60 hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors w-[160px] flex-shrink-0"
+        >
+          <Search className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="flex-1 text-left truncate">Buscar</span>
+          <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-[10px] text-surface-400 font-medium flex-shrink-0">
+            /
+          </kbd>
+        </button>
+        <button
+          type="button"
+          onClick={() => setDropOpen(true)}
+          title="Buscar"
+          aria-label="Abrir busca"
+          className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+        >
+          <Search className="w-4 h-4" />
+        </button>
 
         {/* Copilot drawer shortcut — mirrors the admin + route gate used by
              the CopilotPanel itself, so the button only shows where the drawer
@@ -1508,6 +1567,83 @@ export function TopBar() {
           {notifOpen && <NotificationsPanel />}
         </div>
       </div>
+
+      {/* Command palette overlay — portal-rendered so it covers the whole
+          viewport regardless of any ancestor with `transform`/`filter` that
+          would otherwise clip a position:fixed child. Reuses the existing
+          search index + SearchDropdown by feeding them through a centered
+          panel with autoFocus on the input. Escape and outside-click both
+          close it; `/` opens it (handler at top of component). */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {dropOpen && (
+            <motion.div
+              className="fixed inset-0 z-[60] flex items-start justify-center px-4 pt-[15vh]"
+              onClick={() => setDropOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
+            >
+              <div className="absolute inset-0 bg-black/70" />
+              <motion.div
+                ref={searchRef}
+                className="relative z-10 w-full max-w-xl bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+              >
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-800">
+                  <Search className="w-4 h-4 text-surface-500 flex-shrink-0" />
+                  <input
+                    ref={inputRef}
+                    autoFocus
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Buscar páginas, ações, configurações..."
+                    className="flex-1 bg-transparent text-sm text-surface-100 placeholder-surface-500 outline-none min-w-0"
+                  />
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={() => { setQuery(''); inputRef.current?.focus() }}
+                      title="Limpar"
+                      className="text-surface-500 hover:text-surface-300 transition-colors flex-shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setDropOpen(false)}
+                    title="Fechar"
+                    className="text-[10px] text-surface-500 hover:text-surface-300 px-1.5 py-0.5 rounded border border-surface-700"
+                  >
+                    Esc
+                  </button>
+                </div>
+                {/* The SearchDropdown was built to be absolute-positioned
+                    under an input. Inside the overlay we render it inline
+                    via a relative wrapper so it occupies the body of the
+                    panel naturally. */}
+                <div className="relative">
+                  <SearchDropdown
+                    query={query}
+                    activeIndex={activeIdx}
+                    onSelect={handleSelect}
+                    onHover={setActiveIdx}
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   )
 }

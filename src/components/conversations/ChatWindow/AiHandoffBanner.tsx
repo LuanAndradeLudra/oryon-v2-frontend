@@ -1,30 +1,31 @@
-// ─── AI Handoff Banner ───────────────────────────────────────────────────────
+// ─── AI Handoff Controls ─────────────────────────────────────────────────────
 //
-// Phase 27 — persistent banner at the top of the chat that shows the current
-// AI handoff state and exposes the manual override actions:
+// Phase 27 → 32 evolution. The original banner ate ~52px of vertical space at
+// the top of every chat just to surface a status the operator already knew.
+// We split it into two leaner pieces:
 //
-//   * AI active (aiPausedUntil = null OR past timestamp):
-//     "🤖 Em atendimento IA · Intervir agora"
+//   * `HandoffChip`   — colored pill that lives inside ChatHeader, next to
+//                       the action icons. Shows current state + the same
+//                       actions the banner had (intervir / reativar / estender)
+//                       as icon buttons with native tooltips.
 //
-//   * AI paused (aiPausedUntil > now):
-//     "👤 Você está atendendo · IA volta em 3h 24min · Reativar IA · Estender ▾"
+//   * `HandoffStripe` — 2px colored line directly below the header. A
+//                       peripheral signal that survives even if the chip is
+//                       cropped on a narrow viewport.
 //
-// The banner is always visible — operators need a single "where am I?"
-// signal that doesn't require scrolling or hovering. We never collapse it
-// to save vertical space; the cost of a missed handoff is much higher than
-// 32 px of chat surface.
+// Together they recover ~50px of chat surface without losing the "where am I?"
+// affordance that operators rely on.
+//
+// Pause/resume controls are open to every operator role — agents need to hand
+// the conversation back to the AI after answering manually (2026-05-09 prod
+// feedback). Backend mirrors this; department scoping there still prevents
+// cross-line interference.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bot, UserCog, ChevronDown, RotateCcw, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { INDEFINITE_PAUSE_ISO } from '@/hooks/useConversations'
-
-interface Props {
-  aiPausedUntil: string | null | undefined
-  onPause: (until: string) => Promise<void> | void
-  onResume: () => Promise<void> | void
-}
 
 const EXTEND_OPTIONS: Array<{ label: string; minutes: number }> = [
   { label: '+30 min',     minutes: 30 },
@@ -33,28 +34,50 @@ const EXTEND_OPTIONS: Array<{ label: string; minutes: number }> = [
   { label: 'Indefinido',  minutes: -1 },
 ]
 
-export function AiHandoffBanner({ aiPausedUntil, onPause, onResume }: Props) {
-  const [busy, setBusy] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
+interface HandoffProps {
+  aiPausedUntil: string | null | undefined
+  onPause: (until: string) => Promise<void> | void
+  onResume: () => Promise<void> | void
+}
 
-  // Pause/resume controls are open to every operator role — agents need to
-  // hand the conversation back to the AI after answering manually
-  // (2026-05-09 production feedback). The backend mirrors this; department
-  // scoping there still prevents cross-line interference.
-
+/** Shared state derivation — both Chip and Stripe need the same booleans
+ *  and the same per-minute tick to keep the countdown fresh. */
+function useHandoffState(aiPausedUntil: string | null | undefined) {
   const pausedUntilMs = aiPausedUntil ? new Date(aiPausedUntil).getTime() : null
   const isPaused = pausedUntilMs !== null && pausedUntilMs > Date.now()
   const isIndefinite = isPaused && pausedUntilMs! >= new Date(INDEFINITE_PAUSE_ISO).getTime() - 1000
 
   // Tick once a minute to refresh the countdown — sub-minute precision is
-  // overkill (the operator doesn't need to see seconds for a 4-hour window)
-  // and a per-second timer would re-render the chat surface needlessly.
+  // overkill (operator doesn't need seconds for a 4-hour window).
   const [, setTick] = useState(0)
   useEffect(() => {
     if (!isPaused || isIndefinite) return
     const id = setInterval(() => setTick((t) => t + 1), 60_000)
     return () => clearInterval(id)
   }, [isPaused, isIndefinite])
+
+  return { pausedUntilMs, isPaused, isIndefinite }
+}
+
+// ─── HandoffChip (lives inside ChatHeader) ───────────────────────────────────
+
+export function HandoffChip({ aiPausedUntil, onPause, onResume }: HandoffProps) {
+  const { pausedUntilMs, isPaused, isIndefinite } = useHandoffState(aiPausedUntil)
+  const [busy, setBusy] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Close the "Estender" submenu when the user clicks outside it.
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [menuOpen])
 
   const handlePause = async (minutes: number) => {
     setBusy(true)
@@ -78,28 +101,25 @@ export function AiHandoffBanner({ aiPausedUntil, onPause, onResume }: Props) {
     }
   }
 
+  // ── AI ativa ─────────────────────────────────────────────────────────────
+  // Color convention (inverted 2026-05-15): amber = AI is in control (the
+  // operator might want to step in), emerald = human took over (everything's
+  // under manual control). Reads as "amber = attention area, emerald = safe".
   if (!isPaused) {
     return (
-      <div className="flex items-center justify-between gap-3 px-4 py-2 min-h-[52px] bg-emerald-950/50 border-b border-emerald-900/50">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-700/30 text-emerald-300 flex-shrink-0">
-            <Bot className="w-3.5 h-3.5" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-xs text-emerald-200 font-medium truncate">
-              Em atendimento por IA
-            </p>
-            <p className="text-[10px] text-emerald-300/80 truncate">
-              Resposta automática habilitada
-            </p>
-          </div>
-        </div>
+      <div
+        className="flex items-center h-8 pl-2 pr-1 gap-1.5 rounded-lg bg-amber-950/40 border border-amber-900/60"
+        title="A IA está respondendo automaticamente"
+      >
+        <Bot className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+        <span className="text-[11px] font-medium text-amber-200 leading-none">IA</span>
         <button
           type="button"
           disabled={busy}
           onClick={() => handlePause(240)}
-          className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-emerald-200 hover:text-white hover:bg-emerald-700/40 disabled:opacity-50 transition-colors"
-          title="Pausar a IA e assumir esta conversa"
+          title="Intervir agora — pausar IA por 4h"
+          aria-label="Intervir agora"
+          className="inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-[11px] font-medium text-amber-200 hover:text-white hover:bg-amber-700/40 disabled:opacity-50 transition-colors"
         >
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserCog className="w-3 h-3" />}
           Intervir agora
@@ -108,77 +128,82 @@ export function AiHandoffBanner({ aiPausedUntil, onPause, onResume }: Props) {
     )
   }
 
-  // Paused state
+  // ── Humano atendendo (IA pausada) ────────────────────────────────────────
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-2 min-h-[52px] bg-amber-950/40 border-b border-amber-900/40">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="flex items-center justify-center w-6 h-6 rounded-md bg-amber-700/30 text-amber-300 flex-shrink-0">
-          <UserCog className="w-3.5 h-3.5" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs text-amber-200 font-medium truncate">
-            Você está atendendo
-          </p>
-          <p className="text-[10px] text-amber-300/80 truncate">
-            {isIndefinite
-              ? 'IA pausada até você reativar'
-              : `IA volta em ${formatRemaining(pausedUntilMs!)}`}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-1 flex-shrink-0">
+    <div
+      className="flex items-center h-8 pl-2 pr-1 gap-1.5 rounded-lg bg-emerald-950/40 border border-emerald-900/60"
+      title={isIndefinite ? 'Você está atendendo. IA pausada até reativar.' : `Você está atendendo. IA volta em ${formatRemaining(pausedUntilMs!)}`}
+    >
+      <UserCog className="w-3.5 h-3.5 text-emerald-300 flex-shrink-0" />
+      <span className="text-[11px] font-medium text-emerald-200 leading-none whitespace-nowrap">
+        Você · {isIndefinite ? '∞' : formatRemaining(pausedUntilMs!)}
+      </span>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={handleResume}
+        title="Reativar IA agora"
+        aria-label="Reativar IA"
+        className="w-6 h-6 flex items-center justify-center rounded-md text-emerald-300 hover:text-white hover:bg-emerald-700/40 disabled:opacity-50 transition-colors"
+      >
+        {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+      </button>
+      <div ref={menuRef} className="relative">
         <button
           type="button"
           disabled={busy}
-          onClick={handleResume}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-amber-200 hover:text-white hover:bg-amber-700/40 disabled:opacity-50 transition-colors"
-          title="Reativar a IA agora"
+          onClick={() => setMenuOpen((v) => !v)}
+          title="Estender pausa da IA"
+          aria-label="Estender pausa"
+          className="w-6 h-6 flex items-center justify-center rounded-md text-emerald-300 hover:text-white hover:bg-emerald-700/40 disabled:opacity-50 transition-colors"
         >
-          {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
-          Reativar IA
+          <ChevronDown className={cn('w-3 h-3 transition-transform', menuOpen && 'rotate-180')} />
         </button>
-        <div className="relative">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => setMenuOpen((v) => !v)}
-            className="inline-flex items-center gap-0.5 px-1.5 py-1 rounded-md text-[11px] text-amber-300 hover:text-white hover:bg-amber-700/40"
-          >
-            Estender
-            <ChevronDown className="w-3 h-3" />
-          </button>
-          <AnimatePresence>
-            {menuOpen && (
-              <>
-                {/* Backdrop to close on outside click */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                  className="absolute right-0 mt-1 z-50 min-w-[160px] rounded-lg border border-surface-800 bg-surface-950 shadow-lg overflow-hidden"
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.12 }}
+              className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg border border-surface-700 bg-surface-900 shadow-xl overflow-hidden"
+            >
+              {EXTEND_OPTIONS.map((opt) => (
+                <button
+                  key={opt.label}
+                  type="button"
+                  onClick={() => handlePause(opt.minutes)}
+                  className="w-full px-3 py-2 text-left text-xs text-surface-200 hover:bg-surface-800 transition-colors"
                 >
-                  {EXTEND_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.label}
-                      onClick={() => handlePause(opt.minutes)}
-                      className={cn(
-                        'w-full px-3 py-2 text-left text-xs text-surface-200 hover:bg-surface-800',
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
+                  {opt.label}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
 }
+
+// ─── HandoffStripe (peripheral 2px line under the header) ────────────────────
+
+export function HandoffStripe({ aiPausedUntil }: { aiPausedUntil: string | null | undefined }) {
+  const { isPaused } = useHandoffState(aiPausedUntil)
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        'h-[2px] w-full flex-shrink-0 transition-colors',
+        // amber while AI is replying (caller may want to intervene),
+        // emerald once a human takes over (under manual control)
+        isPaused ? 'bg-emerald-500/70' : 'bg-amber-500/80',
+      )}
+    />
+  )
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** "3h 24min" / "12min" / "<1min". Capped at days for very long timers. */
 function formatRemaining(untilMs: number): string {

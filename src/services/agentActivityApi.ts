@@ -19,6 +19,10 @@ export interface AgentAction {
   durationMs: number | null
   errorMessage: string | null
   agentId: string
+  /** Snapshot of the agent's display name when the action ran. Null for
+   *  legacy rows recorded before migration 31. The activity panel renders
+   *  this next to each card (matching the operator's actor name format). */
+  agentName: string | null
   createdAt: string
 }
 

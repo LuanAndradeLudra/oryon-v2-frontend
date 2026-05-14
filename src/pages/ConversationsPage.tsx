@@ -69,6 +69,15 @@ export function ConversationsPage() {
       if (payload.conversationId !== activeConversation?.id) {
         setTotalUnread((p) => p + 1)
       }
+      // Phase 32 — outbound human messages now carry aiPausedUntil +
+      // assignedUser via the same event. Mirror onto activeConversation so
+      // the header pill flips state without a refetch.
+      if (activeConversation?.id === payload.conversationId) {
+        const patch: Partial<Conversation> = {}
+        if (payload.aiPausedUntil !== undefined) patch.aiPausedUntil = payload.aiPausedUntil
+        if (payload.assignedUser !== undefined) patch.assignedUser = payload.assignedUser ?? undefined
+        if (Object.keys(patch).length > 0) syncActive(payload.conversationId, patch)
+      }
     }, [handleNewMessage, activeConversation?.id]),
 
     onUnreadUpdate: useCallback((payload: SocketUnreadUpdate) => {
@@ -95,6 +104,14 @@ export function ConversationsPage() {
       if (payload.conversationId !== activeConversation?.id) {
         setTotalUnread((p) => p + 1)
       }
+      // Phase 32 — same as onMessageNew: keep activeConversation in lockstep
+      // with the latest pause + assignment so the header pill is correct.
+      if (activeConversation?.id === payload.conversationId) {
+        const patch: Partial<Conversation> = {}
+        if (payload.aiPausedUntil !== undefined) patch.aiPausedUntil = payload.aiPausedUntil
+        if (payload.assignedUser !== undefined) patch.assignedUser = payload.assignedUser ?? undefined
+        if (Object.keys(patch).length > 0) syncActive(payload.conversationId, patch)
+      }
     }, [handleNewMessage, activeConversation?.id]),
 
     // Phase 27 — AI handoff pause/resume from another tab or operator. Keeps
@@ -103,7 +120,13 @@ export function ConversationsPage() {
     onConversationAiPauseUpdated: useCallback((payload: SocketAiPauseUpdated) => {
       handleAiPauseUpdated(payload)
       if (activeConversation?.id === payload.conversationId) {
-        syncActive(payload.conversationId, { aiPausedUntil: payload.aiPausedUntil })
+        // Phase 32 — pause/resume now also moves the assignment, so propagate
+        // both fields onto the active row to keep the header pill consistent.
+        const patch: Partial<Conversation> = { aiPausedUntil: payload.aiPausedUntil }
+        if (payload.assignedUser !== undefined) {
+          patch.assignedUser = payload.assignedUser ?? undefined
+        }
+        syncActive(payload.conversationId, patch)
       }
     }, [handleAiPauseUpdated, activeConversation?.id]),
   })

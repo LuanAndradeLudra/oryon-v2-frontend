@@ -45,6 +45,10 @@ type TimelineEntry =
       success: boolean
       errorMessage: string | null
       toolName: string
+      /** Snapshot of the agent's display name when the action ran. Null for
+       *  rows recorded before migration 31 — TimelineRow falls back to a
+       *  generic "Agente IA" label so the slot is never empty. */
+      agentName: string | null
       createdAt: string
     }
   | {
@@ -355,9 +359,19 @@ function TimelineRow({ entry }: { entry: TimelineEntry }) {
             </>
           )}
           {entry.kind === 'agent' && (
-            entry.success
-              ? <CheckCircle className="w-2.5 h-2.5 text-status-success-500" />
-              : <span className="text-status-error-400">· falhou</span>
+            <>
+              {/* Same actor slot the operator branch uses, so the timeline
+                  reads "Atribuiu a conversa... · há 2h · Agente Vendas".
+                  Legacy rows without agent_name fall back to a neutral
+                  "Agente IA" — the UUID is never exposed. */}
+              <span>·</span>
+              <span className="truncate max-w-[140px]">
+                {entry.agentName || 'Agente IA'}
+              </span>
+              {entry.success
+                ? <CheckCircle className="w-2.5 h-2.5 text-status-success-500" />
+                : <span className="text-status-error-400">· falhou</span>}
+            </>
           )}
         </p>
         {entry.kind === 'agent' && !entry.success && entry.errorMessage && (
@@ -385,6 +399,7 @@ function toAgentEntry(a: AgentAction): TimelineEntry {
     success: a.success,
     errorMessage: a.errorMessage,
     toolName: a.toolName,
+    agentName: a.agentName,
     createdAt: a.createdAt,
   }
 }

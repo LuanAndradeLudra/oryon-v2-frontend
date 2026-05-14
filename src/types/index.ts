@@ -1091,12 +1091,21 @@ export interface SocketMessageNew {
   /** Phase 27 — surfaced on outbound human messages so the UI's AI-handoff
    *  banner and ContactPanel countdown update in lockstep with the new row. */
   aiPausedUntil?: string | null
+  /** Phase 32 — the human outbound also auto-assigns the conversation to the
+   *  sender. Sent for outbound human messages; undefined for inbound and
+   *  AI-generated messages. */
+  assignedUser?: { id: string; firstName: string; lastName: string | null } | null
 }
 
 export interface SocketAiPauseUpdated {
   conversationId: string
   aiPausedUntil: string | null
   changedBy: string
+  /** Phase 32 — handoff state now controls assignment too. Pause sets the
+   *  assigned user to the intervener; resume clears it. The frontend
+   *  applies this to its cached conversation row. */
+  assignedUser?: { id: string; firstName: string; lastName: string | null } | null
+  assignmentChanged?: boolean
 }
 
 export interface SocketMessageStatus {

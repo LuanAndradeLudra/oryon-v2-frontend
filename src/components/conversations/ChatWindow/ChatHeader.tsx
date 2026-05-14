@@ -13,6 +13,7 @@ import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { cn, hexToRgba } from '@/lib/utils'
+import { HandoffChip } from './AiHandoffBanner'
 import type { Conversation, Tag as TagType, User } from '@/types'
 
 const STATUS_OPTIONS = [
@@ -41,6 +42,10 @@ interface ChatHeaderProps {
   onDeleteTag?: (tagId: string) => Promise<void>
   onAssign: (user: User | null) => void
   onArchive: () => void
+  /** Phase 32 — replaces the standalone AiHandoffBanner. The chip lives
+   *  inline in the header and the actions (intervir / reativar / estender)
+   *  are reachable in 1 click from here. */
+  onSetAiPause: (pauseUntil: string | null) => Promise<void> | void
   /** When provided, shows a mobile-only back button on the left of the header. */
   onBack?: () => void
 }
@@ -50,6 +55,7 @@ export function ChatHeader({
   onStatusChange, onToggleInfo, infoOpen,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
   onAssign, onArchive,
+  onSetAiPause,
   onBack,
 }: ChatHeaderProps) {
   const isMobile = useIsMobile()
@@ -216,6 +222,15 @@ export function ChatHeader({
               )}
             </div>
           )}
+          {/* Handoff chip — wraps below the phone/tags row so the right-side
+              buttons (status / more) stay reachable even on narrow phones. */}
+          <div className="mt-1">
+            <HandoffChip
+              aiPausedUntil={conversation.aiPausedUntil}
+              onPause={(until) => onSetAiPause(until)}
+              onResume={() => onSetAiPause(null)}
+            />
+          </div>
         </div>
 
         {/* Status + 3-pontos */}
@@ -329,6 +344,17 @@ export function ChatHeader({
 
       {/* ── Right: actions ────────────────────────────────────── */}
       <div className="flex items-center gap-1 flex-shrink-0">
+        {/* Handoff chip lives at the leftmost position of the actions group
+            so the colored pill (emerald/amber) catches the eye before the
+            neutral-toned icon buttons. Replaces the full-width banner that
+            used to sit below the header. */}
+        <HandoffChip
+          aiPausedUntil={conversation.aiPausedUntil}
+          onPause={(until) => onSetAiPause(until)}
+          onResume={() => onSetAiPause(null)}
+        />
+        <span className="w-px h-5 bg-surface-800 mx-1" />
+
         <Tooltip content="Gerenciar etiquetas" side="bottom">
           <button
             onClick={() => { closeAll(); setTagOpen(true) }}

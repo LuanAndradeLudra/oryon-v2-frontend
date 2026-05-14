@@ -3,10 +3,9 @@ import { MessageSquare } from 'lucide-react'
 import { ChatHeader } from './ChatHeader'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
-import { AiHandoffBanner } from './AiHandoffBanner'
+import { HandoffStripe } from './AiHandoffBanner'
 import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
-import { WorkspaceReadinessBanner } from '@/components/common/WorkspaceReadinessBanner'
 import type { Conversation, Tag, User, SocketAiPauseUpdated, SocketMessageNew } from '@/types'
 
 interface ChatWindowProps {
@@ -126,12 +125,11 @@ export function ChatWindow({
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black relative overflow-hidden">
-      {/* Phase 29 — surfaces tenant-wide blockers (no WhatsApp number, no
-          department) above the chat. Auto-hides when nothing is unmet, so
-          well-configured tenants see no extra chrome. The user_in_department
-          blocker shows up in the MessageInput's blockedReason prop instead
-          (same data, more contextual placement near the action). */}
-      <WorkspaceReadinessBanner mode="inline" flows={['send_message']} />
+      {/* Phase 32 — the tenant-wide setup blockers banner moved into the
+          topbar (TopBarReadinessIndicator). The user_in_department blocker
+          still surfaces inline above the message input via
+          MessageInput.blockedReason, since that's a per-flow gate that the
+          operator needs to see right next to the send action. */}
       <ChatHeader
         conversation={conversation}
         allTags={allTags}
@@ -145,13 +143,14 @@ export function ChatWindow({
         onDeleteTag={onDeleteTag}
         onAssign={(user) => onAssign(conversation.id, user)}
         onArchive={() => onArchive(conversation.id)}
+        onSetAiPause={(until) => onSetAiPause(conversation.id, until)}
         onBack={onBack}
       />
-      <AiHandoffBanner
-        aiPausedUntil={conversation.aiPausedUntil}
-        onPause={(until) => onSetAiPause(conversation.id, until)}
-        onResume={() => onSetAiPause(conversation.id, null)}
-      />
+      {/* 2px peripheral status strip — emerald when AI is responding, amber
+          when a human took over. Replaces the 52px banner that used to live
+          here. The chip in the header carries the actions; the strip is just
+          the "where am I?" sticky signal. */}
+      <HandoffStripe aiPausedUntil={conversation.aiPausedUntil} />
       <MessageList messages={messages} loading={loading} hasMore={hasMore} onLoadMore={fetchMore} />
       <MessageInput
         onSend={handleSendWithErrorReporting}

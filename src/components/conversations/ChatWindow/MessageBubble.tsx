@@ -644,18 +644,17 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           !isSameDirection && !isOutbound && 'rounded-bl-2xl rounded-tl-sm'
         )}
       >
-        {/* Accent bar — flagged on outbound only. Sits on the right edge
-            (the side aligned with the operator) and uses emerald for human
-            messages, violet for AI. The thin 3px strip and rounded ends
-            keep it from competing with the message content while still
-            giving the eye a fast "who sent this" signal even before the
-            label in the footer is read. */}
+        {/* Accent bar — outbound only. Right-edge strip whose color mirrors
+            the HandoffChip in the header: emerald = AI replied, amber =
+            human intervened. Same colors operator already learns from the
+            chip + the 2px stripe at the top of the chat, so the eye gets
+            the same signal without extra cognitive load. */}
         {isOutbound && (
           <span
             aria-hidden
             className={cn(
               'absolute top-0 bottom-[13px] right-0 w-[3px] rounded-full',
-              message.sentByUser ? 'bg-emerald-500' : 'bg-white',
+              message.sentByUser ? 'bg-emerald-500/70' : 'bg-amber-500/80',
             )}
           />
         )}
@@ -706,11 +705,11 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               >
                 {message.sentByUser ? (
                   <>
-                    <UserCircle2 className="w-3 h-3 shrink-0 text-emerald-400" />
+                    <UserCircle2 className="w-3 h-3 shrink-0" />
                     <span className="leading-none">{message.sentByUser.firstName}</span>
                   </>
                 ) : (
-                  <Bot className="w-3 h-3 shrink-0 text-white" />
+                  <Bot className="w-3 h-3 shrink-0" />
                 )}
               </span>
             )}

@@ -197,6 +197,10 @@ export function useConversations(filters: ConversationFilters = {}) {
         // banner countdown updates without a separate fetch. We accept
         // explicit null (resume) and undefined (untouched).
         ...(payload.aiPausedUntil !== undefined ? { aiPausedUntil: payload.aiPausedUntil } : {}),
+        // Phase 32 — the same outbound also auto-assigns the conversation
+        // to the sender. Mirror that locally so the assignedUser pill
+        // re-renders without waiting for a refetch.
+        ...(payload.assignedUser !== undefined ? { assignedUser: payload.assignedUser ?? undefined } : {}),
       }
       const [item] = updated.splice(idx, 1)
       return [item, ...updated]
@@ -204,9 +208,14 @@ export function useConversations(filters: ConversationFilters = {}) {
   }, [fetchAndPrependConversation])
 
   /** Phase 27 — handler for the dedicated 'conversation:ai-pause-updated' socket
-   *  event emitted by the backend's manual pause/resume endpoint. */
+   *  event emitted by the backend's manual pause/resume endpoint.
+   *  Phase 32 — also syncs assignedUser because pause/resume now manages it. */
   const handleAiPauseUpdated = useCallback((payload: SocketAiPauseUpdated) => {
-    patchConv(payload.conversationId, { aiPausedUntil: payload.aiPausedUntil })
+    const patch: Partial<Conversation> = { aiPausedUntil: payload.aiPausedUntil }
+    if (payload.assignedUser !== undefined) {
+      patch.assignedUser = payload.assignedUser ?? undefined
+    }
+    patchConv(payload.conversationId, patch)
   }, [patchConv])
 
   const markAsRead = useCallback((conversationId: string) => {
