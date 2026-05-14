@@ -664,7 +664,13 @@ export interface Message {
   readAt?: string
   failedAt?: string
   errorCode?: string
-  sentByUser?: Pick<User, 'id' | 'firstName' | 'lastName' | 'avatarUrl'>
+  /** Populated by the backend for outbound messages typed by a human operator
+   *  (`sentByUserId` not null). Stays null/undefined for AI-generated outbound
+   *  and any inbound. The bubble uses presence to render either the
+   *  operator's first name or the "IA" label. lastName can be null because
+   *  the User entity allows null lastName at the database level. */
+  sentByUser?: { id: string; firstName: string; lastName: string | null } | null
+  sentByUserId?: string | null
   createdAt: string
 }
 
@@ -693,6 +699,13 @@ export interface ConversationFilters {
    *  access. Omit to fetch across every line the user is authorized to
    *  see (admin "All lines" mode, or agent with no line restriction). */
   whatsappNumberId?: string
+  /** Period filter — ISO 8601 UTC. Frontend resolves the BRT-aligned range
+   *  (start of "today" at 00:00 America/Sao_Paulo, etc.) before sending so
+   *  the backend doesn't need timezone awareness. Backend filters
+   *  `lastMessageAt >= startDate AND lastMessageAt < endDate`, and statusCounts
+   *  inherits the same filter automatically. */
+  startDate?: string
+  endDate?: string
 }
 
 export interface PaginatedResponse<T> {

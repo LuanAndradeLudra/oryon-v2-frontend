@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/useToast'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import type { Tag } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
@@ -47,19 +49,31 @@ interface TagCardProps {
   usageCount: number
   onEdit: (tag: Tag) => void
   onDelete: (tag: Tag) => void
+  /** When false, the card stays visible but the edit/delete affordances
+   *  are hidden — matches the backend's `@Roles(ADMIN, BUSINESS_ADMIN)`
+   *  guard on PATCH/DELETE /tags so non-admins don't see actions that
+   *  would 403. */
+  canManage: boolean
 }
 
-function TagCard({ tag, usageCount, onEdit, onDelete }: TagCardProps) {
-  const buildContextMenu = useCallback((): ContextMenuEntry[] => [
-    { label: 'Editar', icon: Pencil, onClick: () => onEdit(tag) },
-    {
-      label: 'Copiar nome',
-      icon: Copy,
-      onClick: () => navigator.clipboard.writeText(tag.name).catch(() => {}),
-    },
-    { separator: true },
-    { label: 'Excluir', icon: Trash2, danger: true, onClick: () => onDelete(tag) },
-  ], [tag, onEdit, onDelete])
+function TagCard({ tag, usageCount, onEdit, onDelete, canManage }: TagCardProps) {
+  const buildContextMenu = useCallback((): ContextMenuEntry[] => {
+    const entries: ContextMenuEntry[] = [
+      {
+        label: 'Copiar nome',
+        icon: Copy,
+        onClick: () => navigator.clipboard.writeText(tag.name).catch(() => {}),
+      },
+    ]
+    if (canManage) {
+      entries.unshift({ label: 'Editar', icon: Pencil, onClick: () => onEdit(tag) })
+      entries.push(
+        { separator: true },
+        { label: 'Excluir', icon: Trash2, danger: true, onClick: () => onDelete(tag) },
+      )
+    }
+    return entries
+  }, [tag, onEdit, onDelete, canManage])
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
   return (
@@ -81,26 +95,33 @@ function TagCard({ tag, usageCount, onEdit, onDelete }: TagCardProps) {
           <p className="text-xs text-surface-500">{usageCount} conversa{usageCount !== 1 ? 's' : ''}</p>
         </div>
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={() => onEdit(tag)}
-          className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => onDelete(tag)}
-          className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      {canManage && (
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => onEdit(tag)}
+            className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onDelete(tag)}
+            className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
 export function TagsSettings() {
   const { toast, toasts, dismiss } = useToast()
+  const { user: actor } = useAuth()
+  // Mirror the backend's @Roles(ADMIN, BUSINESS_ADMIN) on POST/PATCH/DELETE
+  // /tags. Read-only access (GET /tags) is open, so non-admins still see
+  // the section to know which tags exist — they just can't mutate.
+  const canManageTags = isAdminTier(actor?.role)
   const [tags, setTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -181,7 +202,7 @@ export function TagsSettings() {
         title="Tags"
         description="Organize conversas com etiquetas personalizadas."
         action={
-          !creating && (
+          canManageTags && !creating ? (
             <button
               onClick={() => setCreating(true)}
               className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
@@ -189,7 +210,7 @@ export function TagsSettings() {
               <Plus className="w-4 h-4" />
               Nova tag
             </button>
-          )
+          ) : null
         }
       />
 
@@ -273,6 +294,7 @@ export function TagsSettings() {
             usageCount={TAG_USAGE[tag.id] ?? 0}
             onEdit={handleEdit}
             onDelete={setDeleteTarget}
+            canManage={canManageTags}
           />
         ))}
       </div>

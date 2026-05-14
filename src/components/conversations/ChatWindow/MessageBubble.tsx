@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, MapPin, Mic, Download, Play, Pause,
-  Copy, ExternalLink, Link as LinkIcon, Sparkles,
+  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -635,6 +635,21 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           !isSameDirection && !isOutbound && 'rounded-bl-2xl rounded-tl-sm'
         )}
       >
+        {/* Accent bar — flagged on outbound only. Sits on the right edge
+            (the side aligned with the operator) and uses emerald for human
+            messages, violet for AI. The thin 3px strip and rounded ends
+            keep it from competing with the message content while still
+            giving the eye a fast "who sent this" signal even before the
+            label in the footer is read. */}
+        {isOutbound && (
+          <span
+            aria-hidden
+            className={cn(
+              'absolute top-0 bottom-[13px] right-0 w-[3px] rounded-full',
+              message.sentByUser ? 'bg-emerald-500' : 'bg-white',
+            )}
+          />
+        )}
         <MediaContent message={message} showTranscription={showTranscription} />
         <TextContent message={message} />
 
@@ -668,6 +683,28 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               isOutbound ? 'justify-end' : 'justify-start',
             )}
           >
+            {isOutbound && (
+              // Author indicator: icon-only for AI (the bot icon already
+                // carries the meaning), icon + first name for human operators.
+                // `leading-none` keeps the text baseline matching the icon's
+                // visual center so the row aligns cleanly with the timestamp.
+              <span
+                className={cn(
+                  'inline-flex items-center gap-0.5 text-[10px] leading-none',
+                  'text-bubble-out-time',
+                )}
+                title={message.sentByUser ? 'Enviado por um operador humano' : 'Enviado pelo agente de IA'}
+              >
+                {message.sentByUser ? (
+                  <>
+                    <UserCircle2 className="w-3 h-3 shrink-0 text-emerald-400" />
+                    <span className="leading-none">{message.sentByUser.firstName}</span>
+                  </>
+                ) : (
+                  <Bot className="w-3 h-3 shrink-0 text-white" />
+                )}
+              </span>
+            )}
             <span className={cn('text-[10px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-400')}>
               {timeStr}
             </span>

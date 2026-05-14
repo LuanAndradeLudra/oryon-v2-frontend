@@ -1153,39 +1153,58 @@ function Step6KB({
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploadingFile(file.name)
-    try {
-      const isText = file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')
-      let content: string
-      let contentType: 'base64' | 'text'
+    const files = Array.from(e.target.files ?? [])
+    if (files.length === 0) return
+    // Sequential processing so the "X of Y" progress label below makes sense
+    // and the backend isn't hit with concurrent extraction jobs (PDF parsing
+    // is CPU-heavy on the agent-server side). Each file gets its own doc
+    // entry in knowledge_docs; failures are logged but don't abort the batch.
+    const failed: string[] = []
+    const total = files.length
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      setUploadingFile(total > 1 ? `${file.name} (${i + 1}/${total})` : file.name)
+      try {
+        const isText = file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')
+        let content: string
+        let contentType: 'base64' | 'text'
 
-      if (isText) {
-        content = await file.text()
-        contentType = 'text'
-      } else {
-        const buffer = await file.arrayBuffer()
-        const bytes = new Uint8Array(buffer)
-        let binary = ''
-        for (let j = 0; j < bytes.length; j++) binary += String.fromCharCode(bytes[j])
-        content = btoa(binary)
-        contentType = 'base64'
+        if (isText) {
+          content = await file.text()
+          contentType = 'text'
+        } else {
+          const buffer = await file.arrayBuffer()
+          const bytes = new Uint8Array(buffer)
+          let binary = ''
+          for (let j = 0; j < bytes.length; j++) binary += String.fromCharCode(bytes[j])
+          content = btoa(binary)
+          contentType = 'base64'
+        }
+
+        const extracted = await extractBrandFile(file.name, file.type || 'text/plain', content, contentType)
+        // Suffix the id with the index so a fast batch (sub-ms apart) doesn't
+        // collide on Date.now() and produce duplicate doc ids.
+        const id = `kb-${Date.now()}-${i}`
+        setData(d => ({
+          ...d,
+          knowledge_docs: [...d.knowledge_docs, { id, name: file.name, content: extracted, source_type: 'file' }],
+        }))
+        // Only auto-focus the LAST successful upload — focusing each one
+        // mid-batch is jarring when the user picked 10 files at once.
+        if (i === files.length - 1) setViewingDocId(id)
+      } catch (err) {
+        console.error('[KB upload]', file.name, err)
+        failed.push(file.name)
       }
-
-      const extracted = await extractBrandFile(file.name, file.type || 'text/plain', content, contentType)
-      const id = `kb-${Date.now()}`
-      setData(d => ({
-        ...d,
-        knowledge_docs: [...d.knowledge_docs, { id, name: file.name, content: extracted, source_type: 'file' }],
-      }))
-      setViewingDocId(id)
-    } catch (err) {
-      console.error('[KB upload]', err)
-    } finally {
-      setUploadingFile(null)
-      if (fileInputRef.current) fileInputRef.current.value = ''
     }
+    if (failed.length > 0) {
+      alert(
+        `Falha ao processar ${failed.length} arquivo${failed.length > 1 ? 's' : ''}:\n` +
+        failed.map((n) => `• ${n}`).join('\n'),
+      )
+    }
+    setUploadingFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const [removeDocTarget, setRemoveDocTarget] = useState<string | null>(null)
@@ -1210,11 +1229,12 @@ function Step6KB({
 
       {/* Upload file */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-surface-400">Enviar arquivo (PDF, DOCX, TXT, imagem)</label>
+        <label className="text-xs font-medium text-surface-400">Enviar arquivos (PDF, DOCX, TXT, imagem)</label>
         <input
           ref={fileInputRef}
           type="file"
           accept=".pdf,.docx,.doc,.txt,.md,.png,.jpg,.jpeg,.webp"
+          multiple
           onChange={handleFileUpload}
           className="hidden"
         />
@@ -1225,7 +1245,7 @@ function Step6KB({
           className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-surface-700 hover:border-brand-500/40 text-surface-400 hover:text-brand-400 transition disabled:opacity-50"
         >
           <Upload className="w-4 h-4" />
-          Selecionar arquivo
+          {uploadingFile ? `Enviando ${uploadingFile}…` : 'Selecionar arquivos'}
         </button>
       </div>
 

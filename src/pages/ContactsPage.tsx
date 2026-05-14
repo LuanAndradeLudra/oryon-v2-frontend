@@ -28,6 +28,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
 import { tagsApi } from '@/services/api'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { cn } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag } from '@/types'
 
@@ -58,6 +59,11 @@ export function ContactsPage() {
   const currentUser = user
     ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl }
     : undefined
+  // Backend's POST /contacts/bulk/delete is @Roles(ADMIN, BUSINESS_ADMIN).
+  // Mirror here so non-admins don't see the "Excluir" affordance in the
+  // bulk action bar or the per-row context menu. SUPER_ADMIN passes
+  // implicitly via the RolesGuard so the helper already covers it.
+  const canBulkDelete = isAdminTier(user?.role)
 
   // Dual-hook setup: useContacts powers the table/mobile views with a flat
   // paginated array; useKanbanContacts powers the kanban with per-column
@@ -320,7 +326,7 @@ export function ContactsPage() {
               selectedIds={selectedIds}
               onToggleSelect={toggleSelect}
               onSelectAll={selectAll}
-              onBulkDelete={requestBulkDelete}
+              onBulkDelete={canBulkDelete ? requestBulkDelete : undefined}
             />
           ) : (
             <ContactsKanban
@@ -332,7 +338,7 @@ export function ContactsPage() {
               onToggleSelect={toggleSelect}
               onSelectAll={selectAll}
               onBulkMoveStage={handleBulkDragMoveStage}
-              onBulkDelete={requestBulkDelete}
+              onBulkDelete={canBulkDelete ? requestBulkDelete : undefined}
               onNewContact={() => setShowNewContact(true)}
               onImport={() => setShowImport(true)}
               onConfigCRM={() => setShowCRMConfig(true)}
@@ -360,7 +366,7 @@ export function ContactsPage() {
             onAddTag={handleBulkAddTag}
             onRemoveTag={handleBulkRemoveTag}
             onCreateCampaign={handleCreateCampaignFromSelection}
-            onDelete={requestBulkDelete}
+            onDelete={canBulkDelete ? requestBulkDelete : undefined}
             onClear={clearSelection}
           />
         )}

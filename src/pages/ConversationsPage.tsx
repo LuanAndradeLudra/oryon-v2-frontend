@@ -13,12 +13,14 @@ import { Fab } from '@/components/common/Fab'
 import { useConversations } from '@/hooks/useConversations'
 import { useSocket } from '@/hooks/useSocket'
 import { joinConversation, leaveConversation } from '@/services/socket'
+import { conversationsApi } from '@/services/api'
 import { useToast } from '@/hooks/useToast'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useContacts } from '@/hooks/useContacts'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
+import { resolveRange } from '@/lib/dateRange'
 import type {
   Conversation, ConversationFilters,
   SocketAiPauseUpdated, SocketMessageNew, SocketUnreadUpdate,
@@ -32,7 +34,14 @@ export function ConversationsPage() {
   const navigate = useNavigate()
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
   const [infoOpen, setInfoOpen]     = useState(false)
-  const [filters, setFilters]       = useState<ConversationFilters>({ status: 'all' })
+  // Default to "today" (BRT) on every mount — the operator opens the page
+  // and sees only the conversations with activity from 00:00 São Paulo today.
+  // The chip stays clickable for other presets and persists only within the
+  // session; on reload we always reset to "today" by design.
+  const [filters, setFilters]       = useState<ConversationFilters>(() => {
+    const today = resolveRange('today')
+    return { status: 'all', startDate: today.startDate, endDate: today.endDate }
+  })
   const [totalUnread, setTotalUnread] = useState(0)
 
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
@@ -129,21 +138,50 @@ export function ConversationsPage() {
     setSearchParams({ id: conv.id }, { replace: true })
   }
 
-  // Restore active conversation from URL on load
+  // Restore active conversation from URL on load. Two cases:
+  //   1. Conversation is already in the loaded list → just select it.
+  //   2. Conversation is NOT in the list (most commonly: an external link
+  //      from the CRM "Abrir conversa" button points at a conversation
+  //      whose lastMessageAt falls outside the active period filter, so
+  //      it was excluded from /conversations). Fetch it directly and
+  //      clear the period filter so the operator sees it in the list too.
   const restoredRef = useRef(false)
   useEffect(() => {
-    if (restoredRef.current || conversations.length === 0) return
+    if (restoredRef.current) return
     const urlId = searchParams.get('id')
-    if (urlId) {
+    if (!urlId) return
+
+    // Case 1: already in the list
+    if (conversations.length > 0) {
       const match = conversations.find((c) => c.id === urlId)
       if (match) {
         setActiveConversation(match)
-        // Mesma logica do handleSelectConversation: so abre o painel em desktop
         if (!isMobile) setInfoOpen(true)
         restoredRef.current = true
+        return
       }
     }
-  }, [conversations, searchParams, isMobile])
+
+    // Case 2: wait for the initial fetch to finish before deciding it's
+    // missing. Without this, we'd fire the fallback fetch while the list
+    // is still loading and end up duplicating work.
+    if (loading) return
+
+    // Not in the list — pull it directly. Clear the period filter so the
+    // newly-loaded conversation also surfaces in the list (otherwise the
+    // operator opens a chat but the left column reads "Nenhuma conversa").
+    restoredRef.current = true
+    conversationsApi.get(urlId)
+      .then((r) => {
+        setActiveConversation(r.data)
+        if (!isMobile) setInfoOpen(true)
+        setFilters((f) => ({ ...f, startDate: undefined, endDate: undefined }))
+      })
+      .catch(() => {
+        // Invalid id or no permission — leave the restoredRef true so we
+        // don't retry on every render, and let the empty state explain.
+      })
+  }, [conversations, searchParams, isMobile, loading])
 
   // Tells the ConversationActivitySection to refetch its timeline. We dispatch
   // a CustomEvent rather than threading a ref through several layers because
