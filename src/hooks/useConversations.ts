@@ -114,6 +114,7 @@ export function useConversations(filters: ConversationFilters = {}) {
     filters.status, filters.assignedTo, filters.aiHandling,
     filters.tagId, filters.search, filters.contactId, filters.whatsappNumberId,
     filters.unreadOnly, filters.awaitingReply, filters.untagged,
+    filters.startDate, filters.endDate,
   ])
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -151,6 +152,11 @@ export function useConversations(filters: ConversationFilters = {}) {
       if (f.unreadOnly && conv.unreadCount === 0) return
       if (f.awaitingReply && !getAwaitingReply(conv)) return
       if (f.untagged && conv.tags && conv.tags.length > 0) return
+      // Period filter — drop conversations whose lastMessageAt falls outside
+      // the active range. Same comparison the backend uses (>= start, < end)
+      // so the realtime prepend stays consistent with the paginated list.
+      if (f.startDate && conv.lastMessageAt && conv.lastMessageAt < f.startDate) return
+      if (f.endDate && conv.lastMessageAt && conv.lastMessageAt >= f.endDate) return
 
       setConversations((prev) => {
         if (prev.some((c) => c.id === conversationId)) return prev

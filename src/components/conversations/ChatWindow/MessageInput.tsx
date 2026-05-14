@@ -100,6 +100,13 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // Refs used by the outside-click handler below so a mousedown on the
+  // menu itself (or on the clip toggle) doesn't pre-emptively close it.
+  // Without these, mousedown on "Imagem"/"Documento"/"Vídeo" unmounts the
+  // button before mouseup fires — and the browser then never dispatches
+  // the click event, so the hidden file input is never .click()ed.
+  const attachMenuRef = useRef<HTMLDivElement>(null)
+  const attachButtonRef = useRef<HTMLButtonElement>(null)
 
   const buildInputContextMenu = useCallback((): ContextMenuEntry[] => {
     const el = textareaRef.current
@@ -188,10 +195,21 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
       .catch(() => {})
   }, [])
 
-  // Close attach menu when clicking outside
+  // Close attach menu when clicking outside. We MUST check that the click
+  // wasn't on the menu (or its toggle), otherwise a mousedown on one of the
+  // type buttons closes the menu before mouseup fires — the browser then
+  // doesn't dispatch a click event, so the hidden <input type="file">
+  // .click() never runs and the file picker never opens.
   useEffect(() => {
     if (!showAttachMenu) return
     const handler = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (
+        attachMenuRef.current?.contains(target) ||
+        attachButtonRef.current?.contains(target)
+      ) {
+        return
+      }
       setShowAttachMenu(false)
     }
     document.addEventListener('mousedown', handler)
@@ -301,31 +319,59 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files ?? [])
+    if (files.length === 0) return
 
-    // Check file size (max 16MB)
+    // Filter out anything over 16MB before sending — the backend will reject
+    // it anyway, and surfacing the oversize names up-front beats a partial
+    // batch that succeeds for some files and fails silently for others.
     const maxSize = 16 * 1024 * 1024
-    if (file.size > maxSize) {
-      alert('Arquivo muito grande. Tamanho máximo: 16MB')
+    const oversize = files.filter((f) => f.size > maxSize)
+    const valid = files.filter((f) => f.size <= maxSize)
+    if (oversize.length > 0) {
+      alert(
+        `Arquivo${oversize.length > 1 ? 's' : ''} muito grande${oversize.length > 1 ? 's' : ''} (máx 16MB):\n` +
+        oversize.map((f) => `• ${f.name}`).join('\n'),
+      )
+    }
+    if (valid.length === 0) {
       e.target.value = ''
       return
     }
 
+    // Caption: only attach the typed text to the FIRST file in the batch.
+    // For the rest we leave body undefined so the bubbles don't all share
+    // the same caption — the operator usually writes the caption to
+    // describe the first/leading attachment, not every single one.
     const previousText = text
     setText('')
     e.target.value = ''
-    try {
-      await onSend({
-        file,
-        mediaCaption: file.name,
-        body: previousText.trim() || undefined,
-      })
-    } catch {
-      // Restore typed caption text on failure (file selection can't be
-      // restored — operator picks again). Toast comes from page-level.
-      setText(previousText)
+
+    // Sequential dispatch: each file gets its own POST so each message has
+    // its own bubble + status icon, and we avoid bursting the Meta API.
+    // If one fails, we keep going (don't abort the batch) but collect the
+    // failures so the user can see which ones didn't go through.
+    const failed: string[] = []
+    for (let i = 0; i < valid.length; i++) {
+      const file = valid[i]
+      try {
+        await onSend({
+          file,
+          mediaCaption: file.name,
+          body: i === 0 ? previousText.trim() || undefined : undefined,
+        })
+      } catch {
+        failed.push(file.name)
+      }
     }
+
+    if (failed.length > 0) {
+      // Page-level toast already fires per-failure; this restores the
+      // caption text only if every file failed, so a partial-batch
+      // success doesn't dump the user back into the textarea.
+      if (failed.length === valid.length) setText(previousText)
+    }
+
     setShowAttachMenu(false)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
   }
@@ -432,11 +478,15 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-sm focus-within:shadow-brand-500/10'
           )}
         >
-          {/* Hidden file inputs */}
+          {/* Hidden file inputs — `multiple` lets the operator pick a whole
+              batch in one go; handleFileSelect dispatches them sequentially
+              so each gets its own message bubble and the Meta API isn't hit
+              by a burst that would trip rate limits. */}
           <input
             ref={imageInputRef}
             type="file"
             accept="image/*"
+            multiple
             className="hidden"
             onChange={handleFileSelect}
           />
@@ -444,6 +494,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             ref={videoInputRef}
             type="file"
             accept="video/*"
+            multiple
             className="hidden"
             onChange={handleFileSelect}
           />
@@ -451,6 +502,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             ref={documentInputRef}
             type="file"
             accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+            multiple
             className="hidden"
             onChange={handleFileSelect}
           />
@@ -458,7 +510,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
           {/* Attachments menu */}
           <div className="relative">
             <button
-              onClick={(e) => { e.stopPropagation(); setShowAttachMenu(!showAttachMenu) }}
+              ref={attachButtonRef}
+              onClick={() => setShowAttachMenu(!showAttachMenu)}
               className="w-8 h-8 flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors flex-shrink-0"
               title="Anexar arquivo"
             >
@@ -467,8 +520,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
             {showAttachMenu && (
               <div
+                ref={attachMenuRef}
                 className="absolute bottom-full left-0 mb-2 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden z-50"
-                onClick={(e) => e.stopPropagation()}
               >
                 <button
                   onClick={() => {

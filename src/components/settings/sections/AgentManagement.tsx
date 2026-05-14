@@ -3,6 +3,7 @@ import { UserPlus, MoreHorizontal, CheckCircle2, XCircle, Clock, Pencil } from '
 import axios from 'axios'
 import { useAuth } from '@/contexts/AuthContext'
 import { appLogger } from '@/services/appLogger'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { SectionHeader } from '../SectionHeader'
 import { Avatar } from '@/components/ui/Avatar'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
@@ -183,6 +184,12 @@ export function AgentManagement() {
   }, [])
 
   const { user: actor } = useAuth()
+  // Backend's POST /users is gated to ADMIN, BUSINESS_ADMIN, SUPER_ADMIN
+  // via @Roles in users.controller.ts. Mirror that here so the UI doesn't
+  // expose an affordance that always 403s. `isAdminTier` matches the
+  // backend allowlist exactly — keeping both in sync via the helper means
+  // any future role addition only needs to be wired in one place.
+  const canCreateUsers = isAdminTier(actor?.role)
 
   const handleCreated = (newUser: User) => {
     setUsers((u) => [...u, newUser])
@@ -284,13 +291,15 @@ export function AgentManagement() {
         title="Usuários"
         description={`${users.length} membro${users.length !== 1 ? 's' : ''} na equipe`}
         action={
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
-          >
-            <UserPlus className="w-4 h-4" />
-            Criar usuário
-          </button>
+          canCreateUsers ? (
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
+            >
+              <UserPlus className="w-4 h-4" />
+              Criar usuário
+            </button>
+          ) : null
         }
       />
 
@@ -399,11 +408,17 @@ export function AgentManagement() {
         )}
       </div>
 
-      <CreateUserDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        onCreated={handleCreated}
-      />
+      {/* Defense in depth — even if some future caller flips drawerOpen
+          true (or React DevTools edits state in prod), a non-admin actor
+          never sees the create flow. The button itself is also hidden
+          above; this is the second wall. */}
+      {canCreateUsers && (
+        <CreateUserDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          onCreated={handleCreated}
+        />
+      )}
 
       {editTarget && (
         <EditAgentModal

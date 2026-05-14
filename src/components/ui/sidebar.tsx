@@ -157,9 +157,15 @@ export const SidebarLink = memo(function SidebarLink({
       <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
         {icon}
         {badge !== undefined && badge > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] bg-danger text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
-            {badge > 99 ? '99+' : badge}
-          </span>
+          // Dot-only indicator: shows there's unread activity without putting
+          // a number that could be confused with the status-tab counters
+          // inside the Conversas page. The `badge: number` prop still flows
+          // from NavSidebar (so the trigger is unchanged) — only the render
+          // is now a fixed-size circle. Keep aria-label for screen readers.
+          <span
+            aria-label="Atividade não lida"
+            className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-danger rounded-full"
+          />
         )}
         {/* Nudge dot — visible only when sidebar is collapsed */}
         {nudge && animate && !open && (

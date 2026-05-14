@@ -135,7 +135,11 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
         </div>
       ) : (
         <>
-          <ContactDetailHeader contact={contact} onClose={onClose} onDelete={handleDelete} />
+          <ContactDetailHeader
+            contact={contact}
+            onClose={onClose}
+            onDelete={handleDelete}
+          />
           <ContactDetailTabs activeTab={activeTab} onChange={setActiveTab} />
           <div className="flex-1 overflow-y-auto">
             {activeTab === 'overview'      && <OverviewTab
@@ -145,6 +149,14 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
               onRemoveTag={handleRemoveTag}
               onRefresh={() => {
                 contactsApi.get(contactId).then((r) => { setContact(r.data); onContactUpdate?.(r.data) }).catch(() => {})
+              }}
+              onStageChanged={(next) => {
+                // StageCard / MoveStageModal already PATCH'd the backend.
+                // Just sync local state so the badge, timeline, and any
+                // header consumer re-render immediately.
+                const updated = { ...contact, stage: next }
+                setContact(updated)
+                onContactUpdate?.(updated)
               }}
             />}
             {activeTab === 'history'       && <HistoryTab contactId={contactId} />}

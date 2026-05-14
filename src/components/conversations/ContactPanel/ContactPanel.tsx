@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, Clock, MessageSquare, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink,
-  Bot, UserCog,
+  Bot, UserCog, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { TagPickerContent } from '@/components/ui/TagPicker'
@@ -14,6 +14,9 @@ import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAn
 import { ConversationActivitySection } from './ConversationActivitySection'
 import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
 import { isFeatureVisible } from '@/config/featureFlags'
+import { MoveStageModal } from '@/components/contacts/MoveStageModal'
+import { StageBadge } from '@/components/contacts/StageBadge'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { Conversation, Tag, User } from '@/types'
 
 function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; selectedUserId?: string; onSelect: (user: User | null) => void }) {
@@ -154,37 +157,100 @@ export function ContactPanel({
   const { contact, tags = [], assignedUser, createdAt, lastMessageAt } = conversation
 
   const navigate = useNavigate()
+  const { stages } = useCRMConfig()
 
   const [tagOpen,     setTagOpen]     = useState(false)
   const [assignOpen,  setAssignOpen]  = useState(false)
   const [xferModal,   setXferModal]   = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [stageOpen,   setStageOpen]   = useState(false)
+  // Mirror the contact.stage prop into local state so a successful move
+  // reflects immediately in the panel without waiting for the parent to
+  // refetch the conversation. Resets to the prop value if the parent
+  // pushes a different contact (e.g. operator switched conversations).
+  const [localStage, setLocalStage] = useState<string | undefined | null>(contact.stage)
+  useEffect(() => { setLocalStage(contact.stage) }, [contact.id, contact.stage])
 
   return (
     <aside className="w-full md:w-[280px] flex-shrink-0 flex flex-col h-full bg-black md:border-l md:border-surface-800">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
-        <h3 className="text-sm font-semibold text-surface-100">Informações</h3>
-        <button
-          onClick={onClose}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all"
-        >
-          <X className="w-4 h-4" />
-        </button>
+      {/* Action bar — replaces the standalone header. Left side shows the
+          current stage as a colored badge (or "Sem estágio" hint); right
+          side groups the icon-only actions including the panel close.
+          Keeping everything on one strip avoids a near-empty title bar
+          stacked on a near-empty actions bar. */}
+      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-surface-800 bg-black">
+        <div className="min-w-0">
+          {localStage ? (
+            <StageBadge stage={localStage} stages={stages} />
+          ) : (
+            <span className="text-[11px] text-surface-600">Sem estágio</span>
+          )}
+        </div>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <button
+            onClick={() => setStageOpen(true)}
+            title="Mover para estágio"
+            aria-label="Mover para estágio"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all"
+          >
+            <KanbanSquare className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => navigate(`/contacts?contact=${contact.id}`)}
+            title="Ver no CRM"
+            aria-label="Ver no CRM"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            title="Fechar"
+            aria-label="Fechar painel"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
+      <MoveStageModal
+        open={stageOpen}
+        onClose={() => setStageOpen(false)}
+        contactId={contact.id}
+        contactName={contact.displayName}
+        currentStage={localStage}
+        onStageChanged={(next) => setLocalStage(next)}
+      />
+
       <div className="flex-1 overflow-y-auto">
-        {/* Contact card */}
-        <div className="flex flex-col items-center py-6 px-4 border-b border-surface-800">
-          <div className="relative mb-3">
-            <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="lg" />
+        {/* Contact card — horizontal layout to use the panel's width better.
+            Avatar on the left, name + phone + last-seen stacked on the right.
+            We surface the phone here so the "Número de contato" InfoRow below
+            isn't a duplicate and can be dropped from the details list. */}
+        <div className="flex items-center gap-3 py-4 px-4 border-b border-surface-800">
+          <Avatar
+            name={contact.displayName}
+            imageUrl={contact.profilePicUrl}
+            size="md"
+            className="flex-shrink-0"
+          />
+          <div className="min-w-0 flex-1">
+            <h4 className="text-base font-semibold text-surface-50 truncate">
+              {contact.displayName}
+            </h4>
+            {contact.waId && (
+              <p className="flex items-center gap-1.5 text-xs text-surface-400 mt-0.5 truncate">
+                <WhatsAppIcon className="w-3 h-3 flex-shrink-0 text-emerald-500" />
+                +{contact.waId}
+              </p>
+            )}
+            {contact.lastSeenAt && (
+              <p className="text-[10px] text-surface-500 mt-0.5">
+                Visto {formatRelativeTime(contact.lastSeenAt)}
+              </p>
+            )}
           </div>
-          <h4 className="text-base font-semibold text-surface-50">{contact.displayName}</h4>
-          {contact.lastSeenAt && (
-            <p className="text-[11px] text-surface-500 mt-1">
-              Visto {formatRelativeTime(contact.lastSeenAt)}
-            </p>
-          )}
         </div>
 
         {/* Hidden when conversionAnalysisPanel is off — covers both the
@@ -204,7 +270,6 @@ export function ContactPanel({
         <div className="px-4 py-3">
           <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-2">Conversa</p>
           <AiStatusInfoRow aiPausedUntil={conversation.aiPausedUntil} />
-          <InfoRow icon={WhatsAppIcon as React.ElementType} label="Número de contato" value={contact.waId ? `+${contact.waId}` : contact.displayName} />
           <InfoRow icon={Clock}         label="Iniciada"        value={formatRelativeTime(createdAt)} />
           <InfoRow icon={MessageSquare} label="Última mensagem" value={formatRelativeTime(lastMessageAt)} />
           {assignedUser && (
@@ -299,22 +364,6 @@ export function ContactPanel({
           )}
         </div>
 
-        {/* Actions */}
-        <div className="px-4 py-3 border-t border-surface-800">
-          <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-2">Ações</p>
-          <div className="flex flex-col gap-1">
-
-            {/* Ver no CRM */}
-            <button
-              onClick={() => navigate(`/contacts?contact=${contact.id}`)}
-              className="w-full flex items-center gap-2 text-left text-xs px-3 py-2 rounded-lg text-surface-300 hover:bg-surface-800 transition-all"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-surface-500" />
-              Ver no CRM
-            </button>
-
-          </div>
-        </div>
       </div>
 
       {/* Transfer modal */}
