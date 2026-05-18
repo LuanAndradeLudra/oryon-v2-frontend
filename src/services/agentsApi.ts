@@ -40,6 +40,14 @@ export interface AgentConfig {
   wizard_config: Record<string, unknown>
   /** Phase 25 — per-agent CRM operation permissions for WhatsApp agents. */
   crm_capabilities?: AgentCrmCapabilities
+  /** Phase F3 — tenant overrides for the "when to act" guidance the WhatsApp
+   *  agent reads before mutating the CRM. NULL/empty means use the agent-
+   *  server's BASE_CRITERIA for that category. Keep field names in lockstep
+   *  with agent-server/src/services/agentConfigService.ts. */
+  decision_criteria_resolved?: string | null
+  decision_criteria_stage_transitions?: string | null
+  decision_criteria_tags?: string | null
+  decision_criteria_handoff?: string | null
   // Metrics
   test_count: number
   last_tested_at: string | null
@@ -756,6 +764,8 @@ export async function updateAgent(
     | 'name' | 'icon' | 'sector' | 'objective' | 'status'
     | 'system_prompt' | 'handoff_rules' | 'channels' | 'wizard_config'
     | 'crm_capabilities'
+    | 'decision_criteria_resolved' | 'decision_criteria_stage_transitions'
+    | 'decision_criteria_tags' | 'decision_criteria_handoff'
   >>,
 ): Promise<AgentConfig> {
   const { userId, tenantId, actorName } = readSession()
@@ -792,6 +802,22 @@ export async function updateAgent(
       entity_id: id, entity_name: result.name,
       description: `Regras de handoff do agente "${result.name}" atualizadas (${ruleCount} regras)`,
       details: { rule_count: ruleCount, agent_id: id },
+      source: 'ui',
+    })
+  } else if (
+    fields.decision_criteria_resolved !== undefined
+    || fields.decision_criteria_stage_transitions !== undefined
+    || fields.decision_criteria_tags !== undefined
+    || fields.decision_criteria_handoff !== undefined
+  ) {
+    const criteriaKeys = (['resolved', 'stage_transitions', 'tags', 'handoff'] as const)
+      .filter((k) => fields[`decision_criteria_${k}` as const] !== undefined)
+    appLogger.logActivity({
+      tenant_id: tenantId, actor_id: userId, actor_name: actorName,
+      action: 'agent_decision_criteria_updated', entity_type: 'ai_agent',
+      entity_id: id, entity_name: result.name,
+      description: `Critérios de decisão do agente "${result.name}" atualizados (${criteriaKeys.join(', ')})`,
+      details: { categories: criteriaKeys, agent_id: id },
       source: 'ui',
     })
   } else {
