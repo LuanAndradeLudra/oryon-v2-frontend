@@ -346,6 +346,7 @@ export function ConversationsPage() {
                 filters={filters}
                 allTags={allTags}
                 allContacts={allContacts}
+                allUsers={allUsers}
                 onSelectConversation={handleSelectConversation}
                 onFiltersChange={setFilters}
                 scrollPositionRef={listScrollPosRef}
@@ -364,6 +365,7 @@ export function ConversationsPage() {
             filters={filters}
             allTags={allTags}
             allContacts={allContacts}
+            allUsers={allUsers}
             onSelectConversation={handleSelectConversation}
             onFiltersChange={setFilters}
             scrollPositionRef={listScrollPosRef}

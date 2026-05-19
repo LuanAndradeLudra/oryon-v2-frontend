@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
-  X, Search, UserCircle2, Bot, UserCheck, UserX, Users,
+  X, Search, UserCircle2, Bot, UserCheck, Users, ChevronDown, UserX,
   CalendarDays, Calendar as CalendarIcon, CalendarRange, CalendarSearch,
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
@@ -10,8 +11,10 @@ import { format } from 'date-fns'
 import { Avatar } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
 import { resolveRange, type DateRangePreset } from '@/lib/dateRange'
-import type { Contact, ConversationFilters, Tag } from '@/types'
+import type { Contact, ConversationFilters, Tag, User } from '@/types'
 import 'react-day-picker/style.css'
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Custom month caption: renders the month label and the prev/next chevrons
 // in the SAME flex row. By default react-day-picker v10 renders `nav` as a
@@ -180,6 +183,208 @@ function ContactPicker({
   )
 }
 
+// ── Team picker (Atendimento → "Equipe ▾") ──────────────────────────────────
+//
+// Chip-shaped dropdown that lists every active operator plus a "Sem
+// atribuição" shortcut. Single-select. Closes on outside click. Built
+// inline (not reusing ContactPicker above) because:
+//   • Different data shape — User instead of Contact.
+//   • Different "no selection" semantics — when the picker closes without a
+//     choice the filter should clear rather than fall back to "all team".
+//   • The chip visual matches the other handling chips, with a chevron tail
+//     to signal "this opens a list".
+
+function TeamPicker({
+  allUsers,
+  value,
+  isActive,
+  onChange,
+}: {
+  allUsers: User[]
+  value: string | undefined
+  isActive: boolean
+  onChange: (v: 'unassigned' | string | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
+  // Anchored to the trigger button's viewport rect at open time so the
+  // popover sits right under the chip even though it renders in a portal.
+  // Recomputed on resize / scroll while open to stay glued to the trigger
+  // (avoids the dropdown floating off when the operator scrolls the list).
+  const [anchor, setAnchor] = useState<{ top: number; left: number; width: number } | null>(null)
+
+  const updateAnchor = () => {
+    if (!triggerRef.current) return
+    const r = triggerRef.current.getBoundingClientRect()
+    setAnchor({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 240) })
+  }
+
+  useLayoutEffect(() => {
+    if (!open) { setAnchor(null); return }
+    updateAnchor()
+    const onScroll = () => updateAnchor()
+    window.addEventListener('resize', onScroll)
+    window.addEventListener('scroll', onScroll, true)  // capture: catch inner scrollers
+    return () => {
+      window.removeEventListener('resize', onScroll)
+      window.removeEventListener('scroll', onScroll, true)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      const t = e.target as Node
+      // Outside-click closes — but clicks INSIDE the portal popover count
+      // as inside (the popover lives in document.body, not under
+      // triggerRef, so we need an explicit check on both refs).
+      if (triggerRef.current?.contains(t)) return
+      if (popoverRef.current?.contains(t)) return
+      setOpen(false); setSearch('')
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  // What the chip body shows when the picker is in an active state. Defaults
+  // to the literal "Equipe" so the chip is recognisable even before the
+  // operator picks anyone.
+  const chipLabel = useMemo(() => {
+    if (!isActive) return 'Equipe'
+    if (value === 'unassigned') return 'Sem atribuição'
+    const u = allUsers.find((x) => x.id === value)
+    if (!u) return 'Equipe'
+    const full = `${u.firstName} ${u.lastName ?? ''}`.trim()
+    return full || 'Equipe'
+  }, [isActive, value, allUsers])
+
+  const filtered = useMemo(() => {
+    if (!search) return allUsers
+    const q = search.toLowerCase()
+    return allUsers.filter((u) => {
+      const full = `${u.firstName} ${u.lastName ?? ''}`.toLowerCase()
+      return full.includes(q) || u.email.toLowerCase().includes(q)
+    })
+  }, [allUsers, search])
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'flex-shrink-0 inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium transition-all',
+          isActive
+            ? 'bg-brand-600 text-surface-950 border border-brand-500/30'
+            : 'bg-surface-800 text-surface-400 hover:bg-surface-700 hover:text-surface-200',
+        )}
+      >
+        <Users className="w-3 h-3" />
+        <span className="truncate max-w-[120px]">{chipLabel}</span>
+        <ChevronDown className={cn('w-3 h-3 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {/* Popover renders into document.body via Portal so the parent's
+          `overflow-x-auto` can't clip it. Position is `fixed` and tracked
+          against the trigger's viewport rect (updated on scroll/resize). */}
+      {open && anchor && createPortal(
+        <div
+          ref={popoverRef}
+          style={{ position: 'fixed', top: anchor.top, left: anchor.left, width: anchor.width }}
+          className="z-[9999] bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden"
+        >
+          {/* Search — only shows when the team has enough members to justify it. */}
+          {allUsers.length > 5 && (
+            <div className="p-2 border-b border-surface-700">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar atendente..."
+                  className="w-full pl-7 pr-2.5 py-1.5 text-xs bg-surface-700 border border-surface-600 rounded-lg text-surface-100 placeholder-surface-500 outline-none focus:border-brand-500 transition-colors"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="max-h-72 overflow-y-auto">
+            {/* "Sem atribuição" — always at the top so the most-used shortcut
+                stays one click away (replaces the old standalone chip). */}
+            <button
+              type="button"
+              onClick={() => { onChange('unassigned'); setOpen(false); setSearch('') }}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-all',
+                value === 'unassigned'
+                  ? 'bg-brand-600/15 text-brand-300 font-medium'
+                  : 'text-surface-300 hover:bg-surface-700 hover:text-surface-100',
+              )}
+            >
+              <UserX className="w-3.5 h-3.5 flex-shrink-0" />
+              Sem atribuição
+            </button>
+
+            {filtered.length > 0 && (
+              <div className="border-t border-surface-700/60" />
+            )}
+
+            {filtered.map((u) => {
+              const full = `${u.firstName} ${u.lastName ?? ''}`.trim()
+              const isPicked = value === u.id
+              return (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => { onChange(u.id); setOpen(false); setSearch('') }}
+                  className={cn(
+                    'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-all',
+                    isPicked
+                      ? 'bg-brand-600/15 text-brand-300'
+                      : 'text-surface-200 hover:bg-surface-700',
+                  )}
+                >
+                  <Avatar name={full || u.email} size="xs" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate">{full || u.email}</p>
+                    <p className="text-[10px] text-surface-500 truncate">{u.email}</p>
+                  </div>
+                  {isPicked && <span className="w-1.5 h-1.5 rounded-full bg-brand-400 flex-shrink-0" />}
+                </button>
+              )
+            })}
+
+            {filtered.length === 0 && search && (
+              <p className="px-3 py-4 text-xs text-surface-500 text-center">
+                Nenhum atendente encontrado
+              </p>
+            )}
+          </div>
+
+          {/* Clear footer — only shows when the filter is currently applied,
+              so it doesn't add visual noise on a fresh open. */}
+          {isActive && (
+            <div className="border-t border-surface-700 p-1">
+              <button
+                type="button"
+                onClick={() => { onChange(null); setOpen(false); setSearch('') }}
+                className="w-full text-[11px] text-surface-400 hover:text-surface-200 px-2 py-1 rounded-md hover:bg-surface-700 transition-colors flex items-center justify-center gap-1"
+              >
+                <X className="w-3 h-3" /> Limpar filtro
+              </button>
+            </div>
+          )}
+        </div>,
+        document.body,
+      )}
+    </>
+  )
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 interface ConversationFiltersBarProps {
@@ -188,29 +393,38 @@ interface ConversationFiltersBarProps {
   counts?: Partial<Record<string, number>>
   allTags?: Tag[]
   allContacts?: Contact[]
+  /** Team roster — populates the "Equipe" dropdown. Required for the
+   *  picker to render its list; if omitted, the dropdown only offers
+   *  "Sem atribuição" (operators can't pick a specific colleague). */
+  allUsers?: User[]
 }
 
 // Mutually-exclusive handling filter — collapses the (assignedTo × aiHandling)
 // matrix into a single radio so the UI doesn't have to expose every combination.
-// 'all' is the no-narrowing state; the four others map to one server-side filter.
-type HandlingFilterValue = 'all' | 'ai' | 'me' | 'unassigned'
+// 'all' is the no-narrowing state; the others map to one server-side filter.
+// 'team' is special: it covers BOTH "Sem atribuição" and "atribuído a algum
+// usuário específico". The exact selection lives in `filters.assignedTo`
+// (either the literal 'unassigned' or a UUID).
+type HandlingFilterValue = 'all' | 'ai' | 'me' | 'team'
 
 function resolveHandlingValue(f: ConversationFilters): HandlingFilterValue {
   if (f.aiHandling === 'active') return 'ai'
   if (f.assignedTo === 'me') return 'me'
-  if (f.assignedTo === 'unassigned') return 'unassigned'
+  if (f.assignedTo === 'unassigned') return 'team'
+  if (f.assignedTo && f.assignedTo !== 'all' && UUID_REGEX.test(f.assignedTo)) return 'team'
   return 'all'
 }
 
-const HANDLING_CHIPS: Array<{
-  value: HandlingFilterValue
+// Static handling chips. "Equipe" is rendered separately because it carries
+// dropdown state (selected colleague / 'Sem atribuição').
+const STATIC_HANDLING_CHIPS: Array<{
+  value: 'all' | 'ai' | 'me'
   label: string
   icon: typeof Bot
 }> = [
-  { value: 'all',        label: 'Todas',           icon: Users },
-  { value: 'ai',         label: 'IA',              icon: Bot },
-  { value: 'me',         label: 'Minhas',          icon: UserCheck },
-  { value: 'unassigned', label: 'Sem atribuição',  icon: UserX },
+  { value: 'all', label: 'Todas',   icon: Users    },
+  { value: 'ai',  label: 'IA',      icon: Bot      },
+  { value: 'me',  label: 'Minhas',  icon: UserCheck },
 ]
 
 // Period filter chips — sit between Status and Atendimento. Preset shortcuts
@@ -230,7 +444,7 @@ const PERIOD_CHIPS: Array<{
 ]
 
 export function ConversationFiltersBar({
-  filters, onFiltersChange, counts = {}, allTags = [], allContacts = [],
+  filters, onFiltersChange, counts = {}, allTags = [], allContacts = [], allUsers = [],
 }: ConversationFiltersBarProps) {
   const handlingValue = resolveHandlingValue(filters)
   const totalActiveFilters = [
@@ -300,13 +514,25 @@ export function ConversationFiltersBar({
   const set = (patch: Partial<ConversationFilters>) =>
     onFiltersChange({ ...filters, ...patch })
 
-  const setHandling = (v: HandlingFilterValue) => {
+  const setHandling = (v: 'all' | 'ai' | 'me') => {
     // Reset both axes first, then apply the picked one. Keeps the radio
     // exclusive even if the previous filter touched a different field.
-    if (v === 'all')              set({ assignedTo: 'all', aiHandling: 'all' })
-    else if (v === 'ai')          set({ assignedTo: 'all', aiHandling: 'active' })
-    else if (v === 'me')          set({ assignedTo: 'me',  aiHandling: 'all' })
-    else if (v === 'unassigned')  set({ assignedTo: 'unassigned', aiHandling: 'all' })
+    if (v === 'all')     set({ assignedTo: 'all', aiHandling: 'all' })
+    else if (v === 'ai') set({ assignedTo: 'all', aiHandling: 'active' })
+    else if (v === 'me') set({ assignedTo: 'me',  aiHandling: 'all' })
+  }
+
+  /**
+   * Apply a "Equipe" picker selection. Two cases:
+   *   • picked === 'unassigned' → filter to conversations with no assignee
+   *   • picked === <userId>     → filter to that colleague's conversations
+   *   • picked === null         → clear the team filter
+   * In every case aiHandling is reset so the radio stays mutually-exclusive
+   * with the IA chip.
+   */
+  const setTeamFilter = (picked: 'unassigned' | string | null) => {
+    if (picked === null) set({ assignedTo: 'all', aiHandling: 'all' })
+    else                 set({ assignedTo: picked, aiHandling: 'all' })
   }
 
   const clearAll = () =>
@@ -509,17 +735,18 @@ export function ConversationFiltersBar({
         )}
       </div>
 
-      {/* ── Row 1.5: Atendimento (IA / Humano / Sem atribuição) ────────────────
+      {/* ── Row 1.5: Atendimento (Todas / IA / Minhas / Equipe ▾) ─────────────
           Single radio over (assignedTo × aiHandling) so the operator can
-          pivot the list by who's currently replying without having to
-          combine two filters mentally. Always rendered — the four states
-          are intrinsic to the product, not tenant-configured like tags. */}
+          pivot the list by who's currently replying. The "Equipe" chip is
+          a dropdown that lists every active operator + a "Sem atribuição"
+          shortcut at the top — this is what lets one colleague pick up
+          conversations another operator was handling when she logged off. */}
       <div>
         <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-1.5">
           Atendimento
         </p>
         <div className="filter-scroll flex gap-1.5 overflow-x-auto pb-2">
-          {HANDLING_CHIPS.map(({ value, label, icon: Icon }) => {
+          {STATIC_HANDLING_CHIPS.map(({ value, label, icon: Icon }) => {
             const isActive = handlingValue === value
             return (
               <button
@@ -537,6 +764,12 @@ export function ConversationFiltersBar({
               </button>
             )
           })}
+          <TeamPicker
+            allUsers={allUsers}
+            value={filters.assignedTo}
+            isActive={handlingValue === 'team'}
+            onChange={setTeamFilter}
+          />
           {/* Spacer — garante padding direito no scroll */}
           <span className="flex-shrink-0 w-3 block" />
         </div>
@@ -597,7 +830,11 @@ export function ConversationFiltersBar({
             <span className="flex items-center gap-1 text-[11px] bg-brand-600/15 text-brand-300 px-2 py-0.5 rounded-full border border-brand-500/20">
               {handlingValue === 'ai' && 'IA'}
               {handlingValue === 'me' && 'Minhas'}
-              {handlingValue === 'unassigned' && 'Sem atribuição'}
+              {handlingValue === 'team' && (() => {
+                if (filters.assignedTo === 'unassigned') return 'Sem atribuição'
+                const picked = allUsers.find((u) => u.id === filters.assignedTo)
+                return picked ? `Equipe: ${picked.firstName} ${picked.lastName ?? ''}`.trim() : 'Equipe'
+              })()}
               <button onClick={() => setHandling('all')}>
                 <X className="w-2.5 h-2.5" />
               </button>

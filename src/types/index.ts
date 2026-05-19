@@ -691,7 +691,16 @@ export interface Message {
 
 export interface ConversationFilters {
   status?: ConversationStatus | 'all'
-  assignedTo?: 'me' | 'unassigned' | 'all'
+  /**
+   * Assignment filter. Values:
+   *   • 'me'         → conversations assigned to the logged-in user
+   *   • 'unassigned' → no assignee at all
+   *   • 'all' / undefined → no filter
+   *   • <UUID>       → conversations assigned to a specific team member,
+   *     picked from the "Equipe" dropdown in ConversationFiltersBar.
+   * The backend recognises all four shapes; arbitrary strings fall through.
+   */
+  assignedTo?: 'me' | 'unassigned' | 'all' | string
   /**
    * Filter by AI handling state (derived server-side from aiPausedUntil):
    *   'active' → AI is replying (paused until is null or in the past)

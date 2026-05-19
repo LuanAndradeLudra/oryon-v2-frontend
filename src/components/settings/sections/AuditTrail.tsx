@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Search, AlertCircle, Filter, X } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ActorChip } from '@/components/ui/ActorChip'
+import { formatActivity } from '@/components/dashboard/activityFormatter'
 import {
   listTenantAuditFeed,
   type TenantAuditRow,
@@ -138,16 +140,35 @@ export function AuditTrail() {
 }
 
 // ─── Row ─────────────────────────────────────────────────────────────────────
+//
+// Linha da tabela de auditoria. Mesmo padrão visual da Atividade Recente
+// do dashboard:
+//   • "Quem" → ActorChip (ícone monocromático + nome). Fallback de nome
+//     vem do ActorChip para 'agent'/'webhook'/'job'.
+//   • "Ação" → frase passiva via `formatActivity` (mesmo formatter
+//     usado no dashboard, garante consistência de copy). O action_name
+//     técnico fica como sub-label discreto pra investigação.
+//   • "Recurso" e "Detalhes" mantidos — auditoria precisa expor os
+//     dados crus pro time de suporte usar como evidência.
 
 function Row({ row }: { row: TenantAuditRow }) {
-  const verb = humanizeAction(row.action)
+  const verb = formatActivity({
+    action: row.action,
+    subject: row.entityName ?? '',
+    details: row.details,
+  })
   return (
     <tr className="hover:bg-surface-800/30">
       <td className="px-4 py-2.5 whitespace-nowrap text-surface-300 text-xs">
         {new Date(row.createdAt).toLocaleString('pt-BR')}
       </td>
-      <td className="px-4 py-2.5 text-surface-200 text-xs">
-        {row.actorName ?? <span className="text-surface-500">—</span>}
+      <td className="px-4 py-2.5 text-xs">
+        <ActorChip
+          actorType={row.actorType}
+          actorName={row.actorName}
+          maxNameWidth={180}
+          className="text-xs"
+        />
       </td>
       <td className="px-4 py-2.5">
         <div className="flex items-center gap-2">
@@ -164,128 +185,126 @@ function Row({ row }: { row: TenantAuditRow }) {
         {row.entityName ? (
           <>
             <span>{row.entityName}</span>
-            <span className="text-surface-500 text-xs"> · {row.entityType}</span>
+            <span className="text-surface-500 text-xs"> · {ENTITY_LABEL[row.entityType] ?? row.entityType}</span>
           </>
         ) : (
-          <span className="text-surface-500 text-xs">{row.entityType}</span>
+          <span className="text-surface-500 text-xs">{ENTITY_LABEL[row.entityType] ?? row.entityType}</span>
         )}
       </td>
-      <td className="px-4 py-2.5 text-surface-300 text-xs max-w-md truncate" title={row.description}>
-        {row.description}
+      <td className="px-4 py-2.5 text-surface-300 text-xs max-w-md">
+        {renderDetails(row)}
       </td>
     </tr>
   )
 }
 
-// Turn 'campaign_sent' → 'Campanha enviada'. Falls back to a humanised verb
-// when the action isn't in the dictionary so we never show a raw snake_case
-// to the customer. The dictionary is intentionally finite — when a new
-// action appears, the fallback prints "<entityType> <pastVerb>" which is
-// usually fine until we add a translation here.
-function humanizeAction(action: string): string {
-  return ACTION_LABELS[action] ?? defaultize(action)
+// Render the audit row's `details` JSONB as a series of "chave: valor" chips
+// — but ONLY for keys explicitly listed as operator-friendly. Anything not
+// in `DETAIL_KEY_LABEL` (typically raw UUIDs like `tagId`, `agent_id`, `id`)
+// is suppressed instead of leaking technical identifiers into the panel.
+// Operators investigating a row can still drill into the raw payload from
+// a future detail modal; this column is for at-a-glance scanning.
+function renderDetails(row: TenantAuditRow): React.ReactNode {
+  const details = row.details ?? {}
+  const entries = Object.entries(details).filter(([k, v]) => {
+    if (!(k in DETAIL_KEY_LABEL)) return false   // allowlist gate
+    if (v === null || v === undefined || v === '') return false
+    return true
+  })
+  if (entries.length === 0) {
+    // No useful structured details — show the description, but never the
+    // raw "<action> <entityType>" technical fallback that some endpoints
+    // emit when they don't provide a friendly description (the action
+    // name is already shown beneath the "Ação" column).
+    const looksTechnical = row.description.trim().startsWith(row.action)
+    return looksTechnical
+      ? <span className="text-surface-600">—</span>
+      : <span className="truncate block" title={row.description}>{row.description}</span>
+  }
+  return (
+    <div className="flex flex-wrap gap-x-3 gap-y-1">
+      {entries.slice(0, 4).map(([k, v]) => (
+        <span key={k} className="inline-flex items-baseline gap-1">
+          <span className="text-surface-500">{DETAIL_KEY_LABEL[k]}:</span>
+          <span className="text-surface-200">{formatDetailValue(v)}</span>
+        </span>
+      ))}
+      {entries.length > 4 && (
+        <span className="text-surface-500">+{entries.length - 4} mais</span>
+      )}
+    </div>
+  )
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  // Contacts
-  contact_created: 'Contato criado',
-  contact_updated: 'Contato atualizado',
-  contact_deleted: 'Contato removido',
-  contact_ai_profile_generated: 'Perfil IA gerado',
-  contact_ai_profile_applied: 'Perfil IA aplicado',
-  contact_template_sent: 'Template enviado para contato',
-  contact_custom_fields_updated: 'Campos customizados do contato atualizados',
-  contacts_bulk_stage_updated: 'Estágio atualizado em lote',
-  contacts_bulk_tags_updated: 'Tags atualizadas em lote',
-  contacts_bulk_opt_in_updated: 'Opt-in atualizado em lote',
-  contacts_bulk_deleted: 'Contatos removidos em lote',
-  // Conversations
-  message_sent: 'Mensagem enviada',
-  conversation_assigned: 'Conversa atribuída',
-  conversation_transferred: 'Conversa transferida',
-  conversation_status_updated: 'Status da conversa alterado',
-  conversation_tag_added: 'Tag adicionada à conversa',
-  conversation_tag_removed: 'Tag removida da conversa',
-  conversation_analysis_triggered: 'Análise de conversa solicitada',
-  conversation_analysis_confirmed: 'Análise de conversa confirmada',
-  // Campaigns
-  campaign_created: 'Campanha criada',
-  campaign_updated: 'Campanha atualizada',
-  campaign_sent: 'Campanha enviada',
-  campaign_deleted: 'Campanha removida',
-  // Automations
-  automation_created: 'Automação criada',
-  automation_updated: 'Automação atualizada',
-  automation_toggled: 'Automação ativada/desativada',
-  automation_deleted: 'Automação removida',
-  // Templates
-  template_created: 'Template criado',
-  template_updated: 'Template atualizado',
-  template_deleted: 'Template removido',
-  templates_synced: 'Templates sincronizados',
-  template_duplicated_to_line: 'Template duplicado para outra linha',
-  // Tags / stages / custom-fields / canned
-  tag_created: 'Tag criada',
-  tag_updated: 'Tag atualizada',
-  tag_deleted: 'Tag removida',
-  stage_created: 'Estágio criado',
-  stage_updated: 'Estágio atualizado',
-  stage_deleted: 'Estágio removido',
-  stage_reordered: 'Estágios reordenados',
-  custom_field_created: 'Campo customizado criado',
-  custom_field_updated: 'Campo customizado atualizado',
-  custom_field_deleted: 'Campo customizado removido',
-  canned_response_created: 'Resposta rápida criada',
-  canned_response_updated: 'Resposta rápida atualizada',
-  canned_response_deleted: 'Resposta rápida removida',
-  // Team
-  user_invited: 'Usuário convidado',
-  user_updated: 'Usuário atualizado',
-  user_deactivated: 'Usuário desativado',
-  user_invitation_resent: 'Convite reenviado',
-  user_self_updated: 'Usuário atualizou o próprio perfil',
-  user_password_changed: 'Senha alterada',
-  user_logged_out: 'Usuário deslogou',
-  department_created: 'Setor criado',
-  department_updated: 'Setor atualizado',
-  department_deleted: 'Setor removido',
-  // WhatsApp
-  meta_oauth_started: 'Conexão Meta iniciada',
-  whatsapp_number_set_primary: 'Linha WhatsApp definida como primária',
-  whatsapp_number_updated: 'Linha WhatsApp atualizada',
-  whatsapp_number_removed: 'Linha WhatsApp desconectada',
-  waba_resubscribed: 'WABA re-inscrito',
-  waba_system_user_token_generated: 'Token de sistema gerado',
-  meta_business_created: 'Business Manager criado',
-  meta_phone_verification_requested: 'Verificação de telefone solicitada',
-  meta_phone_verified: 'Telefone verificado',
-  meta_setup_finalized: 'Setup WhatsApp concluído',
-  // Context / organization / preferences
-  organization_updated: 'Empresa atualizada',
-  company_brain_updated: 'Contexto da IA atualizado',
-  company_brain_synced_to_rag: 'Contexto sincronizado com RAG',
-  knowledge_base_updated: 'Base de conhecimento atualizada',
-  notification_preference_updated: 'Preferência de notificação atualizada',
-  notification_preferences_bulk_updated: 'Preferências de notificação salvas',
-  notification_preference_reset: 'Preferência de notificação restaurada',
-  // Compliance / media
-  lgpd_contact_data_exported: 'Dados LGPD do contato exportados',
-  lgpd_contact_data_erased: 'Dados LGPD do contato apagados',
-  media_uploaded: 'Mídia enviada',
-  // Internal chat
-  internal_channel_created: 'Canal interno criado',
-  internal_message_sent: 'Mensagem interna enviada',
-  internal_message_deleted: 'Mensagem interna removida',
-  internal_channel_members_added: 'Membros adicionados ao canal',
-  internal_channel_member_removed: 'Membro removido do canal',
-  internal_channel_deleted: 'Canal interno removido',
+function formatDetailValue(v: unknown): string {
+  if (v === true) return 'sim'
+  if (v === false) return 'não'
+  if (Array.isArray(v)) return v.length > 3 ? `${v.length} itens` : v.map(String).join(', ')
+  if (typeof v === 'object' && v !== null) return JSON.stringify(v).slice(0, 40)
+  return String(v)
 }
 
-function defaultize(action: string): string {
-  return action
-    .split('_')
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
+// Allowlist of detail keys that ARE meaningful to a non-technical operator
+// (no UUIDs, no internal plumbing). When the audit infrastructure adds a
+// new field that the operator should see, add it here with its PT-BR
+// label — leaving it out is the safe default (suppresses the chip).
+//
+// Convention: friendly verbs/nouns; lowercase except for proper labels.
+// The resolver fields (userName/toUserName/tagName) come from the backend's
+// `resolveDetailEnrichments` step in ActivityService; they're the resolved
+// HUMAN names paired with the corresponding *Id fields (which we hide).
+const DETAIL_KEY_LABEL: Record<string, string> = {
+  // Movement / transitions
+  from:           'de',
+  to:             'para',
+  new_status:     'novo status',
+  status:         'status',
+  new_stage:      'novo estágio',
+  stage:          'estágio',
+  // Toggles
+  enabled:        'ativada',
+  isActive:       'ativa',
+  // Resolved human names (paired with hidden *Id fields)
+  userName:       'usuário',
+  toUserName:     'destinatário',
+  tagName:        'etiqueta',
+  agent_name:     'agente',
+  // Counts / scope
+  rule_count:     'regras',
+  fields:         'campos',
+  field:          'campo',
+  categories:     'categorias',
+  prompt_length:  'tamanho do prompt',
+  count:          'quantidade',
+  // Misc
+  reason:         'motivo',
+  new_role:       'novo papel',
+  role:           'papel',
+}
+
+// Friendly translation of entity_type → PT-BR for the "Recurso" column.
+// Mirrors the same vocabulary the Settings sidebar uses so the audit
+// rows speak the same language as the rest of the app.
+const ENTITY_LABEL: Record<string, string> = {
+  contact:           'contato',
+  conversation:      'conversa',
+  campaign:          'campanha',
+  automation:        'automação',
+  template:          'modelo',
+  tag:               'etiqueta',
+  stage:             'estágio',
+  canned_response:   'resposta rápida',
+  user:              'usuário',
+  department:        'setor',
+  whatsapp_number:   'número WhatsApp',
+  context:           'contexto da IA',
+  organization:      'empresa',
+  media:             'mídia',
+  internal_channel:  'canal interno',
+  internal_message:  'mensagem interna',
+  ai_agent:          'agente IA',
+  custom_field:      'campo personalizado',
+  notification_preference: 'preferência de notificação',
 }
 
 // ─── FilterBar ───────────────────────────────────────────────────────────────

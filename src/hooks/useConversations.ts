@@ -147,6 +147,14 @@ export function useConversations(filters: ConversationFilters = {}) {
       if (f.contactId && conv.contact?.id !== f.contactId) return
       if (f.assignedTo === 'unassigned' && conv.assignedUser) return
       if (f.assignedTo === 'me' && currentUser && conv.assignedUser?.id !== currentUser.id) return
+      // UUID branch — the "Equipe" picker lets the operator filter to a
+      // specific colleague's queue (e.g. taking over Maria's conversations
+      // after she logs off). Same realtime gate as the static buckets above.
+      if (f.assignedTo
+          && f.assignedTo !== 'me'
+          && f.assignedTo !== 'unassigned'
+          && f.assignedTo !== 'all'
+          && conv.assignedUser?.id !== f.assignedTo) return
       if (f.aiHandling === 'active' && !isAiActive(conv)) return
       if (f.aiHandling === 'paused' && isAiActive(conv)) return
       if (f.unreadOnly && conv.unreadCount === 0) return

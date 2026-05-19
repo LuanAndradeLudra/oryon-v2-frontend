@@ -8,7 +8,7 @@ import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { cn } from '@/lib/utils'
-import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag } from '@/types'
+import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
 
 // TODO: substituir por dado real da API de billing
 const USAGE_MOCK = { used: 847, total: 1000 }
@@ -26,6 +26,10 @@ interface ConversationListProps {
   filters: ConversationFilters
   allTags: Tag[]
   allContacts: Contact[]
+  /** Team roster — drives the "Equipe" filter dropdown. Optional so
+   *  callers that don't surface the assignment filter (e.g. embedded
+   *  previews) can omit it; the dropdown then only shows "Sem atribuição". */
+  allUsers?: User[]
   onSelectConversation: (conv: Conversation) => void
   onFiltersChange: (filters: ConversationFilters) => void
   onLoadMore?: () => void
@@ -38,7 +42,7 @@ interface ConversationListProps {
 export function ConversationList({
   conversations, loading, loadingMore = false, hasMore = false,
   statusCounts,
-  activeId, filters, allTags, allContacts,
+  activeId, filters, allTags, allContacts, allUsers,
   onSelectConversation, onFiltersChange, onLoadMore,
   scrollPositionRef,
 }: ConversationListProps) {
@@ -211,6 +215,7 @@ export function ConversationList({
           counts={counts}
           allTags={allTags}
           allContacts={allContacts}
+          allUsers={allUsers}
         />
       </div>
 

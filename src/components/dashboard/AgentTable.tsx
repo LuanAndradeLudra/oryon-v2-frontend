@@ -1,9 +1,23 @@
 import { useState } from 'react'
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, HelpCircle } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
 import type { AgentMetrics } from '@/types/dashboard'
+
+// Helper text for each column header. Kept in one place so updating the
+// definition propagates to every place the table is rendered, and so the
+// product team can iterate on copy without hunting through JSX.
+const COLUMN_TOOLTIPS: Record<string, string> = {
+  conversations:  'Quantidade de conversas atualmente abertas atribuídas ao atendente.',
+  resolved:       'Conversas que o atendente marcou como resolvidas no dia de hoje.',
+  responseTime:   'TMR — Tempo Médio de Resposta. Quanto o atendente leva, em média, para enviar a primeira resposta após o cliente abrir a conversa.',
+  resolutionTime: 'Tempo médio entre o início da conversa e o momento em que ela foi marcada como resolvida.',
+  csat:           'Satisfação do cliente (CSAT) — média das avaliações recebidas em uma escala de 0 a 5. Disponível quando a pesquisa de satisfação estiver ativa.',
+  sla:            'Cumprimento do SLA — porcentagem de conversas em que a primeira resposta foi enviada dentro do tempo-alvo (atualmente 5 minutos).',
+  utilization:    'Utilização da capacidade do atendente. 100% indica saturação (a partir de 20 conversas abertas simultâneas).',
+}
 
 type SortKey = keyof AgentMetrics
 type SortDir = 'asc' | 'desc'
@@ -58,7 +72,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
     )
   }
 
-  const Th = ({ label, sortKey, className }: { label: string; sortKey?: SortKey; className?: string }) => (
+  const Th = ({ label, sortKey, tooltip, className }: { label: string; sortKey?: SortKey; tooltip?: string; className?: string }) => (
     <th
       className={cn(
         'text-left px-4 py-3 text-[11px] font-semibold text-surface-500 uppercase tracking-wider select-none',
@@ -70,6 +84,15 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
       <div className="flex items-center gap-1">
         {label}
         {sortKey && <SortIcon active={sort.key === sortKey} dir={sort.dir} />}
+        {tooltip && (
+          // Wrap with stopPropagation so hovering / clicking the help icon
+          // doesn't trigger the column's sort toggle.
+          <span onClick={(e) => e.stopPropagation()} className="cursor-help">
+            <Tooltip content={tooltip} side="top" wide>
+              <HelpCircle className="w-3 h-3 text-surface-600 hover:text-surface-400 transition-colors" />
+            </Tooltip>
+          </span>
+        )}
       </div>
     </th>
   )
@@ -95,13 +118,13 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
             <tr className="border-b border-surface-800">
               <Th label="Agente"         sortKey="name"               />
               <Th label="Status"         sortKey="isOnline"           />
-              <Th label="Conversas"      sortKey="conversationsToday" />
-              <Th label="Resolvidas"     sortKey="resolvedToday"      />
-              <Th label="TMR"            sortKey="avgResponseTime"    />
-              <Th label="Resolução"      sortKey="avgResolutionTime"  />
-              <Th label="CSAT"           sortKey="csat"               />
-              <Th label="SLA"            sortKey="slaCompliance"      />
-              <Th label="Utilização"     sortKey="utilization"        />
+              <Th label="Conversas"      sortKey="conversationsToday" tooltip={COLUMN_TOOLTIPS.conversations}  />
+              <Th label="Resolvidas"     sortKey="resolvedToday"      tooltip={COLUMN_TOOLTIPS.resolved}       />
+              <Th label="TMR"            sortKey="avgResponseTime"    tooltip={COLUMN_TOOLTIPS.responseTime}   />
+              <Th label="Resolução"      sortKey="avgResolutionTime"  tooltip={COLUMN_TOOLTIPS.resolutionTime} />
+              <Th label="CSAT"           sortKey="csat"               tooltip={COLUMN_TOOLTIPS.csat}           />
+              <Th label="SLA"            sortKey="slaCompliance"      tooltip={COLUMN_TOOLTIPS.sla}            />
+              <Th label="Utilização"     sortKey="utilization"        tooltip={COLUMN_TOOLTIPS.utilization}    />
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-800">
