@@ -28,7 +28,9 @@ import {
   type DateRange,
   type DashboardSnapshot,
   type KpiMetric,
+  type ActivityEvent,
 } from '@/types/dashboard'
+import { formatActivity, pickActivityType } from '@/components/dashboard/activityFormatter'
 import type { HomeStats } from '@/types'
 import type { User } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
@@ -37,6 +39,68 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
+
+// Row shape returned by GET /activity-feed (mirrors the public shape from
+// backend/src/modules/activity/activity.service.ts). The `metadata` bag
+// carries the row's `details` JSONB (from/to for stage changes, enabled
+// for automation toggles, etc.) plus enrichments resolved at request time
+// (userName, tagName). We forward both to the formatter so it can produce
+// the most informative sentence possible.
+interface ActivityFeedApiRow {
+  id: string
+  type: string
+  timestamp: string
+  actor: string
+  subject: string
+  summary: string
+  metadata?: Record<string, unknown>
+}
+
+/**
+ * Convert raw backend rows into the closed `ActivityEvent` shape the
+ * dashboard renders. Two concerns:
+ *   1. ICON — pickActivityType maps known actions to one of the 8 curated
+ *      icons in EVENT_CONFIG; everything else gets the generic
+ *      'system_event' icon (no info lost — the text below carries it).
+ *   2. TEXT — formatActivity produces an operator-friendly PT-BR
+ *      sentence for EVERY action, even ones we don't have a dedicated
+ *      formatter for. The sentence already includes the actor name, so
+ *      the renderer can show `event.subject` directly without prefixing.
+ *
+ * `subject` here intentionally holds the FULL formatted sentence (not
+ * just a name) so the ActivityFeed component can render it as-is.
+ */
+function mapActivityFeed(rows: ActivityFeedApiRow[]): ActivityEvent[] {
+  if (!Array.isArray(rows)) return []
+  return rows.map((r) => {
+    // The backend's actorType comes nested under metadata. We normalise
+    // it into one of three buckets — user/agent/system — so the timeline
+    // can render the right icon (User / Bot / Cpu).
+    const rawActorType = typeof r.metadata?.actorType === 'string' ? r.metadata.actorType : ''
+    const actorType =
+      rawActorType === 'user' ? 'user' as const :
+      rawActorType === 'agent' ? 'agent' as const :
+      'system' as const
+    // For AI-agent rows the resolver in activity.service.ts may have left
+    // `actor` empty (cross-DB lookup to agent_configs isn't wired yet).
+    // Fall back to a generic "Agente IA" label so the panel never shows
+    // "Sistema" for what was clearly a bot action.
+    const actorName = r.actor
+      || (actorType === 'agent' ? 'Agente IA' : 'Sistema')
+    return {
+      id: r.id,
+      type: pickActivityType(r.type),
+      actorName,
+      actorType,
+      subject: formatActivity({
+        action: r.type,
+        subject: r.subject,
+        details: r.metadata,
+      }),
+      timestamp: r.timestamp,
+    }
+  })
+}
 
 export function DashboardPage() {
   const isMobile = useIsMobile()
@@ -55,10 +119,21 @@ export function DashboardPage() {
   const fetchDashboard = async () => {
     setLoading(true)
     try {
-      // Fetch full snapshot from backend
-      const [{ data: dbSnapshot }, { data: stats }] = await Promise.all([
+      // Fetch full snapshot + activity feed from backend. The activity feed
+      // lives on its own endpoint (`/activity-feed`) because it powers more
+      // than just the dashboard widget; we map its rows below into the
+      // narrower ActivityEvent shape the dashboard component understands.
+      //
+      // The activity widget shows the LAST 4 HOURS only — older activity
+      // belongs to the dedicated audit screen, not the dashboard glance.
+      // Limit raised to 100 because, with the AI agent actively replying,
+      // even a single hour can produce dozens of conversation_assigned /
+      // resolved rows.
+      const sinceIso = new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+      const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.all([
         axios.get(`${API}/home/snapshot`).catch(() => ({ data: null })),
         axios.get<HomeStats>(`${API}/home/stats`),
+        axios.get<{ data: ActivityFeedApiRow[] }>(`${API}/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
       ])
 
       // Start with empty structure, fill with real data
@@ -132,11 +207,19 @@ export function DashboardPage() {
         avgWaitSeconds:      (s.avgResponseMinutes ?? 0) * 60,
       }
 
-      // Clear mock charts — show empty instead of fake data
-      snap.volumeChart = []
-      snap.csatTimeline = []
-      snap.heatmap = []
-      snap.activityFeed = []
+      // Volume / heatmap / csatChart now come from the backend snapshot.
+      // The previous code zeroed them out as a guard against mock data; with
+      // the backend producing real values they pass straight through. Each
+      // is defaulted to [] when the backend omits it (e.g. csatChart while
+      // the satisfaction-survey feature isn't shipped).
+      snap.volumeChart = Array.isArray(dbSnapshot?.volumeChart) ? dbSnapshot.volumeChart : []
+      snap.heatmap     = Array.isArray(dbSnapshot?.heatmap)     ? dbSnapshot.heatmap     : []
+      snap.csatChart   = Array.isArray(dbSnapshot?.csatChart)   ? dbSnapshot.csatChart   : []
+
+      // Activity feed comes from /activity-feed (separate endpoint). The
+      // mapper drops rows whose `type` isn't in the dashboard's renderer
+      // catalog so the component never crashes on unknown actions.
+      snap.activityFeed = mapActivityFeed(activityFeedRes?.data ?? [])
 
       setSnapshot(snap)
       setLastUpdated(new Date())

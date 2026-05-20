@@ -92,11 +92,28 @@ export type ActivityEventType =
   | 'sla_breach'
   | 'csat_received'
   | 'bot_deflection'
+  // Catch-all for backend `action` names that don't fit the curated set
+  // above (stage_created, tag_updated, conversation_ai_pause_updated, etc.).
+  // The feed renderer falls back to the row's `summary` text so we surface
+  // the activity instead of dropping it from the panel.
+  | 'system_event'
+
+/**
+ * Subset of the backend's ActivityActorType. We only care about three
+ * buckets for icon-picking:
+ *   • user  — a human operator (default)
+ *   • agent — the WhatsApp / Copilot AI agent
+ *   • system — non-human / non-AI source (cron, webhook, job)
+ * Other backend values collapse into 'system' downstream.
+ */
+export type ActivityActorKind = 'user' | 'agent' | 'system'
 
 export interface ActivityEvent {
   id: string
   type: ActivityEventType
   actorName: string
+  /** Drives the badge icon at the bottom-right of the activity card. */
+  actorType: ActivityActorKind
   subject: string
   timestamp: string
 }
