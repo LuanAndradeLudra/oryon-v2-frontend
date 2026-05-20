@@ -18,7 +18,7 @@ import {
 } from './constants'
 import { validateTemplate, isTemplateValid, type TemplateValidationErrors } from './templateValidation'
 import type {
-  WhatsAppTemplate, TemplateHeaderType, TemplateButtonType, TemplateCategoryType,
+  WhatsAppTemplate, TemplateHeaderType, TemplateHeaderTypeInput, TemplateButtonType, TemplateCategoryType,
 } from '@/types'
 import type { SubCategory } from './SubcategoryPreview'
 
@@ -251,14 +251,12 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
     if (!canSave || isContentLocked) return
     setSaving(true); setError('')
     try {
+      const resolvedHeader: TemplateHeaderTypeInput | undefined =
+        headerType ? headerType : editing ? 'NONE' : undefined
       const payload = {
         name: name.trim().toLowerCase().replace(/\s+/g, '_'),
         language, category,
-        ...(headerType
-          ? { headerType }
-          : editing
-            ? { headerType: 'NONE' as const }
-            : {}),
+        ...(resolvedHeader !== undefined ? { headerType: resolvedHeader } : {}),
         ...(headerType === 'TEXT' && headerText.trim() ? { headerText: headerText.trim() } : {}),
         ...(['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && headerMediaUrl.trim() ? { headerMediaUrl: headerMediaUrl.trim() } : {}),
         body,

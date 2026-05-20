@@ -33,6 +33,7 @@ import type {
   User,
   WhatsAppNumber,
   WhatsAppTemplate,
+  TemplateHeaderTypeInput,
 } from '@/types'
 
 import { apiBaseUrl, isNativePlatform } from '@/config/env'
@@ -764,7 +765,7 @@ let refreshPromise: Promise<boolean> | null = null
 /** Requests that carry this flag bypass the 401→refresh interceptor.
  *  Required on /auth/refresh itself — otherwise a dead refresh cookie
  *  re-enters the interceptor and deadlocks waiting on its own promise. */
-const SKIP_AUTH_REFRESH = { _skipAuthRefresh: true } as const
+export const SKIP_AUTH_REFRESH = { _skipAuthRefresh: true } as const
 
 async function attemptRefresh(): Promise<boolean> {
   try {
@@ -1164,6 +1165,15 @@ export type PullTemplatesFromMetaResponse = {
   errors: string[]
 }
 
+type WhatsAppTemplateCreate = Omit<
+  WhatsAppTemplate,
+  'id' | 'tenantId' | 'status' | 'createdAt' | 'updatedAt' | 'headerType'
+> & { headerType?: TemplateHeaderTypeInput }
+
+type WhatsAppTemplateUpdate = Partial<Omit<WhatsAppTemplate, 'headerType'>> & {
+  headerType?: TemplateHeaderTypeInput
+}
+
 export const templatesApi = {
   list(status?: string) {
     return api.get<WhatsAppTemplate[]>('/templates', { params: status ? { status } : {} })
@@ -1186,10 +1196,10 @@ export const templatesApi = {
       /* local list still works */
     }
   },
-  create(dto: Omit<WhatsAppTemplate, 'id' | 'tenantId' | 'status' | 'createdAt' | 'updatedAt'>) {
+  create(dto: WhatsAppTemplateCreate) {
     return api.post<WhatsAppTemplate>('/templates', dto)
   },
-  update(id: string, patch: Partial<WhatsAppTemplate>) {
+  update(id: string, patch: WhatsAppTemplateUpdate) {
     return api.patch<WhatsAppTemplate>(`/templates/${id}`, patch)
   },
   delete(id: string) {

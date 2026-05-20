@@ -939,6 +939,9 @@ export type TemplateStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAUSED' | 'D
 
 export type TemplateHeaderType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT'
 
+/** API-only value to clear header on update (stored as null in DB). */
+export type TemplateHeaderTypeInput = TemplateHeaderType | 'NONE'
+
 export type TemplateButtonType = 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'FLOW' | 'COPY_CODE'
 
 export type TemplateCategoryType = 'MARKETING' | 'UTILITY' | 'AUTHENTICATION'

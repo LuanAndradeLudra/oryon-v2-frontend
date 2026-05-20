@@ -6,6 +6,7 @@ import { disconnectSocket } from '@/services/socket'
 import { isNativePlatform } from '@/config/env'
 import { setTokens, clearTokens, getRefreshToken } from '@/services/auth-storage'
 import { registerPushNotifications, unregisterPushNotifications, syncTokenWithBackend } from '@/services/push-registration'
+import { SKIP_AUTH_REFRESH } from '@/services/api'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -182,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const body = isNativePlatform() ? { refreshToken: refreshToken ?? undefined } : {}
       await axios.post(`${API}/auth/logout`, body, {
         withCredentials: true,
-        _skipAuthRefresh: true,
+        ...SKIP_AUTH_REFRESH,
       })
     } catch { /* best-effort — cookies will expire on their own */ }
     clearTokens()
@@ -230,7 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Validate session on app load ────────────────────────────────────────
   useEffect(() => {
     if (!session?.user) return
-    axios.get(`${API}/auth/me`, { withCredentials: true, _skipAuthRefresh: true })
+    axios.get(`${API}/auth/me`, { withCredentials: true, ...SKIP_AUTH_REFRESH })
       .catch((err) => {
         const status = err?.response?.status
         if (status === 401 || status === 403) {
