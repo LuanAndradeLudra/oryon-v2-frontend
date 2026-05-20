@@ -761,6 +761,11 @@ const SESSION_KEY = 'oryon:session'
 let isRefreshing = false
 let refreshPromise: Promise<boolean> | null = null
 
+/** Requests that carry this flag bypass the 401→refresh interceptor.
+ *  Required on /auth/refresh itself — otherwise a dead refresh cookie
+ *  re-enters the interceptor and deadlocks waiting on its own promise. */
+const SKIP_AUTH_REFRESH = { _skipAuthRefresh: true } as const
+
 async function attemptRefresh(): Promise<boolean> {
   try {
     if (isNativePlatform()) {
@@ -769,7 +774,7 @@ async function attemptRefresh(): Promise<boolean> {
       const res = await axios.post<{ accessToken: string; refreshToken: string }>(
         `${apiBaseUrl()}/auth/mobile-refresh`,
         { refreshToken },
-        { withCredentials: false },
+        { withCredentials: false, ...SKIP_AUTH_REFRESH },
       )
       setTokens(res.data.accessToken, res.data.refreshToken)
       return true
@@ -782,7 +787,7 @@ async function attemptRefresh(): Promise<boolean> {
     const res = await axios.post<{ user?: Record<string, unknown> }>(
       `${apiBaseUrl()}/auth/refresh`,
       {},
-      { withCredentials: true },
+      { withCredentials: true, ...SKIP_AUTH_REFRESH },
     )
     if (res.data?.user) {
       try {
@@ -811,26 +816,47 @@ function clearSessionAndRedirect() {
 /** AxiosRequestConfig augmented with our retry-once marker. Stored on the
  *  config object itself so the same interceptor doesn't re-trigger when
  *  the retried request fails again with 401 (refresh truly failed). */
-type RetryableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean }
+type RetryableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean
+  _skipAuthRefresh?: boolean
+}
+
+const AUTH_NO_REFRESH_RE = /\/auth\/(refresh|mobile-refresh|logout|login|mobile-login)(?:\/|$|\?)/
+
+function isAuthNoRefreshRequest(config: RetryableRequestConfig): boolean {
+  if (config._skipAuthRefresh) return true
+  const url = config.url ?? ''
+  return AUTH_NO_REFRESH_RE.test(url)
+}
 
 function makeRefreshInterceptor(client: typeof axios | typeof api) {
   return async (error: AxiosError) => {
     const original = error.config as RetryableRequestConfig | undefined
-    if (error.response?.status !== 401 || !original || original._retry) {
+    if (error.response?.status !== 401 || !original) {
       return Promise.reject(error)
     }
-    original._retry = true
 
-    // No session = user is on a public page or already logged out;
-    // nothing to refresh.
-    if (!localStorage.getItem(SESSION_KEY)) {
+    const hasSession = !!localStorage.getItem(SESSION_KEY)
+
+    // Second 401 after a refresh retry, or an auth endpoint itself failed
+    // (e.g. expired refresh cookie) — session is dead, send user to login.
+    if (original._retry || isAuthNoRefreshRequest(original)) {
+      if (hasSession) clearSessionAndRedirect()
       return Promise.reject(error)
     }
+
+    // No session = public page (wrong password on /login, etc.) — don't redirect.
+    if (!hasSession) {
+      return Promise.reject(error)
+    }
+
+    original._retry = true
 
     if (!isRefreshing) {
       isRefreshing = true
       refreshPromise = attemptRefresh().finally(() => {
         isRefreshing = false
+        refreshPromise = null
       })
     }
     const ok = await refreshPromise
@@ -1117,9 +1143,48 @@ export const onboardingApi = {
   },
 }
 
+export type MetaTemplateListResponse = {
+  ok: boolean
+  templates: Array<{
+    metaId: string
+    name: string
+    language: string
+    status: string
+    category: string
+    rejectionReason?: string
+    whatsappNumberId: string
+  }>
+  error?: string
+}
+
+export type PullTemplatesFromMetaResponse = {
+  metaFetched: number
+  imported: number
+  updated: number
+  errors: string[]
+}
+
 export const templatesApi = {
   list(status?: string) {
     return api.get<WhatsAppTemplate[]>('/templates', { params: status ? { status } : {} })
+  },
+  /** Read-only probe — lists templates as Meta returns them. */
+  listFromMeta(whatsappNumberId?: string) {
+    return api.get<MetaTemplateListResponse>('/templates/from-meta', {
+      params: whatsappNumberId ? { whatsappNumberId } : {},
+    })
+  },
+  /** Import missing rows and refresh statuses from Meta. */
+  pullFromMeta() {
+    return api.post<PullTemplatesFromMetaResponse>('/templates/pull-from-meta')
+  },
+  /** Best-effort sync before listing — never throws. */
+  async ensureFromMeta() {
+    try {
+      await templatesApi.pullFromMeta()
+    } catch {
+      /* local list still works */
+    }
   },
   create(dto: Omit<WhatsAppTemplate, 'id' | 'tenantId' | 'status' | 'createdAt' | 'updatedAt'>) {
     return api.post<WhatsAppTemplate>('/templates', dto)
@@ -1131,7 +1196,7 @@ export const templatesApi = {
     return api.delete(`/templates/${id}`)
   },
   sync() {
-    return api.post<{ synced: number; updated: number }>('/templates/sync')
+    return api.post<{ synced: number; updated: number; imported?: number }>('/templates/sync')
   },
   // Clone this template onto another WhatsApp line — the cloned copy
   // enters PENDING and gets submitted to the target line's WABA for

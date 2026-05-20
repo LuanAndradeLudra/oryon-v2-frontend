@@ -168,38 +168,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     disconnectSocket()
-    // Sprint 5.3 — desregistra push antes de limpar tokens (precisa do auth
-    // para chamar DELETE /push/token em mobile)
+    const prev = session
+    const refreshToken = isNativePlatform() ? getRefreshToken() : undefined
+    // Sprint 5.3 — desregistra push antes de limpar tokens (precisa do Bearer).
     if (isNativePlatform()) {
       try { await unregisterPushNotifications() } catch { /* best-effort */ }
     }
+    // Limpa sessão React/localStorage primeiro para o RequireGuest liberar
+    // /login imediatamente, mesmo se o POST /auth/logout falhar com 401.
+    clearSession()
+    setSession(null)
     try {
-      // Em mobile manda refreshToken no body para invalidar; backend tambem
-      // ja aceita do cookie. Em ambos casos da pra confiar no try/catch.
-      const body = isNativePlatform()
-        ? { refreshToken: getRefreshToken() ?? undefined }
-        : {}
-      await axios.post(`${API}/auth/logout`, body, { withCredentials: true })
+      const body = isNativePlatform() ? { refreshToken: refreshToken ?? undefined } : {}
+      await axios.post(`${API}/auth/logout`, body, {
+        withCredentials: true,
+        _skipAuthRefresh: true,
+      })
     } catch { /* best-effort — cookies will expire on their own */ }
     clearTokens()
 
     appLogger.logSessionEvent({
-      tenant_id: session?.user.tenantId ?? null,
-      user_id:   session?.user.id ?? null,
-      user_role: session?.user.role ?? null,
+      tenant_id: prev?.user.tenantId ?? null,
+      user_id:   prev?.user.id ?? null,
+      user_role: prev?.user.role ?? null,
       event_type: 'logout',
     })
     appLogger.logActivity({
-      tenant_id:   session?.user.tenantId ?? null,
-      actor_id:    session?.user.id ?? null,
-      actor_name:  session?.user ? `${session.user.firstName ?? ''} ${session.user.lastName ?? ''}`.trim() || null : null,
+      tenant_id:   prev?.user.tenantId ?? null,
+      actor_id:    prev?.user.id ?? null,
+      actor_name:  prev?.user ? `${prev.user.firstName ?? ''} ${prev.user.lastName ?? ''}`.trim() || null : null,
       action:      'user_logout',
       entity_type: 'session',
-      description: `Usuário "${session?.user.email ?? ''}" encerrou a sessão`,
+      description: `Usuário "${prev?.user.email ?? ''}" encerrou a sessão`,
       source:      'ui',
     })
-    clearSession()
-    setSession(null)
   }, [session])
 
   const completePasswordChange = useCallback(async (newPassword: string, currentPassword?: string) => {
@@ -228,13 +230,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Validate session on app load ────────────────────────────────────────
   useEffect(() => {
     if (!session?.user) return
-    axios.get(`${API}/auth/me`, { withCredentials: true })
+    axios.get(`${API}/auth/me`, { withCredentials: true, _skipAuthRefresh: true })
       .catch((err) => {
         const status = err?.response?.status
         if (status === 401 || status === 403) {
           clearSession()
           clearTokens()
           setSession(null)
+          const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/activate']
+          if (!publicPaths.includes(window.location.pathname)) {
+            window.location.href = '/login'
+          }
         }
       })
     // Sprint 5.3 — em mobile, reativa registro de push em retornos do app

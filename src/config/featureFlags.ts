@@ -7,7 +7,7 @@ export const FEATURE_FLAGS = {
   conversations: true,
   contacts: true,
   nexus: false,
-  campaigns: false,
+  campaigns: true,
   marketing: false,
   automations: false,
   agents: true,

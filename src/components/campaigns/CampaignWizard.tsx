@@ -185,7 +185,7 @@ export function CampaignWizard({
     setLoadingTemplates(true)
     setLoadingContacts(true)
     Promise.all([
-      templatesApi.list('APPROVED'),
+      templatesApi.ensureFromMeta().then(() => templatesApi.list('APPROVED')),
       tagsApi.list(),
       contactsApi.list({}, 1, 500),
       whatsappNumbersApi.list(),
@@ -666,7 +666,12 @@ function Step1({
             <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-surface-500 text-center py-8">Nenhum template aprovado encontrado</p>
+          <div className="text-center py-8 space-y-2">
+            <p className="text-sm text-surface-500">Nenhum template aprovado no Oryon</p>
+            <p className="text-xs text-surface-600 max-w-xs mx-auto">
+              Abra a aba Templates e use Sincronizar para importar os modelos ativos da Meta.
+            </p>
+          </div>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {filtered.map((tpl) => (

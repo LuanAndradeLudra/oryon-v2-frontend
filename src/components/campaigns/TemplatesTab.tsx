@@ -41,6 +41,8 @@ export function TemplatesTab() {
   const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const [metaLoadWarning, setMetaLoadWarning] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   // Must be declared with the other hooks, NOT after the `drawerOpen` early
   // return below — otherwise when drawerOpen=true we render one fewer hook
   // and React throws "Rendered fewer hooks than expected", crashing the tab.
@@ -55,9 +57,30 @@ export function TemplatesTab() {
   // we block the UI here to fail fast (no form fill-in wasted).
   const hasWhatsappLine = waLines.length > 0
 
-  const fetchTemplates = useCallback(() => {
+  const fetchTemplates = useCallback(async () => {
     setLoading(true)
-    templatesApi.list().then((r) => setTemplates(r.data)).finally(() => setLoading(false))
+    setMetaLoadWarning(null)
+    try {
+      const pull = await templatesApi.pullFromMeta()
+      if (pull.data.errors.length > 0) {
+        setMetaLoadWarning(pull.data.errors.join(' '))
+      } else if (pull.data.imported > 0) {
+        setMetaLoadWarning(null)
+      }
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setMetaLoadWarning(
+        typeof msg === 'string' && msg.trim()
+          ? msg
+          : 'Não foi possível carregar templates da Meta. Exibindo apenas os salvos localmente.',
+      )
+    }
+    try {
+      const r = await templatesApi.list()
+      setTemplates(r.data)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { fetchTemplates() }, [fetchTemplates])
@@ -95,14 +118,21 @@ export function TemplatesTab() {
   const handleDelete = async () => {
     if (!deleteTarget) return
     setDeleting(deleteTarget)
+    setDeleteError(null)
     try {
       await templatesApi.delete(deleteTarget)
       setTemplates((prev) => prev.filter((t) => t.id !== deleteTarget))
+      setDeleteTarget(null)
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setDeleteError(typeof msg === 'string' ? msg : 'Não foi possível excluir o template.')
     } finally {
       setDeleting(null)
-      setDeleteTarget(null)
     }
   }
+
+  const canEditTemplate = (tpl: WhatsAppTemplate) =>
+    tpl.status === 'REJECTED' || (tpl.status === 'PENDING' && !!tpl.rejectionReason)
 
   // Local filter via LineFilterChip. Rows without a whatsappNumberId
   // (legacy, Migration #045) stay visible so the badge + modal can
@@ -120,6 +150,13 @@ export function TemplatesTab() {
       {!waLoading && !hasWhatsappLine && (
         <div className="px-5 pt-4">
           <WhatsappLineRequiredBanner resource="templates WhatsApp" />
+        </div>
+      )}
+
+      {metaLoadWarning && hasWhatsappLine && (
+        <div className="mx-5 mt-4 flex items-start gap-2 px-3 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-200">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+          <p>{metaLoadWarning}</p>
         </div>
       )}
 
@@ -158,7 +195,7 @@ export function TemplatesTab() {
           onClick={handleSync}
           disabled={syncing}
           className="flex items-center gap-2 px-3 py-2 bg-surface-800 hover:bg-surface-700 border border-surface-700 text-surface-300 text-sm font-medium rounded-xl transition-all disabled:opacity-50"
-          title="Sincronizar status dos templates com a Meta"
+          title="Importar da Meta e atualizar status dos templates"
         >
           <RefreshCw className={cn('w-3.5 h-3.5', syncing && 'animate-spin')} />
           Sincronizar
@@ -201,6 +238,7 @@ export function TemplatesTab() {
                 template={tpl}
                 onPreview={() => setPreviewTemplate(tpl)}
                 onEdit={() => { setEditing(tpl); setDrawerOpen(true) }}
+                canEdit={canEditTemplate(tpl)}
                 onDelete={() => setDeleteTarget(tpl.id)}
                 onAssignWaba={() => setAssignWabaTarget(tpl)}
                 onDuplicate={waLines.length > 1 ? () => setDuplicateTarget(tpl) : undefined}
@@ -235,12 +273,19 @@ export function TemplatesTab() {
         </div>
       )}
 
+      {deleteError && (
+        <div className="mx-5 mb-2 flex items-start gap-2 px-3 py-2.5 bg-danger/10 border border-danger/30 rounded-xl text-xs text-danger">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+          <p>{deleteError}</p>
+        </div>
+      )}
+
       <ConfirmModal
         open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
+        onClose={() => { setDeleteTarget(null); setDeleteError(null) }}
         onConfirm={handleDelete}
         title="Excluir template"
-        description="Esta ação é irreversível. O template será excluído permanentemente e não poderá mais ser usado em campanhas."
+        description="O template será removido do Oryon e da Meta (quando possível). Campanhas que já usaram este template não são afetadas retroativamente."
         confirmLabel="Excluir template"
         danger
         loading={!!deleting}
@@ -281,6 +326,7 @@ function TemplateCard({
   onDelete,
   onAssignWaba,
   onDuplicate,
+  canEdit,
   deleting,
 }: {
   template: WhatsAppTemplate
@@ -290,6 +336,7 @@ function TemplateCard({
   onAssignWaba: () => void
   /** Only set in multi-WABA tenants — undefined hides the button. */
   onDuplicate?: () => void
+  canEdit: boolean
   deleting: boolean
 }) {
   const cfg = STATUS_CONFIG[template.status]
@@ -350,13 +397,15 @@ function TemplateCard({
         >
           <Eye className="w-3.5 h-3.5" />
         </button>
-        <button
-          onClick={onEdit}
-          className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-          title="Editar"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
+        {canEdit && (
+          <button
+            onClick={onEdit}
+            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
+            title="Editar"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        )}
         {onDuplicate && (
           <button
             onClick={onDuplicate}

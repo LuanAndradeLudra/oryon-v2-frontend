@@ -47,6 +47,16 @@ const sanitizeHeaderText = (s: string): string =>
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorProps) {
+  /** Meta não permite alterar conteúdo de templates aprovados ou em análise. */
+  const isContentLocked = !!(
+    editing
+    && (
+      editing.status === 'APPROVED'
+      || (editing.status === 'PENDING' && !editing.rejectionReason)
+    )
+  )
+  const canEditContent = !editing || editing.status === 'REJECTED' || !!(editing.status === 'PENDING' && editing.rejectionReason)
+
   const [step, setStep] = useState<StepNum>(1)
 
   const [name, setName]                     = useState('')
@@ -238,13 +248,17 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
   // ── Save ───────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
-    if (!canSave) return
+    if (!canSave || isContentLocked) return
     setSaving(true); setError('')
     try {
       const payload = {
         name: name.trim().toLowerCase().replace(/\s+/g, '_'),
         language, category,
-        ...(headerType ? { headerType } : {}),
+        ...(headerType
+          ? { headerType }
+          : editing
+            ? { headerType: 'NONE' as const }
+            : {}),
         ...(headerType === 'TEXT' && headerText.trim() ? { headerText: headerText.trim() } : {}),
         ...(['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && headerMediaUrl.trim() ? { headerMediaUrl: headerMediaUrl.trim() } : {}),
         body,
@@ -331,7 +345,17 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
           automatically in single-line tenants. Width capped so the
           callout doesn't stretch across the whole page on wide screens
           (the full-bleed page was making it feel outsized). */}
-      <div className="px-6 pt-3">
+      <div className="px-6 pt-3 space-y-2">
+        {isContentLocked && (
+          <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-200">
+            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <p>
+              {editing?.status === 'APPROVED'
+                ? 'Templates aprovados não podem ser editados. Use Duplicar na lista para criar uma nova versão, ou exclua e crie outro.'
+                : 'Este template está em análise na Meta. Aguarde o resultado ou duplique com outro nome para alterar o conteúdo.'}
+            </p>
+          </div>
+        )}
         <WhatsappLineRow
           whatsappNumberId={whatsappNumberId || null}
           variant="callout"
@@ -385,6 +409,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
                 subCategory={subCategory}
                 onSubCategory={setSubCategory}
                 editing={!!editing}
+                readOnly={isContentLocked}
               />
               {/* Line picker lives in the top-of-form WhatsappLineRow
                   callout (right-side select) — no duplicate block here. */}
@@ -413,6 +438,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
               wrapSelection={wrapSelection}
               addVariable={addVariable}
               errors={errors}
+              readOnly={isContentLocked}
             />
           )}
           {step === 3 && (
@@ -425,6 +451,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
               removeButton={removeButton}
               updateButton={updateButton}
               errors={errors}
+              readOnly={isContentLocked}
             />
           )}
           {step === 4 && (
@@ -511,16 +538,26 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
           ) : (
             <button
               onClick={handleSave}
-              disabled={!canSave || saving}
-              title={needsExplicitLine ? 'Escolha a linha WhatsApp no banner acima para continuar' : undefined}
+              disabled={!canSave || saving || isContentLocked}
+              title={
+                isContentLocked
+                  ? 'Este template não pode ser editado no estado atual'
+                  : needsExplicitLine
+                    ? 'Escolha a linha WhatsApp no banner acima para continuar'
+                    : undefined
+              }
               className={cn(
                 'px-5 py-2 rounded-xl text-sm font-medium transition-all',
-                canSave && !saving
+                canSave && !saving && !isContentLocked
                   ? 'bg-brand-600 hover:bg-brand-500 text-surface-950'
                   : 'bg-surface-700 text-surface-400 cursor-not-allowed'
               )}
             >
-              {saving ? 'Enviando...' : editing ? 'Salvar e reenviar para aprovação' : 'Enviar para aprovação'}
+              {saving
+                ? 'Enviando...'
+                : editing
+                  ? (canEditContent ? 'Salvar e reenviar para aprovação' : 'Não editável')
+                  : 'Enviar para aprovação'}
             </button>
           )}
         </div>
@@ -532,13 +569,14 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
 // ─── Step 1: Categoria ────────────────────────────────────────────────────────
 
 function StepCategoria({
-  category, onCategory, subCategory, onSubCategory, editing,
+  category, onCategory, subCategory, onSubCategory, editing, readOnly,
 }: {
   category: TemplateCategoryType
   onCategory: (v: TemplateCategoryType) => void
   subCategory: SubCategory
   onSubCategory: (v: SubCategory) => void
   editing: boolean
+  readOnly?: boolean
 }) {
   return (
     <div className="space-y-7">
@@ -580,8 +618,8 @@ function StepCategoria({
             return (
               <button
                 key={value}
-                onClick={() => { if (!disabled) onCategory(value) }}
-                disabled={disabled}
+                onClick={() => { if (!disabled && !readOnly) onCategory(value) }}
+                disabled={disabled || readOnly}
                 title={disabled ? 'Em breve — esta categoria precisa de um fluxo dedicado e ainda não está disponível.' : undefined}
                 className={cn(
                   'text-left p-3 rounded-xl border transition-all relative',
@@ -623,7 +661,8 @@ function StepCategoria({
           {SUBCATEGORIES[category].map((sub) => (
             <button
               key={sub.value}
-              onClick={() => onSubCategory(sub.value)}
+              onClick={() => { if (!readOnly) onSubCategory(sub.value) }}
+              disabled={readOnly}
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all',
                 subCategory === sub.value
@@ -659,6 +698,7 @@ function StepMensagem({
   bodyRef, varPositions, varExamples, onVarExamples,
   wrapSelection, addVariable,
   errors,
+  readOnly,
 }: {
   name: string
   onName: (v: string) => void
@@ -681,7 +721,9 @@ function StepMensagem({
   wrapSelection: (w: string) => void
   addVariable: () => void
   errors: TemplateValidationErrors
+  readOnly?: boolean
 }) {
+  const fieldDisabled = !!readOnly
   return (
     <div className="space-y-7">
       {/* Section: Identificação */}
@@ -692,6 +734,7 @@ function StepMensagem({
             <input
               value={name}
               onChange={(e) => onName(e.target.value)}
+              disabled={fieldDisabled}
               placeholder="ex: boas_vindas_novos_clientes"
               className={cn(
                 'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
@@ -709,7 +752,8 @@ function StepMensagem({
             <select
               value={language}
               onChange={(e) => onLanguage(e.target.value)}
-              className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 pr-8 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+              disabled={fieldDisabled}
+              className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 pr-8 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors disabled:opacity-60"
             >
               {LANGUAGES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -726,12 +770,14 @@ function StepMensagem({
           {HEADER_TYPES.map((ht) => (
             <button
               key={ht.value}
-              onClick={() => onHeaderType(ht.value)}
+              onClick={() => { if (!fieldDisabled) onHeaderType(ht.value) }}
+              disabled={fieldDisabled}
               className={cn(
                 'p-2.5 rounded-xl border text-center transition-all',
                 headerType === ht.value
                   ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
+                  : 'border-surface-700 bg-surface-800/40 hover:border-surface-600',
+                fieldDisabled && 'opacity-60 cursor-not-allowed',
               )}
             >
               <p className={cn('text-xs font-medium', headerType === ht.value ? 'text-brand-300' : 'text-surface-300')}>{ht.label}</p>
@@ -748,6 +794,7 @@ function StepMensagem({
             <input
               value={headerText}
               onChange={(e) => onHeaderText(sanitizeHeaderText(e.target.value).slice(0, 60))}
+              disabled={fieldDisabled}
               placeholder="Texto do cabeçalho — pode conter {{1}}"
               className={cn(
                 'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
@@ -769,6 +816,7 @@ function StepMensagem({
             <input
               value={headerMediaUrl}
               onChange={(e) => onHeaderMediaUrl(e.target.value)}
+              disabled={fieldDisabled}
               placeholder="https://exemplo.com/imagem.jpg"
               className={cn(
                 'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
@@ -838,6 +886,7 @@ function StepMensagem({
             ref={bodyRef}
             value={body}
             onChange={(e) => onBody(e.target.value)}
+            disabled={fieldDisabled}
             rows={6}
             maxLength={1024}
             placeholder="Olá, {{1}}! Sua mensagem aqui..."
@@ -901,6 +950,7 @@ function StepMensagem({
           <input
             value={footer}
             onChange={(e) => onFooter(e.target.value.slice(0, 60))}
+            disabled={fieldDisabled}
             placeholder="Ex: Oryon • Atendimento Digital"
             className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors pr-12"
           />
@@ -917,6 +967,7 @@ function StepBotoes({
   buttons, availableButtonTypes, showAddButton, onShowAddButton,
   addButtonOfType, removeButton, updateButton,
   errors,
+  readOnly,
 }: {
   buttons: ButtonRow[]
   availableButtonTypes: typeof BUTTON_TYPES
@@ -926,7 +977,9 @@ function StepBotoes({
   removeButton: (i: number) => void
   updateButton: (i: number, field: keyof ButtonRow, value: string) => void
   errors: TemplateValidationErrors
+  readOnly?: boolean
 }) {
+  const fieldDisabled = !!readOnly
   return (
     <div className="space-y-5">
       {/* Info banner */}
@@ -1028,7 +1081,8 @@ function StepBotoes({
         <div>
           <button
             onClick={() => onShowAddButton(!showAddButton)}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-surface-600 hover:border-brand-500 rounded-xl text-xs text-surface-400 hover:text-brand-300 transition-all w-full justify-center"
+            disabled={fieldDisabled}
+            className="flex items-center gap-2 px-3 py-2 border border-dashed border-surface-600 hover:border-brand-500 rounded-xl text-xs text-surface-400 hover:text-brand-300 transition-all w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-3.5 h-3.5" />
             Adicionar botão

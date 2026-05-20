@@ -151,7 +151,11 @@ export function CampaignsTab() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 gap-3">
             <Send className="w-8 h-8 text-surface-700" />
-            <p className="text-sm text-surface-500">Nenhuma campanha encontrada</p>
+            <p className="text-sm text-surface-500">Nenhuma campanha de disparo encontrada</p>
+            <p className="text-xs text-surface-600 text-center max-w-sm leading-relaxed">
+              Os modelos ativos no Gerenciador do WhatsApp ficam na aba <strong className="text-surface-400">Templates</strong>.
+              Aqui você cria disparos em massa que usam esses templates.
+            </p>
             {campaigns.length === 0 && hasWhatsappLine && (
               <button
                 onClick={() => setWizardOpen(true)}

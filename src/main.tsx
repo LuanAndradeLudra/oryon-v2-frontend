@@ -9,6 +9,8 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import './lib/emojiText' // registers <em-emoji> web component globally
 import App from './App.tsx'
+// Registra interceptors 401→refresh→/login antes de qualquer request axios.
+import '@/services/api'
 import { hydrateAuthStorage } from './services/auth-storage'
 import { isNativePlatform } from './config/env'
 import { initCapacitor } from './lib/capacitor-init'
