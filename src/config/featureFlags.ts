@@ -1,13 +1,14 @@
 // Visibility flags for UI navigation entries.
 // `false` = oculto da sidebar/busca/atalhos. Rotas, código e backend permanecem
-// intactos — a página continua acessível digitando a URL diretamente.
+// intactos — a página continua acessível digitando a URL diretamente, salvo
+// guardas explícitas na página (ex.: campaigns).
 export const FEATURE_FLAGS = {
   home: true,
   dashboard: true,
   conversations: true,
   contacts: true,
   nexus: false,
-  campaigns: true,
+  campaigns: false,
   marketing: false,
   automations: false,
   agents: true,
@@ -46,7 +47,32 @@ export const FEATURE_FLAGS = {
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS
 
-export const isFeatureVisible = (flag: FeatureFlag): boolean => FEATURE_FLAGS[flag]
+/**
+ * E-mails com acesso antecipado a features com `FEATURE_FLAGS[flag] === false`.
+ * Comparação case-insensitive após trim.
+ */
+export const BETA_TESTER_EMAILS: readonly string[] = [
+  'luanandradeti100@gmail.com'
+]
+
+/** Flags desligadas globalmente que beta testers podem ver. */
+const BETA_GATED_FLAGS = new Set<FeatureFlag>(['campaigns'])
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+export function isBetaTester(userEmail?: string | null): boolean {
+  if (!userEmail?.trim()) return false
+  const normalized = normalizeEmail(userEmail)
+  return BETA_TESTER_EMAILS.some((e) => normalizeEmail(e) === normalized)
+}
+
+export const isFeatureVisible = (flag: FeatureFlag, userEmail?: string | null): boolean => {
+  const base = FEATURE_FLAGS[flag]
+  if (!base && BETA_GATED_FLAGS.has(flag) && isBetaTester(userEmail)) return true
+  return base
+}
 
 // Order matters: more specific prefixes (e.g. /settings/billing) must come
 // before broader ones (/settings) — first match wins.
@@ -67,9 +93,9 @@ const ROUTE_FLAGS: Array<[string, FeatureFlag]> = [
   ['/settings', 'settings'],
 ]
 
-export const isRouteVisible = (href: string): boolean => {
+export const isRouteVisible = (href: string, userEmail?: string | null): boolean => {
   const match = ROUTE_FLAGS.find(
     ([prefix]) => href === prefix || href.startsWith(prefix + '/'),
   )
-  return match ? isFeatureVisible(match[1]) : true
+  return match ? isFeatureVisible(match[1], userEmail) : true
 }

@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { Send, FileText, X, Target } from 'lucide-react'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 
 import { useAuth } from '@/contexts/AuthContext'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { CampaignsTab } from '@/components/campaigns/CampaignsTab'
 import { TemplatesTab } from '@/components/campaigns/TemplatesTab'
@@ -20,8 +22,10 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
 
 export function CampaignsPage() {
   const { user } = useAuth()
+  const { isFeatureVisible } = useFeatureVisibility()
   const { checklist, markDone } = useSetupChecklist(user?.id)
   const [activeTab, setActiveTab] = useState<Tab>('campaigns')
+  const campaignsEnabled = isFeatureVisible('campaigns')
 
   useRegisterTopBarActions(
     <div className="flex items-center bg-surface-800 border border-surface-700 rounded-lg p-0.5">
@@ -47,11 +51,9 @@ export function CampaignsPage() {
     [activeTab],
   )
 
-  const currentUser = user ? {
-    firstName: user.firstName,
-    lastName: user.lastName,
-    avatarUrl: user.avatarUrl,
-  } : undefined
+  if (!campaignsEnabled) {
+    return <Navigate to="/home" replace />
+  }
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">

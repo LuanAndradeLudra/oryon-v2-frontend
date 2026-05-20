@@ -23,7 +23,8 @@ import {
 } from '@/hooks/useNotifications'
 import { cn } from '@/lib/utils'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { isFeatureVisible, isRouteVisible } from '@/config/featureFlags'
+import { isRouteVisible } from '@/config/featureFlags'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import {
   categoryOf,
   CATEGORY_STYLE,
@@ -148,7 +149,7 @@ const SEARCH_INDEX = ([
   { type: 'settings', label: 'Notificações', description: 'Preferências de alertas', href: '/settings/notifications', Icon: BellRing, keywords: ['alertas', 'avisos', 'push', 'email'] },
   { type: 'settings', label: 'Integrações', description: 'Webhooks e APIs externas', href: '/settings/integrations', Icon: Plug, keywords: ['webhook', 'api', 'zapier', 'n8n', 'integracao', 'conectar', 'externo'] },
   { type: 'settings', label: 'Empresa', description: 'Dados, setores e configurações da organização', href: '/settings/company', Icon: Building2, keywords: ['empresa', 'organizacao', 'cnpj', 'logo', 'setores', 'departamentos', 'nome'] },
-] as SearchItem[]).filter((item) => isRouteVisible(item.href))
+] as SearchItem[])
 
 // ── Notification types ─────────────────────────────────────────────────────────
 //
@@ -249,23 +250,25 @@ function SearchDropdown({
   activeIndex,
   onSelect,
   onHover,
+  searchIndex,
 }: {
   query: string
   activeIndex: number
   onSelect: (item: SearchItem) => void
   onHover: (flatIdx: number) => void
+  searchIndex: SearchItem[]
 }) {
   const trimmed = query.trim()
 
   // Build filtered + scored list
-  const scored = SEARCH_INDEX
+  const scored = searchIndex
     .map((item) => ({ item, score: scoreItem(item, trimmed) }))
     .filter(({ score }) => score > 0 || trimmed === '')
     .sort((a, b) => b.score - a.score)
     .map(({ item }) => item)
 
   // Limit to 10 when filtering, all when empty
-  const results = trimmed ? scored.slice(0, 10) : SEARCH_INDEX.slice(0, 8)
+  const results = trimmed ? scored.slice(0, 10) : searchIndex.slice(0, 8)
 
   // Group by type, in fixed order
   const groups = TYPE_ORDER
@@ -1341,6 +1344,12 @@ export function TopBar() {
   const location  = useLocation()
   const navigate  = useNavigate()
   const { user }  = useAuth()
+  const { userEmail, isFeatureVisible: isFeatureVisibleForUser } = useFeatureVisibility()
+
+  const visibleSearchIndex = useMemo(
+    () => SEARCH_INDEX.filter((item) => isRouteVisible(item.href, userEmail)),
+    [userEmail],
+  )
   const { open: openCopilot } = useCopilotContext()
   const { pageActions } = useTopBarActions()
   const { unreadCount } = useNotifications()
@@ -1391,15 +1400,15 @@ export function TopBar() {
   }, [dropOpen])
 
   // Flat list for keyboard nav (rebuilt per render — cheap)
-  const flatItems: SearchItem[] = (() => {
+  const flatItems: SearchItem[] = useMemo(() => {
     const trimmed = query.trim()
-    const scored = SEARCH_INDEX
+    const scored = visibleSearchIndex
       .map((item) => ({ item, score: scoreItem(item, trimmed) }))
       .filter(({ score }) => score > 0 || trimmed === '')
       .sort((a, b) => b.score - a.score)
       .map(({ item }) => item)
-    return trimmed ? scored.slice(0, 10) : SEARCH_INDEX.slice(0, 8)
-  })()
+    return trimmed ? scored.slice(0, 10) : visibleSearchIndex.slice(0, 8)
+  }, [query, visibleSearchIndex])
 
   // Total navigable items (including "search in contacts" row when query present)
   const totalNav = query.trim() ? flatItems.length + 1 : flatItems.length
@@ -1539,7 +1548,7 @@ export function TopBar() {
         {/* Copilot drawer shortcut — mirrors the admin + route gate used by
              the CopilotPanel itself, so the button only shows where the drawer
              can actually render. */}
-        {isFeatureVisible('copilot') && isAdminTier(user?.role) && !location.pathname.startsWith('/copilot') && (
+        {isFeatureVisibleForUser('copilot') && isAdminTier(user?.role) && !location.pathname.startsWith('/copilot') && (
           <button
             onClick={() => openCopilot()}
             title="Abrir Copilot"
@@ -1636,6 +1645,7 @@ export function TopBar() {
                     activeIndex={activeIdx}
                     onSelect={handleSelect}
                     onHover={setActiveIdx}
+                    searchIndex={visibleSearchIndex}
                   />
                 </div>
               </motion.div>

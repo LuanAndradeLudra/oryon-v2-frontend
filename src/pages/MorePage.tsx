@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
-import { isRouteVisible } from '@/config/featureFlags'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { cn } from '@/lib/utils'
 
 interface Item {
@@ -91,6 +91,7 @@ export function MorePage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const isSuperAdmin = isOryonStaff(user?.role)
+  const { isRouteVisible } = useFeatureVisibility()
 
   const handleLogout = () => {
     logout()

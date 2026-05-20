@@ -27,7 +27,7 @@ import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import { conversationsApi } from '@/services/api'
-import { isRouteVisible, isFeatureVisible } from '@/config/featureFlags'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 
 interface NavSidebarProps {
   totalUnread?: number
@@ -154,6 +154,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   const navigate = useNavigate()
   const activeHref = '/' + location.pathname.split('/')[1]
   const { user, organizationConfigured, logout } = useAuth()
+  const { isRouteVisible, isFeatureVisible } = useFeatureVisibility()
   const { checklist } = useSetupChecklist(user?.id)
   const { vocab } = useTenantVocab()
   const { totalUnread: internalUnread } = useInternalChat()
