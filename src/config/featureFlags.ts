@@ -52,7 +52,9 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS
  * Comparação case-insensitive após trim.
  */
 export const BETA_TESTER_EMAILS: readonly string[] = [
-  'luanandradeti100@gmail.com'
+  'luanandradeti100@gmail.com',
+  'luanandradeti10@gmail.com',
+  'joaolucasrdugin@gmail.com'
 ]
 
 /** Flags desligadas globalmente que beta testers podem ver. */
