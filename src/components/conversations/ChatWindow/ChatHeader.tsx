@@ -227,6 +227,7 @@ export function ChatHeader({
           <div className="mt-1">
             <HandoffChip
               aiPausedUntil={conversation.aiPausedUntil}
+              assignedUser={conversation.assignedUser}
               onPause={(until) => onSetAiPause(until)}
               onResume={() => onSetAiPause(null)}
             />
@@ -350,6 +351,7 @@ export function ChatHeader({
             used to sit below the header. */}
         <HandoffChip
           aiPausedUntil={conversation.aiPausedUntil}
+          assignedUser={conversation.assignedUser}
           onPause={(until) => onSetAiPause(until)}
           onResume={() => onSetAiPause(null)}
         />

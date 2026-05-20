@@ -25,6 +25,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Bot, UserCog, ChevronDown, RotateCcw, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 import { INDEFINITE_PAUSE_ISO } from '@/hooks/useConversations'
 
 const EXTEND_OPTIONS: Array<{ label: string; minutes: number }> = [
@@ -36,6 +37,14 @@ const EXTEND_OPTIONS: Array<{ label: string; minutes: number }> = [
 
 interface HandoffProps {
   aiPausedUntil: string | null | undefined
+  /**
+   * Who took over the conversation. The backend automatically assigns the
+   * conversation to whoever pauses the AI (see ConversationsService
+   * .updateAiPause), so this is the operator the chip should attribute the
+   * intervention to. Null means nobody is currently assigned (typical when
+   * the AI is replying).
+   */
+  assignedUser?: { id: string; firstName: string; lastName?: string | null } | null
   onPause: (until: string) => Promise<void> | void
   onResume: () => Promise<void> | void
 }
@@ -61,11 +70,23 @@ function useHandoffState(aiPausedUntil: string | null | undefined) {
 
 // ─── HandoffChip (lives inside ChatHeader) ───────────────────────────────────
 
-export function HandoffChip({ aiPausedUntil, onPause, onResume }: HandoffProps) {
+export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume }: HandoffProps) {
   const { pausedUntilMs, isPaused, isIndefinite } = useHandoffState(aiPausedUntil)
+  const { user: currentUser } = useAuth()
   const [busy, setBusy] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // "Você" when the logged-in operator is the one driving the conversation,
+  // otherwise the assignee's first name. Empty fallback (when the backend
+  // hasn't propagated the assignee yet) also reads as "Você" to preserve
+  // the previous behaviour during the brief moment between pausing and
+  // the websocket broadcasting the new assignedUser.
+  const ownerLabel = (() => {
+    if (!assignedUser) return 'Você'
+    if (currentUser && assignedUser.id === currentUser.id) return 'Você'
+    return assignedUser.firstName || 'Atendente'
+  })()
 
   // Close the "Estender" submenu when the user clicks outside it.
   useEffect(() => {
@@ -129,14 +150,27 @@ export function HandoffChip({ aiPausedUntil, onPause, onResume }: HandoffProps) 
   }
 
   // ── Humano atendendo (IA pausada) ────────────────────────────────────────
+  // The label leads with the operator name (or "Você") so anyone reading
+  // the conversation knows WHO took the AI offline. The original copy said
+  // "Você" unconditionally, which hid the fact that a colleague was driving
+  // and the current operator would need to coordinate before assuming.
+  const isMe = ownerLabel === 'Você'
   return (
     <div
       className="flex items-center h-8 pl-2 pr-1 gap-1.5 rounded-lg bg-emerald-950/40 border border-emerald-900/60"
-      title={isIndefinite ? 'Você está atendendo. IA pausada até reativar.' : `Você está atendendo. IA volta em ${formatRemaining(pausedUntilMs!)}`}
+      title={
+        isMe
+          ? (isIndefinite
+              ? 'Você está atendendo. IA pausada até reativar.'
+              : `Você está atendendo. IA volta em ${formatRemaining(pausedUntilMs!)}`)
+          : (isIndefinite
+              ? `${ownerLabel} está atendendo. IA pausada até reativar.`
+              : `${ownerLabel} está atendendo. IA volta em ${formatRemaining(pausedUntilMs!)}`)
+      }
     >
       <UserCog className="w-3.5 h-3.5 text-emerald-300 flex-shrink-0" />
       <span className="text-[11px] font-medium text-emerald-200 leading-none whitespace-nowrap">
-        Você · {isIndefinite ? '∞' : formatRemaining(pausedUntilMs!)}
+        {ownerLabel} · {isIndefinite ? '∞' : formatRemaining(pausedUntilMs!)}
       </span>
       <button
         type="button"
