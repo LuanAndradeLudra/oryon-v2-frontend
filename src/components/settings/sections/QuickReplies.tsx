@@ -43,7 +43,7 @@ function QuickReplyRow({
   return (
     <tr onContextMenu={onContextMenu} className="hover:bg-surface-800/50 transition-colors">
       <td className="px-5 py-4">
-        <code className="text-xs font-mono text-brand-300 bg-brand-900/20 px-2 py-1 rounded-lg">
+        <code className="inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-brand-300 bg-brand-900/20 px-2 py-1 rounded-lg" title={response.shortcut}>
           {response.shortcut}
         </code>
       </td>
@@ -81,6 +81,16 @@ function QuickReplyRow({
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
+function errorMessage(e: unknown, fallback: string): string {
+  if (axios.isAxiosError(e)) {
+    const msg = e.response?.data?.message
+    if (Array.isArray(msg)) return msg.join(', ')
+    if (typeof msg === 'string') return msg
+    if (e.response?.status === 403) return 'Você não tem permissão para esta ação.'
+  }
+  return fallback
+}
+
 export function QuickReplies() {
   const { toast, toasts, dismiss } = useToast()
   const [responses, setResponses] = useState<CannedResponse[]>([])
@@ -106,24 +116,33 @@ export function QuickReplies() {
   )
 
   const handleSave = async (data: { shortcut: string; title: string; body: string }) => {
-    if (editTarget) {
-      const r = await axios.patch<CannedResponse>(`${API}/canned-responses/${editTarget.id}`, data)
-      setResponses((prev) => prev.map((x) => x.id === editTarget.id ? r.data : x))
-      toast('Resposta atualizada.', 'success')
-    } else {
-      const r = await axios.post<CannedResponse>(`${API}/canned-responses`, data)
-      setResponses((prev) => [...prev, r.data])
-      toast('Resposta criada!', 'success')
+    try {
+      if (editTarget) {
+        const r = await axios.patch<CannedResponse>(`${API}/canned-responses/${editTarget.id}`, data)
+        setResponses((prev) => prev.map((x) => x.id === editTarget.id ? r.data : x))
+        toast('Resposta atualizada.', 'success')
+      } else {
+        const r = await axios.post<CannedResponse>(`${API}/canned-responses`, data)
+        setResponses((prev) => [...prev, r.data])
+        toast('Resposta criada!', 'success')
+      }
+      setEditTarget(null)
+    } catch (e) {
+      toast(errorMessage(e, 'Não foi possível salvar a resposta.'), 'error')
+      throw e
     }
-    setEditTarget(null)
   }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
-    await axios.delete(`${API}/canned-responses/${deleteTarget.id}`)
-    setResponses((prev) => prev.filter((x) => x.id !== deleteTarget.id))
-    toast('Resposta excluída.', 'success')
-    setDeleteTarget(null)
+    try {
+      await axios.delete(`${API}/canned-responses/${deleteTarget.id}`)
+      setResponses((prev) => prev.filter((x) => x.id !== deleteTarget.id))
+      toast('Resposta excluída.', 'success')
+      setDeleteTarget(null)
+    } catch (e) {
+      toast(errorMessage(e, 'Não foi possível excluir a resposta.'), 'error')
+    }
   }
 
   return (
@@ -153,7 +172,7 @@ export function QuickReplies() {
         />
       </div>
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
