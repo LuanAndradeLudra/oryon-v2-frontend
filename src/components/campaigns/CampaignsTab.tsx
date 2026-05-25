@@ -60,10 +60,15 @@ export function CampaignsTab() {
     campaignsApi.list().then((r) => setCampaigns(r.data)).finally(() => setLoading(false))
   }, [])
 
-  const handleCreated = (camp: Campaign) => {
-    setCampaigns((prev) => [camp, ...prev])
+  const handleCreated = useCallback((camp: Campaign) => {
+    setCampaigns((prev) => {
+      // Remove duplicata caso o wizard já tenha feito o envio e
+      // o status tenha mudado (draft → sending/sent).
+      const withoutDup = prev.filter((c) => c.id !== camp.id)
+      return [camp, ...withoutDup]
+    })
     setWizardOpen(false)
-  }
+  }, [])
 
   const handleSend = async (id: string) => {
     setSending(id)
@@ -327,11 +332,11 @@ function CampaignCard({
           {/* Stats (only when sent) */}
           {isSent && stats.total > 0 && (
             <div className="flex items-center gap-4">
-              <StatChip label="Enviadas" value={stats.sent} total={stats.total} color="text-brand-400" />
-              <StatChip label="Entregues" value={stats.delivered} total={stats.sent} color="text-emerald-400" suffix={`${deliveredRate}%`} />
-              <StatChip label="Lidas" value={stats.read} total={stats.sent} color="text-amber-400" suffix={`${readRate}%`} />
+              <StatChip label="Enviadas" value={stats.sent} color="text-brand-400" />
+              <StatChip label="Entregues" value={stats.delivered} color="text-emerald-400" suffix={`${deliveredRate}%`} />
+              <StatChip label="Lidas" value={stats.read} color="text-amber-400" suffix={`${readRate}%`} />
               {stats.failed > 0 && (
-                <StatChip label="Falhas" value={stats.failed} total={stats.total} color="text-danger" />
+                <StatChip label="Falhas" value={stats.failed} color="text-danger" />
               )}
               {/* Progress bar */}
               <div className="flex-1 max-w-xs">
@@ -387,10 +392,9 @@ function CampaignCard({
   )
 }
 
-function StatChip({ label, value, total, color, suffix }: {
+function StatChip({ label, value, color, suffix }: {
   label: string
   value: number
-  total: number
   color: string
   suffix?: string
 }) {

@@ -344,6 +344,24 @@ export function CampaignWizard({
         scheduledAt: scheduleMode === 'later' ? scheduledAt : undefined,
         ...(whatsappNumberId ? { whatsappNumberId } : {}),
       } as any)
+
+      let finalCampaign = res.data
+
+      // Quando o modo é "agora", disparar imediatamente após criar.
+      if (scheduleMode === 'now') {
+        try {
+          const sendRes = await campaignsApi.send(res.data.id)
+          finalCampaign = sendRes.data
+        } catch (sendErr) {
+          const msg = (sendErr as { response?: { data?: { message?: string | string[] } } })
+            ?.response?.data?.message
+          const text = Array.isArray(msg) ? msg.join('; ') : msg
+          // Campanha foi criada mas o envio falhou — informar sem
+          // desfazer a criação (o usuário pode tentar na lista).
+          setError(text?.trim() || 'Campanha criada, mas o envio automático falhou. Use "Enviar" na lista.')
+        }
+      }
+
       completedRef.current = true
       appLogger.logWizardEvent({
         tenant_id: tenantId, user_id: userId,
@@ -359,15 +377,18 @@ export function CampaignWizard({
         details: { segment_type: segmentType, schedule_mode: scheduleMode, template_name: selectedTemplate.name },
         source: 'ui',
       })
-      onCreated(res.data)
-    } catch {
+      onCreated(finalCampaign)
+    } catch (createErr) {
+      const msg = (createErr as { response?: { data?: { message?: string | string[] } } })
+        ?.response?.data?.message
+      const text = Array.isArray(msg) ? msg.join('; ') : msg
       appLogger.logWizardEvent({
         tenant_id: tenantId, user_id: userId,
         wizard_type: 'campaign', wizard_session_id: sessionIdRef.current,
         step_number: 5, step_name: STEP_LABELS[4], action: 'error',
-        error_message: 'Erro ao criar campanha',
+        error_message: text ?? 'Erro ao criar campanha',
       })
-      setError('Erro ao criar campanha. Tente novamente.')
+      setError(text?.trim() || 'Erro ao criar campanha. Verifique os campos e tente novamente.')
     } finally {
       setSaving(false)
     }
@@ -593,7 +614,9 @@ export function CampaignWizard({
                     )}
                   >
                     {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {scheduleMode === 'later' ? 'Agendar campanha' : 'Criar campanha'}
+                    {scheduleMode === 'later'
+                      ? 'Agendar campanha'
+                      : saving ? 'Enviando...' : 'Criar e enviar agora'}
                   </button>
                 )}
               </div>
