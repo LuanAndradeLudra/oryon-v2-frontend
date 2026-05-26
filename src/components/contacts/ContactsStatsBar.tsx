@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils'
 import { generateCRMInsights, type DashboardInsight } from '@/services/copilotService'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import { isFeatureVisible } from '@/config/featureFlags'
-import type { Contact } from '@/types'
+import { ContactsFiltersBar } from './ContactsFiltersBar'
+import type { Contact, ContactFilters } from '@/types'
 
 // ─── Insight palette (mirrors AiInsightsSection) ──────────────────────────────
 
@@ -133,7 +134,7 @@ function TotalCard({ contacts, total }: { contacts: Contact[]; total: number }) 
               <div className="flex items-center gap-1.5">
                 <div className="w-16 h-1 rounded-full bg-surface-700 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-brand-500/60"
+                    className="h-full rounded-full bg-brand-500/60 transition-[width] duration-500 ease-out"
                     style={{ width: `${Math.round((count / total) * 100)}%` }}
                   />
                 </div>
@@ -192,7 +193,7 @@ function StageCard({
               <div className="flex items-center gap-1.5">
                 <div className="w-16 h-1 rounded-full bg-surface-700 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-brand-500/60"
+                    className="h-full rounded-full bg-brand-500/60 transition-[width] duration-500 ease-out"
                     style={{ width: `${Math.round((count / maxCount) * 100)}%` }}
                   />
                 </div>
@@ -216,9 +217,15 @@ interface ContactsStatsBarProps {
    *  of deriving from `contacts` (which only reflects the loaded page in
    *  paginated views). Pass `undefined` in non-paginated views. */
   stageCounts?: Record<string, number>
+  /** Quando o card de Insights está desligado (flag crmAiInsights=false), o
+   *  slot col-span-2 hospeda a busca + filtros — então precisamos do estado
+   *  de filtros aqui. */
+  filters: ContactFilters
+  onFiltersChange: (f: ContactFilters) => void
 }
 
-export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStatsBarProps) {
+export function ContactsStatsBar({ contacts, total, stageCounts, filters, onFiltersChange }: ContactsStatsBarProps) {
+  const insightsEnabled = isFeatureVisible('crmAiInsights')
   const [insights, setInsights] = useState<DashboardInsight[]>([])
   const [loading, setLoading]   = useState(true)
   const loadedRef = useRef(false)
@@ -254,6 +261,11 @@ export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStats
   // Fetch insights only on initial mount (not on every contact change to avoid API costs)
   const insightsFetchedRef = useRef(false)
   useEffect(() => {
+    // Feature desligada → nenhuma chamada à IA (economia de tokens).
+    if (!insightsEnabled) {
+      setLoading(false)
+      return
+    }
     if (contacts.length === 0) {
       setInsights([])
       setLoading(false)
@@ -264,7 +276,7 @@ export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStats
       fetchInsights()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contacts.length > 0])
+  }, [contacts.length > 0, insightsEnabled])
 
   return (
     // Em mobile so o card de Insights IA aparece (Total e Estagio sao
@@ -277,47 +289,55 @@ export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStats
         <StageCard contacts={contacts} stageCounts={stageCounts} />
       </div>
 
-      {/* AI insights — col-span-2 em desktop, ocupa toda largura em mobile */}
-      <div className="md:col-span-2 bg-surface-900 rounded-xl border border-surface-700/60 px-4 py-2.5 flex flex-col gap-2 relative overflow-hidden">
-        {/* amber accent top stripe */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-brand-600/60 to-transparent rounded-t-xl" />
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-white flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-3 h-3 text-black" />
+      {/* Slot col-span-2: card de Insights da IA quando a flag está ligada;
+          caso contrário, hospeda a busca + filtros (preenchendo o espaço que
+          o card ocupava, sem deixar vazio). */}
+      {insightsEnabled ? (
+        <div className="md:col-span-2 bg-surface-900 rounded-xl border border-surface-700/60 px-4 py-2.5 flex flex-col gap-2 relative overflow-hidden">
+          {/* amber accent top stripe */}
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-brand-600/60 to-transparent rounded-t-xl" />
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-md bg-white flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-3 h-3 text-black" />
+              </div>
+              <p className="text-[11px] font-semibold text-brand-400/70 uppercase tracking-widest">Insights da IA</p>
             </div>
-            <p className="text-[11px] font-semibold text-brand-400/70 uppercase tracking-widest">Insights da IA</p>
-          </div>
-          {!loading && (
-            <button
-              onClick={fetchInsights}
-              className="flex items-center gap-1 text-[11px] text-brand-400/60 hover:text-brand-300 transition-colors"
-            >
-              <RefreshCw className="w-3 h-3" />
-              Atualizar
-            </button>
-          )}
-        </div>
-
-        {/* Insight rows */}
-        <div className="grid grid-cols-2 gap-2">
-          <AnimatePresence>
-            {loading ? (
-              <>
-                <SkeletonRow key="sk1" />
-                <SkeletonRow key="sk2" />
-              </>
-            ) : insights.length === 0 ? (
-              <p key="empty" className="col-span-2 text-xs text-surface-600 text-center py-2">
-                Sem dados suficientes para gerar insights.
-              </p>
-            ) : (
-              insights.map((ins) => <InsightRow key={ins.id} insight={ins} />)
+            {!loading && (
+              <button
+                onClick={fetchInsights}
+                className="flex items-center gap-1 text-[11px] text-brand-400/60 hover:text-brand-300 transition-colors"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Atualizar
+              </button>
             )}
-          </AnimatePresence>
+          </div>
+
+          {/* Insight rows */}
+          <div className="grid grid-cols-2 gap-2">
+            <AnimatePresence>
+              {loading ? (
+                <>
+                  <SkeletonRow key="sk1" />
+                  <SkeletonRow key="sk2" />
+                </>
+              ) : insights.length === 0 ? (
+                <p key="empty" className="col-span-2 text-xs text-surface-600 text-center py-2">
+                  Sem dados suficientes para gerar insights.
+                </p>
+              ) : (
+                insights.map((ins) => <InsightRow key={ins.id} insight={ins} />)
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="md:col-span-2 bg-surface-900 rounded-xl border border-surface-700/50 px-4 py-2.5">
+          <ContactsFiltersBar filters={filters} onFiltersChange={onFiltersChange} embedded />
+        </div>
+      )}
     </div>
   )
 }

@@ -18,6 +18,7 @@ import { PeakHoursHeatmap } from '@/components/dashboard/PeakHoursHeatmap'
 import { AgentTable }       from '@/components/dashboard/AgentTable'
 import { ActivityFeed }     from '@/components/dashboard/ActivityFeed'
 import { AiInsightsSection } from '@/components/dashboard/AiInsightsSection'
+import { isFeatureVisible } from '@/config/featureFlags'
 // import { MarketingFunnelSection } from '@/components/dashboard/MarketingFunnelSection'
 // Removido temporariamente — endpoint /api/analytics/marketing-funnel ainda nao
 // existe no backend; trazer de volta quando o endpoint for implementado.
@@ -322,7 +323,12 @@ export function DashboardPage() {
               <>
                 <KpiGrid metrics={snapshot.kpis} />
 
-                <AiInsightsSection kpis={snapshot.kpis} />
+                {/* Seção desligada por padrão (flag dashboardAiInsights) — não
+                    montar evita a chamada generateDashboardInsights() e o gasto
+                    de tokens. */}
+                {isFeatureVisible('dashboardAiInsights') && (
+                  <AiInsightsSection kpis={snapshot.kpis} />
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
                   <div className="lg:col-span-2 h-full">

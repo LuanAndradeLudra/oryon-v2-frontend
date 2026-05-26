@@ -220,6 +220,10 @@ export interface ContactFilters {
   optIn?: boolean
   sortBy?: 'displayName' | 'leadScore' | 'lastContactedAt' | 'createdAt'
   sortDir?: 'asc' | 'desc'
+  /** Faixa de lead score (interpretada no backend: high>=80, medium 50-79, low<50). */
+  leadScoreBand?: 'high' | 'medium' | 'low'
+  /** Recência do último contato (interpretada no backend a partir de lastContactedAt). */
+  lastContact?: '24h' | '7d' | '30d' | 'none'
 }
 
 export interface Contact {

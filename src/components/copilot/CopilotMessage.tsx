@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { getReadableTextColor } from '@/lib/colorPalette'
 import { useArtifactContext } from '@/contexts/ArtifactContext'
 import type { ArtifactType } from '@/contexts/ArtifactContext'
 import type { CopilotAttachment, CopilotMessage, ToolCallRecord } from '@/contexts/CopilotContext'
@@ -1518,7 +1519,7 @@ function TagApprovalPreview({
             onChange={(e) => onChange('color', e.target.value)}
             className="flex-1 px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 font-mono focus:outline-none focus:border-brand-500/50"
           />
-          <div className="px-3 py-1 rounded-full text-[10px] font-medium text-white" style={{ backgroundColor: color }}>
+          <div className="px-3 py-1 rounded-full text-[10px] font-medium" style={{ backgroundColor: color, color: getReadableTextColor(color) }}>
             {String(input.name ?? 'Preview')}
           </div>
         </div>
