@@ -6,6 +6,8 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
+import { ColorPicker } from '@/components/ui/ColorPicker'
+import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { departmentsApi, whatsappNumbersApi } from '@/services/api'
 import type { Department, DepartmentPermission, WhatsAppNumber } from '@/types'
 
@@ -58,12 +60,6 @@ function hasConversationModule(perms: DepartmentPermission[]): boolean {
   return CONVERSATION_PERMISSIONS.some((k) => perms.includes(k))
 }
 
-const PRESET_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
-  '#f97316', '#f59e0b', '#10b981', '#06b6d4',
-  '#3b82f6', '#64748b', '#84cc16', '#f43f5e',
-]
-
 interface DeptFormState {
   name: string
   description: string
@@ -73,25 +69,7 @@ interface DeptFormState {
 }
 
 const DEFAULT_FORM: DeptFormState = {
-  name: '', description: '', color: PRESET_COLORS[0], whatsappNumberId: '', permissions: [],
-}
-
-function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {PRESET_COLORS.map((color) => (
-        <button
-          key={color} type="button" onClick={() => onChange(color)}
-          className="w-6 h-6 rounded-full border-2 transition-colors flex-shrink-0"
-          style={{
-            backgroundColor: color,
-            borderColor: value === color ? 'white' : 'transparent',
-            boxShadow: value === color ? `0 0 0 2px ${color}` : 'none',
-          }}
-        />
-      ))}
-    </div>
-  )
+  name: '', description: '', color: DEFAULT_ENTITY_COLOR, whatsappNumberId: '', permissions: [],
 }
 
 function PermissionMatrix({ value, onChange }: { value: DepartmentPermission[]; onChange: (p: DepartmentPermission[]) => void }) {

@@ -266,10 +266,13 @@ function KanbanColumn({
         ref={scrollRef}
         onScroll={handleScroll}
         className={cn(
-          'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-xl transition-all duration-150 min-h-[80px] p-2',
+          'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-xl transition-all duration-200 min-h-[80px] p-2',
           isOver
             ? 'bg-brand-500/5 ring-2 ring-brand-500/30 ring-inset'
             : 'bg-transparent',
+          // Revalidando com dados antigos na tela (troca de filtro): esmaece
+          // de leve para sinalizar atualização sem piscar skeleton.
+          loading && cards.length > 0 && 'opacity-50',
         )}
       >
         {/* Initial loading skeleton (page 1 in flight, no cards yet). */}

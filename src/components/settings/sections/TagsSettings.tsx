@@ -8,40 +8,17 @@ import { useToast } from '@/hooks/useToast'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn } from '@/lib/utils'
+import { ColorPicker } from '@/components/ui/ColorPicker'
+import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import type { Tag } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
-const PRESET_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
-  '#f97316', '#f59e0b', '#10b981', '#06b6d4',
-  '#3b82f6', '#64748b', '#84cc16', '#f43f5e',
-]
-
 // Simulated usage count
 const TAG_USAGE: Record<string, number> = {
   tag1: 8, tag2: 5, tag3: 3, tag4: 7, tag5: 2, tag6: 4,
-}
-
-function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {PRESET_COLORS.map((color) => (
-        <button
-          key={color}
-          onClick={() => onChange(color)}
-          className="w-5 h-5 rounded-full border-2 transition-all"
-          style={{
-            backgroundColor: color,
-            borderColor: value === color ? 'white' : 'transparent',
-            boxShadow: value === color ? `0 0 0 1px ${color}` : 'none',
-          }}
-        />
-      ))}
-    </div>
-  )
 }
 
 interface TagCardProps {
@@ -126,7 +103,7 @@ export function TagsSettings() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
-  const [newColor, setNewColor] = useState(PRESET_COLORS[0])
+  const [newColor, setNewColor] = useState(DEFAULT_ENTITY_COLOR)
   const [editTarget, setEditTarget] = useState<Tag | null>(null)
   const [editName, setEditName] = useState('')
   const [editColor, setEditColor] = useState('')
@@ -147,7 +124,7 @@ export function TagsSettings() {
       const r = await axios.post<Tag>(`${API}/tags`, { name: newName.trim(), color: newColor })
       setTags((t) => [...t, r.data])
       setNewName('')
-      setNewColor(PRESET_COLORS[0])
+      setNewColor(DEFAULT_ENTITY_COLOR)
       setCreating(false)
       toast('Tag criada!', 'success')
     } catch (err: any) {

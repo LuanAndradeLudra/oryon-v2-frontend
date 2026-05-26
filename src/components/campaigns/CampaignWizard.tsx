@@ -19,6 +19,7 @@ import {
   Sparkles, MessageCircle, Send, Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getReadableTextColor } from '@/lib/colorPalette'
 import { Emoji } from '@/lib/emojiText'
 import { campaignsApi, contactsApi, templatesApi, tagsApi, whatsappNumbersApi } from '@/services/api'
 import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
@@ -946,8 +947,8 @@ function Step2({
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {stageDef && (
                         <span
-                          className="text-[10px] px-1.5 py-0.5 rounded font-medium text-white"
-                          style={{ backgroundColor: stageDef.color }}
+                          className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                          style={{ backgroundColor: stageDef.color, color: getReadableTextColor(stageDef.color) }}
                         >
                           {stageDef.label}
                         </span>
@@ -1504,7 +1505,7 @@ function Step5({
                 {selectedTagIds.map((id) => {
                   const tag = tags.find((t) => t.id === id)
                   return tag ? (
-                    <span key={id} className="text-[10px] text-white px-2 py-0.5 rounded font-medium" style={{ backgroundColor: tag.color }}>
+                    <span key={id} className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ backgroundColor: tag.color, color: getReadableTextColor(tag.color) }}>
                       {tag.name}
                     </span>
                   ) : null
@@ -1521,7 +1522,7 @@ function Step5({
                 {selectedStages.map((key) => {
                   const stage = stages.find((s) => s.key === key)
                   return stage ? (
-                    <span key={key} className="text-[10px] text-white px-2 py-0.5 rounded font-medium" style={{ backgroundColor: stage.color }}>
+                    <span key={key} className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ backgroundColor: stage.color, color: getReadableTextColor(stage.color) }}>
                       {stage.label}
                     </span>
                   ) : null
@@ -1713,7 +1714,7 @@ function ContactListModal({
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {stageDef && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium text-white" style={{ backgroundColor: stageDef.color }}>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: stageDef.color, color: getReadableTextColor(stageDef.color) }}>
                           {stageDef.label}
                         </span>
                       )}

@@ -32,6 +32,19 @@ export const FEATURE_FLAGS = {
   // (AiInsightsSection) e CRM/Contatos (ContactsStatsBar). Quando false,
   // o insight continua sendo exibido mas o CTA que abre o Copilot some.
   aiInsightsAskButton: false,
+  // Card "Insights da IA" no topo da página de CRM/Contatos
+  // (ContactsStatsBar) — chama generateCRMInsights() na montagem e gasta
+  // tokens. Quando false: o card some, a chamada de API é evitada por
+  // completo, e o espaço liberado (col-span-2) passa a hospedar a busca +
+  // filtros. Reativar = trocar para true (o card volta e a faixa de
+  // filtros separada reaparece). Mesmo padrão reativável do aiContextCard.
+  crmAiInsights: false,
+  // Seção "Insights da IA" no Dashboard (AiInsightsSection, entre o KpiGrid e
+  // os gráficos) — chama generateDashboardInsights() na montagem e gasta
+  // tokens. Quando false: a seção não é montada, então nenhuma chamada de API
+  // acontece e o layout colapsa naturalmente. Reativar = trocar para true.
+  // Mesmo padrão reativável do crmAiInsights / aiContextCard.
+  dashboardAiInsights: false,
   // Painel "Análise de Conversão IA" no sidebar de contato dentro de uma
   // conversa (botão "Analisar conversa com IA" + telas de resultado).
   // Quando false, o painel inteiro fica oculto — análises já feitas também
