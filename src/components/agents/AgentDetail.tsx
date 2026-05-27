@@ -28,6 +28,9 @@ import type {
   FaqRule, FaqRuleDraft, FaqMatchMode, ToolMetricRow,
 } from '@/services/agentsApi'
 import { ConfirmModal, Modal } from '@/components/ui/Modal'
+import { FormField } from '@/components/ui/FormField'
+import { Select } from '@/components/ui/Select'
+import { conversationsApi } from '@/services/api'
 import { HandoffRulesPanel } from '@/components/agents/HandoffRuleBuilder'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
@@ -115,6 +118,122 @@ function InlineEdit({
 }
 
 // ─── Tab: Overview ────────────────────────────────────────────────────────────
+
+// ─── Card: AI behaviour (Phase 34 — moved here from Company Profile) ──────────
+// Per-agent handoff pause + inbound debounce. Both can be left to "inherit"
+// (NULL), in which case the backend falls back to the organization-level
+// value (then the hardcoded default). 0 on debounce means "reply immediately"
+// and is distinct from "inherit".
+const PAUSE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: 'Herdar da organização' },
+  { value: '30', label: '30 minutos' },
+  { value: '60', label: '1 hora' },
+  { value: '120', label: '2 horas' },
+  { value: '240', label: '4 horas' },
+  { value: '480', label: '8 horas' },
+  { value: '1440', label: '24 horas' },
+  { value: '4320', label: '3 dias' },
+  { value: '10080', label: '1 semana' },
+]
+const DEBOUNCE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: 'Herdar da organização' },
+  { value: '0', label: 'Desligado (resposta imediata)' },
+  { value: '5', label: '5 segundos' },
+  { value: '10', label: '10 segundos' },
+  { value: '12', label: '12 segundos' },
+  { value: '15', label: '15 segundos' },
+  { value: '20', label: '20 segundos' },
+  { value: '30', label: '30 segundos' },
+]
+
+function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate: (a: AgentConfig) => void }) {
+  const toStr = (n: number | null | undefined): string => (n == null ? '' : String(n))
+  const initialPause = toStr(agent.ai_handoff_pause_minutes)
+  const initialDebounce = toStr(agent.ai_inbound_debounce_seconds)
+  const [pause, setPause] = useState(initialPause)
+  const [debounce, setDebounce] = useState(initialDebounce)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    setPause(toStr(agent.ai_handoff_pause_minutes))
+    setDebounce(toStr(agent.ai_inbound_debounce_seconds))
+  }, [agent.ai_handoff_pause_minutes, agent.ai_inbound_debounce_seconds])
+
+  const dirty = pause !== initialPause || debounce !== initialDebounce
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const updated = await updateAgent(agent.id, {
+        ai_handoff_pause_minutes: pause === '' ? null : parseInt(pause, 10),
+        ai_inbound_debounce_seconds: debounce === '' ? null : parseInt(debounce, 10),
+      })
+      onUpdate(updated)
+      // Bust the backend's per-agent behavior cache so the new value takes
+      // effect immediately (otherwise it lags up to the 60s TTL). Best-effort:
+      // the TTL is the fallback if this call fails.
+      await conversationsApi.refreshAgentBehaviorCache(agent.id).catch(() => {})
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Bot className="w-3.5 h-3.5 text-surface-500" />
+        <p className="text-xs font-medium text-surface-500">Comportamento da IA</p>
+      </div>
+
+      <FormField
+        label="Pausar IA quando um atendente humano intervém"
+        hint="Quando um atendente envia uma mensagem na conversa, a IA pausa automaticamente por este período. O atendente pode reativar a IA a qualquer momento na própria conversa."
+      >
+        <Select value={pause} onChange={(e) => setPause(e.target.value)}>
+          {PAUSE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </Select>
+      </FormField>
+
+      <FormField
+        label="Aguardar mensagens fragmentadas antes de responder"
+        hint="Quando o cliente envia mensagens em sequência (ex: 'oi' / 'tudo bem?' / 'queria saber sobre X'), a IA espera este período após cada mensagem. Mensagens novas dentro da janela cancelam o timer e a IA responde tudo de uma vez só. Desligar = resposta imediata por mensagem."
+      >
+        <Select value={debounce} onChange={(e) => setDebounce(e.target.value)}>
+          {DEBOUNCE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </Select>
+      </FormField>
+
+      <div className="flex items-center justify-end gap-3 mt-1">
+        {saved && (
+          <span className="inline-flex items-center gap-1 text-xs text-status-active">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Salvo
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || !dirty}
+          className={cn(
+            'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
+            dirty
+              ? 'border-transparent bg-status-active-bg text-status-active ring-1 ring-status-active-border hover:brightness-110 cursor-pointer'
+              : 'border-surface-800 text-surface-600 bg-surface-900 cursor-default',
+          )}
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          Salvar
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate: (a: AgentConfig) => void }) {
   const [savingStatus, setSavingStatus] = useState(false)
@@ -216,6 +335,9 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
           })}
         </div>
       </div>
+
+      {/* AI behaviour (Phase 34) */}
+      <AiBehaviorCard agent={agent} onUpdate={onUpdate} />
 
       {/* Activity */}
       <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-4">

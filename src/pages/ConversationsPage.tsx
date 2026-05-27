@@ -59,7 +59,7 @@ export function ConversationsPage() {
     conversations, loading, loadingMore, hasMore, loadMore, statusCounts,
     handleNewMessage, handleAiPauseUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
-    addTag, removeTag, archiveConversation, setAiPause,
+    addTag, removeTag, archiveConversation, setAiPause, interveneAi,
   } = useConversations(filters)
 
   // ── Socket.IO real-time ────────────────────────────────────────────────────
@@ -290,6 +290,20 @@ export function ConversationsPage() {
     }
   }
 
+  // Phase 34 — "Intervir agora": the backend resolves the pause window from the
+  // agent's configured handoff duration, so we don't pass a timestamp. We sync
+  // the active conversation from the resolved value the hook returns.
+  const handleInterveneAi = async (convId: string) => {
+    try {
+      const until = await interveneAi(convId)
+      syncActive(convId, { aiPausedUntil: until })
+      invalidateActivity(convId)
+      toast('IA pausada para esta conversa', 'info')
+    } catch {
+      toast('Não foi possível atualizar a IA — tente de novo', 'error')
+    }
+  }
+
   // Phase 29 — page-level handler for send-message failures bubbling up
   // from MessageInput. Reads the human-readable `message` that the backend's
   // TenantExceptionFilter writes into the response body and toasts it.
@@ -390,6 +404,7 @@ export function ConversationsPage() {
           onTransfer={handleTransfer}
           onArchive={handleArchive}
           onSetAiPause={handleSetAiPause}
+          onInterveneAi={handleInterveneAi}
           onAiPauseSocketEvent={(p) => {
             handleAiPauseUpdated(p)
             // Mirror onto the currently-open conversation in case another

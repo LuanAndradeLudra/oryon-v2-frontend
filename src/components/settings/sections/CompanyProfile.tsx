@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Camera, Lock, Building2, Bot } from 'lucide-react'
+import { Camera, Lock, Building2 } from 'lucide-react'
 import axios from 'axios'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -38,8 +38,6 @@ export function CompanyProfile() {
     email: '',
     timezone: '',
     language: '',
-    aiHandoffPauseMinutes: 240,
-    aiInboundDebounceSeconds: 12,
   })
   const [loading, setLoading] = useState(false)
 
@@ -48,17 +46,11 @@ export function CompanyProfile() {
       const d = r.data as Record<string, unknown>
       const mapped = { ...d, name: d.businessName ?? d.name ?? '', email: d.businessEmail ?? d.email ?? '', timezone: d.timezone ?? 'America/Sao_Paulo', language: d.language ?? 'pt-BR' } as Tenant
       setTenant(mapped)
-      const pauseMinutesRaw = d.aiHandoffPauseMinutes
-      const pauseMinutes = typeof pauseMinutesRaw === 'number' ? pauseMinutesRaw : 240
-      const debounceRaw = d.aiInboundDebounceSeconds
-      const debounceSeconds = typeof debounceRaw === 'number' ? debounceRaw : 12
       setForm({
         name: String(mapped.name ?? ''),
         email: String(mapped.email ?? ''),
         timezone: String(mapped.timezone ?? ''),
         language: String(mapped.language ?? ''),
-        aiHandoffPauseMinutes: pauseMinutes,
-        aiInboundDebounceSeconds: debounceSeconds,
       })
     }).catch(() => {
       setTenant({ name: '', email: '', timezone: 'America/Sao_Paulo', language: 'pt-BR' } as Tenant)
@@ -72,8 +64,6 @@ export function CompanyProfile() {
       await axios.patch(`${API}/settings/company`, {
         businessName: form.name,
         businessEmail: form.email,
-        aiHandoffPauseMinutes: form.aiHandoffPauseMinutes,
-        aiInboundDebounceSeconds: form.aiInboundDebounceSeconds,
       })
       toast('Perfil da empresa salvo com sucesso.', 'success')
       markDone('company')
@@ -217,51 +207,6 @@ export function CompanyProfile() {
             </Select>
           </FormField>
         </div>
-      </div>
-
-      {/* AI behaviour card (Phase 27) */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Bot className="w-4 h-4 text-brand-400" />
-          <h3 className="text-sm font-semibold text-surface-300">Comportamento da IA</h3>
-        </div>
-
-        <FormField
-          label="Pausar IA quando um atendente humano intervém"
-          hint="Quando um atendente envia uma mensagem na conversa, a IA pausa automaticamente por este período. O atendente pode reativar a IA a qualquer momento na própria conversa."
-        >
-          <Select
-            value={String(form.aiHandoffPauseMinutes)}
-            onChange={(e) => setForm((f) => ({ ...f, aiHandoffPauseMinutes: parseInt(e.target.value, 10) }))}
-          >
-            <option value="30">30 minutos</option>
-            <option value="60">1 hora</option>
-            <option value="120">2 horas</option>
-            <option value="240">4 horas (recomendado)</option>
-            <option value="480">8 horas</option>
-            <option value="1440">24 horas</option>
-            <option value="4320">3 dias</option>
-            <option value="10080">1 semana</option>
-          </Select>
-        </FormField>
-
-        <FormField
-          label="Aguardar mensagens fragmentadas antes de responder"
-          hint="Quando o cliente envia mensagens em sequência (ex: 'oi' / 'tudo bem?' / 'queria saber sobre X'), a IA espera este período após cada mensagem. Mensagens novas dentro da janela cancelam o timer e a IA responde tudo de uma vez só. Desligar = resposta imediata por mensagem."
-        >
-          <Select
-            value={String(form.aiInboundDebounceSeconds)}
-            onChange={(e) => setForm((f) => ({ ...f, aiInboundDebounceSeconds: parseInt(e.target.value, 10) }))}
-          >
-            <option value="0">Desligado (resposta imediata)</option>
-            <option value="5">5 segundos</option>
-            <option value="10">10 segundos</option>
-            <option value="12">12 segundos (recomendado)</option>
-            <option value="15">15 segundos</option>
-            <option value="20">20 segundos</option>
-            <option value="30">30 segundos</option>
-          </Select>
-        </FormField>
       </div>
 
       <div className="flex justify-end">

@@ -24,6 +24,9 @@ interface ChatWindowProps {
   onArchive: (convId: string) => void
   /** Phase 27 — manually pause/resume the WhatsApp AI for this conversation. */
   onSetAiPause: (convId: string, pauseUntil: string | null) => Promise<void> | void
+  /** Phase 34 — "Intervir agora": pause using the agent's configured handoff
+   *  window (duration resolved server-side). */
+  onInterveneAi?: (convId: string) => Promise<void> | void
   /** Phase 27 — invoked when the backend emits 'conversation:ai-pause-updated'. */
   onAiPauseSocketEvent?: (payload: SocketAiPauseUpdated) => void
   /**
@@ -48,7 +51,7 @@ export function ChatWindow({
   onStatusChange, onToggleInfo, infoOpen,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
   onAssign, onTransfer, onArchive,
-  onSetAiPause, onAiPauseSocketEvent,
+  onSetAiPause, onInterveneAi, onAiPauseSocketEvent,
   onSendError, sendBlockedReason,
   onBack,
 }: ChatWindowProps) {
@@ -144,6 +147,7 @@ export function ChatWindow({
         onAssign={(user) => onAssign(conversation.id, user)}
         onArchive={() => onArchive(conversation.id)}
         onSetAiPause={(until) => onSetAiPause(conversation.id, until)}
+        onInterveneAi={onInterveneAi ? () => onInterveneAi(conversation.id) : undefined}
         onBack={onBack}
       />
       {/* 2px peripheral status strip — emerald when AI is responding, amber

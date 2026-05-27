@@ -302,6 +302,21 @@ export function useConversations(filters: ConversationFilters = {}) {
     }
   }, [])
 
+  /**
+   * Phase 34 — "Intervir agora": server-authoritative pause. The backend
+   * computes the window from the agent's configured ai_handoff_pause_minutes
+   * (with org/default fallback) instead of the frontend hardcoding it. We
+   * apply the resolved aiPausedUntil from the response; the dedicated
+   * 'conversation:ai-pause-updated' socket event also lands and keeps the
+   * active conversation in lockstep.
+   */
+  const interveneAi = useCallback(async (id: string) => {
+    const r = await conversationsApi.interveneAiDefault(id)
+    const until = (r.data as { aiPausedUntil?: string | null }).aiPausedUntil ?? null
+    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, aiPausedUntil: until } : c)))
+    return until
+  }, [])
+
   return {
     conversations,
     loading,
@@ -321,6 +336,7 @@ export function useConversations(filters: ConversationFilters = {}) {
     removeTag,
     archiveConversation,
     setAiPause,
+    interveneAi,
     patchConv,
   }
 }
