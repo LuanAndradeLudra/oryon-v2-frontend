@@ -241,7 +241,7 @@ export function KanbanCard({
             type="button"
             onClick={handleOpenChat}
             disabled={openingChat}
-            title="Abrir conversa no WhatsApp"
+            title="Abrir conversa"
             className="self-start inline-flex items-center gap-1.5 text-[11px] text-surface-400 font-mono hover:text-status-active transition-colors"
           >
             <WhatsAppIcon variant="mono" size={13} className="text-status-active" />

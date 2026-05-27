@@ -519,7 +519,7 @@ export function ContactsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full sm:w-[840px] z-40 bg-black border-l border-surface-800 flex flex-col shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-[700px] z-40 bg-black border-l border-surface-800 flex flex-col shadow-2xl"
             >
               <ContactDetailPanel
                 contactId={selectedContactId}
