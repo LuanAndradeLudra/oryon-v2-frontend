@@ -1,7 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR" translate="no">
   <head>
     <meta charset="UTF-8" />
+    <!-- App é em pt-BR. A tradução automática do navegador (Google Tradutor)
+         reescreve o DOM embrulhando textos em <font>, o que conflita com o
+         controle de DOM do React e quebra a página de conversas com
+         "Failed to execute 'removeChild' on 'Node'". Declarar o idioma correto
+         + bloquear tradução resolve a tela branca "Algo deu errado". -->
+    <meta name="google" content="notranslate" />
     <link rel="icon" type="image/svg+xml" href="/oryon-logo-favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Oryon</title>
