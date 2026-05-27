@@ -1,11 +1,11 @@
 import { useCallback, useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import {
   Send, Paperclip, AlertTriangle, Zap, Image, FileText, Video, ChevronDown,
-  Scissors, Copy, Clipboard, CopyCheck,
+  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X,
 } from 'lucide-react'
 import axios from 'axios'
 import { cn } from '@/lib/utils'
-import type { CannedResponse, SendMessageDto, WhatsAppTemplate } from '@/types'
+import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -31,6 +31,24 @@ interface MessageInputProps {
    * BEFORE the operator types and clicks send.
    */
   blockedReason?: { message: string; ctaHref?: string; ctaLabel?: string } | null
+  /** When set, shows a "replying to" bar and the next send quotes this message. */
+  replyTo?: Message | null
+  onCancelReply?: () => void
+}
+
+/** One-line preview of the message being replied to (for the compose bar). */
+function replyPreview(m: Message): string {
+  if (m.body && m.body.trim()) return m.body.trim()
+  switch (m.type) {
+    case 'image': return '📷 Imagem'
+    case 'video': return '🎥 Vídeo'
+    case 'audio': return '🎤 Áudio'
+    case 'document': return '📄 Documento'
+    case 'sticker': return 'Figurinha'
+    case 'location': return '📍 Localização'
+    case 'contacts': return '👤 Contato'
+    default: return 'Mensagem'
+  }
 }
 
 // ── Quick Reply Picker ─────────────────────────────────────────────────────────
@@ -90,7 +108,7 @@ function QuickReplyPicker({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MessageInput({ onSend, sending, windowOpen, disabled, blockedReason }: MessageInputProps) {
+export function MessageInput({ onSend, sending, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
   const [allResponses, setAllResponses] = useState<CannedResponse[]>([])
@@ -249,7 +267,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
     setText('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     try {
-      await onSend({ body: trimmed })
+      await onSend({ body: trimmed, replyToWamid: replyTo?.wamid ?? undefined })
+      onCancelReply?.()
     } catch {
       // Send failed (e.g. backend rejected with 403 because user has no
       // department). Restore the typed text so the operator can retry or
@@ -311,7 +330,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   const handleSelectTemplate = async (tpl: WhatsAppTemplate) => {
     setTemplatePickerOpen(false)
     try {
-      await onSend({ body: tpl.body })
+      await onSend({ body: tpl.body, replyToWamid: replyTo?.wamid ?? undefined })
+      onCancelReply?.()
       setTemplateSent(true)
     } catch {
       // Page-level toast already surfaced the error.
@@ -359,11 +379,16 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
           file,
           mediaCaption: file.name,
           body: i === 0 ? previousText.trim() || undefined : undefined,
+          // Only the first attachment quotes the message being replied to.
+          replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
         })
       } catch {
         failed.push(file.name)
       }
     }
+
+    // Clear the reply context if at least one file went through.
+    if (failed.length < valid.length) onCancelReply?.()
 
     if (failed.length > 0) {
       // Page-level toast already fires per-failure; this restores the
@@ -470,6 +495,27 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             activeIndex={activeIndex}
             onSelect={handleSelectResponse}
           />
+        )}
+
+        {replyTo && (
+          <div className="mb-2 flex items-center gap-2 rounded-lg bg-surface-800/70 border-l-2 border-brand-500 px-3 py-2">
+            <CornerUpLeft className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium text-brand-300">
+                Respondendo {replyTo.direction === 'outbound' ? '· sua mensagem' : '· cliente'}
+              </p>
+              <p className="text-xs text-surface-400 truncate">{replyPreview(replyTo)}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onCancelReply}
+              title="Cancelar resposta"
+              aria-label="Cancelar resposta"
+              className="w-6 h-6 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors flex-shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         )}
 
         <div

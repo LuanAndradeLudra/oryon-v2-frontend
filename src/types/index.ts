@@ -780,6 +780,8 @@ export interface SendMessageDto {
   body?: string
   file?: File
   mediaCaption?: string
+  /** wamid of the message being replied to — sent so the client sees a quoted reply. */
+  replyToWamid?: string
 }
 
 // ─── Billing / Plan Types ─────────────────────────────────────────────────────

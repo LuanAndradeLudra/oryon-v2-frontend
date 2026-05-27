@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, MapPin, Mic, Download, Play, Pause,
-  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2, Megaphone,
+  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2, Megaphone, CornerUpLeft,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -37,6 +37,8 @@ interface MessageBubbleProps {
   prevMessage?: Message
   /** The message this one replies to, resolved by MessageList from the loaded window. */
   quotedMessage?: Message | null
+  /** Start a quoted reply to this message (desktop hover button + mobile swipe). */
+  onReply?: (message: Message) => void
 }
 
 function StatusIcon({ status }: { status: Message['status'] }) {
@@ -567,7 +569,7 @@ function TextContent({ message }: { message: Message }) {
   ) : null
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
   // Campaign/automation name carried in metadata, shown in the sender indicator.
@@ -646,18 +648,63 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
 
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
+  // Mobile swipe-to-reply: horizontal drag past a threshold triggers a reply.
+  // We only translate when the gesture is mostly horizontal so vertical
+  // scrolling is never hijacked. No preventDefault → native scroll preserved.
+  const [dragX, setDragX] = useState(0)
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
+  const canReply = !!onReply && message.status !== 'failed'
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!canReply) return
+    const t = e.touches[0]
+    touchStart.current = { x: t.clientX, y: t.clientY }
+  }
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!canReply || !touchStart.current) return
+    const t = e.touches[0]
+    const dx = t.clientX - touchStart.current.x
+    const dy = t.clientY - touchStart.current.y
+    if (Math.abs(dx) > Math.abs(dy)) setDragX(Math.max(-80, Math.min(80, dx)))
+  }
+  const handleTouchEnd = () => {
+    if (canReply && Math.abs(dragX) > 56) onReply!(message)
+    setDragX(0)
+    touchStart.current = null
+  }
+
   return (
     <div
       onContextMenu={onContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       className={cn(
-        'flex items-end gap-2',
+        'group flex items-end gap-2',
         isOutbound ? 'flex-row-reverse' : 'flex-row',
         gap
       )}
+      style={{
+        transform: dragX ? `translateX(${dragX}px)` : undefined,
+        transition: dragX ? 'none' : 'transform 0.15s ease-out',
+      }}
       title={formatFullTime(message.sentAt)}
     >
       {/* Avatar placeholder for spacing */}
       <div className="w-0 flex-shrink-0" />
+
+      {/* Desktop reply affordance — appears on hover, beside the bubble. */}
+      {canReply && (
+        <button
+          type="button"
+          onClick={() => onReply!(message)}
+          title="Responder"
+          aria-label="Responder"
+          className="hidden md:flex self-center w-7 h-7 rounded-full items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-700/60 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+        >
+          <CornerUpLeft className="w-3.5 h-3.5" />
+        </button>
+      )}
 
       {/* Bubble — handoff accent rendered as inset box-shadow on the right
           edge so it follows the bubble's rounded corners automatically. The

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { MessageSquare } from 'lucide-react'
 import { ChatHeader } from './ChatHeader'
 import { MessageList } from './MessageList'
@@ -6,7 +6,7 @@ import { MessageInput } from './MessageInput'
 import { HandoffStripe } from './AiHandoffBanner'
 import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
-import type { Conversation, Tag, User, SocketAiPauseUpdated, SocketMessageNew } from '@/types'
+import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew } from '@/types'
 
 interface ChatWindowProps {
   conversation: Conversation | null
@@ -57,6 +57,11 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const { messages, loading, sending, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus } =
     useMessages(conversation?.id ?? null)
+
+  // Outbound quoted reply: which message the operator is replying to. Cleared
+  // when the conversation changes or after a successful send.
+  const [replyTo, setReplyTo] = useState<Message | null>(null)
+  useEffect(() => { setReplyTo(null) }, [conversation?.id])
 
   // Wrap sendMessage so the page-level handler hears about failures.
   // Re-throws so the MessageInput's restore-text-on-failure path still runs.
@@ -155,12 +160,14 @@ export function ChatWindow({
           here. The chip in the header carries the actions; the strip is just
           the "where am I?" sticky signal. */}
       <HandoffStripe aiPausedUntil={conversation.aiPausedUntil} />
-      <MessageList messages={messages} loading={loading} hasMore={hasMore} onLoadMore={fetchMore} />
+      <MessageList messages={messages} loading={loading} hasMore={hasMore} onLoadMore={fetchMore} onReply={setReplyTo} />
       <MessageInput
         onSend={handleSendWithErrorReporting}
         sending={sending}
         windowOpen={windowOpen}
         blockedReason={sendBlockedReason}
+        replyTo={replyTo}
+        onCancelReply={() => setReplyTo(null)}
       />
     </div>
   )

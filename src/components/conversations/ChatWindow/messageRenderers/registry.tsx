@@ -1,11 +1,12 @@
-import type { FC, ReactElement } from 'react'
+import { useState, type FC, type ReactElement } from 'react'
 import {
-  User, Phone, CornerUpLeft, MousePointerClick, ListChecks,
+  User, UserPlus, Phone, CornerUpLeft, MousePointerClick, ListChecks,
   ClipboardList, ShoppingBag, Info, Megaphone, ExternalLink, Copy, Workflow, FileText, Video,
 } from 'lucide-react'
 import type { Message } from '@/types'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
 import { cn } from '@/lib/utils'
+import { AddSharedContactModal, type SharedContact } from './AddSharedContactModal'
 
 /**
  * Extensible renderer registry for WhatsApp message types beyond the built-in
@@ -42,6 +43,12 @@ interface ButtonMetadata {
 interface ReferralMetadata {
   referral?: { headline?: string | null; body?: string | null; sourceUrl?: string | null }
 }
+interface OrderMetadata {
+  kind: 'order'
+  catalogId: string | null
+  text: string | null
+  items: Array<{ productRetailerId: string; quantity: number; itemPrice: number; currency: string }>
+}
 interface TemplateMetadata {
   kind: 'template'
   template: {
@@ -66,33 +73,47 @@ function meta<T>(message: Message): T | null {
 const ContactCard: FC<{ message: Message }> = ({ message }) => {
   const m = meta<ContactsMetadata>(message)
   const contacts = m?.contacts ?? []
+  // Which shared contact the operator is adding to the CRM (modal target).
+  const [selected, setSelected] = useState<SharedContact | null>(null)
   if (contacts.length === 0) {
     return <PlainNotice icon={User} text={message.body ?? 'Contato compartilhado'} />
   }
   return (
-    <div className="flex flex-col gap-2 py-1 min-w-[200px] max-w-[280px]">
-      {contacts.map((c, i) => {
-        const phone = c.phones?.find((p) => p.phone || p.waId)
-        const phoneText = phone?.phone ?? phone?.waId ?? null
-        return (
-          <div key={i} className="flex items-center gap-2.5 rounded-lg bg-current/5 px-2.5 py-2">
-            <div className="w-9 h-9 rounded-full bg-current/15 flex items-center justify-center flex-shrink-0">
-              <User className="w-4.5 h-4.5 opacity-80" />
+    <>
+      <div className="flex flex-col gap-2 py-1 min-w-[260px] max-w-[360px]">
+        {contacts.map((c, i) => {
+          const phone = c.phones?.find((p) => p.phone || p.waId)
+          const phoneText = phone?.phone ?? phone?.waId ?? null
+          return (
+            <div key={i} className="rounded-lg bg-current/5 px-2.5 py-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-current/15 flex items-center justify-center flex-shrink-0">
+                  <User className="w-4.5 h-4.5 opacity-80" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{c.name}</p>
+                  {phoneText && (
+                    <p className="text-xs opacity-70 flex items-center gap-1 truncate">
+                      <Phone className="w-3 h-3 flex-shrink-0" />
+                      {phoneText}
+                    </p>
+                  )}
+                  {c.org && <p className="text-[11px] opacity-50 truncate">{c.org}</p>}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelected(c)}
+                className="mt-2 w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium rounded-md bg-current/10 hover:bg-current/20 px-2 py-1.5 transition-colors"
+              >
+                <UserPlus className="w-3.5 h-3.5" /> Adicionar ao CRM
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{c.name}</p>
-              {phoneText && (
-                <p className="text-xs opacity-70 flex items-center gap-1 truncate">
-                  <Phone className="w-3 h-3 flex-shrink-0" />
-                  {phoneText}
-                </p>
-              )}
-              {c.org && <p className="text-[11px] opacity-50 truncate">{c.org}</p>}
-            </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+      <AddSharedContactModal open={!!selected} contact={selected} onClose={() => setSelected(null)} />
+    </>
   )
 }
 
@@ -149,9 +170,54 @@ const ButtonReply: FC<{ message: Message }> = ({ message }) => {
   )
 }
 
-const OrderCard: FC<{ message: Message }> = ({ message }) => (
-  <PlainNotice icon={ShoppingBag} text={message.body ?? 'Pedido recebido'} />
-)
+const fmtMoney = (v: number, currency?: string): string => {
+  try {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(v)
+  } catch {
+    return `${currency ?? ''} ${v.toFixed(2)}`.trim()
+  }
+}
+
+const OrderCard: FC<{ message: Message }> = ({ message }) => {
+  const m = meta<OrderMetadata>(message)
+  const items = m?.items ?? []
+  if (items.length === 0) {
+    return <PlainNotice icon={ShoppingBag} text={message.body ?? 'Pedido recebido'} />
+  }
+  const currency = items[0]?.currency
+  const total = items.reduce((s, it) => s + (it.itemPrice || 0) * (it.quantity || 0), 0)
+  return (
+    <div className="flex flex-col gap-2 py-1 min-w-[240px] max-w-[340px]">
+      <div className="flex items-center gap-2">
+        <ShoppingBag className="w-4 h-4 opacity-70 flex-shrink-0" />
+        <span className="text-sm font-medium">Pedido</span>
+        <span className="ml-auto text-xs opacity-60">
+          {items.length} {items.length === 1 ? 'item' : 'itens'}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        {items.map((it, i) => (
+          <div key={i} className="flex items-center gap-2 rounded-lg bg-current/5 px-2.5 py-1.5">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium truncate">{it.productRetailerId}</p>
+              <p className="text-[11px] opacity-60">
+                {it.quantity} × {fmtMoney(it.itemPrice, it.currency)}
+              </p>
+            </div>
+            <span className="text-xs font-medium whitespace-nowrap">
+              {fmtMoney((it.itemPrice || 0) * (it.quantity || 0), it.currency)}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between border-t border-current/10 pt-1.5">
+        <span className="text-xs opacity-70">Total</span>
+        <span className="text-sm font-semibold">{fmtMoney(total, currency)}</span>
+      </div>
+      {m?.text && <p className="text-xs opacity-70 italic break-words">"{m.text}"</p>}
+    </div>
+  )
+}
 
 /** Substitute {{1}}, {{2}}… with resolved variable values. */
 function subTemplateVars(text: string, vars: Record<string, string>): string {

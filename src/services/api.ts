@@ -964,6 +964,7 @@ export const messagesApi = {
       formData.append('file', dto.file)
       if (dto.body) formData.append('body', dto.body)
       if (dto.mediaCaption) formData.append('mediaCaption', dto.mediaCaption)
+      if (dto.replyToWamid) formData.append('replyToWamid', dto.replyToWamid)
 
       return api.post<Message>(`/conversations/${conversationId}/messages`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -1061,6 +1062,13 @@ export const contactsApi = {
       tagIds: Array.isArray(tags) ? (tags as Array<{ id: string }>).map((t) => t.id) : undefined,
     }
     return api.post<Contact>('/contacts', payload)
+  },
+
+  /** Pre-check whether a contact with this phone (digits) already exists.
+   *  Returns the contact (frontend shape) or null. Used by the "add shared
+   *  WhatsApp contact" flow to offer "open contact" instead of a duplicate. */
+  lookup(phone: string) {
+    return api.get<Contact | null>('/contacts/lookup', { params: { phone } })
   },
 
   getHistory(id: string, page = 1, limit = 30) {

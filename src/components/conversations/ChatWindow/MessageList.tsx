@@ -12,6 +12,8 @@ interface MessageListProps {
   hasMore: boolean
   isTyping?: boolean
   onLoadMore: () => void
+  /** Start an outbound quoted reply to this message (button/swipe in the bubble). */
+  onReply?: (message: Message) => void
 }
 
 function DateSeparator({ date }: { date: string }) {
@@ -32,7 +34,7 @@ function DateSeparator({ date }: { date: string }) {
   )
 }
 
-export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore }: MessageListProps) {
+export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, onReply }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(0)
@@ -154,6 +156,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore }
               prevMessage={prev}
               showAvatar={!prev || prev.direction !== msg.direction}
               quotedMessage={msg.contextWamid ? byWamid.get(msg.contextWamid) ?? null : null}
+              onReply={onReply}
             />
           </div>
         )

@@ -55,3 +55,16 @@ export async function fetchUserActivity(
   )
   return res.data?.data ?? []
 }
+
+/** Contact-level variant: operator/system activity aggregated across ALL of
+ *  the contact's conversations (CRM history → "Histórico de conversas"). */
+export async function fetchContactActivity(
+  contactId: string,
+  limit = 100,
+): Promise<UserActivity[]> {
+  const res = await api.get<UserActivityResponse>(
+    `/activity-feed/contact/${contactId}`,
+    { params: { limit } },
+  )
+  return res.data?.data ?? []
+}

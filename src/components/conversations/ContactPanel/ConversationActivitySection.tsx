@@ -19,6 +19,7 @@ import {
   Bot, CheckCircle, AlertCircle, Loader2, UserPlus, UserMinus, Tag as TagIcon,
   TagsIcon, UserCog, History, Pause, Play, ArrowRightLeft,
   CheckCircle2, Clock, Inbox, Archive, Send, MoveRight, Megaphone, CornerDownLeft,
+  MessageSquarePlus, RotateCcw, FileText,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn, formatRelativeTime } from '@/lib/utils'
@@ -430,7 +431,7 @@ function toUserEntry(a: UserActivity): TimelineEntry {
  *  for the same action — one from the AI, one from an operator — stay
  *  visually consistent on the timeline. The actor source is conveyed by
  *  the actor name on the metadata line below the title, not by colour. */
-interface RowVisual {
+export interface RowVisual {
   label: string
   Icon: typeof UserPlus
   rowBg: string
@@ -473,7 +474,7 @@ function toolToActionKey(toolName: string): string {
  *  right variant. Falls back to a neutral grey treatment for unknown
  *  actions instead of throwing — new tools can ship before we add a
  *  dedicated case. */
-function visualForActionKey(key: string, metadata: Record<string, unknown>): RowVisual {
+export function visualForActionKey(key: string, metadata: Record<string, unknown>): RowVisual {
   switch (key) {
     case 'conversation_assigned': {
       const userId = metadata.userId
@@ -541,6 +542,23 @@ function visualForActionKey(key: string, metadata: Record<string, unknown>): Row
             rowBg: 'bg-emerald-950/25', iconClass: 'bg-emerald-900/40 text-emerald-300' }
         : { label: 'Pausou o agente IA', Icon: Pause,
             rowBg: 'bg-amber-950/25', iconClass: 'bg-amber-900/40 text-amber-300' }
+    }
+    case 'conversation_created':
+      return { label: 'Conversa iniciada', Icon: MessageSquarePlus,
+               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+    case 'conversation_reopened':
+      return { label: 'Conversa reaberta', Icon: RotateCcw,
+               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+    case 'conversation_ai_auto_paused':
+      return { label: 'IA pausada (atendente assumiu)', Icon: Pause,
+               rowBg: 'bg-amber-950/25', iconClass: 'bg-amber-900/40 text-amber-300' }
+    case 'template_sent': {
+      const tplName = typeof metadata.templateName === 'string' ? metadata.templateName : null
+      return {
+        label: tplName ? `Template enviado: ${tplName}` : 'Template enviado',
+        Icon: FileText,
+        rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300',
+      }
     }
     case 'message_sent':
       return { label: 'Enviou uma mensagem', Icon: Send,

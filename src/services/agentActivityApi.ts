@@ -27,7 +27,8 @@ export interface AgentAction {
 }
 
 interface AgentActionsResponse {
-  conversation_id: string
+  conversation_id?: string
+  contact_id?: string
   actions: AgentAction[]
 }
 
@@ -39,6 +40,15 @@ interface AgentActionsResponse {
 export async function fetchAgentActions(conversationId: string, limit = 50): Promise<AgentAction[]> {
   const res = await apiFetch<AgentActionsResponse>(
     `/conversations/${conversationId}/actions?limit=${limit}`,
+  )
+  return res.actions ?? []
+}
+
+/** Contact-level variant: the agent's CRM operations across ALL of the
+ *  contact's conversations (CRM history → "Histórico de conversas"). */
+export async function fetchAgentActionsByContact(contactId: string, limit = 100): Promise<AgentAction[]> {
+  const res = await apiFetch<AgentActionsResponse>(
+    `/contacts/${contactId}/actions?limit=${limit}`,
   )
   return res.actions ?? []
 }
