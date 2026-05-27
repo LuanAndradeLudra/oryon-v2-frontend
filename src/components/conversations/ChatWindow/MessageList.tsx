@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState, useLayoutEffect } from 'react'
+import { useEffect, useRef, useCallback, useState, useLayoutEffect, useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
 import { MessageBubble } from './MessageBubble'
 import { TypingIndicator } from './TypingIndicator'
@@ -39,6 +39,15 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore }
   const isInitialLoadRef = useRef(true)
   const prevFirstIdRef = useRef<string | null>(null)
   const [newMsgIds, setNewMsgIds] = useState<Set<string>>(new Set())
+
+  // Index by wamid so a reply bubble can resolve its quoted message from the
+  // already-loaded window (no extra fetch). Degrades gracefully when the
+  // original is outside the loaded page.
+  const byWamid = useMemo(() => {
+    const map = new Map<string, Message>()
+    for (const m of messages) if (m.wamid) map.set(m.wamid, m)
+    return map
+  }, [messages])
 
   // Instant jump to bottom (no animation) — used on initial load / conversation switch
   const jumpToBottom = useCallback(() => {
@@ -144,6 +153,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore }
               message={msg}
               prevMessage={prev}
               showAvatar={!prev || prev.direction !== msg.direction}
+              quotedMessage={msg.contextWamid ? byWamid.get(msg.contextWamid) ?? null : null}
             />
           </div>
         )

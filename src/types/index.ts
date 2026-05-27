@@ -56,8 +56,12 @@ export type MessageType =
   | 'location'
   | 'sticker'
   | 'reaction'
-  | 'template'
+  | 'contacts'
   | 'interactive'
+  | 'button'
+  | 'order'
+  | 'system'
+  | 'template'
   | 'unsupported'
 
 export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed'
@@ -216,6 +220,10 @@ export interface ContactFilters {
   optIn?: boolean
   sortBy?: 'displayName' | 'leadScore' | 'lastContactedAt' | 'createdAt'
   sortDir?: 'asc' | 'desc'
+  /** Faixa de lead score (interpretada no backend: high>=80, medium 50-79, low<50). */
+  leadScoreBand?: 'high' | 'medium' | 'low'
+  /** Recência do último contato (interpretada no backend a partir de lastContactedAt). */
+  lastContact?: '24h' | '7d' | '30d' | 'none'
 }
 
 export interface Contact {
@@ -625,6 +633,8 @@ export interface Conversation {
   channel: string
   lastMessageAt: string
   lastMessagePreview: string
+  /** Who sent the last message — drives the sender indicator on the preview. */
+  lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | null
   unreadCount: number
   /** Minimal shape — only the fields the conversation list/header actually
    *  read (id, firstName, lastName for the assignee pill). The realtime
@@ -673,7 +683,15 @@ export interface Message {
   reactionEmoji?: string | null
   /** wamid of the message that was reacted to (type = 'reaction'). */
   reactionTargetWamid?: string | null
-  metadata?: Record<string, unknown>
+  /** Structured payload for non-trivial types (contacts, interactive reply,
+   *  order, system, referral, …). Discriminated by `metadata.kind`. */
+  metadata?: Record<string, unknown> | null
+  /** wamid of the message this one replies to (WhatsApp `context.id`). */
+  contextWamid?: string | null
+  /** Sender of the replied-to message (WhatsApp `context.from`). */
+  contextFrom?: string | null
+  /** Origin of the message — drives the per-bubble sender indicator. */
+  senderKind?: 'client' | 'operator' | 'ai' | 'campaign' | null
   sentAt: string
   deliveredAt?: string
   readAt?: string

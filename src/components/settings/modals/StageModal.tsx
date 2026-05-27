@@ -3,13 +3,9 @@ import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
+import { ColorPicker } from '@/components/ui/ColorPicker'
+import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import type { TenantStage } from '@/types'
-
-const PRESET_COLORS = [
-  '#6366f1', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b',
-  '#ef4444', '#ec4899', '#06b6d4', '#64748b', '#475569',
-  '#84cc16', '#f97316',
-]
 
 interface StageModalProps {
   open: boolean
@@ -20,7 +16,7 @@ interface StageModalProps {
 
 export function StageModal({ open, onClose, onSave, editStage }: StageModalProps) {
   const [label, setLabel] = useState('')
-  const [color, setColor] = useState('#6366f1')
+  const [color, setColor] = useState(DEFAULT_ENTITY_COLOR)
   const [isTerminal, setIsTerminal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -28,7 +24,7 @@ export function StageModal({ open, onClose, onSave, editStage }: StageModalProps
   useEffect(() => {
     if (open) {
       setLabel(editStage?.label ?? '')
-      setColor(editStage?.color ?? '#6366f1')
+      setColor(editStage?.color ?? DEFAULT_ENTITY_COLOR)
       setIsTerminal(editStage?.isTerminal ?? false)
       setError('')
     }
@@ -67,29 +63,7 @@ export function StageModal({ open, onClose, onSave, editStage }: StageModalProps
         </FormField>
 
         <FormField label="Cor">
-          <div className="flex flex-wrap gap-2 mb-2">
-            {PRESET_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => setColor(c)}
-                className="w-7 h-7 rounded-full border-2 transition-all"
-                style={{
-                  backgroundColor: c,
-                  borderColor: color === c ? '#fff' : 'transparent',
-                  boxShadow: color === c ? `0 0 0 2px ${c}` : 'none',
-                }}
-              />
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full border border-surface-700 flex-shrink-0" style={{ backgroundColor: color }} />
-            <Input
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              placeholder="#6366f1"
-              className="font-mono text-sm"
-            />
-          </div>
+          <ColorPicker value={color} onChange={setColor} />
         </FormField>
 
         <div className="flex items-center justify-between py-2 border-t border-surface-800">

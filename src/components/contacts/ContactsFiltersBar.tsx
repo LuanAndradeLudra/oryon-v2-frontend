@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Search, X, ChevronDown, Tag } from 'lucide-react'
 import { cn, hexToRgba } from '@/lib/utils'
 import { tagsApi } from '@/services/api'
-import type { ContactFilters, ContactSource, Tag as TagType } from '@/types'
+import type { ContactFilters, ContactSource, ContactSentiment, ContactIntent, Tag as TagType } from '@/types'
 
 const SOURCES: { value: ContactSource; label: string }[] = [
   { value: 'whatsapp',  label: 'WhatsApp' },
@@ -19,6 +19,36 @@ const SORTS = [
   { value: 'leadScore',       label: 'Lead score' },
   { value: 'displayName',     label: 'Nome (A-Z)' },
   { value: 'createdAt',       label: 'Mais recente' },
+]
+
+const INTENTS: { value: ContactIntent; label: string }[] = [
+  { value: 'high',   label: 'Intenção alta' },
+  { value: 'medium', label: 'Intenção média' },
+  { value: 'low',    label: 'Intenção baixa' },
+]
+
+const SENTIMENTS: { value: ContactSentiment; label: string }[] = [
+  { value: 'positive', label: 'Positivo' },
+  { value: 'neutral',  label: 'Neutro' },
+  { value: 'negative', label: 'Negativo' },
+]
+
+const OPT_INS: { value: string; label: string }[] = [
+  { value: 'true',  label: 'Com opt-in' },
+  { value: 'false', label: 'Sem opt-in' },
+]
+
+const LEAD_BANDS: { value: NonNullable<ContactFilters['leadScoreBand']>; label: string }[] = [
+  { value: 'high',   label: 'Score alto (80+)' },
+  { value: 'medium', label: 'Score médio (50-79)' },
+  { value: 'low',    label: 'Score baixo (<50)' },
+]
+
+const LAST_CONTACTS: { value: NonNullable<ContactFilters['lastContact']>; label: string }[] = [
+  { value: '24h',  label: 'Contato < 24h' },
+  { value: '7d',   label: 'Contato < 7 dias' },
+  { value: '30d',  label: 'Contato < 30 dias' },
+  { value: 'none', label: 'Sem contato' },
 ]
 
 // ─── Custom select wrapper ────────────────────────────────────────────────────
@@ -151,73 +181,153 @@ function TagFilter({ selected, onChange }: {
 interface ContactsFiltersBarProps {
   filters: ContactFilters
   onFiltersChange: (f: ContactFilters) => void
+  /** Quando true, renderiza num layout empilhado (busca em cima, filtros
+   *  embaixo) sem a faixa própria (px/py/border-b) — para ser hospedado
+   *  dentro do slot col-span-2 da ContactsStatsBar. Default false mantém o
+   *  layout de faixa autônoma usado quando o card de Insights está ativo. */
+  embedded?: boolean
 }
 
-export function ContactsFiltersBar({ filters, onFiltersChange }: ContactsFiltersBarProps) {
-  const hasFilters = !!filters.source || (filters.tagId?.length ?? 0) > 0
+export function ContactsFiltersBar({ filters, onFiltersChange, embedded = false }: ContactsFiltersBarProps) {
+  const hasFilters =
+    !!filters.source ||
+    (filters.tagId?.length ?? 0) > 0 ||
+    !!filters.intent ||
+    !!filters.sentiment ||
+    filters.optIn !== undefined ||
+    !!filters.leadScoreBand ||
+    !!filters.lastContact
 
+  // Limpar filtros — ícone X à direita da busca. Só aparece quando há filtro
+  // ativo; por ser horizontal, não altera a altura do card.
+  const clearBtn = hasFilters && (
+    <button
+      onClick={() => onFiltersChange({ search: filters.search, sortBy: filters.sortBy })}
+      title="Limpar filtros"
+      aria-label="Limpar filtros"
+      className="flex-shrink-0 flex items-center justify-center px-2.5 py-2 rounded-lg border border-surface-700 bg-surface-800 text-surface-400 hover:text-surface-100 hover:border-surface-600 transition-all"
+    >
+      <X className="w-4 h-4" />
+    </button>
+  )
+
+  const search = (
+    <div className={cn('relative', embedded ? 'flex-1 min-w-0' : 'flex-1 min-w-48')}>
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" />
+      <input
+        type="text"
+        value={filters.search ?? ''}
+        onChange={(e) => onFiltersChange({ ...filters, search: e.target.value || undefined })}
+        placeholder="Buscar por nome, telefone, empresa ou etiqueta..."
+        className="w-full pl-9 pr-9 py-2 rounded-lg text-sm bg-surface-800 border border-surface-700 text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+      />
+      {filters.search && (
+        <button
+          onClick={() => onFiltersChange({ ...filters, search: undefined })}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-100"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  )
+
+  // Filtros desktop — em mobile so a busca aparece. Filtros avancados
+  // ficam para o desktop (abrir o link no computador via "Mais").
+  const advancedFilters = (
+    <div className="hidden md:flex items-center gap-2 flex-wrap">
+      {/* Source */}
+      <FilterSelect
+        value={filters.source ?? ''}
+        onChange={(v) => onFiltersChange({ ...filters, source: (v || undefined) as ContactSource | undefined })}
+        placeholder="Fonte"
+      >
+        {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+      </FilterSelect>
+
+      {/* Tags */}
+      <TagFilter
+        selected={filters.tagId ?? []}
+        onChange={(ids) => onFiltersChange({ ...filters, tagId: ids.length > 0 ? ids : undefined })}
+      />
+
+      {/* Sort */}
+      <FilterSelect
+        value={filters.sortBy ?? 'lastContactedAt'}
+        onChange={(v) => onFiltersChange({ ...filters, sortBy: v as ContactFilters['sortBy'] })}
+      >
+        {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+      </FilterSelect>
+
+      {/* Intent */}
+      <FilterSelect
+        value={filters.intent ?? ''}
+        onChange={(v) => onFiltersChange({ ...filters, intent: (v || undefined) as ContactIntent | undefined })}
+        placeholder="Intenção"
+      >
+        {INTENTS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
+      </FilterSelect>
+
+      {/* Sentiment (sobre aiSentiment) */}
+      <FilterSelect
+        value={filters.sentiment ?? ''}
+        onChange={(v) => onFiltersChange({ ...filters, sentiment: (v || undefined) as ContactSentiment | undefined })}
+        placeholder="Sentimento"
+      >
+        {SENTIMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+      </FilterSelect>
+
+      {/* Opt-in (boolean → string no select) */}
+      <FilterSelect
+        value={filters.optIn === undefined ? '' : String(filters.optIn)}
+        onChange={(v) => onFiltersChange({ ...filters, optIn: v === '' ? undefined : v === 'true' })}
+        placeholder="Opt-in"
+      >
+        {OPT_INS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </FilterSelect>
+
+      {/* Lead score (faixa interpretada no backend) */}
+      <FilterSelect
+        value={filters.leadScoreBand ?? ''}
+        onChange={(v) => onFiltersChange({ ...filters, leadScoreBand: (v || undefined) as ContactFilters['leadScoreBand'] })}
+        placeholder="Lead score"
+      >
+        {LEAD_BANDS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+      </FilterSelect>
+
+      {/* Atividade (recência do último contato) */}
+      <FilterSelect
+        value={filters.lastContact ?? ''}
+        onChange={(v) => onFiltersChange({ ...filters, lastContact: (v || undefined) as ContactFilters['lastContact'] })}
+        placeholder="Atividade"
+      >
+        {LAST_CONTACTS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+      </FilterSelect>
+    </div>
+  )
+
+  // Embedded: layout empilhado p/ preencher a altura do slot col-span-2.
+  // O X de limpar filtros fica na linha da busca, à direita.
+  if (embedded) {
+    return (
+      <div className="flex flex-col justify-center gap-2 h-full">
+        <div className="flex items-center gap-2">
+          {search}
+          {clearBtn}
+        </div>
+        {advancedFilters}
+      </div>
+    )
+  }
+
+  // Standalone: faixa própria (usada quando o card de Insights está ativo).
   return (
     <div className="flex flex-col gap-2 px-4 py-2.5 border-b border-surface-800">
-      {/* Search + selects */}
       <div className="flex items-center gap-2 flex-wrap">
-        {/* Search */}
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" />
-          <input
-            type="text"
-            value={filters.search ?? ''}
-            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value || undefined })}
-            placeholder="Buscar por nome, telefone, empresa ou etiqueta..."
-            className="w-full pl-9 pr-9 py-2 rounded-lg text-sm bg-surface-800 border border-surface-700 text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
-          />
-          {filters.search && (
-            <button
-              onClick={() => onFiltersChange({ ...filters, search: undefined })}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-100"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Filtros desktop — em mobile so a busca aparece. Filtros avancados
-            ficam para o desktop (abrir o link no computador via "Mais"). */}
-        <div className="hidden md:flex items-center gap-2">
-          {/* Source */}
-          <FilterSelect
-            value={filters.source ?? ''}
-            onChange={(v) => onFiltersChange({ ...filters, source: (v || undefined) as ContactSource | undefined })}
-            placeholder="Fonte"
-          >
-            {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </FilterSelect>
-
-          {/* Tags */}
-          <TagFilter
-            selected={filters.tagId ?? []}
-            onChange={(ids) => onFiltersChange({ ...filters, tagId: ids.length > 0 ? ids : undefined })}
-          />
-
-          {/* Sort */}
-          <FilterSelect
-            value={filters.sortBy ?? 'lastContactedAt'}
-            onChange={(v) => onFiltersChange({ ...filters, sortBy: v as ContactFilters['sortBy'] })}
-          >
-            {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </FilterSelect>
-
-          {/* Clear */}
-          {hasFilters && (
-            <button
-              onClick={() => onFiltersChange({ search: filters.search, sortBy: filters.sortBy })}
-              className="text-xs text-brand-400 hover:text-brand-300 px-2 py-1.5 rounded-lg hover:bg-brand-500/10 transition-all"
-            >
-              Limpar filtros
-            </button>
-          )}
-        </div>
+        {search}
+        {advancedFilters}
+        {clearBtn}
       </div>
-
     </div>
   )
 }

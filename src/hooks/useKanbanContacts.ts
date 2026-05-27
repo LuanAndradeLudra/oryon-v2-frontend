@@ -158,12 +158,16 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
     const generation = generationRef.current + 1
     generationRef.current = generation
 
-    // Reset columns to a "loading page 1" state for every stage so transitions
-    // (e.g. filter changed) don't show stale data with the new badge counts.
-    setColumns(() => {
+    // Stale-while-revalidate: mantemos os contatos já carregados visíveis e só
+    // marcamos loading=true. Assim a troca de filtro não pisca skeletons na
+    // tela inteira — os cards antigos ficam (levemente esmaecidos pela coluna)
+    // até a nova página chegar e substituí-los suavemente. Colunas que ainda
+    // não tinham dados caem no skeleton normal (cards.length === 0).
+    setColumns((prev) => {
       const next: Record<string, ColumnState> = {}
       for (const s of stages) {
-        next[s.key] = { ...EMPTY_COLUMN, loading: true }
+        const cur = prev[s.key] ?? EMPTY_COLUMN
+        next[s.key] = { ...cur, loading: true, error: null }
       }
       return next
     })

@@ -1,14 +1,10 @@
 import { useState } from 'react'
 import { Search, Check, X, Plus, Trash2, Loader2 } from 'lucide-react'
 import { Dropdown } from './Dropdown'
+import { ColorPicker } from './ColorPicker'
+import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { cn } from '@/lib/utils'
 import type { Tag } from '@/types'
-
-const PRESET_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
-  '#f97316', '#f59e0b', '#10b981', '#06b6d4',
-  '#3b82f6', '#64748b', '#84cc16', '#f43f5e',
-]
 
 interface TagPickerContentProps {
   allTags: Tag[]
@@ -37,7 +33,7 @@ export function TagPickerContent({
   const [search, setSearch]           = useState('')
   const [creating, setCreating]       = useState(false)
   const [newName, setNewName]         = useState('')
-  const [newColor, setNewColor]       = useState(PRESET_COLORS[0])
+  const [newColor, setNewColor]       = useState(DEFAULT_ENTITY_COLOR)
   const [saving, setSaving]           = useState(false)
   const [deletingId, setDeletingId]   = useState<string | null>(null)
   const [hoverId, setHoverId]         = useState<string | null>(null)
@@ -54,7 +50,7 @@ export function TagPickerContent({
       const tag = await onCreate(newName.trim(), newColor)
       onAdd(tag)
       setNewName('')
-      setNewColor(PRESET_COLORS[0])
+      setNewColor(DEFAULT_ENTITY_COLOR)
       setCreating(false)
     } finally {
       setSaving(false)
@@ -119,19 +115,9 @@ export function TagPickerContent({
             className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 outline-none focus:border-brand-500 transition-colors"
           />
 
-          {/* Color swatches */}
-          <div className="flex flex-wrap gap-1.5 mt-2.5">
-            {PRESET_COLORS.map((color) => (
-              <button
-                key={color}
-                onClick={() => setNewColor(color)}
-                className={cn(
-                  'w-5 h-5 rounded-full transition-all',
-                  newColor === color && 'ring-2 ring-white ring-offset-1 ring-offset-surface-800 scale-110'
-                )}
-                style={{ backgroundColor: color }}
-              />
-            ))}
+          {/* Color picker — curated swatches + custom hex */}
+          <div className="mt-2.5">
+            <ColorPicker value={newColor} onChange={setNewColor} />
           </div>
 
           {/* Preview */}

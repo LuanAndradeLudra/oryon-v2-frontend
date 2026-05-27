@@ -1,10 +1,13 @@
 import { useCallback, useState, type MouseEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   MoreHorizontal, ChevronRight, Phone, Check, Clock, Star, Building2,
   ExternalLink, Copy, CheckSquare, Square, ArrowRightLeft, Trash2,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { contactsApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn, hexToRgba, formatRelativeTime } from '@/lib/utils'
@@ -35,8 +38,29 @@ export function KanbanCard({
   onDeleteSelected,
 }: KanbanCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [openingChat, setOpeningChat] = useState(false)
+  const navigate = useNavigate()
   const otherStages = stages.filter((s) => s.key !== contact.stage)
   const stageColor = stages.find((s) => s.key === contact.stage)?.color
+
+  // Abre a conversa do contato DENTRO da plataforma (página de Conversas),
+  // não o link externo wa.me. Busca a conversa mais recente do contato e
+  // navega via ?id=<convId> (mesmo padrão do ContactDetailHeader). Sem
+  // conversa, cai na lista de conversas.
+  const handleOpenChat = useCallback(async (e: MouseEvent) => {
+    e.stopPropagation()
+    if (openingChat) return
+    setOpeningChat(true)
+    try {
+      const r = await contactsApi.getConversations(contact.id)
+      const conv = r.data?.data?.[0]
+      navigate(conv ? `/conversations?id=${conv.id}` : '/conversations')
+    } catch {
+      navigate('/conversations')
+    } finally {
+      setOpeningChat(false)
+    }
+  }, [contact.id, navigate, openingChat])
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
@@ -213,10 +237,16 @@ export function KanbanCard({
           </div>
         )}
         {contact.waId && (
-          <span className="flex items-center gap-1 text-[11px] text-surface-400 font-mono">
-            <Phone className="w-2.5 h-2.5 flex-shrink-0" />
+          <button
+            type="button"
+            onClick={handleOpenChat}
+            disabled={openingChat}
+            title="Abrir conversa"
+            className="self-start inline-flex items-center gap-1.5 text-[11px] text-surface-400 font-mono hover:text-status-active transition-colors"
+          >
+            <WhatsAppIcon variant="mono" size={13} className="text-status-active" />
             {contact.waId}
-          </span>
+          </button>
         )}
       </div>
 
