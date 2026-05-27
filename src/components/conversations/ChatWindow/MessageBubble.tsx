@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, MapPin, Mic, Download, Play, Pause,
-  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2,
+  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2, Megaphone,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -10,6 +10,8 @@ import type { Message } from '@/types'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
 import { feAudioLog } from '@/lib/audioMediaDebug'
 import { getAuthenticatedMediaUrl, useAuthenticatedMediaSrc } from '@/lib/mediaUrls'
+import { renderExtendedContent, STRUCTURED_TYPES, ReferralBanner } from './messageRenderers/registry'
+import { ReplyQuoteBar } from './messageRenderers/ReplyQuoteBar'
 
 // Robust media download: fetch blob (works cross-origin as long as CORS is
 // permissive), fall back to opening in a new tab if the browser refuses.
@@ -33,6 +35,8 @@ interface MessageBubbleProps {
   message: Message
   showAvatar?: boolean
   prevMessage?: Message
+  /** The message this one replies to, resolved by MessageList from the loaded window. */
+  quotedMessage?: Message | null
 }
 
 function StatusIcon({ status }: { status: Message['status'] }) {
@@ -543,10 +547,19 @@ function MediaContent({
     )
   }
 
+  // Structured/extended types (contacts, interactive, button, order, system,
+  // unsupported) render via the extensible registry — a type the backend
+  // captured never falls through to a blank bubble.
+  const extended = renderExtendedContent(message)
+  if (extended) return extended
+
   return null
 }
 
 function TextContent({ message }: { message: Message }) {
+  // Structured types own their full display via the registry; don't also
+  // render the synthetic "[…]" body underneath the rich renderer.
+  if (STRUCTURED_TYPES.has(message.type)) return null
   return message.body ? (
     <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
       <WhatsAppText text={message.body} />
@@ -554,9 +567,22 @@ function TextContent({ message }: { message: Message }) {
   ) : null
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
+  // Campaign/automation name carried in metadata, shown in the sender indicator.
+  const campaignName =
+    typeof (message.metadata as { campaignName?: unknown } | null)?.campaignName === 'string'
+      ? (message.metadata as { campaignName: string }).campaignName
+      : undefined
+  // Faixa lateral do bubble outbound: verde = operador humano, âmbar = IA
+  // (agente conversacional). Disparos de campanha/automação NÃO têm faixa.
+  const outboundAccent =
+    message.senderKind === 'campaign'
+      ? null
+      : message.sentByUser
+        ? 'rgba(16,185,129,0.7)'
+        : 'rgba(245,158,11,0.8)'
   const gap = isSameDirection ? 'mt-0.5' : 'mt-3'
 
   // Transcription toggle lives here so the "Ver transcrição" control can sit
@@ -652,11 +678,13 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           !isSameDirection && !isOutbound && 'rounded-bl-2xl rounded-tl-sm'
         )}
         style={isOutbound ? {
-          boxShadow: `0 1px 2px 0 rgb(0 0 0 / 0.05), inset -3px 0 0 0 ${
-            message.sentByUser ? 'rgba(16,185,129,0.7)' : 'rgba(245,158,11,0.8)'
-          }`,
+          boxShadow: outboundAccent
+            ? `0 1px 2px 0 rgb(0 0 0 / 0.05), inset -3px 0 0 0 ${outboundAccent}`
+            : '0 1px 2px 0 rgb(0 0 0 / 0.05)',
         } : undefined}
       >
+        {message.contextWamid && <ReplyQuoteBar message={message} quoted={quotedMessage} />}
+        <ReferralBanner message={message} />
         <MediaContent message={message} showTranscription={showTranscription} />
         <TextContent message={message} />
 
@@ -691,26 +719,33 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
             )}
           >
             {isOutbound && (
-              // Author indicator: icon-only for AI (the bot icon already
-                // carries the meaning), icon + first name for human operators.
-                // `leading-none` keeps the text baseline matching the icon's
-                // visual center so the row aligns cleanly with the timestamp.
-              <span
-                className={cn(
-                  'inline-flex items-center gap-0.5 text-[10px] leading-none',
-                  'text-bubble-out-time',
-                )}
-                title={message.sentByUser ? 'Enviado por um operador humano' : 'Enviado pelo agente de IA'}
-              >
-                {message.sentByUser ? (
-                  <>
-                    <UserCircle2 className="w-3 h-3 shrink-0" />
-                    <span className="leading-none">{message.sentByUser.firstName}</span>
-                  </>
-                ) : (
-                  <Bot className="w-3 h-3 shrink-0" />
-                )}
-              </span>
+              // Author indicator: 📣 Campanha for campaign/template sends,
+              // icon + first name for human operators, bot icon for AI.
+              // `leading-none` keeps the text baseline matching the icon's
+              // visual center so the row aligns cleanly with the timestamp.
+              message.senderKind === 'campaign' ? (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] leading-none text-bubble-out-time max-w-[140px]"
+                  title={campaignName ? `Campanha: ${campaignName}` : 'Enviado via campanha'}
+                >
+                  <Megaphone className="w-3 h-3 shrink-0" />
+                  <span className="leading-none truncate">{campaignName ?? 'Campanha'}</span>
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] leading-none text-bubble-out-time"
+                  title={message.sentByUser ? 'Enviado por um operador humano' : 'Enviado pelo agente de IA'}
+                >
+                  {message.sentByUser ? (
+                    <>
+                      <UserCircle2 className="w-3 h-3 shrink-0" />
+                      <span className="leading-none">{message.sentByUser.firstName}</span>
+                    </>
+                  ) : (
+                    <Bot className="w-3 h-3 shrink-0" />
+                  )}
+                </span>
+              )
             )}
             <span className={cn('text-[10px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-400')}>
               {timeStr}

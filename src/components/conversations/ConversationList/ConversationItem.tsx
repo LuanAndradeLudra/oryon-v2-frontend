@@ -2,7 +2,7 @@ import { memo, useCallback } from 'react'
 import {
   Camera, Mic, FileText, Video, MapPin, Sticker,
   ExternalLink, Phone, Copy,
-  Bot, UserCheck, UserX, Clock,
+  Bot, UserCheck, UserX, Clock, Megaphone, Users,
 } from 'lucide-react'
 import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
@@ -40,6 +40,26 @@ function MessagePreview({ text }: { text: string }) {
   return <>{truncate(text || '…', 52)}</>
 }
 
+/** Icon shown before the preview indicating who sent the last message.
+ *  Client (inbound) shows no icon — the contact avatar already implies it. */
+const SENDER_META: Record<'operator' | 'ai' | 'campaign', { icon: typeof Bot; title: string; className: string }> = {
+  ai:       { icon: Bot,       title: 'Última mensagem enviada pela IA',                 className: 'text-brand-400' },
+  campaign: { icon: Megaphone, title: 'Template enviado via campanha',                   className: 'text-amber-400' },
+  operator: { icon: Users,     title: 'Enviada por um usuário da plataforma (Equipe)',   className: 'text-emerald-400' },
+}
+
+function SenderIndicator({ kind }: { kind?: Conversation['lastMessageSenderKind'] }) {
+  if (!kind || kind === 'client') return null
+  const meta = SENDER_META[kind]
+  if (!meta) return null
+  const Icon = meta.icon
+  return (
+    <span title={meta.title} className="inline-flex flex-shrink-0">
+      <Icon className={cn('w-3.5 h-3.5', meta.className)} />
+    </span>
+  )
+}
+
 interface ConversationItemProps {
   conversation: Conversation
   isActive: boolean
@@ -61,7 +81,7 @@ const statusLabel = {
 }
 
 export const ConversationItem = memo(function ConversationItem({ conversation, isActive, onSelect }: ConversationItemProps) {
-  const { contact, lastMessagePreview, lastMessageAt, unreadCount, status, assignedUser, tags } =
+  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, status, assignedUser, tags } =
     conversation
 
   const hasUnread = unreadCount > 0 && !isActive
@@ -133,12 +153,15 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
 
         {/* Row 3: message preview + unread badge */}
         <div className="flex items-center justify-between gap-2">
-          <p className={cn(
-            'text-xs truncate',
+          <div className={cn(
+            'flex items-center gap-1 min-w-0 text-xs',
             hasUnread ? 'text-surface-300' : 'text-surface-500'
           )}>
-            <MessagePreview text={lastMessagePreview || '…'} />
-          </p>
+            <SenderIndicator kind={lastMessageSenderKind} />
+            <span className="truncate">
+              <MessagePreview text={lastMessagePreview || '…'} />
+            </span>
+          </div>
           {hasUnread && (
             <span className="flex-shrink-0 min-w-[18px] h-[18px] bg-brand-500 text-surface-950 text-[10px] font-bold rounded-full flex items-center justify-center px-1">
               {unreadCount > 99 ? '99+' : unreadCount}

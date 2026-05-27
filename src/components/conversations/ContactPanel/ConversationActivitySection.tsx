@@ -18,7 +18,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Bot, CheckCircle, AlertCircle, Loader2, UserPlus, UserMinus, Tag as TagIcon,
   TagsIcon, UserCog, History, Pause, Play, ArrowRightLeft,
-  CheckCircle2, Clock, Inbox, Archive, Send, MoveRight,
+  CheckCircle2, Clock, Inbox, Archive, Send, MoveRight, Megaphone, CornerDownLeft,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn, formatRelativeTime } from '@/lib/utils'
@@ -548,6 +548,22 @@ function visualForActionKey(key: string, metadata: Record<string, unknown>): Row
     case 'contact_updated':
       return { label: 'Atualizou contato', Icon: UserCog,
                rowBg: 'bg-fuchsia-950/25', iconClass: 'bg-fuchsia-900/40 text-fuchsia-300' }
+    case 'automated_message_sent': {
+      const name = typeof metadata.name === 'string' ? metadata.name : null
+      return {
+        label: name ? `Disparo enviado: ${name}` : 'Disparo automático enviado',
+        Icon: Megaphone,
+        rowBg: 'bg-amber-950/25', iconClass: 'bg-amber-900/40 text-amber-300',
+      }
+    }
+    case 'interactive_reply_received': {
+      const title = typeof metadata.title === 'string' ? metadata.title : null
+      return {
+        label: title ? `Cliente respondeu: ${title}` : 'Resposta interativa do cliente',
+        Icon: CornerDownLeft,
+        rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300',
+      }
+    }
     default:
       return { label: key, Icon: Bot,
                rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300' }
