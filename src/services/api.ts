@@ -930,6 +930,24 @@ export const conversationsApi = {
   setAiPause(id: string, pauseUntil: string | null) {
     return api.patch<Conversation>(`/conversations/${id}/ai-pause`, { pauseUntil })
   },
+  /**
+   * "Intervir agora" — pause the AI using the agent's configured handoff
+   * window (Phase 34). The backend computes the duration from
+   * ai_handoff_pause_minutes (agent → org → default), so the frontend no
+   * longer hardcodes a value. Returns the conversation with the resolved
+   * aiPausedUntil.
+   */
+  interveneAiDefault(id: string) {
+    return api.patch<Conversation>(`/conversations/${id}/ai-pause`, { useDefaultDuration: true })
+  },
+  /**
+   * Phase 34 — bust the backend's per-agent behavior cache after the Agent
+   * Builder saves ai_handoff_pause_minutes / ai_inbound_debounce_seconds, so
+   * the new value takes effect immediately (otherwise it lags up to 60s).
+   */
+  refreshAgentBehaviorCache(agentId: string) {
+    return api.post(`/conversations/agent-behavior/${agentId}/refresh`)
+  },
 }
 
 export const messagesApi = {

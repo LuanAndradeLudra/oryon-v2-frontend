@@ -48,6 +48,13 @@ export interface AgentConfig {
   decision_criteria_stage_transitions?: string | null
   decision_criteria_tags?: string | null
   decision_criteria_handoff?: string | null
+  /** Phase 34 — per-agent AI behavior. `ai_handoff_pause_minutes`: minutes the
+   *  AI stays paused after a human operator intervenes. `ai_inbound_debounce_
+   *  seconds`: seconds the AI waits to batch fragmented inbound messages
+   *  before replying (0 = immediate). NULL on either = inherit the
+   *  organization-level value (then the hardcoded default). */
+  ai_handoff_pause_minutes?: number | null
+  ai_inbound_debounce_seconds?: number | null
   // Metrics
   test_count: number
   last_tested_at: string | null
@@ -766,6 +773,7 @@ export async function updateAgent(
     | 'crm_capabilities'
     | 'decision_criteria_resolved' | 'decision_criteria_stage_transitions'
     | 'decision_criteria_tags' | 'decision_criteria_handoff'
+    | 'ai_handoff_pause_minutes' | 'ai_inbound_debounce_seconds'
   >>,
 ): Promise<AgentConfig> {
   const { userId, tenantId, actorName } = readSession()

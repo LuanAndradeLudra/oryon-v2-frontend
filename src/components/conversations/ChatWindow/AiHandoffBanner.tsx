@@ -47,6 +47,13 @@ interface HandoffProps {
   assignedUser?: { id: string; firstName: string; lastName?: string | null } | null
   onPause: (until: string) => Promise<void> | void
   onResume: () => Promise<void> | void
+  /**
+   * Phase 34 — "Intervir agora". When provided, the initial intervention
+   * pauses the AI for the agent's CONFIGURED handoff window (resolved
+   * server-side) instead of a hardcoded duration. Falls back to a 4h
+   * client-side pause when absent (older callers).
+   */
+  onIntervene?: () => Promise<void> | void
 }
 
 /** Shared state derivation — both Chip and Stripe need the same booleans
@@ -70,7 +77,7 @@ function useHandoffState(aiPausedUntil: string | null | undefined) {
 
 // ─── HandoffChip (lives inside ChatHeader) ───────────────────────────────────
 
-export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume }: HandoffProps) {
+export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, onIntervene }: HandoffProps) {
   const { pausedUntilMs, isPaused, isIndefinite } = useHandoffState(aiPausedUntil)
   const { user: currentUser } = useAuth()
   const [busy, setBusy] = useState(false)
@@ -122,6 +129,24 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume }: 
     }
   }
 
+  // Phase 34 — first intervention. Prefer the server-authoritative path
+  // (`onIntervene`) so the pause honours the agent's configured handoff
+  // window. Fall back to a 4h client-side pause for callers that don't
+  // pass `onIntervene`.
+  const handleIntervene = async () => {
+    if (!onIntervene) {
+      await handlePause(240)
+      return
+    }
+    setBusy(true)
+    setMenuOpen(false)
+    try {
+      await onIntervene()
+    } finally {
+      setBusy(false)
+    }
+  }
+
   // ── AI ativa ─────────────────────────────────────────────────────────────
   // Color convention (inverted 2026-05-15): amber = AI is in control (the
   // operator might want to step in), emerald = human took over (everything's
@@ -137,8 +162,8 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume }: 
         <button
           type="button"
           disabled={busy}
-          onClick={() => handlePause(240)}
-          title="Intervir agora — pausar IA por 4h"
+          onClick={handleIntervene}
+          title="Intervir agora — pausa a IA pelo período configurado no agente"
           aria-label="Intervir agora"
           className="inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-[11px] font-medium text-amber-200 hover:text-white hover:bg-amber-700/40 disabled:opacity-50 transition-colors"
         >

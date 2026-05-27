@@ -46,6 +46,9 @@ interface ChatHeaderProps {
    *  inline in the header and the actions (intervir / reativar / estender)
    *  are reachable in 1 click from here. */
   onSetAiPause: (pauseUntil: string | null) => Promise<void> | void
+  /** Phase 34 — "Intervir agora": pause using the agent's configured handoff
+   *  window (duration resolved server-side; no client-computed timestamp). */
+  onInterveneAi?: () => Promise<void> | void
   /** When provided, shows a mobile-only back button on the left of the header. */
   onBack?: () => void
 }
@@ -55,7 +58,7 @@ export function ChatHeader({
   onStatusChange, onToggleInfo, infoOpen,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
   onAssign, onArchive,
-  onSetAiPause,
+  onSetAiPause, onInterveneAi,
   onBack,
 }: ChatHeaderProps) {
   const isMobile = useIsMobile()
@@ -230,6 +233,7 @@ export function ChatHeader({
               assignedUser={conversation.assignedUser}
               onPause={(until) => onSetAiPause(until)}
               onResume={() => onSetAiPause(null)}
+              onIntervene={onInterveneAi}
             />
           </div>
         </div>
@@ -354,6 +358,7 @@ export function ChatHeader({
           assignedUser={conversation.assignedUser}
           onPause={(until) => onSetAiPause(until)}
           onResume={() => onSetAiPause(null)}
+          onIntervene={onInterveneAi}
         />
         <span className="w-px h-5 bg-surface-800 mx-1" />
 
