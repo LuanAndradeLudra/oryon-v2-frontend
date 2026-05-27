@@ -77,9 +77,6 @@ const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').th
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
 const NotificationsPage = lazyRoute(() => import('@/pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
 
-// DEV-only: visual harness for message rendering. The route below is gated by
-// import.meta.env.DEV, so it is never reachable in production builds.
-const MessageRenderPreview = lazyRoute(() => import('@/pages/dev/MessageRenderPreview').then(m => ({ default: m.MessageRenderPreview })))
 
 // Admin (Oryon staff only) — gated by RequireSuperAdmin inside the route.
 const SkillTemplatesPage       = lazyRoute(() => import('@/pages/admin/SkillTemplatesPage').then(m => ({ default: m.SkillTemplatesPage })))
@@ -201,11 +198,6 @@ function AnimatedRoutes() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/activate" element={<ActivateAccountPage />} />
-
-          {/* DEV-only message render harness — never registered in production builds */}
-          {import.meta.env.DEV && (
-            <Route path="/dev/messages" element={<MessageRenderPreview />} />
-          )}
 
           {/* Password setup gate */}
           <Route path="/set-password" element={
