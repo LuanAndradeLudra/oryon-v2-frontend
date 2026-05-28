@@ -8,7 +8,7 @@ export const FEATURE_FLAGS = {
   conversations: true,
   contacts: true,
   nexus: false,
-  campaigns: false,
+  campaigns: true,
   marketing: false,
   automations: false,
   agents: true,
@@ -71,7 +71,7 @@ export const BETA_TESTER_EMAILS: readonly string[] = [
 ]
 
 /** Flags desligadas globalmente que beta testers podem ver. */
-const BETA_GATED_FLAGS = new Set<FeatureFlag>(['campaigns'])
+const BETA_GATED_FLAGS = new Set<FeatureFlag>()
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
