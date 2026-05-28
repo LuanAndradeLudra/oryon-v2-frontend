@@ -342,7 +342,11 @@ export function CampaignWizard({
         templateId: selectedTemplate.id,
         segment,
         variableMappings: mappings,
-        scheduledAt: scheduleMode === 'later' ? scheduledAt : undefined,
+        // Converte para ISO UTC antes de enviar. O datetime-local devolve
+        // "YYYY-MM-DDTHH:mm" sem timezone — new Date() no browser interpreta
+        // como hora local do usuário, e .toISOString() converte para UTC.
+        // Isso garante que o servidor (UTC na AWS) dispare no horário certo.
+        scheduledAt: scheduleMode === 'later' ? new Date(scheduledAt).toISOString() : undefined,
         ...(whatsappNumberId ? { whatsappNumberId } : {}),
       } as any)
 
@@ -1332,7 +1336,12 @@ function Step4({
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={(e) => onScheduledAt(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
+                min={(() => {
+                  // toISOString() é UTC — subtrai o offset para obter hora local
+                  const now = new Date()
+                  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+                  return local.toISOString().slice(0, 16)
+                })()}
                 className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
               />
             </div>
