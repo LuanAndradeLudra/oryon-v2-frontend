@@ -26,6 +26,7 @@ export function useConversations(filters: ConversationFilters = {}) {
   const [statusCounts, setStatusCounts] = useState<ConversationStatusCounts>({
     all: 0, open: 0, pending: 0, resolved: 0,
   })
+  const [needsReviewCount, setNeedsReviewCount] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
 
   // Filter scoping is owned by the page — admins pick via a local
@@ -67,6 +68,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       loadedConvIds.current = new Set(data.data.map((c) => c.id))
       setHasMore(data.hasMore)
       setStatusCounts(data.statusCounts)
+      setNeedsReviewCount(data.needsReviewCount ?? 0)
       setError(null)
       initialLoadDone.current = true
     } catch {
@@ -96,6 +98,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       })
       setHasMore(data.hasMore)
       setStatusCounts(data.statusCounts)
+      setNeedsReviewCount(data.needsReviewCount ?? 0)
       pageRef.current = next
     } catch {
       // Keep the existing list; user can retry by scrolling again. No toast
@@ -113,7 +116,7 @@ export function useConversations(filters: ConversationFilters = {}) {
   }, [
     filters.status, filters.assignedTo, filters.aiHandling,
     filters.tagId, filters.search, filters.contactId, filters.whatsappNumberId,
-    filters.unreadOnly, filters.awaitingReply, filters.untagged,
+    filters.unreadOnly, filters.awaitingReply, filters.untagged, filters.needsReview,
     filters.startDate, filters.endDate,
   ])
 
@@ -160,6 +163,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       if (f.unreadOnly && conv.unreadCount === 0) return
       if (f.awaitingReply && !getAwaitingReply(conv)) return
       if (f.untagged && conv.tags && conv.tags.length > 0) return
+      if (f.needsReview && !conv.hasRecentAnomaly) return
       // Period filter — drop conversations whose lastMessageAt falls outside
       // the active range. Same comparison the backend uses (>= start, < end)
       // so the realtime prepend stays consistent with the paginated list.
@@ -222,6 +226,11 @@ export function useConversations(filters: ConversationFilters = {}) {
     const patch: Partial<Conversation> = { aiPausedUntil: payload.aiPausedUntil }
     if (payload.assignedUser !== undefined) {
       patch.assignedUser = payload.assignedUser ?? undefined
+    }
+    // Phase 33c — a phantom-confirmation handoff rides this same event and sets
+    // hasRecentAnomaly so the "Verificar" badge appears without a refetch.
+    if (payload.hasRecentAnomaly !== undefined) {
+      patch.hasRecentAnomaly = payload.hasRecentAnomaly
     }
     patchConv(payload.conversationId, patch)
   }, [patchConv])
@@ -324,6 +333,7 @@ export function useConversations(filters: ConversationFilters = {}) {
     hasMore,
     loadMore,
     statusCounts,
+    needsReviewCount,
     error,
     refetch: fetchConversations,
     handleNewMessage,

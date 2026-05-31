@@ -663,6 +663,13 @@ export interface Conversation {
    * the "Em atendimento IA" / "Você está atendendo" banner + countdown.
    */
   aiPausedUntil?: string | null
+  /**
+   * Phase 33c — true when a phantom-confirmation handoff fired on this
+   * conversation in the recent window (the AI claimed an action it never
+   * executed and the turn was transferred to a human). Drives the amber
+   * "Verificar" badge in the conversation list. Cleared after the window.
+   */
+  hasRecentAnomaly?: boolean
   createdAt: string
 }
 
@@ -704,6 +711,28 @@ export interface Message {
    *  the User entity allows null lastName at the database level. */
   sentByUser?: { id: string; firstName: string; lastName: string | null } | null
   sentByUserId?: string | null
+  /**
+   * Phase 33c — phantom-confirmation marker for this bubble. Set when the
+   * anti-claim guard caught the AI claiming an action it never executed on
+   * this turn. `handoff` = transferred to a human (needs verification);
+   * `corrected` = the AI self-corrected before sending. Null/absent otherwise.
+   */
+  anomaly?: {
+    kind: 'handoff' | 'corrected'
+    claimType: string | null
+    /** The phrase the AI used that triggered detection. */
+    matchedText?: string | null
+    /** Technical guard outcome (e.g. "retry_failed_fallback"). */
+    outcome?: string | null
+    /** When the anomaly was recorded (ISO). */
+    occurredAt?: string | null
+    /** The skill that should have run for this claim (slug). */
+    requiredSkill?: string | null
+    /** Skills/tools that were called and failed during the turn. */
+    skillFailures?: Array<{ name: string; kind: string; statusCode: number | null; message: string | null }>
+    /** Correlation id to cross-reference the agent-server logs. */
+    correlationId?: string | null
+  } | null
   createdAt: string
 }
 
@@ -732,6 +761,9 @@ export interface ConversationFilters {
   unreadOnly?: boolean
   awaitingReply?: boolean
   untagged?: boolean
+  /** Only conversations with a recent phantom-confirmation handoff (the
+   *  "Verificar" badge). Lets the operator triage AI validation errors. */
+  needsReview?: boolean
   tagId?: string
   contactId?: string
   search?: string
@@ -774,6 +806,9 @@ export interface ConversationStatusCounts {
 
 export interface ConversationListResponse extends PaginatedResponse<Conversation> {
   statusCounts: ConversationStatusCounts
+  /** Tenant-wide count of conversations with a recent phantom-confirmation
+   *  handoff — drives the "Verificar" indicator badge next to the search. */
+  needsReviewCount?: number
 }
 
 export interface SendMessageDto {
@@ -1149,6 +1184,10 @@ export interface SocketAiPauseUpdated {
    *  applies this to its cached conversation row. */
   assignedUser?: { id: string; firstName: string; lastName: string | null } | null
   assignmentChanged?: boolean
+  /** Phase 33c — a phantom-confirmation handoff reuses this event (it pauses
+   *  the AI + assigns) and sets this so the "Verificar" list badge appears in
+   *  realtime. Undefined for ordinary manual pause/resume. */
+  hasRecentAnomaly?: boolean
 }
 
 export interface SocketMessageStatus {

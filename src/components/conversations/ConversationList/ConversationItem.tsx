@@ -2,7 +2,7 @@ import { memo, useCallback } from 'react'
 import {
   Camera, Mic, FileText, Video, MapPin, Sticker,
   ExternalLink, Phone, Copy,
-  Bot, UserCheck, UserX, Clock, Megaphone, Users,
+  Bot, UserCheck, UserX, Clock, Megaphone, Users, AlertTriangle,
 } from 'lucide-react'
 import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
@@ -81,7 +81,7 @@ const statusLabel = {
 }
 
 export const ConversationItem = memo(function ConversationItem({ conversation, isActive, onSelect }: ConversationItemProps) {
-  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, status, assignedUser, tags } =
+  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, status, assignedUser, tags, hasRecentAnomaly } =
     conversation
 
   const hasUnread = unreadCount > 0 && !isActive
@@ -189,6 +189,19 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
 
             {tags && tags.length > 2 && (
               <span className="text-[10px] text-surface-500">+{tags.length - 2}</span>
+            )}
+
+            {/* Phase 33c — phantom-confirmation handoff flag. The AI claimed an
+                action it never executed and the turn was transferred to a human;
+                the operator must verify whether anything was actually recorded. */}
+            {hasRecentAnomaly && (
+              <span
+                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-500/15 text-amber-400 border border-amber-500/25"
+                title="Verificação necessária: a IA confirmou uma ação que pode não ter sido registrada no sistema."
+              >
+                <AlertTriangle className="w-2.5 h-2.5" />
+                Verificar
+              </span>
             )}
           </div>
 

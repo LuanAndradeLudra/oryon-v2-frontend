@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect, type MutableRefObject } from 'react'
 import {
   Loader2, MessageSquareOff, SlidersHorizontal,
-  Mail, Hourglass, Tag as TagIcon, Check, RotateCcw,
+  Mail, Hourglass, Tag as TagIcon, Check, RotateCcw, AlertTriangle,
 } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { ConversationSearch } from './ConversationSearch'
@@ -22,6 +22,9 @@ interface ConversationListProps {
    *  badges stay accurate even with pagination (otherwise they'd show only
    *  what fits in the loaded array). */
   statusCounts?: ConversationStatusCounts
+  /** Phase 33c — tenant-wide count of conversations needing review (the
+   *  "Verificar" badge). 0 hides the contextual indicator. */
+  needsReviewCount?: number
   activeId: string | null
   filters: ConversationFilters
   allTags: Tag[]
@@ -41,7 +44,7 @@ interface ConversationListProps {
 
 export function ConversationList({
   conversations, loading, loadingMore = false, hasMore = false,
-  statusCounts,
+  statusCounts, needsReviewCount = 0,
   activeId, filters, allTags, allContacts, allUsers,
   onSelectConversation, onFiltersChange, onLoadMore,
   scrollPositionRef,
@@ -141,6 +144,33 @@ export function ConversationList({
             />
           </div>
           {loading && <Loader2 className="w-4 h-4 text-brand-400 animate-spin flex-shrink-0" />}
+
+          {/* Phase 33c — verification badge. Contextual indicator: appears
+              ONLY when there are conversations needing review. Clicking
+              toggles the needsReview filter so the operator can triage
+              them. Active state mirrors the filter dropdown's blue glow but
+              in amber to match the in-bubble warning. */}
+          {needsReviewCount > 0 && (
+            <button
+              onClick={() =>
+                onFiltersChange({ ...filters, needsReview: filters.needsReview ? undefined : true })
+              }
+              aria-label="Conversas que precisam de verificação"
+              title={`${needsReviewCount} ${needsReviewCount === 1 ? 'conversa precisa' : 'conversas precisam'} de verificação`}
+              className={cn(
+                'relative flex items-center justify-center w-9 h-9 rounded-lg transition-all border flex-shrink-0',
+                filters.needsReview
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  : 'bg-surface-800 text-amber-400 border-surface-700 hover:bg-surface-700 hover:text-amber-300',
+              )}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-[10px] font-bold text-surface-950 flex items-center justify-center ring-2 ring-black">
+                {needsReviewCount > 99 ? '99+' : needsReviewCount}
+              </span>
+            </button>
+          )}
+
           <Dropdown
             open={filterMenuOpen}
             onClose={() => setFilterMenuOpen(false)}

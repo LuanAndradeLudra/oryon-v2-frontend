@@ -56,7 +56,7 @@ export function ConversationsPage() {
   const listScrollPosRef = useRef(0)
 
   const {
-    conversations, loading, loadingMore, hasMore, loadMore, statusCounts,
+    conversations, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
     handleNewMessage, handleAiPauseUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
@@ -125,6 +125,10 @@ export function ConversationsPage() {
         const patch: Partial<Conversation> = { aiPausedUntil: payload.aiPausedUntil }
         if (payload.assignedUser !== undefined) {
           patch.assignedUser = payload.assignedUser ?? undefined
+        }
+        // Phase 33c — mirror the anomaly flag onto the open conversation too.
+        if (payload.hasRecentAnomaly !== undefined) {
+          patch.hasRecentAnomaly = payload.hasRecentAnomaly
         }
         syncActive(payload.conversationId, patch)
       }
@@ -343,49 +347,40 @@ export function ConversationsPage() {
 
   return (
     <>
-      {/* 1 — Conversation list */}
-      {showList && (
-        isMobile ? (
+      {/* 1 — Conversation list. Mobile and desktop render the SAME list with
+          the same props — only the outer wrapper differs (mobile adds the
+          page header + flex column). Props are extracted into `listProps` so
+          new fields can never be passed to one variant and forgotten on the
+          other (a real bug we hit when adding the verification badge). */}
+      {showList && (() => {
+        const listProps = {
+          conversations,
+          loading,
+          loadingMore,
+          hasMore,
+          onLoadMore: loadMore,
+          statusCounts,
+          needsReviewCount,
+          activeId: activeConversation?.id ?? null,
+          filters,
+          allTags,
+          allContacts,
+          allUsers,
+          onSelectConversation: handleSelectConversation,
+          onFiltersChange: setFilters,
+          scrollPositionRef: listScrollPosRef,
+        }
+        return isMobile ? (
           <div className="flex flex-col flex-1 min-h-0 w-full">
             <MobilePageHeader title="Conversas" />
             <div className="flex-1 min-h-0 flex">
-              <ConversationList
-                conversations={conversations}
-                loading={loading}
-                loadingMore={loadingMore}
-                hasMore={hasMore}
-                onLoadMore={loadMore}
-                statusCounts={statusCounts}
-                activeId={activeConversation?.id ?? null}
-                filters={filters}
-                allTags={allTags}
-                allContacts={allContacts}
-                allUsers={allUsers}
-                onSelectConversation={handleSelectConversation}
-                onFiltersChange={setFilters}
-                scrollPositionRef={listScrollPosRef}
-              />
+              <ConversationList {...listProps} />
             </div>
           </div>
         ) : (
-          <ConversationList
-            conversations={conversations}
-            loading={loading}
-            loadingMore={loadingMore}
-            hasMore={hasMore}
-            onLoadMore={loadMore}
-            statusCounts={statusCounts}
-            activeId={activeConversation?.id ?? null}
-            filters={filters}
-            allTags={allTags}
-            allContacts={allContacts}
-            allUsers={allUsers}
-            onSelectConversation={handleSelectConversation}
-            onFiltersChange={setFilters}
-            scrollPositionRef={listScrollPosRef}
-          />
+          <ConversationList {...listProps} />
         )
-      )}
+      })()}
 
       {/* 3 — Chat window */}
       {showChat && (

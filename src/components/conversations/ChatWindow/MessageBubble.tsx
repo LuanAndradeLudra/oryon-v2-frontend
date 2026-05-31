@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Check, CheckCheck, Clock, AlertCircle, MapPin, Mic, Download, Play, Pause,
+  Check, CheckCheck, Clock, AlertCircle, AlertTriangle, MapPin, Mic, Download, Play, Pause,
   Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2, Megaphone, CornerUpLeft,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
@@ -12,6 +12,7 @@ import { feAudioLog } from '@/lib/audioMediaDebug'
 import { getAuthenticatedMediaUrl, useAuthenticatedMediaSrc } from '@/lib/mediaUrls'
 import { renderExtendedContent, STRUCTURED_TYPES, ReferralBanner } from './messageRenderers/registry'
 import { ReplyQuoteBar } from './messageRenderers/ReplyQuoteBar'
+import { AnomalyDetailModal } from './AnomalyDetailModal'
 
 // Robust media download: fetch blob (works cross-origin as long as CORS is
 // permissive), fall back to opening in a new tab if the browser refuses.
@@ -569,6 +570,16 @@ function TextContent({ message }: { message: Message }) {
   ) : null
 }
 
+/** Map the anti-claim guard's claim type to a human phrase for the bubble flag. */
+function phantomClaimLabel(raw: string | null | undefined): string {
+  switch (raw) {
+    case 'schedule': return 'um agendamento'
+    case 'cancel':   return 'um cancelamento'
+    case 'confirm':  return 'uma confirmação'
+    default:         return 'uma ação'
+  }
+}
+
 export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
@@ -592,6 +603,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
   // consumes this as a prop and renders the revealed text.
   const audioTranscription = getAudioTranscription(message)
   const [showTranscription, setShowTranscription] = useState(false)
+  const [anomalyOpen, setAnomalyOpen] = useState(false)
 
   // Stable — sentAt never changes after message creation
   const timeStr = useMemo(
@@ -804,6 +816,55 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         {/* Failed indicator */}
         {message.status === 'failed' && (
           <p className="text-[10px] text-danger mt-1">Falha no envio</p>
+        )}
+
+        {/* Phase 33c — phantom-confirmation flag on the exact bubble of the
+            turn where the anti-claim guard caught the AI claiming an action it
+            never executed. Full-bleed banner pinned to the bubble's bottom
+            edge (same width as the bubble); click opens a modal with the full
+            detail. Amber = handoff (needs verification); muted = the AI
+            self-corrected before sending. */}
+        {message.anomaly && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setAnomalyOpen(true) }}
+              title="Ver detalhes da verificação"
+              // w-0 + min-w-[calc(100%+1.5rem)] makes the banner span the full
+              // bubble width (the +1.5rem cancels the bubble's px-3 on each
+              // side, reached via -mx-3) WITHOUT contributing to the bubble's
+              // max-content width — so a long warning never forces a short
+              // message's bubble to grow. It always tracks the bubble's size.
+              className={cn(
+                'flex items-start gap-1.5 text-left w-0 min-w-[calc(100%+1.5rem)] -mx-3 -mb-2 mt-2 px-3 py-1.5 rounded-b-2xl border-t transition-colors',
+                message.anomaly.kind === 'handoff'
+                  ? 'bg-amber-500/15 border-amber-500/25 hover:bg-amber-500/25'
+                  : 'bg-surface-700/40 border-surface-600/40 hover:bg-surface-700/60',
+              )}
+            >
+              <AlertTriangle
+                className={cn(
+                  'w-3 h-3 mt-0.5 shrink-0',
+                  message.anomaly.kind === 'handoff' ? 'text-amber-400' : 'text-surface-400',
+                )}
+              />
+              <span
+                className={cn(
+                  'text-[10px] leading-tight flex-1 min-w-0',
+                  message.anomaly.kind === 'handoff' ? 'text-amber-200' : 'text-surface-300',
+                )}
+              >
+                {message.anomaly.kind === 'handoff'
+                  ? `Verificação necessária: a IA afirmou ${phantomClaimLabel(message.anomaly.claimType)} sem executar a operação no sistema.`
+                  : `A IA se autocorrigiu (${phantomClaimLabel(message.anomaly.claimType)}) antes de enviar.`}
+              </span>
+            </button>
+            <AnomalyDetailModal
+              open={anomalyOpen}
+              onClose={() => setAnomalyOpen(false)}
+              anomaly={message.anomaly}
+            />
+          </>
         )}
       </div>
     </div>

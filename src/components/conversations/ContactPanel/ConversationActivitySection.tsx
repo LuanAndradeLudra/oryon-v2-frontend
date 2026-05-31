@@ -19,7 +19,7 @@ import {
   Bot, CheckCircle, AlertCircle, Loader2, UserPlus, UserMinus, Tag as TagIcon,
   TagsIcon, UserCog, History, Pause, Play, ArrowRightLeft,
   CheckCircle2, Clock, Inbox, Archive, Send, MoveRight, Megaphone, CornerDownLeft,
-  MessageSquarePlus, RotateCcw, FileText,
+  MessageSquarePlus, RotateCcw, FileText, AlertTriangle,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn, formatRelativeTime } from '@/lib/utils'
@@ -582,8 +582,33 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
         rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300',
       }
     }
+    // Phase 33c — anti-claim guard outcomes. Handoff = the AI claimed an action
+    // it never executed and the turn was transferred to a human (needs review).
+    // Corrected = the AI tried to claim falsely but self-corrected (audit only).
+    case 'agent_phantom_confirmation_handoff':
+      return {
+        label: `Verificação necessária: a IA afirmou ${phantomClaimLabel(metadata.claimType)} sem executar a operação — transferido para atendente`,
+        Icon: AlertTriangle,
+        rowBg: 'bg-amber-950/40', iconClass: 'bg-amber-900/50 text-amber-200',
+      }
+    case 'agent_phantom_confirmation_corrected':
+      return {
+        label: `A IA tentou confirmar ${phantomClaimLabel(metadata.claimType)} sem executar — corrigido automaticamente`,
+        Icon: AlertCircle,
+        rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300',
+      }
     default:
       return { label: key, Icon: Bot,
                rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300' }
+  }
+}
+
+/** Map the anti-claim guard's claim type to a human phrase for timeline rows. */
+function phantomClaimLabel(raw: unknown): string {
+  switch (typeof raw === 'string' ? raw : '') {
+    case 'schedule': return 'um agendamento'
+    case 'cancel':   return 'um cancelamento'
+    case 'confirm':  return 'uma confirmação'
+    default:         return 'uma ação'
   }
 }
