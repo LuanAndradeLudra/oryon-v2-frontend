@@ -208,7 +208,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
   // Load canned responses once
   useEffect(() => {
-    axios.get<{ data: CannedResponse[] } | CannedResponse[]>(`${API}/canned-responses`)
+    axios.get<{ data: CannedResponse[] } | CannedResponse[]>(`${API}/canned-responses?limit=100`)
       .then((r) => setAllResponses(Array.isArray(r.data) ? r.data : r.data.data))
       .catch(() => {})
   }, [])
