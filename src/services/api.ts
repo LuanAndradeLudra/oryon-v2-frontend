@@ -12,6 +12,7 @@ import type {
   Campaign,
   CampaignSegment,
   CampaignVariableMapping,
+  CannedResponse,
   Contact,
   ContactCustomFieldDef,
   ContactFilters,
@@ -1455,6 +1456,25 @@ export interface WhatsappLineDependencies {
   automations: number
   automationsActive: number
   departments: Array<{ id: string; name: string; color: string }>
+}
+
+export const cannedResponsesApi = {
+  async fetchAll(): Promise<CannedResponse[]> {
+    const limit = 100
+    let page = 1
+    const all: CannedResponse[] = []
+    while (true) {
+      const { data } = await api.get<{ data: CannedResponse[]; hasMore: boolean } | CannedResponse[]>(
+        `/canned-responses?page=${page}&limit=${limit}`,
+      )
+      const items = Array.isArray(data) ? data : data.data
+      all.push(...items)
+      const hasMore = !Array.isArray(data) && data.hasMore
+      if (!hasMore) break
+      page++
+    }
+    return all
+  },
 }
 
 /** Short-lived JWT for static /uploads (same as ws-token); cached ~3m server-side TTL. */

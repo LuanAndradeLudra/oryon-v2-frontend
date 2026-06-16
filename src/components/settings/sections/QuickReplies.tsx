@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect } from 'react'
 import { Plus, Search, Pencil, Trash2, Copy } from 'lucide-react'
 import axios from 'axios'
+import { cannedResponsesApi } from '@/services/api'
 import { SectionHeader } from '../SectionHeader'
 import { Input } from '@/components/ui/Input'
 import { ConfirmModal } from '@/components/ui/Modal'
@@ -101,8 +102,7 @@ export function QuickReplies() {
   const [deleteTarget, setDeleteTarget] = useState<CannedResponse | null>(null)
 
   useEffect(() => {
-    axios.get<{ data: CannedResponse[] } | CannedResponse[]>(`${API}/canned-responses`).then((r) => {
-      const list = Array.isArray(r.data) ? r.data : r.data.data
+    cannedResponsesApi.fetchAll().then((list) => {
       setResponses(list)
       setLoading(false)
     })
