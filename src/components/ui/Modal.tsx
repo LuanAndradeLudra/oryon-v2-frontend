@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { Button } from './Button'
 
 interface ModalProps {
   open: boolean
@@ -152,25 +153,14 @@ export function ConfirmModal({
     <Modal open={open} onClose={onClose} title={title}>
       <p className="text-sm text-surface-400 mb-5">{description}</p>
       <div className="flex gap-2 justify-end">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-all"
-        >
-          Cancelar
-        </button>
-        <button
+        <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+        <Button
+          variant={danger ? 'danger' : 'primary'}
           onClick={onConfirm}
-          disabled={loading}
-          className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-            danger
-              ? 'bg-danger text-white hover:bg-red-600'
-              : 'bg-brand-600 text-surface-950 hover:bg-brand-500',
-            loading && 'opacity-60 cursor-not-allowed'
-          )}
+          loading={loading}
         >
-          {loading ? 'Aguarde...' : confirmLabel}
-        </button>
+          {confirmLabel}
+        </Button>
       </div>
     </Modal>
   )

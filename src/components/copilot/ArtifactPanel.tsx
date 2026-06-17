@@ -690,7 +690,7 @@ function FullscreenOverlay({ content, title, type, onClose }: { content: string;
 
   return createPortal(
     <motion.div
-      className="fixed inset-0 z-[100] bg-black flex flex-col"
+      className="fixed inset-0 z-[100] bg-surface-950 flex flex-col"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

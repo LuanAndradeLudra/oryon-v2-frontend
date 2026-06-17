@@ -42,7 +42,7 @@ function StatusStrip({ automations }: { automations: Automation[] }) {
   ]
 
   return (
-    <div className="flex items-center gap-6 px-6 py-3 border-b border-surface-800 bg-black flex-shrink-0">
+    <div className="flex items-center gap-6 px-6 py-3 border-b border-surface-800 bg-surface-950 flex-shrink-0">
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-2">
           <span className={cn('text-sm font-bold', item.color)}>{item.value}</span>

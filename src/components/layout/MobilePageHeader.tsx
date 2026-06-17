@@ -34,7 +34,7 @@ export function MobilePageHeader({
   return (
     <header
       className={cn(
-        'flex-shrink-0 pt-safe px-3 flex items-center gap-2 bg-black border-b border-surface-800/60',
+        'flex-shrink-0 pt-safe px-3 flex items-center gap-2 bg-surface-950 border-b border-surface-800/60',
         className,
       )}
       style={{ minHeight: 'calc(3.5rem + env(safe-area-inset-top))' }}

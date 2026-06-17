@@ -172,13 +172,13 @@ export function ContactPanel({
   useEffect(() => { setLocalStage(contact.stage) }, [contact.id, contact.stage])
 
   return (
-    <aside className="w-full md:w-[280px] flex-shrink-0 flex flex-col h-full bg-black md:border-l md:border-surface-800">
+    <aside className="w-full md:w-[280px] flex-shrink-0 flex flex-col h-full bg-surface-950 md:border-l md:border-surface-800">
       {/* Action bar — replaces the standalone header. Left side shows the
           current stage as a colored badge (or "Sem estágio" hint); right
           side groups the icon-only actions including the panel close.
           Keeping everything on one strip avoids a near-empty title bar
           stacked on a near-empty actions bar. */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-surface-800 bg-black">
+      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-surface-800 bg-surface-950">
         <div className="min-w-0">
           {localStage ? (
             <StageBadge stage={localStage} stages={stages} />
@@ -269,16 +269,18 @@ export function ContactPanel({
         {/* Details */}
         <div className="px-4 py-3">
           <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-2">Conversa</p>
-          <AiStatusInfoRow aiPausedUntil={conversation.aiPausedUntil} />
-          <InfoRow icon={Clock}         label="Iniciada"        value={formatRelativeTime(createdAt)} />
-          <InfoRow icon={MessageSquare} label="Última mensagem" value={formatRelativeTime(lastMessageAt)} />
-          {assignedUser && (
-            <InfoRow
-              icon={UserCheck}
-              label="Responsável"
-              value={`${assignedUser.firstName} ${assignedUser.lastName}`}
-            />
-          )}
+          <div className="bg-surface-800 rounded-xl px-3 py-1">
+            <AiStatusInfoRow aiPausedUntil={conversation.aiPausedUntil} />
+            <InfoRow icon={Clock}         label="Iniciada"        value={formatRelativeTime(createdAt)} />
+            <InfoRow icon={MessageSquare} label="Última mensagem" value={formatRelativeTime(lastMessageAt)} />
+            {assignedUser && (
+              <InfoRow
+                icon={UserCheck}
+                label="Responsável"
+                value={`${assignedUser.firstName} ${assignedUser.lastName}`}
+              />
+            )}
+          </div>
         </div>
 
         {/* Assign agent */}

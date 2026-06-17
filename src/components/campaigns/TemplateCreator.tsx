@@ -319,9 +319,9 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
   ]
 
   return (
-    <div className="flex flex-col h-full bg-black">
+    <div className="flex flex-col h-full bg-surface-950">
       {/* Header */}
-      <div className="flex items-center gap-4 px-6 py-3.5 border-b border-surface-700 flex-shrink-0 bg-black">
+      <div className="flex items-center gap-4 px-6 py-3.5 border-b border-surface-700 flex-shrink-0 bg-surface-950">
         <button
           onClick={onCancel}
           className="flex items-center gap-1.5 text-sm text-surface-400 hover:text-surface-200 transition-colors"
@@ -364,7 +364,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT: step sidebar */}
-        <div className="w-44 border-r border-surface-700 py-6 px-3 flex flex-col gap-1 flex-shrink-0 bg-black">
+        <div className="w-44 border-r border-surface-700 py-6 px-3 flex flex-col gap-1 flex-shrink-0 bg-surface-950">
           {([1, 2, 3, 4] as StepNum[]).map((s) => {
             const done = s < step
             const current = s === step
@@ -398,7 +398,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
         </div>
 
         {/* CENTER: form */}
-        <div className="flex-1 overflow-y-auto p-7 bg-black">
+        <div className="flex-1 overflow-y-auto p-7 bg-surface-950">
           {step === 1 && (
             <>
               <StepCategoria
@@ -467,7 +467,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
         </div>
 
         {/* RIGHT: preview panel */}
-        <div className="w-[340px] border-l border-surface-700 flex flex-col flex-shrink-0 bg-black">
+        <div className="w-[340px] border-l border-surface-700 flex flex-col flex-shrink-0 bg-surface-950">
           <div className="px-4 py-3 border-b border-surface-700 flex-shrink-0 flex items-center justify-center gap-1.5">
             {body ? (
               <>
@@ -498,7 +498,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
       </div>
 
       {/* Footer: navigation */}
-      <div className="flex items-center justify-between px-6 py-4 border-t border-surface-700 flex-shrink-0 bg-black">
+      <div className="flex items-center justify-between px-6 py-4 border-t border-surface-700 flex-shrink-0 bg-surface-950">
         <button
           onClick={() => step > 1 ? setStep((s) => (s - 1) as StepNum) : onCancel()}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-surface-400 hover:text-surface-200 transition-colors"

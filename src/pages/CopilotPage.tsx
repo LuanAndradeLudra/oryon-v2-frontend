@@ -282,7 +282,7 @@ function CopilotPageInner() {
         onDelete={deleteSession}
       />
 
-      <div className="relative flex-1 flex min-w-0 overflow-hidden bg-black">
+      <div className="relative flex-1 flex min-w-0 overflow-hidden bg-surface-950">
         {/* Chat area */}
         <div className="flex-1 flex flex-col min-w-0">
           {activeSessionId ? (

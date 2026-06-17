@@ -15,3 +15,6 @@
 .env.*.local
 .env.development.local
 .env.production.local
+
+# Dev-only mocks (ficam apenas no localhost, não sobem para o git)
+src/mocks/

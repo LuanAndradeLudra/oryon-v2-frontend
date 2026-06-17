@@ -26,7 +26,7 @@ export function NotificationsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-black">
+    <div className="flex flex-col h-full bg-surface-950">
       <MobilePageHeader
         title="Notificações"
         onBack={() => navigate(-1)}
@@ -63,7 +63,7 @@ export function NotificationsPage() {
                   className={cn(
                     'w-full text-left flex items-start gap-3 px-4 py-3 border-b border-surface-800/40 transition-colors',
                     n.isRead
-                      ? 'bg-black hover:bg-surface-900'
+                      ? 'bg-surface-950 hover:bg-surface-900'
                       : 'bg-surface-900/40 hover:bg-surface-900',
                   )}
                 >

@@ -117,7 +117,7 @@ export function ChatWindow({
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-black gap-4">
+      <div className="flex-1 flex flex-col items-center justify-center bg-surface-950 gap-4">
         <div className="w-16 h-16 rounded-2xl bg-surface-800 flex items-center justify-center">
           <MessageSquare className="w-8 h-8 text-surface-600" />
         </div>
@@ -132,7 +132,7 @@ export function ChatWindow({
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black relative overflow-hidden">
+    <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-surface-950 relative overflow-hidden">
       {/* Phase 32 — the tenant-wide setup blockers banner moved into the
           topbar (TopBarReadinessIndicator). The user_in_department blocker
           still surfaces inline above the message input via

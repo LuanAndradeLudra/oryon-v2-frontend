@@ -95,7 +95,7 @@ const KPI_COLORS: Record<KPIColor, { bg: string; icon: string; ring: string }> =
   purple: { bg: 'bg-purple-500/10',  icon: 'text-purple-400',  ring: 'ring-purple-500/20' },
 }
 
-function KPICard({ data }: { data: KPIData }) {
+function KPICard({ data, hero }: { data: KPIData; hero?: boolean }) {
   const c = KPI_COLORS[data.color] ?? KPI_COLORS.brand
   const Icon = data.icon
   return (
@@ -103,9 +103,20 @@ function KPICard({ data }: { data: KPIData }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="bg-surface-900 border border-surface-800 rounded-2xl p-5 flex flex-col gap-3"
+      className={cn(
+        'relative overflow-hidden bg-surface-900 rounded-2xl p-5 flex flex-col gap-3',
+        hero
+          ? 'border border-brand-500/40 shadow-[0_6px_20px_rgba(20,184,166,.35)]'
+          : 'border border-surface-800',
+      )}
     >
-      <div className="flex items-start justify-between">
+      {hero && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse at top left, rgba(20,184,166,0.14) 0%, transparent 65%)' }}
+        />
+      )}
+      <div className="relative flex items-start justify-between">
         <div className={cn('w-10 h-10 rounded-xl ring-1 flex items-center justify-center', c.bg, c.ring)}>
           <Icon className={cn('w-5 h-5', c.icon)} />
         </div>
@@ -120,10 +131,10 @@ function KPICard({ data }: { data: KPIData }) {
           </span>
         )}
       </div>
-      <div>
+      <div className="relative">
         <p className="text-3xl font-bold text-surface-50 leading-none tabular-nums">{data.value}</p>
         {data.subtext && <p className="text-xs text-surface-500 mt-1">{data.subtext}</p>}
-        <p className="text-xs text-surface-400 uppercase tracking-wide mt-1.5">{data.label}</p>
+        <p className={cn('text-xs uppercase tracking-wide mt-1.5', hero ? 'text-brand-400' : 'text-surface-400')}>{data.label}</p>
       </div>
     </motion.div>
   )
@@ -154,8 +165,8 @@ function getKPIs(stats: HomeStats, role: string): KPIData[] {
 function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {getKPIs(stats, role).map((kpi) => (
-        <KPICard key={kpi.label} data={kpi} />
+      {getKPIs(stats, role).map((kpi, i) => (
+        <KPICard key={kpi.label} data={kpi} hero={i === 0} />
       ))}
     </div>
   )

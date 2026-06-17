@@ -405,7 +405,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   // Shown before the operator types so the silent failure path is gone.
   if (blockedReason) {
     return (
-      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
+      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-surface-950 flex-shrink-0">
         <div className="bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-3 flex items-center gap-3">
           <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
@@ -427,7 +427,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
   if (!windowOpen) {
     return (
-      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
+      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-surface-950 flex-shrink-0">
         <div className="card-24h bg-brand-800/20 border border-brand-600/30 rounded-xl px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-brand-400 flex-shrink-0" />
@@ -486,7 +486,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   const slashQuery = text.match(/^\/(\S*)$/)?.[1] ?? ''
 
   return (
-    <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
+    <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-surface-950 flex-shrink-0">
       <div className="relative">
         {pickerActive && (
           <QuickReplyPicker

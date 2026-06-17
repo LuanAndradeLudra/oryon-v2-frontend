@@ -14,7 +14,7 @@ function ShellLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-black">
+    <div className="flex h-screen w-screen overflow-hidden bg-surface-950">
       <NavSidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar />

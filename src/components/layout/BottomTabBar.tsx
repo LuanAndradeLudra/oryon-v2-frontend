@@ -58,7 +58,7 @@ export function BottomTabBar() {
     <nav
       role="tablist"
       aria-label="Navegação principal"
-      className="flex-shrink-0 grid grid-cols-4 bg-black border-t border-surface-800/80 pb-[env(safe-area-inset-bottom)]"
+      className="flex-shrink-0 grid grid-cols-4 bg-surface-950 border-t border-surface-800/80 pb-[env(safe-area-inset-bottom)]"
     >
       {TABS.map((tab) => {
         const active = isActive(location.pathname, tab)

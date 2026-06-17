@@ -9,7 +9,7 @@ function formatWait(seconds: number): string {
 
 export function RealtimeStrip({ status }: { status: RealtimeStatus }) {
   return (
-    <div className="flex items-center gap-5 px-6 h-10 bg-black border-b border-surface-800 text-xs flex-shrink-0">
+    <div className="flex items-center gap-5 px-6 h-10 bg-surface-950 border-b border-surface-800 text-xs flex-shrink-0">
       <div className="flex items-center gap-1.5">
         <span className="w-1.5 h-1.5 rounded-full bg-online" />
         <span className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Ao Vivo</span>

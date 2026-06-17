@@ -249,7 +249,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
   ]
 
   return (
-    <div className="flex flex-col h-full w-full sm:w-[380px] bg-black border-r border-surface-800 flex-shrink-0">
+    <div className="flex flex-col h-full w-full sm:w-[380px] bg-surface-950 border-r border-surface-800 flex-shrink-0">
       {/* Search */}
       <div className="px-3 pt-3 pb-3 flex-shrink-0">
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
@@ -417,7 +417,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
   }
 
   return (
-    <div className="w-72 h-full border-l border-surface-800 flex flex-col bg-black flex-shrink-0 overflow-hidden">
+    <div className="w-72 h-full border-l border-surface-800 flex flex-col bg-surface-950 flex-shrink-0 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800 flex-shrink-0">
         <span className="text-sm font-semibold text-surface-100">
           {isDM ? 'Sobre esta pessoa' : 'Sobre o canal'}
@@ -593,7 +593,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
   }
 
   return (
-    <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b border-surface-800 bg-black">
+    <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b border-surface-800 bg-surface-950">
       {showSearch ? (
         <div className="flex-1 flex items-center gap-3">
           <Search className="w-4 h-4 text-surface-400 flex-shrink-0" />
@@ -778,7 +778,7 @@ function TeamChatPageDesktop() {
       <div className="flex-1 flex min-w-0 overflow-hidden">
         {activeChannel ? (
           <>
-            <div className="flex-1 flex flex-col min-w-0 bg-black">
+            <div className="flex-1 flex flex-col min-w-0 bg-surface-950">
               <ChannelViewHeader
                 channel={activeChannel}
                 currentUserId={currentUserId}

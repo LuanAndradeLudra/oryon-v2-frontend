@@ -181,7 +181,7 @@ export function ChatHeader({
     const extraTags = tags.length - visibleTags.length
 
     return (
-      <div className="flex items-center px-2 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] border-b border-surface-800 bg-black flex-shrink-0 gap-2">
+      <div className="flex items-center px-2 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] border-b border-surface-800 bg-surface-950 flex-shrink-0 gap-2">
         {/* Back */}
         {onBack && (
           <button
@@ -308,7 +308,7 @@ export function ChatHeader({
 
   // ─── Desktop layout (original) ──────────────────────────────────────────
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800 bg-black flex-shrink-0 gap-3">
+    <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800 bg-surface-950 flex-shrink-0 gap-3">
 
       {/* ── Left: contact info ────────────────────────────────── */}
       <div className="flex items-center gap-3 min-w-0">

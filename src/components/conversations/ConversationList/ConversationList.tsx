@@ -133,7 +133,7 @@ export function ConversationList({
     : { all: 0, open: 0, pending: 0, resolved: 0 }
 
   return (
-    <div className="flex flex-col h-full w-full sm:w-[418px] bg-black border-r border-surface-800 flex-shrink-0">
+    <div className="flex flex-col h-full w-full sm:w-[418px] bg-surface-950 border-r border-surface-800 flex-shrink-0">
       {/* Search header */}
       <div className="px-3 pt-3 pb-3 border-b border-surface-800">
         <div className="flex items-center gap-2">

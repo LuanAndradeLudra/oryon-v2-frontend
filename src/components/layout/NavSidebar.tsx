@@ -16,7 +16,10 @@ import {
   ShieldCheck,
   Activity,
   LineChart,
+  Sun,
+  Moon,
 } from 'lucide-react'
+import { useTheme } from '@/hooks/useTheme'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
@@ -77,6 +80,7 @@ function UserFooter({
 }) {
   const { open, animate } = useSidebar()
   const { user } = useAuth()
+  const { theme, toggle } = useTheme()
 
   const name = currentUser
     ? `${currentUser.firstName} ${currentUser.lastName}`
@@ -87,6 +91,32 @@ function UserFooter({
   return (
     <div className="flex flex-col gap-0.5">
       <div className="mx-3 mb-2 border-t border-surface-800/60" />
+
+      {/* Theme toggle */}
+      <button
+        onClick={toggle}
+        title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+        className="w-full text-left"
+      >
+        <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-surface-400 hover:bg-surface-800 hover:text-surface-100">
+          <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </span>
+          <AnimatePresence>
+            {(!animate || open) && (
+              <motion.span
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.15 }}
+                className="text-sm font-medium whitespace-pre overflow-hidden"
+              >
+                {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
+      </button>
 
       {/* Logout */}
       <button

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import {
   ChevronRight,
   Settings,
@@ -109,7 +109,7 @@ export function MorePage() {
     .filter((section) => section.items.length > 0)
 
   return (
-    <div className="flex flex-col h-full bg-black">
+    <div className="flex flex-col h-full bg-surface-950">
       <MobilePageHeader title="Mais" titleImage="/oryon-wordmark.png" />
       <div className="flex-1 overflow-y-auto">
         {/* User card */}

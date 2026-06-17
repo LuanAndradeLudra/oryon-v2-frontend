@@ -42,7 +42,7 @@ export function MobileFeatureGate({
 
   return createPortal(
     <motion.div
-      className="fixed inset-0 z-[60] bg-black flex flex-col"
+      className="fixed inset-0 z-[60] bg-surface-950 flex flex-col"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

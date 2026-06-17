@@ -80,7 +80,7 @@ function loadSlots(): KpiId[] {
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
 
-function KpiCard({ metric }: { metric: KpiMetric }) {
+function KpiCard({ metric, hero }: { metric: KpiMetric; hero?: boolean }) {
   const isGood =
     (metric.trend > 0 && metric.trendIsGood === 'up') ||
     (metric.trend < 0 && metric.trendIsGood === 'down')
@@ -89,19 +89,34 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
     (metric.trend < 0 && metric.trendIsGood === 'up')
 
   const trendColor = isGood ? 'text-online' : isBad ? 'text-danger' : 'text-surface-500'
-  const catColor = CATEGORY_COLORS[metric.category] ?? '#6366f1'
+  const catColor = hero ? '#14B8A6' : (CATEGORY_COLORS[metric.category] ?? '#6366f1')
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col gap-2.5">
-      <div className="flex items-center gap-2">
+    <div
+      className={cn(
+        'relative overflow-hidden bg-surface-900 border rounded-xl p-4 flex flex-col gap-2.5',
+        hero
+          ? 'border-brand-500/40 shadow-[0_6px_20px_rgba(20,184,166,.35)]'
+          : 'border-surface-800',
+      )}
+    >
+      {hero && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse at top left, rgba(20,184,166,0.14) 0%, transparent 65%)' }}
+        />
+      )}
+      <div className="relative flex items-center gap-2">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: catColor + '1a', color: catColor }}>
           {KPI_ICONS[metric.id]}
         </div>
-        <span className="text-xs text-surface-400 font-medium leading-tight">{metric.label}</span>
+        <span className={cn('text-xs font-medium leading-tight', hero ? 'text-brand-400' : 'text-surface-400')}>
+          {metric.label}
+        </span>
       </div>
 
-      <div className="text-2xl font-bold text-surface-50 tabular-nums leading-none">
+      <div className="relative text-2xl font-bold text-surface-50 tabular-nums leading-none">
         {formatKpiValue(metric.value, metric.unit)}
         {metric.unit === 'csat_score' && (
           <span className="text-sm font-normal text-surface-400 ml-1">/ 5</span>
@@ -109,7 +124,7 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
       </div>
 
       {metric.trend !== 0 && (
-        <div className={cn('flex items-center gap-1 text-xs font-medium', trendColor)}>
+        <div className={cn('relative flex items-center gap-1 text-xs font-medium', trendColor)}>
           {metric.trend > 0
             ? <TrendingUp className="w-3 h-3" />
             : <TrendingDown className="w-3 h-3" />}

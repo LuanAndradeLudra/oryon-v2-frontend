@@ -203,7 +203,7 @@ export function SessionsSidebar({
     <motion.div
       animate={{ width: open ? SIDEBAR_WIDTH : 0 }}
       transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
-      className="flex-shrink-0 flex flex-col border-r border-surface-800/60 bg-black overflow-hidden"
+      className="flex-shrink-0 flex flex-col border-r border-surface-800/60 bg-surface-950 overflow-hidden"
       style={{ minWidth: 0 }}
       // No hover handlers — sidebar is now controlled exclusively by the
       // toggle button in the topbar (and Cmd/Ctrl+B). This eliminates the
