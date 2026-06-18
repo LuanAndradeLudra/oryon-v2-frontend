@@ -1263,6 +1263,17 @@ export const campaignsApi = {
   }) {
     return api.post<Campaign>('/campaigns', dto)
   },
+  countSegment(segment: CampaignSegment) {
+    return api.post<{ count: number }>('/campaigns/segment-count', { segment })
+  },
+  previewSegment(segment: CampaignSegment, page = 1, limit = 50) {
+    return api.post<{
+      data: Array<{ id: string; displayName: string; waId: string; stage: string | null }>
+      total: number
+      page: number
+      limit: number
+    }>('/campaigns/segment-preview', { segment, page, limit })
+  },
   update(id: string, patch: Partial<Campaign>) {
     return api.patch<Campaign>(`/campaigns/${id}`, patch)
   },

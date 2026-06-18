@@ -96,6 +96,57 @@ const SENTIMENT_OPTIONS: { value: ContactSentiment; label: string; color: string
   { value: 'unknown',  label: 'Desconhecido', color: 'text-surface-500 border-surface-700 bg-surface-800/50' },
 ]
 
+function buildCampaignSegment(
+  segmentType: CampaignSegment['type'],
+  selectedTagIds: string[],
+  selectedStages: string[],
+  selectedContactIds: string[],
+  filterStages: string[],
+  filterTagIds: string[],
+  filterIntent: ContactIntent[],
+  filterSource: ContactSource[],
+  filterOptIn: boolean | undefined,
+  filterSentiment: ContactSentiment[],
+  filterContactSearch: string,
+  filterHasConversations: boolean | undefined,
+): CampaignSegment {
+  return {
+    type: segmentType,
+    ...(segmentType === 'tag'    ? { tagIds: selectedTagIds }           : {}),
+    ...(segmentType === 'stage'  ? { stages: selectedStages }           : {}),
+    ...(segmentType === 'manual' ? { contactIds: selectedContactIds }   : {}),
+    ...(segmentType === 'filter' ? {
+      ...(filterStages.length  ? { filterStages }  : {}),
+      ...(filterTagIds.length  ? { filterTagIds }  : {}),
+      ...(filterIntent.length  ? { filterIntent }  : {}),
+      ...(filterSource.length  ? { filterSource }  : {}),
+      ...(filterOptIn !== undefined ? { filterOptIn } : {}),
+      ...(filterSentiment.length ? { filterSentiment } : {}),
+      ...(filterContactSearch.trim() ? { filterContactSearch } : {}),
+      ...(filterHasConversations !== undefined ? { filterHasConversations } : {}),
+    } : {}),
+  }
+}
+
+function segmentHasReachCriteria(segment: CampaignSegment): boolean {
+  if (segment.type === 'manual') return (segment.contactIds?.length ?? 0) > 0
+  if (segment.type === 'tag') return (segment.tagIds?.length ?? 0) > 0
+  if (segment.type === 'stage') return (segment.stages?.length ?? 0) > 0
+  if (segment.type === 'filter') {
+    return !!(
+      segment.filterStages?.length ||
+      segment.filterTagIds?.length ||
+      segment.filterIntent?.length ||
+      segment.filterSource?.length ||
+      segment.filterOptIn !== undefined ||
+      segment.filterSentiment?.length ||
+      segment.filterContactSearch?.trim() ||
+      segment.filterHasConversations !== undefined
+    )
+  }
+  return segment.type === 'all'
+}
+
 export function CampaignWizard({
   open, onClose, onCreated, initialContactIds, initialName,
 }: CampaignWizardProps) {
@@ -230,45 +281,47 @@ export function CampaignWizard({
     })))
   }, [selectedTemplate])
 
-  // ── Estimated reach ─────────────────────────────────────────────────────────
+  // ── Estimated reach (server-side count — contacts list is capped at 100) ───
 
-  const estimatedReach = useMemo(() => {
-    if (!contacts.length) return null
-    if (segmentType === 'all') return contacts.length
-    if (segmentType === 'tag')
-      return selectedTagIds.length
-        ? contacts.filter((c) => c.tags?.some((t) => selectedTagIds.includes(t.id))).length
-        : null
-    if (segmentType === 'stage')
-      return selectedStages.length
-        ? contacts.filter((c) => selectedStages.includes(c.stage ?? '')).length
-        : null
-    if (segmentType === 'manual') return selectedContactIds.length || null
-    if (segmentType === 'filter') {
-      const hasFilter = filterStages.length || filterTagIds.length || filterIntent.length ||
-                        filterSource.length || filterOptIn !== undefined ||
-                        filterSentiment.length || filterContactSearch.trim() ||
-                        filterHasConversations !== undefined
-      if (!hasFilter) return null
-      let f = contacts
-      if (filterStages.length)  f = f.filter((c) => filterStages.includes(c.stage ?? ''))
-      if (filterTagIds.length)  f = f.filter((c) => c.tags?.some((t) => filterTagIds.includes(t.id)))
-      if (filterIntent.length)  f = f.filter((c) => filterIntent.includes(c.intent ?? 'unknown'))
-      if (filterSource.length)  f = f.filter((c) => filterSource.includes(c.source ?? 'other'))
-      if (filterOptIn !== undefined) f = f.filter((c) => c.optIn === filterOptIn)
-      if (filterSentiment.length)  f = f.filter((c) => filterSentiment.includes(c.aiSentiment ?? 'unknown'))
-      if (filterContactSearch.trim()) {
-        const q = filterContactSearch.toLowerCase()
-        f = f.filter((c) => c.displayName.toLowerCase().includes(q) || c.waId.includes(q))
-      }
-      if (filterHasConversations !== undefined)
-        f = f.filter((c) => filterHasConversations ? (c.conversationCount ?? 0) > 0 : (c.conversationCount ?? 0) === 0)
-      return f.length
-    }
-    return null
-  }, [contacts, segmentType, selectedTagIds, selectedStages, selectedContactIds,
+  const [estimatedReach, setEstimatedReach] = useState<number | null>(null)
+  const [loadingReach, setLoadingReach] = useState(false)
+
+  const currentSegment = useMemo(
+    () => buildCampaignSegment(
+      segmentType, selectedTagIds, selectedStages, selectedContactIds,
       filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
-      filterSentiment, filterContactSearch, filterHasConversations])
+      filterSentiment, filterContactSearch, filterHasConversations,
+    ),
+    [segmentType, selectedTagIds, selectedStages, selectedContactIds,
+      filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
+      filterSentiment, filterContactSearch, filterHasConversations],
+  )
+
+  useEffect(() => {
+    if (!open) return
+    if (!segmentHasReachCriteria(currentSegment)) {
+      setEstimatedReach(null)
+      return
+    }
+    if (currentSegment.type === 'manual') {
+      setEstimatedReach(currentSegment.contactIds?.length ?? null)
+      return
+    }
+
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      setLoadingReach(true)
+      campaignsApi.countSegment(currentSegment)
+        .then((res) => { if (!cancelled) setEstimatedReach(res.data.count) })
+        .catch(() => { if (!cancelled) setEstimatedReach(null) })
+        .finally(() => { if (!cancelled) setLoadingReach(false) })
+    }, 300)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [open, currentSegment])
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -321,22 +374,11 @@ export function CampaignWizard({
       data: { campaign_name: campaignName, template_id: selectedTemplate.id, segment_type: segmentType, schedule_mode: scheduleMode },
     })
     try {
-      const segment: CampaignSegment = {
-        type: segmentType,
-        ...(segmentType === 'tag'    ? { tagIds: selectedTagIds }           : {}),
-        ...(segmentType === 'stage'  ? { stages: selectedStages }           : {}),
-        ...(segmentType === 'manual' ? { contactIds: selectedContactIds }   : {}),
-        ...(segmentType === 'filter' ? {
-          ...(filterStages.length  ? { filterStages }  : {}),
-          ...(filterTagIds.length  ? { filterTagIds }  : {}),
-          ...(filterIntent.length  ? { filterIntent }  : {}),
-          ...(filterSource.length  ? { filterSource }  : {}),
-          ...(filterOptIn !== undefined ? { filterOptIn } : {}),
-          ...(filterSentiment.length ? { filterSentiment } : {}),
-          ...(filterContactSearch.trim() ? { filterContactSearch } : {}),
-          ...(filterHasConversations !== undefined ? { filterHasConversations } : {}),
-        } : {}),
-      }
+      const segment = buildCampaignSegment(
+        segmentType, selectedTagIds, selectedStages, selectedContactIds,
+        filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
+        filterSentiment, filterContactSearch, filterHasConversations,
+      )
       const res = await campaignsApi.create({
         name: campaignName.trim(),
         templateId: selectedTemplate.id,
@@ -513,6 +555,7 @@ export function CampaignWizard({
                     filterHasConversations={filterHasConversations}
                     onFilterHasConversations={setFilterHasConversations}
                     estimatedReach={estimatedReach}
+                    loadingReach={loadingReach}
                   />
                 )}
                 {step === 3 && selectedTemplate && (
@@ -551,6 +594,7 @@ export function CampaignWizard({
                     filterContactSearch={filterContactSearch}
                     filterHasConversations={filterHasConversations}
                     estimatedReach={estimatedReach}
+                    segment={currentSegment}
                     scheduleMode={scheduleMode}
                     scheduledAt={scheduledAt}
                     campaignName={campaignName}
@@ -750,7 +794,7 @@ function Step2({
   filterSentiment, onFilterSentiment,
   filterContactSearch, onFilterContactSearch,
   filterHasConversations, onFilterHasConversations,
-  estimatedReach,
+  estimatedReach, loadingReach,
 }: {
   segmentType: CampaignSegment['type']
   onSegmentType: (t: CampaignSegment['type']) => void
@@ -781,6 +825,7 @@ function Step2({
   filterHasConversations: boolean | undefined
   onFilterHasConversations: (v: boolean | undefined) => void
   estimatedReach: number | null
+  loadingReach: boolean
 }) {
   const [contactSearch, setContactSearch] = useState('')
 
@@ -855,17 +900,26 @@ function Step2({
       </div>
 
       {/* Reach estimate */}
-      {estimatedReach !== null && (
+      {(loadingReach || estimatedReach !== null) && (
         <div className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium',
           estimatedReach === 0
             ? 'bg-danger/10 border border-danger/30 text-danger'
             : 'bg-status-active-bg border border-status-active-border text-status-active'
         )}>
-          <Users className="w-3.5 h-3.5 flex-shrink-0" />
-          {estimatedReach === 0
-            ? 'Nenhum contato corresponde aos filtros selecionados'
-            : `Alcance estimado: ${estimatedReach} contato${estimatedReach === 1 ? '' : 's'}`}
+          {loadingReach ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 flex-shrink-0 animate-spin" />
+              Calculando alcance...
+            </>
+          ) : (
+            <>
+              <Users className="w-3.5 h-3.5 flex-shrink-0" />
+              {estimatedReach === 0
+                ? 'Nenhum contato corresponde aos filtros selecionados'
+                : `Alcance estimado: ${estimatedReach} contato${estimatedReach === 1 ? '' : 's'}`}
+            </>
+          )}
         </div>
       )}
 
@@ -1383,7 +1437,7 @@ function Step5({
   selectedTagIds, selectedStages, selectedContactIds,
   filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
   filterSentiment, filterContactSearch, filterHasConversations,
-  estimatedReach, scheduleMode, scheduledAt, campaignName,
+  estimatedReach, segment, scheduleMode, scheduledAt, campaignName,
 }: {
   template: WhatsAppTemplate
   mappings: CampaignVariableMapping[]
@@ -1403,6 +1457,7 @@ function Step5({
   filterContactSearch: string
   filterHasConversations: boolean | undefined
   estimatedReach: number | null
+  segment: CampaignSegment
   scheduleMode: 'now' | 'later'
   scheduledAt: string
   campaignName: string
@@ -1611,21 +1666,10 @@ function Step5({
       {/* Contact list modal */}
       {showContactsModal && (
         <ContactListModal
+          segment={segment}
           contacts={contacts}
-          segmentType={segmentType}
-          selectedContactIds={selectedContactIds}
-          selectedTagIds={selectedTagIds}
-          selectedStages={selectedStages}
-          filterStages={filterStages}
-          filterTagIds={filterTagIds}
-          filterIntent={filterIntent}
-          filterSource={filterSource}
-          filterOptIn={filterOptIn}
-          filterSentiment={filterSentiment}
-          filterContactSearch={filterContactSearch}
-          filterHasConversations={filterHasConversations}
           stages={stages}
-          tags={tags}
+          totalCount={estimatedReach}
           onClose={() => setShowContactsModal(false)}
         />
       )}
@@ -1636,64 +1680,81 @@ function Step5({
 // ─── Contact List Modal ────────────────────────────────────────────────────────
 
 function ContactListModal({
-  contacts, segmentType,
-  selectedContactIds, selectedTagIds, selectedStages,
-  filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
-  filterSentiment, filterContactSearch, filterHasConversations,
-  stages, tags, onClose,
+  segment,
+  contacts,
+  stages,
+  totalCount,
+  onClose,
 }: {
+  segment: CampaignSegment
   contacts: Contact[]
-  segmentType: CampaignSegment['type']
-  selectedContactIds: string[]
-  selectedTagIds: string[]
-  selectedStages: string[]
-  filterStages: string[]
-  filterTagIds: string[]
-  filterIntent: ContactIntent[]
-  filterSource: ContactSource[]
-  filterOptIn: boolean | undefined
-  filterSentiment: ContactSentiment[]
-  filterContactSearch: string
-  filterHasConversations: boolean | undefined
   stages: { key: string; label: string; color: string }[]
-  tags: Tag[]
+  totalCount: number | null
   onClose: () => void
 }) {
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [rows, setRows] = useState<Array<{ id: string; displayName: string; waId: string; stage: string | null }>>([])
+  const [total, setTotal] = useState(0)
+  const [pageLimit, setPageLimit] = useState(50)
 
-  const segmented = useMemo(() => {
-    if (segmentType === 'all') return contacts
-    if (segmentType === 'tag')
-      return contacts.filter((c) => c.tags?.some((t) => selectedTagIds.includes(t.id)))
-    if (segmentType === 'stage')
-      return contacts.filter((c) => selectedStages.includes(c.stage ?? ''))
-    if (segmentType === 'manual')
-      return contacts.filter((c) => selectedContactIds.includes(c.id))
-    // filter
-    let f = contacts
-    if (filterStages.length)  f = f.filter((c) => filterStages.includes(c.stage ?? ''))
-    if (filterTagIds.length)  f = f.filter((c) => c.tags?.some((t) => filterTagIds.includes(t.id)))
-    if (filterIntent.length)  f = f.filter((c) => filterIntent.includes(c.intent ?? 'unknown'))
-    if (filterSource.length)  f = f.filter((c) => filterSource.includes(c.source ?? 'other'))
-    if (filterOptIn !== undefined) f = f.filter((c) => c.optIn === filterOptIn)
-    if (filterSentiment.length) f = f.filter((c) => filterSentiment.includes(c.aiSentiment ?? 'unknown'))
-    if (filterContactSearch.trim()) {
-      const q = filterContactSearch.toLowerCase()
-      f = f.filter((c) => c.displayName.toLowerCase().includes(q) || c.waId.includes(q))
+  useEffect(() => {
+    setPage(1)
+    setSearch('')
+  }, [segment])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (segment.type === 'manual') {
+      const manual = contacts
+        .filter((c) => segment.contactIds?.includes(c.id))
+        .map((c) => ({
+          id: c.id,
+          displayName: c.displayName,
+          waId: c.waId,
+          stage: c.stage ?? null,
+        }))
+      if (!cancelled) {
+        setRows(manual)
+        setTotal(manual.length)
+        setPageLimit(manual.length || 50)
+        setLoading(false)
+      }
+      return () => { cancelled = true }
     }
-    if (filterHasConversations !== undefined)
-      f = f.filter((c) => filterHasConversations ? (c.conversationCount ?? 0) > 0 : (c.conversationCount ?? 0) === 0)
-    return f
-  }, [contacts, segmentType, selectedContactIds, selectedTagIds, selectedStages,
-      filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
-      filterSentiment, filterContactSearch, filterHasConversations])
+
+    setLoading(true)
+    campaignsApi.previewSegment(segment, page, 50)
+      .then((res) => {
+        if (cancelled) return
+        setRows(res.data.data)
+        setTotal(res.data.total)
+        setPageLimit(res.data.limit)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRows([])
+          setTotal(0)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [segment, page, contacts])
 
   const displayed = search.trim()
-    ? segmented.filter((c) =>
+    ? rows.filter((c) =>
         c.displayName.toLowerCase().includes(search.toLowerCase()) ||
         c.waId.includes(search)
       )
-    : segmented
+    : rows
+
+  const totalPages = Math.max(1, Math.ceil(total / pageLimit))
+  const headerCount = totalCount ?? total
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -1709,7 +1770,9 @@ function ContactListModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
           <div>
             <h3 className="text-sm font-semibold text-surface-50">Lista de contatos</h3>
-            <p className="text-xs text-surface-500 mt-0.5">{segmented.length} contato{segmented.length === 1 ? '' : 's'} na segmentação</p>
+            <p className="text-xs text-surface-500 mt-0.5">
+              {headerCount} contato{headerCount === 1 ? '' : 's'} na segmentação
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -1734,7 +1797,12 @@ function ContactListModal({
 
         {/* List */}
         <div className="flex-1 overflow-y-auto p-2">
-          {displayed.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-10 text-surface-500">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <span className="text-xs">Carregando contatos...</span>
+            </div>
+          ) : displayed.length === 0 ? (
             <p className="text-xs text-surface-500 text-center py-8">Nenhum contato encontrado</p>
           ) : (
             <div className="space-y-0.5">
@@ -1749,24 +1817,37 @@ function ContactListModal({
                       <p className="text-sm font-medium text-surface-100 truncate">{c.displayName}</p>
                       <p className="text-xs text-surface-500">{c.waId}</p>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {stageDef && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: stageDef.color, color: getReadableTextColor(stageDef.color) }}>
-                          {stageDef.label}
-                        </span>
-                      )}
-                      {c.tags && c.tags.length > 0 && (
-                        <span className="text-[10px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded">
-                          {c.tags[0].name}{c.tags.length > 1 ? ` +${c.tags.length - 1}` : ''}
-                        </span>
-                      )}
-                    </div>
+                    {stageDef && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0" style={{ backgroundColor: stageDef.color, color: getReadableTextColor(stageDef.color) }}>
+                        {stageDef.label}
+                      </span>
+                    )}
                   </div>
                 )
               })}
             </div>
           )}
         </div>
+
+        {segment.type !== 'manual' && totalPages > 1 && (
+          <div className="px-5 py-2 border-t border-surface-800 flex items-center justify-between flex-shrink-0">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || loading}
+              className="text-xs text-surface-400 hover:text-surface-200 disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <span className="text-xs text-surface-500">Página {page} de {totalPages}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || loading}
+              className="text-xs text-surface-400 hover:text-surface-200 disabled:opacity-40"
+            >
+              Próxima
+            </button>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
