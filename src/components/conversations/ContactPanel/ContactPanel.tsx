@@ -73,7 +73,7 @@ interface ContactPanelProps {
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-surface-800 last:border-0">
+    <div className="flex items-start gap-3 p-3 border-b border-surface-800 last:border-0">
       <div className="w-7 h-7 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 mt-0.5">
         <Icon className="w-3.5 h-3.5 text-surface-400" />
       </div>
@@ -107,7 +107,7 @@ function AiStatusInfoRow({ aiPausedUntil }: { aiPausedUntil: string | null | und
 
   if (!isPaused) {
     return (
-      <div className="flex items-start gap-3 py-2.5 border-b border-surface-800">
+      <div className="flex items-start gap-3 p-3 border-b border-surface-800">
         <div className="w-7 h-7 rounded-lg bg-emerald-700/20 flex items-center justify-center flex-shrink-0 mt-0.5">
           <Bot className="w-3.5 h-3.5 text-emerald-300" />
         </div>
@@ -123,7 +123,7 @@ function AiStatusInfoRow({ aiPausedUntil }: { aiPausedUntil: string | null | und
     ? 'até reativar manualmente'
     : `IA volta em ${formatRemainingMin(pausedUntilMs!)}`
   return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-surface-800">
+    <div className="flex items-start gap-3 py-3 border-b border-surface-800">
       <div className="w-7 h-7 rounded-lg bg-amber-700/20 flex items-center justify-center flex-shrink-0 mt-0.5">
         <UserCog className="w-3.5 h-3.5 text-amber-300" />
       </div>
@@ -269,7 +269,7 @@ export function ContactPanel({
         {/* Details */}
         <div className="px-4 py-3">
           <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-2">Conversa</p>
-          <div className="bg-surface-800 rounded-xl px-3 py-1">
+          <div className="bg-white-800 rounded-xl p-4">
             <AiStatusInfoRow aiPausedUntil={conversation.aiPausedUntil} />
             <InfoRow icon={Clock}         label="Iniciada"        value={formatRelativeTime(createdAt)} />
             <InfoRow icon={MessageSquare} label="Última mensagem" value={formatRelativeTime(lastMessageAt)} />

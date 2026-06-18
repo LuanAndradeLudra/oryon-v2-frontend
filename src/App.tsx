@@ -62,6 +62,7 @@ const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m 
 const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const HomePage          = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
+const WelcomePage       = lazyRoute(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })))
 const ForgotPasswordPage = lazyRoute(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
@@ -283,8 +284,8 @@ function AnimatedRoutes() {
           {/* Canva OAuth callback — public, opened as popup */}
           <Route path="/canva/callback" element={<CanvaCallbackPage />} />
 
-          {/* Fallback */}
-          <Route path="/" element={<Navigate to="/home" replace />} />
+          {/* Welcome page — public */}
+          <Route path="/" element={<WelcomePage />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
         </Suspense>

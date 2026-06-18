@@ -62,7 +62,7 @@ function LogoSection() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -6 }}
             transition={{ duration: 0.15 }}
-            className="h-[27px] w-auto select-none"
+            className="h-[27px] w-auto select-none oryon-wordmark"
             draggable={false}
           />
         )}

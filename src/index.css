@@ -456,6 +456,11 @@ html, body, #root {
   --color-accent-dark:   #0F766E;
 }
 
+/* Wordmark branca → preta no tema claro */
+[data-theme="light"] .oryon-wordmark {
+  filter: invert(1);
+}
+
 /* ── Card janela 24h ─────────────────────────────────────────────────────── */
 .card-24h {
   background: var(--color-card-24h-bg);

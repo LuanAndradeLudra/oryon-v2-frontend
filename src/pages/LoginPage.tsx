@@ -1,10 +1,11 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Sun, Moon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { LoginBeams } from '@/components/ui/LoginBeams'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useTheme } from '@/hooks/useTheme'
 
 const ROTATING_WORDS = ['convertem.', 'encantam.', 'fidelizam.', 'crescem.']
 
@@ -37,6 +38,8 @@ function RotatingWord() {
 }
 
 export function LoginPage() {
+  const { theme, toggle } = useTheme()
+  const isLight = theme === 'light'
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -71,12 +74,30 @@ export function LoginPage() {
   const handleSubmit = (e: FormEvent) => { e.preventDefault(); void doLogin(email, password) }
 
   return (
-    <div className="min-h-[100dvh] w-screen flex overflow-hidden bg-surface-950">
+    <div className="min-h-[100dvh] w-screen flex overflow-hidden bg-surface-950 relative">
+
+      {/* ── Theme toggle — canto inferior direito ── */}
+      <button
+        onClick={toggle}
+        title={isLight ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-900 hover:bg-surface-800 transition-colors shadow-lg"
+      >
+        <div className="relative w-8 h-4 rounded-full bg-surface-700 flex-shrink-0">
+          <motion.div
+            animate={{ x: isLight ? 16 : 0 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-brand-400"
+          />
+        </div>
+        {isLight
+          ? <Sun className="w-3.5 h-3.5 text-brand-400" />
+          : <Moon className="w-3.5 h-3.5 text-surface-400" />}
+      </button>
 
       {/* ── Left panel — hero + beams (lg+ only, skipped at mount in smaller) ── */}
       {isLargeScreen && (
-      <div className="flex flex-1 relative flex-col items-start justify-end pb-16 pl-16 overflow-hidden">
-        <LoginBeams />
+      <div className={`flex flex-1 relative flex-col items-start justify-end pb-16 pl-16 overflow-hidden transition-colors ${isLight ? 'bg-white' : 'bg-surface-950'}`}>
+        <LoginBeams bgColor={isLight ? '#ffffff' : '#0a0a0a'} isLight={isLight} />
 
         {/* Headline */}
         <div className="relative z-10 max-w-lg">
@@ -95,16 +116,16 @@ export function LoginPage() {
               <img
                 src="/oryon-wordmark.png"
                 alt="Oryon"
-                className="h-7 w-auto select-none"
+                className={`h-7 w-auto select-none ${isLight ? 'oryon-wordmark' : ''}`}
                 draggable={false}
               />
             </div>
 
-            <h1 className="text-5xl font-bold text-surface-50 leading-tight tracking-tight mb-4">
+            <h1 className={`text-5xl font-bold leading-tight tracking-tight mb-4 ${isLight ? 'text-gray-900' : 'text-surface-50'}`}>
               Conversas que<br />
               <RotatingWord />
             </h1>
-            <p className="text-surface-400 text-lg leading-relaxed max-w-sm">
+            <p className={`text-lg leading-relaxed max-w-sm ${isLight ? 'text-black-500' : 'text-surface-400'}`}>
               Gerencie atendimentos, automatize follow-ups e transforme cada contato em uma oportunidade real.
             </p>
           </motion.div>
@@ -113,7 +134,7 @@ export function LoginPage() {
       )}
 
       {/* ── Right panel — login form ── */}
-      <div className="w-full lg:w-[480px] flex flex-col items-center justify-start lg:justify-center px-8 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(3rem+env(safe-area-inset-bottom))] lg:py-12 bg-surface-950 lg:border-l lg:border-surface-800/60">
+      <div className="w-full lg:w-[480px] flex flex-col items-center justify-start lg:justify-center px-8 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(3rem+env(safe-area-inset-bottom))] lg:py-12 bg-surface-950 lg:border-l lg:border-gray-400">
 
         {/* Mobile headline — logo + divisor + wordmark horizontalmente centralizados;
             headline + subheadline alinhados a esquerda. */}
@@ -151,7 +172,7 @@ export function LoginPage() {
           {/* Card chrome only on mobile/tablet — on desktop the right column
               already provides the surface-950 panel, so the inner card was
               competing with it visually. */}
-          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 shadow-2xl lg:bg-transparent lg:border-0 lg:rounded-none lg:p-0 lg:shadow-none">
+          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 shadow-2xl lg:bg-transparent lg:border-0 lg:p-5 lg:shadow-none lg:rounded-lg">
             <div className="mb-5">
               <h2 className="text-2xl font-bold text-surface-50">Entrar</h2>
               <p className="text-sm text-surface-400 mt-1">Acesse sua conta para continuar</p>
