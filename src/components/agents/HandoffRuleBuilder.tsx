@@ -187,8 +187,8 @@ function RuleCard({
     <motion.div
       layout
       className={cn(
-        'bg-surface-900/60 border rounded-xl overflow-hidden transition-colors',
-        rule.enabled ? 'border-surface-800/60' : 'border-surface-800/30 opacity-60',
+        'bg-surface-900 border rounded-xl overflow-hidden transition-colors',
+        rule.enabled ? 'border-surface-700' : 'border-surface-800/40 opacity-60',
       )}
     >
       {/* Header row */}
@@ -1134,7 +1134,7 @@ export function HandoffRulesPanel({
             </div>
           ) : (
             <>
-              <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-900/40 border border-surface-800/60 rounded-xl">
+              <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-900 border border-surface-700 rounded-xl">
                 <AlertCircle className="w-3.5 h-3.5 text-surface-600 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-surface-600">
                   As regras são avaliadas em ordem — a primeira que corresponder é executada.

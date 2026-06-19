@@ -65,7 +65,8 @@ export function AuditPage() {
         onDismiss={banner.dismiss}
         message="Auditoria foi pensada para desktop — colunas largas, filtros laterais e drill modais. No celular você pode dar uma olhada rápida, mas para investigar use seu computador."
       />
-      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-800">
+      <div className="border-r border-surface-700">
+      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-700">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-brand-700/30 flex items-center justify-center">
             <Activity className="w-5 h-5 text-brand-300" />
@@ -77,7 +78,7 @@ export function AuditPage() {
         </div>
       </header>
 
-      <nav className="px-6 border-b border-surface-800 bg-surface-900/40 flex gap-1">
+      <nav className="px-6 border-b border-surface-700 bg-surface-900/40 flex gap-1">
         {TABS.map(t => {
           const Icon = t.icon
           const active = t.id === tab
@@ -98,6 +99,7 @@ export function AuditPage() {
           )
         })}
       </nav>
+      </div>
 
       {tab === 'activity'    && <ActivityFeedTab />}
       {tab === 'auth'        && <AuthEventsTab />}
@@ -187,7 +189,7 @@ function ActivityFeedTab() {
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-hidden bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -306,7 +308,7 @@ function AuthEventsTab() {
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-hidden bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -407,7 +409,7 @@ function IntegrationEventsTab() {
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-hidden bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -505,7 +507,7 @@ function AutomationRunsTab() {
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-hidden bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -575,7 +577,7 @@ function FilterBar<T extends { tenantId?: string; limit?: number }>({
   const hasFilters = Object.entries(draft).some(([k, v]) => k !== 'limit' && v !== undefined && v !== '')
 
   return (
-    <div className="px-6 py-3 border-b border-surface-800 bg-surface-900/40 flex flex-wrap items-end gap-3">
+    <div className="px-6 py-3 border-b border-r border-surface-700 bg-surface-900/40 flex flex-wrap items-end gap-3">
       <div className="flex items-center gap-2 text-xs text-surface-400">
         <Filter className="w-4 h-4" /> Filtros
       </div>

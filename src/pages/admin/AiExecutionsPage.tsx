@@ -105,7 +105,8 @@ export function AiExecutionsPage() {
 
   return (
     <div className="flex flex-col h-full bg-surface-950">
-      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-800">
+      <div className="border-r border-surface-700">
+      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-700">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-brand-700/30 flex items-center justify-center">
             <Bot className="w-5 h-5 text-brand-300" />
@@ -119,7 +120,7 @@ export function AiExecutionsPage() {
         </div>
       </header>
 
-      <div className="px-6 py-3 border-b border-surface-800 bg-surface-900/40 flex flex-wrap items-end gap-3">
+      <div className="px-6 py-3 border-b border-r border-surface-700 bg-surface-900/40 flex flex-wrap items-end gap-3">
         <Field label="tenantId" value={tenantId} onChange={setTenantId} placeholder="opcional — UUID" wide />
         <Field label="agentId" value={agentId} onChange={setAgentId} placeholder="opcional — UUID" wide />
         <SelectField
@@ -139,9 +140,10 @@ export function AiExecutionsPage() {
           Atualizar
         </button>
       </div>
+      </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="px-6 py-4 grid grid-cols-2 md:grid-cols-5 gap-3 border-b border-surface-800">
+        <div className="px-6 py-4 grid grid-cols-2 md:grid-cols-5 gap-3 border-b border-r border-surface-700">
           <KpiCard label="Execuções" value={totals.exec.toLocaleString('pt-BR')} />
           <KpiCard label="Custo total" value={`$${totals.cost.toFixed(4)}`} />
           <KpiCard label="Input tokens" value={fmtCompact(totals.input)} />
@@ -176,9 +178,9 @@ export function AiExecutionsPage() {
           )}
 
           {rows.length > 0 && (
-            <div className="rounded-lg border border-surface-800 bg-surface-900 overflow-hidden">
+            <div className="rounded-xl border border-surface-700 bg-surface-900 overflow-hidden">
               <table className="w-full text-xs">
-                <thead className="bg-surface-900 text-surface-500 text-left border-b border-surface-800">
+                <thead className="bg-surface-900 text-surface-500 text-left border-b border-surface-700">
                   <tr>
                     <th className="px-3 py-2 font-medium">Quando</th>
                     <th className="px-3 py-2 font-medium">Status</th>
@@ -327,7 +329,7 @@ function SelectField({
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-lg border border-surface-800 bg-surface-900 p-3">
+    <div className="rounded-xl border border-surface-700 bg-surface-900 p-3">
       <p className="text-[11px] uppercase tracking-wider text-surface-400">{label}</p>
       <p className="mt-1 text-lg font-semibold text-surface-100">{value}</p>
       {hint && <p className="text-[11px] text-surface-500 mt-0.5">{hint}</p>}

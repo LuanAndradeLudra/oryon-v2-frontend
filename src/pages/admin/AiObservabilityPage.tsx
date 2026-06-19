@@ -93,7 +93,8 @@ export function AiObservabilityPage() {
 
   return (
     <div className="flex flex-col h-full bg-surface-950">
-      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-800">
+      <div className="border-r border-surface-700">
+      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-700">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-emerald-700/30 flex items-center justify-center">
             <BarChart3 className="w-5 h-5 text-emerald-300" />
@@ -105,7 +106,7 @@ export function AiObservabilityPage() {
         </div>
       </header>
 
-      <div className="px-6 py-3 border-b border-surface-800 bg-surface-900/40 flex flex-wrap items-end gap-3">
+      <div className="px-6 py-3 border-b border-r border-surface-700 bg-surface-900/40 flex flex-wrap items-end gap-3">
         <Field label="tenantId" value={tenantId} onChange={setTenantId} placeholder="opcional — UUID" wide />
         <Field label="since (date)" value={since} onChange={setSince} placeholder="YYYY-MM-DD" />
         <Field label="until (date)" value={until} onChange={setUntil} placeholder="YYYY-MM-DD" />
@@ -117,10 +118,11 @@ export function AiObservabilityPage() {
           Atualizar rollup
         </button>
       </div>
+      </div>
 
       <div className="flex-1 overflow-auto">
         {/* ── Cost rollup ────────────────────────────────────────────────────── */}
-        <section className="px-6 py-5 border-b border-surface-800">
+        <section className="px-6 py-5 border-b border-r border-surface-700">
           <h2 className="text-sm font-semibold text-surface-200 mb-3">Cost rollup</h2>
 
           {rollupError && (
@@ -147,7 +149,7 @@ export function AiObservabilityPage() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="rounded-lg border border-surface-800 bg-surface-900 p-3">
+                <div className="rounded-xl border border-surface-700 bg-surface-900 p-3">
                   <h3 className="text-xs uppercase tracking-wider text-surface-400 mb-2">Por feature</h3>
                   <table className="w-full text-sm">
                     <tbody className="divide-y divide-surface-800">
@@ -162,7 +164,7 @@ export function AiObservabilityPage() {
                   </table>
                 </div>
 
-                <div className="rounded-lg border border-surface-800 bg-surface-900 p-3 max-h-[260px] overflow-auto">
+                <div className="rounded-xl border border-surface-700 bg-surface-900 p-3 max-h-[260px] overflow-auto">
                   <h3 className="text-xs uppercase tracking-wider text-surface-400 mb-2">Linhas brutas ({rollup.length})</h3>
                   <table className="w-full text-xs">
                     <thead className="text-surface-500">
@@ -227,7 +229,7 @@ export function AiObservabilityPage() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="rounded-lg border border-surface-800 bg-surface-900 p-3">
+                <div className="rounded-xl border border-surface-700 bg-surface-900 p-3">
                   <h3 className="text-xs uppercase tracking-wider text-surface-400 mb-2">Top tools</h3>
                   {agentSummary.top_tools.length === 0 ? (
                     <p className="text-xs text-surface-500">Sem chamadas no período.</p>
@@ -246,7 +248,7 @@ export function AiObservabilityPage() {
                   )}
                 </div>
 
-                <div className="rounded-lg border border-surface-800 bg-surface-900 p-3">
+                <div className="rounded-xl border border-surface-700 bg-surface-900 p-3">
                   <h3 className="text-xs uppercase tracking-wider text-surface-400 mb-2">RAG</h3>
                   <dl className="space-y-1 text-xs text-surface-300">
                     <Row k="queries" v={agentSummary.rag.queries.toLocaleString('pt-BR')} />
@@ -311,7 +313,7 @@ function Field({
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-lg border border-surface-800 bg-surface-900 p-3">
+    <div className="rounded-xl border border-surface-700 bg-surface-900 p-3">
       <p className="text-[11px] uppercase tracking-wider text-surface-400">{label}</p>
       <p className="mt-1 text-lg font-semibold text-surface-100">{value}</p>
       {hint && <p className="text-[11px] text-surface-500 mt-0.5">{hint}</p>}
@@ -321,7 +323,7 @@ function KpiCard({ label, value, hint }: { label: string; value: string; hint?: 
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex justify-between border-b border-surface-800/50 last:border-0 py-0.5">
+    <div className="flex justify-between border-b border-surface-700/50 last:border-0 py-0.5">
       <dt className="text-surface-400">{k}</dt>
       <dd className="text-surface-200 font-mono">{v}</dd>
     </div>

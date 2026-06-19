@@ -1681,7 +1681,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           )}
         </div>
         {data.objective && (
-          <p className="text-xs text-surface-500 mt-2 pt-2 border-t border-surface-800">{data.objective}</p>
+          <p className="text-xs text-surface-500 mt-2 p-2 border-t border-surface-800 rounded-lg">{data.objective}</p>
         )}
       </div>
 
