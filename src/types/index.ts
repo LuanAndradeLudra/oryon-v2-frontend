@@ -173,6 +173,30 @@ export interface ContactCustomFieldDef {
   order: number
 }
 
+// ─── Catálogo de Produtos ───────────────────────────────────────────────────────
+export interface ProductPriceVariation {
+  id?: string
+  label: string
+  amountCents: number      // valor em centavos (BRL por padrão)
+  currency?: string        // default 'BRL'
+  description?: string
+  order?: number
+}
+
+export interface Product {
+  id: string
+  agentId?: string | null  // reservado: null = catálogo da empresa toda
+  name: string
+  sku?: string | null
+  description?: string | null
+  category?: string | null
+  active: boolean
+  order: number
+  priceVariations: ProductPriceVariation[]
+  createdAt?: string
+  updatedAt?: string
+}
+
 // ─── AI Onboarding ────────────────────────────────────────────────────────────
 
 export interface AIOnboardingConfig {
