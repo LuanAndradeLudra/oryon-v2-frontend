@@ -197,6 +197,36 @@ export interface Product {
   updatedAt?: string
 }
 
+// ─── Negócios / Propostas (Deals) ────────────────────────────────────────────
+export type DealStatus = 'open' | 'won' | 'lost'
+
+export interface DealLineItem {
+  id?: string
+  productId: string
+  productName?: string          // snapshot (vem do backend)
+  variationLabel?: string | null
+  unitPriceCents: number        // centavos
+  quantity?: number
+  discountCents?: number
+  order?: number
+}
+
+export interface Deal {
+  id: string
+  contactId: string
+  title: string
+  status: DealStatus
+  pipelineStageKey?: string | null
+  amountCents: number           // total em centavos
+  currency?: string
+  note?: string | null
+  ownerUserId?: string | null
+  closedAt?: string | null
+  lineItems: DealLineItem[]
+  createdAt?: string
+  updatedAt?: string
+}
+
 // ─── AI Onboarding ────────────────────────────────────────────────────────────
 
 export interface AIOnboardingConfig {

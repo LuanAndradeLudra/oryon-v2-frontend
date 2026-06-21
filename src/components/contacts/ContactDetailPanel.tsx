@@ -10,6 +10,7 @@ import { OverviewTab } from './tabs/OverviewTab'
 import { HistoryTab } from './tabs/HistoryTab'
 import { ConversationsTab } from './tabs/ConversationsTab'
 import { CampaignsTab } from './tabs/CampaignsTab'
+import { DealsTab } from './tabs/DealsTab'
 import type { Contact, Tag } from '@/types'
 
 interface ContactDetailPanelProps {
@@ -159,6 +160,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
                 onContactUpdate?.(updated)
               }}
             />}
+            {activeTab === 'deals'         && <DealsTab contactId={contactId} />}
             {activeTab === 'history'       && <HistoryTab contactId={contactId} />}
             {activeTab === 'conversations' && <ConversationsTab contactId={contactId} />}
             {activeTab === 'campaigns'     && <CampaignsTab />}

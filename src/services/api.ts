@@ -27,6 +27,8 @@ import type {
   MetaAdsReferral,
   PaginatedResponse,
   Product,
+  Deal,
+  DealStatus,
   SendMessageDto,
   Department,
   Tag,
@@ -1181,6 +1183,27 @@ export const productsApi = {
   },
   remove(id: string) {
     return api.delete(`/products/${id}`)
+  },
+}
+
+export const dealsApi = {
+  list(contactId: string) {
+    return api.get<Deal[]>('/deals', { params: { contactId } })
+  },
+  get(id: string) {
+    return api.get<Deal>(`/deals/${id}`)
+  },
+  create(dto: Partial<Deal>) {
+    return api.post<Deal>('/deals', dto)
+  },
+  update(id: string, patch: Partial<Deal>) {
+    return api.patch<Deal>(`/deals/${id}`, patch)
+  },
+  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string }) {
+    return api.patch<Deal>(`/deals/${id}/status`, body)
+  },
+  remove(id: string) {
+    return api.delete(`/deals/${id}`)
   },
 }
 

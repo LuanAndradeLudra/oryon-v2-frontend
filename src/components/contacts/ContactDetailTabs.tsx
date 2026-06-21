@@ -1,13 +1,7 @@
 import { motion } from 'framer-motion'
+import { useTenantVocab } from '@/contexts/TenantVocabContext'
 
-type TabId = 'overview' | 'history' | 'conversations' | 'campaigns'
-
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'overview',      label: 'Visão Geral' },
-  { id: 'history',       label: 'Histórico' },
-  { id: 'conversations', label: 'Conversas' },
-  { id: 'campaigns',     label: 'Disparos' },
-]
+type TabId = 'overview' | 'deals' | 'history' | 'conversations' | 'campaigns'
 
 interface ContactDetailTabsProps {
   activeTab: TabId
@@ -15,9 +9,19 @@ interface ContactDetailTabsProps {
 }
 
 export function ContactDetailTabs({ activeTab, onChange }: ContactDetailTabsProps) {
+  const { vocab } = useTenantVocab()
+  // O rótulo de "Negócios" vem do vocabulário do tenant (vertical-agnostic).
+  const tabs: { id: TabId; label: string }[] = [
+    { id: 'overview',      label: 'Visão Geral' },
+    { id: 'deals',         label: vocab.deals },
+    { id: 'history',       label: 'Histórico' },
+    { id: 'conversations', label: 'Conversas' },
+    { id: 'campaigns',     label: 'Disparos' },
+  ]
+
   return (
     <div className="flex border-b border-surface-800 px-5 flex-shrink-0">
-      {TABS.map((tab) => (
+      {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
