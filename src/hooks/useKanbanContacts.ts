@@ -157,6 +157,56 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
       .catch(() => {})
   }, [])
 
+  // Reconciliação de um contato após `contact:updated` (estágio/etiquetas mudaram noutra view
+  // ou por outro operador): rebusca e, se o estágio mudou, MOVE o card de coluna; senão
+  // atualiza no lugar. Preserva o `dealsSummary` (calculado no client, não vem da API de contato).
+  const reconcileContact = useCallback((contactId: string) => {
+    contactsApi
+      .get(contactId)
+      .then((r) => {
+        const fresh = r.data
+        setColumns((prev) => {
+          let fromKey: string | null = null
+          for (const key of Object.keys(prev)) {
+            if (prev[key].contacts.some((c) => c.id === contactId)) {
+              fromKey = key
+              break
+            }
+          }
+          if (!fromKey) return prev
+          const existing = prev[fromKey].contacts.find((c) => c.id === contactId)
+          if (!existing) return prev
+          const merged: Contact = { ...existing, ...fresh }
+          const toKey = fresh.stage ?? fromKey
+          if (toKey === fromKey || !prev[toKey]) {
+            return {
+              ...prev,
+              [fromKey]: {
+                ...prev[fromKey],
+                contacts: prev[fromKey].contacts.map((c) => (c.id === contactId ? merged : c)),
+              },
+            }
+          }
+          const next = { ...prev }
+          next[fromKey] = {
+            ...next[fromKey],
+            contacts: next[fromKey].contacts.filter((c) => c.id !== contactId),
+            total: Math.max(0, next[fromKey].total - 1),
+          }
+          const already = next[toKey].contacts.some((c) => c.id === contactId)
+          next[toKey] = already
+            ? next[toKey]
+            : {
+                ...next[toKey],
+                contacts: [merged, ...next[toKey].contacts],
+                total: next[toKey].total + 1,
+              }
+          return next
+        })
+      })
+      .catch(() => {})
+  }, [])
+
   const fetchPage = useCallback(
     async (stageKey: string, page: number, generation: number) => {
       if (!enabled) return
@@ -254,11 +304,16 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
     const onDealChanged = (p: { contactId?: string }) => {
       if (p?.contactId) refreshContactDealSummary(p.contactId)
     }
+    const onContactUpdated = (p: { contactId?: string }) => {
+      if (p?.contactId) reconcileContact(p.contactId)
+    }
     socket.on('deal:changed', onDealChanged)
+    socket.on('contact:updated', onContactUpdated)
     return () => {
       socket.off('deal:changed', onDealChanged)
+      socket.off('contact:updated', onContactUpdated)
     }
-  }, [enabled, refreshContactDealSummary])
+  }, [enabled, refreshContactDealSummary, reconcileContact])
 
   const loadMore = useCallback(
     (stageKey: string) => {
