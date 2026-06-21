@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Briefcase } from 'lucide-react'
 import { dealsApi } from '@/services/api'
+import { connectSocket } from '@/services/socket'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { formatBRL } from '@/utils/money'
 import type { Deal } from '@/types'
@@ -20,6 +21,18 @@ export function DealsSummaryCard({ contactId }: { contactId: string }) {
   useEffect(() => {
     load()
   }, [load])
+
+  // Realtime: recarrega quando um negócio deste contato muda em qualquer lugar (socket `deal:changed`).
+  useEffect(() => {
+    const socket = connectSocket()
+    const onDealChanged = (p: { contactId?: string }) => {
+      if (p?.contactId === contactId) load()
+    }
+    socket.on('deal:changed', onDealChanged)
+    return () => {
+      socket.off('deal:changed', onDealChanged)
+    }
+  }, [contactId, load])
 
   const list = deals ?? []
   const count = list.length

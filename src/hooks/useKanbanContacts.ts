@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { contactsApi, dealsApi } from '@/services/api'
+import { connectSocket } from '@/services/socket'
 import { withRetry } from '@/lib/utils'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { Contact, ContactFilters, Tag } from '@/types'
@@ -125,6 +126,37 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
     [enabled],
   )
 
+  // Atualiza o resumo de negócios de UM contato (após um evento socket `deal:changed`),
+  // mesclando no card em qualquer coluna onde ele esteja. Se o contato ficou sem negócios,
+  // a busca volta vazia e o badge é limpo.
+  const refreshContactDealSummary = useCallback((contactId: string) => {
+    dealsApi
+      .summary([contactId])
+      .then((res) => {
+        const summary = Array.isArray(res.data)
+          ? res.data.find((s) => s.contactId === contactId)
+          : undefined
+        setColumns((prev) => {
+          let touched = false
+          const next: Record<string, ColumnState> = {}
+          for (const key of Object.keys(prev)) {
+            const col = prev[key]
+            const idx = col.contacts.findIndex((c) => c.id === contactId)
+            if (idx < 0) {
+              next[key] = col
+              continue
+            }
+            touched = true
+            const contacts = col.contacts.slice()
+            contacts[idx] = { ...contacts[idx], dealsSummary: summary }
+            next[key] = { ...col, contacts }
+          }
+          return touched ? next : prev
+        })
+      })
+      .catch(() => {})
+  }, [])
+
   const fetchPage = useCallback(
     async (stageKey: string, page: number, generation: number) => {
       if (!enabled) return
@@ -212,6 +244,21 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
 
     void Promise.all(stages.map((s) => fetchPage(s.key, 1, generation)))
   }, [enabled, loadingStages, stagesKey, filtersKey, fetchPage, stages])
+
+  // Realtime: quando QUALQUER negócio muda no tenant (socket `deal:changed`, emitido pelo
+  // backend em criar/editar/ganhar/perder/excluir), atualiza o badge do contato afetado —
+  // para o próprio usuário em outra view E para outros operadores, sem recarregar a página.
+  useEffect(() => {
+    if (!enabled) return
+    const socket = connectSocket()
+    const onDealChanged = (p: { contactId?: string }) => {
+      if (p?.contactId) refreshContactDealSummary(p.contactId)
+    }
+    socket.on('deal:changed', onDealChanged)
+    return () => {
+      socket.off('deal:changed', onDealChanged)
+    }
+  }, [enabled, refreshContactDealSummary])
 
   const loadMore = useCallback(
     (stageKey: string) => {
