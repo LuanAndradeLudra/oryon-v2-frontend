@@ -1,7 +1,7 @@
 import { useCallback, useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  MoreHorizontal, ChevronRight, Phone, Check, Clock, Star, Building2,
+  MoreHorizontal, ChevronRight, Phone, Check, Clock, Star, Building2, Briefcase,
   ExternalLink, Copy, CheckSquare, Square, ArrowRightLeft, Trash2,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -11,6 +11,8 @@ import { contactsApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn, hexToRgba, formatRelativeTime } from '@/lib/utils'
+import { formatBRL } from '@/utils/money'
+import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import type { Contact, ContactStage, TenantStage } from '@/types'
 
 
@@ -42,6 +44,8 @@ export function KanbanCard({
   const navigate = useNavigate()
   const otherStages = stages.filter((s) => s.key !== contact.stage)
   const stageColor = stages.find((s) => s.key === contact.stage)?.color
+  const { vocab } = useTenantVocab()
+  const deals = contact.dealsSummary
 
   // Abre a conversa do contato DENTRO da plataforma (página de Conversas),
   // não o link externo wa.me. Busca a conversa mais recente do contato e
@@ -273,6 +277,18 @@ export function KanbanCard({
           {(contact.tags ?? []).length > 3 && (
             <span className="text-[10px] text-surface-500">+{(contact.tags ?? []).length - 3}</span>
           )}
+        </div>
+      )}
+
+      {deals && deals.count > 0 && (
+        <div className="mt-2.5 flex items-center gap-1.5 flex-wrap text-[11px]">
+          <span className="inline-flex items-center gap-1 font-medium px-1.5 py-0.5 rounded-full border bg-emerald-500/10 border-emerald-500/30 text-emerald-300">
+            <Briefcase className="w-2.5 h-2.5" />
+            {formatBRL(deals.totalCents)}
+          </span>
+          <span className="text-surface-500">
+            {deals.count} {(deals.count === 1 ? vocab.deal : vocab.deals).toLowerCase()}
+          </span>
         </div>
       )}
 

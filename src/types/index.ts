@@ -227,6 +227,16 @@ export interface Deal {
   updatedAt?: string
 }
 
+/** Agregado de negócios de um contato (contagem + valor em centavos). Usado no card do Kanban. */
+export interface ContactDealsSummary {
+  count: number
+  openCount: number
+  wonCount: number
+  totalCents: number
+  openCents: number
+  wonCents: number
+}
+
 // ─── AI Onboarding ────────────────────────────────────────────────────────────
 
 export interface AIOnboardingConfig {
@@ -324,6 +334,9 @@ export interface Contact {
   conversationCount?: number
   lastContactedAt?: string
   firstContactedAt?: string
+
+  // ── Resumo de negócios (preenchido no client a partir de /deals/summary, p/ o card do Kanban) ──
+  dealsSummary?: ContactDealsSummary
 
   // ── Relações ──────────────────────────────────────────────────────────────
   tags?: Tag[]

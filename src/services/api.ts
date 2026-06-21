@@ -29,6 +29,7 @@ import type {
   Product,
   Deal,
   DealStatus,
+  ContactDealsSummary,
   SendMessageDto,
   Department,
   Tag,
@@ -1201,6 +1202,12 @@ export const dealsApi = {
   },
   setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string }) {
     return api.patch<Deal>(`/deals/${id}/status`, body)
+  },
+  /** Agregados por contato (batch), p/ o card do Kanban. Só retorna contatos que têm negócios. */
+  summary(contactIds: string[]) {
+    return api.get<(ContactDealsSummary & { contactId: string })[]>('/deals/summary', {
+      params: { contactIds: contactIds.join(',') },
+    })
   },
   remove(id: string) {
     return api.delete(`/deals/${id}`)
