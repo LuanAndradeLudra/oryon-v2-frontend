@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Loader2, Bot, User, Tag, GitCommitHorizontal, UserPlus, ShieldCheck, History,
+  Briefcase, Trophy, XCircle, Pencil,
 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { fetchContactActivity } from '@/services/userActivityApi'
@@ -20,6 +21,10 @@ const PIPELINE_VIS: Record<string, { Icon: RowVisual['Icon']; iconClass: string 
   tag_added:       { Icon: Tag, iconClass: 'bg-emerald-900/40 text-emerald-300' },
   tag_removed:     { Icon: Tag, iconClass: 'bg-zinc-800 text-zinc-300' },
   manual_edit:     { Icon: User, iconClass: 'bg-surface-800 text-surface-300' },
+  deal_created:    { Icon: Briefcase, iconClass: 'bg-emerald-900/40 text-emerald-300' },
+  deal_won:        { Icon: Trophy, iconClass: 'bg-emerald-900/40 text-emerald-300' },
+  deal_lost:       { Icon: XCircle, iconClass: 'bg-red-900/40 text-red-300' },
+  deal_updated:    { Icon: Pencil, iconClass: 'bg-sky-900/40 text-sky-300' },
 }
 const PIPELINE_FALLBACK = { Icon: User, iconClass: 'bg-surface-800 text-surface-300' }
 

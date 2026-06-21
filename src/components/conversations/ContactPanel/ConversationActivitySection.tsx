@@ -20,9 +20,11 @@ import {
   TagsIcon, UserCog, History, Pause, Play, ArrowRightLeft,
   CheckCircle2, Clock, Inbox, Archive, Send, MoveRight, Megaphone, CornerDownLeft,
   MessageSquarePlus, RotateCcw, FileText, AlertTriangle,
+  Briefcase, Trophy, XCircle, Pencil,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn, formatRelativeTime } from '@/lib/utils'
+import { formatBRL } from '@/utils/money'
 import { fetchAgentActions, type AgentAction } from '@/services/agentActivityApi'
 import { fetchUserActivity, type UserActivity } from '@/services/userActivityApi'
 import { getSocket } from '@/services/socket'
@@ -597,6 +599,28 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
         Icon: AlertCircle,
         rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300',
       }
+    case 'deal_created': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      const v = typeof metadata.amountCents === 'number' ? ` · ${formatBRL(metadata.amountCents)}` : ''
+      return { label: `Negócio "${t}" criado${v}`, Icon: Briefcase,
+               rowBg: 'bg-emerald-950/25', iconClass: 'bg-emerald-900/40 text-emerald-300' }
+    }
+    case 'deal_won': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      const v = typeof metadata.amountCents === 'number' ? ` · ${formatBRL(metadata.amountCents)}` : ''
+      return { label: `Negócio "${t}" ganho${v}`, Icon: Trophy,
+               rowBg: 'bg-emerald-950/25', iconClass: 'bg-emerald-900/40 text-emerald-300' }
+    }
+    case 'deal_lost': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      return { label: `Negócio "${t}" perdido`, Icon: XCircle,
+               rowBg: 'bg-red-950/25', iconClass: 'bg-red-900/40 text-red-300' }
+    }
+    case 'deal_updated': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      return { label: `Negócio "${t}" atualizado`, Icon: Pencil,
+               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+    }
     default:
       return { label: key, Icon: Bot,
                rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300' }
