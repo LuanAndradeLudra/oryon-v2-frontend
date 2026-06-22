@@ -54,8 +54,8 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
     setVariations(variations.filter((_, i) => i !== index))
 
   const handleSave = async () => {
-    if (!name.trim()) {
-      setError('O nome do produto é obrigatório.')
+    if (name.trim().length < 2) {
+      setError('O nome do produto precisa de pelo menos 2 caracteres.')
       return
     }
     if (!category.trim()) {
@@ -95,8 +95,9 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
       })
       onClose()
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Erro ao salvar produto.'
-      setError(msg)
+      // Mostra a mensagem específica do backend (class-validator devolve string ou array) em vez de um erro genérico.
+      const msg = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
+      setError(typeof msg === 'string' ? msg : Array.isArray(msg) ? msg[0] : 'Erro ao salvar produto.')
     } finally {
       setSaving(false)
     }
