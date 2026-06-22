@@ -361,7 +361,7 @@ function FilterBar({
         <button
           onClick={apply}
           disabled={loading}
-          className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-black text-xs disabled:opacity-50"
+          className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-xs disabled:opacity-50"
         >
           Aplicar
         </button>

@@ -43,7 +43,7 @@ function QuickReplyRow({
   return (
     <tr onContextMenu={onContextMenu} className="hover:bg-surface-800/50 transition-colors">
       <td className="px-5 py-4">
-        <code className="inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-brand-300 bg-brand-900/20 px-2 py-1 rounded-lg" title={response.shortcut}>
+        <code className="shortcut-tag inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-brand-300 bg-brand-900/20 px-2 py-1 rounded-lg" title={response.shortcut}>
           {response.shortcut}
         </code>
       </td>

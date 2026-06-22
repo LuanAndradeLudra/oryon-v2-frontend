@@ -115,10 +115,10 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
       onClick={() => onSelect(conversation)}
       onContextMenu={onContextMenu}
       className={cn(
-        'w-full flex items-start gap-3 px-3 py-3.5 text-left transition-all duration-100 border-b border-surface-800/60',
+        'w-full flex items-start gap-3 px-3 py-3.5 text-left transition-all duration-100 rounded-xl border border-surface-800/60 mb-1',
         isActive
-          ? 'bg-brand-600/10 border-l-2 border-l-brand-500'
-          : 'hover:bg-surface-800/50 border-l-2 border-l-transparent',
+          ? 'bg-brand-600/10 border-brand-500/40'
+          : 'hover:bg-surface-800/50 hover:border-surface-700',
         hasUnread && !isActive && 'bg-brand-600/5'
       )}
     >

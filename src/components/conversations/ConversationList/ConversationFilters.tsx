@@ -571,7 +571,7 @@ export function ConversationFiltersBar({
           const underlineColor = value === 'open' ? 'bg-status-open'
             : value === 'pending' ? 'bg-status-pending'
             : value === 'resolved' ? 'bg-status-active'
-            : 'bg-white'
+            : 'bg-surface-400'
           return (
             <button
               key={value}
@@ -587,7 +587,7 @@ export function ConversationFiltersBar({
               {(count ?? 0) > 0 && (
                 <span className={cn(
                   'rounded-full px-1.5 py-0.5 text-[10.5px] font-bold leading-none min-w-[18px] text-center',
-                  isActive ? 'bg-white text-red-700' : 'bg-white text-red-700'
+                  isActive ? 'bg-danger/80 text-white' : 'conv-tab-badge bg-surface-500 text-white'
                 )}>
                   {displayCount}
                 </span>

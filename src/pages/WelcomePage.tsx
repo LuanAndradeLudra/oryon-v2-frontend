@@ -466,7 +466,7 @@ export function WelcomePage() {
 
           <div className={`pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3 ${isLight ? 'border-gray-200' : 'border-surface-800'}`}>
             <p className={`text-xs ${isLight ? 'text-gray-400' : 'text-surface-600'}`}>
-              © 2025 Oryon · Todos os direitos reservados
+              © 2026 Oryon · Todos os direitos reservados
             </p>
             <div className="flex items-center gap-4">
               <a href="#" className={`text-xs transition-colors hover:text-brand-400 ${isLight ? 'text-gray-400' : 'text-surface-600'}`}>Privacidade</a>

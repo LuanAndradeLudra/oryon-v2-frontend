@@ -93,30 +93,19 @@ function KpiCard({ metric, hero }: { metric: KpiMetric; hero?: boolean }) {
 
   return (
     <div
-      className={cn(
-        'relative overflow-hidden bg-surface-900 border rounded-xl p-4 flex flex-col gap-2.5',
-        hero
-          ? 'border-brand-500/40 shadow-[0_6px_20px_rgba(20,184,166,.35)]'
-          : 'border-surface-800',
-      )}
+      className="card-glow bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col gap-2.5"
     >
-      {hero && (
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at top left, rgba(20,184,166,0.14) 0%, transparent 65%)' }}
-        />
-      )}
-      <div className="relative flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: catColor + '1a', color: catColor }}>
           {KPI_ICONS[metric.id]}
         </div>
-        <span className={cn('text-xs font-medium leading-tight', hero ? 'text-brand-400' : 'text-surface-400')}>
+        <span className="text-xs font-medium leading-tight text-surface-400">
           {metric.label}
         </span>
       </div>
 
-      <div className="relative text-2xl font-bold text-surface-50 tabular-nums leading-none">
+      <div className="text-2xl font-bold text-surface-50 tabular-nums leading-none">
         {formatKpiValue(metric.value, metric.unit)}
         {metric.unit === 'csat_score' && (
           <span className="text-sm font-normal text-surface-400 ml-1">/ 5</span>

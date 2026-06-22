@@ -270,6 +270,7 @@ export function ConversationList({
           </div>
         ) : (
           <>
+            <div className="px-2 pt-2">
             {conversations.map((conv) => (
               <div key={conv.id} className={newConvIds.has(conv.id) ? 'animate-conv-in' : undefined}>
                 <ConversationItem
@@ -279,6 +280,7 @@ export function ConversationList({
                 />
               </div>
             ))}
+            </div>
             {hasMore && (
               <div className="flex items-center justify-center py-4" aria-hidden="true">
                 {loadingMore && (

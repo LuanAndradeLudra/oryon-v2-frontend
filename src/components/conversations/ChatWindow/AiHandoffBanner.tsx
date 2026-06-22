@@ -154,18 +154,18 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
   if (!isPaused) {
     return (
       <div
-        className="flex items-center h-8 pl-2 pr-1 gap-1.5 rounded-lg bg-amber-950/40 border border-amber-900/60"
+        className="ai-chip flex items-center h-8 pl-2 pr-1 gap-1.5 rounded-lg bg-amber-950/40 border border-amber-900/60"
         title="A IA está respondendo automaticamente"
       >
-        <Bot className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-        <span className="text-[11px] font-medium text-amber-200 leading-none">IA</span>
+        <Bot className="ai-chip-icon w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+        <span className="ai-chip-label text-[11px] font-medium text-amber-200 leading-none">IA</span>
         <button
           type="button"
           disabled={busy}
           onClick={handleIntervene}
           title="Intervir agora — pausa a IA pelo período configurado no agente"
           aria-label="Intervir agora"
-          className="inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-[11px] font-medium text-amber-200 hover:text-white hover:bg-amber-700/40 disabled:opacity-50 transition-colors"
+          className="ai-chip-btn inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-[11px] font-medium text-amber-200 hover:text-white hover:bg-amber-700/40 disabled:opacity-50 transition-colors"
         >
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserCog className="w-3 h-3" />}
           Intervir agora
@@ -182,7 +182,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
   const isMe = ownerLabel === 'Você'
   return (
     <div
-      className="flex items-center h-8 pl-2 pr-1 gap-1.5 rounded-lg bg-emerald-950/40 border border-emerald-900/60"
+      className="flex items-center h-8 pl-2 pr-1 gap-1.5 rounded-lg bg-surface-800 border border-surface-700"
       title={
         isMe
           ? (isIndefinite
@@ -193,8 +193,8 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
               : `${ownerLabel} está atendendo. IA volta em ${formatRemaining(pausedUntilMs!)}`)
       }
     >
-      <UserCog className="w-3.5 h-3.5 text-emerald-300 flex-shrink-0" />
-      <span className="text-[11px] font-medium text-emerald-200 leading-none whitespace-nowrap">
+      <UserCog className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
+      <span className="text-[11px] font-medium text-surface-300 leading-none whitespace-nowrap">
         {ownerLabel} · {isIndefinite ? '∞' : formatRemaining(pausedUntilMs!)}
       </span>
       <button
@@ -214,7 +214,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
           onClick={() => setMenuOpen((v) => !v)}
           title="Estender pausa da IA"
           aria-label="Estender pausa"
-          className="w-6 h-6 flex items-center justify-center rounded-md text-emerald-300 hover:text-white hover:bg-emerald-700/40 disabled:opacity-50 transition-colors"
+          className="w-6 h-6 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-100 hover:bg-surface-700/60 disabled:opacity-50 transition-colors"
         >
           <ChevronDown className={cn('w-3 h-3 transition-transform', menuOpen && 'rotate-180')} />
         </button>

@@ -34,7 +34,7 @@ export function WhatsappLineRequiredBanner({
   settingsHref = '/settings/numbers',
 }: WhatsappLineRequiredBannerProps) {
   return (
-    <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+    <div className="waba-banner mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
       <div className="flex items-start gap-3">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-300">
           <AlertTriangle className="h-4 w-4" />
@@ -49,7 +49,7 @@ export function WhatsappLineRequiredBanner({
         </div>
         <Link
           to={settingsHref}
-          className="flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-100 transition-colors hover:bg-amber-500/30"
+          className="waba-banner-btn flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-100 transition-colors hover:bg-amber-500/30"
         >
           Configurar WhatsApp
           <ArrowRight className="h-3 w-3" />

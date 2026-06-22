@@ -640,9 +640,22 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
           )}
         </div>
       </div>
-      <p className="text-[10px] text-surface-600 mt-1.5 text-center">
-        Enter para enviar · Shift+Enter para nova linha · <span className="text-surface-500">/ para respostas rápidas</span>
-      </p>
+      {/* Quick reply shortcut chips */}
+      {allResponses.length > 0 && !pickerActive && (
+        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+          {allResponses.slice(0, 8).map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => handleSelectResponse(r)}
+              title={r.title}
+              className="flex-shrink-0 text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
+            >
+              /{r.shortcut}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

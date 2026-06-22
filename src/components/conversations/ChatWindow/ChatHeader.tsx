@@ -126,11 +126,13 @@ export function ChatHeader({
         title="Alterar status"
         className={cn(
           'flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-medium transition-all border',
-          status === 'resolved'
-            ? 'bg-status-active-bg text-status-active border-status-active-border hover:bg-status-active-bg'
-            : status === 'pending'
-              ? 'bg-status-pending-bg text-status-pending border-status-pending-border hover:bg-status-pending-bg'
-              : 'bg-status-open-bg text-status-open border-status-open-border hover:bg-status-open-bg',
+          statusOpen
+            ? (status === 'resolved'
+                ? 'bg-status-active-bg text-status-active border-status-active-border'
+                : status === 'pending'
+                  ? 'bg-status-pending-bg text-status-pending border-status-pending-border'
+                  : 'bg-status-open-bg text-status-open border-status-open-border')
+            : 'bg-surface-800 text-surface-300 border-surface-700 hover:bg-surface-700 hover:text-surface-200',
         )}
       >
         <span className="max-w-[7rem] truncate">{statusTriggerLabel(status)}</span>
@@ -387,8 +389,7 @@ export function ChatHeader({
                 onClick={() => { closeAll(); setUserOpen((v) => !v) }}
                 className={cn(
                   'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
-                  userOpen ? 'bg-brand-600/20 text-brand-400'
-                    : assignedUser ? 'text-brand-400 hover:bg-surface-800'
+                  userOpen ? 'bg-surface-800 text-surface-200'
                     : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
                 )}
               >
@@ -403,7 +404,7 @@ export function ChatHeader({
             onClick={onToggleInfo}
             className={cn(
               'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
-              infoOpen ? 'bg-brand-600/20 text-brand-400' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
+              infoOpen ? 'bg-surface-700 text-surface-200' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
             )}
           >
             <div className="relative">

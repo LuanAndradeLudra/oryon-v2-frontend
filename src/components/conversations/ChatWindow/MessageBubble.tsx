@@ -732,7 +732,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           'relative max-w-[72%] px-3 py-2 rounded-2xl',
           isOutbound
             ? 'bg-bubble-out text-bubble-out-fg rounded-br-sm'
-            : 'bg-bubble-in text-surface-100 rounded-bl-sm shadow-sm',
+            : 'bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-sm shadow-sm',
           !isSameDirection && isOutbound && 'rounded-br-2xl rounded-tr-sm',
           !isSameDirection && !isOutbound && 'rounded-bl-2xl rounded-tl-sm'
         )}
