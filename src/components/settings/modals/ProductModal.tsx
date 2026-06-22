@@ -110,7 +110,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
       className="max-w-lg"
     >
       <div className="flex flex-col gap-4">
-        <FormField label="Nome do produto" requirement="required" error={error}>
+        <FormField label="Nome do produto" requirement="required" filled={!!name.trim()} error={error}>
           <Input
             value={name}
             onChange={(e) => {
@@ -123,7 +123,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
         </FormField>
 
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Categoria" requirement="required">
+          <FormField label="Categoria" requirement="required" filled={!!category.trim()}>
             <Input
               value={category}
               onChange={(e) => {
@@ -133,12 +133,12 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
               placeholder="Ex: Odontologia"
             />
           </FormField>
-          <FormField label="SKU / código" requirement="optional">
+          <FormField label="SKU / código" requirement="optional" filled={!!sku.trim()}>
             <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Ex: CONS-001" />
           </FormField>
         </div>
 
-        <FormField label="Descrição" requirement="optional">
+        <FormField label="Descrição" requirement="optional" filled={!!description.trim()}>
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -149,6 +149,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
         <FormField
           label="Variações de preço"
           requirement="required"
+          filled={variations.some((v) => v.label.trim() !== '' && v.amountCents > 0)}
           hint="Pelo menos uma, com rótulo e valor maior que zero. Ex.: Particular, Convênio SAF, Clube VIP."
         >
           <div className="flex flex-col gap-2">
