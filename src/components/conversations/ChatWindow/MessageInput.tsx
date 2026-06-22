@@ -7,7 +7,7 @@ import axios from 'axios'
 import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
-import { templatesApi } from '@/services/api'
+import { cannedResponsesApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 
@@ -208,9 +208,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
   // Load canned responses once
   useEffect(() => {
-    axios.get<{ data: CannedResponse[] } | CannedResponse[]>(`${API}/canned-responses`)
-      .then((r) => setAllResponses(Array.isArray(r.data) ? r.data : r.data.data))
-      .catch(() => {})
+    cannedResponsesApi.fetchAll().then(setAllResponses).catch(() => {})
   }, [])
 
   // Close attach menu when clicking outside. We MUST check that the click
