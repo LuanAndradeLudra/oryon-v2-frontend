@@ -58,10 +58,18 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
       setError('O nome do produto é obrigatório.')
       return
     }
+    if (!category.trim()) {
+      setError('A categoria é obrigatória.')
+      return
+    }
     // Descarta linhas totalmente vazias; exige rótulo e valor > 0 nas que sobraram.
     const cleaned = variations
       .map((v) => ({ ...v, label: v.label.trim() }))
       .filter((v) => v.label !== '' || v.amountCents > 0)
+    if (cleaned.length === 0) {
+      setError('Adicione pelo menos uma variação de preço (com rótulo e valor).')
+      return
+    }
     if (cleaned.some((v) => v.label === '')) {
       setError('Dê um rótulo a todas as variações de preço.')
       return
@@ -75,7 +83,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
       await onSave({
         name: name.trim(),
         sku: sku.trim() || undefined,
-        category: category.trim() || undefined,
+        category: category.trim(),
         description: description.trim() || undefined,
         active,
         priceVariations: cleaned.map((v, index) => ({
@@ -102,7 +110,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
       className="max-w-lg"
     >
       <div className="flex flex-col gap-4">
-        <FormField label="Nome do produto" required error={error}>
+        <FormField label="Nome do produto" requirement="required" error={error}>
           <Input
             value={name}
             onChange={(e) => {
@@ -115,19 +123,22 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
         </FormField>
 
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Categoria (opcional)">
+          <FormField label="Categoria" requirement="required">
             <Input
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                setCategory(e.target.value)
+                setError('')
+              }}
               placeholder="Ex: Odontologia"
             />
           </FormField>
-          <FormField label="SKU / código (opcional)">
+          <FormField label="SKU / código" requirement="optional">
             <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Ex: CONS-001" />
           </FormField>
         </div>
 
-        <FormField label="Descrição (opcional)">
+        <FormField label="Descrição" requirement="optional">
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -137,7 +148,8 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
 
         <FormField
           label="Variações de preço"
-          hint="Ex.: Particular, Convênio SAF, Clube VIP. Sem variação = preço sob avaliação (a IA confirma com a equipe)."
+          requirement="required"
+          hint="Pelo menos uma, com rótulo e valor maior que zero. Ex.: Particular, Convênio SAF, Clube VIP."
         >
           <div className="flex flex-col gap-2">
             {variations.map((v, i) => (
@@ -175,7 +187,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
               <Plus className="w-3.5 h-3.5" /> Adicionar variação
             </button>
             {variations.length === 0 && (
-              <p className="text-xs text-surface-600">Nenhuma variação adicionada.</p>
+              <p className="text-xs text-danger">Adicione ao menos uma variação de preço.</p>
             )}
           </div>
         </FormField>
