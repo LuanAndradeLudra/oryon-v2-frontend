@@ -173,6 +173,60 @@ export interface ContactCustomFieldDef {
   order: number
 }
 
+// ─── Catálogo de Produtos ───────────────────────────────────────────────────────
+export interface ProductPriceVariation {
+  id?: string
+  label: string
+  amountCents: number      // valor em centavos (BRL por padrão)
+  currency?: string        // default 'BRL'
+  description?: string
+  order?: number
+}
+
+export interface Product {
+  id: string
+  agentId?: string | null  // reservado: null = catálogo da empresa toda
+  name: string
+  sku?: string | null
+  description?: string | null
+  category?: string | null
+  active: boolean
+  order: number
+  priceVariations: ProductPriceVariation[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+// ─── Negócios / Propostas (Deals) ────────────────────────────────────────────
+export type DealStatus = 'open' | 'won' | 'lost'
+
+export interface DealLineItem {
+  id?: string
+  productId: string
+  productName?: string          // snapshot (vem do backend)
+  variationLabel?: string | null
+  unitPriceCents: number        // centavos
+  quantity?: number
+  discountCents?: number
+  order?: number
+}
+
+export interface Deal {
+  id: string
+  contactId: string
+  title: string
+  status: DealStatus
+  pipelineStageKey?: string | null
+  amountCents: number           // total em centavos
+  currency?: string
+  note?: string | null
+  ownerUserId?: string | null
+  closedAt?: string | null
+  lineItems: DealLineItem[]
+  createdAt?: string
+  updatedAt?: string
+}
+
 // ─── AI Onboarding ────────────────────────────────────────────────────────────
 
 export interface AIOnboardingConfig {

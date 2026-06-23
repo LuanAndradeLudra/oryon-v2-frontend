@@ -26,6 +26,9 @@ import type {
   Message,
   MetaAdsReferral,
   PaginatedResponse,
+  Product,
+  Deal,
+  DealStatus,
   SendMessageDto,
   Department,
   Tag,
@@ -1161,6 +1164,46 @@ export const customFieldsApi = {
   },
   delete(key: string) {
     return api.delete(`/settings/custom-fields/${key}`)
+  },
+}
+
+export const productsApi = {
+  async list() {
+    const res = await api.get<{ data: Product[] } | Product[]>('/products')
+    return { ...res, data: Array.isArray(res.data) ? res.data : res.data.data }
+  },
+  get(id: string) {
+    return api.get<Product>(`/products/${id}`)
+  },
+  create(dto: Partial<Product>) {
+    return api.post<Product>('/products', dto)
+  },
+  update(id: string, patch: Partial<Product>) {
+    return api.patch<Product>(`/products/${id}`, patch)
+  },
+  remove(id: string) {
+    return api.delete(`/products/${id}`)
+  },
+}
+
+export const dealsApi = {
+  list(contactId: string) {
+    return api.get<Deal[]>('/deals', { params: { contactId } })
+  },
+  get(id: string) {
+    return api.get<Deal>(`/deals/${id}`)
+  },
+  create(dto: Partial<Deal>) {
+    return api.post<Deal>('/deals', dto)
+  },
+  update(id: string, patch: Partial<Deal>) {
+    return api.patch<Deal>(`/deals/${id}`, patch)
+  },
+  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string }) {
+    return api.patch<Deal>(`/deals/${id}/status`, body)
+  },
+  remove(id: string) {
+    return api.delete(`/deals/${id}`)
   },
 }
 
