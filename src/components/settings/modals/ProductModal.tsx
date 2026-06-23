@@ -95,8 +95,10 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
       })
       onClose()
     } catch (e: unknown) {
-      // Mostra a mensagem específica do backend (class-validator devolve string ou array) em vez de um erro genérico.
-      const msg = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
+      // Mostra a mensagem específica do backend. O ProductsManager extrai a msg e relança um
+      // Error (lemos `e.message`); aceitamos também o formato axios direto por robustez.
+      const axiosMsg = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
+      const msg = axiosMsg ?? (e instanceof Error ? e.message : undefined)
       setError(typeof msg === 'string' ? msg : Array.isArray(msg) ? msg[0] : 'Erro ao salvar produto.')
     } finally {
       setSaving(false)
