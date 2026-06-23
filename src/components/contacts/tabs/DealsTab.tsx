@@ -5,6 +5,7 @@ import { DealModal } from '@/components/contacts/DealModal'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/ui/Toast'
 import { dealsApi } from '@/services/api'
+import { connectSocket } from '@/services/socket'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { formatBRL } from '@/utils/money'
 import type { Deal, DealStatus } from '@/types'
@@ -37,6 +38,20 @@ export function DealsTab({ contactId }: { contactId: string }) {
   useEffect(() => {
     refetch()
   }, [refetch])
+
+  // Realtime: recarrega quando um negócio deste contato muda em qualquer lugar (socket `deal:changed`)
+  // — ex.: excluído/editado noutra aba ou por outro operador. Antes a lista ficava stale e abrir um
+  // negócio já excluído caía em "negócio não encontrado".
+  useEffect(() => {
+    const socket = connectSocket()
+    const onDealChanged = (p: { contactId?: string }) => {
+      if (p?.contactId === contactId) refetch()
+    }
+    socket.on('deal:changed', onDealChanged)
+    return () => {
+      socket.off('deal:changed', onDealChanged)
+    }
+  }, [contactId, refetch])
 
   const dealWord = vocab.deal.toLowerCase()
 

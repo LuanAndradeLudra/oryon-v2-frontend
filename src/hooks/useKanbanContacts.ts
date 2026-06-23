@@ -173,7 +173,23 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
               break
             }
           }
-          if (!fromKey) return prev
+          if (!fromKey) {
+            // Contato não está em nenhuma coluna carregada. Se o estágio atual dele corresponde
+            // a uma coluna existente, insere o card lá (antes era no-op → o card não aparecia
+            // quando o contato passava a pertencer a uma coluna já carregada).
+            const toKey = fresh.stage
+            if (toKey && prev[toKey] && !prev[toKey].contacts.some((c) => c.id === contactId)) {
+              return {
+                ...prev,
+                [toKey]: {
+                  ...prev[toKey],
+                  contacts: [fresh, ...prev[toKey].contacts],
+                  total: prev[toKey].total + 1,
+                },
+              }
+            }
+            return prev
+          }
           const existing = prev[fromKey].contacts.find((c) => c.id === contactId)
           if (!existing) return prev
           const merged: Contact = { ...existing, ...fresh }
