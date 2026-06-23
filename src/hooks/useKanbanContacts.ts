@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { contactsApi } from '@/services/api'
+import { contactsApi, dealsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { Contact, ContactFilters, Tag } from '@/types'
@@ -90,6 +90,41 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
     return { ...filters, stage: stageKey as unknown as ContactFilters['stage'] }
   }, [filters])
 
+  // Busca em lote o resumo de negócios dos contatos recém-carregados e funde `dealsSummary` em
+  // cada card por id. Best-effort: erros são ignorados (o badge só não aparece) e respostas de
+  // uma geração antiga (o filtro trocou no meio) são descartadas. O backend só retorna contatos
+  // que têm negócios, então cards sem negócio ficam naturalmente sem badge.
+  const applyDealSummaries = useCallback(
+    (stageKey: string, contactIds: string[], generation: number) => {
+      if (!enabled || contactIds.length === 0) return
+      dealsApi
+        .summary(contactIds)
+        .then((res) => {
+          if (generation !== generationRef.current) return
+          const byId = new Map(res.data.map((s) => [s.contactId, s]))
+          if (byId.size === 0) return
+          setColumns((prev) => {
+            const cur = prev[stageKey]
+            if (!cur) return prev
+            return {
+              ...prev,
+              [stageKey]: {
+                ...cur,
+                contacts: cur.contacts.map((c) => {
+                  const s = byId.get(c.id)
+                  return s ? { ...c, dealsSummary: s } : c
+                }),
+              },
+            }
+          })
+        })
+        .catch(() => {
+          /* badge é best-effort — ignora */
+        })
+    },
+    [enabled],
+  )
+
   const fetchPage = useCallback(
     async (stageKey: string, page: number, generation: number) => {
       if (!enabled) return
@@ -125,6 +160,9 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
             },
           }
         })
+        // Best-effort: enriquece os contatos recém-carregados com o resumo de negócios
+        // (contagem + valor) p/ o badge do card. Não bloqueia o board; se falhar, fica sem badge.
+        void applyDealSummaries(stageKey, data.map((c) => c.id), generation)
       } catch (err) {
         if (generation !== generationRef.current) return
         setColumn(stageKey, {
@@ -140,7 +178,7 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
         loadingMoreLocksRef.current[stageKey] = false
       }
     },
-    [enabled, buildStageFilter, setColumn],
+    [enabled, buildStageFilter, setColumn, applyDealSummaries],
   )
 
   // (Re-)fetch all columns when filters or stages change, or when the hook
