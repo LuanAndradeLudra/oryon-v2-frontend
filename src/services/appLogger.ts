@@ -82,8 +82,8 @@ function post(table: string, data: Record<string, unknown>): void {
 
 const MODEL_COST: Record<string, { in: number; out: number }> = {
   'claude-sonnet-4-6':         { in: 3.00,  out: 15.00 },
-  'claude-haiku-4-5-20251001': { in: 0.25,  out: 1.25  },
-  'claude-haiku-4-5':          { in: 0.25,  out: 1.25  },
+  'claude-haiku-4-5-20251001': { in: 1.00,  out: 5.00  },
+  'claude-haiku-4-5':          { in: 1.00,  out: 5.00  },
   'claude-opus-4-6':           { in: 15.00, out: 75.00 },
 }
 
