@@ -10,7 +10,7 @@ export const FEATURE_FLAGS = {
   nexus: false,
   campaigns: true,
   marketing: false,
-  automations: false,
+  automations: true,
   agents: true,
   copilot: false,
   settings: true,
