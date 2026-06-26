@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from 'react'
 import {
   Workflow, Plus, ToggleLeft, ToggleRight, Pencil, Trash2, Play,
   BookOpen, Search, ChevronRight, Zap, ChevronDown, ChevronUp,
@@ -78,22 +78,22 @@ interface FilterBarProps {
   onSearch: (v: string) => void
   status: AutomationStatus | 'all'
   onStatus: (v: AutomationStatus | 'all') => void
-  typeFilter: AutomationType | 'all'
-  onType: (v: AutomationType | 'all') => void
+  typeFilter: AutomationType[]
+  onType: (v: AutomationType[]) => void
   lineFilter: LineFilterValue
   onLineFilter: (v: LineFilterValue) => void
 }
 
 /**
- * Type-filter dropdown styled to match LineFilterChip so the filter row
- * reads as a single coherent chip cluster.
+ * Type-filter dropdown — multi-select: user can toggle multiple types at
+ * once. Selecting "Todos os tipos" clears all selections.
  */
 function TypeFilterChip({
   value,
   onChange,
 }: {
-  value: AutomationType | 'all'
-  onChange: (v: AutomationType | 'all') => void
+  value: AutomationType[]
+  onChange: (v: AutomationType[]) => void
 }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -107,7 +107,19 @@ function TypeFilterChip({
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const label = TYPE_OPTIONS.find(o => o.value === value)?.label ?? 'Todos os tipos'
+  const label = value.length === 0
+    ? 'Todos os tipos'
+    : value.length === 1
+      ? (TYPE_OPTIONS.find(o => o.value === value[0])?.label ?? value[0])
+      : `${value.length} tipos`
+
+  const toggle = (type: AutomationType) => {
+    if (value.includes(type)) {
+      onChange(value.filter(t => t !== type))
+    } else {
+      onChange([...value, type])
+    }
+  }
 
   return (
     <div className="relative" ref={rootRef}>
@@ -117,7 +129,7 @@ function TypeFilterChip({
         className={cn(
           'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
           'bg-surface-800 border border-surface-700/60 text-surface-200 hover:border-surface-600',
-          open && 'border-brand-500/40 ring-2 ring-brand-500/10',
+          (open || value.length > 0) && 'border-brand-500/40 ring-2 ring-brand-500/10',
         )}
       >
         <ListFilter className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
@@ -128,14 +140,30 @@ function TypeFilterChip({
       {open && (
         <div className="absolute left-0 top-full mt-1.5 w-56 rounded-lg border border-surface-700/60 bg-surface-900 shadow-xl z-30 overflow-hidden">
           <ul className="max-h-72 overflow-y-auto py-1">
-            {TYPE_OPTIONS.map((opt, i) => {
-              const isActive = value === opt.value
+            {/* "Todos os tipos" clears all selections */}
+            <li>
+              <button
+                type="button"
+                onClick={() => { onChange([]); setOpen(false) }}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors',
+                  value.length === 0
+                    ? 'bg-brand-500/10 text-surface-100'
+                    : 'text-surface-300 hover:bg-surface-800',
+                )}
+              >
+                <span className="flex-1 font-medium">Todos os tipos</span>
+                {value.length === 0 && <Check className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />}
+              </button>
+            </li>
+            <li><div className="mx-3 my-1 border-t border-surface-800/60" /></li>
+            {TYPE_OPTIONS.slice(1).map((opt) => {
+              const isActive = value.includes(opt.value as AutomationType)
               return (
                 <li key={opt.value}>
-                  {i === 1 && <div className="mx-3 my-1 border-t border-surface-800/60" />}
                   <button
                     type="button"
-                    onClick={() => { onChange(opt.value); setOpen(false) }}
+                    onClick={() => toggle(opt.value as AutomationType)}
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors',
                       isActive
@@ -763,9 +791,11 @@ export function AutomationsPage() {
 
   const [automations, setAutomations]     = useState<Automation[]>([])
   const [loading, setLoading]             = useState(true)
-  const [search, setSearch]               = useState('')
+  const [searchInput, setSearchInput]     = useState('')
+  // Debounce: defer the filter computation to avoid blocking on every keystroke
+  const search = useDeferredValue(searchInput)
   const [statusFilter, setStatusFilter]   = useState<AutomationStatus | 'all'>('all')
-  const [typeFilter, setTypeFilter]       = useState<AutomationType | 'all'>('all')
+  const [typeFilter, setTypeFilter]       = useState<AutomationType[]>([])
   const [wizardOpen, setWizardOpen]       = useState(false)
   const [editTarget, setEditTarget]       = useState<Automation | null>(null)
   const [wizardPreset, setWizardPreset]   = useState<Partial<typeof GALLERY_TEMPLATES[number]['preset']> | null>(null)
@@ -873,9 +903,13 @@ export function AutomationsPage() {
   const filtered = useMemo(() => automations.filter(a => {
     if (!lineMatches(lineFilter, { whatsappNumberId: a.whatsappNumberId })) return false
     if (statusFilter !== 'all' && a.status !== statusFilter) return false
-    if (typeFilter   !== 'all' && a.type   !== typeFilter)   return false
-    if (search && !a.name.toLowerCase().includes(search.toLowerCase()) &&
-        !a.description.toLowerCase().includes(search.toLowerCase())) return false
+    if (typeFilter.length > 0 && !typeFilter.includes(a.type)) return false
+    if (search) {
+      const q = search.toLowerCase()
+      const nameMatch = a.name.toLowerCase().includes(q)
+      const descMatch = a.description != null && a.description.toLowerCase().includes(q)
+      if (!nameMatch && !descMatch) return false
+    }
     return true
   }), [automations, statusFilter, typeFilter, search, lineFilter])
 
@@ -902,8 +936,8 @@ export function AutomationsPage() {
 
         {/* Filter bar */}
         <FilterBar
-          search={search}
-          onSearch={setSearch}
+          search={searchInput}
+          onSearch={setSearchInput}
           status={statusFilter}
           onStatus={setStatusFilter}
           typeFilter={typeFilter}
@@ -923,7 +957,7 @@ export function AutomationsPage() {
               <GuideCard />
               <EmptyState onNew={openNew} onGallery={() => setGalleryOpen(true)} />
             </>
-          ) : typeFilter !== 'all' ? (
+          ) : typeFilter.length > 0 ? (
             /* Flat list (horizontal rows) when filtering by type */
             <>
               <GuideCard />
