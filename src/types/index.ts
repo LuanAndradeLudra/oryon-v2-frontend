@@ -262,6 +262,7 @@ export type ContactHistoryEventType =
   | 'conversation_resolved' | 'note_added'
   | 'ad_attribution_created'
   | 'ai_analysis_completed' | 'conversion_confirmed' | 'capi_event_sent'
+  | 'deal_created' | 'deal_won' | 'deal_lost' | 'deal_updated'
 
 export interface ContactHistoryEvent {
   id: string
