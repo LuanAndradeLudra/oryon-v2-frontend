@@ -1168,10 +1168,30 @@ export const customFieldsApi = {
   },
 }
 
+/** Resposta paginada de /products (backend SCRUM-133): página de itens + metadados. */
+interface PaginatedProducts {
+  data: Product[]
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
+}
+
 export const productsApi = {
+  // O catálogo é a fonte única de preços (UI + IA), então a lista não pode truncar nos 50 do
+  // backend: paginamos por trás e juntamos TODAS as páginas. Na maioria dos tenants é 1 request.
   async list() {
-    const res = await api.get<{ data: Product[] } | Product[]>('/products')
-    return { ...res, data: Array.isArray(res.data) ? res.data : res.data.data }
+    const limit = 100
+    const all: Product[] = []
+    let res = await api.get<PaginatedProducts | Product[]>(`/products?page=1&limit=${limit}`)
+    for (let page = 1; ; page++) {
+      const body = res.data
+      if (Array.isArray(body)) return { ...res, data: body } // compat: backend sem paginação
+      all.push(...body.data)
+      if (!body.hasMore || page >= 100) break
+      res = await api.get<PaginatedProducts | Product[]>(`/products?page=${page + 1}&limit=${limit}`)
+    }
+    return { ...res, data: all }
   },
   get(id: string) {
     return api.get<Product>(`/products/${id}`)

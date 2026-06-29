@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/ui/Toast'
 import { productsApi } from '@/services/api'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { formatBRL } from '@/utils/money'
 import type { Product } from '@/types'
 
@@ -21,6 +23,10 @@ function priceRange(p: Product): string {
 export function ProductsManager() {
   const { products, refetchProducts } = useCRMConfig()
   const { toast, toasts, dismiss } = useToast()
+  const { user: actor } = useAuth()
+  // Espelha @Roles(ADMIN, BUSINESS_ADMIN) na escrita de /products. GET é aberto (a lista
+  // aparece p/ todos), mas criar/editar/excluir/ativar fica só p/ admin.
+  const canManage = isAdminTier(actor?.role)
   const [modalOpen, setModalOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null)
@@ -106,15 +112,17 @@ export function ProductsManager() {
             Cadastre produtos/serviços e seus preços. É a fonte única que a IA usa para informar valores.
           </p>
         </div>
-        <button
-          onClick={() => {
-            setEditProduct(null)
-            setModalOpen(true)
-          }}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
-        >
-          <Plus className="w-3.5 h-3.5" /> Novo produto
-        </button>
+        {canManage && (
+          <button
+            onClick={() => {
+              setEditProduct(null)
+              setModalOpen(true)
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
+          >
+            <Plus className="w-3.5 h-3.5" /> Novo produto
+          </button>
+        )}
       </div>
 
       <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
@@ -153,25 +161,31 @@ export function ProductsManager() {
                     </p>
                   </div>
 
-                  <Switch checked={isActive} onChange={() => handleToggleActive(p)} />
+                  <Switch
+                    checked={isActive}
+                    onChange={() => handleToggleActive(p)}
+                    disabled={!canManage}
+                  />
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => {
-                        setEditProduct(p)
-                        setModalOpen(true)
-                      }}
-                      className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteProduct(p)}
-                      className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {canManage && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          setEditProduct(p)
+                          setModalOpen(true)
+                        }}
+                        className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteProduct(p)}
+                        className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </li>
               )
             })}
