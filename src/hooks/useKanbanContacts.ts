@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { contactsApi } from '@/services/api'
+import { contactsApi, dealsApi } from '@/services/api'
+import { connectSocket } from '@/services/socket'
 import { withRetry } from '@/lib/utils'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { Contact, ContactFilters, Tag } from '@/types'
@@ -90,6 +91,138 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
     return { ...filters, stage: stageKey as unknown as ContactFilters['stage'] }
   }, [filters])
 
+  // Busca em lote o resumo de negócios dos contatos recém-carregados e funde `dealsSummary` em
+  // cada card por id. Best-effort: erros são ignorados (o badge só não aparece) e respostas de
+  // uma geração antiga (o filtro trocou no meio) são descartadas. O backend só retorna contatos
+  // que têm negócios, então cards sem negócio ficam naturalmente sem badge.
+  const applyDealSummaries = useCallback(
+    (stageKey: string, contactIds: string[], generation: number) => {
+      if (!enabled || contactIds.length === 0) return
+      dealsApi
+        .summary(contactIds)
+        .then((res) => {
+          if (generation !== generationRef.current) return
+          const byId = new Map(res.data.map((s) => [s.contactId, s]))
+          if (byId.size === 0) return
+          setColumns((prev) => {
+            const cur = prev[stageKey]
+            if (!cur) return prev
+            return {
+              ...prev,
+              [stageKey]: {
+                ...cur,
+                contacts: cur.contacts.map((c) => {
+                  const s = byId.get(c.id)
+                  return s ? { ...c, dealsSummary: s } : c
+                }),
+              },
+            }
+          })
+        })
+        .catch(() => {
+          /* badge é best-effort — ignora */
+        })
+    },
+    [enabled],
+  )
+
+  // Atualiza o resumo de negócios de UM contato (após um evento socket `deal:changed`),
+  // mesclando no card em qualquer coluna onde ele esteja. Se o contato ficou sem negócios,
+  // a busca volta vazia e o badge é limpo.
+  const refreshContactDealSummary = useCallback((contactId: string) => {
+    dealsApi
+      .summary([contactId])
+      .then((res) => {
+        const summary = Array.isArray(res.data)
+          ? res.data.find((s) => s.contactId === contactId)
+          : undefined
+        setColumns((prev) => {
+          let touched = false
+          const next: Record<string, ColumnState> = {}
+          for (const key of Object.keys(prev)) {
+            const col = prev[key]
+            const idx = col.contacts.findIndex((c) => c.id === contactId)
+            if (idx < 0) {
+              next[key] = col
+              continue
+            }
+            touched = true
+            const contacts = col.contacts.slice()
+            contacts[idx] = { ...contacts[idx], dealsSummary: summary }
+            next[key] = { ...col, contacts }
+          }
+          return touched ? next : prev
+        })
+      })
+      .catch(() => {})
+  }, [])
+
+  // Reconciliação de um contato após `contact:updated` (estágio/etiquetas mudaram noutra view
+  // ou por outro operador): rebusca e, se o estágio mudou, MOVE o card de coluna; senão
+  // atualiza no lugar. Preserva o `dealsSummary` (calculado no client, não vem da API de contato).
+  const reconcileContact = useCallback((contactId: string) => {
+    contactsApi
+      .get(contactId)
+      .then((r) => {
+        const fresh = r.data
+        setColumns((prev) => {
+          let fromKey: string | null = null
+          for (const key of Object.keys(prev)) {
+            if (prev[key].contacts.some((c) => c.id === contactId)) {
+              fromKey = key
+              break
+            }
+          }
+          if (!fromKey) {
+            // Contato não está em nenhuma coluna carregada. Se o estágio atual dele corresponde
+            // a uma coluna existente, insere o card lá (antes era no-op → o card não aparecia
+            // quando o contato passava a pertencer a uma coluna já carregada).
+            const toKey = fresh.stage
+            if (toKey && prev[toKey] && !prev[toKey].contacts.some((c) => c.id === contactId)) {
+              return {
+                ...prev,
+                [toKey]: {
+                  ...prev[toKey],
+                  contacts: [fresh, ...prev[toKey].contacts],
+                  total: prev[toKey].total + 1,
+                },
+              }
+            }
+            return prev
+          }
+          const existing = prev[fromKey].contacts.find((c) => c.id === contactId)
+          if (!existing) return prev
+          const merged: Contact = { ...existing, ...fresh }
+          const toKey = fresh.stage ?? fromKey
+          if (toKey === fromKey || !prev[toKey]) {
+            return {
+              ...prev,
+              [fromKey]: {
+                ...prev[fromKey],
+                contacts: prev[fromKey].contacts.map((c) => (c.id === contactId ? merged : c)),
+              },
+            }
+          }
+          const next = { ...prev }
+          next[fromKey] = {
+            ...next[fromKey],
+            contacts: next[fromKey].contacts.filter((c) => c.id !== contactId),
+            total: Math.max(0, next[fromKey].total - 1),
+          }
+          const already = next[toKey].contacts.some((c) => c.id === contactId)
+          next[toKey] = already
+            ? next[toKey]
+            : {
+                ...next[toKey],
+                contacts: [merged, ...next[toKey].contacts],
+                total: next[toKey].total + 1,
+              }
+          return next
+        })
+      })
+      .catch(() => {})
+  }, [])
+
   const fetchPage = useCallback(
     async (stageKey: string, page: number, generation: number) => {
       if (!enabled) return
@@ -125,6 +258,9 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
             },
           }
         })
+        // Best-effort: enriquece os contatos recém-carregados com o resumo de negócios
+        // (contagem + valor) p/ o badge do card. Não bloqueia o board; se falhar, fica sem badge.
+        void applyDealSummaries(stageKey, data.map((c) => c.id), generation)
       } catch (err) {
         if (generation !== generationRef.current) return
         setColumn(stageKey, {
@@ -140,7 +276,7 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
         loadingMoreLocksRef.current[stageKey] = false
       }
     },
-    [enabled, buildStageFilter, setColumn],
+    [enabled, buildStageFilter, setColumn, applyDealSummaries],
   )
 
   // (Re-)fetch all columns when filters or stages change, or when the hook
@@ -174,6 +310,26 @@ export function useKanbanContacts(filters: ContactFilters, opts: UseKanbanContac
 
     void Promise.all(stages.map((s) => fetchPage(s.key, 1, generation)))
   }, [enabled, loadingStages, stagesKey, filtersKey, fetchPage, stages])
+
+  // Realtime: quando QUALQUER negócio muda no tenant (socket `deal:changed`, emitido pelo
+  // backend em criar/editar/ganhar/perder/excluir), atualiza o badge do contato afetado —
+  // para o próprio usuário em outra view E para outros operadores, sem recarregar a página.
+  useEffect(() => {
+    if (!enabled) return
+    const socket = connectSocket()
+    const onDealChanged = (p: { contactId?: string }) => {
+      if (p?.contactId) refreshContactDealSummary(p.contactId)
+    }
+    const onContactUpdated = (p: { contactId?: string }) => {
+      if (p?.contactId) reconcileContact(p.contactId)
+    }
+    socket.on('deal:changed', onDealChanged)
+    socket.on('contact:updated', onContactUpdated)
+    return () => {
+      socket.off('deal:changed', onDealChanged)
+      socket.off('contact:updated', onContactUpdated)
+    }
+  }, [enabled, refreshContactDealSummary, reconcileContact])
 
   const loadMore = useCallback(
     (stageKey: string) => {

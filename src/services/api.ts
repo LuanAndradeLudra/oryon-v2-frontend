@@ -27,6 +27,9 @@ import type {
   MetaAdsReferral,
   PaginatedResponse,
   Product,
+  Deal,
+  DealStatus,
+  ContactDealsSummary,
   SendMessageDto,
   Department,
   Tag,
@@ -1211,6 +1214,33 @@ export const agentCatalogApi = {
   },
   set(agentId: string, productIds: string[]) {
     return api.put<Product[]>(`/agent-catalog/${agentId}`, { productIds })
+  },
+}
+
+export const dealsApi = {
+  list(contactId: string) {
+    return api.get<Deal[]>('/deals', { params: { contactId } })
+  },
+  get(id: string) {
+    return api.get<Deal>(`/deals/${id}`)
+  },
+  create(dto: Partial<Deal>) {
+    return api.post<Deal>('/deals', dto)
+  },
+  update(id: string, patch: Partial<Deal>) {
+    return api.patch<Deal>(`/deals/${id}`, patch)
+  },
+  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string }) {
+    return api.patch<Deal>(`/deals/${id}/status`, body)
+  },
+  /** Agregados por contato (batch), p/ o card do Kanban. Só retorna contatos que têm negócios. */
+  summary(contactIds: string[]) {
+    return api.get<(ContactDealsSummary & { contactId: string })[]>('/deals/summary', {
+      params: { contactIds: contactIds.join(',') },
+    })
+  },
+  remove(id: string) {
+    return api.delete(`/deals/${id}`)
   },
 }
 

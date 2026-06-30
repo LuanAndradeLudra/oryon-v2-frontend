@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Loader2, Bot, User, Tag, GitCommitHorizontal, UserPlus, ShieldCheck, History,
+  Briefcase, Trophy, XCircle, Pencil, Trash2, RotateCcw,
 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { fetchContactActivity } from '@/services/userActivityApi'
 import { fetchAgentActionsByContact } from '@/services/agentActivityApi'
+import { getSocket } from '@/services/socket'
 import {
   visualForActionKey, type RowVisual,
 } from '@/components/conversations/ContactPanel/ConversationActivitySection'
@@ -20,6 +22,12 @@ const PIPELINE_VIS: Record<string, { Icon: RowVisual['Icon']; iconClass: string 
   tag_added:       { Icon: Tag, iconClass: 'bg-emerald-900/40 text-emerald-300' },
   tag_removed:     { Icon: Tag, iconClass: 'bg-zinc-800 text-zinc-300' },
   manual_edit:     { Icon: User, iconClass: 'bg-surface-800 text-surface-300' },
+  deal_created:    { Icon: Briefcase, iconClass: 'bg-emerald-900/40 text-emerald-300' },
+  deal_won:        { Icon: Trophy, iconClass: 'bg-emerald-900/40 text-emerald-300' },
+  deal_lost:       { Icon: XCircle, iconClass: 'bg-red-900/40 text-red-300' },
+  deal_updated:    { Icon: Pencil, iconClass: 'bg-sky-900/40 text-sky-300' },
+  deal_reopened:   { Icon: RotateCcw, iconClass: 'bg-sky-900/40 text-sky-300' },
+  deal_deleted:    { Icon: Trash2, iconClass: 'bg-red-900/40 text-red-300' },
 }
 const PIPELINE_FALLBACK = { Icon: User, iconClass: 'bg-surface-800 text-surface-300' }
 
@@ -47,66 +55,98 @@ interface HistoryTabProps {
 
 export function HistoryTab({ contactId }: HistoryTabProps) {
   const [items, setItems] = useState<TimelineItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadedId, setLoadedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | Section>('all')
+  // `loading` é derivado: enquanto o contato já carregado não for o atual, mostra o spinner.
+  // Evita setState síncrono dentro do effect (cascading renders).
+  const loading = loadedId !== contactId
 
+  // Three sources merged: pipeline (contact_history), conversation activity
+  // (operators/system across all the contact's conversations) and agent CRM
+  // actions. Each call degrades to [] so one failure never blanks the panel.
+  // Retorna a lista pronta — quem chama decide se ainda deve aplicá-la (gate `alive`).
+  const loadHistory = useCallback(async (id: string): Promise<TimelineItem[]> => {
+    const [pipeline, userActivity, agentActions] = await Promise.all([
+      contactsApi.getHistory(id).then((r) => r.data.data).catch(() => []),
+      fetchContactActivity(id).catch(() => []),
+      fetchAgentActionsByContact(id).catch(() => []),
+    ])
+    const merged: TimelineItem[] = []
+
+    for (const e of pipeline) {
+      const vis = PIPELINE_VIS[e.type] ?? PIPELINE_FALLBACK
+      merged.push({
+        id: `p-${e.id}`,
+        section: 'pipeline',
+        ts: new Date(e.createdAt).getTime(),
+        label: e.summary,
+        actor: e.actorName ?? 'Sistema',
+        Icon: vis.Icon,
+        iconClass: vis.iconClass,
+      })
+    }
+
+    for (const a of userActivity) {
+      const vis = visualForActionKey(a.type, (a.metadata ?? {}) as Record<string, unknown>)
+      merged.push({
+        id: `u-${a.id}`,
+        section: 'conversas',
+        ts: new Date(a.timestamp).getTime(),
+        label: vis.label,
+        actor: a.actor ?? 'Sistema',
+        Icon: vis.Icon,
+        iconClass: vis.iconClass,
+      })
+    }
+
+    for (const a of agentActions) {
+      merged.push({
+        id: `a-${a.id}`,
+        section: 'conversas',
+        ts: new Date(a.createdAt).getTime(),
+        label: a.humanSummary || 'Ação do agente',
+        actor: a.agentName ?? 'Agente IA',
+        Icon: Bot,
+        iconClass: 'bg-violet-900/40 text-violet-300',
+      })
+    }
+
+    merged.sort((x, y) => y.ts - x.ts)
+    return merged
+  }, [])
+
+  // Carga inicial + recarga ao trocar de contato. `alive` descarta respostas
+  // atrasadas de um contato anterior; `loadedId` casa os dados com o contato exibido.
   useEffect(() => {
     let alive = true
-    setLoading(true)
-    // Three sources merged: pipeline (contact_history), conversation activity
-    // (operators/system across all the contact's conversations) and agent CRM
-    // actions. Each call degrades to [] so one failure never blanks the panel.
-    Promise.all([
-      contactsApi.getHistory(contactId).then((r) => r.data.data).catch(() => []),
-      fetchContactActivity(contactId).catch(() => []),
-      fetchAgentActionsByContact(contactId).catch(() => []),
-    ]).then(([pipeline, userActivity, agentActions]) => {
+    loadHistory(contactId).then((merged) => {
       if (!alive) return
-      const merged: TimelineItem[] = []
-
-      for (const e of pipeline) {
-        const vis = PIPELINE_VIS[e.type] ?? PIPELINE_FALLBACK
-        merged.push({
-          id: `p-${e.id}`,
-          section: 'pipeline',
-          ts: new Date(e.createdAt).getTime(),
-          label: e.summary,
-          actor: e.actorName ?? 'Sistema',
-          Icon: vis.Icon,
-          iconClass: vis.iconClass,
-        })
-      }
-
-      for (const a of userActivity) {
-        const vis = visualForActionKey(a.type, (a.metadata ?? {}) as Record<string, unknown>)
-        merged.push({
-          id: `u-${a.id}`,
-          section: 'conversas',
-          ts: new Date(a.timestamp).getTime(),
-          label: vis.label,
-          actor: a.actor ?? 'Sistema',
-          Icon: vis.Icon,
-          iconClass: vis.iconClass,
-        })
-      }
-
-      for (const a of agentActions) {
-        merged.push({
-          id: `a-${a.id}`,
-          section: 'conversas',
-          ts: new Date(a.createdAt).getTime(),
-          label: a.humanSummary || 'Ação do agente',
-          actor: a.agentName ?? 'Agente IA',
-          Icon: Bot,
-          iconClass: 'bg-violet-900/40 text-violet-300',
-        })
-      }
-
-      merged.sort((x, y) => y.ts - x.ts)
       setItems(merged)
-    }).finally(() => { if (alive) setLoading(false) })
+      setLoadedId(contactId)
+    })
     return () => { alive = false }
-  }, [contactId])
+  }, [contactId, loadHistory])
+
+  // Realtime: um negócio mudou (criar/editar/ganhar/perder/reabrir/excluir) para ESTE
+  // contato → recarrega a timeline na hora (antes ela ficava estática até remontar).
+  useEffect(() => {
+    const socket = getSocket()
+    let alive = true
+    let pending: ReturnType<typeof setTimeout> | null = null
+    const onDealChanged = (p: { contactId?: string }) => {
+      if (p?.contactId && p.contactId !== contactId) return
+      if (pending) clearTimeout(pending)
+      pending = setTimeout(() => {
+        loadHistory(contactId).then((merged) => { if (alive) setItems(merged) })
+      }, 50)
+    }
+    socket.on('deal:changed', onDealChanged)
+    return () => {
+      alive = false
+      if (pending) clearTimeout(pending)
+      socket.off('deal:changed', onDealChanged)
+    }
+  }, [contactId, loadHistory])
 
   const filtered = filter === 'all' ? items : items.filter((i) => i.section === filter)
   const counts = {
