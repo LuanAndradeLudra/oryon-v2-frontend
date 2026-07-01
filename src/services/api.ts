@@ -27,6 +27,10 @@ import type {
   Message,
   MetaAdsReferral,
   PaginatedResponse,
+  Product,
+  Deal,
+  DealStatus,
+  ContactDealsSummary,
   SendMessageDto,
   Department,
   Tag,
@@ -1162,6 +1166,82 @@ export const customFieldsApi = {
   },
   delete(key: string) {
     return api.delete(`/settings/custom-fields/${key}`)
+  },
+}
+
+/** Resposta paginada de /products (backend SCRUM-133): página de itens + metadados. */
+interface PaginatedProducts {
+  data: Product[]
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
+}
+
+export const productsApi = {
+  // O catálogo é a fonte única de preços (UI + IA), então a lista não pode truncar nos 50 do
+  // backend: paginamos por trás e juntamos TODAS as páginas. Na maioria dos tenants é 1 request.
+  async list() {
+    const limit = 100
+    const all: Product[] = []
+    let res = await api.get<PaginatedProducts | Product[]>(`/products?page=1&limit=${limit}`)
+    for (let page = 1; ; page++) {
+      const body = res.data
+      if (Array.isArray(body)) return { ...res, data: body } // compat: backend sem paginação
+      all.push(...body.data)
+      if (!body.hasMore || page >= 100) break
+      res = await api.get<PaginatedProducts | Product[]>(`/products?page=${page + 1}&limit=${limit}`)
+    }
+    return { ...res, data: all }
+  },
+  get(id: string) {
+    return api.get<Product>(`/products/${id}`)
+  },
+  create(dto: Partial<Product>) {
+    return api.post<Product>('/products', dto)
+  },
+  update(id: string, patch: Partial<Product>) {
+    return api.patch<Product>(`/products/${id}`, patch)
+  },
+  remove(id: string) {
+    return api.delete(`/products/${id}`)
+  },
+}
+
+/** Catálogo por agente (SCRUM-221): quais produtos do tenant um agente de IA pode usar. */
+export const agentCatalogApi = {
+  get(agentId: string) {
+    return api.get<Product[]>(`/agent-catalog/${agentId}`)
+  },
+  set(agentId: string, productIds: string[]) {
+    return api.put<Product[]>(`/agent-catalog/${agentId}`, { productIds })
+  },
+}
+
+export const dealsApi = {
+  list(contactId: string) {
+    return api.get<Deal[]>('/deals', { params: { contactId } })
+  },
+  get(id: string) {
+    return api.get<Deal>(`/deals/${id}`)
+  },
+  create(dto: Partial<Deal>) {
+    return api.post<Deal>('/deals', dto)
+  },
+  update(id: string, patch: Partial<Deal>) {
+    return api.patch<Deal>(`/deals/${id}`, patch)
+  },
+  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string }) {
+    return api.patch<Deal>(`/deals/${id}/status`, body)
+  },
+  /** Agregados por contato (batch), p/ o card do Kanban. Só retorna contatos que têm negócios. */
+  summary(contactIds: string[]) {
+    return api.get<(ContactDealsSummary & { contactId: string })[]>('/deals/summary', {
+      params: { contactIds: contactIds.join(',') },
+    })
+  },
+  remove(id: string) {
+    return api.delete(`/deals/${id}`)
   },
 }
 

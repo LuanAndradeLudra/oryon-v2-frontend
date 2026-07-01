@@ -1,6 +1,7 @@
 import { AIContextCard } from './AIContextCard'
 import { ContactInsightsCard } from './ContactInsightsCard'
 import { EngagementCard } from './EngagementCard'
+import { DealsSummaryCard } from './DealsSummaryCard'
 import { QualificationCard } from './QualificationCard'
 import { ContactInfoCard } from './ContactInfoCard'
 import { CustomFieldsCard } from './CustomFieldsCard'
@@ -34,6 +35,7 @@ export function OverviewTab({ contact, onSave, onAddTag, onRemoveTag, onRefresh,
       <AttributionCard contact={contact} />
       <ContactInsightsCard contact={contact} />
       <EngagementCard contactId={contact.id} />
+      <DealsSummaryCard contactId={contact.id} />
       <TagsCard contact={contact} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
       <StageCard contact={contact} onStageChanged={onStageChanged} />
       <QualificationCard contact={contact} onSave={onSave} />

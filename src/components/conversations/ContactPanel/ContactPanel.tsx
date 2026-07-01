@@ -12,6 +12,7 @@ import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
 import { ConversationActivitySection } from './ConversationActivitySection'
+import { ContactPanelDeals } from './ContactPanelDeals'
 import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { MoveStageModal } from '@/components/contacts/MoveStageModal'
@@ -252,6 +253,8 @@ export function ContactPanel({
             )}
           </div>
         </div>
+
+        <ContactPanelDeals contactId={contact.id} conversationId={conversation.id} />
 
         {/* Hidden when conversionAnalysisPanel is off — covers both the
             "Analisar conversa com IA" CTA and any previously-rendered

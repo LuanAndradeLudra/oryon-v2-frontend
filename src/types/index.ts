@@ -173,6 +173,70 @@ export interface ContactCustomFieldDef {
   order: number
 }
 
+// ─── Catálogo de Produtos ───────────────────────────────────────────────────────
+export interface ProductPriceVariation {
+  id?: string
+  label: string
+  amountCents: number      // valor em centavos (BRL por padrão)
+  currency?: string        // default 'BRL'
+  description?: string
+  order?: number
+}
+
+export interface Product {
+  id: string
+  agentId?: string | null  // reservado: null = catálogo da empresa toda
+  name: string
+  sku?: string | null
+  description?: string | null
+  category?: string | null
+  active: boolean
+  order: number
+  priceVariations: ProductPriceVariation[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+// ─── Negócios / Propostas (Deals) ────────────────────────────────────────────
+export type DealStatus = 'open' | 'won' | 'lost'
+
+export interface DealLineItem {
+  id?: string
+  productId: string
+  productName?: string          // snapshot (vem do backend)
+  variationLabel?: string | null
+  unitPriceCents: number        // centavos
+  quantity?: number
+  discountCents?: number
+  order?: number
+}
+
+export interface Deal {
+  id: string
+  contactId: string
+  title: string
+  status: DealStatus
+  pipelineStageKey?: string | null
+  amountCents: number           // total em centavos
+  currency?: string
+  note?: string | null
+  ownerUserId?: string | null
+  closedAt?: string | null
+  lineItems: DealLineItem[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Agregado de negócios de um contato (contagem + valor em centavos). Usado no card do Kanban. */
+export interface ContactDealsSummary {
+  count: number
+  openCount: number
+  wonCount: number
+  totalCents: number
+  openCents: number
+  wonCents: number
+}
+
 // ─── AI Onboarding ────────────────────────────────────────────────────────────
 
 export interface AIOnboardingConfig {
@@ -198,6 +262,7 @@ export type ContactHistoryEventType =
   | 'conversation_resolved' | 'note_added'
   | 'ad_attribution_created'
   | 'ai_analysis_completed' | 'conversion_confirmed' | 'capi_event_sent'
+  | 'deal_created' | 'deal_won' | 'deal_lost' | 'deal_updated'
 
 export interface ContactHistoryEvent {
   id: string
@@ -270,6 +335,9 @@ export interface Contact {
   conversationCount?: number
   lastContactedAt?: string
   firstContactedAt?: string
+
+  // ── Resumo de negócios (preenchido no client a partir de /deals/summary, p/ o card do Kanban) ──
+  dealsSummary?: ContactDealsSummary
 
   // ── Relações ──────────────────────────────────────────────────────────────
   tags?: Tag[]

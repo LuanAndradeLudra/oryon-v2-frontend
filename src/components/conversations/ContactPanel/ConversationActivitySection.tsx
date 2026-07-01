@@ -20,9 +20,11 @@ import {
   TagsIcon, UserCog, History, Pause, Play, ArrowRightLeft,
   CheckCircle2, Clock, Inbox, Archive, Send, MoveRight, Megaphone, CornerDownLeft,
   MessageSquarePlus, RotateCcw, FileText, AlertTriangle,
+  Briefcase, Trophy, XCircle, Pencil, Trash2,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn, formatRelativeTime } from '@/lib/utils'
+import { formatBRL } from '@/utils/money'
 import { fetchAgentActions, type AgentAction } from '@/services/agentActivityApi'
 import { fetchUserActivity, type UserActivity } from '@/services/userActivityApi'
 import { getSocket } from '@/services/socket'
@@ -190,11 +192,15 @@ export function ConversationActivitySection({ conversationId }: { conversationId
     const handleUpdated = (p: { conversationId: string }) => refetchSoon(p?.conversationId)
     const handleAiPause = (p: { conversationId: string }) => refetchSoon(p?.conversationId)
     const handleMessageNew = (p: { conversationId: string }) => refetchSoon(p?.conversationId)
+    // `deal:changed` traz contactId (não conversationId), então não dá p/ filtrar por conversa
+    // aqui — recarrega a conversa atual (o backend grava o evento de negócio no feed dela).
+    const handleDealChanged = () => refetchSoon()
     socket.on('conversation:assigned', handleAssigned)
     socket.on('conversation:resolved', handleResolved)
     socket.on('conversation:updated', handleUpdated)
     socket.on('conversation:ai-pause-updated', handleAiPause)
     socket.on('message:new', handleMessageNew)
+    socket.on('deal:changed', handleDealChanged)
 
     return () => {
       if (pending) clearTimeout(pending)
@@ -204,6 +210,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
       socket.off('conversation:updated', handleUpdated)
       socket.off('conversation:ai-pause-updated', handleAiPause)
       socket.off('message:new', handleMessageNew)
+      socket.off('deal:changed', handleDealChanged)
     }
   }, [loadActivity])
 
@@ -597,6 +604,38 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
         Icon: AlertCircle,
         rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300',
       }
+    case 'deal_created': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      const v = typeof metadata.amountCents === 'number' ? ` · ${formatBRL(metadata.amountCents)}` : ''
+      return { label: `Negócio "${t}" criado${v}`, Icon: Briefcase,
+               rowBg: 'bg-emerald-950/25', iconClass: 'bg-emerald-900/40 text-emerald-300' }
+    }
+    case 'deal_won': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      const v = typeof metadata.amountCents === 'number' ? ` · ${formatBRL(metadata.amountCents)}` : ''
+      return { label: `Negócio "${t}" ganho${v}`, Icon: Trophy,
+               rowBg: 'bg-emerald-950/25', iconClass: 'bg-emerald-900/40 text-emerald-300' }
+    }
+    case 'deal_lost': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      return { label: `Negócio "${t}" perdido`, Icon: XCircle,
+               rowBg: 'bg-red-950/25', iconClass: 'bg-red-900/40 text-red-300' }
+    }
+    case 'deal_updated': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      return { label: `Negócio "${t}" atualizado`, Icon: Pencil,
+               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+    }
+    case 'deal_reopened': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      return { label: `Negócio "${t}" reaberto`, Icon: RotateCcw,
+               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+    }
+    case 'deal_deleted': {
+      const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
+      return { label: `Negócio "${t}" excluído`, Icon: Trash2,
+               rowBg: 'bg-red-950/25', iconClass: 'bg-red-900/40 text-red-300' }
+    }
     default:
       return { label: key, Icon: Bot,
                rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300' }
