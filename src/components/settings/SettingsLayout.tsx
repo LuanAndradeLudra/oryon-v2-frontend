@@ -16,6 +16,7 @@ import {
   Activity,
   ScrollText,
   Package,
+  Stethoscope,
 } from 'lucide-react'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
 import { isRouteVisible } from '@/config/featureFlags'
@@ -64,6 +65,7 @@ const NAV_GROUPS = [
     items: [
       { section: 'vertical', label: 'Vertical & Vocabulário', icon: <Globe2 className="w-4 h-4" />, adminOnly: true },
       { section: 'crm-products', label: 'Produtos', icon: <Package className="w-4 h-4" />, adminOnly: true },
+      { section: 'crm-practitioners', label: 'Profissionais', icon: <Stethoscope className="w-4 h-4" />, adminOnly: true },
     ],
   },
   {

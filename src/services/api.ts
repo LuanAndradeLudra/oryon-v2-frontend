@@ -27,6 +27,7 @@ import type {
   MetaAdsReferral,
   PaginatedResponse,
   Product,
+  Practitioner,
   Deal,
   DealStatus,
   ContactDealsSummary,
@@ -1214,6 +1215,45 @@ export const agentCatalogApi = {
   },
   set(agentId: string, productIds: string[]) {
     return api.put<Product[]>(`/agent-catalog/${agentId}`, { productIds })
+  },
+}
+
+/** Resposta paginada de /practitioners — mesmo shape de PaginatedProducts. */
+interface PaginatedPractitioners {
+  data: Practitioner[]
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
+}
+
+export const practitionersApi = {
+  // Mesmo motivo de productsApi.list: o registro é a fonte única pro portão
+  // de médico (UI + IA), então junta todas as páginas por trás.
+  async list() {
+    const limit = 100
+    const all: Practitioner[] = []
+    let res = await api.get<PaginatedPractitioners | Practitioner[]>(`/practitioners?page=1&limit=${limit}`)
+    for (let page = 1; ; page++) {
+      const body = res.data
+      if (Array.isArray(body)) return { ...res, data: body } // compat: backend sem paginação
+      all.push(...body.data)
+      if (!body.hasMore || page >= 100) break
+      res = await api.get<PaginatedPractitioners | Practitioner[]>(`/practitioners?page=${page + 1}&limit=${limit}`)
+    }
+    return { ...res, data: all }
+  },
+  get(id: string) {
+    return api.get<Practitioner>(`/practitioners/${id}`)
+  },
+  create(dto: Partial<Practitioner>) {
+    return api.post<Practitioner>('/practitioners', dto)
+  },
+  update(id: string, patch: Partial<Practitioner>) {
+    return api.patch<Practitioner>(`/practitioners/${id}`, patch)
+  },
+  remove(id: string) {
+    return api.delete(`/practitioners/${id}`)
   },
 }
 
