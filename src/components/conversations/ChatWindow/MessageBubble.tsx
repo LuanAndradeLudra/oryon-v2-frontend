@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, AlertTriangle, MapPin, Mic, Download, Play, Pause,
-  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2, Megaphone, CornerUpLeft,
+  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2, Megaphone, CornerUpLeft, Workflow,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -589,9 +589,10 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       ? (message.metadata as { campaignName: string }).campaignName
       : undefined
   // Faixa lateral do bubble outbound: verde = operador humano, âmbar = IA
-  // (agente conversacional). Disparos de campanha/automação NÃO têm faixa.
+  // (agente conversacional). Disparos de campanha/automação e respostas por
+  // regra (encaminhamento/FAQ) NÃO têm faixa — não são geradas pelo LLM.
   const outboundAccent =
-    message.senderKind === 'campaign'
+    message.senderKind === 'campaign' || message.senderKind === 'rule'
       ? null
       : message.sentByUser
         ? 'rgba(16,185,129,0.7)'
@@ -779,6 +780,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           >
             {isOutbound && (
               // Author indicator: 📣 Campanha for campaign/template sends,
+              // ⚙️ Resposta automática for rule-based (handoff/FAQ) sends,
               // icon + first name for human operators, bot icon for AI.
               // `leading-none` keeps the text baseline matching the icon's
               // visual center so the row aligns cleanly with the timestamp.
@@ -789,6 +791,14 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                 >
                   <Megaphone className="w-3 h-3 shrink-0" />
                   <span className="leading-none truncate">{campaignName ?? 'Campanha'}</span>
+                </span>
+              ) : message.senderKind === 'rule' ? (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] leading-none text-bubble-out-time"
+                  title="Resposta automática (encaminhamento/FAQ) — não gerada pela IA"
+                >
+                  <Workflow className="w-3 h-3 shrink-0" />
+                  <span className="leading-none">Resposta automática</span>
                 </span>
               ) : (
                 <span
