@@ -20,6 +20,12 @@ type VariationRow = ProductPriceVariation & { _uid: string }
 let uidSeq = 0
 const makeUid = () => `row-${uidSeq++}`
 
+/** Limites de caracteres (espelham os @MaxLength do backend). */
+const MAX_NAME = 100
+const MAX_SKU = 100
+const MAX_CATEGORY = 100
+const MAX_DESCRIPTION = 500
+
 export function ProductModal({ open, onClose, onSave, editProduct }: ProductModalProps) {
   const [name, setName] = useState('')
   const [sku, setSku] = useState('')
@@ -53,6 +59,19 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
   const removeVariation = (index: number) =>
     setVariations(variations.filter((_, i) => i !== index))
 
+  // Validação de limites em tempo real — cada erro aparece abaixo do próprio campo.
+  const nameError =
+    name.length > MAX_NAME ? `O nome deve ter no máximo ${MAX_NAME} caracteres.` : ''
+  const skuError =
+    sku.length > MAX_SKU ? `O SKU deve ter no máximo ${MAX_SKU} caracteres.` : ''
+  const categoryError =
+    category.length > MAX_CATEGORY ? `A categoria deve ter no máximo ${MAX_CATEGORY} caracteres.` : ''
+  const descError =
+    description.length > MAX_DESCRIPTION
+      ? `A descrição deve ter no máximo ${MAX_DESCRIPTION} caracteres.`
+      : ''
+  const hasLimitError = !!(nameError || skuError || categoryError || descError)
+
   const handleSave = async () => {
     if (name.trim().length < 2) {
       setError('O nome do produto precisa de pelo menos 2 caracteres.')
@@ -62,6 +81,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
       setError('A categoria é obrigatória.')
       return
     }
+    if (hasLimitError) return // mensagens de limite já visíveis em tempo real nos campos
     // Descarta linhas totalmente vazias; exige rótulo e valor > 0 nas que sobraram.
     const cleaned = variations
       .map((v) => ({ ...v, label: v.label.trim() }))
@@ -113,7 +133,13 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
       className="max-w-lg"
     >
       <div className="flex flex-col gap-4">
-        <FormField label="Nome do produto" requirement="required" filled={!!name.trim()} error={error}>
+        <FormField
+          label="Nome do produto"
+          requirement="required"
+          filled={!!name.trim()}
+          error={nameError || error}
+          hint={name.length > 0 ? `${name.length}/${MAX_NAME}` : undefined}
+        >
           <Input
             value={name}
             onChange={(e) => {
@@ -126,7 +152,13 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
         </FormField>
 
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Categoria" requirement="required" filled={!!category.trim()}>
+          <FormField
+            label="Categoria"
+            requirement="required"
+            filled={!!category.trim()}
+            error={categoryError}
+            hint={category.length > 0 ? `${category.length}/${MAX_CATEGORY}` : undefined}
+          >
             <Input
               value={category}
               onChange={(e) => {
@@ -136,12 +168,24 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
               placeholder="Ex: Odontologia"
             />
           </FormField>
-          <FormField label="SKU / código" requirement="optional" filled={!!sku.trim()}>
+          <FormField
+            label="SKU / código"
+            requirement="optional"
+            filled={!!sku.trim()}
+            error={skuError}
+            hint={sku.length > 0 ? `${sku.length}/${MAX_SKU}` : undefined}
+          >
             <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Ex: CONS-001" />
           </FormField>
         </div>
 
-        <FormField label="Descrição" requirement="optional" filled={!!description.trim()}>
+        <FormField
+          label="Descrição"
+          requirement="optional"
+          filled={!!description.trim()}
+          error={descError}
+          hint={description.length > 0 ? `${description.length}/${MAX_DESCRIPTION}` : undefined}
+        >
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -213,7 +257,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
           </button>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || hasLimitError}
             className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
           >
             {saving ? 'Salvando...' : editProduct ? 'Salvar alterações' : 'Criar produto'}

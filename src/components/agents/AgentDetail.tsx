@@ -6,7 +6,7 @@ import {
   ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Shield,
   Link2, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
   Pencil, CheckCircle2, Upload, MessageCircleQuestion, BarChart3,
-  Workflow, Info, ShieldCheck,
+  Workflow, Info, ShieldCheck, Package,
 } from 'lucide-react'
 import { CapabilitiesTab } from './CapabilitiesTab'
 import { DecisionCriteriaTab } from './DecisionCriteriaTab'
@@ -37,6 +37,7 @@ import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { AgentIcon } from '@/components/agents/AgentIcons'
 import { AgentTestModal } from '@/components/agents/AgentTestModal'
 import { SkillsTab } from '@/components/agents/SkillsTab'
+import { AgentCatalogTab } from '@/components/agents/AgentCatalogTab'
 import { useAdvancedMode } from '@/hooks/useAdvancedMode'
 import { isFeatureVisible } from '@/config/featureFlags'
 
@@ -2027,7 +2028,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
 // ─── Agent Detail ─────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'prompt' | 'tools' | 'skills' | 'capabilities' | 'criteria' | 'rules' | 'knowledge' | 'metrics'
+type Tab = 'overview' | 'prompt' | 'tools' | 'skills' | 'capabilities' | 'criteria' | 'rules' | 'knowledge' | 'catalog' | 'metrics'
 
 export function AgentDetail({
   agent: initialAgent,
@@ -2090,6 +2091,7 @@ export function AgentDetail({
       : []),
     { id: 'rules',    label: 'Regras', icon: <Workflow className="w-3.5 h-3.5" /> },
     { id: 'knowledge', label: 'Conhecimento', icon: <BookOpen className="w-3.5 h-3.5" /> },
+    { id: 'catalog',  label: 'Catálogo', icon: <Package className="w-3.5 h-3.5" /> },
     { id: 'metrics',  label: 'Métricas', icon: <BarChart3 className="w-3.5 h-3.5" /> },
   ]
 
@@ -2242,6 +2244,7 @@ export function AgentDetail({
                   />
                 )}
                 {activeTab === 'knowledge' && <KnowledgeBaseTab agent={agent} />}
+                {activeTab === 'catalog'  && <AgentCatalogTab agentId={agent.id} />}
                 {activeTab === 'metrics'  && <MetricsTab agent={agent} />}
               </motion.div>
             </AnimatePresence>

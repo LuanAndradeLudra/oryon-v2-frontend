@@ -1207,6 +1207,16 @@ export const productsApi = {
   },
 }
 
+/** Catálogo por agente (SCRUM-221): quais produtos do tenant um agente de IA pode usar. */
+export const agentCatalogApi = {
+  get(agentId: string) {
+    return api.get<Product[]>(`/agent-catalog/${agentId}`)
+  },
+  set(agentId: string, productIds: string[]) {
+    return api.put<Product[]>(`/agent-catalog/${agentId}`, { productIds })
+  },
+}
+
 export const dealsApi = {
   list(contactId: string) {
     return api.get<Deal[]>('/deals', { params: { contactId } })
