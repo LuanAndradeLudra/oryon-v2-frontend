@@ -26,11 +26,12 @@ import { CompanyBrain }        from '@/components/settings/sections/CompanyBrain
 import { Notifications }       from '@/components/settings/sections/Notifications'
 import { AuditTrail }          from '@/components/settings/sections/AuditTrail'
 import { ProductsManager }     from '@/components/settings/sections/crm/ProductsManager'
+import { PractitionersManager } from '@/components/settings/sections/crm/PractitionersManager'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health',
   'quick-replies', 'tags', 'billing', 'security', 'ad-accounts', 'vertical',
-  'audit', 'crm-products',
+  'audit', 'crm-products', 'crm-practitioners',
 ]
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
@@ -82,6 +83,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   vertical:         VerticalSettings,
   audit:            AuditTrail,
   'crm-products':   ProductsManager,
+  'crm-practitioners': PractitionersManager,
 }
 
 export function SettingsPage() {
