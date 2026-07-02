@@ -20,6 +20,20 @@ const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
  *  `previewUrl` é uma objectURL só para imagens, revogada ao remover/desmontar. */
 type StagedAttachment = { id: string; file: File; previewUrl?: string }
 
+/** Tamanho legível para o preview do anexo (B / KB / MB). */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+/** Ícone por tipo de arquivo (fallback documento) para o card de preview. */
+function fileIcon(file: File) {
+  if (file.type.startsWith('video/')) return Video
+  if (file.type.startsWith('image/')) return Image
+  return FileText
+}
+
 interface MessageInputProps {
   /**
    * Returns a promise that rejects on send failure (e.g. backend rejected
@@ -511,14 +525,57 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
         <div
           className={cn(
-            'flex items-center gap-2 bg-surface-800 rounded-2xl px-3 py-2.5 transition-all',
+            'bg-surface-800 rounded-2xl px-3 py-2.5 transition-all',
             'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-sm focus-within:shadow-brand-500/10'
           )}
         >
+          {/* Preview dos anexos em espera (staging). Fica dentro da caixa, acima
+              da textarea — o operador confere/remove antes de enviar. */}
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2.5 pb-2.5 border-b border-surface-700/60">
+              {attachments.map((att) => {
+                const Icon = fileIcon(att.file)
+                return (
+                  <div
+                    key={att.id}
+                    className="flex items-center gap-2 bg-surface-700/60 border border-surface-600 rounded-lg pl-2 pr-1.5 py-1.5 max-w-[220px]"
+                  >
+                    {att.previewUrl ? (
+                      <img
+                        src={att.previewUrl}
+                        alt={att.file.name}
+                        className="w-8 h-8 rounded object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-surface-800 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 text-surface-300" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-medium text-surface-200 truncate">{att.file.name}</p>
+                      <p className="text-[10px] text-surface-500">{formatFileSize(att.file.size)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(att.id)}
+                      title="Remover anexo"
+                      aria-label={`Remover ${att.file.name}`}
+                      className="w-5 h-5 flex items-center justify-center rounded text-surface-400 hover:text-surface-100 hover:bg-surface-600 transition-colors flex-shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Linha de composição (anexar · textarea · emoji · enviar) */}
+          <div className="flex items-center gap-2">
           {/* Hidden file inputs — `multiple` lets the operator pick a whole
-              batch in one go; handleFileSelect dispatches them sequentially
-              so each gets its own message bubble and the Meta API isn't hit
-              by a burst that would trip rate limits. */}
+              batch in one go; handleFileSelect stages them (preview) and
+              handleSend dispatches one POST per file, so each gets its own
+              message bubble and the Meta API isn't hit by a burst. */}
           <input
             ref={imageInputRef}
             type="file"
@@ -629,6 +686,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
               <Send className="w-4 h-4" />
             </button>
           )}
+          </div>
         </div>
       </div>
       <p className="text-[10px] text-surface-600 mt-1.5 text-center">
