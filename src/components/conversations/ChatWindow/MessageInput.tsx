@@ -13,6 +13,13 @@ import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
+const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
+
+/** Um anexo "em espera" no input: fica no preview até o operador clicar em
+ *  Enviar (UX estilo Claude/ChatGPT). `id` serve de key de render/remoção;
+ *  `previewUrl` é uma objectURL só para imagens, revogada ao remover/desmontar. */
+type StagedAttachment = { id: string; file: File; previewUrl?: string }
+
 interface MessageInputProps {
   /**
    * Returns a promise that rejects on send failure (e.g. backend rejected
@@ -116,6 +123,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   const [pickerActive, setPickerActive] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
+  const [attachments, setAttachments] = useState<StagedAttachment[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   // Refs used by the outside-click handler below so a mousedown on the
@@ -336,67 +344,52 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
     }
   }
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? [])
-    if (files.length === 0) return
+  // Mantém uma referência viva dos anexos para revogar as objectURLs no
+  // unmount sem re-registrar o efeito a cada mudança da lista.
+  const attachmentsRef = useRef(attachments)
+  attachmentsRef.current = attachments
+  useEffect(() => () => {
+    attachmentsRef.current.forEach((a) => a.previewUrl && URL.revokeObjectURL(a.previewUrl))
+  }, [])
 
-    // Filter out anything over 16MB before sending — the backend will reject
-    // it anyway, and surfacing the oversize names up-front beats a partial
-    // batch that succeeds for some files and fails silently for others.
-    const maxSize = 16 * 1024 * 1024
-    const oversize = files.filter((f) => f.size > maxSize)
-    const valid = files.filter((f) => f.size <= maxSize)
+  // Filtra arquivos acima de 16MB (o backend rejeitaria de qualquer forma) e
+  // empilha os válidos no preview. Reaproveitado por seleção, drag-and-drop e
+  // colar (SCRUM-275), então concentra aqui a regra de validação/oversize.
+  const stageFiles = useCallback((files: File[]) => {
+    if (files.length === 0) return
+    const oversize = files.filter((f) => f.size > MAX_FILE_SIZE)
+    const valid = files.filter((f) => f.size <= MAX_FILE_SIZE)
     if (oversize.length > 0) {
       alert(
         `Arquivo${oversize.length > 1 ? 's' : ''} muito grande${oversize.length > 1 ? 's' : ''} (máx 16MB):\n` +
         oversize.map((f) => `• ${f.name}`).join('\n'),
       )
     }
-    if (valid.length === 0) {
-      e.target.value = ''
-      return
-    }
+    if (valid.length === 0) return
+    setAttachments((prev) => [
+      ...prev,
+      ...valid.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      })),
+    ])
+  }, [])
 
-    // Caption: only attach the typed text to the FIRST file in the batch.
-    // For the rest we leave body undefined so the bubbles don't all share
-    // the same caption — the operator usually writes the caption to
-    // describe the first/leading attachment, not every single one.
-    const previousText = text
-    setText('')
-    e.target.value = ''
+  const removeAttachment = useCallback((id: string) => {
+    setAttachments((prev) => {
+      const found = prev.find((a) => a.id === id)
+      if (found?.previewUrl) URL.revokeObjectURL(found.previewUrl)
+      return prev.filter((a) => a.id !== id)
+    })
+  }, [])
 
-    // Sequential dispatch: each file gets its own POST so each message has
-    // its own bubble + status icon, and we avoid bursting the Meta API.
-    // If one fails, we keep going (don't abort the batch) but collect the
-    // failures so the user can see which ones didn't go through.
-    const failed: string[] = []
-    for (let i = 0; i < valid.length; i++) {
-      const file = valid[i]
-      try {
-        await onSend({
-          file,
-          mediaCaption: file.name,
-          body: i === 0 ? previousText.trim() || undefined : undefined,
-          // Only the first attachment quotes the message being replied to.
-          replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
-        })
-      } catch {
-        failed.push(file.name)
-      }
-    }
-
-    // Clear the reply context if at least one file went through.
-    if (failed.length < valid.length) onCancelReply?.()
-
-    if (failed.length > 0) {
-      // Page-level toast already fires per-failure; this restores the
-      // caption text only if every file failed, so a partial-batch
-      // success doesn't dump the user back into the textarea.
-      if (failed.length === valid.length) setText(previousText)
-    }
-
+  // Selecionar arquivo(s) NÃO envia mais na hora — só empilha no preview
+  // (staging). O envio de fato acontece no handleSend, ao clicar em Enviar.
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    stageFiles(Array.from(e.target.files ?? []))
+    e.target.value = '' // permite re-selecionar o mesmo arquivo
     setShowAttachMenu(false)
-    if (textareaRef.current) textareaRef.current.style.height = 'auto'
   }
 
   // Phase 29 — pre-detected blocker (no department, no WA line, etc.).
