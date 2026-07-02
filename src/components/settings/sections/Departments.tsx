@@ -5,16 +5,11 @@ import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
-import { cn } from '@/lib/utils'
+import { cn, formatWaSelectLabel } from '@/lib/utils'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { departmentsApi, whatsappNumbersApi } from '@/services/api'
 import type { Department, DepartmentPermission, WhatsAppNumber } from '@/types'
-
-function formatWaSelectLabel(n: WhatsAppNumber): string {
-  if (n.label?.trim()) return `${n.label.trim()} — ${n.displayPhoneNumber}`
-  return n.displayPhoneNumber
-}
 
 // ── Permission definitions ───────────────────────────────────────────────────
 
