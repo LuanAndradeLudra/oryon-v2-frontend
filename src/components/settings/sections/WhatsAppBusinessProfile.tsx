@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { Camera } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
+import { Avatar } from '@/components/ui/Avatar'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
@@ -53,6 +55,7 @@ interface ProfileForm {
   email: string
   websites: [string, string]
   vertical: string
+  profilePictureUrl: string
 }
 
 const EMPTY_FORM: ProfileForm = {
@@ -62,6 +65,7 @@ const EMPTY_FORM: ProfileForm = {
   email: '',
   websites: ['', ''],
   vertical: 'UNDEFINED',
+  profilePictureUrl: '',
 }
 
 export function WhatsAppBusinessProfile() {
@@ -71,6 +75,8 @@ export function WhatsAppBusinessProfile() {
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!selectedId && numbers.length > 0) {
@@ -94,6 +100,7 @@ export function WhatsAppBusinessProfile() {
         email: data.email ?? '',
         websites: [data.websites?.[0] ?? '', data.websites?.[1] ?? ''],
         vertical: data.vertical ?? 'UNDEFINED',
+        profilePictureUrl: data.profile_picture_url ?? '',
       })
     } catch {
       toast('Erro ao carregar o perfil do WhatsApp.', 'error')
@@ -126,6 +133,32 @@ export function WhatsAppBusinessProfile() {
     }
   }
 
+  const handlePhotoChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !selectedId) return
+
+    const formData = new FormData()
+    formData.append('file', file)
+    setUploadingPhoto(true)
+    try {
+      await api.post(`/meta/numbers/${selectedId}/business-profile/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      toast('Foto de perfil atualizada.', 'success')
+      await loadProfile(selectedId)
+    } catch (err) {
+      toast(
+        extractErrorMessage(err, 'Erro ao enviar a foto. Confira o formato (JPEG/PNG) e o tamanho (até 5MB).'),
+        'error',
+      )
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  const selectedNumber = numbers.find((n) => n.id === selectedId)
+
   if (loadingNumbers) {
     return (
       <div className="flex items-center justify-center h-48">
@@ -138,7 +171,7 @@ export function WhatsAppBusinessProfile() {
     <div className="max-w-2xl">
       <SectionHeader
         title="Perfil do WhatsApp"
-        description="Edite o perfil do WhatsApp Business de cada número — endereço, e-mail, descrição, sites e categoria."
+        description="Edite o perfil do WhatsApp Business de cada número — foto, endereço, e-mail, descrição, sites e categoria."
       />
 
       {numbers.length === 0 ? (
@@ -157,6 +190,37 @@ export function WhatsAppBusinessProfile() {
                 ))}
               </Select>
             </FormField>
+
+            <div className="flex items-center gap-5 mt-5">
+              <div
+                className="relative group cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Avatar
+                  name={selectedNumber?.displayPhoneNumber ?? 'WA'}
+                  imageUrl={form.profilePictureUrl || undefined}
+                  size="lg"
+                />
+                <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  {uploadingPhoto ? (
+                    <div className="w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4 text-white" />
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  hidden
+                  onChange={handlePhotoChange}
+                />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-surface-100">Foto de perfil</p>
+                <p className="text-xs text-surface-500">JPEG ou PNG, até 5MB.</p>
+              </div>
+            </div>
           </div>
 
           <div className={loadingProfile ? 'opacity-50 pointer-events-none' : ''}>
