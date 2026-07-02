@@ -281,20 +281,64 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
   const handleSend = async () => {
     const trimmed = text.trim()
-    if (!trimmed || sending || disabled) return
-    // Snapshot before clearing so we can restore on failure.
+    // Envia com texto E/OU anexos. Só bloqueia quando não há nada dos dois.
+    if ((!trimmed && attachments.length === 0) || sending || disabled) return
+
+    // Snapshot para restaurar em caso de falha total.
     const previousText = text
+    const staged = attachments
+
+    // Limpa o input de forma otimista.
     setText('')
+    setAttachments([])
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
-    try {
-      await onSend({ body: trimmed, replyToWamid: replyTo?.wamid ?? undefined })
-      onCancelReply?.()
-    } catch {
-      // Send failed (e.g. backend rejected with 403 because user has no
-      // department). Restore the typed text so the operator can retry or
-      // copy it elsewhere — the toast is shown by the page-level handler.
-      setText(previousText)
+
+    // Caminho texto puro (sem anexos) — comportamento original.
+    if (staged.length === 0) {
+      try {
+        await onSend({ body: trimmed, replyToWamid: replyTo?.wamid ?? undefined })
+        onCancelReply?.()
+      } catch {
+        // Falha (ex.: 403 sem setor) — restaura o texto para retry/cópia; o
+        // toast é exibido pelo handler no nível da página.
+        setText(previousText)
+      }
+      return
     }
+
+    // Com anexos: 1 POST por arquivo (cada um vira seu balão/status e evita
+    // burst na Meta API). O texto vira legenda só do 1º arquivo (decisão de
+    // produto SCRUM-269); idem o contexto de reply. Falha em um não aborta os
+    // demais — coletamos os que falharam para o operador tentar de novo.
+    const failed: StagedAttachment[] = []
+    for (let i = 0; i < staged.length; i++) {
+      const { file } = staged[i]
+      try {
+        await onSend({
+          file,
+          mediaCaption: file.name,
+          body: i === 0 ? trimmed || undefined : undefined,
+          replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
+        })
+      } catch {
+        failed.push(staged[i])
+      }
+    }
+
+    if (failed.length < staged.length) onCancelReply?.()
+
+    // Revoga as previews só dos que foram enviados com sucesso; os que
+    // falharam voltam ao preview com a objectURL intacta.
+    const failedSet = new Set(failed)
+    staged.forEach((s) => {
+      if (!failedSet.has(s) && s.previewUrl) URL.revokeObjectURL(s.previewUrl)
+    })
+
+    // Se TUDO falhou, restaura o texto (era a legenda do 1º arquivo). Em
+    // sucesso parcial, mantém só os que falharam no preview e não devolve o
+    // texto — não jogar o operador de volta ao input após envios que foram.
+    if (failed.length === staged.length) setText(previousText)
+    setAttachments(failed)
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -676,8 +720,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             className="w-8 h-8"
           />
 
-          {/* Send */}
-          {text.trim() && (
+          {/* Send — aparece com texto E/OU anexos em espera */}
+          {(text.trim() || attachments.length > 0) && (
             <button
               onClick={handleSend}
               disabled={sending || disabled}
