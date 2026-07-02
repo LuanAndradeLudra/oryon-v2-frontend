@@ -1,17 +1,14 @@
 import { useCallback, useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import {
   Send, Paperclip, AlertTriangle, Zap, Image, FileText, Video, ChevronDown,
-  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X,
+  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2,
 } from 'lucide-react'
-import axios from 'axios'
 import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { cannedResponsesApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
-
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
 
@@ -138,6 +135,9 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   const [activeIndex, setActiveIndex] = useState(0)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [attachments, setAttachments] = useState<StagedAttachment[]>([])
+  const [dragOver, setDragOver] = useState(false)
+  // id do anexo cujo POST está em voo (envio sequencial) — dirige o spinner.
+  const [uploadingId, setUploadingId] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   // Refs used by the outside-click handler below so a mousedown on the
@@ -288,9 +288,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
     const previousText = text
     const staged = attachments
 
-    // Limpa o input de forma otimista.
+    // Limpa o texto de forma otimista (vira legenda do 1º anexo, se houver).
     setText('')
-    setAttachments([])
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
 
     // Caminho texto puro (sem anexos) — comportamento original.
@@ -306,39 +305,34 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
       return
     }
 
-    // Com anexos: 1 POST por arquivo (cada um vira seu balão/status e evita
-    // burst na Meta API). O texto vira legenda só do 1º arquivo (decisão de
-    // produto SCRUM-269); idem o contexto de reply. Falha em um não aborta os
-    // demais — coletamos os que falharam para o operador tentar de novo.
+    // Com anexos: 1 POST por arquivo, em sequência (cada um vira seu balão/
+    // status e evita burst na Meta API). O texto vira legenda só do 1º arquivo
+    // (decisão SCRUM-269); idem o reply. Cada card fica visível com um spinner
+    // enquanto seu upload está em voo (uploadingId) e some ao concluir; os que
+    // falham permanecem no preview para nova tentativa.
     const failed: StagedAttachment[] = []
     for (let i = 0; i < staged.length; i++) {
-      const { file } = staged[i]
+      const item = staged[i]
+      setUploadingId(item.id)
       try {
         await onSend({
-          file,
-          mediaCaption: file.name,
+          file: item.file,
+          mediaCaption: item.file.name,
           body: i === 0 ? trimmed || undefined : undefined,
           replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
         })
+        setAttachments((prev) => prev.filter((a) => a.id !== item.id))
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
       } catch {
-        failed.push(staged[i])
+        failed.push(item)
       }
     }
+    setUploadingId(null)
 
     if (failed.length < staged.length) onCancelReply?.()
-
-    // Revoga as previews só dos que foram enviados com sucesso; os que
-    // falharam voltam ao preview com a objectURL intacta.
-    const failedSet = new Set(failed)
-    staged.forEach((s) => {
-      if (!failedSet.has(s) && s.previewUrl) URL.revokeObjectURL(s.previewUrl)
-    })
-
-    // Se TUDO falhou, restaura o texto (era a legenda do 1º arquivo). Em
-    // sucesso parcial, mantém só os que falharam no preview e não devolve o
-    // texto — não jogar o operador de volta ao input após envios que foram.
+    // Se TUDO falhou, devolve o texto (era a legenda do 1º). Os anexos que
+    // falharam seguem no preview (nunca removidos do estado).
     if (failed.length === staged.length) setText(previousText)
-    setAttachments(failed)
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -405,7 +399,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   // Mantém uma referência viva dos anexos para revogar as objectURLs no
   // unmount sem re-registrar o efeito a cada mudança da lista.
   const attachmentsRef = useRef(attachments)
-  attachmentsRef.current = attachments
+  useEffect(() => { attachmentsRef.current = attachments }, [attachments])
   useEffect(() => () => {
     attachmentsRef.current.forEach((a) => a.previewUrl && URL.revokeObjectURL(a.previewUrl))
   }, [])
@@ -441,6 +435,32 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
       return prev.filter((a) => a.id !== id)
     })
   }, [])
+
+  // Drag-and-drop de arquivos sobre a caixa do input (SCRUM-275).
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes('Files')) return
+    e.preventDefault()
+    setDragOver(true)
+  }
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Ignora a saída para elementos-filhos (evita flicker do highlight).
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setDragOver(false)
+  }
+  const handleDrop = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes('Files')) return
+    e.preventDefault()
+    setDragOver(false)
+    stageFiles(Array.from(e.dataTransfer.files))
+  }
+
+  // Colar imagem do clipboard (ex.: print de tela) direto no input (SCRUM-275).
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const images = Array.from(e.clipboardData.files ?? []).filter((f) => f.type.startsWith('image/'))
+    if (images.length === 0) return
+    e.preventDefault() // não colar o binário como texto
+    stageFiles(images)
+  }
 
   // Selecionar arquivo(s) NÃO envia mais na hora — só empilha no preview
   // (staging). O envio de fato acontece no handleSend, ao clicar em Enviar.
@@ -568,33 +588,55 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
         )}
 
         <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           className={cn(
-            'bg-surface-800 rounded-2xl px-3 py-2.5 transition-all',
-            'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-sm focus-within:shadow-brand-500/10'
+            'relative bg-surface-800 rounded-2xl px-3 py-2.5 transition-all',
+            'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-sm focus-within:shadow-brand-500/10',
+            dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
           )}
         >
+          {/* Dropzone: feedback "solte aqui" durante o arraste (SCRUM-275) */}
+          {dragOver && (
+            <div className="absolute inset-0 z-10 rounded-2xl bg-brand-950/50 border-2 border-dashed border-brand-500 flex items-center justify-center pointer-events-none">
+              <span className="text-xs font-semibold text-brand-200">Solte para anexar</span>
+            </div>
+          )}
+
           {/* Preview dos anexos em espera (staging). Fica dentro da caixa, acima
               da textarea — o operador confere/remove antes de enviar. */}
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2.5 pb-2.5 border-b border-surface-700/60">
               {attachments.map((att) => {
                 const Icon = fileIcon(att.file)
+                const isUploading = att.id === uploadingId
                 return (
                   <div
                     key={att.id}
-                    className="flex items-center gap-2 bg-surface-700/60 border border-surface-600 rounded-lg pl-2 pr-1.5 py-1.5 max-w-[220px]"
-                  >
-                    {att.previewUrl ? (
-                      <img
-                        src={att.previewUrl}
-                        alt={att.file.name}
-                        className="w-8 h-8 rounded object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded bg-surface-800 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-surface-300" />
-                      </div>
+                    className={cn(
+                      'flex items-center gap-2 bg-surface-700/60 border border-surface-600 rounded-lg pl-2 pr-1.5 py-1.5 max-w-[220px]',
+                      isUploading && 'opacity-80'
                     )}
+                  >
+                    <div className="relative w-8 h-8 flex-shrink-0">
+                      {att.previewUrl ? (
+                        <img
+                          src={att.previewUrl}
+                          alt={att.file.name}
+                          className="w-8 h-8 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded bg-surface-800 flex items-center justify-center">
+                          <Icon className="w-4 h-4 text-surface-300" />
+                        </div>
+                      )}
+                      {isUploading && (
+                        <div className="absolute inset-0 rounded bg-black/55 flex items-center justify-center">
+                          <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0">
                       <p className="text-[11px] font-medium text-surface-200 truncate">{att.file.name}</p>
                       <p className="text-[10px] text-surface-500">{formatFileSize(att.file.size)}</p>
@@ -602,9 +644,10 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
                     <button
                       type="button"
                       onClick={() => removeAttachment(att.id)}
+                      disabled={uploadingId !== null}
                       title="Remover anexo"
                       aria-label={`Remover ${att.file.name}`}
-                      className="w-5 h-5 flex items-center justify-center rounded text-surface-400 hover:text-surface-100 hover:bg-surface-600 transition-colors flex-shrink-0"
+                      className="w-5 h-5 flex items-center justify-center rounded text-surface-400 hover:text-surface-100 hover:bg-surface-600 transition-colors flex-shrink-0 disabled:opacity-40 disabled:hover:bg-transparent"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -703,6 +746,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             onKeyDown={handleKeyDown}
             onInput={handleInput}
             onContextMenu={onInputContextMenu}
+            onPaste={handlePaste}
             placeholder="Digite uma mensagem ou / para respostas rápidas..."
             rows={1}
             disabled={disabled || sending}
