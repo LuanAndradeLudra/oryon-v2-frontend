@@ -74,7 +74,10 @@ export const DesktopSidebar = ({
   return (
     <div
       className={cn(
-        'nav-sidebar h-full py-4 flex flex-col bg-surface-950 border-r border-surface-800/60 flex-shrink-0 overflow-hidden',
+        // Sem bg/borda própria: a sidebar vive sobre o SHELL (fundo profundo) e
+        // faz parte da moldura do workspace — o canvas de conteúdo é quem se
+        // destaca. (bg via token local .nav-sidebar continua p/ hovers/chips.)
+        'nav-sidebar h-full py-4 flex flex-col bg-transparent flex-shrink-0 overflow-hidden',
         'transition-[width] duration-200 ease-out will-change-[width]',
         className
       )}

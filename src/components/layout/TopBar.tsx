@@ -1479,14 +1479,14 @@ export function TopBar() {
   }
 
   return (
-    <div className="conv-surface h-12 flex-shrink-0 bg-surface-950 border-b border-surface-700/50 px-4 flex items-center gap-3">
+    <div className="conv-surface h-12 flex-shrink-0 bg-surface-950 border-b border-surface-800/60 px-4 flex items-center gap-3">
 
       {/* Left: page title + subtitle (inline with "·" bullet separator).
           Subtitle hidden on small viewports so the row stays single-line
           on phones. Title stays bold; bullet + subtitle use the muted
           surface-500/600 ramp so the secondary copy doesn't compete. */}
       <div className="flex items-baseline gap-2 min-w-0">
-        <span className="text-sm font-semibold text-surface-100 flex-shrink-0 truncate">
+        <span className="text-sm font-display font-bold text-surface-50 flex-shrink-0 truncate">
           {pageTitle}
         </span>
         {pageSubtitle && (

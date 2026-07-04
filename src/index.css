@@ -170,6 +170,12 @@
   --color-status-info-bg:        rgba(96, 165, 250, 0.12);
   --color-status-info-border:    rgba(96, 165, 250, 0.25);
 
+  /* ── Shell (moldura do workspace) ─────────────────────────────────────────
+     Fundo do APP atrás do canvas de conteúdo. O conteúdo flutua num cartão
+     arredondado (.workspace-canvas) sobre esta cor — padrão Linear/Slack.
+     Deve ser sempre mais profundo que surface-950. */
+  --color-shell: #050808;
+
   /* ── Acentos categóricos (não-status) — hues p/ chips de categoria (ações
      de handoff, origens de campanha etc.). Sempre usar via var() para que o
      tema claro possa escurecer os matizes e manter contraste AA. */
@@ -522,6 +528,9 @@ code, pre, kbd, samp {
   --color-status-info-bg:     rgba(37, 99, 235, 0.08);
   --color-status-info-border: rgba(37, 99, 235, 0.20);
 
+  /* Shell (light): cinza-azulado atrás do canvas branco — profundidade Notion-like */
+  --color-shell: #E2E6ED;
+
   /* Acentos categóricos (light: tons escurecidos p/ contraste AA em fundo claro) */
   --color-accent-blue:   #2563EB;
   --color-accent-green:  #047857;
@@ -733,6 +742,25 @@ svg[data-oryon-icon] {
 [data-theme="light"] .card-glow:hover {
   border-color: rgba(15, 118, 110, 0.35) !important;
   box-shadow: 0 6px 20px rgba(15, 118, 110, 0.16);
+}
+
+/* ── Workspace canvas — o conteúdo flutua sobre o shell ─────────────────────
+ * Moldura arredondada + elevação. A sombra é o que "descola" o canvas do
+ * fundo; no light ela é mais suave (sombra pesada sobre cinza claro suja). */
+.workspace-canvas {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 16px 48px rgba(0, 0, 0, 0.42);
+}
+[data-theme="light"] .workspace-canvas {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 12px 36px rgba(15, 23, 42, 0.10);
+}
+
+/* ── Tipografia display — tracking apertado em títulos (ar editorial) ──────*/
+h1, h2, h3 {
+  letter-spacing: -0.015em;
 }
 
 /* ── Acessibilidade: usuário pediu menos movimento — respeitar sempre ───────*/

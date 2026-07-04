@@ -13,8 +13,11 @@ function ShellLayout({ children }: { children: ReactNode }) {
     return <AppShellMobile>{children}</AppShellMobile>
   }
 
+  // Workspace canvas (padrão Linear/Slack): a navegação vive no SHELL (fundo
+  // profundo) e todo o conteúdo flutua num cartão arredondado e elevado.
+  // Uma única mudança estrutural que reenquadra todas as telas do app.
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-surface-950">
+    <div className="flex h-screen w-screen overflow-hidden bg-shell">
       {/* Navegação por teclado: pula os 15+ itens da sidebar direto ao conteúdo */}
       <a
         href="#main-content"
@@ -23,10 +26,12 @@ function ShellLayout({ children }: { children: ReactNode }) {
         Ir para o conteúdo principal
       </a>
       <NavSidebar />
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <TopBar />
-        {/* div (não <main>) — as páginas declaram seu próprio <main> interno */}
-        <div id="main-content" className="flex flex-1 min-w-0 overflow-hidden">{children}</div>
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden py-1.5 pr-1.5">
+        <div className="workspace-canvas flex flex-col flex-1 min-w-0 overflow-hidden rounded-2xl border border-surface-800/70 bg-surface-950">
+          <TopBar />
+          {/* div (não <main>) — as páginas declaram seu próprio <main> interno */}
+          <div id="main-content" className="flex flex-1 min-w-0 overflow-hidden">{children}</div>
+        </div>
       </div>
     </div>
   )
