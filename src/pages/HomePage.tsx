@@ -772,64 +772,39 @@ export function HomePage() {
               <WorkspaceReadinessBanner mode="checklist" />
             </div>
 
-            {/* ── Linha 3: 4 KPIs ───────────────────────────────────────── */}
-            <div className="lg:col-span-12">
-              {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
-            </div>
+            {/* ── Arquitetura main + rail ────────────────────────────────
+                MAIN (8/12): a narrativa do MEU dia — desempenho pessoal,
+                números do workspace, insights da IA, gestão e fila.
+                RAIL (4/12): o que eu FAÇO e o que ACONTECE — atendimento ao
+                vivo (admin), ações rápidas e atividade recente, sempre à
+                mão sem competir com a leitura principal. */}
+            <div className="lg:col-span-12 xl:col-span-8">
+              <div className="flex flex-col gap-5 sm:gap-6">
+                {stats && <MyPerformanceCard stats={stats} />}
 
-            {/* ── Linha 4: Seu desempenho hoje + Insights da Oryon AI ────
-                O PESSOAL vem primeiro (leitura F): "como EU estou" responde a
-                pergunta das 8h da manhã antes da narrativa geral da IA. */}
-            {stats && (
-              <>
-                <div className="lg:col-span-6">
-                  <MyPerformanceCard stats={stats} />
-                </div>
-                <div className="lg:col-span-6">
-                  <AIInsightsWidget stats={stats} />
-                </div>
-              </>
-            )}
+                {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
 
-            {/* ── Linha 5: Quick Actions + Activity Feed ─────────────────
-                Ações e atividade sobem: são de TODOS os papéis; os cards de
-                gestão (admin-only) descem para a linha seguinte. */}
-            <div className="lg:col-span-8">
-              <QuickActions role={role} />
-            </div>
-            <div className="lg:col-span-4">
-              <ActivityFeed logs={logs} loading={logsLoading} />
-            </div>
+                {stats && <AIInsightsWidget stats={stats} />}
 
-            {/* ── Linha 6: 3 cards admin (Equipe / WhatsApp / Atendimento) ─
-                Visão de gestão — relevante, mas não compete com o fluxo
-                pessoal de quem atende. */}
-            {stats && isAdminRole && !isMobile && (
-              <>
-                <div className="lg:col-span-4">
-                  <TeamCard stats={stats} />
-                </div>
-                <div className="lg:col-span-4">
-                  <WhatsAppNumbersCard />
-                </div>
-                <div className="lg:col-span-4">
-                  <LiveServiceCard stats={stats} />
-                </div>
-              </>
-            )}
+                {stats && isAdminRole && !isMobile && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+                    <TeamCard stats={stats} />
+                    <WhatsAppNumbersCard />
+                  </div>
+                )}
 
-            {/* ── Roles supervisor/agent: bloco contextual de largura total
-                (refator simétrico desses fluxos fica como follow-up). */}
-            {role === 'supervisor' && !isMobile && (
-              <div className="lg:col-span-12">
-                <SupervisorBlock />
+                {role === 'supervisor' && !isMobile && <SupervisorBlock />}
+                {role === 'agent' && !isMobile && <AgentBlock />}
               </div>
-            )}
-            {role === 'agent' && !isMobile && (
-              <div className="lg:col-span-12">
-                <AgentBlock />
+            </div>
+
+            <div className="lg:col-span-12 xl:col-span-4">
+              <div className="flex flex-col gap-5 sm:gap-6">
+                {stats && isAdminRole && !isMobile && <LiveServiceCard stats={stats} />}
+                <QuickActions role={role} />
+                <ActivityFeed logs={logs} loading={logsLoading} />
               </div>
-            )}
+            </div>
 
           </div>
 

@@ -6,7 +6,7 @@ import axios from 'axios'
 import { AnimatePresence, motion } from 'framer-motion'
 
 
-import { RealtimeStrip }    from '@/components/dashboard/RealtimeStrip'
+import { LiveNowCard }      from '@/components/dashboard/LiveNowCard'
 import { DateRangePicker }  from '@/components/dashboard/DateRangePicker'
 import { KpiGrid }          from '@/components/dashboard/KpiGrid'
 import { VolumeChart }      from '@/components/dashboard/VolumeChart'
@@ -254,9 +254,6 @@ export function DashboardPage() {
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {isMobile && <MobilePageHeader title="Dashboard" />}
 
-        {/* Strip realtime — quebra linha em mobile (fila/espera sempre visíveis) */}
-        <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
-
         <div className="flex-1 overflow-y-auto">
           {/* Toolbar de período — sticky JUNTO do conteúdo que controla
               (affordance: mudar o range e ver o efeito sem voltar ao topo).
@@ -298,59 +295,63 @@ export function DashboardPage() {
 
             {loading ? (
               /* Minimal skeleton */
-              <div className="space-y-5">
-                {/* Espelha o layout real (4 heroes + grid compacto) p/ evitar layout shift */}
-                <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-32 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
-                  ))}
+              <div className="grid grid-cols-12 gap-4 items-start">
+                {/* Espelha o layout main + rail p/ evitar layout shift */}
+                <div className="col-span-12 xl:col-span-8 space-y-4">
+                  <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-32 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
+                    ))}
+                  </div>
+                  <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="h-24 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
+                    ))}
+                  </div>
+                  <div className="h-72 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
                 </div>
-                <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="h-24 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <div className="lg:col-span-2 h-64 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
-                  <div className="h-64 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
+                <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
+                  <div className="h-40 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
+                  <div className="h-72 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
                 </div>
               </div>
             ) : snapshot && (
-              <>
-                <KpiGrid metrics={snapshot.kpis} />
+              /* ── Arquitetura main + rail ─────────────────────────────────
+                 Coluna principal (8/12): a NARRATIVA analítica — KPIs, volume,
+                 tags/CSAT, picos, equipe. Rail (4/12): o PULSO da operação —
+                 Ao Vivo, distribuição de status e atividade. Em mobile o rail
+                 vem primeiro (fila/espera são alerta, não rodapé). */
+              <div className="grid grid-cols-12 gap-4 items-start">
+                <div className="col-span-12 xl:col-span-8 space-y-4">
+                  <KpiGrid metrics={snapshot.kpis} />
 
-                {/* Seção desligada por padrão (flag dashboardAiInsights) — não
-                    montar evita a chamada generateDashboardInsights() e o gasto
-                    de tokens. */}
-                {isFeatureVisible('dashboardAiInsights') && (
-                  <AiInsightsSection kpis={snapshot.kpis} />
-                )}
+                  {/* Seção desligada por padrão (flag dashboardAiInsights) — não
+                      montar evita a chamada generateDashboardInsights() e o gasto
+                      de tokens. */}
+                  {isFeatureVisible('dashboardAiInsights') && (
+                    <AiInsightsSection kpis={snapshot.kpis} />
+                  )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
-                  <div className="lg:col-span-2 h-full">
-                    <VolumeChart data={snapshot.volumeChart} />
+                  <VolumeChart data={snapshot.volumeChart} />
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <TagsChart data={snapshot.tagVolumes} />
+                    <CsatChart data={snapshot.csatChart} />
                   </div>
+
+                  <PeakHoursHeatmap data={snapshot.heatmap} />
+
+                  <AgentTable agents={snapshot.agentMetrics} />
+
+                  {/* <MarketingFunnelSection dateRange={dateRange} /> — endpoint backend nao existe ainda */}
+                </div>
+
+                <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
+                  <LiveNowCard status={snapshot.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
                   <StatusDonut data={snapshot.statusDistribution} />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <TagsChart data={snapshot.tagVolumes} />
-                  <CsatChart data={snapshot.csatChart} />
-                </div>
-
-                <PeakHoursHeatmap data={snapshot.heatmap} />
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <div className="lg:col-span-2">
-                    <AgentTable agents={snapshot.agentMetrics} />
-                  </div>
                   <ActivityFeed events={snapshot.activityFeed} />
                 </div>
-
-                {/* <MarketingFunnelSection dateRange={dateRange} /> — endpoint backend nao existe ainda */}
-
-                <div className="h-2" />
-              </>
+              </div>
             )}
           </div>
         </div>
