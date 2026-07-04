@@ -227,8 +227,9 @@ function AnimatedRoutes() {
           <Route path="/campaigns" element={
             <ProtectedRoute><CampaignsPage /></ProtectedRoute>
           } />
+          {/* Raiz de settings = hub navegável (mapa das configurações) */}
           <Route path="/settings" element={
-            <RequireAuth><Navigate to="/settings/account" replace /></RequireAuth>
+            <ProtectedRoute><SettingsPage /></ProtectedRoute>
           } />
           <Route path="/settings/:section" element={
             <ProtectedRoute><SettingsPage /></ProtectedRoute>

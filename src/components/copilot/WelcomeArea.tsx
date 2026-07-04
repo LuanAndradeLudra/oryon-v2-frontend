@@ -155,7 +155,32 @@ export function WelcomeArea({ onSend, atLimit, onNew, onOpenKnowledge, userId }:
           )}
         </motion.div>
 
-        {/* Suggestion chips removed — direct input provides cleaner UX */}
+        {/* Sugestões de partida — o copilot em branco é intimidador; 4 ações
+            reais mostram o ALCANCE da ferramenta (análise, CRM, campanha).
+            Clicou → envia direto. */}
+        {!atLimit && (
+          <motion.div
+            className="flex flex-wrap items-center justify-center gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.45, duration: 0.5 }}
+          >
+            {[
+              'Analise meus leads desta semana',
+              'Quais contatos estão esfriando?',
+              'Resuma as conversas de hoje',
+              'Monte uma campanha para leads frios',
+            ].map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => onSend(prompt)}
+                className="px-3 py-1.5 rounded-full border border-surface-700/70 bg-surface-900/60 text-xs text-surface-400 hover:text-surface-100 hover:border-brand-500/40 hover:bg-surface-800 transition-colors cursor-pointer"
+              >
+                {prompt}
+              </button>
+            ))}
+          </motion.div>
+        )}
       </div>
     </div>
   )

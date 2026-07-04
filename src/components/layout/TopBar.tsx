@@ -69,7 +69,7 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/agents': 'Construtor de IA',
   '/copilot': 'Assistente Oryon',
   '/team': 'Habilidades dos agentes',
-  '/settings': 'Conta e equipe',
+  '/settings': 'Central do workspace',
 }
 
 // ── Search index ───────────────────────────────────────────────────────────────

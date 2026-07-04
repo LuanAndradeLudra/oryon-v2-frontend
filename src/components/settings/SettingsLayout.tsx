@@ -50,61 +50,74 @@ const SEARCH_KEYWORDS: Record<string, string[]> = {
 const normalize = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
-const NAV_GROUPS = [
+export const NAV_GROUPS = [
   {
     label: 'Conta',
     items: [
-      { section: 'account',  label: 'Minha Conta',      icon: <User className="w-4 h-4" /> },
-      { section: 'notifications', label: 'Notificações',  icon: <Bell className="w-4 h-4" /> },
-      { section: 'company',       label: 'Perfil da Empresa', icon: <Building2 className="w-4 h-4" />, supervisorOnly: true },
-      { section: 'company-brain', label: 'Contexto da IA',   icon: <Brain className="w-4 h-4" />,    supervisorOnly: true },
+      { section: 'account',  label: 'Minha Conta',      icon: <User className="w-4 h-4" />, desc: 'Perfil pessoal, e-mail e senha' },
+      { section: 'notifications', label: 'Notificações',  icon: <Bell className="w-4 h-4" />, desc: 'Alertas, push e avisos por tipo' },
+      { section: 'company',       label: 'Perfil da Empresa', icon: <Building2 className="w-4 h-4" />, supervisorOnly: true, desc: 'Nome, logo e dados da organização' },
+      { section: 'company-brain', label: 'Contexto da IA',   icon: <Brain className="w-4 h-4" />,    supervisorOnly: true, desc: 'O que os agentes sabem sobre o negócio' },
     ],
   },
   {
     label: 'Equipe & Atendimento',
     items: [
-      { section: 'agents',       label: 'Usuários',          icon: <Users className="w-4 h-4" />,  supervisorOnly: true },
-      { section: 'departments',  label: 'Setores',           icon: <Layers className="w-4 h-4" />, supervisorOnly: true },
-      { section: 'quick-replies', label: 'Respostas Rápidas', icon: <Zap className="w-4 h-4" />,  supervisorOnly: true },
-      { section: 'tags',         label: 'Tags',              icon: <Tag className="w-4 h-4" />,    supervisorOnly: true },
+      { section: 'agents',       label: 'Usuários',          icon: <Users className="w-4 h-4" />,  supervisorOnly: true, desc: 'Convites, papéis e acessos da equipe' },
+      { section: 'departments',  label: 'Setores',           icon: <Layers className="w-4 h-4" />, supervisorOnly: true, desc: 'Times e filas de atendimento' },
+      { section: 'quick-replies', label: 'Respostas Rápidas', icon: <Zap className="w-4 h-4" />,  supervisorOnly: true, desc: 'Atalhos de mensagem com /' },
+      { section: 'tags',         label: 'Tags',              icon: <Tag className="w-4 h-4" />,    supervisorOnly: true, desc: 'Etiquetas de conversas e contatos' },
     ],
   },
   {
     label: 'WhatsApp',
     items: [
-      { section: 'numbers', label: 'Números WhatsApp', icon: <Smartphone className="w-4 h-4" />, adminOnly: true },
-      { section: 'whatsapp-health', label: 'Saúde das Linhas', icon: <Activity className="w-4 h-4" />, adminOnly: true },
+      { section: 'numbers', label: 'Números WhatsApp', icon: <Smartphone className="w-4 h-4" />, adminOnly: true, desc: 'Linhas conectadas e pareamento' },
+      { section: 'whatsapp-health', label: 'Saúde das Linhas', icon: <Activity className="w-4 h-4" />, adminOnly: true, desc: 'Qualidade, limites e tier das linhas' },
     ],
   },
   {
     label: 'Marketing',
     items: [
-      { section: 'ad-accounts', label: 'Contas de Anúncios', icon: <Megaphone className="w-4 h-4" />, adminOnly: true },
+      { section: 'ad-accounts', label: 'Contas de Anúncios', icon: <Megaphone className="w-4 h-4" />, adminOnly: true, desc: 'Integração Meta Ads e pixels' },
     ],
   },
   {
     label: 'CRM',
     items: [
-      { section: 'vertical', label: 'Vertical & Vocabulário', icon: <Globe2 className="w-4 h-4" />, adminOnly: true },
+      { section: 'vertical', label: 'Vertical & Vocabulário', icon: <Globe2 className="w-4 h-4" />, adminOnly: true, desc: 'Nicho do negócio e termos do funil' },
     ],
   },
   {
     label: 'Plataforma',
     items: [
-      { section: 'billing',  label: 'Plano & Faturamento', icon: <CreditCard className="w-4 h-4" />, adminOnly: true },
-      { section: 'security', label: 'Segurança',           icon: <ShieldCheck className="w-4 h-4" />, adminOnly: true },
-      { section: 'audit',    label: 'Auditoria',           icon: <ScrollText className="w-4 h-4" />, adminOnly: true },
+      { section: 'billing',  label: 'Plano & Faturamento', icon: <CreditCard className="w-4 h-4" />, adminOnly: true, desc: 'Assinatura, uso e cobrança' },
+      { section: 'security', label: 'Segurança',           icon: <ShieldCheck className="w-4 h-4" />, adminOnly: true, desc: 'Sessões ativas e logs de acesso' },
+      { section: 'audit',    label: 'Auditoria',           icon: <ScrollText className="w-4 h-4" />, adminOnly: true, desc: 'Histórico de ações no workspace' },
     ],
   },
 ]
 
-export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayoutProps) {
-  // super_admin (Oryon staff) and business_admin (tenant owner) both should
-  // see every admin-gated section. Missing super_admin here was the reason
-  // WhatsApp + Plataforma vanished after `/auth/me` resolved.
+/** Filtra grupos/itens por papel + feature flags — usado pela sidebar e pelo hub. */
+export function visibleNavGroups(currentRole: string) {
   const isAdmin = currentRole === 'admin'
     || currentRole === 'business_admin'
     || currentRole === 'super_admin'
+  return NAV_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const adminOnly = 'adminOnly' in item && item.adminOnly
+        const supervisorOnly = 'supervisorOnly' in item && item.supervisorOnly
+        if (adminOnly && !isAdmin) return false
+        if (supervisorOnly && currentRole === 'agent') return false
+        return isRouteVisible(`/settings/${item.section}`)
+      }),
+    }))
+    .filter((group) => group.items.length > 0)
+}
+
+export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayoutProps) {
   const isMobile = useIsMobile()
   const [search, setSearch] = useState('')
   const query = normalize(search.trim())
@@ -113,18 +126,8 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
     if (normalize(item.label).includes(query)) return true
     return (SEARCH_KEYWORDS[item.section] ?? []).some((kw) => normalize(kw).includes(query))
   }
-  const visibleGroups = NAV_GROUPS
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => {
-        const adminOnly = 'adminOnly' in item && item.adminOnly
-        const supervisorOnly = 'supervisorOnly' in item && item.supervisorOnly
-        if (adminOnly && !isAdmin) return false
-        if (supervisorOnly && currentRole === 'agent') return false
-        if (!isRouteVisible(`/settings/${item.section}`)) return false
-        return matches(item)
-      }),
-    }))
+  const visibleGroups = visibleNavGroups(currentRole)
+    .map((group) => ({ ...group, items: group.items.filter(matches) }))
     .filter((group) => group.items.length > 0)
 
   return (

@@ -222,7 +222,7 @@ function KanbanColumn({
 
   return (
     <div
-      className="flex flex-col w-[85vw] md:w-72 flex-shrink-0 snap-start bg-surface-900 rounded-2xl border border-surface-700/50 p-2"
+      className="flex flex-col w-[85vw] md:w-72 flex-shrink-0 snap-start bg-surface-900/60 rounded-2xl border border-surface-800/60 p-2"
       onDragOver={(e) => { e.preventDefault(); onSetOverKey(stage.key) }}
       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onSetOverKey(null) }}
       onDrop={() => onDrop(stage.key)}
