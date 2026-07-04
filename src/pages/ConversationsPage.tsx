@@ -270,6 +270,17 @@ export function ConversationsPage() {
       return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable
     }
 
+    // Mantém o item selecionado visível enquanto o usuário navega por J/K —
+    // sem isso o cursor "desce" mas a lista não acompanha e o operador se
+    // perde. block:'nearest' rola o mínimo necessário (sem salto de âncora).
+    const scrollToConv = (id: string) => {
+      requestAnimationFrame(() => {
+        document
+          .querySelector(`[data-conv-id="${CSS.escape(id)}"]`)
+          ?.scrollIntoView({ block: 'nearest' })
+      })
+    }
+
     const handler = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return
       const key = e.key.toLowerCase()
@@ -284,7 +295,10 @@ export function ConversationsPage() {
         const next = key === 'j'
           ? list[Math.min(list.length - 1, idx + 1)]
           : list[Math.max(0, idx <= 0 ? 0 : idx - 1)]
-        if (next && next.id !== active?.id) handleSelectConversation(next)
+        if (next && next.id !== active?.id) {
+          handleSelectConversation(next)
+          scrollToConv(next.id)
+        }
         return
       }
 
@@ -295,7 +309,10 @@ export function ConversationsPage() {
         if (active.status !== 'resolved') void handleStatusChange(active.id, 'resolved')
         // Pula para a próxima da fila — o operador segue triando sem o mouse.
         const next = list[idx + 1] ?? list[idx - 1]
-        if (next && next.id !== active.id) handleSelectConversation(next)
+        if (next && next.id !== active.id) {
+          handleSelectConversation(next)
+          scrollToConv(next.id)
+        }
         return
       }
 

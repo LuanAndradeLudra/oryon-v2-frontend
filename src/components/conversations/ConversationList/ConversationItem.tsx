@@ -99,6 +99,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
     <button
       onClick={() => onSelect(conversation)}
       onContextMenu={onContextMenu}
+      data-conv-id={conversation.id}
       className={cn(
         'conv-item w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-all duration-100 rounded-xl border border-surface-800/60 mb-2',
         isActive
