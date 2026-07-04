@@ -100,7 +100,7 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
       {isMobile && <MobilePageHeader title="Configurações" />}
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
       {/* Settings sidebar — empilhada acima em mobile, lateral em desktop */}
-      <aside className="w-full md:w-60 flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-800 py-3 md:py-4 px-2 overflow-y-auto max-h-52 md:max-h-none">
+      <aside className="w-full md:w-56 lg:w-60 flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-800 py-3 md:py-4 px-2 overflow-y-auto max-h-52 md:max-h-none">
         {visibleGroups.map((group) => (
           <div key={group.label} className="mb-4">
             <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-surface-600">

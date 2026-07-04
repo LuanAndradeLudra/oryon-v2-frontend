@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ChevronDown, ChevronUp, RefreshCw, Sparkles } from 'lucide-react'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { VERTICAL_TEMPLATES } from '@/lib/verticalTemplates'
+import { SectionHeader } from '../SectionHeader'
 import type { TenantVocabulary } from '@/types'
 
 // ─── Vocabulary keys and labels ───────────────────────────────────────────────
@@ -183,13 +184,10 @@ export function VerticalSettings() {
 
   return (
     <div className="max-w-[62rem]">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-surface-50">Vertical & Vocabulário</h2>
-        <p className="text-sm text-surface-400 mt-0.5">
-          Adapte a terminologia da plataforma ao seu setor. A IA, o CRM e as automações usarão esses termos automaticamente.
-        </p>
-      </div>
+      <SectionHeader
+        title="Vertical & Vocabulário"
+        description="Adapte a terminologia da plataforma ao seu setor. A IA, o CRM e as automações usarão esses termos automaticamente."
+      />
 
       {/* Template selector */}
       <section className="mb-8">

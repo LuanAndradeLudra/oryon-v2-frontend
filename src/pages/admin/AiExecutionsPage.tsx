@@ -7,13 +7,16 @@
 // while this one zooms into the AI agent runtime itself.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, AlertCircle, Bot, Search, RotateCcw } from 'lucide-react'
+import { Loader2, Search, RotateCcw } from 'lucide-react'
 import {
   fetchChatExecutions,
   type ChatExecutionRow,
 } from '@/services/adminAiObservabilityApi'
 import { ChatExecutionDrillModal } from '@/components/admin/ChatExecutionDrillModal'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SkeletonTable } from '@/components/ui/Skeleton'
 
 const PAGE_SIZE = 50
 
@@ -107,19 +110,10 @@ export function AiExecutionsPage() {
   return (
     <div className="flex flex-col h-full bg-surface-950">
       <div className="border-r border-surface-700">
-      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-700">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-brand-700/30 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-brand-300" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-surface-100">Execuções de Agentes</h1>
-            <p className="text-xs text-surface-400">
-              Cada linha é uma chamada <code className="font-mono text-surface-300">POST /chat</code> — clique para ver input, output, tools e RAG.
-            </p>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="Execuções de Agentes"
+        subtitle="Cada linha é uma chamada POST /chat — clique para ver input, output, tools e RAG."
+      />
 
       <div className="px-6 py-3 border-b border-r border-surface-700 bg-surface-900/40 flex flex-wrap items-end gap-3">
         <Field label="tenantId" value={tenantId} onChange={setTenantId} placeholder="opcional — UUID" wide />
@@ -158,17 +152,15 @@ export function AiExecutionsPage() {
 
         <section className="px-6 py-4">
           {error && (
-            <div className="mb-3 flex items-center gap-2 px-4 py-3 rounded-lg border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
-              <AlertCircle className="w-4 h-4" />
-              {error}
-            </div>
+            <ErrorState
+              compact
+              hint={error}
+              onRetry={() => void load()}
+              className="mb-3"
+            />
           )}
 
-          {loading && rows.length === 0 && (
-            <div className="flex items-center justify-center py-12 text-surface-400">
-              <Loader2 className="w-4 h-4 animate-spin mr-2" /> carregando…
-            </div>
-          )}
+          {loading && rows.length === 0 && <SkeletonTable rows={8} cols={6} />}
 
           {!loading && rows.length === 0 && !error && (
             <EmptyState
@@ -180,6 +172,7 @@ export function AiExecutionsPage() {
 
           {rows.length > 0 && (
             <div className="rounded-xl border border-surface-700 bg-surface-900 overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-surface-900 text-surface-500 text-left border-b border-surface-700">
                   <tr>
@@ -239,6 +232,7 @@ export function AiExecutionsPage() {
                   })}
                 </tbody>
               </table>
+              </div>
 
               {nextCursor && (
                 <div className="border-t border-surface-800 px-3 py-2 flex justify-center">

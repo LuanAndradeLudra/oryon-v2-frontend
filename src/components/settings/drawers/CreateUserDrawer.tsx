@@ -5,6 +5,7 @@ import axios from 'axios'
 import { appLogger } from '@/services/appLogger'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, UserModule, UserPermissions, Department } from '@/types'
 
@@ -124,6 +125,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   })
 
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   // ESC to close
   useEffect(() => {
@@ -148,6 +150,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
       setEmailChecking(false)
       setS2({ role: 'agent', modules: ['dashboard', 'conversations'], permissions: EMPTY_PERMISSIONS })
       setSubmitting(false)
+      setSubmitError(null)
     }
   }, [open])
 
@@ -229,6 +232,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   const handleSubmit = async () => {
     const selectedDepts = departments.filter((d) => s1.departmentIds.includes(d.id))
     setSubmitting(true)
+    setSubmitError(null)
     try {
       // Send only fields the NestJS InviteUserDto accepts
       const r = await axios.post<User>(`${API}/users`, {
@@ -263,7 +267,10 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
         setStep(1)
         return
       }
-      throw err
+      const msg = axios.isAxiosError(err)
+        ? (Array.isArray(err.response?.data?.message) ? err.response?.data?.message?.[0] : err.response?.data?.message)
+        : null
+      setSubmitError(typeof msg === 'string' ? msg : 'Erro ao criar usuário. Tente novamente.')
     } finally {
       setSubmitting(false)
     }
@@ -631,36 +638,37 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-surface-800 flex-shrink-0">
-              <button
+            <div className="border-t border-surface-800 flex-shrink-0">
+              {submitError && step === 3 && (
+                <p role="alert" className="px-6 pt-3 text-xs text-danger">{submitError}</p>
+              )}
+              <div className="flex items-center justify-between px-6 py-4">
+              <Button
+                variant="ghost"
                 onClick={step === 1 ? onClose : () => setStep((s) => s - 1)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-surface-300 hover:text-surface-100 transition-colors"
+                leftIcon={step > 1 ? <ArrowLeft className="w-3.5 h-3.5" /> : undefined}
               >
-                {step > 1 && <ArrowLeft className="w-3.5 h-3.5" />}
                 {step === 1 ? 'Cancelar' : 'Voltar'}
-              </button>
+              </Button>
 
               {step < 3 ? (
-                <button
+                <Button
                   onClick={handleNext}
                   disabled={step === 1 && step1Invalid}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold rounded-xl transition-colors"
+                  rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
                 >
                   Próximo
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={handleSubmit}
-                  disabled={submitting}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
+                  loading={submitting}
+                  leftIcon={<Check className="w-3.5 h-3.5" />}
                 >
-                  {submitting
-                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Criando...</>
-                    : <><Check className="w-3.5 h-3.5" /> Criar Usuário</>
-                  }
-                </button>
+                  {submitting ? 'Criando...' : 'Criar Usuário'}
+                </Button>
               )}
+              </div>
             </div>
           </motion.div>
         </>

@@ -11,6 +11,10 @@ import { CampaignReport } from './CampaignReport'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SkeletonList } from '@/components/ui/Skeleton'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
 import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
@@ -115,61 +119,42 @@ export function CampaignsTab() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
-        <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-xl p-1">
-          {FILTER_OPTIONS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setStatusFilter(f.value)}
-              className={cn(
-                'px-3 py-1 rounded-lg text-xs font-medium transition-all',
-                statusFilter === f.value
-                  ? 'bg-surface-700 text-surface-100'
-                  : 'text-surface-500 hover:text-surface-300'
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          options={FILTER_OPTIONS}
+          value={statusFilter}
+          onChange={setStatusFilter}
+          label="Filtrar campanhas por status"
+        />
 
         <LineFilterChip value={lineFilter} onChange={setLineFilter} />
 
         <div className="flex-1" />
 
-        <button
+        <Button
           onClick={() => hasWhatsappLine && setWizardOpen(true)}
           disabled={!hasWhatsappLine}
           title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar campanhas' : undefined}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-medium rounded-xl transition-all disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-brand-600"
+          leftIcon={<Plus className="w-4 h-4" />}
         >
-          <Plus className="w-4 h-4" />
           Nova campanha
-        </button>
+        </Button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-5">
         {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
-          </div>
+          <SkeletonList items={4} />
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 gap-3">
-            <Send className="w-8 h-8 text-surface-700" />
-            <p className="text-sm text-surface-500">Nenhuma campanha de disparo encontrada</p>
-            <p className="text-xs text-surface-600 text-center max-w-sm leading-relaxed">
-              Os modelos ativos no Gerenciador do WhatsApp ficam na aba <strong className="text-surface-400">Templates</strong>.
-              Aqui você cria disparos em massa que usam esses templates.
-            </p>
-            {campaigns.length === 0 && hasWhatsappLine && (
-              <button
-                onClick={() => setWizardOpen(true)}
-                className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
-              >
-                Criar primeira campanha
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={Send}
+            title="Nenhuma campanha de disparo encontrada"
+            hint="Os modelos ativos no Gerenciador do WhatsApp ficam na aba Templates. Aqui você cria disparos em massa que usam esses templates."
+            action={
+              campaigns.length === 0 && hasWhatsappLine
+                ? { label: 'Criar primeira campanha', onClick: () => setWizardOpen(true) }
+                : undefined
+            }
+          />
         ) : (
           <div className="space-y-3">
             {filtered.map((camp) => (
@@ -357,28 +342,24 @@ function CampaignCard({
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
           {isSent && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onReport}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-all"
+              leftIcon={<BarChart3 className="w-3.5 h-3.5" />}
             >
-              <BarChart3 className="w-3.5 h-3.5" />
               Relatório
-            </button>
+            </Button>
           )}
-          {canSend && !sending && (
-            <button
+          {canSend && (
+            <Button
+              size="sm"
               onClick={onSend}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
+              loading={sending}
+              leftIcon={<Send className="w-3.5 h-3.5" />}
             >
-              <Send className="w-3.5 h-3.5" />
-              {campaign.status === 'scheduled' ? 'Enviar agora' : 'Enviar'}
-            </button>
-          )}
-          {sending && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-brand-400">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Enviando...
-            </div>
+              {sending ? 'Enviando...' : campaign.status === 'scheduled' ? 'Enviar agora' : 'Enviar'}
+            </Button>
           )}
           {canSend && (
             <button

@@ -5,6 +5,10 @@ import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { ToastContainer } from '@/components/ui/Toast'
 import { Banner } from '@/components/ui/Banner'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonList } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import { ColorPicker } from '@/components/ui/ColorPicker'
@@ -230,18 +234,20 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
 
         {/* Actions */}
         <div className="flex justify-end gap-2 pt-1 flex-wrap">
-          <button type="button" onClick={onCancel} className="px-3 py-1.5 text-sm text-surface-400 hover:text-surface-200 transition-colors">Cancelar</button>
+          <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
           {blockedByNoNumbers ? (
             <Link to="/settings/numbers" className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors">
               <ExternalLink className="w-4 h-4" />Conectar número para salvar
             </Link>
           ) : (
-            <button type="button" onClick={handleSave}
-              disabled={saving || !form.name.trim() || (mustPickNumber && !form.whatsappNumberId.trim())}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors">
-              {saving ? <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+            <Button
+              onClick={handleSave}
+              loading={saving}
+              disabled={!form.name.trim() || (mustPickNumber && !form.whatsappNumberId.trim())}
+              leftIcon={<Check className="w-3.5 h-3.5" />}
+            >
               Salvar
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -323,13 +329,16 @@ export function Departments() {
   const [editTarget, setEditTarget] = useState<Department | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Department | null>(null)
   const [saving, setSaving] = useState(false)
+  const [fetchError, setFetchError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    setFetchError(false)
     Promise.all([
       departmentsApi.list().then((r) => setDepartments(r.data)),
-      whatsappNumbersApi.list().then((r) => setWaNumbers(r.data)).catch(() => {}),
-    ]).finally(() => setLoading(false))
-  }, [])
+      whatsappNumbersApi.list().then((r) => setWaNumbers(r.data)),
+    ]).catch(() => setFetchError(true)).finally(() => setLoading(false))
+  }, [reloadKey])
 
   const handleCreate = async (data: DeptFormState) => {
     setSaving(true)
@@ -366,7 +375,27 @@ export function Departments() {
     : DEFAULT_FORM
 
   if (loading) {
-    return <div className="flex items-center justify-center h-48"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
+    return (
+      <div className="max-w-2xl">
+        <SectionHeader
+          title="Setores"
+          description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
+        />
+        <SkeletonList items={4} />
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="max-w-2xl">
+        <SectionHeader
+          title="Setores"
+          description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
+        />
+        <ErrorState compact onRetry={() => { setLoading(true); setReloadKey((k) => k + 1) }} />
+      </div>
+    )
   }
 
   return (
@@ -376,10 +405,9 @@ export function Departments() {
         description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
         action={
           !creating && !editTarget && (
-            <button type="button" onClick={() => setCreating(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors">
-              <Plus className="w-4 h-4" />Novo setor
-            </button>
+            <Button onClick={() => setCreating(true)} leftIcon={<Plus className="w-4 h-4" />}>
+              Novo setor
+            </Button>
           )
         }
       />
@@ -392,14 +420,12 @@ export function Departments() {
       </div>
 
       {departments.length === 0 && !creating && (
-        <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-          <div className="w-12 h-12 rounded-2xl bg-surface-800 flex items-center justify-center mb-3"><Layers className="w-6 h-6 text-surface-500" /></div>
-          <p className="text-sm font-medium text-surface-300 mb-1">Nenhum setor criado</p>
-          <p className="text-xs text-surface-500 max-w-xs">Crie setores por equipe ou função. Vincule um WhatsApp quando o setor puder acessar conversas.</p>
-          <button type="button" onClick={() => setCreating(true)} className="mt-4 flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors">
-            <Plus className="w-4 h-4" />Criar primeiro setor
-          </button>
-        </div>
+        <EmptyState
+          icon={Layers}
+          title="Nenhum setor criado"
+          hint="Crie setores por equipe ou função. Vincule um WhatsApp quando o setor puder acessar conversas."
+          action={{ label: 'Criar primeiro setor', onClick: () => setCreating(true) }}
+        />
       )}
 
       <ConfirmModal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}

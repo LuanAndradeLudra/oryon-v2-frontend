@@ -132,7 +132,7 @@ export function MorePage() {
         {/* Sections */}
         {visibleSections.map((section) => (
           <div key={section.label} className="border-b border-surface-800/60 py-1">
-            <p className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-surface-600">
+            <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-surface-500">
               {section.label}
             </p>
             <div className="flex flex-col">
@@ -145,7 +145,7 @@ export function MorePage() {
 
         {/* Settings rapidas + logout */}
         <div className="border-b border-surface-800/60 py-1">
-          <p className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-surface-600">
+          <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-surface-500">
             Voce
           </p>
           <Link

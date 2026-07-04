@@ -7,6 +7,9 @@ import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -33,17 +36,19 @@ export function MyAccount() {
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false })
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPw, setSavingPw] = useState(false)
+  const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   // Phase 19: notification preferences moved to their own Settings page.
 
   useEffect(() => {
+    setError(false)
     axios.get<User>(`${API}/settings/account`).then((r) => {
       setUser(r.data)
       setForm({ firstName: r.data.firstName ?? '', lastName: r.data.lastName ?? '' })
     }).catch(() => {
-      // Fallback: show empty form instead of infinite loading
-      setUser({ firstName: '', lastName: '', email: '' } as User)
+      setError(true)
     })
-  }, [])
+  }, [reloadKey])
 
   const saveProfile = async () => {
     setSavingProfile(true)
@@ -79,10 +84,23 @@ export function MyAccount() {
     }
   }
 
+  if (error) {
+    return (
+      <div className="max-w-2xl">
+        <SectionHeader title="Minha Conta" description="Gerencie suas informações pessoais e preferências." />
+        <ErrorState compact onRetry={() => { setUser(null); setReloadKey((k) => k + 1) }} />
+      </div>
+    )
+  }
+
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <div className="max-w-2xl">
+        <SectionHeader title="Minha Conta" description="Gerencie suas informações pessoais e preferências." />
+        <div className="flex flex-col gap-6">
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={3} />
+        </div>
       </div>
     )
   }
@@ -161,14 +179,7 @@ export function MyAccount() {
         </FormField>
 
         <div className="flex justify-end mt-4">
-          <button
-            onClick={saveProfile}
-            disabled={savingProfile}
-            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
-          >
-            {savingProfile && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-            Salvar
-          </button>
+          <Button onClick={saveProfile} loading={savingProfile}>Salvar</Button>
         </div>
       </div>
 
@@ -204,14 +215,13 @@ export function MyAccount() {
         </div>
 
         <div className="flex justify-end mt-4">
-          <button
+          <Button
             onClick={savePassword}
-            disabled={savingPw || !pwForm.current || !pwForm.next || !pwForm.confirm}
-            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
+            loading={savingPw}
+            disabled={!pwForm.current || !pwForm.next || !pwForm.confirm}
           >
-            {savingPw && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
             Alterar senha
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -722,6 +722,29 @@ svg[data-oryon-icon] {
   opacity: 1;
 }
 
+/* Light: cards ganham sombra sutil em repouso (profundidade/sofisticação) e
+ * o glow de hover é contido — 0.35 de teal sobre branco ofusca. */
+[data-theme="light"] .card-glow {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .card-glow::before {
+  background: radial-gradient(ellipse at top left, rgba(20, 184, 166, 0.08) 0%, transparent 65%);
+}
+[data-theme="light"] .card-glow:hover {
+  border-color: rgba(15, 118, 110, 0.35) !important;
+  box-shadow: 0 6px 20px rgba(15, 118, 110, 0.16);
+}
+
+/* ── Acessibilidade: usuário pediu menos movimento — respeitar sempre ───────*/
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── WhatsApp line required banner — light theme contrast fix ───────────────*/
 [data-theme="light"] .waba-banner { color: #78350f; }
 [data-theme="light"] .waba-banner .text-amber-100 { color: #78350f; }

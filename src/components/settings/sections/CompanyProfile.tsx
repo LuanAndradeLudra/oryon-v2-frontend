@@ -7,6 +7,9 @@ import { SectionHeader } from '../SectionHeader'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
@@ -40,8 +43,11 @@ export function CompanyProfile() {
     language: '',
   })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    setError(false)
     axios.get(`${API}/settings/company`).then((r) => {
       const d = r.data as Record<string, unknown>
       const mapped = { ...d, name: d.businessName ?? d.name ?? '', email: d.businessEmail ?? d.email ?? '', timezone: d.timezone ?? 'America/Sao_Paulo', language: d.language ?? 'pt-BR' } as Tenant
@@ -53,9 +59,9 @@ export function CompanyProfile() {
         language: String(mapped.language ?? ''),
       })
     }).catch(() => {
-      setTenant({ name: '', email: '', timezone: 'America/Sao_Paulo', language: 'pt-BR' } as Tenant)
+      setError(true)
     })
-  }, [])
+  }, [reloadKey])
 
   const save = async () => {
     setLoading(true)
@@ -81,10 +87,29 @@ export function CompanyProfile() {
     enterprise: 'bg-status-pending-bg text-status-pending',
   }
 
+  if (error) {
+    return (
+      <div className="max-w-2xl">
+        <SectionHeader
+          title="Perfil da Empresa"
+          description="Informações da sua organização na plataforma Oryon."
+        />
+        <ErrorState compact onRetry={() => { setTenant(null); setReloadKey((k) => k + 1) }} />
+      </div>
+    )
+  }
+
   if (!tenant) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <div className="max-w-2xl">
+        <SectionHeader
+          title="Perfil da Empresa"
+          description="Informações da sua organização na plataforma Oryon."
+        />
+        <div className="flex flex-col gap-6">
+          <SkeletonCard lines={3} />
+          <SkeletonCard lines={3} />
+        </div>
       </div>
     )
   }
@@ -210,14 +235,7 @@ export function CompanyProfile() {
       </div>
 
       <div className="flex justify-end">
-        <button
-          onClick={save}
-          disabled={loading}
-          className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
-        >
-          {loading && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-          Salvar alterações
-        </button>
+        <Button onClick={save} loading={loading}>Salvar alterações</Button>
       </div>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>

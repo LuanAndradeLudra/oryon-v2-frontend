@@ -7,6 +7,9 @@ import {
 } from 'lucide-react'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
+import { EmptyState as UiEmptyState } from '@/components/ui/EmptyState'
+import { SkeletonList } from '@/components/ui/Skeleton'
+import { Button } from '@/components/ui/Button'
 
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -206,7 +209,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
   isAdmin: boolean
   onCreateChannel: () => void
 }) {
-  const { channels, activeChannelId, setActiveChannel, markAsRead, presence } = useInternalChat()
+  const { channels, activeChannelId, setActiveChannel, markAsRead, presence, loadingChannels } = useInternalChat()
   const [tab, setTab] = useState<SidebarTab>('todos')
   const [search, setSearch] = useState('')
 
@@ -247,6 +250,10 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
     { id: 'setores', label: 'Setores' },
     { id: 'pessoas', label: 'Pessoas' },
   ]
+
+  // Skeleton só no primeiro load (lista vazia) — refreshes em background
+  // mantêm a lista atual na tela.
+  const showSkeleton = loadingChannels && channels.length === 0
 
   return (
     <div className="flex flex-col h-full w-full sm:w-[380px] bg-surface-950 border-r border-surface-800 flex-shrink-0">
@@ -292,11 +299,19 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
 
       {/* Scrollable list */}
       <div className="flex-1 overflow-y-auto">
+        {/* ── LOADING ── */}
+        {showSkeleton && <SkeletonList items={8} className="pt-2" />}
+
         {/* ── TODOS ── */}
-        {tab === 'todos' && (
+        {!showSkeleton && tab === 'todos' && (
           <>
             {allSorted.length === 0 && (
-              <p className="text-xs text-surface-500 text-center py-8">Nenhum canal encontrado.</p>
+              <UiEmptyState
+                icon={Hash}
+                title="Nenhum canal encontrado"
+                hint={q ? 'Tente outro termo de busca.' : 'Inicie uma conversa ou aguarde um convite.'}
+                className="m-3 py-10"
+              />
             )}
             {allSorted.map((ch) => (
               <ChannelRow key={ch.id} channel={ch} currentUserId={currentUserId}
@@ -306,7 +321,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
         )}
 
         {/* ── SETORES ── */}
-        {tab === 'setores' && (
+        {!showSkeleton && tab === 'setores' && (
           <div className="py-3 space-y-4">
             {groupChannels.length > 0 && (
               <div>
@@ -333,16 +348,18 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
               </div>
             )}
             {deptChannels.length === 0 && groupChannels.length === 0 && (
-              <div className="py-10 text-center px-4">
-                <Building2 className="w-8 h-8 text-surface-600 mx-auto mb-2" />
-                <p className="text-xs text-surface-500">Nenhum setor configurado.</p>
-              </div>
+              <UiEmptyState
+                icon={Building2}
+                title="Nenhum setor configurado"
+                hint="Setores e grupos gerais criados pela equipe aparecem aqui."
+                className="mx-3 py-10"
+              />
             )}
           </div>
         )}
 
         {/* ── PESSOAS ── */}
-        {tab === 'pessoas' && (
+        {!showSkeleton && tab === 'pessoas' && (
           <div className="py-2">
             {dmsByPresence.active.length > 0 && (
               <div>
@@ -367,13 +384,13 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
               </div>
             )}
             {dmChannels.length === 0 && (
-              <div className="py-10 text-center px-4">
-                <MessageSquareDot className="w-8 h-8 text-surface-600 mx-auto mb-2" />
-                <p className="text-xs text-surface-500">Nenhuma conversa direta.</p>
-                <button onClick={onNewChat} className="mt-2 text-xs text-blue-500 hover:underline">
-                  Iniciar conversa
-                </button>
-              </div>
+              <UiEmptyState
+                icon={MessageSquareDot}
+                title="Nenhuma conversa direta"
+                hint="Inicie uma conversa para falar em particular com alguém da equipe."
+                action={{ label: 'Iniciar conversa', onClick: onNewChat }}
+                className="mx-3 my-2 py-10"
+              />
             )}
           </div>
         )}
@@ -675,13 +692,9 @@ function EmptyState({ onNewChat }: { onNewChat: () => void }) {
           Selecione um canal ou conversa direta na barra lateral para começar a se comunicar com sua equipe.
         </p>
       </div>
-      <button
-        onClick={onNewChat}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors"
-      >
-        <Plus className="w-4 h-4" />
+      <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={onNewChat}>
         Nova mensagem
-      </button>
+      </Button>
       {deptCount > 0 && (
         <p className="text-xs text-surface-600">
           {deptCount} setor{deptCount > 1 ? 'es' : ''} disponível{deptCount > 1 ? 'is' : ''} • use a aba{' '}
@@ -739,21 +752,23 @@ function TeamChatPageDesktop() {
   useRegisterTopBarActions(
     <div className="flex items-center gap-2">
       {isAdmin && (
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<Hash className="w-3.5 h-3.5" />}
           onClick={() => setShowCreateChannel(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 text-xs font-semibold transition-all"
         >
-          <Hash className="w-3.5 h-3.5" />
           Canal
-        </button>
+        </Button>
       )}
-      <button
+      <Button
+        variant="primary"
+        size="sm"
+        leftIcon={<Plus className="w-3.5 h-3.5" />}
         onClick={() => setShowNewChat(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all"
       >
-        <Plus className="w-3.5 h-3.5" />
         Nova
-      </button>
+      </Button>
     </div>,
     [isAdmin, showCreateChannel, showNewChat],
   )

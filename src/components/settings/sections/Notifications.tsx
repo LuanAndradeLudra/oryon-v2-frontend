@@ -2,6 +2,7 @@ import { Bell, Volume2, Lock, RotateCcw } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { Switch } from '@/components/ui/Switch'
 import { Banner } from '@/components/ui/Banner'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import {
   useNotificationPreferences,
   type ResolvedPreference,
@@ -39,8 +40,10 @@ export function Notifications() {
     return (
       <div className="space-y-6">
         <SectionHeader title="Notificações" description="Controle quais notificações você recebe e como." />
-        <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 text-sm text-surface-400">
-          Carregando preferências…
+        <div className="flex flex-col gap-6">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={4} />
         </div>
       </div>
     )

@@ -29,6 +29,7 @@ import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useChartColors } from '@/hooks/useChartColors'
 import { ErrorState } from '@/components/ui/ErrorState'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { useNavigate } from 'react-router-dom'
 
 const META_BLUE = '#1877f2'
@@ -954,8 +955,13 @@ function CapiEventsSection() {
           <ErrorState compact title="Erro ao carregar eventos CAPI" onRetry={() => setReloadKey((k) => k + 1)} />
         </div>
       ) : events.length === 0 ? (
-        <div className="px-5 py-8 text-center text-xs text-surface-500">
-          Nenhum evento enviado. Confirme uma conversão nas conversas para gerar o primeiro evento.
+        <div className="p-4">
+          <EmptyState
+            icon={Send}
+            title="Nenhum evento enviado"
+            hint="Confirme uma conversão nas conversas para gerar o primeiro evento."
+            className="py-8"
+          />
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -1050,6 +1056,7 @@ function MarketingPageDesktop() {
   const [perfData, setPerfData]   = useState<PerfPoint[]>([])
   const [account, setAccount]     = useState<AdAccount | null>(null)
   const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [chartMetric, setChartMetric] = useState<ChartMetric>('leads')
   const [leadsDrawer, setLeadsDrawer] = useState<{ campaignId: string; campaignName: string } | null>(null)
@@ -1057,7 +1064,7 @@ function MarketingPageDesktop() {
   const currentUser = user ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl } : undefined
 
   const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true)
+    if (!silent) { setLoading(true); setError(false) }
     else setRefreshing(true)
     try {
       const [funnelRes, perfRes, accountsRes] = await Promise.all([
@@ -1069,7 +1076,7 @@ function MarketingPageDesktop() {
       setTotals(funnelRes.data.totals)
       setPerfData(perfRes.data.map(p => ({ ...p, google_spend: (p as unknown as PerfPoint).google_spend ?? 0, google_leads: (p as unknown as PerfPoint).google_leads ?? 0 })))
       setAccount(accountsRes.data.find((a) => a.platform === 'meta') ?? null)
-    } catch { /* ignore */ }
+    } catch { if (!silent) setError(true) }
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
@@ -1117,6 +1124,11 @@ function MarketingPageDesktop() {
               </div>
               <div className="h-40 bg-surface-900 border border-surface-800 rounded-xl" />
             </div>
+          ) : error ? (
+            <ErrorState
+              title="Erro ao carregar dados de marketing"
+              onRetry={() => void load()}
+            />
           ) : (
             <div className="space-y-4">
               {/* Account bar */}

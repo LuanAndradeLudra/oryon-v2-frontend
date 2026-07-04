@@ -658,7 +658,7 @@ function InteractiveArtifactRenderer({ content }: { content: string }) {
       // our origin even though it loads scripts from CDNs.
       sandbox="allow-scripts"
       srcDoc={html}
-      className="w-full h-full border-0 bg-slate-900"
+      className="w-full h-full border-0 bg-surface-950"
       style={{ minHeight: 0 }}
     />
   )

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Bot, Plus, ChevronRight, RefreshCw, Sparkles,
+  Bot, Plus, ChevronRight, Sparkles,
   ExternalLink, Copy, ToggleRight, Pause, FileText,
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
@@ -20,6 +20,7 @@ import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommended
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { SkeletonList, SkeletonCard } from '@/components/ui/Skeleton'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -122,27 +123,42 @@ function AgentCard({
 
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
+  const statusCfg = STATUS_CONFIG[agent.status]
+
   return (
     <button
       onClick={onClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'w-full text-left px-3 py-3 rounded-xl border transition-colors duration-150 group',
+        'relative w-full text-left pl-4 pr-3 py-3 rounded-xl border transition-colors duration-150 group cursor-pointer',
         selected
-          ? 'bg-brand-600/10 border-brand-500/30 shadow-sm shadow-brand-900/30'
+          ? 'bg-brand-600/10 border-brand-500/30'
           : 'bg-surface-900/50 border-surface-800/60 hover:bg-surface-800/60 hover:border-surface-700',
       )}
     >
-      <div className="flex items-start gap-3">
+      {/* Accent bar de seleção — sinal periférico que não depende de cor de fundo */}
+      <span
+        aria-hidden
+        className={cn(
+          'absolute left-0 top-3 bottom-3 w-[3px] rounded-full transition-colors',
+          selected ? 'bg-brand-500' : 'bg-transparent',
+        )}
+      />
+      <div className="flex items-center gap-3">
         <AgentIcon iconId={agent.icon} className="w-9 h-9" />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-semibold text-surface-100 truncate">{agent.name}</span>
-            <StatusBadge status={agent.status} />
+          {/* Nome em linha própria — status desceu p/ a meta row, então o
+              nome não trunca mais por competir com o badge */}
+          <span className="block text-sm font-semibold text-surface-100 truncate">{agent.name}</span>
+          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-surface-500">
+            <span
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: statusCfg.chip }}
+            />
+            <span>{statusCfg.label}</span>
+            <span className="text-surface-700">·</span>
+            <span className="truncate">{relativeTime(agent.updated_at)}</span>
           </div>
-          <p className="text-xs text-surface-500 truncate">
-            Atualizado {relativeTime(agent.updated_at)}
-          </p>
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           {stale && (
@@ -152,7 +168,7 @@ function AgentCard({
             />
           )}
           <ChevronRight className={cn(
-            'w-4 h-4 transition-colors',
+            'w-4 h-4 transition-all',
             selected ? 'text-brand-400 translate-x-0.5' : 'text-surface-700 group-hover:text-surface-500',
           )} />
         </div>
@@ -247,35 +263,47 @@ export function AgentsPage() {
         {/* ── Left: Agent list — hidden when no agents ── */}
         {hasAgents && (
           <div className="w-80 flex-shrink-0 flex flex-col border-r border-surface-800/60">
+            {/* Cabeçalho da coluna — identifica a lista e o total sem depender do TopBar */}
+            <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
+              <h2 className="text-sm font-display font-bold text-surface-100">Agentes</h2>
+              <span className="text-xs font-medium text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full tabular-nums">
+                {counts.all}
+              </span>
+            </div>
+
             {/* Status filter */}
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-surface-800/40 flex-shrink-0">
-              {([['all', 'Todos'], ['active', 'Ativos'], ['draft', 'Rascunho'], ['paused', 'Pausados']] as const).map(([val, label]) => (
-                <button
-                  key={val}
-                  onClick={() => setStatusFilter(val)}
-                  className={cn(
-                    'flex-1 text-center text-xs py-1 rounded-lg transition',
-                    statusFilter === val
-                      ? 'bg-surface-800 text-surface-200 font-medium'
-                      : 'text-surface-600 hover:text-surface-400',
-                  )}
-                >
-                  {label}
-                  {counts[val] > 0 && (
-                    <span className={cn('ml-1', statusFilter === val ? 'text-surface-400' : 'text-surface-700')}>
-                      {counts[val]}
-                    </span>
-                  )}
-                </button>
-              ))}
+            <div className="px-3 pb-2 flex-shrink-0">
+              <div className="flex items-center gap-0.5 bg-surface-900 border border-surface-800 rounded-xl p-1">
+                {([['all', 'Todos'], ['active', 'Ativos'], ['draft', 'Rascunhos'], ['paused', 'Pausados']] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    onClick={() => setStatusFilter(val)}
+                    className={cn(
+                      'flex-1 text-center text-xs py-1.5 rounded-lg transition-colors cursor-pointer',
+                      statusFilter === val
+                        ? 'bg-surface-700 text-surface-100 font-medium shadow-sm'
+                        : 'text-surface-500 hover:text-surface-300',
+                    )}
+                  >
+                    {label}
+                    {counts[val] > 0 && (
+                      <span className={cn('ml-1 tabular-nums', statusFilter === val ? 'text-surface-400' : 'text-surface-600')}>
+                        {counts[val]}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
               {loadingList ? (
-                <div className="flex items-center justify-center py-12">
-                  <RefreshCw className="w-5 h-5 text-surface-700 animate-spin" />
-                </div>
+                <SkeletonList items={5} />
+              ) : filtered.length === 0 ? (
+                <p className="text-center text-xs text-surface-600 py-10">
+                  Nenhum agente {statusFilter !== 'all' ? 'neste status' : ''}
+                </p>
               ) : (
                 filtered.map(agent => (
                   <AgentCard
@@ -295,8 +323,17 @@ export function AgentsPage() {
         {/* ── Right: Detail panel ── */}
         <div className="flex-1 overflow-hidden">
           {loadingDetail ? (
-            <div className="flex items-center justify-center h-full">
-              <RefreshCw className="w-5 h-5 text-surface-700 animate-spin" />
+            <div className="px-6 pt-6 space-y-4">
+              {/* Skeleton espelha o header + tabs do detail — sem "flash" de spinner */}
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-surface-800 animate-pulse" />
+                <div className="space-y-2">
+                  <div className="h-4 w-48 rounded bg-surface-800 animate-pulse" />
+                  <div className="h-3 w-32 rounded bg-surface-800/70 animate-pulse" />
+                </div>
+              </div>
+              <div className="h-9 w-full max-w-lg rounded bg-surface-800/60 animate-pulse" />
+              <SkeletonCard lines={4} />
             </div>
           ) : selectedAgent ? (
             <AgentDetail

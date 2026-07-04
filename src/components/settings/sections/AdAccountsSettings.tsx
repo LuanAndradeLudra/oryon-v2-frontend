@@ -6,6 +6,9 @@ import {
 import { adAccountsApi } from '@/services/api'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Banner } from '@/components/ui/Banner'
+import { SectionHeader } from '../SectionHeader'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import type { AdAccount, AdCampaignMetrics, AdPlatform } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -334,27 +337,28 @@ function PlatformTab({ platform, accounts, onAccountsChange }: {
 export function AdAccountsSettings() {
   const [accounts, setAccounts] = useState<AdAccount[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
+    setFetchError(false)
     try {
       const res = await adAccountsApi.list()
       setAccounts(res.data)
-    } catch { /* ignore */ }
+    } catch { setFetchError(true) }
     finally { setLoading(false) }
   }, [])
 
   useEffect(() => { void load() }, [load])
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-surface-100">Contas de Anúncios</h2>
-        <p className="text-sm text-surface-400 mt-1">
-          Conecte sua conta do Meta Ads para rastrear a origem dos leads via CTWA (Click-to-WhatsApp) no CRM e medir o ROAS real.
-        </p>
-      </div>
+    <div className="max-w-2xl mx-auto">
+      <SectionHeader
+        title="Contas de Anúncios"
+        description="Conecte sua conta do Meta Ads para rastrear a origem dos leads via CTWA (Click-to-WhatsApp) no CRM e medir o ROAS real."
+      />
 
+      <div className="space-y-6">
       <div className="flex items-center gap-2 border-b border-surface-800 pb-3">
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md"
           style={{ backgroundColor: '#1877f21a', color: '#1877f2' }}>
@@ -364,9 +368,9 @@ export function AdAccountsSettings() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
-        </div>
+        <SkeletonCard lines={3} />
+      ) : fetchError ? (
+        <ErrorState compact onRetry={() => { void load() }} />
       ) : (
         <PlatformTab
           platform="meta"
@@ -374,6 +378,7 @@ export function AdAccountsSettings() {
           onAccountsChange={setAccounts}
         />
       )}
+      </div>
     </div>
   )
 }

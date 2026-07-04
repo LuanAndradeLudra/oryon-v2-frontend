@@ -135,7 +135,7 @@ export function LoginPage() {
       )}
 
       {/* ── Right panel — login form ── */}
-      <div className="w-full lg:w-[480px] flex flex-col items-center justify-start lg:justify-center px-8 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(3rem+env(safe-area-inset-bottom))] lg:py-12 bg-surface-950 lg:border-l lg:border-gray-400">
+      <div className="w-full lg:w-[480px] flex flex-col items-center justify-start lg:justify-center px-8 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(3rem+env(safe-area-inset-bottom))] lg:py-12 bg-surface-950 lg:border-l lg:border-surface-800">
 
         {/* Mobile headline — logo + divisor + wordmark horizontalmente centralizados;
             headline + subheadline alinhados a esquerda. */}
@@ -152,11 +152,11 @@ export function LoginPage() {
               className="w-[52px] h-[52px] select-none"
               draggable={false}
             />
-            <span className="w-0.5 h-9 bg-white rounded-full" aria-hidden />
+            <span className="w-0.5 h-9 bg-surface-100 rounded-full" aria-hidden />
             <img
               src="/oryon-wordmark.png"
               alt="Oryon"
-              className="h-[35px] w-auto select-none"
+              className="h-[35px] w-auto select-none oryon-wordmark"
               draggable={false}
             />
           </div>

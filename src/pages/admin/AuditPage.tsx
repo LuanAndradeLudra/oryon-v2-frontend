@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Loader2, Search, AlertCircle, Filter, X, Activity, ShieldCheck, Plug, Workflow,
+  Loader2, Search, Filter, X, Activity, ShieldCheck, Plug, Workflow,
 } from 'lucide-react'
 import {
   listAuditFeed,
@@ -37,6 +37,9 @@ import {
 } from '@/services/adminAuditApi'
 import { AuditDrillModal } from '@/components/admin/AuditDrillModal'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SkeletonTable } from '@/components/ui/Skeleton'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { cn } from '@/lib/utils'
@@ -66,17 +69,10 @@ export function AuditPage() {
         message="Auditoria foi pensada para desktop — colunas largas, filtros laterais e drill modais. No celular você pode dar uma olhada rápida, mas para investigar use seu computador."
       />
       <div className="border-r border-surface-700">
-      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-700">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-brand-700/30 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-brand-300" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-surface-100">Auditoria — feeds cross-tenant</h1>
-            <p className="text-xs text-surface-400">{TABS.find(t => t.id === tab)?.hint}</p>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="Auditoria — feeds cross-tenant"
+        subtitle={TABS.find(t => t.id === tab)?.hint}
+      />
 
       <nav className="px-6 border-b border-surface-700 bg-surface-900/40 flex gap-1">
         {TABS.map(t => {
@@ -186,13 +182,21 @@ function ActivityFeedTab() {
       </FilterBar>
 
       <div className="flex-1 overflow-auto px-6 py-4">
-        {error && <ErrorBanner message={error} />}
+        {error && (
+          <ErrorState
+            compact
+            hint={error}
+            onRetry={() => void load(filters, false)}
+            className="mb-4"
+          />
+        )}
+        {loading && rows.length === 0 && !error && <SkeletonTable rows={8} cols={5} />}
         {!loading && rows.length === 0 && !error && (
           <EmptyState icon={Search} title="Nenhuma atividade encontrada" hint="Ajuste os filtros ou amplie a janela temporal." />
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-xl border border-surface-700 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -311,13 +315,21 @@ function AuthEventsTab() {
       </FilterBar>
 
       <div className="flex-1 overflow-auto px-6 py-4">
-        {error && <ErrorBanner message={error} />}
+        {error && (
+          <ErrorState
+            compact
+            hint={error}
+            onRetry={() => void load(filters, false)}
+            className="mb-4"
+          />
+        )}
+        {loading && rows.length === 0 && !error && <SkeletonTable rows={8} cols={5} />}
         {!loading && rows.length === 0 && !error && (
           <EmptyState icon={Search} title="Nenhum evento de auth" hint="Ajuste os filtros — login/logout/password change vão aparecer aqui." />
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-xl border border-surface-700 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -415,13 +427,21 @@ function IntegrationEventsTab() {
       </FilterBar>
 
       <div className="flex-1 overflow-auto px-6 py-4">
-        {error && <ErrorBanner message={error} />}
+        {error && (
+          <ErrorState
+            compact
+            hint={error}
+            onRetry={() => void load(filters, false)}
+            className="mb-4"
+          />
+        )}
+        {loading && rows.length === 0 && !error && <SkeletonTable rows={8} cols={5} />}
         {!loading && rows.length === 0 && !error && (
           <EmptyState icon={Search} title="Nenhum evento de integração" hint="Erros Meta/WhatsApp aparecem aqui (token expirado, template rejeitado, etc.)." />
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-xl border border-surface-700 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -516,13 +536,21 @@ function AutomationRunsTab() {
       </FilterBar>
 
       <div className="flex-1 overflow-auto px-6 py-4">
-        {error && <ErrorBanner message={error} />}
+        {error && (
+          <ErrorState
+            compact
+            hint={error}
+            onRetry={() => void load(filters, false)}
+            className="mb-4"
+          />
+        )}
+        {loading && rows.length === 0 && !error && <SkeletonTable rows={8} cols={5} />}
         {!loading && rows.length === 0 && !error && (
           <EmptyState icon={Search} title="Nenhuma execução de automation" hint="Cada vez que uma automation roda, gera uma linha aqui." />
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-xl border border-surface-700 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -662,15 +690,6 @@ function FilterSelect({
         ))}
       </select>
     </label>
-  )
-}
-
-function ErrorBanner({ message }: { message: string }) {
-  return (
-    <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-lg border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
-      <AlertCircle className="w-4 h-4" />
-      {message}
-    </div>
   )
 }
 

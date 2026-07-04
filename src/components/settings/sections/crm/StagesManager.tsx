@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
-import { Plus, Pencil, Trash2, GripVertical, Lock } from 'lucide-react'
+import { Plus, Pencil, Trash2, GripVertical, Lock, Layers } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { StageModal } from '@/components/settings/modals/StageModal'
 import { useToast } from '@/hooks/useToast'
@@ -112,18 +114,21 @@ export function StagesManager() {
           </p>
         </div>
         {canManageStages && (
-          <button
-            onClick={() => { setEditStage(null); setModalOpen(true) }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" /> Novo estágio
-          </button>
+          <Button size="sm" onClick={() => { setEditStage(null); setModalOpen(true) }} leftIcon={<Plus className="w-3.5 h-3.5" />}>
+            Novo estágio
+          </Button>
         )}
       </div>
 
       <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
         {stages.length === 0 ? (
-          <p className="text-sm text-surface-500 text-center py-10">Nenhum estágio configurado.</p>
+          <EmptyState
+            icon={Layers}
+            title="Nenhum estágio configurado"
+            hint="Crie estágios para organizar as etapas do seu funil."
+            className="border-0 rounded-none py-10"
+            action={canManageStages ? { label: 'Novo estágio', onClick: () => { setEditStage(null); setModalOpen(true) } } : undefined}
+          />
         ) : (
           <ul className="divide-y divide-surface-800">
             {stages.map((stage, idx) => (

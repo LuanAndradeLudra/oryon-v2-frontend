@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Eye, Pencil, Trash2, Clock, CheckCircle2, XCircle, PauseCircle, AlertCircle, Loader2, RefreshCw, Copy } from 'lucide-react'
+import { Plus, Search, Eye, Pencil, Trash2, Clock, CheckCircle2, XCircle, PauseCircle, AlertCircle, Loader2, RefreshCw, Copy, FileText } from 'lucide-react'
 import { Banner } from '@/components/ui/Banner'
+import { Button } from '@/components/ui/Button'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SkeletonList } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/utils'
 import { templatesApi } from '@/services/api'
 import { TemplateCreator } from './TemplateCreator'
@@ -170,64 +174,49 @@ export function TemplatesTab() {
           />
         </div>
 
-        <div className="flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-xl p-1">
-          {FILTER_OPTIONS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setStatusFilter(f.value)}
-              className={cn(
-                'px-3 py-1 rounded-lg text-xs font-medium transition-all',
-                statusFilter === f.value
-                  ? 'bg-surface-700 text-surface-100'
-                  : 'text-surface-500 hover:text-surface-300'
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          options={FILTER_OPTIONS}
+          value={statusFilter}
+          onChange={setStatusFilter}
+          label="Filtrar templates por status"
+        />
 
         <LineFilterChip value={lineFilter} onChange={setLineFilter} />
 
-        <button
+        <Button
+          variant="secondary"
           onClick={handleSync}
           disabled={syncing}
-          className="flex items-center gap-2 px-3 py-2 bg-surface-800 hover:bg-surface-700 border border-surface-700 text-surface-300 text-sm font-medium rounded-xl transition-all disabled:opacity-50"
           title="Importar da Meta e atualizar status dos templates"
+          leftIcon={<RefreshCw className={cn('w-3.5 h-3.5', syncing && 'animate-spin')} />}
         >
-          <RefreshCw className={cn('w-3.5 h-3.5', syncing && 'animate-spin')} />
           Sincronizar
-        </button>
+        </Button>
 
-        <button
+        <Button
           onClick={() => { if (!hasWhatsappLine) return; setEditing(null); setDrawerOpen(true) }}
           disabled={!hasWhatsappLine}
           title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar templates' : undefined}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-medium rounded-xl transition-all disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-brand-600"
+          leftIcon={<Plus className="w-4 h-4" />}
         >
-          <Plus className="w-4 h-4" />
           Novo template
-        </button>
+        </Button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-5">
         {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
-          </div>
+          <SkeletonList items={4} />
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 gap-2">
-            <p className="text-sm text-surface-500">Nenhum template encontrado</p>
-            {templates.length === 0 && hasWhatsappLine && (
-              <button
-                onClick={() => { setEditing(null); setDrawerOpen(true) }}
-                className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
-              >
-                Criar primeiro template
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Nenhum template encontrado"
+            action={
+              templates.length === 0 && hasWhatsappLine
+                ? { label: 'Criar primeiro template', onClick: () => { setEditing(null); setDrawerOpen(true) } }
+                : undefined
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 gap-3">
             {filtered.map((tpl) => (

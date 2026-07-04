@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Wifi, WifiOff, Clock, Bot, X } from 'lucide-react'
+import { Plus, Trash2, Wifi, WifiOff, Clock, Bot, X, Smartphone } from 'lucide-react'
 import axios from 'axios'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -7,6 +7,10 @@ import { SectionHeader } from '../SectionHeader'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Tooltip } from '@/components/ui/Tooltip'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
@@ -47,17 +51,42 @@ export function WhatsAppNumbers() {
   const [loading, setLoading] = useState(true)
   const [disconnectTarget, setDisconnectTarget] = useState<WhatsAppNumberDetailed | null>(null)
   const [savingAgent, setSavingAgent] = useState<string | null>(null)
+  const [fetchError, setFetchError] = useState(false)
 
   const fetchNumbers = () => {
     setLoading(true)
+    setFetchError(false)
     Promise.all([
-      axios.get<WhatsAppNumberDetailed[]>(`${API}/whatsapp/numbers`).then((r) => Array.isArray(r.data) ? r.data : []).catch(() => []),
+      axios.get<WhatsAppNumberDetailed[]>(`${API}/whatsapp/numbers`).then((r) => Array.isArray(r.data) ? r.data : []),
       listAgents().catch(() => []),
     ]).then(([nums, ags]) => {
       setNumbers(nums)
       setAgents(ags)
       setLoading(false)
+    }).catch(() => {
+      setFetchError(true)
+      setLoading(false)
     })
+  }
+
+  const startConnect = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+      const res = await fetch(`${apiUrl}/meta/oauth/start`, {
+        credentials: 'include',
+      })
+      const data = await res.json() as Record<string, unknown>
+
+      // Backend returns { redirectUrl: "https://facebook.com/dialog/oauth?..." }
+      const oauthUrl = (data.redirectUrl ?? data.url ?? '') as string
+      if (oauthUrl) {
+        window.open(oauthUrl, '_blank', 'width=600,height=700')
+      } else {
+        toast('URL de OAuth não retornada pelo servidor.', 'error')
+      }
+    } catch {
+      toast('Erro ao iniciar conexão com WhatsApp. Verifique as configurações do Meta App.', 'error')
+    }
   }
 
   const assignAgent = async (numberId: string, agentId: string | null) => {
@@ -109,8 +138,27 @@ export function WhatsAppNumbers() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <div className="max-w-3xl">
+        <SectionHeader
+          title="Números WhatsApp"
+          description="Gerencie os números WhatsApp Business conectados à plataforma."
+        />
+        <div className="flex flex-col gap-4">
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={4} />
+        </div>
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="max-w-3xl">
+        <SectionHeader
+          title="Números WhatsApp"
+          description="Gerencie os números WhatsApp Business conectados à plataforma."
+        />
+        <ErrorState compact onRetry={fetchNumbers} />
       </div>
     )
   }
@@ -121,33 +169,20 @@ export function WhatsAppNumbers() {
         title="Números WhatsApp"
         description="Gerencie os números WhatsApp Business conectados à plataforma."
         action={
-          <button
-            onClick={async () => {
-              try {
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-                const res = await fetch(`${apiUrl}/meta/oauth/start`, {
-                  credentials: 'include',
-                })
-                const data = await res.json() as Record<string, unknown>
-
-                // Backend returns { redirectUrl: "https://facebook.com/dialog/oauth?..." }
-                const oauthUrl = (data.redirectUrl ?? data.url ?? '') as string
-                if (oauthUrl) {
-                  window.open(oauthUrl, '_blank', 'width=600,height=700')
-                } else {
-                  alert('URL de OAuth não retornada pelo servidor.')
-                }
-              } catch (err) {
-                alert('Erro ao iniciar conexão com WhatsApp. Verifique as configurações do Meta App.')
-              }
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
-          >
-            <Plus className="w-4 h-4" />
+          <Button onClick={() => { void startConnect() }} leftIcon={<Plus className="w-4 h-4" />}>
             Conectar número
-          </button>
+          </Button>
         }
       />
+
+      {numbers.length === 0 && (
+        <EmptyState
+          icon={Smartphone}
+          title="Nenhum número conectado"
+          hint="Conecte um número WhatsApp Business para começar a atender pela plataforma."
+          action={{ label: 'Conectar número', onClick: () => { void startConnect() } }}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-4">
         {numbers.map((num) => {

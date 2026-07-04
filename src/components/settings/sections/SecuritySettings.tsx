@@ -5,6 +5,8 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonList, SkeletonTable } from '@/components/ui/Skeleton'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
@@ -44,29 +46,40 @@ export function SecuritySettings() {
   const [revokeTarget, setRevokeTarget] = useState<ActiveSession | null>(null)
   const [logsPage, setLogsPage] = useState(1)
   const [logsTotal, setLogsTotal] = useState(0)
+  const [sessionsError, setSessionsError] = useState(false)
+  const [sessionsReloadKey, setSessionsReloadKey] = useState(0)
+  const [logsError, setLogsError] = useState(false)
+  const [logsReloadKey, setLogsReloadKey] = useState(0)
 
   useEffect(() => {
+    setSessionsError(false)
     axios.get<ActiveSession[]>(`${API}/sessions`).then((r) => {
       setSessions(Array.isArray(r.data) ? r.data : [])
       setSessionsLoading(false)
-    }).catch(() => { setSessions([]); setSessionsLoading(false) })
-  }, [])
+    }).catch(() => { setSessionsError(true); setSessionsLoading(false) })
+  }, [sessionsReloadKey])
 
   useEffect(() => {
     setLogsLoading(true)
+    setLogsError(false)
     axios.get<{ data: AuditLog[]; total: number }>(`${API}/audit-logs?page=${logsPage}&limit=10`).then((r) => {
       setLogs(r.data.data ?? [])
       setLogsTotal(r.data.total ?? 0)
       setLogsLoading(false)
-    }).catch(() => { setLogs([]); setLogsTotal(0); setLogsLoading(false) })
-  }, [logsPage])
+    }).catch(() => { setLogsError(true); setLogsLoading(false) })
+  }, [logsPage, logsReloadKey])
 
   const handleRevoke = async () => {
     if (!revokeTarget) return
-    await axios.delete(`${API}/sessions/${revokeTarget.id}`)
-    setSessions((s) => s.filter((x) => x.id !== revokeTarget.id))
-    toast('Sessão encerrada.', 'success')
-    setRevokeTarget(null)
+    try {
+      await axios.delete(`${API}/sessions/${revokeTarget.id}`)
+      setSessions((s) => s.filter((x) => x.id !== revokeTarget.id))
+      toast('Sessão encerrada.', 'success')
+    } catch {
+      toast('Erro ao encerrar sessão.', 'error')
+    } finally {
+      setRevokeTarget(null)
+    }
   }
 
   return (
@@ -84,9 +97,13 @@ export function SecuritySettings() {
         </div>
 
         {sessionsLoading ? (
-          <div className="flex items-center justify-center h-24">
-            <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <SkeletonList items={2} className="p-3" />
+        ) : sessionsError ? (
+          <ErrorState
+            compact
+            className="border-0 rounded-none"
+            onRetry={() => { setSessionsLoading(true); setSessionsReloadKey((k) => k + 1) }}
+          />
         ) : (
           <div className="divide-y divide-surface-800">
             {sessions.map((sess) => (
@@ -139,9 +156,13 @@ export function SecuritySettings() {
         </div>
 
         {logsLoading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <SkeletonTable rows={5} cols={4} className="p-3" />
+        ) : logsError ? (
+          <ErrorState
+            compact
+            className="border-0 rounded-none"
+            onRetry={() => setLogsReloadKey((k) => k + 1)}
+          />
         ) : (
           <>
             <table className="w-full">

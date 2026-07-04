@@ -93,7 +93,7 @@ export function Drawer({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
         >
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
           <motion.aside
             role="dialog"
             aria-modal="true"

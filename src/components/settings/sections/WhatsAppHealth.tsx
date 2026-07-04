@@ -18,6 +18,10 @@ import { Phone, Star, AlertTriangle, Loader2, Check, Bot, ShieldCheck, ShieldOff
 import { whatsappNumbersApi, type WhatsappLinesHealth, type WhatsappLineHealth } from '@/services/api'
 import { cn } from '@/lib/utils'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
+import { SectionHeader } from '../SectionHeader'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 
 function formatPhone(raw?: string | null): string {
   if (!raw) return '—'
@@ -69,30 +73,43 @@ export function WhatsAppHealth() {
     }
   }
 
+  const header = (
+    <SectionHeader
+      title="Saúde das Linhas"
+      description="Estado de cada número WhatsApp: linha primária, recursos vinculados e pendências."
+    />
+  )
+
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="w-5 h-5 animate-spin text-brand-400" />
+      <div>
+        {header}
+        <div className="flex flex-col gap-4">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={4} />
+        </div>
       </div>
     )
   }
 
   if (error && !data) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-sm text-danger">{error}</p>
-        <button onClick={load} className="mt-3 text-xs text-brand-400 hover:text-brand-300">
-          Tentar novamente
-        </button>
+      <div>
+        {header}
+        <ErrorState compact hint={error} onRetry={load} />
       </div>
     )
   }
 
   if (!data || data.lines.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <Phone className="w-8 h-8 text-surface-600 mx-auto mb-3" />
-        <p className="text-sm text-surface-400">Nenhuma linha WhatsApp conectada ainda.</p>
+      <div>
+        {header}
+        <EmptyState
+          icon={Phone}
+          title="Nenhuma linha WhatsApp conectada ainda"
+          hint="Conecte um número em Números WhatsApp para acompanhar a saúde das linhas."
+        />
       </div>
     )
   }
@@ -102,7 +119,9 @@ export function WhatsAppHealth() {
   const orphansTotal = data.orphans.templates + data.orphans.campaigns + data.orphans.automations
 
   return (
-    <div className="flex flex-col gap-4">
+    <div>
+      {header}
+      <div className="flex flex-col gap-4">
       {/* Global summary — admin's "everything OK" / "something off" snapshot */}
       <div className="grid grid-cols-3 gap-3">
         <SummaryCard
@@ -143,6 +162,7 @@ export function WhatsAppHealth() {
             disabled={promoting !== null && promoting !== line.id}
           />
         ))}
+      </div>
       </div>
     </div>
   )

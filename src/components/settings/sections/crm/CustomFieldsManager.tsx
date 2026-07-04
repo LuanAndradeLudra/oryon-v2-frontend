@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, GripVertical, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, GripVertical, Star, ListPlus } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { CustomFieldModal } from '@/components/settings/modals/CustomFieldModal'
 import { useToast } from '@/hooks/useToast'
@@ -75,17 +77,20 @@ export function CustomFieldsManager() {
             Adicione campos extras aos contatos para capturar dados do seu negócio.
           </p>
         </div>
-        <button
-          onClick={() => { setEditField(null); setModalOpen(true) }}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
-        >
-          <Plus className="w-3.5 h-3.5" /> Novo campo
-        </button>
+        <Button size="sm" onClick={() => { setEditField(null); setModalOpen(true) }} leftIcon={<Plus className="w-3.5 h-3.5" />}>
+          Novo campo
+        </Button>
       </div>
 
       <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
         {fieldDefs.length === 0 ? (
-          <p className="text-sm text-surface-500 text-center py-10">Nenhum campo personalizado configurado.</p>
+          <EmptyState
+            icon={ListPlus}
+            title="Nenhum campo personalizado configurado"
+            hint="Adicione campos extras aos contatos para capturar dados do seu negócio."
+            className="border-0 rounded-none py-10"
+            action={{ label: 'Novo campo', onClick: () => { setEditField(null); setModalOpen(true) } }}
+          />
         ) : (
           <ul className="divide-y divide-surface-800">
             {fieldDefs.map((field) => (

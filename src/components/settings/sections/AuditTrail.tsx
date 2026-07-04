@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Search, AlertCircle, Filter, X } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonTable } from '@/components/ui/Skeleton'
 import { ActorChip } from '@/components/ui/ActorChip'
 import { formatActivity } from '@/components/dashboard/activityFormatter'
 import {
@@ -87,11 +89,19 @@ export function AuditTrail() {
 
       <FilterBar filters={filters} onApply={onApply} loading={loading} />
 
-      {error && (
+      {error && rows.length > 0 && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-lg border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
+      )}
+
+      {error && rows.length === 0 && (
+        <ErrorState compact hint={error} onRetry={() => { void load(filters, false) }} />
+      )}
+
+      {loading && rows.length === 0 && !error && (
+        <SkeletonTable rows={6} cols={4} />
       )}
 
       {!loading && rows.length === 0 && !error && (

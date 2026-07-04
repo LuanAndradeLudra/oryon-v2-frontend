@@ -49,14 +49,14 @@ const STATUS_CONFIG: Record<string, { label: string; chip: string }> = {
   paused:  { label: 'Pausado',   chip: 'var(--color-status-muted)'   },
 }
 
-// Métodos HTTP — cor categórica (não status). Mantém os matizes originais
-// passando o hex direto no --chip do color-chip.
+// Métodos HTTP — cor categórica (não status), matizes convencionais do
+// mercado via tokens theme-aware (o claro escurece para manter contraste).
 const METHOD_COLOR: Record<string, string> = {
-  GET:    '#3b82f6', // azul
-  POST:   '#10b981', // verde
-  PUT:    '#f59e0b', // âmbar
-  PATCH:  '#f97316', // laranja
-  DELETE: '#ef4444', // vermelho
+  GET:    'var(--color-accent-blue)',
+  POST:   'var(--color-accent-green)',
+  PUT:    'var(--color-accent-amber)',
+  PATCH:  'var(--color-warning)',
+  DELETE: 'var(--color-danger)',
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -2071,6 +2071,8 @@ export function AgentDetail({
   // outer scroll/flex layout depends on which sub-panel is active.
   const [rulesSubTab, setRulesSubTab] = useState<RulesSubTab>('handoff')
   const [deletingAgent, setDeletingAgent] = useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const [showTest, setShowTest] = useState(false)
   const [togglingStatus, setTogglingStatus] = useState(false)
 
@@ -2122,9 +2124,12 @@ export function AgentDetail({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-surface-800/60 flex-shrink-0">
-        <AgentIcon iconId={agent.icon} className="w-10 h-10" />
+      {/* Header de identidade — ícone maior ancora o agente; ações
+          hierarquizadas: Testar (primária), Ativar/Pausar (estado) e o
+          destrutivo escondido no menu "..." (padrão enterprise: excluir
+          nunca fica a 1 clique na superfície). */}
+      <div className="flex items-center gap-4 px-6 pt-5 pb-4 flex-shrink-0">
+        <AgentIcon iconId={agent.icon} className="w-12 h-12" />
         <div className="flex-1 min-w-0">
           <InlineEdit
             value={agent.name}
@@ -2132,19 +2137,26 @@ export function AgentDetail({
               const updated = await updateAgent(agent.id, { name })
               handleAgentUpdate(updated)
             }}
-            className="text-base font-bold text-surface-100"
+            className="text-lg font-display font-bold text-surface-50"
           />
-          <div className="flex items-center gap-3 mt-0.5">
+          <div className="flex items-center gap-2.5 mt-1">
             <StatusBadge status={agent.status} />
-            <span className="text-xs text-surface-600">
-              {agent.tools.length} ferramenta(s)
+            <span className="text-xs text-surface-600">·</span>
+            <span className="text-xs text-surface-500">
+              Atualizado {new Date(agent.updated_at).toLocaleDateString('pt-BR')}
             </span>
+            {advancedMode && agent.tools.length > 0 && (
+              <>
+                <span className="text-xs text-surface-600">·</span>
+                <span className="text-xs text-surface-500">{agent.tools.length} ferramenta(s)</span>
+              </>
+            )}
           </div>
         </div>
         {/* Testar Agente */}
         <button
           onClick={() => setShowTest(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-medium ring-1 ring-brand-500/30 transition-colors hover:ring-brand-500/50"
+          className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-xl bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-semibold ring-1 ring-brand-500/30 transition-colors hover:ring-brand-500/50 cursor-pointer"
         >
           <Sparkles className="w-3.5 h-3.5" />
           Testar
@@ -2154,9 +2166,9 @@ export function AgentDetail({
           onClick={toggleStatus}
           disabled={togglingStatus}
           className={cn(
-            'inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium ring-1 transition-colors disabled:opacity-50',
+            'inline-flex items-center gap-1.5 px-3.5 h-9 rounded-xl text-xs font-semibold ring-1 transition-colors disabled:opacity-50 cursor-pointer',
             agent.status === 'active'
-              ? 'bg-surface-800 text-surface-400 ring-surface-700 hover:bg-red-500/10 hover:text-red-400 hover:ring-red-500/30'
+              ? 'bg-surface-800 text-surface-400 ring-surface-700 hover:bg-danger/10 hover:text-danger hover:ring-danger/30'
               : 'bg-status-active-bg text-status-active ring-status-active-border hover:bg-status-active-bg/80',
           )}
         >
@@ -2166,22 +2178,65 @@ export function AgentDetail({
               ? <><PauseCircle className="w-3.5 h-3.5" /> Pausar</>
               : <><Power className="w-3.5 h-3.5" /> Ativar</>}
         </button>
-        {/* Excluir */}
-        <button
-          onClick={() => {
-            if (!confirm(`Excluir o agente "${agent.name}"? Esta ação não pode ser desfeita.`)) return
-            setDeletingAgent(true)
-            updateAgent(agent.id, { status: 'draft' })
-              .then(() => onDeleted())
-              .catch(() => setDeletingAgent(false))
-          }}
-          disabled={deletingAgent}
-          className="p-2 rounded-xl border border-surface-800 text-surface-600 hover:border-red-500/30 hover:text-red-400 hover:bg-red-500/5 transition"
-          title="Excluir agente"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        {/* Overflow — ações raras/destrutivas */}
+        <div className="relative">
+          <button
+            onClick={() => setMoreOpen((v) => !v)}
+            aria-label="Mais ações"
+            className={cn(
+              'w-9 h-9 rounded-xl border flex items-center justify-center transition-colors cursor-pointer',
+              moreOpen
+                ? 'border-surface-600 bg-surface-800 text-surface-200'
+                : 'border-surface-800 text-surface-500 hover:border-surface-700 hover:text-surface-300',
+            )}
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+          {moreOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 min-w-[13rem] py-1 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl z-50">
+                <button
+                  onClick={() => {
+                    setMoreOpen(false)
+                    navigator.clipboard.writeText(agent.name).catch(() => {})
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-surface-300 hover:bg-surface-700 transition-colors text-left cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copiar nome
+                </button>
+                <div className="my-1 border-t border-surface-700/60" />
+                <button
+                  onClick={() => { setMoreOpen(false); setConfirmDeleteOpen(true) }}
+                  disabled={deletingAgent}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 transition-colors text-left cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Excluir agente
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
+      <ConfirmModal
+        open={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={() => {
+          setConfirmDeleteOpen(false)
+          setDeletingAgent(true)
+          updateAgent(agent.id, { status: 'draft' })
+            .then(() => onDeleted())
+            .catch(() => setDeletingAgent(false))
+        }}
+        title="Excluir agente"
+        description={`Excluir o agente "${agent.name}"? Ele será movido para rascunho e deixará de responder conversas.`}
+        confirmLabel="Excluir"
+        danger
+        loading={deletingAgent}
+      />
 
       {/* Setup notification — show when agent not yet tested */}
       <AnimatePresence>
@@ -2211,17 +2266,24 @@ export function AgentDetail({
         )}
       </AnimatePresence>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-0.5 px-6 py-2 border-b border-surface-800/60 flex-shrink-0">
+      {/* Tabs — underline (mais leve que pílulas com 9 opções; o indicador
+          de 2px comunica seleção sem competir com o conteúdo) */}
+      <div
+        role="tablist"
+        aria-label="Seções do agente"
+        className="flex items-center gap-1 px-6 border-b border-surface-800/60 flex-shrink-0 overflow-x-auto"
+      >
         {tabs.map(tab => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+              'inline-flex items-center gap-1.5 px-3 py-2.5 -mb-px border-b-2 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
               activeTab === tab.id
-                ? 'bg-surface-800 text-surface-100'
-                : 'text-surface-500 hover:text-surface-300 hover:bg-surface-900',
+                ? 'text-surface-50 border-brand-500'
+                : 'text-surface-500 border-transparent hover:text-surface-300',
             )}
           >
             {tab.icon}

@@ -8,6 +8,7 @@ import { SectionHeader } from '../SectionHeader'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -550,7 +551,8 @@ export function CompanyBrain() {
       </div>
 
       <div className="flex justify-end gap-3">
-        <button
+        <Button
+          variant="secondary"
           onClick={async () => {
             setSyncing(true)
             try {
@@ -562,20 +564,13 @@ export function CompanyBrain() {
               setSyncing(false)
             }
           }}
-          disabled={syncing || !(form.brandFiles?.length)}
-          className="px-4 py-2.5 bg-surface-800 hover:bg-surface-700 disabled:opacity-50 border border-surface-700 text-surface-200 text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
+          disabled={!(form.brandFiles?.length)}
+          loading={syncing}
+          leftIcon={<RefreshCw className="w-4 h-4" />}
         >
-          {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Sincronizar com IA
-        </button>
-        <button
-          onClick={save}
-          disabled={loading}
-          className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
-        >
-          {loading && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-          Salvar contexto
-        </button>
+        </Button>
+        <Button onClick={save} loading={loading}>Salvar contexto</Button>
       </div>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />

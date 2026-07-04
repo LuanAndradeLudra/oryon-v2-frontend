@@ -1,8 +1,12 @@
 import { useCallback, useState, useEffect } from 'react'
-import { Plus, Search, Pencil, Trash2, Copy } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Copy, Zap } from 'lucide-react'
 import axios from 'axios'
 import { SectionHeader } from '../SectionHeader'
 import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonTable } from '@/components/ui/Skeleton'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { QuickReplyModal } from '../modals/QuickReplyModal'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -99,14 +103,20 @@ export function QuickReplies() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<CannedResponse | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CannedResponse | null>(null)
+  const [fetchError, setFetchError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    setFetchError(false)
     axios.get<{ data: CannedResponse[] } | CannedResponse[]>(`${API}/canned-responses`).then((r) => {
       const list = Array.isArray(r.data) ? r.data : r.data.data
       setResponses(list)
       setLoading(false)
+    }).catch(() => {
+      setFetchError(true)
+      setLoading(false)
     })
-  }, [])
+  }, [reloadKey])
 
   const filtered = responses.filter(
     (r) =>
@@ -151,13 +161,9 @@ export function QuickReplies() {
         title="Respostas Rápidas"
         description="Crie atalhos de texto para agilizar o atendimento."
         action={
-          <button
-            onClick={() => { setEditTarget(null); setModalOpen(true) }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
-          >
-            <Plus className="w-4 h-4" />
+          <Button onClick={() => { setEditTarget(null); setModalOpen(true) }} leftIcon={<Plus className="w-4 h-4" />}>
             Nova resposta
-          </button>
+          </Button>
         }
       />
 
@@ -174,13 +180,27 @@ export function QuickReplies() {
 
       <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-x-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <SkeletonTable rows={5} cols={4} className="p-3" />
+        ) : fetchError ? (
+          <ErrorState
+            compact
+            className="border-0 rounded-none"
+            onRetry={() => { setLoading(true); setReloadKey((k) => k + 1) }}
+          />
         ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-sm text-surface-400">
-            {search ? 'Nenhuma resposta encontrada.' : 'Nenhuma resposta rápida criada ainda.'}
-          </div>
+          search ? (
+            <div className="p-10 text-center text-sm text-surface-400">
+              Nenhuma resposta encontrada.
+            </div>
+          ) : (
+            <EmptyState
+              icon={Zap}
+              title="Nenhuma resposta rápida criada ainda"
+              hint="Crie atalhos de texto para responder mais rápido no atendimento."
+              className="border-0 rounded-none"
+              action={{ label: 'Nova resposta', onClick: () => { setEditTarget(null); setModalOpen(true) } }}
+            />
+          )
         ) : (
           <table className="w-full">
             <thead>
