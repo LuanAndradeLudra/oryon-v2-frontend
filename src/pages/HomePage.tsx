@@ -53,8 +53,8 @@ function PersonalHeader({ user }: { user: User }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-surface-50">
-        {greeting}, {user.firstName} <Hand className="w-6 h-6 inline text-surface-400" />
+      <h1 className="text-2xl font-display font-bold text-surface-50">
+        {greeting}, {user.firstName} <Hand className="w-6 h-6 inline text-brand-400" />
       </h1>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
         <span className={cn('color-chip inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border')} style={{ ['--chip']: role.chip } as React.CSSProperties}>
