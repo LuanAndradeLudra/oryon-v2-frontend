@@ -27,10 +27,11 @@ import { cn } from '@/lib/utils'
 import { CampaignLeadsDrawer } from '@/components/campaigns/CampaignLeadsDrawer'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useChartColors } from '@/hooks/useChartColors'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { useNavigate } from 'react-router-dom'
 
 const META_BLUE = '#1877f2'
-const C = { grid: '#1e293b', axis: '#475569' }
 
 type ChartMetric = 'leads' | 'spend'
 
@@ -75,13 +76,17 @@ function FrequencyBar({ frequency }: { frequency: number }) {
 function CreativesPanel({ adSetId }: { adSetId: string }) {
   const [creatives, setCreatives] = useState<AdCreativeMetrics[]>([])
   const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    setLoading(true)
+    setError(false)
     adSetsApi.getCreatives(adSetId)
       .then((r) => setCreatives(r.data))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [adSetId])
+  }, [adSetId, reloadKey])
 
   if (loading) {
     return (
@@ -89,6 +94,14 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
         {[1, 2].map((i) => (
           <div key={i} className="h-40 bg-surface-800/60 rounded-xl animate-pulse" />
         ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <ErrorState compact title="Erro ao carregar criativos" onRetry={() => setReloadKey((k) => k + 1)} />
       </div>
     )
   }
@@ -191,19 +204,31 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
 function AdSetsTable({ campaignId }: { campaignId: string }) {
   const [adSets, setAdSets]     = useState<AdSetMetrics[]>([])
   const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [openSet, setOpenSet]   = useState<string | null>(null)
 
   useEffect(() => {
+    setLoading(true)
+    setError(false)
     adSetsApi.list(campaignId)
       .then((r) => setAdSets(r.data))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [campaignId])
+  }, [campaignId, reloadKey])
 
   if (loading) {
     return (
       <div className="space-y-2 p-4">
         {[1, 2].map((i) => <div key={i} className="h-10 bg-surface-800/60 rounded-lg animate-pulse" />)}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <ErrorState compact title="Erro ao carregar conjuntos de anúncios" onRetry={() => setReloadKey((k) => k + 1)} />
       </div>
     )
   }
@@ -367,6 +392,7 @@ function KpiStrip({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
 // ── Performance Chart ─────────────────────────────────────────────────────────
 
 function PerformanceChart({ data, metric }: { data: PerfPoint[]; metric: ChartMetric }) {
+  const C = useChartColors()
   const dataKey = metric === 'spend' ? 'meta_spend' : 'meta_leads'
 
   if (!data.length) return <div className="h-48 bg-surface-800 rounded-xl animate-pulse" />
@@ -850,21 +876,25 @@ const EVENT_LABEL: Record<MetaCapiEvent['eventName'], string> = {
 }
 
 const STATUS_CFG = {
-  sent:    { label: 'Enviado',  color: '#10b981', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-  failed:  { label: 'Falhou',   color: '#ef4444', icon: <XCircle      className="w-3.5 h-3.5" /> },
-  pending: { label: 'Pendente', color: '#f59e0b', icon: <AlertCircle  className="w-3.5 h-3.5" /> },
+  sent:    { label: 'Enviado',  color: 'var(--color-accent-green)', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  failed:  { label: 'Falhou',   color: 'var(--color-danger)',       icon: <XCircle      className="w-3.5 h-3.5" /> },
+  pending: { label: 'Pendente', color: 'var(--color-accent-amber)', icon: <AlertCircle  className="w-3.5 h-3.5" /> },
 }
 
 function CapiEventsSection() {
   const [events, setEvents] = useState<MetaCapiEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    setLoading(true)
+    setError(false)
     conversionApi.getCapiEvents()
       .then((r) => setEvents(r.data))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [])
+  }, [reloadKey])
 
   const totalRevenue = events.filter((e) => e.status === 'sent' && e.value).reduce((s, e) => s + (e.value ?? 0), 0)
   const sentCount    = events.filter((e) => e.status === 'sent').length
@@ -918,6 +948,10 @@ function CapiEventsSection() {
       {loading ? (
         <div className="px-5 py-6 flex items-center gap-2 text-xs text-surface-500">
           <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Carregando eventos...
+        </div>
+      ) : error ? (
+        <div className="p-4">
+          <ErrorState compact title="Erro ao carregar eventos CAPI" onRetry={() => setReloadKey((k) => k + 1)} />
         </div>
       ) : events.length === 0 ? (
         <div className="px-5 py-8 text-center text-xs text-surface-500">

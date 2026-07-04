@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import { DollarSign, Users, Target, BarChart2, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
-import { C } from './utils'
+import { useChartColors } from '@/hooks/useChartColors'
 import { attributionApi } from '@/services/api'
 import type { AdCampaignMetrics, MarketingFunnelTotals } from '@/types'
 import type { DateRange } from '@/types/dashboard'
@@ -15,6 +15,7 @@ import { CampaignLeadsDrawer } from '@/components/campaigns/CampaignLeadsDrawer'
 // ── Funnel Chart ──────────────────────────────────────────────────────────────
 
 function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
+  const C = useChartColors()
   if (!campaigns.length) return null
 
   // Aggregate across all selected campaigns

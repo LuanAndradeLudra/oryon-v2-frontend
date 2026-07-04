@@ -147,22 +147,22 @@ const ACTION_OPTIONS: { value: HandoffAction; label: string; desc: string; icon:
   },
 ]
 
-// Cor por ação — categórica (não status). Mantém os matizes originais.
-// Consumida de duas formas: como badge "cheio" (.color-chip via ACTION_CHIP)
-// no cartão da regra, e como estado SELECIONADO (tint suave) no seletor de
-// ação do editor, reconstruído inline a partir do mesmo hex.
+// Cor por ação — categórica (não status). Tokens theme-aware (--color-accent-*)
+// para o tema claro escurecer os matizes sem tocar aqui. Consumida de duas
+// formas: como badge "cheio" (.color-chip via ACTION_CHIP) no cartão da regra,
+// e como estado SELECIONADO (tint suave) no seletor de ação do editor.
 const ACTION_CHIP: Record<HandoffAction, string> = {
-  human_handoff:    '#3b82f6', // azul
-  auto_reply:       '#10b981', // verde
-  external_redirect:'#8b5cf6', // violeta
-  pass_to_ai:       '#f59e0b', // âmbar
+  human_handoff:    'var(--color-accent-blue)',
+  auto_reply:       'var(--color-accent-green)',
+  external_redirect:'var(--color-accent-violet)',
+  pass_to_ai:       'var(--color-accent-amber)',
 }
 
 // Tint suave para o estado selecionado (equivalente ao antigo bg/10 + border/20 + texto).
-const softTint = (hex: string): React.CSSProperties => ({
-  color: hex,
-  backgroundColor: `color-mix(in srgb, ${hex} 10%, transparent)`,
-  borderColor: `color-mix(in srgb, ${hex} 20%, transparent)`,
+const softTint = (color: string): React.CSSProperties => ({
+  color,
+  backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
+  borderColor: `color-mix(in srgb, ${color} 20%, transparent)`,
 })
 
 const ACTION_LABEL: Record<HandoffAction, string> = {
@@ -366,9 +366,9 @@ function TemplateVariantPicker({
 // Cor por camada de keyword — categórica. `chip` guarda o matiz (hex/token);
 // o badge da camada usa .color-chip e as pills ativas reusam o mesmo tom via softTint.
 const TIER_META: Record<keyof HandoffKeywordTiers, { label: string; chip: string; tip: string }> = {
-  exact_phrases:  { label: 'Frases exatas',     chip: '#10b981',              tip: 'A regra dispara quando a mensagem contém esta frase completa' },
-  contains_words: { label: 'Palavras-chave',    chip: 'var(--color-brand-500)', tip: 'Dispara se qualquer uma dessas palavras aparecer na mensagem' },
-  typo_variants:  { label: 'Erros de digitação',chip: '#f59e0b',              tip: 'Variações e abreviações comuns no WhatsApp' },
+  exact_phrases:  { label: 'Frases exatas',     chip: 'var(--color-accent-green)',  tip: 'A regra dispara quando a mensagem contém esta frase completa' },
+  contains_words: { label: 'Palavras-chave',    chip: 'var(--color-brand-500)',     tip: 'Dispara se qualquer uma dessas palavras aparecer na mensagem' },
+  typo_variants:  { label: 'Erros de digitação',chip: 'var(--color-accent-amber)',  tip: 'Variações e abreviações comuns no WhatsApp' },
 }
 
 function KeywordTiersView({

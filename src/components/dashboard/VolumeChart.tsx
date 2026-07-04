@@ -2,7 +2,7 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip,
 } from 'recharts'
-import { C } from './utils'
+import { useChartColors } from '@/hooks/useChartColors'
 import type { VolumeDataPoint } from '@/types/dashboard'
 
 function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
@@ -22,6 +22,7 @@ function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export function VolumeChart({ data }: { data: VolumeDataPoint[] }) {
+  const C = useChartColors()
   return (
     <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4 flex-shrink-0">

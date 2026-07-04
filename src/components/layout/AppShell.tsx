@@ -15,10 +15,17 @@ function ShellLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-surface-950">
+      {/* Navegação por teclado: pula os 15+ itens da sidebar direto ao conteúdo */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-lg focus:bg-brand-500 focus:text-surface-950 focus:text-sm focus:font-semibold"
+      >
+        Ir para o conteúdo principal
+      </a>
       <NavSidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar />
-        <div className="flex flex-1 min-w-0 overflow-hidden">{children}</div>
+        <main id="main-content" className="flex flex-1 min-w-0 overflow-hidden">{children}</main>
       </div>
     </div>
   )

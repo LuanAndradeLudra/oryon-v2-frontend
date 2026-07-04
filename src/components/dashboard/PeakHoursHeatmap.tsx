@@ -2,7 +2,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend,
 } from 'recharts'
-import { C } from './utils'
+import { useChartColors } from '@/hooks/useChartColors'
 import type { HeatmapCell } from '@/types/dashboard'
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
@@ -46,6 +46,7 @@ function CustomTooltip({ active, payload, label }: {
 }
 
 export function PeakHoursHeatmap({ data }: { data: HeatmapCell[] }) {
+  const C = useChartColors()
   const chartData = aggregate(data)
 
   const BARS: { key: 'manha' | 'tarde' | 'noite'; label: string; color: string }[] = [

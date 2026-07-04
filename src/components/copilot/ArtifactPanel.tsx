@@ -386,7 +386,7 @@ function SlidesJsonRenderer({ content }: { content: string }) {
       const json = JSON.parse(content) as SlidesJSON
       html = renderSlidesJson(json)
     } catch {
-      html = '<body style="background:#0f172a;color:#ef4444;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:14px;"><p>JSON inválido ou incompleto — aguardando geração…</p></body>'
+      html = '<body style="background:#0A0F0F;color:#EF4444;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:14px;"><p>JSON inválido ou incompleto — aguardando geração…</p></body>'
     }
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
     const url  = URL.createObjectURL(blob)
@@ -438,7 +438,7 @@ function buildReactArtifactHTML(code: string): string {
   <title>React Artifact</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    html, body { height: 100%; margin: 0; background: #0f172a; color: #e2e8f0; font-family: -apple-system, 'Segoe UI', sans-serif; }
+    html, body { height: 100%; margin: 0; background: #0A0F0F; color: #ECF1F1; font-family: -apple-system, 'Segoe UI', sans-serif; }
     #root { min-height: 100%; }
 
     /* ---- Loading overlay (friendly skeleton, no technical jargon) ---- */
@@ -446,7 +446,7 @@ function buildReactArtifactHTML(code: string): string {
       position: absolute; inset: 0;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       gap: 18px;
-      background: radial-gradient(circle at 50% 35%, rgba(99,102,241,0.08), transparent 60%), #0f172a;
+      background: radial-gradient(circle at 50% 35%, rgba(45,212,191,0.08), transparent 60%), #0A0F0F;
       transition: opacity .25s ease;
       pointer-events: none;
     }
@@ -456,7 +456,7 @@ function buildReactArtifactHTML(code: string): string {
     .artifact-spinner {
       width: 52px; height: 52px;
       border-radius: 50%;
-      background: conic-gradient(from 0deg, #6366f1, #a855f7, #ec4899, #6366f1);
+      background: conic-gradient(from 0deg, #14B8A6, #2DD4BF, #99F6E4, #14B8A6);
       mask: radial-gradient(circle, transparent 55%, black 56%);
       -webkit-mask: radial-gradient(circle, transparent 55%, black 56%);
       animation: artifact-spin 1.2s linear infinite;
@@ -464,10 +464,10 @@ function buildReactArtifactHTML(code: string): string {
     @keyframes artifact-spin { to { transform: rotate(360deg); } }
 
     .artifact-loader-label {
-      font-size: 13px; color: #cbd5e1; font-weight: 500; letter-spacing: 0.01em;
+      font-size: 13px; color: #D3DDDD; font-weight: 500; letter-spacing: 0.01em;
     }
     .artifact-loader-hint {
-      font-size: 11px; color: #64748b; margin-top: -8px;
+      font-size: 11px; color: #8FA5A5; margin-top: -8px;
     }
 
     /* Subtle pulsing dots */
@@ -861,15 +861,15 @@ export function ArtifactPanel() {
 <title>Abrindo no Canva…</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0f172a;display:flex;align-items:center;justify-content:center;height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#f8fafc}
+body{background:#0A0F0F;display:flex;align-items:center;justify-content:center;height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#ECF1F1}
 .card{text-align:center;width:360px}
-.logo-wrap{width:72px;height:72px;border-radius:18px;overflow:hidden;margin:0 auto 20px;box-shadow:0 8px 32px rgba(99,102,241,.35)}
+.logo-wrap{width:72px;height:72px;border-radius:18px;overflow:hidden;margin:0 auto 20px;box-shadow:0 8px 32px rgba(45,212,191,.30)}
 .logo-wrap img{width:100%;height:100%;display:block}
 h1{font-size:22px;font-weight:700;margin-bottom:6px}
-#msg{font-size:14px;color:#94a3b8;margin-bottom:28px;min-height:20px}
+#msg{font-size:14px;color:#8FA5A5;margin-bottom:28px;min-height:20px}
 .track{height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
-.fill{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa);border-radius:2px;width:8%;transition:width .6s ease}
-#step{margin-top:12px;font-size:11px;color:#475569;letter-spacing:.08em;text-transform:uppercase}
+.fill{height:100%;background:linear-gradient(90deg,#14B8A6,#2DD4BF);border-radius:2px;width:8%;transition:width .6s ease}
+#step{margin-top:12px;font-size:11px;color:#6B8080;letter-spacing:.08em;text-transform:uppercase}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 .blink{animation:blink 1.4s infinite}
 </style>

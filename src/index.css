@@ -7,6 +7,20 @@
  * Princípio 90/10: 90% neutro (teal-black/off-white + cinzas), 10% teal.
  * Gradiente é cerimônia: logo, 1 CTA por seção, avatar IA, glow de fundo.
  * Nunca em fundo inteiro, texto longo, sidebar ou bordas de tudo.
+ *
+ * ── RÉGUA CANÔNICA DE COMPONENTES (usar SEMPRE; não inventar variações) ────
+ * Botões / inputs (altura):  sm h-8 · md h-9 · lg h-11  (Button.tsx é a ref)
+ * Radius:  chips/badges rounded-md · botões/inputs rounded-lg ou xl (10-12px)
+ *          cards rounded-xl · painéis/drawers rounded-2xl · pill rounded-full
+ * Bordas:  divisor padrão border-surface-800 · ênfase/hover border-surface-700
+ *          nunca usar surface-600+ como borda de card
+ * Gaps:    label→input gap-1.5 · entre campos gap-4 · entre seções gap-6
+ * Títulos: página text-xl font-display · card/seção text-sm font-semibold
+ *          eyebrow .eyebrow · corpo text-sm · meta text-xs
+ * Transições: hover/estado 150ms · entrada de conteúdo 200-250ms ease-out
+ * Cores:   SEMPRE via token (bg-brand-500, text-surface-400, --color-accent-*).
+ *          Hex direto só p/ marcas de terceiros (Meta, Google, Canva) e print.
+ *          Charts (SVG): usar useChartColors() — nunca hex fixo.
  * ──────────────────────────────────────────────────────────────────────────── */
 
 @theme {
@@ -155,6 +169,16 @@
   --color-status-info:           #60A5FA;
   --color-status-info-bg:        rgba(96, 165, 250, 0.12);
   --color-status-info-border:    rgba(96, 165, 250, 0.25);
+
+  /* ── Acentos categóricos (não-status) — hues p/ chips de categoria (ações
+     de handoff, origens de campanha etc.). Sempre usar via var() para que o
+     tema claro possa escurecer os matizes e manter contraste AA. */
+  --color-accent-blue:   #3B82F6;
+  --color-accent-green:  #10B981;
+  --color-accent-violet: #8B5CF6;
+  --color-accent-amber:  #F59E0B;
+  --color-accent-rose:   #F43F5E;
+  --color-accent-cyan:   #06B6D4;
 
   /* Status de conversa — paleta isolada p/ ajustar sem mexer no success/warning
      globais. open usa status-open (azul) · abandoned usa status-muted (cinza). */
@@ -497,6 +521,14 @@ code, pre, kbd, samp {
   --color-status-info:        #2563EB;
   --color-status-info-bg:     rgba(37, 99, 235, 0.08);
   --color-status-info-border: rgba(37, 99, 235, 0.20);
+
+  /* Acentos categóricos (light: tons escurecidos p/ contraste AA em fundo claro) */
+  --color-accent-blue:   #2563EB;
+  --color-accent-green:  #047857;
+  --color-accent-violet: #6D28D9;
+  --color-accent-amber:  #B45309;
+  --color-accent-rose:   #BE123C;
+  --color-accent-cyan:   #0E7490;
 
   /* Status de conversa (light) */
   --color-cstatus-pending:        #D97706;

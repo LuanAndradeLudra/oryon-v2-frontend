@@ -274,8 +274,7 @@ function AutomationCard({ automation, onEdit, onToggle, onDelete, onAssignWaba }
 
       {/* Type icon */}
       <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-surface-200 border border-surface-600"
-        style={{ backgroundColor: cfg.bg }}
+        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-surface-200 border border-surface-600 bg-surface-800"
       >
         {cfg.icon}
       </div>
@@ -687,8 +686,7 @@ function TemplateGallery({
               >
                 <div className="flex items-center gap-2 mb-2">
                   <span
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-surface-400 border border-surface-700"
-                    style={{ backgroundColor: cfg.bg }}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-surface-400 border border-surface-700 bg-surface-800"
                   >
                     {cfg.icon}
                   </span>

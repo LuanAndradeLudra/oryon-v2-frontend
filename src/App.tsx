@@ -22,15 +22,15 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: 40, fontFamily: 'sans-serif', color: '#fff', background: '#1a1a2e', minHeight: '100vh' }}>
-          <h2 style={{ color: '#ef4444', marginBottom: 12 }}>Algo deu errado</h2>
-          <p style={{ color: '#94a3b8', marginBottom: 20 }}>A página encontrou um erro. Tente recarregar.</p>
-          <pre style={{ background: '#0f0f23', padding: 16, borderRadius: 8, overflow: 'auto', fontSize: 13, color: '#f59e0b' }}>
+        <div style={{ padding: 40, fontFamily: 'var(--font-sans, sans-serif)', color: 'var(--color-surface-100, #ECF1F1)', background: 'var(--color-surface-950, #0A0F0F)', minHeight: '100vh' }}>
+          <h2 style={{ color: 'var(--color-danger, #EF4444)', marginBottom: 12 }}>Algo deu errado</h2>
+          <p style={{ color: 'var(--color-surface-400, #8FA5A5)', marginBottom: 20 }}>A página encontrou um erro. Tente recarregar.</p>
+          <pre style={{ background: 'var(--color-surface-800, #161E1E)', border: '1px solid var(--color-surface-700, #243333)', padding: 16, borderRadius: 12, overflow: 'auto', fontSize: 13, color: 'var(--color-warning, #F97316)' }}>
             {this.state.error.message}
           </pre>
           <button
             onClick={() => { this.setState({ error: null }); window.location.reload() }}
-            style={{ marginTop: 16, padding: '8px 20px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14 }}
+            style={{ marginTop: 16, padding: '8px 20px', background: 'var(--color-brand-500, #2DD4BF)', color: 'var(--color-surface-950, #0A0F0F)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
           >
             Recarregar página
           </button>

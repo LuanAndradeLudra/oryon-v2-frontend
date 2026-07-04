@@ -1,15 +1,16 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
-import { C } from './utils'
+import { chartTooltipProps } from './utils'
+import { useChartColors } from '@/hooks/useChartColors'
 import type { StatusDistribution } from '@/types/dashboard'
 
-const SLICES = [
-  { key: 'pending' as const,   label: 'Em Fila',     color: C.away    },
-  { key: 'open' as const,      label: 'Ativas',      color: C.brand   },
-  { key: 'resolved' as const,  label: 'Resolvidas',  color: C.online  },
-  { key: 'abandoned' as const, label: 'Abandonadas', color: C.danger  },
-]
-
 export function StatusDonut({ data }: { data: StatusDistribution }) {
+  const C = useChartColors()
+  const SLICES = [
+    { key: 'pending' as const,   label: 'Em Fila',     color: C.away    },
+    { key: 'open' as const,      label: 'Ativas',      color: C.brand   },
+    { key: 'resolved' as const,  label: 'Resolvidas',  color: C.online  },
+    { key: 'abandoned' as const, label: 'Abandonadas', color: C.danger  },
+  ]
   const slices = SLICES.map((s) => ({ name: s.label, value: data[s.key], color: s.color }))
   const total = slices.reduce((s, x) => s + x.value, 0)
 
@@ -27,11 +28,7 @@ export function StatusDonut({ data }: { data: StatusDistribution }) {
             >
               {slices.map((s) => <Cell key={s.name} fill={s.color} />)}
             </Pie>
-            <Tooltip
-              contentStyle={{ background: '#0a1a26', border: '1px solid #112a3a', borderRadius: 8, fontSize: 12 }}
-              itemStyle={{ color: '#d4e6f2' }}
-              labelStyle={{ color: '#82adc8' }}
-            />
+            <Tooltip {...chartTooltipProps(C)} />
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

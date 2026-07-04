@@ -7,13 +7,14 @@ import { DollarSign, Users, Target, BarChart2, ChevronDown, ChevronUp, ArrowRigh
 import { AnimatePresence } from 'framer-motion'
 import { attributionApi } from '@/services/api'
 import type { AdCampaignMetrics, MarketingFunnelTotals } from '@/types'
-import { C } from '@/components/dashboard/utils'
+import { useChartColors } from '@/hooks/useChartColors'
 import { cn } from '@/lib/utils'
 import { CampaignLeadsDrawer } from './CampaignLeadsDrawer'
 
 // ── Leads over time chart ─────────────────────────────────────────────────────
 
 function AttributedLeadsChart() {
+  const C = useChartColors()
   const [data, setData] = useState<Array<{ date: string; meta: number }>>([])
   const [loading, setLoading] = useState(true)
 
@@ -77,6 +78,7 @@ function PerCampaignBreakdown({
   campaigns: AdCampaignMetrics[]
   onLeadsClick: (campaignId: string, campaignName: string) => void
 }) {
+  const C = useChartColors()
   const [expanded, setExpanded] = useState<string | null>(null)
 
   return (

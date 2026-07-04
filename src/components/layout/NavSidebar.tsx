@@ -96,6 +96,7 @@ function UserFooter({
       <button
         onClick={toggle}
         title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+        aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
         className="w-full text-left"
       >
         <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-surface-400 hover:bg-surface-800 hover:text-surface-100">
@@ -121,6 +122,7 @@ function UserFooter({
       {/* Logout */}
       <button
         onClick={onLogout}
+        aria-label="Sair da conta"
         className="w-full text-left"
       >
         <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-danger hover:bg-danger/10">
