@@ -777,25 +777,33 @@ export function HomePage() {
               {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
             </div>
 
-            {/* ── Linha 4: Insights da Oryon AI + Seu desempenho hoje ────
-                Insights (esquerda) é narrativa em texto; Performance (direita)
-                é KPI compacto. Cada um span-6 — o grid alinha as alturas
-                automaticamente já que estão na mesma linha. */}
+            {/* ── Linha 4: Seu desempenho hoje + Insights da Oryon AI ────
+                O PESSOAL vem primeiro (leitura F): "como EU estou" responde a
+                pergunta das 8h da manhã antes da narrativa geral da IA. */}
             {stats && (
               <>
                 <div className="lg:col-span-6">
-                  <AIInsightsWidget stats={stats} />
+                  <MyPerformanceCard stats={stats} />
                 </div>
                 <div className="lg:col-span-6">
-                  <MyPerformanceCard stats={stats} />
+                  <AIInsightsWidget stats={stats} />
                 </div>
               </>
             )}
 
-            {/* ── Linha 5: 3 cards admin (Equipe / WhatsApp / Atendimento) ─
-                Cada card é célula independente do grid principal. Como estão
-                na mesma linha (col-span-4 × 3), o grid alinha as alturas
-                automaticamente. */}
+            {/* ── Linha 5: Quick Actions + Activity Feed ─────────────────
+                Ações e atividade sobem: são de TODOS os papéis; os cards de
+                gestão (admin-only) descem para a linha seguinte. */}
+            <div className="lg:col-span-8">
+              <QuickActions role={role} />
+            </div>
+            <div className="lg:col-span-4">
+              <ActivityFeed logs={logs} loading={logsLoading} />
+            </div>
+
+            {/* ── Linha 6: 3 cards admin (Equipe / WhatsApp / Atendimento) ─
+                Visão de gestão — relevante, mas não compete com o fluxo
+                pessoal de quem atende. */}
             {stats && isAdminRole && !isMobile && (
               <>
                 <div className="lg:col-span-4">
@@ -809,14 +817,6 @@ export function HomePage() {
                 </div>
               </>
             )}
-
-            {/* ── Linha 6: Quick Actions + Activity Feed ────────────────── */}
-            <div className="lg:col-span-8">
-              <QuickActions role={role} />
-            </div>
-            <div className="lg:col-span-4">
-              <ActivityFeed logs={logs} loading={logsLoading} />
-            </div>
 
             {/* ── Roles supervisor/agent: bloco contextual de largura total
                 (refator simétrico desses fluxos fica como follow-up). */}

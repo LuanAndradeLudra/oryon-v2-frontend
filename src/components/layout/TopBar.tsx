@@ -43,7 +43,7 @@ import {
 const PAGE_TITLES: Record<string, string> = {
   '/home': 'Home',
   '/conversations': 'Conversas',
-  '/dashboard': 'Dashboard',
+  '/dashboard': 'Relatórios',
   '/contacts': 'Contatos',
   '/campaigns': 'Disparos',
   '/marketing': 'Marketing',
@@ -59,9 +59,9 @@ const PAGE_TITLES: Record<string, string> = {
  *  pattern stays single-line even on laptop widths; the longer-form copy
  *  belongs in section headers inside each page, not in the topbar. */
 const PAGE_SUBTITLES: Record<string, string> = {
-  '/home': 'Visão geral',
+  '/home': 'Seu dia num relance',
   '/conversations': 'Chat com clientes',
-  '/dashboard': 'Métricas e indicadores',
+  '/dashboard': 'Relatórios e análises',
   '/contacts': 'CRM e pipeline',
   '/campaigns': 'Campanhas em massa',
   '/marketing': 'Estratégia e canais',
@@ -92,7 +92,7 @@ const SEARCH_INDEX = ([
   // ── Páginas principais
   { type: 'page', label: 'Home', description: 'Visão geral e atalhos rápidos', href: '/home', Icon: Home, keywords: ['início', 'painel', 'overview'] },
   { type: 'page', label: 'Conversas', description: 'Atendimento via WhatsApp', href: '/conversations', Icon: MessageSquare, keywords: ['whatsapp', 'chat', 'atendimento', 'mensagens'] },
-  { type: 'page', label: 'Dashboard', description: 'Métricas, relatórios e KPIs', href: '/dashboard', Icon: BarChart3, keywords: ['métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
+  { type: 'page', label: 'Relatórios', description: 'Métricas, análises e KPIs', href: '/dashboard', Icon: BarChart3, keywords: ['dashboard', 'métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
   { type: 'page', label: 'Contatos', description: 'CRM e pipeline de leads', href: '/contacts', Icon: Users, keywords: ['crm', 'leads', 'clientes', 'pipeline', 'kanban'] },
   { type: 'page', label: 'Disparos', description: 'Campanhas de mensagens em massa', href: '/campaigns', Icon: Send, keywords: ['campanhas', 'broadcast', 'envio', 'massa'] },
   { type: 'page', label: 'Marketing', description: 'Meta Ads e funil de conversão', href: '/marketing', Icon: Megaphone, keywords: ['meta', 'ads', 'facebook', 'instagram', 'funil', 'tráfego'] },

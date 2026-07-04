@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   User,
   Building2,
@@ -15,6 +15,7 @@ import {
   Bell,
   Activity,
   ScrollText,
+  Search,
 } from 'lucide-react'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
 import { isRouteVisible } from '@/config/featureFlags'
@@ -25,6 +26,29 @@ interface SettingsLayoutProps {
   children: ReactNode
   currentRole?: string
 }
+
+// Sinônimos por seção — a busca encontra "etiquetas" mesmo com a seção
+// rotulada "Tags", "cobrança" para billing etc. (padrão Linear/Slack).
+const SEARCH_KEYWORDS: Record<string, string[]> = {
+  account:           ['perfil', 'senha', 'email', 'avatar'],
+  notifications:     ['alertas', 'push', 'avisos'],
+  company:           ['empresa', 'organização', 'logo'],
+  'company-brain':   ['ia', 'contexto', 'cérebro', 'conhecimento', 'prompt'],
+  agents:            ['usuários', 'atendentes', 'equipe', 'membros', 'convites'],
+  departments:       ['setores', 'times', 'filas'],
+  'quick-replies':   ['respostas rápidas', 'atalhos', 'mensagens prontas'],
+  tags:              ['etiquetas', 'labels', 'marcadores'],
+  numbers:           ['whatsapp', 'linhas', 'números', 'telefone', 'conexão'],
+  'whatsapp-health': ['saúde', 'qualidade', 'limites', 'tier'],
+  'ad-accounts':     ['anúncios', 'meta ads', 'facebook', 'marketing'],
+  vertical:          ['vocabulário', 'nicho', 'segmento', 'crm'],
+  billing:           ['plano', 'fatura', 'cobrança', 'pagamento', 'assinatura'],
+  security:          ['segurança', 'sessões', 'logs de acesso', '2fa'],
+  audit:             ['auditoria', 'logs', 'histórico', 'atividade'],
+}
+
+const normalize = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 const NAV_GROUPS = [
   {
@@ -82,6 +106,13 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
     || currentRole === 'business_admin'
     || currentRole === 'super_admin'
   const isMobile = useIsMobile()
+  const [search, setSearch] = useState('')
+  const query = normalize(search.trim())
+  const matches = (item: { section: string; label: string }) => {
+    if (!query) return true
+    if (normalize(item.label).includes(query)) return true
+    return (SEARCH_KEYWORDS[item.section] ?? []).some((kw) => normalize(kw).includes(query))
+  }
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
       ...group,
@@ -90,7 +121,8 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
         const supervisorOnly = 'supervisorOnly' in item && item.supervisorOnly
         if (adminOnly && !isAdmin) return false
         if (supervisorOnly && currentRole === 'agent') return false
-        return isRouteVisible(`/settings/${item.section}`)
+        if (!isRouteVisible(`/settings/${item.section}`)) return false
+        return matches(item)
       }),
     }))
     .filter((group) => group.items.length > 0)
@@ -101,6 +133,20 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
       {/* Settings sidebar — empilhada acima em mobile, lateral em desktop */}
       <aside className="w-full md:w-56 lg:w-60 flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-800 py-3 md:py-4 px-2 overflow-y-auto max-h-52 md:max-h-none">
+        {/* Busca de configurações — encontra por rótulo OU sinônimo natural */}
+        <div className="relative px-1 mb-3">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar configuração..."
+            aria-label="Buscar configuração"
+            className="w-full bg-surface-900 border border-surface-700 rounded-xl pl-8 pr-3 py-1.5 text-sm text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+          />
+        </div>
+        {visibleGroups.length === 0 && (
+          <p className="px-3 py-4 text-xs text-surface-500">Nenhuma configuração encontrada.</p>
+        )}
         {visibleGroups.map((group) => (
           <div key={group.label} className="mb-4">
             <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-surface-600">

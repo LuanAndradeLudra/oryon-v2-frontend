@@ -18,7 +18,10 @@ import {
   LineChart,
   Sun,
   Moon,
+  Pin,
+  PinOff,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useTheme } from '@/hooks/useTheme'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -181,6 +184,14 @@ function UserFooter({
 
 export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false }: NavSidebarProps) {
   const [open, setOpen] = useState(false)
+  const [pinned, setPinned] = useState(() => {
+    try { return localStorage.getItem('oryon:sidebar-pinned') === '1' } catch { return false }
+  })
+  const togglePinned = () => setPinned((p) => {
+    const next = !p
+    try { localStorage.setItem('oryon:sidebar-pinned', next ? '1' : '0') } catch { /* ignore */ }
+    return next
+  })
   const [whatsappUnread, setWhatsappUnread] = useState(totalUnread)
   const location = useLocation()
   const navigate = useNavigate()
@@ -230,7 +241,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
     { icon: <Home className="w-4.5 h-4.5" />,          label: 'Home',       href: '/home' },
     {
       icon: <BarChart3 className="w-4.5 h-4.5" />,
-      label: 'Dashboard',
+      label: 'Relatórios',
       href: '/dashboard',
       nudge: !checklist.dashboard ? 'Novo' : undefined,
     },
@@ -278,15 +289,36 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   // (via inline style). The wrapper className `[&_.nav-sidebar]:!w-full`
   // overrides that inline width so the sidebar fills its parent — used when
   // embedded in a mobile drawer that is wider than 228px.
-  const sidebarOpen = forceExpanded ? true : open
-  const sidebarSetOpen = forceExpanded ? () => {} : setOpen
-  const sidebarAnimate = !forceExpanded
+  //
+  // PIN: quem trabalha 8h/dia pode FIXAR a sidebar expandida — o hover-expand
+  // padrão re-layouta a tela a cada passagem do mouse (jank acumulado). O pin
+  // persiste em localStorage e reaproveita o caminho do forceExpanded.
+  const expanded = forceExpanded || pinned
+  const sidebarOpen = expanded ? true : open
+  const sidebarSetOpen = expanded ? () => {} : setOpen
+  const sidebarAnimate = !expanded
 
   const body = (
     <Sidebar open={sidebarOpen} setOpen={sidebarSetOpen} animate={sidebarAnimate}>
       <SidebarBody className="justify-between">
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-          <LogoSection />
+          <div className="relative">
+            <LogoSection />
+            {/* Pin — visível só com a sidebar aberta (hover ou fixada) */}
+            {!forceExpanded && sidebarOpen && (
+              <button
+                onClick={togglePinned}
+                aria-label={pinned ? 'Soltar navegação' : 'Fixar navegação'}
+                title={pinned ? 'Soltar navegação (expande no hover)' : 'Fixar navegação expandida'}
+                className={cn(
+                  'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center transition-colors cursor-pointer',
+                  pinned ? 'text-brand-400 hover:text-brand-300' : 'text-surface-600 hover:text-surface-300',
+                )}
+              >
+                {pinned ? <Pin className="w-3.5 h-3.5" /> : <PinOff className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
 
           {/* GERAL */}
           {geralItems.length > 0 && (

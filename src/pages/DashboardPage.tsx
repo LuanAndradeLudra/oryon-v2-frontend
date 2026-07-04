@@ -4,7 +4,6 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import axios from 'axios'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 
 
 import { RealtimeStrip }    from '@/components/dashboard/RealtimeStrip'
@@ -251,12 +250,6 @@ export function DashboardPage() {
     </div>
   )
 
-  // Em desktop registra no TopBar; em mobile renderiza inline acima do conteudo.
-  useRegisterTopBarActions(
-    isMobile ? null : dateAndRefreshActions,
-    [dateRange, loading, lastUpdated, isMobile],
-  )
-
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {isMobile && <MobilePageHeader title="Dashboard" />}
@@ -264,14 +257,13 @@ export function DashboardPage() {
         {/* Strip realtime — quebra linha em mobile (fila/espera sempre visíveis) */}
         <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
 
-        {/* Mobile-only toolbar de filtros (date range + refresh) */}
-        {isMobile && (
-          <div className="flex items-center justify-between px-3 py-2 border-b border-surface-800/60 bg-surface-950/40">
+        <div className="flex-1 overflow-y-auto">
+          {/* Toolbar de período — sticky JUNTO do conteúdo que controla
+              (affordance: mudar o range e ver o efeito sem voltar ao topo).
+              Antes vivia no TopBar global, a uma tela de distância. */}
+          <div className="sticky top-0 z-20 bg-surface-950/95 backdrop-blur-sm border-b border-surface-800/60 px-3 sm:px-6 py-2 flex items-center justify-end">
             {dateAndRefreshActions}
           </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto">
           <div className="px-3 py-4 sm:px-6 sm:py-6 max-w-[1440px] mx-auto space-y-4 sm:space-y-5">
 
             {/* Setup card */}
