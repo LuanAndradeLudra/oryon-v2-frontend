@@ -2,7 +2,7 @@ import { memo, useCallback } from 'react'
 import {
   Camera, Mic, FileText, Video, MapPin, Sticker,
   ExternalLink, Phone, Copy,
-  Bot, UserCheck, UserX, Clock, Megaphone, Users, AlertTriangle,
+  Bot, UserCheck, UserX, Clock, Megaphone, Users, AlertTriangle, Flame,
 } from 'lucide-react'
 import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
@@ -221,15 +221,24 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               </span>
             )}
 
-            {awaiting && (
-              <span
-                className="inline-flex items-center gap-1 text-[10.5px] text-amber-400 font-medium"
-                title={`Cliente aguardando resposta há ${chatRelTime(lastMessageAt)}`}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                {chatRelTime(lastMessageAt)}
-              </span>
-            )}
+            {awaiting && (() => {
+              // Urgência progressiva: o operador prioriza pela COR, sem ler
+              // timestamps — âmbar vira vermelho quando a espera passa de 15min.
+              const waitMin = (Date.now() - new Date(lastMessageAt).getTime()) / 60000
+              const critical = waitMin >= 15
+              return (
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 text-[10.5px] font-medium',
+                    critical ? 'text-danger' : 'text-status-pending',
+                  )}
+                  title={`Cliente aguardando resposta há ${chatRelTime(lastMessageAt)}`}
+                >
+                  {critical ? <Flame className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                  {chatRelTime(lastMessageAt)}
+                </span>
+              )
+            })()}
           </div>
         </div>
       </div>

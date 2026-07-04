@@ -9,7 +9,7 @@
  * Nunca em fundo inteiro, texto longo, sidebar ou bordas de tudo.
  *
  * ── RÉGUA CANÔNICA DE COMPONENTES (usar SEMPRE; não inventar variações) ────
- * Botões / inputs (altura):  sm h-8 · md h-9 · lg h-11  (Button.tsx é a ref)
+ * Botões / inputs (altura):  sm h-7 · md h-9 · lg h-11  (Button.tsx é a ref)
  * Radius:  chips/badges rounded-md · botões/inputs rounded-lg ou xl (10-12px)
  *          cards rounded-xl · painéis/drawers rounded-2xl · pill rounded-full
  * Bordas:  divisor padrão border-surface-800 · ênfase/hover border-surface-700

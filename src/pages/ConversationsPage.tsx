@@ -48,6 +48,7 @@ export function ConversationsPage() {
   const { contacts: allContacts } = useContacts()
   const { toasts, toast, dismiss } = useToast()
   const isMobile = useIsMobile()
+  const { user } = useAuth()
 
   // Persists the conversation list's scrollTop across the mobile mount/unmount
   // cycle (list ↔ chat). Without this, tapping an old conversation and then
@@ -253,6 +254,63 @@ export function ConversationsPage() {
     }
   }
 
+  // ── Atalhos de teclado (triagem estilo Front/Gmail) ────────────────────────
+  // J/K navegam na lista, E resolve e pula p/ a próxima, R atribui a mim.
+  // Só em desktop e nunca enquanto o foco está num campo de texto — a regra
+  // é: digitar mensagem SEMPRE vence atalho.
+  const shortcutsRef = useRef({ conversations, activeConversation })
+  shortcutsRef.current = { conversations, activeConversation }
+
+  useEffect(() => {
+    if (isMobile) return
+    const isTyping = (el: EventTarget | null) => {
+      const t = el as HTMLElement | null
+      if (!t) return false
+      const tag = t.tagName
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable
+    }
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return
+      const key = e.key.toLowerCase()
+      if (!['j', 'k', 'e', 'r'].includes(key)) return
+
+      const { conversations: list, activeConversation: active } = shortcutsRef.current
+      if (list.length === 0) return
+      const idx = active ? list.findIndex((c) => c.id === active.id) : -1
+
+      if (key === 'j' || key === 'k') {
+        e.preventDefault()
+        const next = key === 'j'
+          ? list[Math.min(list.length - 1, idx + 1)]
+          : list[Math.max(0, idx <= 0 ? 0 : idx - 1)]
+        if (next && next.id !== active?.id) handleSelectConversation(next)
+        return
+      }
+
+      if (!active) return
+
+      if (key === 'e') {
+        e.preventDefault()
+        if (active.status !== 'resolved') void handleStatusChange(active.id, 'resolved')
+        // Pula para a próxima da fila — o operador segue triando sem o mouse.
+        const next = list[idx + 1] ?? list[idx - 1]
+        if (next && next.id !== active.id) handleSelectConversation(next)
+        return
+      }
+
+      if (key === 'r') {
+        e.preventDefault()
+        const me = allUsers.find((u) => u.id === user?.id)
+        if (me && active.assignedUser?.id !== me.id) void handleAssign(active.id, me)
+      }
+    }
+
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile, allUsers, user?.id])
+
   const handleTransfer = async (convId: string, user: User) => {
     try {
       await transferUser(convId, user)
@@ -327,7 +385,6 @@ export function ConversationsPage() {
   // from MessageInput. Reads the human-readable `message` that the backend's
   // TenantExceptionFilter writes into the response body and toasts it.
   // Without this the operator typed → text disappeared → no feedback.
-  const { user } = useAuth()
   const handleSendError = useCallback((err: unknown) => {
     const ax = err as { response?: { data?: { message?: string | string[] } } }
     const raw = ax?.response?.data?.message
@@ -393,7 +450,17 @@ export function ConversationsPage() {
             </div>
           </div>
         ) : (
-          <ConversationList {...listProps} />
+          <div className="flex flex-col min-h-0">
+            <div className="flex-1 min-h-0 flex">
+              <ConversationList {...listProps} />
+            </div>
+            {/* Descoberta dos atalhos de triagem — discreto, só desktop */}
+            <div className="flex items-center justify-center gap-3 px-3 py-1.5 border-t border-r border-surface-800 bg-surface-950 text-[10px] text-surface-600 select-none flex-shrink-0">
+              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">J</kbd>/<kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">K</kbd> navegar</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">E</kbd> resolver</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">R</kbd> p/ mim</span>
+            </div>
+          </div>
         )
       })()}
 

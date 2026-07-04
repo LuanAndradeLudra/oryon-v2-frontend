@@ -225,15 +225,21 @@ export function KanbanCard({
               </span>
             )}
             {contact.source && contact.lastContactedAt && <span className="text-surface-700">·</span>}
-            {contact.lastContactedAt && (
-              <span
-                className="inline-flex items-center gap-1"
-                title={new Date(contact.lastContactedAt).toLocaleString('pt-BR')}
-              >
-                <Clock className="w-2.5 h-2.5 flex-shrink-0" />
-                {formatRelativeTime(contact.lastContactedAt)}
-              </span>
-            )}
+            {contact.lastContactedAt && (() => {
+              // Temperatura do lead: verde = contato recente (quente), vermelho =
+              // parado há 7+ dias (esfriando) — o SDR prioriza a coluna pela cor.
+              const days = (Date.now() - new Date(contact.lastContactedAt).getTime()) / 86400000
+              const tempClass = days <= 2 ? 'text-status-active' : days > 7 ? 'text-danger/80' : undefined
+              return (
+                <span
+                  className={cn('inline-flex items-center gap-1', tempClass)}
+                  title={new Date(contact.lastContactedAt).toLocaleString('pt-BR')}
+                >
+                  <Clock className="w-2.5 h-2.5 flex-shrink-0" />
+                  {formatRelativeTime(contact.lastContactedAt)}
+                </span>
+              )
+            })()}
           </div>
         )}
         {/* Nº completo fica no tooltip/painel — no card, só a ação. Reduz

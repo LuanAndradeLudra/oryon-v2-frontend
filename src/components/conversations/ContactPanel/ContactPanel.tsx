@@ -319,19 +319,8 @@ export function ContactPanel({
           )}
         </Section>
 
-        {isFeatureVisible('conversionAnalysisPanel') && (
-          <ConversionAnalysisPanel conversationId={conversation.id} contact={contact} />
-        )}
-
-        {/* Timeline */}
-        <ConversationActivitySection conversationId={conversation.id} />
-
-        {/* Informações */}
-        <Section title="Informações">
-          <InfoTable rows={infoRows} />
-        </Section>
-
-        {/* Agente responsável */}
+        {/* Agente responsável — ação mais frequente do atendente; vive logo
+            após etiquetas, acima da dobra (antes ficava depois da timeline). */}
         <Section
           title="Agente responsável"
           action={
@@ -368,6 +357,18 @@ export function ContactPanel({
               onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
           </Modal>
         </Section>
+
+        {isFeatureVisible('conversionAnalysisPanel') && (
+          <ConversionAnalysisPanel conversationId={conversation.id} contact={contact} />
+        )}
+
+        {/* Informações — referência estática, acima da timeline dinâmica */}
+        <Section title="Informações">
+          <InfoTable rows={infoRows} />
+        </Section>
+
+        {/* Timeline */}
+        <ConversationActivitySection conversationId={conversation.id} />
 
         {/* Notas */}
         <NotasSection />
