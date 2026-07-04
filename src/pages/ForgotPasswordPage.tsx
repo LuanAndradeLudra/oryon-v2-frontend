@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import axios from 'axios'
+import { Banner } from '@/components/ui/Banner'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
@@ -89,9 +90,7 @@ export function ForgotPasswordPage() {
               </div>
 
               {error && (
-                <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
-                  {error}
-                </p>
+                <Banner variant="danger">{error}</Banner>
               )}
 
               <button

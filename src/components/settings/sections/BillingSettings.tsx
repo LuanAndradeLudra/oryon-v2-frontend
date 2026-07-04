@@ -98,13 +98,17 @@ function InvoiceRow({ invoice }: { invoice: typeof MOCK_BILLING.invoices[0] }) {
           {new Date(invoice.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
         </p>
       </div>
-      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-        invoice.status === 'paid'
-          ? 'bg-status-active-bg text-status-active'
-          : invoice.status === 'pending'
-            ? 'bg-status-pending-bg text-status-pending'
-            : 'bg-red-500/10 text-red-400'
-      }`}>
+      <span
+        className="color-chip border text-xs font-medium px-2 py-0.5 rounded-full"
+        style={{
+          ['--chip']:
+            invoice.status === 'paid'
+              ? 'var(--color-status-active)'
+              : invoice.status === 'pending'
+                ? 'var(--color-status-pending)'
+                : 'var(--color-danger)',
+        } as React.CSSProperties}
+      >
         {invoice.status === 'paid' ? 'Pago' : invoice.status === 'pending' ? 'Pendente' : 'Falhou'}
       </span>
       <span className="text-sm font-semibold text-surface-200 w-24 text-right">

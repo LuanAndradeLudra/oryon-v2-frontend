@@ -727,17 +727,17 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="text-xs font-semibold text-surface-200">{conv.contactName}</span>
-                                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-                                      style={{ backgroundColor: outcomeCfg.color + '20', color: outcomeCfg.color }}>
+                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                                      style={{ ['--chip']: outcomeCfg.color } as React.CSSProperties}>
                                       {outcomeCfg.label}
                                     </span>
-                                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-medium"
-                                      style={{ backgroundColor: sentimentCfg.color + '18', color: sentimentCfg.color }}>
+                                    <span className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-medium"
+                                      style={{ ['--chip']: sentimentCfg.color } as React.CSSProperties}>
                                       {sentimentCfg.label}
                                     </span>
                                     {adCfg && (
-                                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium"
-                                        style={{ backgroundColor: adCfg.color + '18', color: adCfg.color }}>
+                                      <span className="color-chip flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium"
+                                        style={{ ['--chip']: adCfg.color } as React.CSSProperties}>
                                         {adCfg.icon}
                                         {conv.adCampaignName ?? adCfg.label}
                                       </span>

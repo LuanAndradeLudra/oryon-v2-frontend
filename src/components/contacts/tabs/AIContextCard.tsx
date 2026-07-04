@@ -11,11 +11,11 @@ function formatDate(iso?: string) {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
-const SENTIMENT_CONFIG: Record<ContactSentiment, { icon: React.ReactNode; label: string; className: string }> = {
-  positive: { icon: <Smile className="w-3.5 h-3.5" />, label: 'Positivo', className: 'text-status-active bg-status-active-bg border-status-active-border' },
-  neutral:  { icon: <Meh className="w-3.5 h-3.5" />,  label: 'Neutro',   className: 'text-surface-300 bg-surface-800 border-surface-700' },
-  negative: { icon: <Frown className="w-3.5 h-3.5" />, label: 'Negativo', className: 'text-red-400 bg-red-900/30 border-red-700/40' },
-  unknown:  { icon: <HelpCircle className="w-3.5 h-3.5" />, label: 'Indefinido', className: 'text-surface-500 bg-surface-800 border-surface-700' },
+const SENTIMENT_CONFIG: Record<ContactSentiment, { icon: React.ReactNode; label: string; chip: string; iconColor: string }> = {
+  positive: { icon: <Smile className="w-3.5 h-3.5" />, label: 'Positivo', chip: 'var(--color-status-active)', iconColor: 'text-status-active' },
+  neutral:  { icon: <Meh className="w-3.5 h-3.5" />,  label: 'Neutro',   chip: 'var(--color-status-muted)', iconColor: 'text-surface-300' },
+  negative: { icon: <Frown className="w-3.5 h-3.5" />, label: 'Negativo', chip: 'var(--color-danger)', iconColor: 'text-red-400' },
+  unknown:  { icon: <HelpCircle className="w-3.5 h-3.5" />, label: 'Indefinido', chip: 'var(--color-status-muted)', iconColor: 'text-surface-500' },
 }
 
 // ── Loading steps ────────────────────────────────────────────────────────────
@@ -318,8 +318,11 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
 
               {/* Sentiment */}
               {contact.aiSentiment && contact.aiSentiment !== 'unknown' && (
-                <Section label="Sentimento geral das conversas" icon={SENTIMENT_CONFIG[contact.aiSentiment!].icon} iconColor={SENTIMENT_CONFIG[contact.aiSentiment!].className.split(' ')[0]} delay={justFinished ? 0.15 : 0}>
-                  <span className={cn('inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border', SENTIMENT_CONFIG[contact.aiSentiment!].className)}>
+                <Section label="Sentimento geral das conversas" icon={SENTIMENT_CONFIG[contact.aiSentiment!].icon} iconColor={SENTIMENT_CONFIG[contact.aiSentiment!].iconColor} delay={justFinished ? 0.15 : 0}>
+                  <span
+                    className="color-chip inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border"
+                    style={{ ['--chip']: SENTIMENT_CONFIG[contact.aiSentiment!].chip } as React.CSSProperties}
+                  >
                     {SENTIMENT_CONFIG[contact.aiSentiment!].icon}{SENTIMENT_CONFIG[contact.aiSentiment!].label}
                   </span>
                 </Section>

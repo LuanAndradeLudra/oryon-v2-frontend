@@ -124,8 +124,8 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide"
-                    style={{ backgroundColor: fmt.color + '20', color: fmt.color }}
+                    className="color-chip inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide"
+                    style={{ ['--chip']: fmt.color } as React.CSSProperties}
                   >
                     {fmt.icon}
                     {fmt.label}

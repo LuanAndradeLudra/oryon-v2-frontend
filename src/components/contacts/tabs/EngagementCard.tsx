@@ -186,15 +186,19 @@ export function EngagementCard({ contactId }: Props) {
             <p className="text-[10px] text-surface-500 uppercase tracking-wide mb-2">Conversas por status</p>
             <div className="flex gap-2">
               {Object.entries(conversations.byStatus).map(([status, count]) => {
-                const colors: Record<string, string> = {
-                  open: 'border-blue-500/30 bg-blue-500/10 text-blue-300',
-                  pending: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-                  resolved: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-                  abandoned: 'border-surface-600 bg-surface-800 text-surface-400',
+                const chips: Record<string, string> = {
+                  open: 'var(--color-status-open)',
+                  pending: 'var(--color-cstatus-pending)',
+                  resolved: 'var(--color-cstatus-resolved)',
+                  abandoned: 'var(--color-status-muted)',
                 }
                 const labels: Record<string, string> = { open: 'Abertas', pending: 'Pendentes', resolved: 'Resolvidas', abandoned: 'Abandonadas' }
                 return (
-                  <span key={status} className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${colors[status] ?? colors.abandoned}`}>
+                  <span
+                    key={status}
+                    className="color-chip text-[11px] font-medium px-2.5 py-1 rounded-full border"
+                    style={{ ['--chip']: chips[status] ?? chips.abandoned } as React.CSSProperties}
+                  >
                     {labels[status] ?? status} {count}
                   </span>
                 )
@@ -225,7 +229,10 @@ export function EngagementCard({ contactId }: Props) {
                 </div>
               )}
               {lastAnalysis.status === 'confirmed' && (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                <span
+                  className="color-chip text-[10px] font-medium px-2 py-0.5 rounded-full border"
+                  style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
+                >
                   Confirmada
                 </span>
               )}

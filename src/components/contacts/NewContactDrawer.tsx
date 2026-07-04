@@ -92,8 +92,8 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
             selected.map((tag) => (
               <span
                 key={tag.id}
-                className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                style={{ backgroundColor: tag.color + '33', color: tag.color }}
+                className="color-chip inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+                style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
                 {tag.name}
               </span>

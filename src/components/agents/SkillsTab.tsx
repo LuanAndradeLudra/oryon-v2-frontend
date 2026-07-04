@@ -303,13 +303,23 @@ function StatPill({
   label: string
   icon?: React.ReactNode
 }) {
-  const cls: Record<typeof tone, string> = {
-    success: 'bg-status-active-bg text-status-active ring-status-active-border',
-    muted:   'bg-surface-800 text-surface-400 ring-surface-700',
-    warning: 'bg-status-pending-bg text-status-pending ring-status-pending-border',
+  const chip: Partial<Record<typeof tone, string>> = {
+    success: 'var(--color-status-active)',
+    warning: 'var(--color-status-pending)',
+  }
+  if (tone === 'muted') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full font-medium ring-1 bg-surface-800 text-surface-400 ring-surface-700">
+        {icon}
+        {label}
+      </span>
+    )
   }
   return (
-    <span className={cn('inline-flex items-center gap-1 px-2 py-1 rounded-full font-medium ring-1', cls[tone])}>
+    <span
+      className="color-chip inline-flex items-center gap-1 px-2 py-1 rounded-full font-medium border"
+      style={{ ['--chip']: chip[tone] } as React.CSSProperties}
+    >
       {icon}
       {label}
     </span>

@@ -62,10 +62,11 @@ export function WhatsappLineChip({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-md border bg-brand-500/5 border-brand-500/20 text-brand-300',
+        'color-chip inline-flex items-center rounded-md border',
         base,
         className,
       )}
+      style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
       title={line.label ? formatPhone(line.displayPhoneNumber) : label}
     >
       <Phone className={cn(size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3')} />

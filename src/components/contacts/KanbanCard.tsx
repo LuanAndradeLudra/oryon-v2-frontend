@@ -1,16 +1,17 @@
 import { useCallback, useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  MoreHorizontal, ChevronRight, Phone, Check, Clock, Star, Building2,
+  MoreHorizontal, ChevronRight, Phone, Check, Clock, Building2,
   ExternalLink, Copy, CheckSquare, Square, ArrowRightLeft, Trash2,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { LeadScorePill } from './LeadScorePill'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { contactsApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
-import { cn, hexToRgba, formatRelativeTime } from '@/lib/utils'
+import { cn, formatRelativeTime } from '@/lib/utils'
 import type { Contact, ContactStage, TenantStage } from '@/types'
 
 
@@ -41,7 +42,6 @@ export function KanbanCard({
   const [openingChat, setOpeningChat] = useState(false)
   const navigate = useNavigate()
   const otherStages = stages.filter((s) => s.key !== contact.stage)
-  const stageColor = stages.find((s) => s.key === contact.stage)?.color
 
   // Abre a conversa do contato DENTRO da plataforma (página de Conversas),
   // não o link externo wa.me. Busca a conversa mais recente do contato e
@@ -253,19 +253,13 @@ export function KanbanCard({
       {((contact.tags ?? []).length > 0 || (contact.leadScore ?? 0) > 0) && (
         <div className="mt-2.5 flex gap-1.5 flex-wrap items-center">
           {(contact.leadScore ?? 0) > 0 && (
-            <span
-              title={`Lead score: ${contact.leadScore}`}
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border bg-amber-500/10 border-amber-500/30 text-amber-400 inline-flex items-center gap-0.5"
-            >
-              <Star className="w-2.5 h-2.5" />
-              {contact.leadScore}
-            </span>
+            <LeadScorePill score={contact.leadScore!} />
           )}
           {(contact.tags ?? []).slice(0, 3).map((tag) => (
             <span
               key={tag.id}
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
-              style={{ color: tag.color, borderColor: hexToRgba(tag.color, 0.3), backgroundColor: hexToRgba(tag.color, 0.12) }}
+              className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+              style={{ ['--chip']: tag.color } as React.CSSProperties}
             >
               {tag.name}
             </span>
@@ -276,17 +270,6 @@ export function KanbanCard({
         </div>
       )}
 
-      {/* Stage accent — sits flush with the bottom border, tapers to transparent
-          at both ends to feel like the line is dissolving into the card edge. */}
-      {stageColor && (
-        <span
-          aria-hidden
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[95%] h-[2.25px] pointer-events-none opacity-70"
-          style={{
-            background: `linear-gradient(90deg, transparent 0%, ${stageColor} 25%, ${stageColor} 75%, transparent 100%)`,
-          }}
-        />
-      )}
     </div>
   )
 }

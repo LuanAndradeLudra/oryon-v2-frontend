@@ -41,9 +41,9 @@ const ENTITY_BUCKETS: Array<{ value: string; label: string }> = [
 const SEVERITY_OPTIONS = ['', 'info', 'warn', 'error'] as const
 
 const SEVERITY_STYLE: Record<string, string> = {
-  info:  'bg-surface-700/40 text-surface-200 border-surface-600',
-  warn:  'bg-status-pending-bg text-status-pending border-status-pending/40',
-  error: 'bg-status-failed-bg text-status-failed border-status-failed/40',
+  info:  'var(--color-status-muted)',
+  warn:  'var(--color-status-pending)',
+  error: 'var(--color-danger)',
 }
 
 export function AuditTrail() {
@@ -174,7 +174,7 @@ function Row({ row }: { row: TenantAuditRow }) {
         <div className="flex items-center gap-2">
           <span className="text-surface-100 text-sm">{verb}</span>
           {row.severity !== 'info' && (
-            <span className={cn('inline-block px-1.5 py-0.5 rounded text-[11px] font-medium border', SEVERITY_STYLE[row.severity])}>
+            <span className={cn('color-chip inline-block px-1.5 py-0.5 rounded text-[11px] font-medium border')} style={{ ['--chip']: SEVERITY_STYLE[row.severity] } as React.CSSProperties}>
               {row.severity}
             </span>
           )}

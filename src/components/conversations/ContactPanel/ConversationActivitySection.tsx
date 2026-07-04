@@ -243,7 +243,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
 
   if (loading && entries === null) {
     return (
-      <div className="px-4 py-3 border-t border-surface-800 flex items-center gap-2 text-xs text-surface-500">
+      <div className="panel-divider px-4 py-3 border-t border-surface-800 flex items-center gap-2 text-xs text-surface-500">
         <Loader2 className="w-3 h-3 animate-spin" />
         Carregando histórico…
       </div>
@@ -252,7 +252,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
 
   if (error) {
     return (
-      <div className="px-4 py-3 border-t border-surface-800 text-xs text-status-error-400 flex items-center gap-2">
+      <div className="panel-divider px-4 py-3 border-t border-surface-800 text-xs text-status-error-400 flex items-center gap-2">
         <AlertCircle className="w-3 h-3" />
         {error}
       </div>
@@ -270,7 +270,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
 
   return (
     <>
-      <div className="px-4 pt-4 pb-3 border-t border-surface-800">
+      <div className="panel-divider px-4 pt-4 pb-3 border-t border-surface-800">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-surface-200">Timeline</p>

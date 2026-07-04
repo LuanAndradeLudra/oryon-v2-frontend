@@ -84,7 +84,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
               while the header/footer stay pinned. */}
           <motion.div
             className={cn(
-              'relative z-10 bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-sm',
+              'relative z-10 bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-lg',
               'flex flex-col max-h-[90vh] overflow-hidden',
               className,
             )}
@@ -150,7 +150,7 @@ export function ConfirmModal({
   confirmLabel = 'Confirmar', danger = false, loading = false,
 }: ConfirmModalProps) {
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose} title={title} className="max-w-sm">
       <p className="text-sm text-surface-400 mb-5">{description}</p>
       <div className="flex gap-2 justify-end">
         <Button variant="ghost" onClick={onClose}>Cancelar</Button>

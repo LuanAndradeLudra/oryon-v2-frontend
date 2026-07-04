@@ -732,14 +732,14 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           'relative max-w-[72%] px-3 py-2 rounded-2xl',
           isOutbound
             ? 'bg-bubble-out text-bubble-out-fg rounded-br-sm'
-            : 'bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-sm shadow-sm',
+            : 'bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-sm shadow-[0_2px_8px_rgba(0,0,0,0.12)]',
           !isSameDirection && isOutbound && 'rounded-br-2xl rounded-tr-sm',
           !isSameDirection && !isOutbound && 'rounded-bl-2xl rounded-tl-sm'
         )}
         style={isOutbound ? {
           boxShadow: outboundAccent
-            ? `0 1px 2px 0 rgb(0 0 0 / 0.05), inset -3px 0 0 0 ${outboundAccent}`
-            : '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+            ? `0 2px 8px 0 rgb(0 0 0 / 0.12), inset -3px 0 0 0 ${outboundAccent}`
+            : '0 2px 8px 0 rgb(0 0 0 / 0.12)',
         } : undefined}
       >
         {message.contextWamid && <ReplyQuoteBar message={message} quoted={quotedMessage} />}

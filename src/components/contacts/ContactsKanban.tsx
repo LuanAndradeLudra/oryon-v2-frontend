@@ -222,13 +222,13 @@ function KanbanColumn({
 
   return (
     <div
-      className="flex flex-col w-[85vw] md:w-64 flex-shrink-0 snap-start"
+      className="flex flex-col w-[85vw] md:w-64 flex-shrink-0 snap-start bg-surface-900 rounded-2xl border border-surface-700/50 p-2"
       onDragOver={(e) => { e.preventDefault(); onSetOverKey(stage.key) }}
       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onSetOverKey(null) }}
       onDrop={() => onDrop(stage.key)}
     >
       {/* Column header */}
-      <div className="flex items-center justify-between mb-3 px-1">
+      <div className="flex items-center justify-between mb-1.5 px-1">
         <div className="flex items-center gap-2">
           <span
             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -260,6 +260,14 @@ function KanbanColumn({
           </span>
         </div>
       </div>
+
+      {/* Linha de acento do estágio no topo da coluna — substitui o acento que
+          ficava em cada card do CRM. Faz um leve fade para a direita. */}
+      <div
+        aria-hidden
+        className="h-[2.5px] rounded-full mb-3 mx-1"
+        style={{ background: `linear-gradient(90deg, ${stage.color} 0%, ${stage.color} 45%, ${stage.color}00 100%)` }}
+      />
 
       {/* Scrollable card list — onScroll triggers loadMore near the bottom. */}
       <div

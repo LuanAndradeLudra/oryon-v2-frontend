@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { adAccountsApi } from '@/services/api'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { Banner } from '@/components/ui/Banner'
 import type { AdAccount, AdCampaignMetrics, AdPlatform } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -97,7 +98,7 @@ function ConnectDrawer({
           </div>
 
           {error && (
-            <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">{error}</p>
+            <Banner variant="danger">{error}</Banner>
           )}
         </div>
 

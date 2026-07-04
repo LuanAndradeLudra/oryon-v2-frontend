@@ -23,15 +23,15 @@ import type { Campaign, CampaignStatus } from '@/types'
 
 const STATUS_CONFIG: Record<CampaignStatus, {
   label: string
-  color: string
+  chip: string
   icon: React.ComponentType<{ className?: string }>
 }> = {
-  draft:     { label: 'Rascunho',   color: 'text-surface-400 bg-surface-400/10 border-surface-400/20', icon: FileText },
-  scheduled: { label: 'Agendada',   color: 'text-status-pending bg-status-pending-bg border-status-pending-border',       icon: Clock },
-  sending:   { label: 'Enviando',   color: 'text-status-info bg-status-info-bg border-status-info-border',       icon: Send },
-  sent:      { label: 'Enviada',    color: 'text-status-active bg-status-active-bg border-status-active-border', icon: CheckCircle2 },
-  failed:    { label: 'Falhou',     color: 'text-danger bg-danger/10 border-danger/20',                icon: XCircle },
-  cancelled: { label: 'Cancelada',  color: 'text-surface-500 bg-surface-500/10 border-surface-500/20', icon: AlertCircle },
+  draft:     { label: 'Rascunho',   chip: 'var(--color-status-muted)', icon: FileText },
+  scheduled: { label: 'Agendada',   chip: 'var(--color-status-open)',       icon: Clock },
+  sending:   { label: 'Enviando',   chip: 'var(--color-status-pending)',       icon: Send },
+  sent:      { label: 'Enviada',    chip: 'var(--color-status-active)', icon: CheckCircle2 },
+  failed:    { label: 'Falhou',     chip: 'var(--color-danger)',                icon: XCircle },
+  cancelled: { label: 'Cancelada',  chip: 'var(--color-status-muted)', icon: AlertCircle },
 }
 
 const FILTER_OPTIONS: { value: CampaignStatus | 'all'; label: string }[] = [
@@ -293,7 +293,10 @@ function CampaignCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-sm font-semibold text-surface-100">{campaign.name}</span>
-            <span className={cn('flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border', cfg.color)}>
+            <span
+              className="color-chip border flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
+              style={{ ['--chip']: cfg.chip } as React.CSSProperties}
+            >
               <StatusIcon className="w-3 h-3" />
               {cfg.label}
             </span>

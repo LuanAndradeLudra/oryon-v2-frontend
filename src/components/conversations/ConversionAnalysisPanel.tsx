@@ -5,6 +5,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { conversionApi } from '@/services/api'
+import { Banner } from '@/components/ui/Banner'
 import type { ConversationAnalysisResult, ConversionOutcome, Contact } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -129,15 +130,12 @@ function CapiStatusBadge({
 
   if (sent) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-online/10 border border-online/20 rounded-lg">
-        <CheckCircle2 className="w-3.5 h-3.5 text-online flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-online">Evento enviado para Meta CAPI</p>
-          <p className="text-[10px] text-surface-500">
-            Conversão de R$ {(analysis.dealValue ?? analysis.conversionValue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} reportada
-          </p>
-        </div>
-      </div>
+      <Banner variant="success">
+        <p className="font-semibold">Evento enviado para Meta CAPI</p>
+        <p className="text-[10px] text-surface-500">
+          Conversão de R$ {(analysis.dealValue ?? analysis.conversionValue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} reportada
+        </p>
+      </Banner>
     )
   }
 
@@ -230,8 +228,8 @@ function AnalysisResult({
       {/* Outcome badge + confidence */}
       <div className="flex items-start gap-2.5">
         <div
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0"
-          style={{ backgroundColor: cfg.bg, color: cfg.color }}
+          className="color-chip border flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0"
+          style={{ ['--chip']: cfg.color } as React.CSSProperties}
         >
           {cfg.icon}
           {cfg.label}

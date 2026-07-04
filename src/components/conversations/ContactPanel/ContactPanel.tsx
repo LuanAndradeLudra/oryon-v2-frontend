@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink,
-  Bot, UserCog, KanbanSquare, MapPin, Phone, Plus,
-  Sparkles,
+  KanbanSquare, MapPin, Phone, Plus, Filter,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { TagPickerContent } from '@/components/ui/TagPicker'
@@ -75,52 +74,13 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="px-4 pt-4 pb-3 border-t border-surface-800">
+    <div className="panel-divider px-4 pt-4 pb-3 border-t border-surface-800">
       <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-widest">{title}</p>
         {action}
       </div>
       {children}
     </div>
-  )
-}
-
-// ─── IA RESPONSÁVEL ───────────────────────────────────────────────────────────
-
-function IaResponsavelSection({ conversation }: { conversation: Conversation }) {
-  const { aiPausedUntil, whatsappNumber } = conversation
-  const pausedUntilMs = aiPausedUntil ? new Date(aiPausedUntil).getTime() : null
-  const isPaused = pausedUntilMs !== null && pausedUntilMs > Date.now()
-  const agentLabel = whatsappNumber.label || 'Agente IA'
-
-  const [, setTick] = useState(0)
-  useEffect(() => {
-    if (!isPaused) return
-    const id = setInterval(() => setTick(t => t + 1), 60_000)
-    return () => clearInterval(id)
-  }, [isPaused])
-
-  return (
-    <Section title="IA Responsável">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
-          <Sparkles className="w-4 h-4 text-surface-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-surface-100 truncate">{agentLabel}</p>
-          <p className="text-[11px] text-surface-500 truncate">Atendimento inteligente</p>
-        </div>
-        {isPaused ? (
-          <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-surface-800 text-surface-400 border border-surface-700 whitespace-nowrap">
-            <UserCog className="w-2.5 h-2.5" /> Pausada
-          </span>
-        ) : (
-          <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700 whitespace-nowrap">
-            <Bot className="w-2.5 h-2.5" /> Ativo
-          </span>
-        )}
-      </div>
-    </Section>
   )
 }
 
@@ -272,11 +232,13 @@ export function ContactPanel({
     ) }] : []),
   ]
 
+  // Largura do painel (desktop): 308px = 280px +10%. Reverter = voltar para md:w-[280px].
   return (
-    <aside className="w-full md:w-[280px] flex-shrink-0 flex flex-col h-full bg-surface-950 md:border-l md:border-surface-800">
+    <aside className="conv-surface w-full md:w-[308px] flex-shrink-0 flex flex-col h-full bg-surface-950 md:border-l md:border-surface-800">
       {/* Action bar */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-surface-800 bg-surface-950">
-        <div className="min-w-0">
+      <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-950">
+        <div className="min-w-0 flex items-center gap-1.5">
+          <Filter className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Estágio do funil" />
           {localStage ? (
             <StageBadge stage={localStage} stages={stages} />
           ) : (
@@ -310,7 +272,7 @@ export function ContactPanel({
 
       <div className="flex-1 overflow-y-auto">
         {/* Contact header */}
-        <div className="flex items-center gap-3 py-4 px-4 border-b border-surface-800">
+        <div className="flex items-center gap-3 py-4 px-4">
           <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" className="flex-shrink-0" />
           <div className="min-w-0 flex-1">
             <h4 className="text-base font-semibold text-surface-50 truncate">{contact.displayName}</h4>
@@ -326,12 +288,40 @@ export function ContactPanel({
           </div>
         </div>
 
+        {/* Etiquetas — logo abaixo do header (avatar + telefone) */}
+        <Section
+          title="Etiquetas"
+          action={
+            <button onClick={() => setTagOpen(true)} className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors">
+              <TagIcon className="w-3 h-3" />
+              Gerenciar
+            </button>
+          }
+        >
+          <Modal open={tagOpen} onClose={() => setTagOpen(false)} title="Gerenciar etiquetas" className="max-w-md">
+            <TagPickerContent allTags={allTags} selectedTags={tags} onAdd={onAddTag} onRemove={onRemoveTag} onCreate={onCreateTag} onDelete={onDeleteTag} />
+          </Modal>
+          {tags.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((tag) => (
+                <span key={tag.id} className="color-chip flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium"
+                  style={{ ['--chip']: tag.color } as React.CSSProperties}>
+                  <span className="w-1.5 h-1.5 rounded-full chip-dot" />
+                  {tag.name}
+                  <button onClick={() => onRemoveTag(tag.id)} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-surface-600">Nenhuma etiqueta. Clique em "Gerenciar" para adicionar.</p>
+          )}
+        </Section>
+
         {isFeatureVisible('conversionAnalysisPanel') && (
           <ConversionAnalysisPanel conversationId={conversation.id} contact={contact} />
         )}
-
-        {/* IA Responsável */}
-        <IaResponsavelSection conversation={conversation} />
 
         {/* Timeline */}
         <ConversationActivitySection conversationId={conversation.id} />
@@ -377,37 +367,6 @@ export function ContactPanel({
             <UserPickerList users={allUsers} selectedUserId={assignedUser?.id}
               onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
           </Modal>
-        </Section>
-
-        {/* Tags */}
-        <Section
-          title="Etiquetas"
-          action={
-            <button onClick={() => setTagOpen(true)} className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors">
-              <TagIcon className="w-3 h-3" />
-              Gerenciar
-            </button>
-          }
-        >
-          <Modal open={tagOpen} onClose={() => setTagOpen(false)} title="Gerenciar etiquetas" className="max-w-md">
-            <TagPickerContent allTags={allTags} selectedTags={tags} onAdd={onAddTag} onRemove={onRemoveTag} onCreate={onCreateTag} onDelete={onDeleteTag} />
-          </Modal>
-          {tags.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map((tag) => (
-                <span key={tag.id} className="flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium"
-                  style={{ backgroundColor: tag.color + '28', color: tag.color }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
-                  {tag.name}
-                  <button onClick={() => onRemoveTag(tag.id)} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-surface-600">Nenhuma etiqueta. Clique em "Gerenciar" para adicionar.</p>
-          )}
         </Section>
 
         {/* Notas */}

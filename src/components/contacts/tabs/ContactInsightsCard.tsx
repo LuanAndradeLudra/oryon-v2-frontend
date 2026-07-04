@@ -123,12 +123,8 @@ export function ContactInsightsCard({ contact }: Props) {
               {contact.tags!.map((tag) => (
                 <span
                   key={tag.id}
-                  className="text-[11px] font-medium px-2 py-0.5 rounded-full border"
-                  style={{
-                    color: tag.color,
-                    borderColor: `${tag.color}40`,
-                    backgroundColor: `${tag.color}15`,
-                  }}
+                  className="color-chip text-[11px] font-medium px-2 py-0.5 rounded-full border"
+                  style={{ ['--chip']: tag.color } as React.CSSProperties}
                 >
                   {tag.name}
                 </span>

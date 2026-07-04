@@ -4,7 +4,6 @@ import {
   Tag, Check, Archive, ArrowLeft, MoreVertical,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
-import { Badge } from '@/components/ui/Badge'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { TagPickerContent } from '@/components/ui/TagPicker'
 import { UserPicker } from '@/components/ui/UserPicker'
@@ -12,7 +11,7 @@ import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { cn, hexToRgba } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { HandoffChip } from './AiHandoffBanner'
 import type { Conversation, Tag as TagType, User } from '@/types'
 
@@ -124,14 +123,17 @@ export function ChatHeader({
         type="button"
         onClick={() => { setTagOpen(false); setUserOpen(false); setMoreOpen(false); setStatusOpen((v) => !v) }}
         title="Alterar status"
+        style={statusOpen
+          ? ({ ['--chip']: status === 'resolved'
+                ? 'var(--color-cstatus-resolved)'
+                : status === 'pending'
+                  ? 'var(--color-cstatus-pending)'
+                  : 'var(--color-status-open)' } as React.CSSProperties)
+          : undefined}
         className={cn(
           'flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-medium transition-all border',
           statusOpen
-            ? (status === 'resolved'
-                ? 'bg-status-active-bg text-status-active border-status-active-border'
-                : status === 'pending'
-                  ? 'bg-status-pending-bg text-status-pending border-status-pending-border'
-                  : 'bg-status-open-bg text-status-open border-status-open-border')
+            ? 'color-chip'
             : 'bg-surface-800 text-surface-300 border-surface-700 hover:bg-surface-700 hover:text-surface-200',
         )}
       >
@@ -146,13 +148,13 @@ export function ChatHeader({
             const statusBg = v === 'open'
               ? 'bg-status-open/10 hover:bg-status-open/18'
               : v === 'pending'
-                ? 'bg-status-pending/10 hover:bg-status-pending/18'
-                : 'bg-status-active/10 hover:bg-status-active/18'
+                ? 'bg-cstatus-pending/10 hover:bg-cstatus-pending/18'
+                : 'bg-cstatus-resolved/10 hover:bg-cstatus-resolved/18'
             const statusText = v === 'open'
               ? 'text-status-open'
               : v === 'pending'
-                ? 'text-status-pending'
-                : 'text-status-active'
+                ? 'text-cstatus-pending'
+                : 'text-cstatus-resolved'
             return (
               <button
                 key={v}
@@ -179,11 +181,8 @@ export function ChatHeader({
 
   // ─── Mobile compact layout ──────────────────────────────────────────────
   if (isMobile) {
-    const visibleTags = tags.slice(0, 2)
-    const extraTags = tags.length - visibleTags.length
-
     return (
-      <div className="flex items-center px-2 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] border-b border-surface-800 bg-surface-950 flex-shrink-0 gap-2">
+      <div className="conv-surface flex items-center px-2 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] border-b border-surface-800 bg-surface-950 flex-shrink-0 gap-2">
         {/* Back */}
         {onBack && (
           <button
@@ -207,27 +206,7 @@ export function ChatHeader({
             <WhatsAppIcon size={10} />
             <span className="truncate">{contact.waId}</span>
           </div>
-          {tags.length > 0 && (
-            <div className="flex items-center flex-wrap gap-1 mt-0.5">
-              {visibleTags.map((t) => (
-                <span
-                  key={t.id}
-                  className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap"
-                  style={{
-                    backgroundColor: hexToRgba(t.color, 0.18),
-                    color: t.color,
-                  }}
-                >
-                  <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} />
-                  {t.name}
-                </span>
-              ))}
-              {extraTags > 0 && (
-                <span className="text-[10px] text-surface-500 font-medium">+{extraTags}</span>
-              )}
-            </div>
-          )}
-          {/* Handoff chip — wraps below the phone/tags row so the right-side
+          {/* Handoff chip — wraps below the phone row so the right-side
               buttons (status / more) stay reachable even on narrow phones. */}
           <div className="mt-1">
             <HandoffChip
@@ -255,7 +234,7 @@ export function ChatHeader({
                 aria-label="Mais ações"
                 className={cn(
                   'w-9 h-9 flex items-center justify-center rounded-lg transition-all',
-                  moreOpen ? 'bg-brand-600/20 text-brand-400' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200',
+                  moreOpen ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200',
                 )}
               >
                 <MoreVertical className="w-5 h-5" />
@@ -310,7 +289,7 @@ export function ChatHeader({
 
   // ─── Desktop layout (original) ──────────────────────────────────────────
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800 bg-surface-950 flex-shrink-0 gap-3">
+    <div className="conv-surface flex items-center justify-between px-4 py-3 border-b border-surface-800 bg-surface-950 flex-shrink-0 gap-3">
 
       {/* ── Left: contact info ────────────────────────────────── */}
       <div className="flex items-center gap-3 min-w-0">
@@ -318,19 +297,6 @@ export function ChatHeader({
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-sm font-semibold text-surface-50 truncate">{contact.displayName}</h2>
-            <Badge variant={status === 'pending' ? 'pending' : status === 'open' ? 'open' : status === 'resolved' ? 'resolved' : 'abandoned'}>
-              {status === 'pending' ? 'Pendente' : status === 'open' ? 'Aberta' : status === 'resolved' ? 'Resolvida' : 'Abandonada'}
-            </Badge>
-            {tags.slice(0, 2).map((t) => (
-              <span
-                key={t.id}
-                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                style={{ backgroundColor: t.color + '28', color: t.color }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: t.color }} />
-                {t.name}
-              </span>
-            ))}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <WhatsAppIcon size={12} />
@@ -340,7 +306,7 @@ export function ChatHeader({
             {assignedUser && (
               <>
                 <span className="text-surface-600 text-xs">·</span>
-                <span className="text-xs text-brand-400 truncate">
+                <span className="text-xs text-surface-300 truncate">
                   {assignedUser.firstName} {assignedUser.lastName}
                 </span>
               </>
@@ -369,7 +335,7 @@ export function ChatHeader({
             onClick={() => { closeAll(); setTagOpen(true) }}
             className={cn(
               'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
-              tagOpen ? 'bg-brand-600/20 text-brand-400' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
+              tagOpen ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
             )}
           >
             <Tag className="w-4 h-4" />
@@ -410,7 +376,7 @@ export function ChatHeader({
             <div className="relative">
               <Info className="w-4 h-4" />
               {(contact.metaAdsReferral || contact.googleAdsAttribution) && !infoOpen && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand-500 border border-surface-900" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-surface-400 border border-surface-900" />
               )}
             </div>
           </button>

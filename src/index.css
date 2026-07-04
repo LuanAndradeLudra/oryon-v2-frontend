@@ -146,15 +146,24 @@
   --color-status-active:         #4ADE80;
   --color-status-active-bg:      rgba(74, 222, 128, 0.12);
   --color-status-active-border:  rgba(74, 222, 128, 0.25);
-  --color-status-open:           #2DD4BF;
-  --color-status-open-bg:        rgba(45, 212, 191, 0.12);
-  --color-status-open-border:    rgba(45, 212, 191, 0.28);
+  --color-status-open:           #3B82F6;
+  --color-status-open-bg:        rgba(59, 130, 246, 0.12);
+  --color-status-open-border:    rgba(59, 130, 246, 0.30);
   --color-status-muted:          #6B8080;
   --color-status-muted-bg:       rgba(107, 128, 128, 0.12);
   --color-status-muted-border:   rgba(107, 128, 128, 0.25);
   --color-status-info:           #60A5FA;
   --color-status-info-bg:        rgba(96, 165, 250, 0.12);
   --color-status-info-border:    rgba(96, 165, 250, 0.25);
+
+  /* Status de conversa — paleta isolada p/ ajustar sem mexer no success/warning
+     globais. open usa status-open (azul) · abandoned usa status-muted (cinza). */
+  --color-cstatus-pending:         #FCD34D;
+  --color-cstatus-pending-bg:      rgba(252, 211, 77, 0.12);
+  --color-cstatus-pending-border:  rgba(252, 211, 77, 0.28);
+  --color-cstatus-resolved:        #86EFAC;
+  --color-cstatus-resolved-bg:     rgba(134, 239, 172, 0.12);
+  --color-cstatus-resolved-border: rgba(134, 239, 172, 0.28);
 
   /* ── Presence ──────────────────────────────────────────────────────────── */
   --color-presence-online:  #22C55E;
@@ -263,6 +272,16 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--color-surface-950);
+}
+
+/* ── Escala global da UI (desktop) ───────────────────────────────────────────
+   Manopla única de escala: aumenta o tamanho base (rem) de TODO o app de uma vez
+   — sidebar, top bar, modais, textos e espaçamentos que usam medida relativa.
+   Escopado a >=768px para não afetar o app mobile (Capacitor). Ajuste só o valor.
+   OBS: elementos cravados em px fixo (ex.: text-[10px], size={N}) NÃO seguem
+   esta manopla — precisariam de conversão px→rem para crescer junto. */
+@media (min-width: 768px) {
+  :root { font-size: 110%; } /* 16px → 17.6px  (~+10%) */
 }
 
 /* ── Typography base ─────────────────────────────────────────────────────── */
@@ -387,6 +406,16 @@ code, pre, kbd, samp {
 .filter-scroll::-webkit-scrollbar-thumb       { background: var(--color-surface-700); border-radius: 999px; }
 .filter-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-surface-600); }
 
+/* ── Colored chip (etiquetas, estágio do funil, status, etc.) ────────────────
+   A cor entra via --chip. Nos DOIS temas: cheio — fundo = cor levemente
+   escurecida + texto quase branco. O ponto (.chip-dot) segue o texto. */
+.color-chip {
+  background-color: color-mix(in srgb, var(--chip) 85%, #000);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--chip) 85%, #000);
+}
+.chip-dot { background-color: currentColor; }
+
 .kanban-scroll::-webkit-scrollbar             { height: 10px; }
 .kanban-scroll::-webkit-scrollbar-track       { background: var(--color-surface-900); border-radius: 999px; }
 .kanban-scroll::-webkit-scrollbar-thumb {
@@ -403,10 +432,14 @@ code, pre, kbd, samp {
    * 900 → cards/painéis (cinza claro — contrasta sobre o fundo branco)
    * 800 → seções internas do card (cinza um pouco mais escuro)
    * 700 → bordas                                                           */
-  --color-surface-950: #FFFFFF;
-  --color-surface-900: #F7F8FA;
-  --color-surface-800: #F0F2F6;
-  --color-surface-700: #E2E5EE;
+  /* Elevação do tema claro: canvas cinza claro → cards/inputs brancos "sobem"
+     sobre ele (+ sombras suaves). Antes o fundo era branco puro e os cards um
+     cinza quase branco — nada separava de nada. Ordem agora consistente com o
+     escuro: 950 = fundo/recua, 800 = superfície elevada. */
+  --color-surface-950: #F1F3F7;
+  --color-surface-900: #FBFBFD;
+  --color-surface-800: #FFFFFF;
+  --color-surface-700: #D9DCE5;
   --color-surface-600: #6B7385;
   --color-surface-500: #4B5263;
   --color-surface-400: #374151;
@@ -440,20 +473,20 @@ code, pre, kbd, samp {
   --color-accent-on:    #FFFFFF;
 
   /* Bubbles (light) */
-  --color-bubble-out:      #E0F5F2;
+  --color-bubble-out:      #C9ECE6;
   --color-bubble-out-fg:   #1A1F2E;
   --color-bubble-out-time: rgba(26, 31, 46, 0.55);
-  --color-bubble-in:       #F0F2F5;
+  --color-bubble-in:       #FFFFFF;
   --color-bubble-in-fg:    #111827;
 
   /* Card 24h */
   --color-card-24h-bg:     #FAFAFC;
   --color-card-24h-border: #E4E6EC;
 
-  /* Status open (light: teal-600) */
-  --color-status-open:        #14B8A6;
-  --color-status-open-bg:     rgba(20, 184, 166, 0.10);
-  --color-status-open-border: rgba(20, 184, 166, 0.25);
+  /* Status open (light: blue-700) */
+  --color-status-open:        #1D4ED8;
+  --color-status-open-bg:     rgba(29, 78, 216, 0.10);
+  --color-status-open-border: rgba(29, 78, 216, 0.25);
   --color-status-muted:       #5C657A;
   --color-status-pending:     #B45309;
   --color-status-pending-bg:  rgba(180, 83, 9, 0.08);
@@ -464,6 +497,14 @@ code, pre, kbd, samp {
   --color-status-info:        #2563EB;
   --color-status-info-bg:     rgba(37, 99, 235, 0.08);
   --color-status-info-border: rgba(37, 99, 235, 0.20);
+
+  /* Status de conversa (light) */
+  --color-cstatus-pending:        #D97706;
+  --color-cstatus-pending-bg:     rgba(217, 119, 6, 0.10);
+  --color-cstatus-pending-border: rgba(217, 119, 6, 0.25);
+  --color-cstatus-resolved:        #16A34A;
+  --color-cstatus-resolved-bg:     rgba(22, 163, 74, 0.10);
+  --color-cstatus-resolved-border: rgba(22, 163, 74, 0.25);
 
   /* Semantic (light versions) */
   --color-success:  #15803D;
@@ -488,8 +529,38 @@ code, pre, kbd, samp {
  * indesejado no light mode.                                                */
 [data-theme="light"] [class*="rounded"][class*="border-surface-7"],
 [data-theme="light"] [class*="rounded"][class*="border-surface-8"] {
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.09), 0 4px 12px rgba(15, 23, 42, 0.09);
 }
+
+/* ── Conversas (tema claro) — lista e painel em branco sobre o canvas cinza;
+   hover/ativo dos itens em cinza (no dark o branco/50 sumia no fundo branco).
+   Escopado ao claro; o escuro mantém o comportamento por token. */
+[data-theme="light"] .conv-surface {
+  background-color: var(--color-surface-800);
+  border-color: var(--color-surface-700);
+}
+/* Light: contact-panel section dividers use surface-800 (= #FFFFFF in light, so
+   invisible). Remap them to surface-700 (#D9DCE5). Dark keeps surface-800. */
+[data-theme="light"] .panel-divider {
+  border-color: var(--color-surface-700);
+}
+[data-theme="light"] .conv-item { background-color: #FFFFFF; }
+/* Hover: only the border reacts — no fill change (intense teal). */
+[data-theme="light"] .conv-item:hover { border-color: #4ECBB8; }
+/* Active (conversa aberta): thin 1.5px border with a dark teal gradient.
+   Double background-clip trick so the gradient rides the rounded border while
+   the card stays white inside. */
+[data-theme="light"] .conv-item.conv-item-active {
+  border: 1.5px solid transparent;
+  background-image:
+    linear-gradient(#FFFFFF, #FFFFFF),
+    linear-gradient(135deg, #00A896 0%, #0A4A44 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+/* (Conversation list "background container"/lane removed — the previews now sit
+   directly on the white list surface as shadowed cards.) */
 
 /* ── Scrollbar light ─────────────────────────────────────────────────────── */
 [data-theme="light"] ::-webkit-scrollbar-thumb       { background: var(--color-surface-700); }
@@ -554,6 +625,11 @@ code, pre, kbd, samp {
 .card-24h {
   background: var(--color-card-24h-bg);
   border: 1.5px solid var(--color-card-24h-border);
+}
+/* Light: alert icon + copy inside the 24h card match the "Escolher template"
+   chip fill (same darkened brand-600 as .color-chip). Dark keeps its own tones. */
+[data-theme="light"] .card-24h-accent {
+  color: color-mix(in srgb, var(--color-brand-600) 85%, #000);
 }
 
 /* ── Copilot / IA icon — gradiente teal ─────────────────────────────────── */

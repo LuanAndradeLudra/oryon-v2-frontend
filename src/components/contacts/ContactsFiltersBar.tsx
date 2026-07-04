@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Search, X, ChevronDown, Tag } from 'lucide-react'
-import { cn, hexToRgba } from '@/lib/utils'
+import { Search, X, ChevronDown, Tag, SlidersHorizontal } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { tagsApi } from '@/services/api'
 import type { ContactFilters, ContactSource, ContactSentiment, ContactIntent, Tag as TagType } from '@/types'
 
@@ -51,20 +51,28 @@ const LAST_CONTACTS: { value: NonNullable<ContactFilters['lastContact']>; label:
   { value: 'none', label: 'Sem contato' },
 ]
 
+const labelOf = (arr: { value: string; label: string }[], v?: string) =>
+  arr.find((o) => o.value === v)?.label
+
 // ─── Custom select wrapper ────────────────────────────────────────────────────
 
-function FilterSelect({ value, onChange, children, placeholder }: {
+function FilterSelect({ value, onChange, children, placeholder, fullWidth }: {
   value: string
   onChange: (v: string) => void
   children: React.ReactNode
   placeholder?: string
+  /** Ocupa 100% da largura — usado dentro do painel "Filtros". */
+  fullWidth?: boolean
 }) {
   return (
-    <div className="relative flex items-center">
+    <div className={cn('relative flex items-center', fullWidth && 'w-full')}>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none pl-3 pr-8 py-2 rounded-lg text-sm bg-surface-800 border border-surface-700 text-surface-300 focus:outline-none focus:border-brand-500 transition-all cursor-pointer"
+        className={cn(
+          'appearance-none pl-3 pr-8 py-2 rounded-lg text-sm bg-surface-800 border border-surface-700 text-surface-300 focus:outline-none focus:border-brand-500 transition-all cursor-pointer',
+          fullWidth && 'w-full',
+        )}
       >
         {placeholder && <option value="">{placeholder}</option>}
         {children}
@@ -151,8 +159,8 @@ function TagFilter({ selected, onChange }: {
                     <span className="text-xs text-surface-200 flex-1 truncate">{t.name}</span>
                     {active && (
                       <span
-                        className="w-3.5 h-3.5 rounded-sm flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-                        style={{ backgroundColor: hexToRgba(t.color, 0.25), color: t.color }}
+                        className="color-chip w-3.5 h-3.5 rounded-sm flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                        style={{ ['--chip']: t.color } as React.CSSProperties}
                       >✓</span>
                     )}
                   </button>
@@ -176,158 +184,180 @@ function TagFilter({ selected, onChange }: {
   )
 }
 
+// ─── Grupo de filtros dentro do painel "Filtros" ──────────────────────────────
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[10px] uppercase tracking-wider text-surface-500 font-semibold">{label}</p>
+      {children}
+    </div>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
+//
+// Cabeçalho enxuto: busca + os 2 filtros mais usados inline (Fonte, Etiquetas) +
+// um botão "Filtros" que agrupa o resto (IA, Atividade, Ordenar). Os filtros
+// avançados ativos viram chips removíveis para não ficarem escondidos.
 
 interface ContactsFiltersBarProps {
   filters: ContactFilters
   onFiltersChange: (f: ContactFilters) => void
-  /** Quando true, renderiza num layout empilhado (busca em cima, filtros
-   *  embaixo) sem a faixa própria (px/py/border-b) — para ser hospedado
-   *  dentro do slot col-span-2 da ContactsStatsBar. Default false mantém o
-   *  layout de faixa autônoma usado quando o card de Insights está ativo. */
-  embedded?: boolean
 }
 
-export function ContactsFiltersBar({ filters, onFiltersChange, embedded = false }: ContactsFiltersBarProps) {
-  const hasFilters =
-    !!filters.source ||
-    (filters.tagId?.length ?? 0) > 0 ||
-    !!filters.intent ||
-    !!filters.sentiment ||
-    filters.optIn !== undefined ||
-    !!filters.leadScoreBand ||
-    !!filters.lastContact
+export function ContactsFiltersBar({ filters, onFiltersChange }: ContactsFiltersBarProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
-  // Limpar filtros — ícone X à direita da busca. Só aparece quando há filtro
-  // ativo; por ser horizontal, não altera a altura do card.
-  const clearBtn = hasFilters && (
-    <button
-      onClick={() => onFiltersChange({ search: filters.search, sortBy: filters.sortBy })}
-      title="Limpar filtros"
-      aria-label="Limpar filtros"
-      className="flex-shrink-0 flex items-center justify-center px-2.5 py-2 rounded-lg border border-surface-700 bg-surface-800 text-surface-400 hover:text-surface-100 hover:border-surface-600 transition-all"
-    >
-      <X className="w-4 h-4" />
-    </button>
-  )
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
-  const search = (
-    <div className={cn('relative', embedded ? 'flex-1 min-w-0' : 'flex-1 min-w-48')}>
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" />
-      <input
-        type="text"
-        value={filters.search ?? ''}
-        onChange={(e) => onFiltersChange({ ...filters, search: e.target.value || undefined })}
-        placeholder="Buscar por nome, telefone, empresa ou etiqueta..."
-        className="w-full pl-9 pr-9 py-2 rounded-lg text-sm bg-surface-800 border border-surface-700 text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
-      />
-      {filters.search && (
-        <button
-          onClick={() => onFiltersChange({ ...filters, search: undefined })}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-100"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      )}
-    </div>
-  )
+  const set = (patch: Partial<ContactFilters>) => onFiltersChange({ ...filters, ...patch })
 
-  // Filtros desktop — em mobile so a busca aparece. Filtros avancados
-  // ficam para o desktop (abrir o link no computador via "Mais").
-  const advancedFilters = (
-    <div className="hidden md:flex items-center gap-2 flex-wrap">
-      {/* Source */}
-      <FilterSelect
-        value={filters.source ?? ''}
-        onChange={(v) => onFiltersChange({ ...filters, source: (v || undefined) as ContactSource | undefined })}
-        placeholder="Fonte"
-      >
-        {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-      </FilterSelect>
+  // Filtros "avançados" — os que moram dentro do botão. Contam pro badge.
+  const advancedCount = [
+    filters.intent,
+    filters.sentiment,
+    filters.leadScoreBand,
+    filters.lastContact,
+    filters.optIn !== undefined ? 'x' : undefined,
+  ].filter(Boolean).length
 
-      {/* Tags */}
-      <TagFilter
-        selected={filters.tagId ?? []}
-        onChange={(ids) => onFiltersChange({ ...filters, tagId: ids.length > 0 ? ids : undefined })}
-      />
+  const clearAll = () => onFiltersChange({ search: filters.search, sortBy: filters.sortBy })
 
-      {/* Sort */}
-      <FilterSelect
-        value={filters.sortBy ?? 'lastContactedAt'}
-        onChange={(v) => onFiltersChange({ ...filters, sortBy: v as ContactFilters['sortBy'] })}
-      >
-        {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-      </FilterSelect>
+  // Chips dos filtros avançados ativos — mantêm visível o que está aplicado sem
+  // precisar reabrir o painel.
+  const chips: { key: string; label: string; onRemove: () => void }[] = []
+  if (filters.intent)        chips.push({ key: 'intent',    label: labelOf(INTENTS, filters.intent) ?? 'Intenção',       onRemove: () => set({ intent: undefined }) })
+  if (filters.sentiment)     chips.push({ key: 'sentiment', label: labelOf(SENTIMENTS, filters.sentiment) ?? 'Sentimento', onRemove: () => set({ sentiment: undefined }) })
+  if (filters.leadScoreBand) chips.push({ key: 'lead',      label: labelOf(LEAD_BANDS, filters.leadScoreBand) ?? 'Lead score', onRemove: () => set({ leadScoreBand: undefined }) })
+  if (filters.lastContact)   chips.push({ key: 'last',      label: labelOf(LAST_CONTACTS, filters.lastContact) ?? 'Atividade', onRemove: () => set({ lastContact: undefined }) })
+  if (filters.optIn !== undefined) chips.push({ key: 'optin', label: filters.optIn ? 'Com opt-in' : 'Sem opt-in', onRemove: () => set({ optIn: undefined }) })
 
-      {/* Intent */}
-      <FilterSelect
-        value={filters.intent ?? ''}
-        onChange={(v) => onFiltersChange({ ...filters, intent: (v || undefined) as ContactIntent | undefined })}
-        placeholder="Intenção"
-      >
-        {INTENTS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
-      </FilterSelect>
-
-      {/* Sentiment (sobre aiSentiment) */}
-      <FilterSelect
-        value={filters.sentiment ?? ''}
-        onChange={(v) => onFiltersChange({ ...filters, sentiment: (v || undefined) as ContactSentiment | undefined })}
-        placeholder="Sentimento"
-      >
-        {SENTIMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-      </FilterSelect>
-
-      {/* Opt-in (boolean → string no select) */}
-      <FilterSelect
-        value={filters.optIn === undefined ? '' : String(filters.optIn)}
-        onChange={(v) => onFiltersChange({ ...filters, optIn: v === '' ? undefined : v === 'true' })}
-        placeholder="Opt-in"
-      >
-        {OPT_INS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </FilterSelect>
-
-      {/* Lead score (faixa interpretada no backend) */}
-      <FilterSelect
-        value={filters.leadScoreBand ?? ''}
-        onChange={(v) => onFiltersChange({ ...filters, leadScoreBand: (v || undefined) as ContactFilters['leadScoreBand'] })}
-        placeholder="Lead score"
-      >
-        {LEAD_BANDS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
-      </FilterSelect>
-
-      {/* Atividade (recência do último contato) */}
-      <FilterSelect
-        value={filters.lastContact ?? ''}
-        onChange={(v) => onFiltersChange({ ...filters, lastContact: (v || undefined) as ContactFilters['lastContact'] })}
-        placeholder="Atividade"
-      >
-        {LAST_CONTACTS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-      </FilterSelect>
-    </div>
-  )
-
-  // Embedded: layout empilhado p/ preencher a altura do slot col-span-2.
-  // O X de limpar filtros fica na linha da busca, à direita.
-  if (embedded) {
-    return (
-      <div className="flex flex-col justify-center gap-2 h-full">
-        <div className="flex items-center gap-2">
-          {search}
-          {clearBtn}
-        </div>
-        {advancedFilters}
-      </div>
-    )
-  }
-
-  // Standalone: faixa própria (usada quando o card de Insights está ativo).
   return (
     <div className="flex flex-col gap-2 px-4 py-2.5 border-b border-surface-800">
-      <div className="flex items-center gap-2 flex-wrap">
-        {search}
-        {advancedFilters}
-        {clearBtn}
+      <div className="flex items-center gap-2">
+        {/* Busca */}
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" />
+          <input
+            type="text"
+            value={filters.search ?? ''}
+            onChange={(e) => set({ search: e.target.value || undefined })}
+            placeholder="Buscar por nome, telefone, empresa ou etiqueta..."
+            className="w-full pl-9 pr-9 py-2 rounded-lg text-sm bg-surface-800 border border-surface-700 text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+          />
+          {filters.search && (
+            <button
+              onClick={() => set({ search: undefined })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-100"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Inline: Fonte + Etiquetas + botão Filtros (só desktop) */}
+        <div className="hidden md:flex items-center gap-2">
+          <FilterSelect
+            value={filters.source ?? ''}
+            onChange={(v) => set({ source: (v || undefined) as ContactSource | undefined })}
+            placeholder="Fonte"
+          >
+            {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </FilterSelect>
+
+          <TagFilter
+            selected={filters.tagId ?? []}
+            onChange={(ids) => set({ tagId: ids.length > 0 ? ids : undefined })}
+          />
+
+          <div ref={menuRef} className="relative">
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className={cn(
+                'flex items-center gap-1.5 pl-3 pr-2.5 py-2 rounded-lg text-sm border transition-all',
+                advancedCount > 0
+                  ? 'bg-brand-600/15 border-brand-500/40 text-brand-300'
+                  : 'bg-surface-800 border-surface-700 text-surface-300 hover:border-surface-600',
+              )}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Filtros</span>
+              {advancedCount > 0 && (
+                <span
+                  className="color-chip inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold border"
+                  style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}
+                >
+                  {advancedCount}
+                </span>
+              )}
+              <ChevronDown className={cn('w-3.5 h-3.5 flex-shrink-0 transition-transform', menuOpen && 'rotate-180')} />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-surface-800 border border-surface-700 rounded-xl shadow-xl shadow-black/40 p-3 flex flex-col gap-3">
+                <FilterGroup label="IA">
+                  <FilterSelect fullWidth value={filters.intent ?? ''} onChange={(v) => set({ intent: (v || undefined) as ContactIntent | undefined })} placeholder="Intenção">
+                    {INTENTS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
+                  </FilterSelect>
+                  <FilterSelect fullWidth value={filters.sentiment ?? ''} onChange={(v) => set({ sentiment: (v || undefined) as ContactSentiment | undefined })} placeholder="Sentimento">
+                    {SENTIMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </FilterSelect>
+                  <FilterSelect fullWidth value={filters.leadScoreBand ?? ''} onChange={(v) => set({ leadScoreBand: (v || undefined) as ContactFilters['leadScoreBand'] })} placeholder="Lead score">
+                    {LEAD_BANDS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+                  </FilterSelect>
+                </FilterGroup>
+
+                <FilterGroup label="Atividade">
+                  <FilterSelect fullWidth value={filters.lastContact ?? ''} onChange={(v) => set({ lastContact: (v || undefined) as ContactFilters['lastContact'] })} placeholder="Atividade">
+                    {LAST_CONTACTS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                  </FilterSelect>
+                  <FilterSelect fullWidth value={filters.optIn === undefined ? '' : String(filters.optIn)} onChange={(v) => set({ optIn: v === '' ? undefined : v === 'true' })} placeholder="Opt-in">
+                    {OPT_INS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </FilterSelect>
+                </FilterGroup>
+
+                <FilterGroup label="Ordenar por">
+                  <FilterSelect fullWidth value={filters.sortBy ?? 'lastContactedAt'} onChange={(v) => set({ sortBy: v as ContactFilters['sortBy'] })}>
+                    {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </FilterSelect>
+                </FilterGroup>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Chips dos filtros avançados ativos */}
+      {chips.length > 0 && (
+        <div className="hidden md:flex items-center gap-1.5 flex-wrap">
+          {chips.map((c) => (
+            <span
+              key={c.key}
+              className="inline-flex items-center gap-1 text-[11px] bg-surface-700 text-surface-100 pl-2.5 pr-1.5 py-0.5 rounded-full border border-surface-600"
+            >
+              {c.label}
+              <button onClick={c.onRemove} aria-label={`Remover ${c.label}`} className="text-surface-400 hover:text-surface-100">
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          ))}
+          <button
+            onClick={clearAll}
+            className="ml-auto text-[10px] text-surface-500 hover:text-surface-300 transition-colors flex items-center gap-1"
+          >
+            <X className="w-2.5 h-2.5" />
+            Limpar tudo
+          </button>
+        </div>
+      )}
     </div>
   )
 }

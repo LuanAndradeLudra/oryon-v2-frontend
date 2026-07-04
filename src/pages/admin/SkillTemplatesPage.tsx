@@ -410,15 +410,27 @@ function Badge({
   tone: 'success' | 'muted' | 'brand' | 'pending' | 'danger'
   children: React.ReactNode
 }) {
-  const cls: Record<typeof tone, string> = {
-    success: 'bg-status-active-bg text-status-active ring-status-active-border',
-    muted:   'bg-surface-800 text-surface-400 ring-surface-700',
-    brand:   'bg-brand-600/15 text-brand-400 ring-brand-600/30',
-    pending: 'bg-status-pending-bg text-status-pending ring-status-pending-border',
-    danger:  'bg-danger/10 text-danger ring-danger/30',
+  // `muted` stays on the neutral surface path (no --chip); the colored tones
+  // render as filled chips (darkened bg + white text) via .color-chip.
+  const chipColor: Partial<Record<typeof tone, string>> = {
+    success: 'var(--color-status-active)',
+    brand:   'var(--color-brand-500)',
+    pending: 'var(--color-status-pending)',
+    danger:  'var(--color-danger)',
+  }
+  const base = 'inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium'
+  if (tone === 'muted') {
+    return (
+      <span className={cn(base, 'ring-1 bg-surface-800 text-surface-400 ring-surface-700')}>
+        {children}
+      </span>
+    )
   }
   return (
-    <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1', cls[tone])}>
+    <span
+      className={cn(base, 'color-chip border')}
+      style={{ ['--chip']: chipColor[tone] } as React.CSSProperties}
+    >
       {children}
     </span>
   )

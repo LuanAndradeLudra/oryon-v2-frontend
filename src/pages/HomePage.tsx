@@ -35,12 +35,12 @@ function relativeTime(date: string) {
 
 // ── Personal header ────────────────────────────────────────────────────────────
 
-const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
-  super_admin:    { label: 'Equipe Oryon', cls: 'bg-brand-700/20 text-brand-300 border border-brand-600/40' },
-  business_admin: { label: 'Admin',        cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
-  admin:          { label: 'Admin',        cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
-  supervisor:     { label: 'Supervisor',   cls: 'bg-status-pending-bg text-status-pending border border-status-pending-border' },
-  agent:          { label: 'Agente',       cls: 'bg-surface-700 text-surface-300 border border-surface-600' },
+const ROLE_CONFIG: Record<string, { label: string; chip: string }> = {
+  super_admin:    { label: 'Equipe Oryon', chip: 'var(--color-brand-500)' },
+  business_admin: { label: 'Admin',        chip: 'var(--color-brand-500)' },
+  admin:          { label: 'Admin',        chip: 'var(--color-brand-500)' },
+  supervisor:     { label: 'Supervisor',   chip: 'var(--color-status-pending)' },
+  agent:          { label: 'Agente',       chip: 'var(--color-status-muted)' },
 }
 
 function PersonalHeader({ user }: { user: User }) {
@@ -57,7 +57,7 @@ function PersonalHeader({ user }: { user: User }) {
         {greeting}, {user.firstName} <Hand className="w-6 h-6 inline text-surface-400" />
       </h1>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', role.cls)}>
+        <span className={cn('color-chip inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border')} style={{ ['--chip']: role.chip } as React.CSSProperties}>
           {role.label}
         </span>
         {user.departmentName && (

@@ -16,8 +16,9 @@
 //     </>
 //   )
 
-import { AlertTriangle, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Banner } from '@/components/ui/Banner'
 
 interface WhatsappLineRequiredBannerProps {
   /** Plural noun used in the message — e.g. "automações", "campanhas",
@@ -34,27 +35,23 @@ export function WhatsappLineRequiredBanner({
   settingsHref = '/settings/numbers',
 }: WhatsappLineRequiredBannerProps) {
   return (
-    <div className="waba-banner mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
-      <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-300">
-          <AlertTriangle className="h-4 w-4" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-amber-100">
-            Nenhuma linha WhatsApp conectada
-          </p>
-          <p className="mt-0.5 text-[13px] text-amber-200/80">
-            Você precisa conectar uma linha WhatsApp Business (WABA) antes de criar {resource}. Todas as operações dependentes são bloqueadas até que exista pelo menos uma linha ativa no tenant.
-          </p>
-        </div>
+    <Banner
+      variant="warning"
+      className="waba-banner mb-4"
+      action={
         <Link
           to={settingsHref}
-          className="waba-banner-btn flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-100 transition-colors hover:bg-amber-500/30"
+          className="waba-banner-btn flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/25"
         >
           Configurar WhatsApp
           <ArrowRight className="h-3 w-3" />
         </Link>
-      </div>
-    </div>
+      }
+    >
+      <p className="font-semibold">Nenhuma linha WhatsApp conectada</p>
+      <p className="mt-0.5 text-white/80">
+        Você precisa conectar uma linha WhatsApp Business (WABA) antes de criar {resource}. Todas as operações dependentes são bloqueadas até que exista pelo menos uma linha ativa no tenant.
+      </p>
+    </Banner>
   )
 }

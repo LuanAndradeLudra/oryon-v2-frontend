@@ -22,8 +22,8 @@ const SIDE_VARIANTS = {
 } as const
 
 const SIDE_PANEL = {
-  left: 'top-0 left-0 bottom-0 h-full w-80 max-w-[85vw] border-r',
-  right: 'top-0 right-0 bottom-0 h-full w-80 max-w-[85vw] border-l',
+  left: 'top-0 left-0 bottom-0 h-full w-96 max-w-[85vw] border-r',
+  right: 'top-0 right-0 bottom-0 h-full w-96 max-w-[85vw] border-l',
   bottom: 'bottom-0 left-0 right-0 max-h-[90vh] rounded-t-2xl border-t',
 } as const
 

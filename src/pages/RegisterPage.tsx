@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, Zap, Loader2, Building2, Sun, Moon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
+import { Banner } from '@/components/ui/Banner'
 import { useTheme } from '@/hooks/useTheme'
 
 interface FormState {
@@ -262,9 +263,7 @@ export function RegisterPage() {
 
           {/* Error */}
           {error && (
-            <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
-              {error}
-            </p>
+            <Banner variant="danger">{error}</Banner>
           )}
 
           {/* Submit */}

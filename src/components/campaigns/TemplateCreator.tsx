@@ -6,6 +6,7 @@ import {
   CheckCircle2, Clock, Sparkles, Check,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Banner } from '@/components/ui/Banner'
 import { TemplatePreview } from './TemplatePreview'
 import { SubcategoryPreview } from './SubcategoryPreview'
 import { templatesApi, whatsappNumbersApi } from '@/services/api'
@@ -345,14 +346,11 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
           (the full-bleed page was making it feel outsized). */}
       <div className="px-6 pt-3 space-y-2">
         {isContentLocked && (
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-200">
-            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-            <p>
-              {editing?.status === 'APPROVED'
-                ? 'Templates aprovados não podem ser editados. Use Duplicar na lista para criar uma nova versão, ou exclua e crie outro.'
-                : 'Este template está em análise na Meta. Aguarde o resultado ou duplique com outro nome para alterar o conteúdo.'}
-            </p>
-          </div>
+          <Banner variant="warning">
+            {editing?.status === 'APPROVED'
+              ? 'Templates aprovados não podem ser editados. Use Duplicar na lista para criar uma nova versão, ou exclua e crie outro.'
+              : 'Este template está em análise na Meta. Aguarde o resultado ou duplique com outro nome para alterar o conteúdo.'}
+          </Banner>
         )}
         <WhatsappLineRow
           whatsappNumberId={whatsappNumberId || null}
@@ -990,10 +988,7 @@ function StepBotoes({
       </div>
 
       {errors.buttonsGeneral && (
-        <div className="flex items-start gap-2 px-3 py-2.5 bg-rose-500/10 border border-rose-500/40 rounded-xl">
-          <Info className="w-3.5 h-3.5 text-rose-400 mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-rose-300 leading-relaxed">{errors.buttonsGeneral}</p>
-        </div>
+        <Banner variant="danger">{errors.buttonsGeneral}</Banner>
       )}
 
       {/* Button list */}
@@ -1219,9 +1214,7 @@ function StepRevisao({
       </div>
 
       {error && (
-        <p className="text-xs text-danger bg-danger/10 px-3 py-2.5 rounded-xl flex items-center gap-2">
-          <Info className="w-3.5 h-3.5 flex-shrink-0" />{error}
-        </p>
+        <Banner variant="danger">{error}</Banner>
       )}
     </div>
   )

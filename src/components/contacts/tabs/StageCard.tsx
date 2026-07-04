@@ -112,39 +112,36 @@ export function StageCard({ contact, onStageChanged }: StageCardProps) {
           <>
             {/* ── Current stage spotlight ─────────────────────────────── */}
             <div
-              className="rounded-xl border p-4 flex items-start gap-3"
+              className="color-chip rounded-xl border p-4 flex items-start gap-3"
               style={{
-                backgroundColor: hexToRgba(current.color, 0.08),
-                borderColor: hexToRgba(current.color, 0.35),
-              }}
+                ['--chip']: current.color,
+                // Levemente translúcido: mesmo fundo escurecido do .color-chip, mas
+                // a ~88% de opacidade, deixando o surface aparecer um pouco por trás.
+                backgroundColor: 'color-mix(in srgb, color-mix(in srgb, var(--chip) 85%, #000) 88%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--chip) 85%, #000)',
+              } as React.CSSProperties}
             >
-              <div
-                className="w-2 self-stretch rounded-full flex-shrink-0"
-                style={{ backgroundColor: current.color }}
-              />
+              <div className="w-2 self-stretch rounded-full flex-shrink-0 bg-white/70" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p
-                    className="text-sm font-semibold leading-tight"
-                    style={{ color: current.color }}
-                  >
+                  <p className="text-sm font-semibold leading-tight">
                     {current.label}
                   </p>
                   {isTerminal && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-surface-800 text-surface-400 border border-surface-700">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25">
                       <Flag className="w-2.5 h-2.5" />
                       Estágio final
                     </span>
                   )}
                   {isFirst && !isTerminal && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-surface-800 text-surface-400 border border-surface-700">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25">
                       Início do funil
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-surface-400 mt-1.5 leading-relaxed">
-                  Posição <strong className="text-surface-200">{currentIndex + 1}</strong> de{' '}
-                  <strong className="text-surface-200">{stages.length}</strong> no funil.
+                <p className="text-[11px] text-white/75 mt-1.5 leading-relaxed">
+                  Posição <strong className="text-white">{currentIndex + 1}</strong> de{' '}
+                  <strong className="text-white">{stages.length}</strong> no funil.
                   {isTerminal && ' Este é um estágio terminal — contatos aqui não devem avançar.'}
                 </p>
               </div>

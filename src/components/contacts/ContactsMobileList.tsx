@@ -2,7 +2,8 @@ import { ChevronRight, Phone, Building2, Mail, TrendingUp } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { CardListView } from '@/components/common/CardListView'
-import { hexToRgba, relativeDate } from '@/lib/utils'
+import { LeadScorePill } from './LeadScorePill'
+import { relativeDate } from '@/lib/utils'
 import type { Contact } from '@/types'
 
 interface ContactsMobileListProps {
@@ -45,11 +46,8 @@ function ContactCard({
           </p>
           {stageLabel && stageColor && (
             <span
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0"
-              style={{
-                backgroundColor: hexToRgba(stageColor, 0.18),
-                color: stageColor,
-              }}
+              className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 border"
+              style={{ ['--chip']: stageColor } as React.CSSProperties}
             >
               {stageLabel}
             </span>
@@ -93,7 +91,7 @@ function ContactCard({
           <div className="flex items-center gap-1.5 text-[11px] text-surface-500">
             <TrendingUp className="w-3 h-3 flex-shrink-0" />
             <span className="text-surface-400 font-medium">Lead score:</span>
-            <span className="text-surface-200 font-semibold tabular-nums">{contact.leadScore}</span>
+            <LeadScorePill score={contact.leadScore!} showIcon={false} />
           </div>
         )}
 
@@ -103,15 +101,11 @@ function ContactCard({
             {visibleTags.map((tag) => (
               <span
                 key={tag.id}
-                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap"
-                style={{
-                  backgroundColor: hexToRgba(tag.color, 0.18),
-                  color: tag.color,
-                }}
+                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap border"
+                style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
                 <span
-                  className="w-1 h-1 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: tag.color }}
+                  className="w-1 h-1 rounded-full flex-shrink-0 chip-dot"
                 />
                 {tag.name}
               </span>

@@ -6,7 +6,6 @@ import { LayoutList, LayoutGrid, Plus, Upload, Settings2, AlertTriangle } from '
 import { useAuth } from '@/contexts/AuthContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
-import { isFeatureVisible } from '@/config/featureFlags'
 import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
 import { ContactsTable } from '@/components/contacts/ContactsTable'
@@ -298,17 +297,11 @@ export function ContactsPage() {
           contacts={contacts}
           total={total}
           stageCounts={stageCounts}
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
         />
 
-        {/* Quando o card de Insights está ativo, a busca + filtros ficam numa
-            faixa própria abaixo. Com o card desligado, a ContactsStatsBar já
-            hospeda os filtros no slot liberado — então esta faixa some e o
-            Kanban sobe. */}
-        {isFeatureVisible('crmAiInsights') && (
-          <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
-        )}
+        {/* Busca + filtros: 2 mais usados inline (Fonte, Etiquetas) e o resto
+            dentro do botão "Filtros". */}
+        <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
 
         <div className="flex-1 overflow-hidden">
           {error ? (
@@ -340,6 +333,9 @@ export function ContactsPage() {
               onToggleSelect={toggleSelect}
               onSelectAll={selectAll}
               onBulkDelete={canBulkDelete ? requestBulkDelete : undefined}
+              onLoadMore={tableMode.loadMore}
+              hasMore={tableMode.hasMore}
+              loadingMore={tableMode.loadingMore}
             />
           ) : (
             <ContactsKanban
@@ -519,7 +515,7 @@ export function ContactsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full sm:w-[700px] z-40 bg-surface-950 border-l border-surface-800 flex flex-col shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-40 bg-surface-950 border-l border-surface-800 flex flex-col shadow-2xl"
             >
               <ContactDetailPanel
                 contactId={selectedContactId}

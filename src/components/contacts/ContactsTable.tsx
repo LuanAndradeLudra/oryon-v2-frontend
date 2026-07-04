@@ -13,6 +13,9 @@ interface ContactsTableProps {
   onToggleSelect?: (id: string) => void
   onSelectAll?: (ids: string[]) => void
   onBulkDelete?: () => void
+  onLoadMore?: () => void
+  hasMore?: boolean
+  loadingMore?: boolean
 }
 
 export function ContactsTable({
@@ -25,6 +28,9 @@ export function ContactsTable({
   onToggleSelect,
   onSelectAll,
   onBulkDelete,
+  onLoadMore,
+  hasMore,
+  loadingMore,
 }: ContactsTableProps) {
   const hasSelection = (selectedIds?.size ?? 0) > 0
   const allSelected =
@@ -40,8 +46,14 @@ export function ContactsTable({
     }
   }
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!onLoadMore || !hasMore || loadingMore) return
+    const el = e.currentTarget
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 320) onLoadMore()
+  }
+
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="h-full overflow-auto" onScroll={handleScroll}>
       <table className="w-full border-collapse">
         <thead className="sticky top-0 z-10 bg-surface-900 border-b border-surface-800">
           <tr>
@@ -108,6 +120,13 @@ export function ContactsTable({
                 onDeleteSelected={onBulkDelete}
               />
             ))
+          )}
+          {loadingMore && contacts.length > 0 && (
+            <tr>
+              <td colSpan={11} className="py-4 text-center">
+                <Loader2 className="w-4 h-4 text-surface-500 animate-spin inline-block" />
+              </td>
+            </tr>
           )}
         </tbody>
       </table>

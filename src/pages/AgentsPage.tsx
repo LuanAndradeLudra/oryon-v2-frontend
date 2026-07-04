@@ -23,10 +23,10 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG = {
-  active:  { label: 'Ativo',     color: 'bg-status-active-bg text-status-active ring-status-active-border', dot: 'bg-status-active' },
-  draft:   { label: 'Rascunho',  color: 'bg-status-pending-bg   text-status-pending   ring-status-pending-border',   dot: 'bg-status-pending'   },
-  paused:  { label: 'Pausado',   color: 'bg-surface-700/40 text-surface-400 ring-surface-600/30', dot: 'bg-surface-400' },
+const STATUS_CONFIG: Record<string, { label: string; chip: string }> = {
+  active:  { label: 'Ativo',     chip: 'var(--color-status-active)'  },
+  draft:   { label: 'Rascunho',  chip: 'var(--color-status-pending)' },
+  paused:  { label: 'Pausado',   chip: 'var(--color-status-muted)'   },
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -34,8 +34,11 @@ const STATUS_CONFIG = {
 function StatusBadge({ status }: { status: AgentConfig['status'] }) {
   const cfg = STATUS_CONFIG[status]
   return (
-    <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ring-1', cfg.color)}>
-      <span className={cn('w-1.5 h-1.5 rounded-full', cfg.dot)} />
+    <span
+      className="color-chip inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border"
+      style={{ ['--chip']: cfg.chip } as React.CSSProperties}
+    >
+      <span className="chip-dot w-1.5 h-1.5 rounded-full" />
       {cfg.label}
     </span>
   )

@@ -235,20 +235,35 @@ export function ConversationsPage() {
   }
 
   const handleAssign = async (convId: string, user: User | null) => {
-    await assignUser(convId, user)
-    syncActive(convId, { assignedUser: user ?? undefined })
-    invalidateActivity(convId)
-    toast(
-      user ? `Atribuído para ${user.firstName} ${user.lastName}` : 'Atribuição removida',
-      'success'
-    )
+    try {
+      await assignUser(convId, user)
+      syncActive(convId, { assignedUser: user ?? undefined })
+      invalidateActivity(convId)
+      toast(
+        user ? `Atribuído para ${user.firstName} ${user.lastName}` : 'Atribuição removida',
+        'success'
+      )
+    } catch (err) {
+      // Surface the backend reason (TenantExceptionFilter writes a human-readable
+      // message) instead of failing silently. The "sem acesso" case usually means
+      // the TARGET user isn't allowed on this conversation's WhatsApp line.
+      const raw = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
+      const msg = Array.isArray(raw) ? raw[0] : raw
+      toast(msg || 'Não foi possível atribuir a conversa', 'error')
+    }
   }
 
   const handleTransfer = async (convId: string, user: User) => {
-    await transferUser(convId, user)
-    syncActive(convId, { assignedUser: user })
-    invalidateActivity(convId)
-    toast(`Transferido para ${user.firstName} ${user.lastName}`, 'success')
+    try {
+      await transferUser(convId, user)
+      syncActive(convId, { assignedUser: user })
+      invalidateActivity(convId)
+      toast(`Transferido para ${user.firstName} ${user.lastName}`, 'success')
+    } catch (err) {
+      const raw = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
+      const msg = Array.isArray(raw) ? raw[0] : raw
+      toast(msg || 'Não foi possível transferir a conversa', 'error')
+    }
   }
 
   const handleAddTag = async (convId: string, tag: Tag) => {

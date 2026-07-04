@@ -25,11 +25,12 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'max_turns',    label: 'max_turns' },
 ]
 
+// Holds a chip color (token) rendered as a filled .color-chip.
 const STATUS_STYLE: Record<string, string> = {
-  answered:     'bg-emerald-700/30 text-emerald-200',
-  aborted_loop: 'bg-status-failed-bg text-status-failed',
-  error:        'bg-status-failed-bg text-status-failed',
-  max_turns:    'bg-amber-700/30 text-amber-200',
+  answered:     'var(--color-status-active)',
+  aborted_loop: 'var(--color-danger)',
+  error:        'var(--color-danger)',
+  max_turns:    'var(--color-status-pending)',
 }
 
 export function AiExecutionsPage() {
@@ -195,7 +196,7 @@ export function AiExecutionsPage() {
                 </thead>
                 <tbody className="divide-y divide-surface-800">
                   {rows.map(r => {
-                    const statusClass = STATUS_STYLE[r.final_status] ?? 'bg-surface-700 text-surface-200'
+                    const statusChip = STATUS_STYLE[r.final_status] ?? 'var(--color-status-muted)'
                     return (
                       <tr
                         key={r.id}
@@ -206,7 +207,10 @@ export function AiExecutionsPage() {
                           {new Date(r.created_at).toLocaleString('pt-BR', { hour12: false })}
                         </td>
                         <td className="px-3 py-2">
-                          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${statusClass}`}>
+                          <span
+                            className="color-chip border px-1.5 py-0.5 rounded text-[11px] font-medium"
+                            style={{ ['--chip']: statusChip } as React.CSSProperties}
+                          >
                             {r.final_status}
                           </span>
                           {r.error_code && (

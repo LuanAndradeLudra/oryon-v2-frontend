@@ -260,8 +260,8 @@ function AutomationCard({ automation, onEdit, onToggle, onDelete, onAssignWaba }
       className={cn(
         'group relative bg-surface-800 border rounded-2xl px-4 py-3 flex items-center gap-4 transition-colors duration-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)]',
         isActive  ? 'border-surface-600 hover:border-surface-500'  :
-        isDraft   ? 'border-surface-600/60 opacity-70'             :
-                    'border-surface-600/50 opacity-60',
+        isDraft   ? 'border-surface-600/60'                        :
+                    'border-surface-600/50',
       )}
     >
       {/* Status indicator bar */}
@@ -285,7 +285,7 @@ function AutomationCard({ automation, onEdit, onToggle, onDelete, onAssignWaba }
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-sm font-semibold text-surface-100 truncate">{automation.name}</span>
           {isDraft && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-status-pending-bg text-status-pending flex-shrink-0">
+            <span className="color-chip inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
               Rascunho
             </span>
           )}
@@ -303,7 +303,8 @@ function AutomationCard({ automation, onEdit, onToggle, onDelete, onAssignWaba }
           {automation.agentBehavior === 'never_silence' && (
             <span
               title="A IA continua respondendo em paralelo a esta automação."
-              className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-brand-600/15 text-brand-400 border border-brand-600/30 flex-shrink-0"
+              className="color-chip inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold border flex-shrink-0"
+              style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}
             >
               IA em paralelo
             </span>
@@ -475,15 +476,15 @@ function GuideCard() {
               <div className="bg-surface-950 border border-surface-800 rounded-xl p-3">
                 <p className="text-[11px] font-semibold text-surface-300 mb-1.5">Exemplo de fluxo completo:</p>
                 <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                  <span className="px-2 py-0.5 rounded-md bg-status-pending-bg border border-status-pending-border text-status-pending">Gatilho: Palavra-chave "preço"</span>
+                  <span className="color-chip px-2 py-0.5 rounded-md border" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>Gatilho: Palavra-chave "preço"</span>
                   <ChevronRight className="w-3 h-3 text-surface-600" />
-                  <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">Condição: Estágio = Novo</span>
+                  <span className="color-chip px-2 py-0.5 rounded-md border" style={{ ['--chip']: 'var(--color-status-open)' } as React.CSSProperties}>Condição: Estágio = Novo</span>
                   <ChevronRight className="w-3 h-3 text-surface-600" />
-                  <span className="px-2 py-0.5 rounded-md bg-status-active-bg border border-status-active-border text-status-active">Ação 1: Adicionar tag "Interesse"</span>
+                  <span className="color-chip px-2 py-0.5 rounded-md border" style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}>Ação 1: Adicionar tag "Interesse"</span>
                   <ChevronRight className="w-3 h-3 text-surface-600" />
-                  <span className="px-2 py-0.5 rounded-md bg-status-active-bg border border-status-active-border text-status-active">Ação 2: Mover → Qualificado</span>
+                  <span className="color-chip px-2 py-0.5 rounded-md border" style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}>Ação 2: Mover → Qualificado</span>
                   <ChevronRight className="w-3 h-3 text-surface-600" />
-                  <span className="px-2 py-0.5 rounded-md bg-status-active-bg border border-status-active-border text-status-active">Ação 3: Atribuir agente de vendas</span>
+                  <span className="color-chip px-2 py-0.5 rounded-md border" style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}>Ação 3: Atribuir agente de vendas</span>
                 </div>
               </div>
             </div>

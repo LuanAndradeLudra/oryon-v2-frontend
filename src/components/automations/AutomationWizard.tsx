@@ -29,6 +29,7 @@ import { automationsApi, stagesApi, templatesApi, tagsApi, usersApi, departments
 import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
+import { Banner } from '@/components/ui/Banner'
 import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -1440,7 +1441,7 @@ export function AutomationWizard({ open, onClose, onSaved, editTarget, preset }:
                 {step === 2 && <Step2 draft={draft} onChange={updateDraft} />}
                 {step === 3 && <Step3 draft={draft} onChange={updateDraft} />}
               </div>
-              {error && <p className="mt-3 text-xs text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2">{error}</p>}
+              {error && <Banner variant="danger" className="mt-3">{error}</Banner>}
             </div>
 
             {/* Footer */}

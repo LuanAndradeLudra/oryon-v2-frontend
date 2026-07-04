@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, X, Check, Layers, Smartphone, ShieldCheck, Chevro
 import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { ToastContainer } from '@/components/ui/Toast'
+import { Banner } from '@/components/ui/Banner'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import { ColorPicker } from '@/components/ui/ColorPicker'
@@ -203,12 +204,12 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
               <Smartphone className="w-3 h-3 inline mr-1" />Número WhatsApp vinculado
             </label>
             {waNumbers.length === 0 ? (
-              <div className="bg-status-pending-bg border border-status-pending-border rounded-lg px-3 py-3 text-xs text-status-pending">
-                <p className="mb-2">Para atender conversas, conecte pelo menos um número WhatsApp.</p>
-                <Link to="/settings/numbers" className="inline-flex items-center gap-1.5 font-semibold text-brand-400 hover:text-brand-300">
+              <Banner variant="warning">
+                <p>Para atender conversas, conecte pelo menos um número WhatsApp.</p>
+                <Link to="/settings/numbers" className="mt-2 inline-flex items-center gap-1.5 font-semibold text-white underline underline-offset-2 hover:text-white/80">
                   <ExternalLink className="w-3.5 h-3.5" />Conectar primeiro número
                 </Link>
-              </div>
+              </Banner>
             ) : (
               <div className="relative">
                 <select value={form.whatsappNumberId} onChange={(e) => set('whatsappNumberId', e.target.value)}

@@ -1,6 +1,7 @@
 import { Bell, Volume2, Lock, RotateCcw } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { Switch } from '@/components/ui/Switch'
+import { Banner } from '@/components/ui/Banner'
 import {
   useNotificationPreferences,
   type ResolvedPreference,
@@ -80,9 +81,7 @@ export function Notifications() {
       </div>
 
       {error && (
-        <div className="bg-danger/10 border border-danger/30 rounded-xl p-3 text-xs text-danger">
-          {error}
-        </div>
+        <Banner variant="danger">{error}</Banner>
       )}
 
       {/* Per-type preferences grouped by category */}

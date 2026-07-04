@@ -101,10 +101,10 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                     className={cn(
                       'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
                       outcomeFilter === key
-                        ? 'border-current'
+                        ? 'color-chip'
                         : 'border-surface-800 text-surface-400 hover:text-surface-200',
                     )}
-                    style={outcomeFilter === key ? { backgroundColor: cfg.color + '18', borderColor: cfg.color + '50', color: cfg.color } : {}}
+                    style={outcomeFilter === key ? ({ ['--chip']: cfg.color } as React.CSSProperties) : {}}
                   >
                     {cfg.label} ({count})
                   </button>
@@ -159,8 +159,8 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-surface-200">{lead.name}</span>
                         <span
-                          className="px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-                          style={{ backgroundColor: outcome.color + '20', color: outcome.color }}
+                          className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                          style={{ ['--chip']: outcome.color } as React.CSSProperties}
                         >
                           {outcome.label}
                         </span>

@@ -221,12 +221,12 @@ function LineHealthCard({
               </span>
             )}
             {line.hasSystemUserToken ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-status-active-bg text-status-active border border-status-active-border" title="Token de system user presente">
+              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border" style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties} title="Token de system user presente">
                 <ShieldCheck className="w-2.5 h-2.5" />
                 Token OK
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-danger/10 text-danger border border-danger/30" title="Sem token — mensagens falharão">
+              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border" style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties} title="Sem token — mensagens falharão">
                 <ShieldOff className="w-2.5 h-2.5" />
                 Sem token
               </span>
@@ -325,7 +325,7 @@ function LineHealthCard({
           )}
         </div>
         {needsAttention > 0 && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-status-pending/10 text-status-pending border border-status-pending/30">
+          <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
             <AlertTriangle className="w-3 h-3" />
             {needsAttention} sem linha
           </span>

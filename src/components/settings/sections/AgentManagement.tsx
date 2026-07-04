@@ -25,11 +25,11 @@ const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  super_admin:    'bg-brand-700/40 text-brand-200 border-brand-600',
-  business_admin: 'bg-status-active-bg text-status-active border-status-active-border',
-  admin:          'bg-brand-900/40 text-brand-300 border-brand-800',
-  supervisor:     'bg-status-pending-bg text-status-pending border-status-pending-border',
-  agent:          'bg-surface-800 text-surface-300 border-surface-700',
+  super_admin:    'var(--color-brand-500)',
+  business_admin: 'var(--color-status-active)',
+  admin:          'var(--color-brand-500)',
+  supervisor:     'var(--color-status-pending)',
+  agent:          'var(--color-status-muted)',
 }
 
 function StatusBadge({ user }: { user: User }) {
@@ -341,7 +341,7 @@ export function AgentManagement() {
                     })()}
                   </td>
                   <td className="px-5 py-4">
-                    <span className={cn('inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border', ROLE_COLORS[user.role])}>
+                    <span className={cn('color-chip inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border')} style={{ ['--chip']: ROLE_COLORS[user.role] } as React.CSSProperties}>
                       {ROLE_LABELS[user.role]}
                     </span>
                   </td>

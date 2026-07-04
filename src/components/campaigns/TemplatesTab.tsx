@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, Eye, Pencil, Trash2, Clock, CheckCircle2, XCircle, PauseCircle, AlertCircle, Loader2, RefreshCw, Copy } from 'lucide-react'
+import { Banner } from '@/components/ui/Banner'
 import { cn } from '@/lib/utils'
 import { templatesApi } from '@/services/api'
 import { TemplateCreator } from './TemplateCreator'
@@ -15,12 +16,12 @@ import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequ
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { WhatsAppTemplate, TemplateStatus } from '@/types'
 
-const STATUS_CONFIG: Record<TemplateStatus, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  PENDING:  { label: 'Em análise',  color: 'text-status-pending bg-status-pending-bg border-status-pending-border',  icon: Clock },
-  APPROVED: { label: 'Aprovado',    color: 'text-status-active bg-status-active-bg border-status-active-border', icon: CheckCircle2 },
-  REJECTED: { label: 'Rejeitado',   color: 'text-danger bg-danger/10 border-danger/20', icon: XCircle },
-  PAUSED:   { label: 'Pausado',     color: 'text-status-pending bg-status-pending-bg border-status-pending-border', icon: PauseCircle },
-  DISABLED: { label: 'Desativado',  color: 'text-surface-500 bg-surface-500/10 border-surface-500/20', icon: AlertCircle },
+const STATUS_CONFIG: Record<TemplateStatus, { label: string; chip: string; icon: React.ComponentType<{ className?: string }> }> = {
+  PENDING:  { label: 'Em análise',  chip: 'var(--color-status-pending)',  icon: Clock },
+  APPROVED: { label: 'Aprovado',    chip: 'var(--color-status-active)', icon: CheckCircle2 },
+  REJECTED: { label: 'Rejeitado',   chip: 'var(--color-danger)', icon: XCircle },
+  PAUSED:   { label: 'Pausado',     chip: 'var(--color-status-muted)', icon: PauseCircle },
+  DISABLED: { label: 'Desativado',  chip: 'var(--color-danger)', icon: AlertCircle },
 }
 
 const FILTER_OPTIONS: { value: TemplateStatus | 'all'; label: string }[] = [
@@ -154,10 +155,7 @@ export function TemplatesTab() {
       )}
 
       {metaLoadWarning && hasWhatsappLine && (
-        <div className="mx-5 mt-4 flex items-start gap-2 px-3 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-200">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-          <p>{metaLoadWarning}</p>
-        </div>
+        <Banner variant="warning" className="mx-5 mt-4">{metaLoadWarning}</Banner>
       )}
 
       {/* Toolbar */}
@@ -274,10 +272,7 @@ export function TemplatesTab() {
       )}
 
       {deleteError && (
-        <div className="mx-5 mb-2 flex items-start gap-2 px-3 py-2.5 bg-danger/10 border border-danger/30 rounded-xl text-xs text-danger">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-          <p>{deleteError}</p>
-        </div>
+        <Banner variant="danger" className="mx-5 mb-2">{deleteError}</Banner>
       )}
 
       <ConfirmModal
@@ -348,7 +343,10 @@ function TemplateCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           <span className="text-sm font-medium text-surface-100 font-mono">{template.name}</span>
-          <span className={cn('flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border', cfg.color)}>
+          <span
+            className="color-chip border flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
+            style={{ ['--chip']: cfg.chip } as React.CSSProperties}
+          >
             <StatusIcon className="w-3 h-3" />
             {cfg.label}
           </span>

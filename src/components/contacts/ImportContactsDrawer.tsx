@@ -3,9 +3,10 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   X, Upload, FileText, FileJson, FileCode2, ChevronDown,
   CheckCircle2, AlertCircle, Loader2, ArrowRight, ArrowLeft,
-  Users, TriangleAlert, ClipboardPaste, FolderOpen, Sparkles,
+  Users, ClipboardPaste, FolderOpen, Sparkles,
 } from 'lucide-react'
 import { appLogger } from '@/services/appLogger'
+import { Banner } from '@/components/ui/Banner'
 import { cn } from '@/lib/utils'
 import type { Contact, ContactSource } from '@/types'
 
@@ -664,10 +665,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: Import
                   )}
 
                   {parseError && (
-                    <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
-                      <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-red-300">{parseError}</p>
-                    </div>
+                    <Banner variant="danger">{parseError}</Banner>
                   )}
                 </div>
               )}
@@ -691,29 +689,23 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: Import
                       <motion.div
                         key="ai-loading"
                         initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                        className="flex items-center gap-2.5 p-3 bg-status-pending-bg border border-status-pending-border rounded-xl"
                       >
-                        <Loader2 className="w-3.5 h-3.5 text-brand-400 animate-spin flex-shrink-0" />
-                        <div>
-                          <p className="text-xs font-medium text-brand-300">IA analisando colunas…</p>
-                          <p className="text-[11px] text-brand-400/60 mt-0.5">Identificando campos automaticamente, mesmo com nomes diferentes</p>
-                        </div>
+                        <Banner variant="info" icon={<Loader2 className="w-4 h-4 animate-spin" />}>
+                          <p className="font-medium">IA analisando colunas…</p>
+                          <p className="text-white/70 mt-0.5">Identificando campos automaticamente, mesmo com nomes diferentes</p>
+                        </Banner>
                       </motion.div>
                     ) : Object.keys(aiSuggestions).length > 0 ? (
                       <motion.div
                         key="ai-done"
                         initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                        className="flex items-center gap-2.5 p-3 bg-status-pending-bg border border-status-pending-border rounded-xl"
                       >
-                        <div className="w-5 h-5 rounded-md bg-gradient-to-br from-brand-600 to-brand-500 flex items-center justify-center flex-shrink-0">
-                          <Sparkles className="w-3 h-3 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-brand-300">
+                        <Banner variant="info" icon={<Sparkles className="w-4 h-4" />}>
+                          <p className="font-medium">
                             IA mapeou {Object.values(aiSuggestions).filter((s) => s.field !== '__skip__').length} de {headers.length} colunas
                           </p>
-                          <p className="text-[11px] text-brand-400/60 mt-0.5">Revise abaixo e ajuste se necessário</p>
-                        </div>
+                          <p className="text-white/70 mt-0.5">Revise abaixo e ajuste se necessário</p>
+                        </Banner>
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
@@ -794,12 +786,9 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: Import
                   </div>
 
                   {!hasRequiredMapped && !aiLoading && (
-                    <div className="flex items-center gap-2 p-3 bg-status-pending-bg border border-status-pending-border rounded-xl">
-                      <TriangleAlert className="w-3.5 h-3.5 text-status-pending flex-shrink-0" />
-                      <p className="text-xs text-status-pending">
-                        A IA não conseguiu identificar os campos <strong>Nome</strong> e <strong>WhatsApp</strong>. Selecione manualmente.
-                      </p>
-                    </div>
+                    <Banner variant="warning">
+                      A IA não conseguiu identificar os campos <strong>Nome</strong> e <strong>WhatsApp</strong>. Selecione manualmente.
+                    </Banner>
                   )}
                 </div>
               )}
@@ -906,17 +895,14 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: Import
                         </p>
                       </div>
                       {errors.length > 0 && (
-                        <div className="w-full max-w-xs bg-red-500/10 border border-red-500/25 rounded-xl p-3 flex flex-col gap-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-                            <span className="text-xs font-semibold text-red-400">{errors.length} falha{errors.length !== 1 ? 's' : ''}</span>
-                          </div>
-                          <div className="max-h-24 overflow-y-auto flex flex-col gap-0.5">
+                        <Banner variant="danger" className="w-full max-w-xs">
+                          <p className="font-semibold">{errors.length} falha{errors.length !== 1 ? 's' : ''}</p>
+                          <div className="mt-1 max-h-24 overflow-y-auto flex flex-col gap-0.5">
                             {errors.map((e, i) => (
-                              <p key={i} className="text-[11px] text-red-400/80">{e}</p>
+                              <p key={i} className="text-white/80">{e}</p>
                             ))}
                           </div>
-                        </div>
+                        </Banner>
                       )}
                       <div className="flex gap-2 mt-2">
                         <button

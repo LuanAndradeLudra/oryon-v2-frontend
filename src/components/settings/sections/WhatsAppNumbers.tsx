@@ -15,17 +15,17 @@ import type { WhatsAppNumberDetailed } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
-  connected:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    cls: 'text-online bg-status-active-bg border-status-active-border' },
-  CONNECTED:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    cls: 'text-online bg-status-active-bg border-status-active-border' },
-  disconnected: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, cls: 'text-danger bg-red-900/30 border-red-800' },
-  DISCONNECTED: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, cls: 'text-danger bg-red-900/30 border-red-800' },
-  pending:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    cls: 'text-away bg-status-pending-bg border-status-pending-border' },
-  PENDING:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    cls: 'text-away bg-status-pending-bg border-status-pending-border' },
-  DELETED:      { label: 'Removido',     icon: <WifiOff className="w-3.5 h-3.5" />, cls: 'text-surface-500 bg-surface-900/30 border-surface-800' },
+const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; chip: string }> = {
+  connected:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    chip: 'var(--color-status-active)' },
+  CONNECTED:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    chip: 'var(--color-status-active)' },
+  disconnected: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, chip: 'var(--color-danger)' },
+  DISCONNECTED: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, chip: 'var(--color-danger)' },
+  pending:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    chip: 'var(--color-status-pending)' },
+  PENDING:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    chip: 'var(--color-status-pending)' },
+  DELETED:      { label: 'Removido',     icon: <WifiOff className="w-3.5 h-3.5" />, chip: 'var(--color-status-muted)' },
 }
 
-const DEFAULT_STATUS = { label: 'Desconhecido', icon: <Clock className="w-3.5 h-3.5" />, cls: 'text-surface-500 bg-surface-900/30 border-surface-800' }
+const DEFAULT_STATUS = { label: 'Desconhecido', icon: <Clock className="w-3.5 h-3.5" />, chip: 'var(--color-status-muted)' }
 
 const QUALITY_CONFIG: Record<string, { label: string; cls: string }> = {
   green:   { label: 'Alta',      cls: 'bg-online' },
@@ -164,7 +164,7 @@ export function WhatsAppNumbers() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-semibold text-surface-50">{num.displayPhoneNumber}</p>
-                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border', status.cls)}>
+                      <span className={cn('color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
                         {status.icon}
                         {status.label}
                       </span>

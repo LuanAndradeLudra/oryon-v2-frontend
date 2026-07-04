@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
-import { Badge } from '@/components/ui/Badge'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
@@ -43,9 +42,9 @@ function MessagePreview({ text }: { text: string }) {
 /** Icon shown before the preview indicating who sent the last message.
  *  Client (inbound) shows no icon — the contact avatar already implies it. */
 const SENDER_META: Record<'operator' | 'ai' | 'campaign', { icon: typeof Bot; title: string; className: string }> = {
-  ai:       { icon: Bot,       title: 'Última mensagem enviada pela IA',                 className: 'text-brand-400' },
-  campaign: { icon: Megaphone, title: 'Template enviado via campanha',                   className: 'text-amber-400' },
-  operator: { icon: Users,     title: 'Enviada por um usuário da plataforma (Equipe)',   className: 'text-emerald-400' },
+  ai:       { icon: Bot,       title: 'Última mensagem enviada pela IA',                 className: 'text-surface-400' },
+  campaign: { icon: Megaphone, title: 'Template enviado via campanha',                   className: 'text-surface-400' },
+  operator: { icon: Users,     title: 'Enviada por um usuário da plataforma (Equipe)',   className: 'text-surface-400' },
 }
 
 function SenderIndicator({ kind }: { kind?: Conversation['lastMessageSenderKind'] }) {
@@ -66,22 +65,8 @@ interface ConversationItemProps {
   onSelect: (conv: Conversation) => void
 }
 
-const statusVariantMap = {
-  pending: 'pending',
-  open: 'open',
-  resolved: 'resolved',
-  abandoned: 'abandoned',
-} as const
-
-const statusLabel = {
-  pending: 'Pendente',
-  open: 'Aberta',
-  resolved: 'Resolvida',
-  abandoned: 'Abandonada',
-}
-
 export const ConversationItem = memo(function ConversationItem({ conversation, isActive, onSelect }: ConversationItemProps) {
-  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, status, assignedUser, tags, hasRecentAnomaly } =
+  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly } =
     conversation
 
   const hasUnread = unreadCount > 0 && !isActive
@@ -115,11 +100,10 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
       onClick={() => onSelect(conversation)}
       onContextMenu={onContextMenu}
       className={cn(
-        'w-full flex items-start gap-3 px-3 py-3.5 text-left transition-all duration-100 rounded-xl border border-surface-800/60 mb-1',
+        'conv-item w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-all duration-100 rounded-xl border border-surface-800/60 mb-2',
         isActive
-          ? 'bg-brand-600/10 border-brand-500/40'
-          : 'hover:bg-surface-800/50 hover:border-surface-700',
-        hasUnread && !isActive && 'bg-brand-600/5'
+          ? 'conv-item-active bg-surface-800 border-surface-700'
+          : 'hover:border-surface-600',
       )}
     >
       {/* Avatar with WhatsApp badge */}
@@ -137,7 +121,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
         <div className="flex items-center justify-between gap-2 mb-0.5">
           <span className={cn(
             'text-sm truncate',
-            hasUnread ? 'font-semibold text-surface-50' : 'font-medium text-surface-200'
+            (hasUnread || isActive) ? 'font-semibold text-surface-50' : 'font-medium text-surface-200'
           )}>
             {contact.displayName}
           </span>
@@ -174,15 +158,13 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             classify the conversation, ghost icons+text for live state. */}
         <div className="flex items-center gap-1.5 mt-1.5">
           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-            <Badge variant={statusVariantMap[status]}>{statusLabel[status]}</Badge>
-
             {tags?.slice(0, 2).map((tag) => (
               <span
                 key={tag.id}
-                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                style={{ backgroundColor: tag.color + '28', color: tag.color }}
+                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
+                <span className="w-1.5 h-1.5 rounded-full chip-dot" />
                 {tag.name}
               </span>
             ))}
@@ -196,7 +178,8 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 the operator must verify whether anything was actually recorded. */}
             {hasRecentAnomaly && (
               <span
-                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-500/15 text-amber-400 border border-amber-500/25"
+                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium border"
+                style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
                 title="Verificação necessária: a IA confirmou uma ação que pode não ter sido registrada no sistema."
               >
                 <AlertTriangle className="w-2.5 h-2.5" />
@@ -210,7 +193,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 assignment chip below is shown independently of this one. */}
             {aiActive && (
               <span
-                className="inline-flex items-center gap-1 text-[10.5px] text-brand-400"
+                className="inline-flex items-center gap-1 text-[10.5px] text-surface-300"
                 title="IA respondendo nesta conversa"
               >
                 <Bot className="w-3.5 h-3.5" />

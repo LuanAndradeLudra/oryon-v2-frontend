@@ -19,6 +19,7 @@ import {
   Sparkles, MessageCircle, Send, Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Banner } from '@/components/ui/Banner'
 import { getReadableTextColor } from '@/lib/colorPalette'
 import { Emoji } from '@/lib/emojiText'
 import { campaignsApi, contactsApi, templatesApi, tagsApi, whatsappNumbersApi } from '@/services/api'
@@ -71,11 +72,11 @@ const SEGMENT_OPTIONS: {
   { value: 'filter', label: 'Filtro avançado',   description: 'Combine intenção, origem, opt-in e estágio livremente',   icon: SlidersHorizontal },
 ]
 
-const INTENT_OPTIONS: { value: ContactIntent; label: string; color: string }[] = [
-  { value: 'high',    label: 'Alta',       color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10' },
-  { value: 'medium',  label: 'Média',      color: 'text-amber-400 border-amber-500/40 bg-amber-500/10' },
-  { value: 'low',     label: 'Baixa',      color: 'text-surface-400 border-surface-600 bg-surface-800' },
-  { value: 'unknown', label: 'Indefinida', color: 'text-surface-500 border-surface-700 bg-surface-800/50' },
+const INTENT_OPTIONS: { value: ContactIntent; label: string; chip: string }[] = [
+  { value: 'high',    label: 'Alta',       chip: 'var(--color-status-active)' },
+  { value: 'medium',  label: 'Média',      chip: 'var(--color-status-pending)' },
+  { value: 'low',     label: 'Baixa',      chip: 'var(--color-danger)' },
+  { value: 'unknown', label: 'Indefinida', chip: 'var(--color-status-muted)' },
 ]
 
 const SOURCE_OPTIONS: { value: ContactSource; label: string }[] = [
@@ -89,11 +90,11 @@ const SOURCE_OPTIONS: { value: ContactSource; label: string }[] = [
   { value: 'import',    label: 'Importação' },
 ]
 
-const SENTIMENT_OPTIONS: { value: ContactSentiment; label: string; color: string }[] = [
-  { value: 'positive', label: 'Positivo',     color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10' },
-  { value: 'neutral',  label: 'Neutro',       color: 'text-amber-400 border-amber-500/40 bg-amber-500/10' },
-  { value: 'negative', label: 'Negativo',     color: 'text-danger border-danger/40 bg-danger/10' },
-  { value: 'unknown',  label: 'Desconhecido', color: 'text-surface-500 border-surface-700 bg-surface-800/50' },
+const SENTIMENT_OPTIONS: { value: ContactSentiment; label: string; chip: string }[] = [
+  { value: 'positive', label: 'Positivo',     chip: 'var(--color-status-active)' },
+  { value: 'neutral',  label: 'Neutro',       chip: 'var(--color-status-pending)' },
+  { value: 'negative', label: 'Negativo',     chip: 'var(--color-danger)' },
+  { value: 'unknown',  label: 'Desconhecido', chip: 'var(--color-status-muted)' },
 ]
 
 export function CampaignWizard({
@@ -557,7 +558,7 @@ export function CampaignWizard({
                   />
                 )}
                 {error && (
-                  <p className="text-xs text-danger bg-danger/10 px-3 py-2 rounded-lg mt-4">{error}</p>
+                  <Banner variant="danger" className="mt-4">{error}</Banner>
                 )}
               </div>
 
@@ -856,17 +857,11 @@ function Step2({
 
       {/* Reach estimate */}
       {estimatedReach !== null && (
-        <div className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium',
-          estimatedReach === 0
-            ? 'bg-danger/10 border border-danger/30 text-danger'
-            : 'bg-status-active-bg border border-status-active-border text-status-active'
-        )}>
-          <Users className="w-3.5 h-3.5 flex-shrink-0" />
+        <Banner variant={estimatedReach === 0 ? 'danger' : 'success'}>
           {estimatedReach === 0
             ? 'Nenhum contato corresponde aos filtros selecionados'
             : `Alcance estimado: ${estimatedReach} contato${estimatedReach === 1 ? '' : 's'}`}
-        </div>
+        </Banner>
       )}
 
       {/* Tag picker */}
@@ -1064,8 +1059,9 @@ function Step2({
                   onClick={() => toggleFilterIntent(opt.value)}
                   className={cn(
                     chipBase,
-                    filterIntent.includes(opt.value) ? opt.color : chipOff
+                    filterIntent.includes(opt.value) ? 'color-chip' : chipOff
                   )}
+                  style={filterIntent.includes(opt.value) ? ({ ['--chip']: opt.chip } as React.CSSProperties) : {}}
                 >
                   {opt.label}
                 </button>
@@ -1129,8 +1125,9 @@ function Step2({
                   onClick={() => toggleFilterSentiment(opt.value)}
                   className={cn(
                     chipBase,
-                    filterSentiment.includes(opt.value) ? opt.color : chipOff
+                    filterSentiment.includes(opt.value) ? 'color-chip' : chipOff
                   )}
+                  style={filterSentiment.includes(opt.value) ? ({ ['--chip']: opt.chip } as React.CSSProperties) : {}}
                 >
                   {opt.label}
                 </button>
@@ -1354,13 +1351,10 @@ function Step4({
 
       {/* Warning for large reach */}
       {estimatedReach !== null && estimatedReach > 100 && (
-        <div className="flex items-start gap-2 px-3 py-2.5 bg-status-pending-bg border border-status-pending-border rounded-xl">
-          <Info className="w-3.5 h-3.5 text-status-pending mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-status-pending/80 leading-relaxed">
-            Campanhas grandes podem impactar o <strong>limite de conversas</strong> do seu plano e a qualidade do número WhatsApp.
-            Verifique seu saldo antes de enviar.
-          </p>
-        </div>
+        <Banner variant="warning">
+          Campanhas grandes podem impactar o <strong>limite de conversas</strong> do seu plano e a qualidade do número WhatsApp.
+          Verifique seu saldo antes de enviar.
+        </Banner>
       )}
     </div>
   )

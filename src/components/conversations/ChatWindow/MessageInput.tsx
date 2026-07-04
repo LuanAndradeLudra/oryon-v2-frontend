@@ -405,8 +405,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   // Shown before the operator types so the silent failure path is gone.
   if (blockedReason) {
     return (
-      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-surface-950 flex-shrink-0">
-        <div className="bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-3 flex items-center gap-3">
+      <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
+        <div className="bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
           <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-amber-200 font-semibold">Não é possível enviar mensagens agora</p>
@@ -427,20 +427,21 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
   if (!windowOpen) {
     return (
-      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-surface-950 flex-shrink-0">
-        <div className="card-24h bg-brand-800/20 border border-brand-600/30 rounded-xl px-4 py-3">
+      <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
+        <div className="card-24h bg-brand-800/20 border border-brand-600/30 rounded-xl px-4 py-3 shadow-lg">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-brand-400 flex-shrink-0" />
+            <AlertTriangle className="card-24h-accent w-4 h-4 text-brand-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-brand-300 font-semibold">Janela de 24h encerrada</p>
-              <p className="text-[11px] text-brand-400/90 mt-0.5">
+              <p className="card-24h-accent text-xs text-brand-300 font-semibold">Janela de 24h encerrada</p>
+              <p className="card-24h-accent text-[11px] text-brand-400/90 mt-0.5">
                 {templateSent ? 'Template enviado — aguardando resposta do contato.' : 'Selecione um template aprovado para reabrir a conversa'}
               </p>
             </div>
             {!templateSent && (
               <button
                 onClick={toggleTemplatePicker}
-                className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold text-brand-400 hover:text-brand-300 bg-brand-600/15 hover:bg-brand-600/25 border border-brand-500/30 px-3 py-1.5 rounded-lg transition-colors"
+                style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
+                className="color-chip flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border hover:brightness-110 transition"
               >
                 Escolher template
                 <ChevronDown className={cn('w-3 h-3', templatePickerOpen && 'rotate-180')} />
@@ -486,7 +487,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   const slashQuery = text.match(/^\/(\S*)$/)?.[1] ?? ''
 
   return (
-    <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-surface-950 flex-shrink-0">
+    <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
       <div className="relative">
         {pickerActive && (
           <QuickReplyPicker
@@ -520,8 +521,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
         <div
           className={cn(
-            'flex items-center gap-2 bg-surface-800 rounded-2xl px-3 py-2.5 transition-all',
-            'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-sm focus-within:shadow-brand-500/10'
+            'flex items-center gap-2 bg-surface-800 rounded-2xl px-3 py-2.5 transition-all shadow-lg',
+            'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-brand-500/20'
           )}
         >
           {/* Hidden file inputs — `multiple` lets the operator pick a whole

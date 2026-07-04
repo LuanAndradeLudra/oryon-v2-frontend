@@ -16,6 +16,7 @@ import {
   revokeAttachmentUrls,
 } from '@/lib/attachmentUtils'
 import { CopilotMessageBubble } from './CopilotMessage'
+import { Banner } from '@/components/ui/Banner'
 import { SLIDE_PRESETS } from '@/config/slidePresets'
 
 // ─── Animations ───────────────────────────────────────────────────────────────
@@ -353,9 +354,9 @@ function ChatWindow() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="mx-3 mb-2 px-3 py-1.5 bg-danger/10 border border-danger/20 rounded-lg text-[11px] text-danger flex-shrink-0"
+            className="mx-3 mb-2 flex-shrink-0"
           >
-            {error}
+            <Banner variant="danger">{error}</Banner>
           </motion.div>
         )}
       </AnimatePresence>

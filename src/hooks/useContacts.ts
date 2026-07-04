@@ -3,6 +3,8 @@ import { contactsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import type { Contact, ContactFilters, Tag } from '@/types'
 
+const PAGE_SIZE = 50
+
 export interface UseContactsOpts {
   /** When false, no fetches happen and the hook returns its initial state.
    *  Used by ContactsPage to skip the table-view fetch while the kanban
@@ -17,6 +19,8 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
   const [filters, setFilters] = useState<ContactFilters>(initialFilters)
+  const [page, setPage] = useState(1)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const fetch = useCallback(async () => {
     if (!enabled) {
@@ -26,9 +30,10 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
     setLoading(true)
     setError(null)
     try {
-      const res = await withRetry(() => contactsApi.list(filters))
+      const res = await withRetry(() => contactsApi.list(filters, 1, PAGE_SIZE))
       setContacts(res.data.data)
       setTotal(res.data.total)
+      setPage(1)
     } catch {
       setError('Não foi possível carregar os contatos. Tente novamente.')
     } finally {
@@ -37,6 +42,26 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
   }, [filters, enabled])
 
   useEffect(() => { fetch() }, [fetch])
+
+  const hasMore = contacts.length < total
+
+  // Scroll infinito: busca a próxima página e concatena. O backend já pagina
+  // (GET /contacts aceita page/limit e devolve total), então isto é só frontend.
+  const loadMore = useCallback(async () => {
+    if (!enabled || loading || loadingMore || contacts.length >= total) return
+    setLoadingMore(true)
+    try {
+      const next = page + 1
+      const res = await withRetry(() => contactsApi.list(filters, next, PAGE_SIZE))
+      setContacts((cs) => [...cs, ...res.data.data])
+      setTotal(res.data.total)
+      setPage(next)
+    } catch {
+      // Silencioso: mantém o que já carregou; rolar de novo tenta de novo.
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [enabled, loading, loadingMore, contacts.length, total, page, filters])
 
   const updateContact = useCallback(async (id: string, patch: Partial<Contact>) => {
     const prev = contacts.find((c) => c.id === id)
@@ -153,6 +178,9 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
     loading,
     error,
     total,
+    hasMore,
+    loadingMore,
+    loadMore,
     filters,
     setFilters,
     updateContact,

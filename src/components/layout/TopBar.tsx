@@ -1479,7 +1479,7 @@ export function TopBar() {
   }
 
   return (
-    <div className="h-12 flex-shrink-0 bg-surface-950 border-b border-surface-700/50 px-4 flex items-center gap-3">
+    <div className="conv-surface h-12 flex-shrink-0 bg-surface-950 border-b border-surface-700/50 px-4 flex items-center gap-3">
 
       {/* Left: page title + subtitle (inline with "·" bullet separator).
           Subtitle hidden on small viewports so the row stays single-line

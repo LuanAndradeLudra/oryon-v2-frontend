@@ -147,12 +147,23 @@ const ACTION_OPTIONS: { value: HandoffAction; label: string; desc: string; icon:
   },
 ]
 
-const ACTION_COLOR: Record<HandoffAction, string> = {
-  human_handoff:    'text-blue-400    bg-blue-500/10    border-blue-500/20    ring-blue-500/20',
-  auto_reply:       'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 ring-emerald-500/20',
-  external_redirect:'text-violet-400  bg-violet-500/10  border-violet-500/20  ring-violet-500/20',
-  pass_to_ai:       'text-amber-400   bg-amber-500/10   border-amber-500/20   ring-amber-500/20',
+// Cor por ação — categórica (não status). Mantém os matizes originais.
+// Consumida de duas formas: como badge "cheio" (.color-chip via ACTION_CHIP)
+// no cartão da regra, e como estado SELECIONADO (tint suave) no seletor de
+// ação do editor, reconstruído inline a partir do mesmo hex.
+const ACTION_CHIP: Record<HandoffAction, string> = {
+  human_handoff:    '#3b82f6', // azul
+  auto_reply:       '#10b981', // verde
+  external_redirect:'#8b5cf6', // violeta
+  pass_to_ai:       '#f59e0b', // âmbar
 }
+
+// Tint suave para o estado selecionado (equivalente ao antigo bg/10 + border/20 + texto).
+const softTint = (hex: string): React.CSSProperties => ({
+  color: hex,
+  backgroundColor: `color-mix(in srgb, ${hex} 10%, transparent)`,
+  borderColor: `color-mix(in srgb, ${hex} 20%, transparent)`,
+})
 
 const ACTION_LABEL: Record<HandoffAction, string> = {
   human_handoff:    'Transferir para humano',
@@ -207,15 +218,18 @@ function RuleCard({
             <span className={cn('text-sm font-semibold', rule.enabled ? 'text-surface-100' : 'text-surface-500')}>
               {rule.name}
             </span>
-            <span className={cn(
-              'inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md border ring-1 font-medium',
-              ACTION_COLOR[rule.action],
-            )}>
+            <span
+              className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md border font-medium"
+              style={{ ['--chip']: ACTION_CHIP[rule.action] } as React.CSSProperties}
+            >
               {actionCfg?.icon}
               {ACTION_LABEL[rule.action]}
             </span>
             {rule.aiGenerated && (
-              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-brand-500/10 border border-brand-500/20 text-brand-400">
+              <span
+                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md border"
+                style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}
+              >
                 <Sparkles className="w-2.5 h-2.5" /> IA
               </span>
             )}
@@ -349,10 +363,12 @@ function TemplateVariantPicker({
 
 // ─── Keyword Tiers Display ────────────────────────────────────────────────────
 
-const TIER_META: Record<keyof HandoffKeywordTiers, { label: string; color: string; tip: string }> = {
-  exact_phrases:  { label: 'Frases exatas',     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', tip: 'A regra dispara quando a mensagem contém esta frase completa' },
-  contains_words: { label: 'Palavras-chave',    color: 'text-brand-400   bg-brand-500/10   border-brand-500/20',   tip: 'Dispara se qualquer uma dessas palavras aparecer na mensagem' },
-  typo_variants:  { label: 'Erros de digitação',color: 'text-amber-400   bg-amber-500/10   border-amber-500/20',   tip: 'Variações e abreviações comuns no WhatsApp' },
+// Cor por camada de keyword — categórica. `chip` guarda o matiz (hex/token);
+// o badge da camada usa .color-chip e as pills ativas reusam o mesmo tom via softTint.
+const TIER_META: Record<keyof HandoffKeywordTiers, { label: string; chip: string; tip: string }> = {
+  exact_phrases:  { label: 'Frases exatas',     chip: '#10b981',              tip: 'A regra dispara quando a mensagem contém esta frase completa' },
+  contains_words: { label: 'Palavras-chave',    chip: 'var(--color-brand-500)', tip: 'Dispara se qualquer uma dessas palavras aparecer na mensagem' },
+  typo_variants:  { label: 'Erros de digitação',chip: '#f59e0b',              tip: 'Variações e abreviações comuns no WhatsApp' },
 }
 
 function KeywordTiersView({
@@ -391,7 +407,10 @@ function KeywordTiersView({
         return (
           <div key={tier}>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded border', meta.color)}>
+              <span
+                className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded border"
+                style={{ ['--chip']: meta.chip } as React.CSSProperties}
+              >
                 {meta.label}
               </span>
               <span className="text-[10px] text-surface-600">{meta.tip}</span>
@@ -402,10 +421,10 @@ function KeywordTiersView({
                   key={kw}
                   className={cn(
                     'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-xs font-mono',
-                    flatKeywords.includes(kw)
-                      ? meta.color
-                      : 'text-surface-600 bg-surface-800/50 border-surface-700/50 line-through opacity-50',
+                    !flatKeywords.includes(kw) &&
+                      'text-surface-600 bg-surface-800/50 border-surface-700/50 line-through opacity-50',
                   )}
+                  style={flatKeywords.includes(kw) ? softTint(meta.chip) : undefined}
                 >
                   {kw}
                   {flatKeywords.includes(kw) && (
@@ -521,9 +540,10 @@ function DraftEditor({
               className={cn(
                 'flex items-start gap-2.5 p-3 rounded-xl border text-left transition-all',
                 draft.action === opt.value
-                  ? cn('ring-1', ACTION_COLOR[opt.value])
+                  ? 'ring-1'
                   : 'bg-surface-800 border-surface-700 hover:border-surface-600',
               )}
+              style={draft.action === opt.value ? softTint(ACTION_CHIP[opt.value]) : undefined}
             >
               <span className={draft.action === opt.value ? '' : 'text-surface-500 mt-0.5'}>{opt.icon}</span>
               <div>

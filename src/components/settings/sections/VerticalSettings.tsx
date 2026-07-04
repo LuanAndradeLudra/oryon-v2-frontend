@@ -124,8 +124,8 @@ function StagePreview({ templateId }: { templateId: string }) {
         {template.suggestedStages.map((s) => (
           <span
             key={s.label}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border"
-            style={{ color: s.color, borderColor: `${s.color}40`, backgroundColor: `${s.color}12` }}
+            className="color-chip flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border"
+            style={{ ['--chip']: s.color } as React.CSSProperties}
           >
             {s.isTerminal && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />}
             {s.label}
