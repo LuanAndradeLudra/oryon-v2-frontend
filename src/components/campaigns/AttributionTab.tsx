@@ -173,7 +173,8 @@ function TotalsStrip({
     { label: 'ROAS Médio',      value: `${totals.avgRoas.toFixed(1)}x`,      icon: <BarChart2 className="w-4 h-4" />, color: 'var(--color-accent-green)', clickable: false },
   ]
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    // No rail, os totais empilham em coluna única (2 col em telas médias)
+    <div className="grid grid-cols-2 xl:grid-cols-1 gap-3">
       {items.map((item) => (
         <div
           key={item.label}
@@ -231,18 +232,26 @@ export function AttributionTab() {
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+      <div className="flex-1 overflow-y-auto px-6 py-6">
         {/* Header */}
-        <div>
-          <p className="text-sm font-bold text-surface-100">Atribuição de Anúncios</p>
+        <div className="mb-5">
+          <p className="text-sm font-display font-bold text-surface-100">Atribuição de Anúncios</p>
           <p className="text-xs text-surface-400 mt-0.5">Rastreamento de leads gerados por Meta Ads nos últimos 30 dias</p>
         </div>
 
-        {totals && <TotalsStrip totals={totals} onLeadsClick={handleTotalLeadsClick} />}
-        <AttributedLeadsChart />
-        {campaigns.length > 0 && (
-          <PerCampaignBreakdown campaigns={campaigns} onLeadsClick={handleLeadsClick} />
-        )}
+        {/* Main (série temporal + funil por campanha) + rail (totais) —
+            mesmo padrão de Home/Relatórios/Marketing. */}
+        <div className="grid grid-cols-12 gap-4 items-start">
+          <div className="col-span-12 xl:col-span-8 space-y-4">
+            <AttributedLeadsChart />
+            {campaigns.length > 0 && (
+              <PerCampaignBreakdown campaigns={campaigns} onLeadsClick={handleLeadsClick} />
+            )}
+          </div>
+          <div className="col-span-12 xl:col-span-4 order-first xl:order-none">
+            {totals && <TotalsStrip totals={totals} onLeadsClick={handleTotalLeadsClick} />}
+          </div>
+        </div>
       </div>
 
       <AnimatePresence>

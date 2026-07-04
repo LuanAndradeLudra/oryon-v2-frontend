@@ -28,7 +28,9 @@ import type { Automation, AutomationType, AutomationStatus } from '@/types'
 
 // ── Status strip ──────────────────────────────────────────────────────────────
 
-function StatusStrip({ automations }: { automations: Automation[] }) {
+// Antes era uma faixa horizontal passiva no topo (StatusStrip); agora é o
+// cartão-pulso do rail, no mesmo padrão do Ao Vivo do dashboard.
+function OverviewCard({ automations }: { automations: Automation[] }) {
   const total   = automations.length
   const active  = automations.filter(a => a.status === 'active').length
   const inactive = automations.filter(a => a.status === 'inactive').length
@@ -36,21 +38,33 @@ function StatusStrip({ automations }: { automations: Automation[] }) {
   const totalExec = automations.reduce((s, a) => s + a.executionCount, 0)
 
   const items = [
-    { label: 'Total',      value: total,     color: 'text-surface-200' },
-    { label: 'Ativas',     value: active,    color: 'text-status-active' },
-    { label: 'Inativas',   value: inactive,  color: 'text-surface-400' },
-    { label: 'Rascunho',   value: draft,     color: 'text-status-pending'   },
-    { label: 'Execuções',  value: totalExec.toLocaleString('pt-BR'), color: 'text-brand-400' },
+    { label: 'Ativas',    value: String(active),   color: 'text-status-active' },
+    { label: 'Inativas',  value: String(inactive), color: 'text-surface-300' },
+    { label: 'Rascunhos', value: String(draft),    color: 'text-status-pending' },
+    { label: 'Total',     value: String(total),    color: 'text-surface-50' },
   ]
 
   return (
-    <div className="flex items-center gap-6 px-6 py-3 border-b border-surface-800 bg-surface-950 flex-shrink-0">
-      {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-2">
-          <span className={cn('text-sm font-bold', item.color)}>{item.value}</span>
-          <span className="text-xs text-surface-400">{item.label}</span>
-        </div>
-      ))}
+    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="relative flex w-2 h-2">
+          <span className={cn('absolute inline-flex h-full w-full rounded-full bg-online opacity-60', active > 0 && 'animate-ping')} />
+          <span className={cn('relative inline-flex rounded-full w-2 h-2', active > 0 ? 'bg-online' : 'bg-surface-600')} />
+        </span>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Visão geral</p>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+        {items.map((item) => (
+          <div key={item.label}>
+            <p className="text-[11px] text-surface-500 mb-1">{item.label}</p>
+            <p className={cn('text-xl font-display font-bold tabular-nums leading-none', item.color)}>{item.value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 pt-3 border-t border-surface-800 flex items-baseline justify-between">
+        <span className="text-[11px] text-surface-500">Execuções acumuladas</span>
+        <span className="text-sm font-display font-bold text-brand-400 tabular-nums">{totalExec.toLocaleString('pt-BR')}</span>
+      </div>
     </div>
   )
 }
@@ -417,7 +431,7 @@ function GuideCard() {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="mx-6 mt-4 mb-2 bg-surface-900 border border-brand-500/20 rounded-2xl overflow-hidden">
+    <div className="bg-surface-900 border border-brand-500/20 rounded-2xl overflow-hidden">
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-800/50 transition-colors"
@@ -883,9 +897,6 @@ export function AutomationsPage() {
           </div>
         )}
 
-        {/* Status strip */}
-        {!loading && <StatusStrip automations={automations} />}
-
         {/* Filter bar */}
         <FilterBar
           search={search}
@@ -898,66 +909,65 @@ export function AutomationsPage() {
           onLineFilter={setLineFilter}
         />
 
-        {/* Content */}
+        {/* Content — main (lista) + rail (visão geral viva + guia).
+            A antiga faixa de status no topo virou o cartão do rail. */}
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="px-6 py-4">
-              <SkeletonList items={5} />
+          <div className="grid grid-cols-12 gap-4 items-start px-6 py-4">
+            <div className="col-span-12 xl:col-span-8">
+              {loading ? (
+                <SkeletonList items={5} />
+              ) : filtered.length === 0 ? (
+                <EmptyState onNew={openNew} onGallery={() => setGalleryOpen(true)} />
+              ) : typeFilter !== 'all' ? (
+                /* Flat list (horizontal rows) when filtering by type */
+                <div className="flex flex-col gap-2">
+                  {filtered.map(a => (
+                    <AutomationCard
+                      key={a.id}
+                      automation={a}
+                      onEdit={openEdit}
+                      onToggle={handleToggle}
+                      onDelete={setDeleteTarget}
+                      onAssignWaba={setAssignWabaTarget}
+                    />
+                  ))}
+                </div>
+              ) : (
+                /* Grouped by type — each group is a horizontal list */
+                <div className="flex flex-col gap-6">
+                  {Object.entries(groups).map(([typeKey, list]) => {
+                    const cfg = TYPE_CONFIG[typeKey as AutomationType]
+                    return (
+                      <div key={typeKey}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-surface-200">{cfg.icon}</span>
+                          <h2 className="text-xs font-semibold text-surface-200 uppercase tracking-wider">{cfg.label}</h2>
+                          <span className="text-xs text-surface-300">({list.length})</span>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            {list.map(a => (
+                              <AutomationCard
+                                key={a.id}
+                                automation={a}
+                                onEdit={openEdit}
+                                onToggle={handleToggle}
+                                onDelete={setDeleteTarget}
+                                onAssignWaba={setAssignWabaTarget}
+                              />
+                            ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-          ) : filtered.length === 0 ? (
-            <>
+
+            <div className="col-span-12 xl:col-span-4 space-y-4">
+              {!loading && <OverviewCard automations={automations} />}
               <GuideCard />
-              <EmptyState onNew={openNew} onGallery={() => setGalleryOpen(true)} />
-            </>
-          ) : typeFilter !== 'all' ? (
-            /* Flat list (horizontal rows) when filtering by type */
-            <>
-              <GuideCard />
-              <div className="px-6 py-4 flex flex-col gap-2">
-                {filtered.map(a => (
-                  <AutomationCard
-                    key={a.id}
-                    automation={a}
-                    onEdit={openEdit}
-                    onToggle={handleToggle}
-                    onDelete={setDeleteTarget}
-                    onAssignWaba={setAssignWabaTarget}
-                  />
-                ))}
-              </div>
-            </>
-          ) : (
-            /* Grouped by type — each group is a horizontal list */
-            <>
-              <GuideCard />
-              <div className="px-6 py-4 flex flex-col gap-6">
-                {Object.entries(groups).map(([typeKey, list]) => {
-                  const cfg = TYPE_CONFIG[typeKey as AutomationType]
-                  return (
-                    <div key={typeKey}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-surface-200">{cfg.icon}</span>
-                        <h2 className="text-xs font-semibold text-surface-200 uppercase tracking-wider">{cfg.label}</h2>
-                        <span className="text-xs text-surface-300">({list.length})</span>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                          {list.map(a => (
-                            <AutomationCard
-                              key={a.id}
-                              automation={a}
-                              onEdit={openEdit}
-                              onToggle={handleToggle}
-                              onDelete={setDeleteTarget}
-                              onAssignWaba={setAssignWabaTarget}
-                            />
-                          ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          )}
+            </div>
+          </div>
         </div>
       </main>
 

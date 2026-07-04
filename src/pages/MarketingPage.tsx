@@ -365,7 +365,7 @@ function KpiStrip({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   ]
 
   return (
-    <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {kpis.map((kpi) => (
         <div
           key={kpi.label}
@@ -771,16 +771,16 @@ function CampaignTable({
 
 function ConversionFunnel({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   const stages = [
-    { label: 'Impressões', value: campaigns.reduce((s, c) => s + c.impressions, 0),      color: '#5588b0' },
-    { label: 'Cliques',    value: campaigns.reduce((s, c) => s + c.clicks, 0),           color: '#6366f1' },
-    { label: 'Leads',      value: campaigns.reduce((s, c) => s + c.leadsGenerated, 0),   color: '#f59e0b' },
-    { label: 'Qualif.',    value: campaigns.reduce((s, c) => s + c.qualified, 0),        color: '#8b5cf6' },
-    { label: 'Clientes',   value: campaigns.reduce((s, c) => s + c.customers, 0),        color: '#10b981' },
+    { label: 'Impressões', value: campaigns.reduce((s, c) => s + c.impressions, 0),      color: 'var(--color-status-muted)' },
+    { label: 'Cliques',    value: campaigns.reduce((s, c) => s + c.clicks, 0),           color: 'var(--color-accent-blue)' },
+    { label: 'Leads',      value: campaigns.reduce((s, c) => s + c.leadsGenerated, 0),   color: 'var(--color-accent-amber)' },
+    { label: 'Qualif.',    value: campaigns.reduce((s, c) => s + c.qualified, 0),        color: 'var(--color-accent-violet)' },
+    { label: 'Clientes',   value: campaigns.reduce((s, c) => s + c.customers, 0),        color: 'var(--color-accent-green)' },
   ]
   const max = stages[0].value || 1
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 lg:col-span-2">
+    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
       <p className="text-sm font-semibold text-surface-100 mb-0.5">Funil de Conversão</p>
       <p className="text-xs text-surface-400 mb-4">Do clique no anúncio ao cliente no CRM</p>
       <div className="space-y-2.5">
@@ -824,10 +824,10 @@ function SummaryPanel({ campaigns, totals }: { campaigns: AdCampaignMetrics[]; t
 
   const items = [
     { label: 'Total Investido', value: `R$ ${spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,  icon: <DollarSign className="w-3.5 h-3.5" />,   color: META_BLUE },
-    { label: 'Leads Gerados',   value: leads.toLocaleString('pt-BR'),                                         icon: <Users className="w-3.5 h-3.5" />,        color: '#f59e0b' },
-    { label: 'CPL Médio',       value: `R$ ${avgCpl.toFixed(2)}`,                                             icon: <Target className="w-3.5 h-3.5" />,       color: '#8b5cf6' },
-    { label: 'ROAS Médio',      value: `${avgRoas.toFixed(1)}x`,                                              icon: <BarChart2 className="w-3.5 h-3.5" />,    color: '#10b981' },
-    { label: 'Novos Clientes',  value: customers.toLocaleString('pt-BR'),                                     icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: '#10b981' },
+    { label: 'Leads Gerados',   value: leads.toLocaleString('pt-BR'),                                         icon: <Users className="w-3.5 h-3.5" />,        color: 'var(--color-accent-amber)' },
+    { label: 'CPL Médio',       value: `R$ ${avgCpl.toFixed(2)}`,                                             icon: <Target className="w-3.5 h-3.5" />,       color: 'var(--color-accent-violet)' },
+    { label: 'ROAS Médio',      value: `${avgRoas.toFixed(1)}x`,                                              icon: <BarChart2 className="w-3.5 h-3.5" />,    color: 'var(--color-accent-green)' },
+    { label: 'Novos Clientes',  value: customers.toLocaleString('pt-BR'),                                     icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: 'var(--color-accent-green)' },
   ]
 
   return (
@@ -1111,18 +1111,21 @@ function MarketingPageDesktop() {
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {loading ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="h-16 bg-surface-900 border border-surface-800 rounded-xl" />
-                ))}
-              </div>
-              <div className="h-72 bg-surface-900 border border-surface-800 rounded-xl" />
-              <div className="grid grid-cols-3 gap-4">
-                <div className="lg:col-span-2 h-48 bg-surface-900 border border-surface-800 rounded-xl" />
+            <div className="grid grid-cols-12 gap-4 items-start animate-pulse">
+              {/* Espelha o layout main + rail */}
+              <div className="col-span-12 xl:col-span-8 space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="h-16 bg-surface-900 border border-surface-800 rounded-xl" />
+                  ))}
+                </div>
+                <div className="h-72 bg-surface-900 border border-surface-800 rounded-xl" />
                 <div className="h-48 bg-surface-900 border border-surface-800 rounded-xl" />
               </div>
-              <div className="h-40 bg-surface-900 border border-surface-800 rounded-xl" />
+              <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
+                <div className="h-28 bg-surface-900 border border-surface-800 rounded-xl" />
+                <div className="h-56 bg-surface-900 border border-surface-800 rounded-xl" />
+              </div>
             </div>
           ) : error ? (
             <ErrorState
@@ -1130,24 +1133,13 @@ function MarketingPageDesktop() {
               onRetry={() => void load()}
             />
           ) : (
-            <div className="space-y-4">
-              {/* Account bar */}
-              {account && (
-                <div className="flex items-center gap-3 px-4 py-2.5 bg-surface-900 border border-surface-800 rounded-xl">
-                  <div className="w-2 h-2 rounded-full bg-online flex-shrink-0" />
-                  <span className="text-xs font-semibold text-surface-200">{account.accountName}</span>
-                  <span className="text-xs text-surface-600">·</span>
-                  <span className="text-xs text-surface-500 font-mono">{account.accountId}</span>
-                  <div className="flex-1" />
-                  <span className="text-xs text-surface-500">
-                    Sincronizado:{' '}
-                    {account.lastSyncAt
-                      ? new Date(account.lastSyncAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-                      : '—'}
-                  </span>
-                </div>
-              )}
-
+            /* ── Arquitetura main + rail (mesmo padrão de Home/Relatórios) ──
+               MAIN (8/12): narrativa de performance — KPIs, evolução diária,
+               tabela de campanhas com drill-down e eventos CAPI.
+               RAIL (4/12): o contexto vivo — conta conectada, resumo
+               executivo e funil de conversão sempre à vista. */
+            <div className="grid grid-cols-12 gap-4 items-start">
+              <div className="col-span-12 xl:col-span-8 space-y-4">
               {/* KPI strip */}
               <KpiStrip campaigns={campaigns} />
 
@@ -1176,12 +1168,6 @@ function MarketingPageDesktop() {
                 <PerformanceChart data={perfData} metric={chartMetric} />
               </div>
 
-              {/* Funnel + Summary */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <ConversionFunnel campaigns={campaigns} />
-                <SummaryPanel campaigns={campaigns} totals={platformTotals} />
-              </div>
-
               {/* Campaign table with ad sets + creatives drill-down */}
               <CampaignTable
                 campaigns={campaigns}
@@ -1190,6 +1176,34 @@ function MarketingPageDesktop() {
 
               {/* CAPI Events */}
               <CapiEventsSection />
+              </div>
+
+              {/* ── Rail ── */}
+              <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
+                {/* Conta conectada — status vivo da integração Meta */}
+                {account && (
+                  <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="relative flex w-2 h-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-online opacity-60" />
+                        <span className="relative inline-flex rounded-full w-2 h-2 bg-online" />
+                      </span>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Conta conectada</p>
+                    </div>
+                    <p className="text-sm font-display font-bold text-surface-50 truncate">{account.accountName}</p>
+                    <p className="text-xs text-surface-500 font-mono mt-0.5 truncate">{account.accountId}</p>
+                    <p className="text-[11px] text-surface-500 mt-2">
+                      Sincronizado:{' '}
+                      {account.lastSyncAt
+                        ? new Date(account.lastSyncAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                        : '—'}
+                    </p>
+                  </div>
+                )}
+
+                <SummaryPanel campaigns={campaigns} totals={platformTotals} />
+                <ConversionFunnel campaigns={campaigns} />
+              </div>
             </div>
           )}
         </div>
