@@ -236,16 +236,18 @@ export function KanbanCard({
             )}
           </div>
         )}
+        {/* Nº completo fica no tooltip/painel — no card, só a ação. Reduz
+            ruído visual sem perder o atalho de 1 clique para a conversa. */}
         {contact.waId && (
           <button
             type="button"
             onClick={handleOpenChat}
             disabled={openingChat}
-            title="Abrir conversa"
-            className="self-start inline-flex items-center gap-1.5 text-[11px] text-surface-400 font-mono hover:text-status-active transition-colors"
+            title={`Abrir conversa — ${contact.waId}`}
+            className="self-start inline-flex items-center gap-1.5 text-[11px] text-surface-400 hover:text-status-active transition-colors"
           >
             <WhatsAppIcon variant="mono" size={13} className="text-status-active" />
-            {contact.waId}
+            Conversar
           </button>
         )}
       </div>
@@ -255,7 +257,7 @@ export function KanbanCard({
           {(contact.leadScore ?? 0) > 0 && (
             <LeadScorePill score={contact.leadScore!} />
           )}
-          {(contact.tags ?? []).slice(0, 3).map((tag) => (
+          {(contact.tags ?? []).slice(0, 2).map((tag) => (
             <span
               key={tag.id}
               className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
@@ -264,8 +266,13 @@ export function KanbanCard({
               {tag.name}
             </span>
           ))}
-          {(contact.tags ?? []).length > 3 && (
-            <span className="text-[10px] text-surface-500">+{(contact.tags ?? []).length - 3}</span>
+          {(contact.tags ?? []).length > 2 && (
+            <span
+              className="text-[10px] text-surface-500"
+              title={(contact.tags ?? []).slice(2).map((t) => t.name).join(', ')}
+            >
+              +{(contact.tags ?? []).length - 2}
+            </span>
           )}
         </div>
       )}

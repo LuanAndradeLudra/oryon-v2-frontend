@@ -113,7 +113,7 @@ export function ContactsKanban({
           className="flex gap-3 p-4 h-full min-h-0"
           // Em mobile, cada coluna ocupa ~85% da viewport — usuario percebe
           // que ha colunas alem e desliza. minWidth fixo so a partir de md.
-          style={{ minWidth: typeof window !== 'undefined' && window.innerWidth >= 768 ? stages.length * 260 : undefined }}
+          style={{ minWidth: typeof window !== 'undefined' && window.innerWidth >= 768 ? stages.length * 300 : undefined }}
         >
           {stages.map((stage) => {
             const column = columns[stage.key]
@@ -222,7 +222,7 @@ function KanbanColumn({
 
   return (
     <div
-      className="flex flex-col w-[85vw] md:w-64 flex-shrink-0 snap-start bg-surface-900 rounded-2xl border border-surface-700/50 p-2"
+      className="flex flex-col w-[85vw] md:w-72 flex-shrink-0 snap-start bg-surface-900 rounded-2xl border border-surface-700/50 p-2"
       onDragOver={(e) => { e.preventDefault(); onSetOverKey(stage.key) }}
       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onSetOverKey(null) }}
       onDrop={() => onDrop(stage.key)}

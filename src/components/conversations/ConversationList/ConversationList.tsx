@@ -123,10 +123,12 @@ export function ConversationList({
     ? { ...statusCounts }
     : { all: 0, open: 0, pending: 0, resolved: 0 }
 
-  // Painel da lista (desktop): 480px. A lane interna fica em max-w-[440px] +
-  // mx-auto, então segue centralizada conforme o painel muda de largura.
+  // Painel da lista (desktop): largura responsiva — a CONVERSA é o foco
+  // absoluto do Inbox, então a lista cede espaço em telas menores
+  // (360px em laptops, 420px em xl, 480px só em 2xl+). A lane interna fica
+  // em max-w-[440px] + mx-auto, então segue centralizada em qualquer largura.
   return (
-    <div className="conv-surface flex flex-col h-full w-full sm:w-[480px] bg-surface-950 border-r border-surface-800 flex-shrink-0">
+    <div className="conv-surface flex flex-col h-full w-full sm:w-[360px] xl:w-[420px] 2xl:w-[480px] bg-surface-950 border-r border-surface-800 flex-shrink-0">
       {/* Search header */}
       <div className="px-3 pt-3 pb-3 border-b border-surface-800">
         <div className="flex items-center gap-2">

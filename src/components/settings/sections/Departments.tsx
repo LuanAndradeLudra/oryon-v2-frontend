@@ -260,8 +260,8 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
       <div className="flex items-center justify-between gap-3 px-4 py-3.5">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center"
-            style={{ backgroundColor: (dept.color || '#6366f1') + '22', border: `2px solid ${dept.color || '#6366f1'}55` }}>
-            <Layers className="w-4 h-4" style={{ color: dept.color || '#6366f1' }} />
+            style={{ backgroundColor: `color-mix(in srgb, ${dept.color || 'var(--color-accent-violet)'} 13%, transparent)`, border: `2px solid color-mix(in srgb, ${dept.color || 'var(--color-accent-violet)'} 33%, transparent)` }}>
+            <Layers className="w-4 h-4" style={{ color: dept.color || 'var(--color-accent-violet)' }} />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-surface-100">{dept.name}</p>

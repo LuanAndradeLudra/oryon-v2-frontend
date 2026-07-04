@@ -261,10 +261,8 @@ export function DashboardPage() {
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {isMobile && <MobilePageHeader title="Dashboard" />}
 
-        {/* Strip realtime — em mobile vira scroll horizontal para caber */}
-        <div className={isMobile ? 'overflow-x-auto' : ''}>
-          <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
-        </div>
+        {/* Strip realtime — quebra linha em mobile (fila/espera sempre visíveis) */}
+        <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
 
         {/* Mobile-only toolbar de filtros (date range + refresh) */}
         {isMobile && (
@@ -309,8 +307,14 @@ export function DashboardPage() {
             {loading ? (
               /* Minimal skeleton */
               <div className="space-y-5">
-                <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {Array.from({ length: 15 }).map((_, i) => (
+                {/* Espelha o layout real (4 heroes + grid compacto) p/ evitar layout shift */}
+                <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-32 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+                <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="h-24 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
                   ))}
                 </div>

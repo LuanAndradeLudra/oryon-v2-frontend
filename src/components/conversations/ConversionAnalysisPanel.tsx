@@ -16,29 +16,29 @@ const OUTCOME_CONFIG: Record<ConversionOutcome, {
 }> = {
   converted: {
     label: 'Convertido',
-    color: '#10b981',
-    bg: '#10b9811a',
+    color: 'var(--color-accent-green)',
+    bg: 'color-mix(in srgb, var(--color-accent-green) 10%, transparent)',
     icon: <CheckCircle2 className="w-4 h-4" />,
     description: 'Sinais claros de compra ou contratação detectados',
   },
   interested: {
     label: 'Interessado',
-    color: '#f59e0b',
-    bg: '#f59e0b1a',
+    color: 'var(--color-accent-amber)',
+    bg: 'color-mix(in srgb, var(--color-accent-amber) 10%, transparent)',
     icon: <TrendingUp className="w-4 h-4" />,
     description: 'Alto interesse, mas sem confirmação de compra',
   },
   follow_up: {
     label: 'Follow-up',
-    color: '#6366f1',
-    bg: '#6366f11a',
+    color: 'var(--color-accent-blue)',
+    bg: 'color-mix(in srgb, var(--color-accent-blue) 10%, transparent)',
     icon: <Clock className="w-4 h-4" />,
     description: 'Requer acompanhamento proativo',
   },
   not_interested: {
     label: 'Sem interesse',
-    color: '#ef4444',
-    bg: '#ef44441a',
+    color: 'var(--color-danger)',
+    bg: 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
     icon: <XCircle className="w-4 h-4" />,
     description: 'Intenção de cancelamento ou desinteresse claro',
   },
@@ -342,7 +342,7 @@ function AnalysisResult({
         <button
           onClick={onReanalyze}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-surface-950 transition-opacity hover:opacity-90 mt-1"
-          style={{ background: 'linear-gradient(40deg, #ffffff, #a8a8b4)' }}
+          style={{ background: 'linear-gradient(40deg, var(--color-surface-50), var(--color-surface-300))' }}
         >
           <Sparkles className="w-3.5 h-3.5" />
           Reanalisar conversa
@@ -437,7 +437,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
   }
 
   const hasAttribution = !!(contact.metaAdsReferral || contact.googleAdsAttribution)
-  const platformColor = contact.metaAdsReferral ? '#1877f2' : contact.googleAdsAttribution ? '#EA4335' : '#6366f1'
+  const platformColor = contact.metaAdsReferral ? '#1877f2' : contact.googleAdsAttribution ? '#EA4335' : 'var(--color-accent-blue)'
   const platformName = contact.metaAdsReferral ? 'Meta Ads' : contact.googleAdsAttribution ? 'Google Ads' : null
   const campaignName = contact.metaAdsReferral?.campaignName ?? contact.googleAdsAttribution?.utmCampaign
 
@@ -479,7 +479,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
           <button
             onClick={handleAnalyze}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-surface-950 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90"
-            style={{ background: 'linear-gradient(40deg, #ffffff, #a8a8b4)' }}
+            style={{ background: 'linear-gradient(40deg, var(--color-surface-50), var(--color-surface-300))' }}
           >
             <Sparkles className="w-3.5 h-3.5" />
             Analisar conversa com IA

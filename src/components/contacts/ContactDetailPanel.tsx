@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
@@ -69,6 +69,14 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
       socket.off('contact:ai-failed', onFailed)
     }
   }, [contactId, onContactUpdate, toast])
+
+  // Ao trocar de contato, o corpo do painel volta ao topo e à aba Overview —
+  // sem isso, abrir o contato B herda o scroll/aba de onde A parou.
+  const bodyRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 })
+    setActiveTab('overview')
+  }, [contactId])
 
   const handleDelete = async () => {
     try {
@@ -141,7 +149,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
             onDelete={handleDelete}
           />
           <ContactDetailTabs activeTab={activeTab} onChange={setActiveTab} />
-          <div className="flex-1 overflow-y-auto">
+          <div ref={bodyRef} className="flex-1 overflow-y-auto">
             {activeTab === 'overview'      && <OverviewTab
               contact={contact}
               onSave={handleSave}

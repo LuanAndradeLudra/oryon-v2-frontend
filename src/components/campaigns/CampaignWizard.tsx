@@ -1573,7 +1573,7 @@ function Step5({
                     className="text-[10px] px-2 py-0.5 rounded font-medium"
                     style={pill.color
                       ? { backgroundColor: pill.color, color: '#fff' }
-                      : { backgroundColor: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }
+                      : { backgroundColor: 'color-mix(in srgb, var(--color-accent-violet) 15%, transparent)', color: 'var(--color-accent-violet)', border: '1px solid color-mix(in srgb, var(--color-accent-violet) 30%, transparent)' }
                     }
                   >
                     {pill.label}

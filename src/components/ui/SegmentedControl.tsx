@@ -1,0 +1,73 @@
+// ─── Segmented Control ───────────────────────────────────────────────────────
+// Grupo de filtros/abas em pílula usado em toolbars (status de campanhas,
+// tipos de automação, abas de página). Substitui as 4+ reimplementações
+// inline que divergiam em padding/radius/estados.
+
+import type { ComponentType, ReactNode } from 'react'
+import { cn } from '@/lib/utils'
+
+export interface SegmentOption<T extends string> {
+  value: T
+  label: ReactNode
+  icon?: ComponentType<{ className?: string }>
+  /** Contagem opcional exibida como badge à direita do label. */
+  count?: number
+}
+
+interface SegmentedControlProps<T extends string> {
+  options: SegmentOption<T>[]
+  value: T
+  onChange: (value: T) => void
+  size?: 'sm' | 'md'
+  className?: string
+  /** aria-label do grupo (obrigatório para leitores de tela). */
+  label: string
+}
+
+export function SegmentedControl<T extends string>({
+  options, value, onChange, size = 'sm', className, label,
+}: SegmentedControlProps<T>) {
+  return (
+    <div
+      role="tablist"
+      aria-label={label}
+      className={cn(
+        'inline-flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-xl p-1',
+        className,
+      )}
+    >
+      {options.map((opt) => {
+        const Icon = opt.icon
+        const active = value === opt.value
+        return (
+          <button
+            key={opt.value}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-lg font-medium transition-all cursor-pointer',
+              size === 'sm' ? 'px-3 py-1 text-xs' : 'px-3.5 py-1.5 text-sm',
+              active
+                ? 'bg-surface-700 text-surface-100 shadow-sm'
+                : 'text-surface-500 hover:text-surface-300',
+            )}
+          >
+            {Icon && <Icon className={size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />}
+            {opt.label}
+            {typeof opt.count === 'number' && (
+              <span
+                className={cn(
+                  'min-w-[18px] px-1 rounded-full text-[10px] font-semibold text-center tabular-nums',
+                  active ? 'bg-surface-600 text-surface-100' : 'bg-surface-700 text-surface-400',
+                )}
+              >
+                {opt.count > 99 ? '99+' : opt.count}
+              </span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}

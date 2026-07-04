@@ -9,10 +9,10 @@ import { cn } from '@/lib/utils'
 // ── Outcome config ────────────────────────────────────────────────────────────
 
 const OUTCOME_CONFIG: Record<CampaignLeadSummary['outcome'], { label: string; color: string }> = {
-  converted: { label: 'Cliente',     color: '#10b981' },
-  qualified:  { label: 'Qualificado', color: '#f59e0b' },
-  lead:       { label: 'Lead',        color: '#6366f1' },
-  lost:       { label: 'Perdido',     color: '#f43f5e' },
+  converted: { label: 'Cliente',     color: 'var(--color-accent-green)' },
+  qualified:  { label: 'Qualificado', color: 'var(--color-accent-amber)' },
+  lead:       { label: 'Lead',        color: 'var(--color-accent-blue)' },
+  lost:       { label: 'Perdido',     color: 'var(--color-accent-rose)' },
 }
 
 // ── Main drawer ───────────────────────────────────────────────────────────────

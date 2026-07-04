@@ -21,7 +21,7 @@ interface LeadScorePillProps {
 export function LeadScorePill({ score, showIcon = true, className }: LeadScorePillProps) {
   return (
     <span
-      title={`Lead score: ${score}`}
+      title={`Lead score: ${score}/100 — calculado pela IA a partir de engajamento, intenção e perfil. ${score >= 80 ? 'Lead quente' : score >= 50 ? 'Lead morno' : 'Lead frio'}.`}
       className={cn(
         'color-chip inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold tabular-nums',
         className,

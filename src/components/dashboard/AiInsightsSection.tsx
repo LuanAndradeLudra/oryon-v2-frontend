@@ -11,19 +11,16 @@ const TYPE_CONFIG = {
   alert: {
     icon: <AlertTriangle className="w-3.5 h-3.5" />,
     label: 'Alerta',
-    color: '#ef4444',
     chip: 'var(--color-danger)',
   },
   opportunity: {
     icon: <Lightbulb className="w-3.5 h-3.5" />,
     label: 'Oportunidade',
-    color: '#10b981',
     chip: 'var(--color-status-active)',
   },
   trend: {
     icon: <TrendingUp className="w-3.5 h-3.5" />,
     label: 'Tendência',
-    color: '#f59e0b',
     chip: 'var(--color-status-pending)',
   },
 }

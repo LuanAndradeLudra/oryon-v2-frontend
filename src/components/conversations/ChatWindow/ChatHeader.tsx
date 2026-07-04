@@ -333,6 +333,7 @@ export function ChatHeader({
         <Tooltip content="Gerenciar etiquetas" side="bottom">
           <button
             onClick={() => { closeAll(); setTagOpen(true) }}
+            aria-label="Gerenciar etiquetas"
             className={cn(
               'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
               tagOpen ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
@@ -353,6 +354,7 @@ export function ChatHeader({
             <Tooltip content="Atribuir usuário" side="bottom">
               <button
                 onClick={() => { closeAll(); setUserOpen((v) => !v) }}
+                aria-label="Atribuir usuário"
                 className={cn(
                   'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
                   userOpen ? 'bg-surface-800 text-surface-200'
@@ -368,6 +370,8 @@ export function ChatHeader({
         <Tooltip content="Informações do contato" side="bottom">
           <button
             onClick={onToggleInfo}
+            aria-label="Informações do contato"
+            aria-expanded={infoOpen}
             className={cn(
               'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
               infoOpen ? 'bg-surface-700 text-surface-200' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
@@ -387,6 +391,7 @@ export function ChatHeader({
         <Tooltip content="Arquivar conversa" side="bottom">
           <button
             onClick={() => setArchiveOpen(true)}
+            aria-label="Arquivar conversa"
             className="w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 hover:bg-danger/10 hover:text-danger transition-all"
           >
             <Archive className="w-4 h-4" />

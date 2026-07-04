@@ -25,7 +25,8 @@ function ShellLayout({ children }: { children: ReactNode }) {
       <NavSidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar />
-        <main id="main-content" className="flex flex-1 min-w-0 overflow-hidden">{children}</main>
+        {/* div (não <main>) — as páginas declaram seu próprio <main> interno */}
+        <div id="main-content" className="flex flex-1 min-w-0 overflow-hidden">{children}</div>
       </div>
     </div>
   )

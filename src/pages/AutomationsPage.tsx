@@ -21,6 +21,8 @@ import { AssignWabaModal } from '@/components/common/AssignWabaModal'
 import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/common/LineFilterChip'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { SkeletonList } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/utils'
 import type { Automation, AutomationType, AutomationStatus } from '@/types'
 
@@ -171,22 +173,7 @@ function FilterBar({ search, onSearch, status, onStatus, typeFilter, onType, lin
       </div>
 
       {/* Status filter */}
-      <div className="flex items-center bg-surface-800 border border-surface-700 rounded-xl p-0.5">
-        {STATUS_OPTIONS.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => onStatus(opt.value)}
-            className={cn(
-              'px-3 py-1 rounded-lg text-xs font-medium transition-colors',
-              status === opt.value
-                ? 'bg-surface-700 text-surface-100'
-                : 'text-surface-500 hover:text-surface-300'
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl label="Filtrar por status" options={STATUS_OPTIONS} value={status} onChange={onStatus} />
 
       {/* Type filter chip — matches LineFilterChip visual treatment */}
       <TypeFilterChip value={typeFilter} onChange={onType} />
@@ -914,8 +901,8 @@ export function AutomationsPage() {
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+            <div className="px-6 py-4">
+              <SkeletonList items={5} />
             </div>
           ) : filtered.length === 0 ? (
             <>

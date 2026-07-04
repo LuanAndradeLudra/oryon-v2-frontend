@@ -13,6 +13,8 @@ import {
 import { cn } from '@/lib/utils'
 import { campaignsApi } from '@/services/api'
 import { generateCampaignInsights } from '@/services/copilotService'
+import { useChartColors } from '@/hooks/useChartColors'
+import type { ChartColors } from '@/components/dashboard/utils'
 import type { Campaign, CampaignAnalytics, CampaignConversionEvent, CampaignAttributionBreakdown, CampaignConversationSummary } from '@/types'
 import type { CampaignInsight } from '@/services/copilotService'
 
@@ -27,6 +29,11 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
   })
+}
+
+/** Tint temático — alpha via color-mix (funciona com var() e hex, nos dois temas). */
+function tint(color: string, pctVal: number) {
+  return `color-mix(in srgb, ${color} ${pctVal}%, transparent)`
 }
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
@@ -48,14 +55,15 @@ function KpiCard({ label, value, sub, color, icon }: {
 
 // ── Conversion type config ────────────────────────────────────────────────────
 
-const CONV_CONFIG: Record<CampaignConversionEvent['type'], { label: string; color: string; icon: React.ReactNode }> = {
-  replied:      { label: 'Respondeu',       color: '#3b82f6', icon: <MessageCircle className="w-3.5 h-3.5" /> },
-  clicked_link: { label: 'Clicou no link',  color: '#8b5cf6', icon: <TrendingUp className="w-3.5 h-3.5" /> },
-  stage_changed:{ label: 'Avançou no CRM',  color: '#6366f1', icon: <ChevronRight className="w-3.5 h-3.5" /> },
-  purchase:     { label: 'Comprou',         color: '#10b981', icon: <ShoppingCart className="w-3.5 h-3.5" /> },
+// color = chave de useChartColors() — usado em SVG (Recharts), onde var() não funciona
+const CONV_CONFIG: Record<CampaignConversionEvent['type'], { label: string; color: keyof ChartColors; icon: React.ReactNode }> = {
+  replied:      { label: 'Respondeu',       color: 'cyan',   icon: <MessageCircle className="w-3.5 h-3.5" /> },
+  clicked_link: { label: 'Clicou no link',  color: 'purple', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+  stage_changed:{ label: 'Avançou no CRM',  color: 'brand',  icon: <ChevronRight className="w-3.5 h-3.5" /> },
+  purchase:     { label: 'Comprou',         color: 'online', icon: <ShoppingCart className="w-3.5 h-3.5" /> },
 }
 
-const CHURN_COLORS = ['#f43f5e', '#f97316', '#eab308', '#6366f1', '#64748b']
+const CHURN_COLOR_KEYS: (keyof ChartColors)[] = ['danger', 'away', 'brand', 'purple', 'axis']
 const CHURN_LABELS: Record<string, string> = {
   optOut:        'Opt-out / descadastro',
   blocked:       'Bloqueou como spam',
@@ -67,17 +75,17 @@ const CHURN_LABELS: Record<string, string> = {
 // ── AI Insights section ───────────────────────────────────────────────────────
 
 const INSIGHT_COLORS: Record<CampaignInsight['type'], string> = {
-  alert:       '#f43f5e',
-  opportunity: '#10b981',
-  trend:       '#3b82f6',
-  success:     '#a78bfa',
+  alert:       'var(--color-accent-rose)',
+  opportunity: 'var(--color-accent-green)',
+  trend:       'var(--color-accent-blue)',
+  success:     'var(--color-accent-violet)',
 }
 
 const INSIGHT_BG: Record<CampaignInsight['type'], string> = {
-  alert:       '#f43f5e18',
-  opportunity: '#10b98118',
-  trend:       '#3b82f618',
-  success:     '#a78bfa18',
+  alert:       tint('var(--color-accent-rose)', 9),
+  opportunity: tint('var(--color-accent-green)', 9),
+  trend:       tint('var(--color-accent-blue)', 9),
+  success:     tint('var(--color-accent-violet)', 9),
 }
 
 function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analytics: CampaignAnalytics }) {
@@ -153,11 +161,11 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
               <div
                 key={ins.id}
                 className="p-3 rounded-xl border"
-                style={{ backgroundColor: INSIGHT_BG[ins.type], borderColor: INSIGHT_COLORS[ins.type] + '30' }}
+                style={{ backgroundColor: INSIGHT_BG[ins.type], borderColor: tint(INSIGHT_COLORS[ins.type], 19) }}
               >
                 <div className="flex items-start gap-2">
                   <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                    style={{ backgroundColor: INSIGHT_COLORS[ins.type] + '25', color: INSIGHT_COLORS[ins.type] }}>
+                    style={{ backgroundColor: tint(INSIGHT_COLORS[ins.type], 15), color: INSIGHT_COLORS[ins.type] }}>
                     {ins.type === 'alert' ? <AlertTriangle className="w-3 h-3" /> :
                      ins.type === 'success' ? <CheckCircle2 className="w-3 h-3" /> :
                      ins.type === 'opportunity' ? <Target className="w-3 h-3" /> :
@@ -195,26 +203,26 @@ const PLATFORM_CONFIG: Record<string, { label: string; color: string; icon: Reac
   meta_ads:   { label: 'Meta Ads',   color: '#1877f2', icon: <Megaphone className="w-3 h-3" /> },
   google_ads: { label: 'Google Ads', color: '#EA4335', icon: <Globe className="w-3 h-3" /> },
   whatsapp:   { label: 'WhatsApp Orgânico', color: '#25D366', icon: <MessageCircle className="w-3 h-3" /> },
-  manual:     { label: 'Manual / Lista', color: '#64748b', icon: <Users className="w-3 h-3" /> },
+  manual:     { label: 'Manual / Lista', color: 'var(--color-status-muted)', icon: <Users className="w-3 h-3" /> },
 }
 
 function getPlatformCfg(source: string) {
-  return PLATFORM_CONFIG[source] ?? { label: source, color: '#64748b', icon: <Users className="w-3 h-3" /> }
+  return PLATFORM_CONFIG[source] ?? { label: source, color: 'var(--color-status-muted)', icon: <Users className="w-3 h-3" /> }
 }
 
 // ── Outcome / Sentiment config ────────────────────────────────────────────────
 
 const OUTCOME_CONFIG: Record<string, { label: string; color: string }> = {
-  converted:   { label: 'Convertido',    color: '#10b981' },
-  churned:     { label: 'Churn',         color: '#f43f5e' },
-  pending:     { label: 'Em andamento',  color: '#f59e0b' },
-  no_response: { label: 'Sem resposta',  color: '#64748b' },
+  converted:   { label: 'Convertido',    color: 'var(--color-accent-green)' },
+  churned:     { label: 'Churn',         color: 'var(--color-accent-rose)' },
+  pending:     { label: 'Em andamento',  color: 'var(--color-accent-amber)' },
+  no_response: { label: 'Sem resposta',  color: 'var(--color-status-muted)' },
 }
 
 const SENTIMENT_CONFIG: Record<string, { label: string; color: string }> = {
-  positive: { label: 'Positivo',  color: '#10b981' },
-  neutral:  { label: 'Neutro',    color: '#64748b' },
-  negative: { label: 'Negativo',  color: '#f43f5e' },
+  positive: { label: 'Positivo',  color: 'var(--color-accent-green)' },
+  neutral:  { label: 'Neutro',    color: 'var(--color-status-muted)' },
+  negative: { label: 'Negativo',  color: 'var(--color-accent-rose)' },
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -230,6 +238,7 @@ interface CampaignReportProps {
 
 export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const navigate = useNavigate()
+  const C = useChartColors()
   const [analytics, setAnalytics] = useState<CampaignAnalytics | null>(null)
   const [conversations, setConversations] = useState<CampaignConversationSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -259,12 +268,14 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const convRate      = stats.read > 0 && stats.conversions ? Math.round((stats.conversions / stats.read) * 100) : 0
 
   const funnelData = [
-    { label: 'Enviadas',    value: stats.sent,      color: '#3b82f6' },
-    { label: 'Entregues',   value: stats.delivered, color: '#6366f1' },
-    { label: 'Lidas',       value: stats.read,      color: '#f59e0b' },
-    { label: 'Responderam', value: stats.replied ?? 0, color: '#a78bfa' },
-    { label: 'Convertidas', value: stats.conversions ?? 0, color: '#10b981' },
+    { label: 'Enviadas',    value: stats.sent,      color: 'var(--color-accent-blue)' },
+    { label: 'Entregues',   value: stats.delivered, color: 'var(--color-accent-cyan)' },
+    { label: 'Lidas',       value: stats.read,      color: 'var(--color-accent-amber)' },
+    { label: 'Responderam', value: stats.replied ?? 0, color: 'var(--color-accent-violet)' },
+    { label: 'Convertidas', value: stats.conversions ?? 0, color: 'var(--color-accent-green)' },
   ]
+
+  const churnColors = CHURN_COLOR_KEYS.map((k) => C[k])
 
   const churnPieData = analytics ? [
     { name: CHURN_LABELS.optOut,        value: analytics.churnBreakdown.optOut },
@@ -328,10 +339,10 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
             {/* KPI Strip */}
             <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
               <div className="grid grid-cols-4 gap-2">
-                <KpiCard label="Lidas"        value={`${readRate}%`}  sub={`${stats.read} de ${stats.sent}`}      color="#f59e0b" icon={<BarChart3 className="w-3.5 h-3.5" />} />
-                <KpiCard label="Responderam"  value={`${replyRate}%`} sub={`${stats.replied ?? 0} respostas`}       color="#a78bfa" icon={<MessageCircle className="w-3.5 h-3.5" />} />
-                <KpiCard label="Conversões"   value={`${convRate}%`}  sub={`${stats.conversions ?? 0} confirmadas`} color="#10b981" icon={<ShoppingCart className="w-3.5 h-3.5" />} />
-                <KpiCard label="Churn"        value={totalChurn}      sub={`${pct(totalChurn, stats.sent)} do total`} color="#f43f5e" icon={<ThumbsDown className="w-3.5 h-3.5" />} />
+                <KpiCard label="Lidas"        value={`${readRate}%`}  sub={`${stats.read} de ${stats.sent}`}      color="var(--color-accent-amber)" icon={<BarChart3 className="w-3.5 h-3.5" />} />
+                <KpiCard label="Responderam"  value={`${replyRate}%`} sub={`${stats.replied ?? 0} respostas`}       color="var(--color-accent-violet)" icon={<MessageCircle className="w-3.5 h-3.5" />} />
+                <KpiCard label="Conversões"   value={`${convRate}%`}  sub={`${stats.conversions ?? 0} confirmadas`} color="var(--color-accent-green)" icon={<ShoppingCart className="w-3.5 h-3.5" />} />
+                <KpiCard label="Churn"        value={totalChurn}      sub={`${pct(totalChurn, stats.sent)} do total`} color="var(--color-accent-rose)" icon={<ThumbsDown className="w-3.5 h-3.5" />} />
               </div>
               {stats.engagementScore !== undefined && (
                 <div className="mt-2 flex items-center gap-2">
@@ -341,12 +352,12 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       className="h-full rounded-full transition-all"
                       style={{
                         width: `${stats.engagementScore}%`,
-                        background: stats.engagementScore >= 70 ? '#10b981' : stats.engagementScore >= 40 ? '#f59e0b' : '#f43f5e',
+                        background: stats.engagementScore >= 70 ? 'var(--color-accent-green)' : stats.engagementScore >= 40 ? 'var(--color-accent-amber)' : 'var(--color-accent-rose)',
                       }}
                     />
                   </div>
                   <span className="text-xs font-bold" style={{
-                    color: stats.engagementScore >= 70 ? '#10b981' : stats.engagementScore >= 40 ? '#f59e0b' : '#f43f5e',
+                    color: stats.engagementScore >= 70 ? 'var(--color-accent-green)' : stats.engagementScore >= 40 ? 'var(--color-accent-amber)' : 'var(--color-accent-rose)',
                   }}>{stats.engagementScore}/100</span>
                 </div>
               )}
@@ -389,7 +400,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   animate={{ width: `${(f.value / stats.sent) * 100}%` }}
                                   transition={{ duration: 0.6, delay: i * 0.08 }}
                                   className="h-full rounded-lg flex items-center pl-2"
-                                  style={{ backgroundColor: f.color + '40', borderLeft: `3px solid ${f.color}` }}
+                                  style={{ backgroundColor: tint(f.color, 25), borderLeft: `3px solid ${f.color}` }}
                                 >
                                   <span className="text-[10px] font-bold" style={{ color: f.color }}>{f.value}</span>
                                 </motion.div>
@@ -411,26 +422,26 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                               <AreaChart data={analytics.engagementTimeline} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
                                 <defs>
                                   <linearGradient id="gRead" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%"  stopColor="#f59e0b" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                                    <stop offset="5%"  stopColor={C.away} stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor={C.away} stopOpacity={0} />
                                   </linearGradient>
                                   <linearGradient id="gReplied" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%"  stopColor="#a78bfa" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
+                                    <stop offset="5%"  stopColor={C.purple} stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor={C.purple} stopOpacity={0} />
                                   </linearGradient>
                                   <linearGradient id="gConverted" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%"  stopColor="#10b981" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                    <stop offset="5%"  stopColor={C.online} stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor={C.online} stopOpacity={0} />
                                   </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#71717a' }} />
-                                <YAxis tick={{ fontSize: 10, fill: '#71717a' }} />
-                                <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8, fontSize: 11 }} />
+                                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: C.axis }} />
+                                <YAxis tick={{ fontSize: 10, fill: C.axis }} />
+                                <Tooltip contentStyle={{ background: C.surface8, border: `1px solid ${C.grid}`, borderRadius: 8, fontSize: 11 }} />
                                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                                <Area type="monotone" dataKey="read"      name="Lidas"      stroke="#f59e0b" fill="url(#gRead)"      strokeWidth={2} dot={false} />
-                                <Area type="monotone" dataKey="replied"   name="Responderam" stroke="#a78bfa" fill="url(#gReplied)"   strokeWidth={2} dot={false} />
-                                <Area type="monotone" dataKey="converted" name="Convertidas" stroke="#10b981" fill="url(#gConverted)" strokeWidth={2} dot={false} />
+                                <Area type="monotone" dataKey="read"      name="Lidas"      stroke={C.away} fill="url(#gRead)"      strokeWidth={2} dot={false} />
+                                <Area type="monotone" dataKey="replied"   name="Responderam" stroke={C.purple} fill="url(#gReplied)"   strokeWidth={2} dot={false} />
+                                <Area type="monotone" dataKey="converted" name="Convertidas" stroke={C.online} fill="url(#gConverted)" strokeWidth={2} dot={false} />
                               </AreaChart>
                             </ResponsiveContainer>
                           </div>
@@ -470,17 +481,17 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                               data={Object.entries(CONV_CONFIG).map(([type, cfg]) => ({
                                 name: cfg.label,
                                 value: analytics.conversionEvents.filter((e) => e.type === type).length,
-                                fill: cfg.color,
+                                fill: C[cfg.color],
                               }))}
                               margin={{ top: 4, right: 4, bottom: 4, left: -20 }}
                             >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                              <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#71717a' }} />
-                              <YAxis tick={{ fontSize: 10, fill: '#71717a' }} />
-                              <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8, fontSize: 11 }} />
+                              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                              <XAxis dataKey="name" tick={{ fontSize: 9, fill: C.axis }} />
+                              <YAxis tick={{ fontSize: 10, fill: C.axis }} />
+                              <Tooltip contentStyle={{ background: C.surface8, border: `1px solid ${C.grid}`, borderRadius: 8, fontSize: 11 }} />
                               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                                 {Object.values(CONV_CONFIG).map((cfg, i) => (
-                                  <Cell key={i} fill={cfg.color + 'cc'} />
+                                  <Cell key={i} fill={C[cfg.color]} fillOpacity={0.8} />
                                 ))}
                               </Bar>
                             </BarChart>
@@ -497,7 +508,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                             return (
                               <div key={i} className="flex items-center gap-3 px-3 py-2 bg-surface-800 border border-surface-700 rounded-xl">
                                 <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                                  style={{ backgroundColor: cfg.color + '20', color: cfg.color }}>
+                                  style={{ backgroundColor: tint(C[cfg.color], 12), color: C[cfg.color] }}>
                                   {cfg.icon}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -505,7 +516,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   {ev.detail && <p className="text-[10px] text-surface-500">{ev.detail}</p>}
                                 </div>
                                 <div className="flex-shrink-0 text-right">
-                                  <p className="text-[10px] font-medium" style={{ color: cfg.color }}>{cfg.label}</p>
+                                  <p className="text-[10px] font-medium" style={{ color: C[cfg.color] }}>{cfg.label}</p>
                                   <p className="text-[9px] text-surface-600">{fmtDate(ev.convertedAt)}</p>
                                 </div>
                               </div>
@@ -529,7 +540,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         const cfg = getPlatformCfg(best.source)
                         return (
                           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border"
-                            style={{ backgroundColor: cfg.color + '12', borderColor: cfg.color + '30' }}>
+                            style={{ backgroundColor: tint(cfg.color, 7), borderColor: tint(cfg.color, 19) }}>
                             <Crown className="w-4 h-4 flex-shrink-0" style={{ color: cfg.color }} />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold" style={{ color: cfg.color }}>Melhor origem: {cfg.label}</p>
@@ -596,7 +607,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                     animate={{ width: `${ab.conversionRate * 100}%` }}
                                     transition={{ duration: 0.5 }}
                                     className="h-full rounded-full"
-                                    style={{ backgroundColor: cfg.color + 'cc' }}
+                                    style={{ backgroundColor: tint(cfg.color, 80) }}
                                   />
                                 </div>
                               </div>
@@ -670,7 +681,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                       ? 'border-current'
                                       : 'bg-surface-800 border-surface-700 hover:border-surface-600',
                                   )}
-                                  style={outcomeFilter === key ? { backgroundColor: cfg.color + '18', borderColor: cfg.color + '60', color: cfg.color } : undefined}
+                                  style={outcomeFilter === key ? { backgroundColor: tint(cfg.color, 9), borderColor: tint(cfg.color, 38), color: cfg.color } : undefined}
                                 >
                                   <p className="text-base font-bold" style={{ color: cfg.color }}>{count}</p>
                                   <p className="text-[9px] text-surface-500 mt-0.5 leading-tight">{cfg.label}</p>
@@ -718,8 +729,8 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           </div>
                         )}
                         {filteredConvs.map((conv) => {
-                          const outcomeCfg = OUTCOME_CONFIG[conv.outcome] ?? { label: conv.outcome, color: '#64748b' }
-                          const sentimentCfg = SENTIMENT_CONFIG[conv.sentiment] ?? { label: conv.sentiment, color: '#64748b' }
+                          const outcomeCfg = OUTCOME_CONFIG[conv.outcome] ?? { label: conv.outcome, color: 'var(--color-status-muted)' }
+                          const sentimentCfg = SENTIMENT_CONFIG[conv.sentiment] ?? { label: conv.sentiment, color: 'var(--color-status-muted)' }
                           const adCfg = conv.adSource ? getPlatformCfg(conv.adSource) : null
                           return (
                             <div key={conv.contactId} className="px-3 py-2.5 bg-surface-800 border border-surface-700 rounded-xl space-y-1.5">
@@ -811,17 +822,17 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                 <Pie data={churnPieData} cx="50%" cy="50%" innerRadius={42} outerRadius={68}
                                   dataKey="value" paddingAngle={3}>
                                   {churnPieData.map((_, i) => (
-                                    <Cell key={i} fill={CHURN_COLORS[i % CHURN_COLORS.length]} />
+                                    <Cell key={i} fill={churnColors[i % churnColors.length]} />
                                   ))}
                                 </Pie>
-                                <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8, fontSize: 11 }} />
+                                <Tooltip contentStyle={{ background: C.surface8, border: `1px solid ${C.grid}`, borderRadius: 8, fontSize: 11 }} />
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
                           <div className="flex-1 space-y-2">
                             {churnPieData.map((d, i) => (
                               <div key={i} className="flex items-center gap-2">
-                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CHURN_COLORS[i % CHURN_COLORS.length] }} />
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[i % churnColors.length] }} />
                                 <span className="text-[11px] text-surface-400 flex-1 truncate">{d.name}</span>
                                 <span className="text-[11px] font-bold text-surface-200 flex-shrink-0">{d.value}</span>
                                 <span className="text-[10px] text-surface-600 w-10 text-right flex-shrink-0">{pct(d.value, totalChurn)}</span>
@@ -836,7 +847,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         <p className="text-[10px] font-semibold text-surface-400 uppercase tracking-wider">Interpretação dos motivos</p>
                         {analytics.churnBreakdown.optOut > 0 && (
                           <div className="flex gap-2">
-                            <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: CHURN_COLORS[0] }} />
+                            <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[0] }} />
                             <p className="text-[11px] text-surface-400 leading-relaxed">
                               <strong className="text-surface-200">{analytics.churnBreakdown.optOut} opt-outs</strong>: contatos que clicaram em "parar de receber". Revise a relevância do conteúdo e a frequência dos envios para esse segmento.
                             </p>
@@ -844,7 +855,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         )}
                         {analytics.churnBreakdown.blocked > 0 && (
                           <div className="flex gap-2">
-                            <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: CHURN_COLORS[1] }} />
+                            <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[1] }} />
                             <p className="text-[11px] text-surface-400 leading-relaxed">
                               <strong className="text-surface-200">{analytics.churnBreakdown.blocked} bloqueios</strong>: contatos que reportaram como spam. Taxa elevada pode impactar o quality score do número WABA.
                             </p>
@@ -852,7 +863,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         )}
                         {analytics.churnBreakdown.noInteraction > 0 && (
                           <div className="flex gap-2">
-                            <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: CHURN_COLORS[4] }} />
+                            <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[4] }} />
                             <p className="text-[11px] text-surface-400 leading-relaxed">
                               <strong className="text-surface-200">{analytics.churnBreakdown.noInteraction} sem interação</strong>: entregue mas ignorado. Considere um follow-up ou retirar este segmento das próximas campanhas.
                             </p>

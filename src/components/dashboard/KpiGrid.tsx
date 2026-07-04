@@ -57,13 +57,13 @@ const KPI_ICONS: Record<KpiId, React.ReactNode> = {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Atendimento: '#6366f1',
-  Velocidade:  '#f59e0b',
-  Qualidade:   '#10b981',
-  Volume:      '#06b6d4',
-  Bot:         '#8b5cf6',
-  Equipe:      '#5588b0',
-  Disparos:    '#f97316',
+  Atendimento: 'var(--color-accent-blue)',
+  Velocidade:  'var(--color-accent-amber)',
+  Qualidade:   'var(--color-accent-green)',
+  Volume:      'var(--color-accent-cyan)',
+  Bot:         'var(--color-accent-violet)',
+  Equipe:      'var(--color-status-muted)',
+  Disparos:    'var(--color-warning)',
   Marketing:   '#1877f2',
 }
 
@@ -89,35 +89,46 @@ function KpiCard({ metric, hero }: { metric: KpiMetric; hero?: boolean }) {
     (metric.trend < 0 && metric.trendIsGood === 'up')
 
   const trendColor = isGood ? 'text-online' : isBad ? 'text-danger' : 'text-surface-500'
-  const catColor = hero ? '#14B8A6' : (CATEGORY_COLORS[metric.category] ?? '#6366f1')
+  const catColor = hero ? 'var(--color-accent-dark)' : (CATEGORY_COLORS[metric.category] ?? 'var(--color-accent-blue)')
 
   return (
     <div
-      className="card-glow bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col gap-2.5"
+      className={cn(
+        'card-glow bg-surface-900 border rounded-xl flex flex-col',
+        hero
+          ? 'border-surface-700/80 p-5 gap-3'
+          : 'border-surface-800 p-3.5 gap-2',
+      )}
     >
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: catColor + '1a', color: catColor }}>
+        <div
+          className={cn('rounded-lg flex items-center justify-center flex-shrink-0', hero ? 'w-8 h-8' : 'w-6 h-6')}
+          style={{ backgroundColor: `color-mix(in srgb, ${catColor} 10%, transparent)`, color: catColor }}
+        >
           {KPI_ICONS[metric.id]}
         </div>
-        <span className="text-xs font-medium leading-tight text-surface-400">
+        <span className={cn('font-medium leading-tight text-surface-400', hero ? 'text-sm' : 'text-xs')}>
           {metric.label}
         </span>
       </div>
 
-      <div className="text-2xl font-bold text-surface-50 tabular-nums leading-none">
+      <div className={cn(
+        'font-bold text-surface-50 tabular-nums leading-none font-display',
+        hero ? 'text-3xl' : 'text-xl',
+      )}>
         {formatKpiValue(metric.value, metric.unit)}
         {metric.unit === 'csat_score' && (
-          <span className="text-sm font-normal text-surface-400 ml-1">/ 5</span>
+          <span className={cn('font-normal text-surface-400 ml-1 font-sans', hero ? 'text-base' : 'text-sm')}>/ 5</span>
         )}
       </div>
 
       {metric.trend !== 0 && (
-        <div className={cn('relative flex items-center gap-1 text-xs font-medium', trendColor)}>
+        <div className={cn('relative flex items-center gap-1 font-medium', hero ? 'text-sm' : 'text-xs', trendColor)}>
           {metric.trend > 0
-            ? <TrendingUp className="w-3 h-3" />
-            : <TrendingDown className="w-3 h-3" />}
+            ? <TrendingUp className={hero ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
+            : <TrendingDown className={hero ? 'w-3.5 h-3.5' : 'w-3 h-3'} />}
           <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1)}%</span>
+          {hero && <span className="text-surface-600 font-normal">vs. período anterior</span>}
         </div>
       )}
     </div>
@@ -180,7 +191,7 @@ function CustomizerPanel({
           {categories.map((cat) => (
             <div key={cat}>
               <p className="text-[10px] font-bold uppercase tracking-widest mb-2"
-                style={{ color: CATEGORY_COLORS[cat] ?? '#5588b0' }}>
+                style={{ color: CATEGORY_COLORS[cat] ?? 'var(--color-status-muted)' }}>
                 {cat}
               </p>
               <div className="flex flex-col gap-1">
@@ -260,11 +271,23 @@ export function KpiGrid({ metrics }: { metrics: KpiMetric[] }) {
         </button>
       </div>
 
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {activeMetrics.map((metric) => (
-          <KpiCard key={metric.id} metric={metric} />
+      {/* Hierarquia visual: os 4 primeiros KPIs da seleção do usuário são o
+          "hero row" (maiores, com contexto de tendência); o restante fica
+          compacto abaixo. A ordem dos slots continua sendo a do usuário —
+          reordenar no customizer muda o que é destaque. */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        {activeMetrics.slice(0, 4).map((metric) => (
+          <KpiCard key={metric.id} metric={metric} hero />
         ))}
       </div>
+
+      {activeMetrics.length > 4 && (
+        <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 mt-3">
+          {activeMetrics.slice(4).map((metric) => (
+            <KpiCard key={metric.id} metric={metric} />
+          ))}
+        </div>
+      )}
 
       <CustomizerPanel
         open={customizerOpen}

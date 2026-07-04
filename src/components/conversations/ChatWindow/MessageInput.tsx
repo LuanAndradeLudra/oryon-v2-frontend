@@ -13,6 +13,9 @@ import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
+/** Limite de texto do WhatsApp Cloud API (mensagem de texto). */
+const WA_TEXT_LIMIT = 4096
+
 interface MessageInputProps {
   /**
    * Returns a promise that rejects on send failure (e.g. backend rejected
@@ -613,7 +616,9 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             onInput={handleInput}
             onContextMenu={onInputContextMenu}
             placeholder="Digite uma mensagem ou / para respostas rápidas..."
+            aria-label="Mensagem"
             rows={1}
+            maxLength={WA_TEXT_LIMIT}
             disabled={disabled || sending}
             className={cn(
               'flex-1 bg-transparent text-sm text-surface-100 placeholder:text-surface-500',
@@ -621,6 +626,20 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
               'min-h-[24px] max-h-[120px]'
             )}
           />
+
+          {/* Contador de caracteres — só aparece perto do limite do WhatsApp
+              (4096); antes disso é ruído. Âmbar ao se aproximar, vermelho no teto. */}
+          {text.length >= WA_TEXT_LIMIT - 300 && (
+            <span
+              aria-live="polite"
+              className={cn(
+                'self-end pb-1 text-[10px] tabular-nums flex-shrink-0',
+                text.length >= WA_TEXT_LIMIT ? 'text-danger font-semibold' : 'text-warning',
+              )}
+            >
+              {text.length}/{WA_TEXT_LIMIT}
+            </span>
+          )}
 
           {/* Emoji */}
           <EmojiPickerButton
@@ -634,7 +653,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             <button
               onClick={handleSend}
               disabled={sending || disabled}
-              className="w-8 h-8 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 shadow-sm flex items-center justify-center flex-shrink-0 transition-all"
+              aria-label="Enviar mensagem"
+              className="w-8 h-8 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 shadow-sm flex items-center justify-center flex-shrink-0 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send className="w-4 h-4" />
             </button>

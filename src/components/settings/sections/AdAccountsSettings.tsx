@@ -217,7 +217,7 @@ function ConnectedCard({
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">R$ {c.spend.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</td>
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">{c.leadsGenerated}</td>
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">R$ {c.cpl.toFixed(2)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums font-medium" style={{ color: (c.roas ?? 0) > 5 ? '#10b981' : '#5588b0' }}>
+                  <td className="px-3 py-2 text-right tabular-nums font-medium" style={{ color: (c.roas ?? 0) > 5 ? 'var(--color-accent-green)' : 'var(--color-status-muted)' }}>
                     {c.roas ? c.roas.toFixed(1) + 'x' : '—'}
                   </td>
                 </tr>

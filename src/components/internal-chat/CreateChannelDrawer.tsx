@@ -99,7 +99,7 @@ function SectorCard({
       {/* Color swatch */}
       <div
         className="w-9 h-9 rounded-lg flex-shrink-0"
-        style={{ background: dept.color + '30', border: `2px solid ${dept.color}40` }}
+        style={{ background: `color-mix(in srgb, ${dept.color} 19%, transparent)`, border: `2px solid color-mix(in srgb, ${dept.color} 25%, transparent)` }}
       >
         <div className="w-full h-full flex items-center justify-center">
           <Building2 className="w-4 h-4" style={{ color: dept.color }} />
@@ -521,8 +521,8 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                     <div
                       className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={channelType === 'department_room' && selectedDept
-                        ? { background: selectedDept.color + '25', border: `1.5px solid ${selectedDept.color}40` }
-                        : { background: 'rgb(var(--surface-800))' }
+                        ? { background: `color-mix(in srgb, ${selectedDept.color} 15%, transparent)`, border: `1.5px solid color-mix(in srgb, ${selectedDept.color} 25%, transparent)` }
+                        : { background: 'var(--color-surface-800)' }
                       }
                     >
                       <Emoji native={emoji} size="1.75rem" />
@@ -599,7 +599,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   {channelType === 'department_room' && selectedDept && (
                     <div
                       className="flex items-center gap-2 px-3 py-2 rounded-xl mb-1 text-[11px]"
-                      style={{ background: selectedDept.color + '18', border: `1px solid ${selectedDept.color}30` }}
+                      style={{ background: `color-mix(in srgb, ${selectedDept.color} 9%, transparent)`, border: `1px solid color-mix(in srgb, ${selectedDept.color} 19%, transparent)` }}
                     >
                       <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: selectedDept.color }} />
                       <span style={{ color: selectedDept.color }}>
