@@ -57,6 +57,12 @@ export interface PlanOption {
   features: Record<string, unknown>
 }
 
+/** Pacote avulso de crédito — fonte de verdade no backend (SCRUM-154). */
+export interface CreditPack {
+  credits: number
+  valueCents: number
+}
+
 export interface AsaasStatus {
   subscribed: boolean
   tier: BackendPlanTier | null
@@ -113,6 +119,11 @@ export const billingApi = {
   },
   async getAsaasStatus(): Promise<AsaasStatus> {
     const res = await api.get<AsaasStatus>('/settings/billing/asaas-status')
+    return res.data
+  },
+  /** Catálogo de pacotes de crédito (preços definidos no backend, não no front). */
+  async getCreditPacks(): Promise<CreditPack[]> {
+    const res = await api.get<CreditPack[]>('/settings/billing/credit-packs')
     return res.data
   },
   async subscribe(input: {

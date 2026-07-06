@@ -13,6 +13,12 @@ import type {
   BackendPlanTier, BillingMethod, CardInput, CheckoutResult, PlanOption,
 } from '@/services/billingApi'
 
+// 5.6 (PCI): não enviamos PAN/CVV do browser pelo nosso backend enquanto não
+// houver tokenização server-side (Asaas) no subscribe/buy-credits. O cartão fica
+// bloqueado por padrão — só Pix. Reabilitar via VITE_BILLING_CARD_ENABLED='true'
+// depois que o backend tokenizar (ou com tokenização client-side direta no Asaas).
+const CARD_ENABLED = import.meta.env.VITE_BILLING_CARD_ENABLED === 'true'
+
 export type CheckoutIntent =
   | { kind: 'subscribe'; tier: BackendPlanTier; plan: PlanOption }
   | { kind: 'change'; tier: BackendPlanTier; plan: PlanOption }
@@ -63,7 +69,8 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
         postalCode: postalCode || undefined,
         addressNumber: addressNumber || undefined,
       }
-      const cardPayload = method === 'CREDIT_CARD' ? card : undefined
+      // Nunca envia PAN/CVV enquanto o cartão está bloqueado (5.6 / PCI).
+      const cardPayload = CARD_ENABLED && method === 'CREDIT_CARD' ? card : undefined
 
       if (intent.kind === 'change') {
         const r = await billingApi.changePlan(intent.tier)
@@ -190,21 +197,28 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
             <>
               {/* Método */}
               <div className="grid grid-cols-2 gap-2">
-                {(['PIX', 'CREDIT_CARD'] as BillingMethod[]).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setMethod(m)}
-                    className={cn(
-                      'flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors',
-                      method === m
-                        ? 'border-brand-500 bg-brand-950/40 text-brand-300'
-                        : 'border-surface-700 text-surface-300 hover:bg-surface-800',
-                    )}
-                  >
-                    {m === 'PIX' ? <QrCode className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
-                    {m === 'PIX' ? 'Pix' : 'Cartão'}
-                  </button>
-                ))}
+                {(['PIX', 'CREDIT_CARD'] as BillingMethod[]).map((m) => {
+                  // Cartão bloqueado até tokenização server-side (5.6 / PCI).
+                  const cardBlocked = m === 'CREDIT_CARD' && !CARD_ENABLED
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => { if (!cardBlocked) setMethod(m) }}
+                      disabled={cardBlocked}
+                      title={cardBlocked ? 'Pagamento com cartão em breve' : undefined}
+                      className={cn(
+                        'flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors',
+                        method === m
+                          ? 'border-brand-500 bg-brand-950/40 text-brand-300'
+                          : 'border-surface-700 text-surface-300 hover:bg-surface-800',
+                        cardBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent',
+                      )}
+                    >
+                      {m === 'PIX' ? <QrCode className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+                      {m === 'PIX' ? 'Pix' : cardBlocked ? 'Cartão (em breve)' : 'Cartão'}
+                    </button>
+                  )
+                })}
               </div>
 
               {/* CPF/CNPJ (Asaas exige p/ cobranças) */}

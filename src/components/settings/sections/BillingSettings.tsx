@@ -16,7 +16,7 @@ import {
 import { useBilling } from '@/hooks/useBilling'
 import { billingApi } from '@/services/billingApi'
 import type {
-  CreditTransaction, PlanOption, AsaasStatus, BackendPlanTier,
+  CreditTransaction, PlanOption, AsaasStatus, BackendPlanTier, CreditPack,
 } from '@/services/billingApi'
 import { CheckoutModal, type CheckoutIntent } from '@/components/settings/modals/CheckoutModal'
 import { ConfirmModal } from '@/components/ui/Modal'
@@ -31,12 +31,9 @@ function nextBackendTier(current: BackendPlanTier): BackendPlanTier | null {
   return next && next !== 'enterprise' ? next : null
 }
 
-// Pacotes avulsos de crédito oferecidos no painel (preço provisório — SCRUM-152).
-const CREDIT_PACKS = [
-  { credits: 250, valueCents: 12500 },
-  { credits: 500, valueCents: 22500 },
-  { credits: 1000, valueCents: 40000 },
-]
+// Pacotes de crédito vêm do backend (GET /settings/billing/credit-packs) —
+// preço/quantidade são fonte de verdade server-side (SCRUM-154). O front só
+// exibe; o backend valida o valor no buy-credits.
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -129,12 +126,13 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
 }
 
 function UpgradeCard({
-  currentTier, nextPlan, isSubscribed, onUpgrade,
+  currentTier, nextPlan, isSubscribed, onUpgrade, disabled,
 }: {
   currentTier: BackendPlanTier
   nextPlan: PlanOption | null
   isSubscribed: boolean
   onUpgrade: (intent: CheckoutIntent) => void
+  disabled?: boolean
 }) {
   if (!nextPlan) return null
 
@@ -181,12 +179,13 @@ function UpgradeCard({
       )}
 
       <button
+        disabled={disabled}
         onClick={() => onUpgrade({
           kind: isSubscribed ? 'change' : 'subscribe',
           tier: nextPlan.tier,
           plan: nextPlan,
         })}
-        className="mt-5 w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors text-surface-950 font-semibold text-sm flex items-center justify-center gap-2"
+        className="mt-5 w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors text-surface-950 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-600"
       >
         {isSubscribed ? 'Fazer upgrade' : 'Contratar'} {nextPlan.displayName}
         <ChevronRight className="w-4 h-4" />
@@ -215,25 +214,36 @@ export function BillingSettings() {
   const { billing, transactions, loading, error, refetch } = useBilling({ transactions: true })
   const [plans, setPlans] = useState<PlanOption[]>([])
   const [status, setStatus] = useState<AsaasStatus | null>(null)
+  // 5.4: falha ao carregar o status do Asaas NÃO pode ser tratada como "novo
+  // cliente" (senão a UI reoferece contratar → cobrança duplicada). Rastreamos
+  // o erro para desabilitar os CTAs de pagamento e mostrar estado de erro.
+  const [statusError, setStatusError] = useState(false)
+  const [packs, setPacks] = useState<CreditPack[]>([])
   const [intent, setIntent] = useState<CheckoutIntent | null>(null)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [canceling, setCanceling] = useState(false)
 
   useEffect(() => {
     let alive = true
-    Promise.all([billingApi.getPlans(), billingApi.getAsaasStatus()])
-      .then(([p, s]) => { if (alive) { setPlans(p); setStatus(s) } })
-      .catch(() => { /* painel funciona mesmo sem o status do Asaas */ })
+    // Planos e pacotes são independentes do status — carregam à parte.
+    billingApi.getPlans().then((p) => { if (alive) setPlans(p) }).catch(() => {})
+    billingApi.getCreditPacks().then((cp) => { if (alive) setPacks(cp) }).catch(() => {})
+    // Status do Asaas: em erro, marca statusError (não assume "sem assinatura").
+    billingApi.getAsaasStatus()
+      .then((s) => { if (alive) { setStatus(s); setStatusError(false) } })
+      .catch(() => { if (alive) { setStatus(null); setStatusError(true) } })
     return () => { alive = false }
   }, [])
 
-  function openCredits(pack: { credits: number; valueCents: number }) {
+  function openCredits(pack: CreditPack) {
     setIntent({ kind: 'credits', packCredits: pack.credits, valueCents: pack.valueCents })
   }
 
   function onCheckoutDone() {
     void refetch()
-    billingApi.getAsaasStatus().then(setStatus).catch(() => {})
+    billingApi.getAsaasStatus()
+      .then((s) => { setStatus(s); setStatusError(false) })
+      .catch(() => setStatusError(true))
   }
 
   async function confirmCancel() {
@@ -285,6 +295,21 @@ export function BillingSettings() {
   return (
     <div className="max-w-2xl space-y-6">
 
+      {/* 5.4 — status do Asaas indisponível: bloqueia CTAs de pagamento */}
+      {statusError && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-surface-200">
+            <p className="font-medium">Status de cobrança indisponível</p>
+            <p className="text-surface-400 text-xs mt-0.5">
+              Não foi possível confirmar sua assinatura agora. Contratar, trocar de
+              plano e comprar créditos estão temporariamente desabilitados para
+              evitar cobrança duplicada. Tente novamente em instantes.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Inadimplência */}
       {isPastDue && (
         <div className="rounded-2xl border border-status-pending/40 bg-status-pending/5 p-4 flex items-start gap-3">
@@ -313,8 +338,8 @@ export function BillingSettings() {
         </div>
       )}
 
-      {/* Contratação (quando ainda não há assinatura paga) */}
-      {status && !isSubscribed && !isCanceled && (
+      {/* Contratação (quando ainda não há assinatura paga) — nunca em statusError */}
+      {status && !statusError && !isSubscribed && !isCanceled && (
         <div className="rounded-2xl border border-brand-500/30 bg-brand-950/20 p-4 flex items-center justify-between gap-4">
           <div className="text-sm">
             <p className="font-medium text-surface-100">Ative sua assinatura</p>
@@ -399,6 +424,7 @@ export function BillingSettings() {
         nextPlan={nextPlan}
         isSubscribed={isSubscribed}
         onUpgrade={setIntent}
+        disabled={statusError}
       />
 
       {/* Pacotes de crédito */}
@@ -410,21 +436,26 @@ export function BillingSettings() {
         <p className="text-xs text-surface-500 mb-4">
           Pacotes não renovam — somam ao saldo atual. Ideal para picos de atendimento.
         </p>
-        <div className="grid grid-cols-3 gap-2">
-          {CREDIT_PACKS.map((pack) => (
-            <button
-              key={pack.credits}
-              onClick={() => openCredits(pack)}
-              className="rounded-xl border border-surface-700 hover:border-brand-500 hover:bg-surface-800 transition-colors p-3 text-center"
-            >
-              <p className="text-sm font-bold text-surface-100">{pack.credits.toLocaleString('pt-BR')}</p>
-              <p className="text-[11px] text-surface-500">créditos</p>
-              <p className="text-xs text-brand-400 font-semibold mt-1">
-                R$ {(pack.valueCents / 100).toLocaleString('pt-BR')}
-              </p>
-            </button>
-          ))}
-        </div>
+        {packs.length === 0 ? (
+          <p className="text-sm text-surface-500 py-2">Pacotes indisponíveis no momento.</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            {packs.map((pack) => (
+              <button
+                key={pack.credits}
+                onClick={() => openCredits(pack)}
+                disabled={statusError}
+                className="rounded-xl border border-surface-700 hover:border-brand-500 hover:bg-surface-800 transition-colors p-3 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-surface-700 disabled:hover:bg-transparent"
+              >
+                <p className="text-sm font-bold text-surface-100">{pack.credits.toLocaleString('pt-BR')}</p>
+                <p className="text-[11px] text-surface-500">créditos</p>
+                <p className="text-xs text-brand-400 font-semibold mt-1">
+                  R$ {(pack.valueCents / 100).toLocaleString('pt-BR')}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Extrato de créditos */}
