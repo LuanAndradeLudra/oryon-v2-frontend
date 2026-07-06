@@ -16,7 +16,11 @@ export const FEATURE_FLAGS = {
   settings: true,
   settingsAdAccounts: false,
   settingsVertical: false,
-  settingsBilling: true,
+  // Billing (SCRUM-172/154) fica OCULTO por padrão até o backend estar em
+  // produção. Gate por env: só aparece onde VITE_SETTINGS_BILLING='true'
+  // (staging). Sem a env (prod atual), permanece false — evita expor cobrança
+  // antes do backend pronto.
+  settingsBilling: import.meta.env.VITE_SETTINGS_BILLING === 'true',
   // Phase 18+ — surfaces the customer-facing "Skills" tab on AgentDetail.
   // Skills assigned by Oryon staff are always executed; this flag only
   // governs whether the customer sees them in the UI.

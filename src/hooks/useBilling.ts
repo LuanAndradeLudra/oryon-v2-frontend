@@ -41,6 +41,18 @@ async function load(withTransactions: boolean) {
   emit()
 }
 
+/**
+ * Zera o store module-scoped (SCRUM-172). DEVE ser chamado no logout: sem isto
+ * o saldo/plano do tenant anterior persiste em memória e vaza para a próxima
+ * sessão (outro tenant) até o primeiro refetch. Emite para re-renderizar
+ * consumidores montados com o estado limpo.
+ */
+export function resetBillingState() {
+  state = { billing: null, transactions: [], loading: false, error: null }
+  started = false
+  emit()
+}
+
 interface UseBillingOptions {
   /** Também busca o extrato de transações (usado no painel, não no gate). */
   transactions?: boolean
