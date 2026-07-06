@@ -7,6 +7,7 @@ import { isNativePlatform } from '@/config/env'
 import { setTokens, clearTokens, getRefreshToken } from '@/services/auth-storage'
 import { registerPushNotifications, unregisterPushNotifications, syncTokenWithBackend } from '@/services/push-registration'
 import { SKIP_AUTH_REFRESH } from '@/services/api'
+import { resetBillingState } from '@/hooks/useBilling'
 
 // Ensure ALL axios requests send httpOnly cookies
 axios.defaults.withCredentials = true
@@ -179,6 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // /login imediatamente, mesmo se o POST /auth/logout falhar com 401.
     clearSession()
     setSession(null)
+    // Zera o store module-scoped de billing (SCRUM-172) para não vazar
+    // saldo/plano do tenant que saiu para a próxima sessão.
+    resetBillingState()
     try {
       const body = isNativePlatform() ? { refreshToken: refreshToken ?? undefined } : {}
       await axios.post(`${API}/auth/logout`, body, {
