@@ -30,6 +30,7 @@ import type {
   Product,
   Deal,
   DealStatus,
+  Pipeline,
   ContactDealsSummary,
   SendMessageDto,
   Department,
@@ -1218,9 +1219,24 @@ export const agentCatalogApi = {
   },
 }
 
+/** Pipelines de negócio (múltiplos pipelines, Fase 2). Lista já vem com os estágios embutidos. */
+export const pipelinesApi = {
+  list() {
+    return api.get<Pipeline[]>('/settings/pipelines')
+  },
+}
+
 export const dealsApi = {
   list(contactId: string) {
     return api.get<Deal[]>('/deals', { params: { contactId } })
+  },
+  /** Negócios de um pipeline (board). Um card por deal; agrupar por stageId no cliente. */
+  board(pipelineId: string) {
+    return api.get<Deal[]>('/deals', { params: { pipelineId } })
+  },
+  /** Move o negócio para um estágio do seu pipeline (deriva status no backend). */
+  moveStage(id: string, stageId: string) {
+    return api.patch<Deal>(`/deals/${id}/stage`, { stageId })
   },
   get(id: string) {
     return api.get<Deal>(`/deals/${id}`)

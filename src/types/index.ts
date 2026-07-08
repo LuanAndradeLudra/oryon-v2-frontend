@@ -216,13 +216,46 @@ export interface Deal {
   contactId: string
   title: string
   status: DealStatus
-  pipelineStageKey?: string | null
+  pipelineId: string            // Fase 2: pipeline de negócio
+  stageId: string               // estágio atual (fonte da verdade do status)
+  originConversationId?: string | null
+  createdByKind?: 'user' | 'automation' | 'ai'
   amountCents: number           // total em centavos
   currency?: string
   note?: string | null
   ownerUserId?: string | null
   closedAt?: string | null
-  lineItems: DealLineItem[]
+  lineItems?: DealLineItem[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Pipeline de negócio (múltiplos por tenant). O `isDefault` é o pipeline padrão. */
+export interface Pipeline {
+  id: string
+  tenantId: string
+  name: string
+  description?: string | null
+  color: string
+  order: number
+  isDefault: boolean
+  isArchived: boolean
+  stages: PipelineStage[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Estágio de um pipeline. `isWon`/`isLost` marcam os terminais. */
+export interface PipelineStage {
+  id: string
+  tenantId: string
+  pipelineId: string
+  key: string
+  label: string
+  color: string
+  order: number
+  isWon: boolean
+  isLost: boolean
   createdAt?: string
   updatedAt?: string
 }
