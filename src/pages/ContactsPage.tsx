@@ -35,6 +35,31 @@ import type { Contact, ContactFilters, ContactStage, Tag } from '@/types'
 
 type ViewMode = 'table' | 'kanban'
 
+/**
+ * Faceta "Situação comercial" (D-10) — derivada em tempo real do `dealsSummary`
+ * já carregado em cada contato, sem dado novo. Filtra client-side os contatos
+ * exibidos (lista/board); os totais das colunas continuam vindo do servidor.
+ */
+type CommercialSituation = 'all' | 'no_deal' | 'open_deal' | 'customer'
+
+function matchesCommercial(summary: Contact['dealsSummary'], s: CommercialSituation): boolean {
+  if (s === 'all') return true
+  const openCount = summary?.openCount ?? 0
+  const wonCount = summary?.wonCount ?? 0
+  const count = summary?.count ?? 0
+  if (s === 'no_deal') return count === 0
+  if (s === 'open_deal') return openCount > 0
+  if (s === 'customer') return wonCount > 0
+  return true
+}
+
+const COMMERCIAL_OPTIONS: { key: CommercialSituation; label: string }[] = [
+  { key: 'all', label: 'Todos' },
+  { key: 'no_deal', label: 'Sem negócio' },
+  { key: 'open_deal', label: 'Com negócio aberto' },
+  { key: 'customer', label: 'Cliente' },
+]
+
 export function ContactsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
   const isMobile = useIsMobile()
@@ -56,6 +81,7 @@ export function ContactsPage() {
   const [showNewContact, setShowNewContact] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showCRMConfig, setShowCRMConfig] = useState(false)
+  const [commercial, setCommercial] = useState<CommercialSituation>('all')
   const { user } = useAuth()
   const currentUser = user
     ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl }
@@ -94,6 +120,21 @@ export function ContactsPage() {
   const bulkRemoveTag = isKanbanView ? kanbanMode.bulkRemoveTag : tableMode.bulkRemoveTag
   const removeContact = isKanbanView ? kanbanMode.removeContact : tableMode.removeContact
   const refetch = isKanbanView ? kanbanMode.refetchAll : tableMode.refetch
+
+  // Faceta "Situação comercial" (D-10): filtra client-side pelo dealsSummary já
+  // carregado. `displayContacts` alimenta lista/mobile; `displayColumns` o board.
+  const displayContacts = useMemo(
+    () => (commercial === 'all' ? contacts : contacts.filter((c) => matchesCommercial(c.dealsSummary, commercial))),
+    [contacts, commercial],
+  )
+  const displayColumns = useMemo(() => {
+    if (commercial === 'all') return kanbanMode.columns
+    const out: typeof kanbanMode.columns = {}
+    for (const [key, col] of Object.entries(kanbanMode.columns)) {
+      out[key] = { ...col, contacts: col.contacts.filter((c) => matchesCommercial(c.dealsSummary, commercial)) }
+    }
+    return out
+  }, [kanbanMode.columns, commercial])
 
   // Real per-stage totals for the StatsBar's "estágio predominante" widget.
   // Only meaningful in kanban view; in table view the bar falls back to
@@ -310,6 +351,25 @@ export function ContactsPage() {
           <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
         )}
 
+        {/* Faceta "Situação comercial" (D-10) — filtro opt-in derivado do dealsSummary. */}
+        <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto border-b border-surface-800/60">
+          {COMMERCIAL_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => setCommercial(opt.key)}
+              className={cn(
+                'text-xs px-3 py-1 rounded-full whitespace-nowrap transition-colors border',
+                commercial === opt.key
+                  ? 'bg-brand-500/15 text-brand-300 border-brand-500/40'
+                  : 'bg-surface-900 text-surface-400 border-surface-800 hover:text-surface-200',
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex-1 overflow-hidden">
           {error ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
@@ -326,13 +386,13 @@ export function ContactsPage() {
             // Mobile: lista vertical pura — kanban horizontal e table viraram
             // inutilizaveis em viewport estreita. Tap no card abre detail.
             <ContactsMobileList
-              contacts={contacts}
+              contacts={displayContacts}
               loading={loading}
               onOpenPanel={handleOpenPanel}
             />
           ) : effectiveViewMode === 'table' ? (
             <ContactsTable
-              contacts={contacts}
+              contacts={displayContacts}
               loading={loading}
               onOpenPanel={handleOpenPanel}
               onMoveStage={handleMoveStage}
@@ -343,7 +403,7 @@ export function ContactsPage() {
             />
           ) : (
             <ContactsKanban
-              columns={kanbanMode.columns}
+              columns={displayColumns}
               onLoadMore={kanbanMode.loadMore}
               onOpenPanel={handleOpenPanel}
               onMoveStage={handleMoveStage}
