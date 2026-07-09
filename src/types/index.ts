@@ -260,6 +260,23 @@ export interface PipelineStage {
   updatedAt?: string
 }
 
+/** Dono do negócio auto-criado pelo roteamento. */
+export type OwnerRule = 'unassigned' | 'conversation_assignee' | 'fixed_user'
+
+/** Roteamento por canal (Fase 4): linha WhatsApp → pipeline. No máx. 1 por linha. */
+export interface PipelineChannelRouting {
+  id: string
+  tenantId: string
+  whatsappNumberId: string
+  pipelineId: string
+  autoCreateDeal: boolean
+  defaultStageId: string | null
+  ownerRule: OwnerRule
+  ownerUserId: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
 /** Agregado de negócios de um contato (contagem + valor em centavos). Usado no card do Kanban. */
 export interface ContactDealsSummary {
   count: number
