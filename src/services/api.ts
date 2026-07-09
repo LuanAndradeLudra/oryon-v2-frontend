@@ -1225,6 +1225,15 @@ export const pipelinesApi = {
   list() {
     return api.get<Pipeline[]>('/settings/pipelines')
   },
+  create(dto: { name: string; description?: string; color?: string }) {
+    return api.post<Pipeline>('/settings/pipelines', dto)
+  },
+  remove(id: string) {
+    return api.delete(`/settings/pipelines/${id}`)
+  },
+  createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+    return api.post(`/settings/pipelines/${pipelineId}/stages`, dto)
+  },
 }
 
 /** Roteamento por canal (Fase 4): linha WhatsApp → pipeline. Leitura livre, escrita admin. */
