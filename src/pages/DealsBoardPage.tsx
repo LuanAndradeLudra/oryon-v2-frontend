@@ -66,9 +66,9 @@ export function DealsBoardPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-w-0">
       {/* Cabeçalho: título + seletor de pipeline */}
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-surface-800">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-surface-800 min-w-0">
         <div className="flex items-center gap-2">
           <KanbanSquare className="w-5 h-5 text-brand-400" />
           <h1 className="text-sm font-semibold text-surface-100">Negócios</h1>
