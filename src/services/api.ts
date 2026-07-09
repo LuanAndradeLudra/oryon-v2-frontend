@@ -31,6 +31,7 @@ import type {
   Deal,
   DealStatus,
   Pipeline,
+  PipelineChannelRouting,
   ContactDealsSummary,
   SendMessageDto,
   Department,
@@ -1223,6 +1224,19 @@ export const agentCatalogApi = {
 export const pipelinesApi = {
   list() {
     return api.get<Pipeline[]>('/settings/pipelines')
+  },
+}
+
+/** Roteamento por canal (Fase 4): linha WhatsApp → pipeline. Leitura livre, escrita admin. */
+export const pipelineRoutingApi = {
+  list() {
+    return api.get<PipelineChannelRouting[]>('/settings/pipeline-routing')
+  },
+  upsert(whatsappNumberId: string, dto: Partial<Omit<PipelineChannelRouting, 'id' | 'tenantId' | 'whatsappNumberId'>>) {
+    return api.put<PipelineChannelRouting>(`/settings/pipeline-routing/${whatsappNumberId}`, dto)
+  },
+  remove(whatsappNumberId: string) {
+    return api.delete(`/settings/pipeline-routing/${whatsappNumberId}`)
   },
 }
 
