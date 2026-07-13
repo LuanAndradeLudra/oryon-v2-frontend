@@ -5,7 +5,7 @@ import { dealsApi, pipelinesApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { hexToRgba } from '@/lib/utils'
 
-interface DealChip { pipeline: string; stage: string; color: string }
+interface DealChip { pipeline: string; pipelineId: string; stage: string; color: string }
 
 /**
  * Indicador de pipeline/estágio do negócio ABERTO do contato, no cabeçalho da
@@ -27,7 +27,7 @@ export function ConversationDealIndicator({ contactId }: { contactId: string }) 
         const pipe = pipes.find((p) => p.id === open.pipelineId)
         const stage = pipe?.stages.find((s) => s.id === open.stageId)
         if (!pipe || !stage) { setChip(null); return }
-        setChip({ pipeline: pipe.name, stage: stage.label, color: stage.color })
+        setChip({ pipeline: pipe.name, pipelineId: pipe.id, stage: stage.label, color: stage.color })
       })
       .catch(() => setChip(null))
   }, [contactId])
@@ -48,7 +48,7 @@ export function ConversationDealIndicator({ contactId }: { contactId: string }) 
   return (
     <button
       type="button"
-      onClick={() => navigate('/deals')}
+      onClick={() => navigate(`/contacts?pipeline=${chip.pipelineId}`)}
       title={`${chip.pipeline} · ${chip.stage} — abrir no board`}
       className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium max-w-full"
       style={{ backgroundColor: hexToRgba(chip.color, 0.15), color: chip.color }}

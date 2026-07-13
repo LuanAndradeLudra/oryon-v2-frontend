@@ -138,7 +138,7 @@ export function ContactPanelDeals({
                     </span>
                     <button
                       type="button"
-                      onClick={() => navigate('/deals')}
+                      onClick={() => navigate(`/contacts?pipeline=${pipelineId}`)}
                       title="Abrir no board de negócios"
                       className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 transition-colors flex-shrink-0"
                     >
@@ -182,6 +182,7 @@ export function ContactPanelDeals({
         open={modalOpen}
         contactId={contactId}
         editDeal={editDeal}
+        pipelines={pipelines}
         onClose={() => {
           setModalOpen(false)
           setEditDeal(null)

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   X, Upload, FileText, FileJson, FileCode2, ChevronDown,
@@ -6,8 +6,9 @@ import {
   Users, TriangleAlert, ClipboardPaste, FolderOpen, Sparkles,
 } from 'lucide-react'
 import { appLogger } from '@/services/appLogger'
-import { cn } from '@/lib/utils'
-import type { Contact, ContactSource } from '@/types'
+import { dealsApi } from '@/services/api'
+import { cn, getDefaultPipeline } from '@/lib/utils'
+import type { Contact, ContactSource, Pipeline } from '@/types'
 
 // Anthropic SDK removed — AI-powered import mapping will use Agent Server in the future
 const anthropic = {
@@ -47,6 +48,10 @@ interface ImportContactDrawerProps {
   onClose: () => void
   onCreate: (dto: Partial<Contact> & { displayName: string; waId: string }) => Promise<Contact>
   onDone?: (count: number) => void
+  /** Funis de negócio do tenant — todo contato importado nasce com um negócio
+   *  neste funil (mesma regra do "Novo Lead" manual, spec 2026-07-09). */
+  pipelines: Pipeline[]
+  defaultPipelineId?: string | null
 }
 
 // ─── Parsers ──────────────────────────────────────────────────────────────────
@@ -283,7 +288,7 @@ function StepIndicator({ step }: { step: Step }) {
 
 // ─── Main drawer ──────────────────────────────────────────────────────────────
 
-export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: ImportContactDrawerProps) {
+export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipelines, defaultPipelineId }: ImportContactDrawerProps) {
   const [step, setStep]         = useState<Step>('upload')
   const [uploadMode, setUploadMode] = useState<'file' | 'paste'>('file')
   const [pasteText, setPasteText]   = useState('')
@@ -299,6 +304,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: Import
   const [importedCount, setImportedCount] = useState(0)
   const [errors, setErrors]         = useState<string[]>([])
   const [dragging, setDragging]     = useState(false)
+  const [pipelineId, setPipelineId] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const reset = () => {
@@ -306,8 +312,28 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: Import
     setColMap({}); setAiSuggestions({}); setAiLoading(false)
     setParseError(null); setProgress(0)
     setImportedCount(0); setErrors([]); setDragging(false)
-    setPasteText(''); setUploadMode('file')
+    setPasteText(''); setUploadMode('file'); setPipelineId('')
   }
+
+  // Reseta ao abrir — o drawer fica sempre montado (o pai só alterna
+  // `open`), e o fluxo normal de conclusão (handleImport → onDone) fecha via
+  // o pai sem passar por `handleClose`/`reset()`. Sem isto, reabrir "Importar"
+  // reaproveitava silenciosamente o funil (e o step/arquivo) da importação
+  // anterior em vez de recomeçar do zero.
+  useEffect(() => {
+    if (open) reset()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  // Funil pré-selecionado ao abrir (funil em vista, senão o default do
+  // tenant) — mesma regra do drawer de Novo Lead. Reage a `pipelines`
+  // chegando depois do open para não travar em '' (mesma corrida corrigida
+  // em NewContactDrawer).
+  useEffect(() => {
+    if (open && !pipelineId && pipelines.length > 0) {
+      setPipelineId(defaultPipelineId ?? getDefaultPipeline(pipelines)?.id ?? '')
+    }
+  }, [open, pipelines, defaultPipelineId, pipelineId])
 
   const handleClose = () => { reset(); onClose() }
 
@@ -424,7 +450,18 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: Import
           ...(get(row, 'stage')    && { stage:    get(row, 'stage') }),
           source: (get(row, 'source') as ContactSource) || 'import' as ContactSource,
         }
-        await onCreate(dto)
+        const created = await onCreate(dto)
+        // Todo contato importado nasce com um negócio no funil escolhido —
+        // mesma regra do "Novo Lead" manual (spec 2026-07-09). Best-effort:
+        // o contato já foi criado, então uma falha aqui não desfaz a linha,
+        // só entra na lista de falhas parciais mostrada no fim.
+        if (pipelineId) {
+          try {
+            await dealsApi.create({ contactId: created.id, title: created.displayName, pipelineId })
+          } catch {
+            errs.push(`Linha ${rows.indexOf(row) + 2}: contato criado, mas negócio no funil falhou`)
+          }
+        }
         done++
         setImportedCount(done)
         setProgress(Math.round((done / validRows.length) * 100))
@@ -821,6 +858,30 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: Import
                     )}
                   </div>
 
+                  {/* Funil de destino — todo contato importado nasce com um negócio
+                      neste funil (mesma regra do "Novo Lead" manual). */}
+                  <div>
+                    <label className="text-xs font-semibold text-surface-400 mb-1.5 block">
+                      Funil de destino <span className="text-red-400">*</span>
+                    </label>
+                    <div className="relative w-full sm:w-64">
+                      <select
+                        value={pipelineId}
+                        onChange={(e) => setPipelineId(e.target.value)}
+                        className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
+                      >
+                        {pipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
+                        {pipelines.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
+                    </div>
+                    <p className="text-[11px] text-surface-600 mt-1">
+                      Cada contato importado nasce com um negócio aberto neste funil.
+                    </p>
+                  </div>
+
                   {/* Preview table */}
                   <div className="border border-surface-700/60 rounded-xl overflow-hidden">
                     <div className="overflow-x-auto">
@@ -963,7 +1024,8 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone }: Import
                 ) : (
                   <button
                     onClick={handleImport}
-                    disabled={validCount === 0}
+                    disabled={validCount === 0 || !pipelineId}
+                    title={!pipelineId ? 'Selecione um funil de destino' : undefined}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-50 transition-all"
                   >
                     <Upload className="w-3.5 h-3.5" />

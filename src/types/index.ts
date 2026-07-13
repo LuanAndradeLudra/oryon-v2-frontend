@@ -228,6 +228,8 @@ export interface Deal {
   lineItems?: DealLineItem[]
   createdAt?: string
   updatedAt?: string
+  /** Resumo leve do contato — presente no board por pipeline (GET /deals?pipelineId=). */
+  contact?: { id: string; displayName: string; profilePicUrl: string | null }
 }
 
 /** Pipeline de negócio (múltiplos por tenant). O `isDefault` é o pipeline padrão. */
@@ -241,6 +243,8 @@ export interface Pipeline {
   isDefault: boolean
   isArchived: boolean
   stages: PipelineStage[]
+  /** Contagem de negócios abertos — badge do segmented control da aba Leads. */
+  openDealsCount: number
   createdAt?: string
   updatedAt?: string
 }
@@ -278,6 +282,19 @@ export interface PipelineChannelRouting {
 }
 
 /** Agregado de negócios de um contato (contagem + valor em centavos). Usado no card do Kanban. */
+/** Agregado por (contato, pipeline) — alimenta os chips "Negócios" da tabela de contatos. */
+export interface ContactDealsPipelineSummary {
+  pipelineId: string
+  pipelineName: string
+  pipelineColor: string
+  count: number
+  openCount: number
+  wonCount: number
+  totalCents: number
+  openCents: number
+  wonCents: number
+}
+
 export interface ContactDealsSummary {
   count: number
   openCount: number
@@ -285,6 +302,7 @@ export interface ContactDealsSummary {
   totalCents: number
   openCents: number
   wonCents: number
+  byPipeline: ContactDealsPipelineSummary[]
 }
 
 // ─── AI Onboarding ────────────────────────────────────────────────────────────

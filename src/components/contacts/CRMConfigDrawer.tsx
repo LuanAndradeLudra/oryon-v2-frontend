@@ -1,11 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Columns, SlidersHorizontal } from 'lucide-react'
+import { X, Columns, SlidersHorizontal, Workflow } from 'lucide-react'
 import { useState } from 'react'
 import { StagesManager } from '@/components/settings/sections/crm/StagesManager'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
+import { PipelineStagesManager } from '@/components/settings/sections/crm/PipelineStagesManager'
+import type { Pipeline } from '@/types'
 
 const TABS = [
   { id: 'stages', label: 'Estágios', icon: Columns },
+  { id: 'pipelineStages', label: 'Funis', icon: Workflow },
   { id: 'fields', label: 'Campos', icon: SlidersHorizontal },
 ] as const
 
@@ -14,9 +17,15 @@ type Tab = (typeof TABS)[number]['id']
 interface CRMConfigDrawerProps {
   open: boolean
   onClose: () => void
+  /** Funis de negócio do tenant — a aba "Funis" edita os estágios (colunas do
+   *  Kanban) de um deles. */
+  pipelines: Pipeline[]
+  /** Chamado após qualquer mudança de estágio de funil — refaz o fetch dos
+   *  pipelines na página, refletindo direto no Kanban aberto. */
+  onPipelinesChanged: () => void
 }
 
-export function CRMConfigDrawer({ open, onClose }: CRMConfigDrawerProps) {
+export function CRMConfigDrawer({ open, onClose, pipelines, onPipelinesChanged }: CRMConfigDrawerProps) {
   const [activeTab, setActiveTab] = useState<Tab>('stages')
 
   return (
@@ -82,6 +91,9 @@ export function CRMConfigDrawer({ open, onClose }: CRMConfigDrawerProps) {
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-5">
               {activeTab === 'stages' && <StagesManager />}
+              {activeTab === 'pipelineStages' && (
+                <PipelineStagesManager pipelines={pipelines} onChanged={onPipelinesChanged} />
+              )}
               {activeTab === 'fields' && <CustomFieldsManager />}
             </div>
           </motion.div>

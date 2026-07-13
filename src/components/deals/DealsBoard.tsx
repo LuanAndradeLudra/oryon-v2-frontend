@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ArrowRight } from 'lucide-react'
+import { Avatar } from '@/components/ui/Avatar'
 import { cn, hexToRgba } from '@/lib/utils'
 import type { Deal, PipelineStage } from '@/types'
 
@@ -8,6 +9,8 @@ interface DealsBoardProps {
   dealsByStage: Record<string, Deal[]>
   onMoveStage: (deal: Deal, toStageId: string) => void
   loading?: boolean
+  /** Abre a ficha do contato do negócio — chip "ver contato →" no card. */
+  onOpenContact?: (contactId: string) => void
 }
 
 function brl(cents: number): string {
@@ -19,7 +22,7 @@ function brl(cents: number): string {
  * Drag-drop nativo (mesmo padrão do ContactsKanban). A mudança de estágio deriva
  * o status no backend (ganho/perdido nos terminais).
  */
-export function DealsBoard({ stages, dealsByStage, onMoveStage, loading }: DealsBoardProps) {
+export function DealsBoard({ stages, dealsByStage, onMoveStage, loading, onOpenContact }: DealsBoardProps) {
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [overStageId, setOverStageId] = useState<string | null>(null)
 
@@ -136,6 +139,19 @@ export function DealsBoard({ stages, dealsByStage, onMoveStage, loading }: Deals
                           <span className="text-[10px] text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded">auto</span>
                         )}
                       </div>
+                      {deal.contact && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onOpenContact?.(deal.contact!.id) }}
+                          className="mt-2 flex items-center gap-1.5 text-[11px] text-surface-500 hover:text-brand-400 transition-colors group/contact w-full"
+                        >
+                          <Avatar name={deal.contact.displayName} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />
+                          <span className="truncate flex-1 text-left">{deal.contact.displayName}</span>
+                          <span className="flex items-center gap-0.5 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
+                            ver contato <ArrowRight className="w-3 h-3" />
+                          </span>
+                        </button>
+                      )}
                     </div>
                   ))
                 )}

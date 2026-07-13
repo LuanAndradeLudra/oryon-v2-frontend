@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import type { Pipeline } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -24,6 +25,27 @@ export async function withRetry<T>(
     }
   }
   throw new Error('unreachable')
+}
+
+/** Extrai a mensagem de erro de uma resposta axios (`error.response.data.message`),
+ *  caindo para `error.message` e por fim para `fallback`. O `ValidationPipe`
+ *  padrão do NestJS (sem `exceptionFactory` customizado) devolve `message`
+ *  como array de strings — sem tratar isso, o erro real ficava escondido
+ *  atrás do texto genérico do axios ("Request failed with status code 400"). */
+export function getApiErrorMessage(e: unknown, fallback: string): string {
+  const msg = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
+  if (typeof msg === 'string') return msg
+  if (Array.isArray(msg) && msg.length > 0) return msg[0]
+  if (e instanceof Error) return e.message
+  return fallback
+}
+
+/** Funil "default" de um tenant — o marcado `isDefault`, senão o primeiro da
+ *  lista (ordem já vem por `order` do backend). Centraliza a regra de
+ *  fallback repetida em NewContactDrawer/ImportContactsDrawer/DealModal/
+ *  PipelineStagesManager para não divergir entre elas. */
+export function getDefaultPipeline(pipelines: Pipeline[]): Pipeline | undefined {
+  return pipelines.find((p) => p.isDefault) ?? pipelines[0]
 }
 
 export function formatMessageTime(date: string | Date): string {
