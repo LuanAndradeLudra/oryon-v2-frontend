@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
-import type { Deal } from '@/types'
+import type { ContactFilters, Deal } from '@/types'
+
+type BoardFilters = Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'source' | 'tagId' | 'optIn'>
 
 /**
  * Board de negócios de UM pipeline. Diferente de useKanbanContacts (paginado por
@@ -9,11 +11,18 @@ import type { Deal } from '@/types'
  * `stageId` — um board de negócios tem volume gerenciável por pipeline. Mutação
  * (arrastar card entre estágios) é otimista com rollback e usa o endpoint que
  * deriva o status no backend.
+ *
+ * `filters` — mesmo card de filtros da tabela de Contatos (busca/fonte/etiqueta/
+ * intenção/sentimento/opt-in) — passa a valer para o board também, não só a tabela.
  */
-export function useKanbanDeals(pipelineId: string | null) {
+export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters = {}) {
   const [dealsByStage, setDealsByStage] = useState<Record<string, Deal[]>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+
+  // Serializado p/ dependência estável — `filters` é um objeto novo a cada
+  // render de ContactsPage; sem isto o efeito refetch-aria em loop.
+  const filtersKey = useMemo(() => JSON.stringify(filters), [filters])
 
   const load = useCallback(async () => {
     if (!pipelineId) {
@@ -23,7 +32,7 @@ export function useKanbanDeals(pipelineId: string | null) {
     setLoading(true)
     setError(null)
     try {
-      const res = await dealsApi.board(pipelineId)
+      const res = await dealsApi.board(pipelineId, filters)
       const grouped: Record<string, Deal[]> = {}
       for (const d of res.data) {
         ;(grouped[d.stageId] ??= []).push(d)
@@ -34,7 +43,10 @@ export function useKanbanDeals(pipelineId: string | null) {
     } finally {
       setLoading(false)
     }
-  }, [pipelineId])
+    // filtersKey (não `filters`) é a dependência estável — o objeto em si
+    // muda de identidade a cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pipelineId, filtersKey])
 
   useEffect(() => {
     void load()

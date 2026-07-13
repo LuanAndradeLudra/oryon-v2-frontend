@@ -16,7 +16,6 @@ import {
   ShieldCheck,
   Activity,
   LineChart,
-  KanbanSquare,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -214,11 +213,6 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
       label: vocab.contacts,
       href: '/contacts',
       nudge: !organizationConfigured ? 'Configurar' : undefined,
-    },
-    {
-      icon: <KanbanSquare className="w-4.5 h-4.5" />,
-      label: 'Negócios',
-      href: '/deals',
     },
   ].filter((item) => isRouteVisible(item.href))
 

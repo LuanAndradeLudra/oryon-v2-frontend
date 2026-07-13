@@ -18,13 +18,22 @@ interface ContactDetailPanelProps {
   onClose: () => void
   onContactUpdate?: (contact: Contact) => void
   onContactDeleted?: (contactId: string) => void
+  /** Aba com que o painel deve abrir (ex: "deals" ao clicar num chip de negócio na tabela). */
+  initialTab?: TabId
 }
 
-export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted }: ContactDetailPanelProps) {
+export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, initialTab }: ContactDetailPanelProps) {
   const [contact, setContact] = useState<Contact | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<TabId>('overview')
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? 'overview')
   const { toast, toasts, dismiss } = useToast()
+
+  // Reabre na aba pedida sempre que o contato ou a aba solicitada mudarem
+  // (ex.: clicar num chip de negócio de OUTRO contato enquanto o painel já está aberto).
+  useEffect(() => {
+    setActiveTab(initialTab ?? 'overview')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contactId, initialTab])
 
   useEffect(() => {
     setLoading(true)

@@ -59,7 +59,6 @@ import { Monitor }            from 'lucide-react'
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
-const DealsBoardPage    = lazyRoute(() => import('@/pages/DealsBoardPage').then(m => ({ default: m.DealsBoardPage })))
 const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const HomePage          = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
@@ -217,9 +216,6 @@ function AnimatedRoutes() {
           } />
           <Route path="/contacts" element={
             <ProtectedRoute><ContactsPage /></ProtectedRoute>
-          } />
-          <Route path="/deals" element={
-            <ProtectedRoute><DealsBoardPage /></ProtectedRoute>
           } />
           <Route path="/more" element={
             <ProtectedRoute><MorePage /></ProtectedRoute>

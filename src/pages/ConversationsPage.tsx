@@ -45,7 +45,7 @@ export function ConversationsPage() {
   const [totalUnread, setTotalUnread] = useState(0)
 
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
-  const { contacts: allContacts } = useContacts()
+  const { contacts: allContacts } = useContacts({}, { withDealsSummary: false })
   const { toasts, toast, dismiss } = useToast()
   const isMobile = useIsMobile()
 
