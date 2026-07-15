@@ -16,6 +16,7 @@ import {
   Activity,
   ScrollText,
   Package,
+  IdCard,
   Route,
 } from 'lucide-react'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
@@ -52,6 +53,7 @@ const NAV_GROUPS = [
     items: [
       { section: 'numbers', label: 'Números WhatsApp', icon: <Smartphone className="w-4 h-4" />, adminOnly: true },
       { section: 'whatsapp-health', label: 'Saúde das Linhas', icon: <Activity className="w-4 h-4" />, adminOnly: true },
+      { section: 'whatsapp-profile', label: 'Perfil do WhatsApp', icon: <IdCard className="w-4 h-4" />, adminOnly: true },
     ],
   },
   {

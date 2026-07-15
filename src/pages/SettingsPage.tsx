@@ -16,6 +16,7 @@ import { AgentManagement }  from '@/components/settings/sections/AgentManagement
 import { Departments }      from '@/components/settings/sections/Departments'
 import { WhatsAppNumbers }  from '@/components/settings/sections/WhatsAppNumbers'
 import { WhatsAppHealth }   from '@/components/settings/sections/WhatsAppHealth'
+import { WhatsAppBusinessProfile } from '@/components/settings/sections/WhatsAppBusinessProfile'
 import { QuickReplies }     from '@/components/settings/sections/QuickReplies'
 import { TagsSettings }     from '@/components/settings/sections/TagsSettings'
 import { BillingPlan }      from '@/components/settings/sections/BillingPlan'
@@ -29,7 +30,7 @@ import { ProductsManager }     from '@/components/settings/sections/crm/Products
 import { PipelineRoutingSettings } from '@/components/settings/sections/crm/PipelineRoutingSettings'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
-  'whatsapp-health',
+  'whatsapp-health', 'whatsapp-profile',
   'quick-replies', 'tags', 'billing', 'security', 'ad-accounts', 'vertical',
   'audit', 'crm-products', 'pipeline-routing',
 ]
@@ -75,6 +76,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   departments:      Departments,
   numbers:          WhatsAppNumbers,
   'whatsapp-health': WhatsAppHealth,
+  'whatsapp-profile': WhatsAppBusinessProfile,
   'quick-replies':  QuickReplies,
   tags:             TagsSettings,
   billing:          BillingPlan,
