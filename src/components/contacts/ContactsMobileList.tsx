@@ -1,4 +1,4 @@
-import { ChevronRight, Phone, Building2, Mail, TrendingUp } from 'lucide-react'
+import { ChevronRight, Phone, Building2, Mail, TrendingUp, Loader2 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { CardListView } from '@/components/common/CardListView'
@@ -9,6 +9,10 @@ interface ContactsMobileListProps {
   contacts: Contact[]
   loading: boolean
   onOpenPanel: (contact: Contact) => void
+  /** Scroll infinito — dispara ao chegar perto do fim da lista. */
+  hasMore?: boolean
+  loadingMore?: boolean
+  onLoadMore?: () => void
 }
 
 const MAX_TAGS_VISIBLE = 3
@@ -127,34 +131,48 @@ function ContactCard({
   )
 }
 
-export function ContactsMobileList({ contacts, loading, onOpenPanel }: ContactsMobileListProps) {
+export function ContactsMobileList({ contacts, loading, onOpenPanel, hasMore, loadingMore, onLoadMore }: ContactsMobileListProps) {
   const { stages } = useCRMConfig()
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore || loadingMore || !onLoadMore) return
+    const el = e.currentTarget
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    if (distanceFromBottom < 200) onLoadMore()
+  }
+
   return (
-    <CardListView
-      items={contacts}
-      getKey={(c) => c.id}
-      isLoading={loading}
-      className="gap-2 p-3"
-      emptyState={
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-          <p className="text-sm font-medium text-surface-300 mb-1">Nenhum contato</p>
-          <p className="text-xs text-surface-500">
-            Use o + no canto para criar um contato.
-          </p>
+    <div className="flex-1 overflow-auto" onScroll={handleScroll}>
+      <CardListView
+        items={contacts}
+        getKey={(c) => c.id}
+        isLoading={loading}
+        className="gap-2 p-3"
+        emptyState={
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <p className="text-sm font-medium text-surface-300 mb-1">Nenhum contato</p>
+            <p className="text-xs text-surface-500">
+              Use o + no canto para criar um contato.
+            </p>
+          </div>
+        }
+        renderCard={(contact) => {
+          const stage = stages.find((s) => s.key === contact.stage)
+          return (
+            <ContactCard
+              contact={contact}
+              stageColor={stage?.color}
+              stageLabel={stage?.label}
+              onClick={() => onOpenPanel(contact)}
+            />
+          )
+        }}
+      />
+      {loadingMore && (
+        <div className="flex items-center justify-center py-3">
+          <Loader2 className="w-4 h-4 text-surface-500 animate-spin" />
         </div>
-      }
-      renderCard={(contact) => {
-        const stage = stages.find((s) => s.key === contact.stage)
-        return (
-          <ContactCard
-            contact={contact}
-            stageColor={stage?.color}
-            stageLabel={stage?.label}
-            onClick={() => onOpenPanel(contact)}
-          />
-        )
-      }}
-    />
+      )}
+    </div>
   )
 }

@@ -30,6 +30,9 @@ import type {
   Product,
   Deal,
   DealStatus,
+  Pipeline,
+  PipelineStage,
+  PipelineChannelRouting,
   ContactDealsSummary,
   SendMessageDto,
   Department,
@@ -1218,9 +1221,64 @@ export const agentCatalogApi = {
   },
 }
 
+/** Pipelines de negócio (múltiplos pipelines, Fase 2). Lista já vem com os estágios embutidos. */
+export const pipelinesApi = {
+  list() {
+    return api.get<Pipeline[]>('/settings/pipelines')
+  },
+  create(dto: { name: string; description?: string; color?: string }) {
+    return api.post<Pipeline>('/settings/pipelines', dto)
+  },
+  update(id: string, dto: { name?: string; description?: string; color?: string }) {
+    return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
+  },
+  remove(id: string) {
+    return api.delete(`/settings/pipelines/${id}`)
+  },
+  createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+    return api.post<PipelineStage>(`/settings/pipelines/${pipelineId}/stages`, dto)
+  },
+  listStages(pipelineId: string) {
+    return api.get<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages`)
+  },
+  updateStage(pipelineId: string, id: string, dto: { label?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+    return api.patch<PipelineStage>(`/settings/pipelines/${pipelineId}/stages/${id}`, dto)
+  },
+  removeStage(pipelineId: string, id: string) {
+    return api.delete(`/settings/pipelines/${pipelineId}/stages/${id}`)
+  },
+  reorderStages(pipelineId: string, ids: string[]) {
+    return api.patch<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages/reorder`, { ids })
+  },
+}
+
+/** Roteamento por canal (Fase 4): linha WhatsApp → pipeline. Leitura livre, escrita admin. */
+export const pipelineRoutingApi = {
+  list() {
+    return api.get<PipelineChannelRouting[]>('/settings/pipeline-routing')
+  },
+  upsert(whatsappNumberId: string, dto: Partial<Omit<PipelineChannelRouting, 'id' | 'tenantId' | 'whatsappNumberId'>>) {
+    return api.put<PipelineChannelRouting>(`/settings/pipeline-routing/${whatsappNumberId}`, dto)
+  },
+  remove(whatsappNumberId: string) {
+    return api.delete(`/settings/pipeline-routing/${whatsappNumberId}`)
+  },
+}
+
 export const dealsApi = {
   list(contactId: string) {
     return api.get<Deal[]>('/deals', { params: { contactId } })
+  },
+  /** Negócios de um pipeline (board). Um card por deal; agrupar por stageId no cliente. */
+  /** `filters` espelha o card de filtros da tabela de Contatos (busca, fonte,
+   *  etiqueta, intenção, sentimento, opt-in) — agora também filtra o board de
+   *  qualquer funil, não só a tabela. */
+  board(pipelineId: string, filters?: Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'source' | 'tagId' | 'optIn'>) {
+    return api.get<Deal[]>('/deals', { params: { pipelineId, ...filters } })
+  },
+  /** Move o negócio para um estágio do seu pipeline (deriva status no backend). */
+  moveStage(id: string, stageId: string) {
+    return api.patch<Deal>(`/deals/${id}/stage`, { stageId })
   },
   get(id: string) {
     return api.get<Deal>(`/deals/${id}`)
