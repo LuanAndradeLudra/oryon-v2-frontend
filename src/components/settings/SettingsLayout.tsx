@@ -15,6 +15,9 @@ import {
   Bell,
   Activity,
   ScrollText,
+  Package,
+  IdCard,
+  Route,
 } from 'lucide-react'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
 import { isRouteVisible } from '@/config/featureFlags'
@@ -50,6 +53,7 @@ const NAV_GROUPS = [
     items: [
       { section: 'numbers', label: 'Números WhatsApp', icon: <Smartphone className="w-4 h-4" />, adminOnly: true },
       { section: 'whatsapp-health', label: 'Saúde das Linhas', icon: <Activity className="w-4 h-4" />, adminOnly: true },
+      { section: 'whatsapp-profile', label: 'Perfil do WhatsApp', icon: <IdCard className="w-4 h-4" />, adminOnly: true },
     ],
   },
   {
@@ -62,6 +66,8 @@ const NAV_GROUPS = [
     label: 'CRM',
     items: [
       { section: 'vertical', label: 'Vertical & Vocabulário', icon: <Globe2 className="w-4 h-4" />, adminOnly: true },
+      { section: 'crm-products', label: 'Produtos', icon: <Package className="w-4 h-4" />, adminOnly: true },
+      { section: 'pipeline-routing', label: 'Roteamento por Canal', icon: <Route className="w-4 h-4" />, adminOnly: true },
     ],
   },
   {

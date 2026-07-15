@@ -1,39 +1,27 @@
 // ─── BillingSettings ─────────────────────────────────────────────────────────
-// Settings section: current plan, credit usage, invoices, upgrade CTA.
+// Settings section: plano, uso de créditos e extrato — dados reais do ledger
+// no backend (SCRUM-172). Faturas (Asaas) entram na Fase 3.
 
 import { useState } from 'react'
 import {
   Zap, TrendingUp, Users, Smartphone, Bot, RefreshCw,
-  ChevronRight, CheckCircle2, AlertTriangle, ExternalLink,
-  CreditCard, Receipt, ArrowUpRight,
+  ChevronRight, CheckCircle2, AlertTriangle, ArrowUpRight,
+  Receipt, Loader2,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { PlanTier } from '@/types'
-import { PLANS, PLAN_ORDER, formatCredits, formatPlanPrice, annualSavings } from '@/config/plans'
-
-// ─── Mock data (replace with real API calls) ──────────────────────────────────
-
-const MOCK_BILLING = {
-  tier: 'pro' as PlanTier,
-  creditsUsed: 2847,
-  creditsTotal: 4000,
-  periodStart: '2026-03-01',
-  periodEnd: '2026-03-31',
-  nextRenewal: '2026-04-01',
-  billingCycle: 'monthly' as 'monthly' | 'annual',
-  invoices: [
-    { id: 'inv_003', date: '2026-03-01', description: 'Oryon Pro — Março 2026', amount: 1997, status: 'paid' as const },
-    { id: 'inv_002', date: '2026-02-01', description: 'Oryon Pro — Fevereiro 2026', amount: 1997, status: 'paid' as const },
-    { id: 'inv_001', date: '2026-01-01', description: 'Oryon Pro — Janeiro 2026', amount: 1997, status: 'paid' as const },
-  ],
-}
+import {
+  PLANS, PLAN_ORDER, formatCredits, formatPlanPrice, annualSavings, mapBackendTier,
+} from '@/config/plans'
+import { useBilling } from '@/hooks/useBilling'
+import type { CreditTransaction } from '@/services/billingApi'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function CreditBar({ used, total }: { used: number; total: number | null }) {
   const pct = total ? Math.min((used / total) * 100, 100) : 0
-  const warning = pct >= 80
-  const danger  = pct >= 95
+  const warning = pct >= 80 && pct < 100
+  const danger  = pct >= 100
 
   return (
     <div className="space-y-2">
@@ -51,7 +39,7 @@ function CreditBar({ used, total }: { used: number; total: number | null }) {
           transition={{ duration: 0.6, ease: 'easeOut' }}
         />
       </div>
-      {warning && !danger && (
+      {warning && (
         <p className="text-xs text-status-pending flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5" />
           Você usou {Math.round(pct)}% dos créditos. Considere fazer upgrade.
@@ -60,7 +48,7 @@ function CreditBar({ used, total }: { used: number; total: number | null }) {
       {danger && (
         <p className="text-xs text-red-400 flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5" />
-          Créditos quase esgotados — funcionalidades de IA serão limitadas.
+          Créditos esgotados — o Copilot é bloqueado e o atendimento sinaliza recarga.
         </p>
       )}
     </div>
@@ -70,49 +58,50 @@ function CreditBar({ used, total }: { used: number; total: number | null }) {
 function LimitRow({
   icon,
   label,
-  used,
   limit,
 }: {
   icon: React.ReactNode
   label: string
-  used?: number
   limit: number | null
 }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-surface-800/50 last:border-0">
       <span className="text-surface-500 flex-shrink-0">{icon}</span>
       <span className="text-sm text-surface-300 flex-1">{label}</span>
-      <span className="text-sm font-medium text-surface-200">
-        {used !== undefined ? `${used} / ` : ''}{formatCredits(limit)}
-      </span>
+      <span className="text-sm font-medium text-surface-200">{formatCredits(limit)}</span>
     </div>
   )
 }
 
-function InvoiceRow({ invoice }: { invoice: typeof MOCK_BILLING.invoices[0] }) {
+const TX_TYPE_LABEL: Record<CreditTransaction['type'], string> = {
+  debit:      'Consumo',
+  grant:      'Crédito',
+  reset:      'Renovação',
+  refund:     'Estorno',
+  adjustment: 'Ajuste',
+}
+
+function TransactionRow({ tx }: { tx: CreditTransaction }) {
+  const credits = Number(tx.credits)
+  const isDebit = credits < 0
+  const label = TX_TYPE_LABEL[tx.type] ?? tx.type
+  const desc = tx.feature ?? tx.source ?? label
+
   return (
     <div className="flex items-center gap-4 py-3 border-b border-surface-800/50 last:border-0">
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-surface-200 truncate">{invoice.description}</p>
+        <p className="text-sm text-surface-200 truncate">{desc}</p>
         <p className="text-xs text-surface-500 mt-0.5">
-          {new Date(invoice.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+          {label}
+          {' · '}
+          {new Date(tx.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          {tx.model ? ` · ${tx.model}` : ''}
         </p>
       </div>
-      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-        invoice.status === 'paid'
-          ? 'bg-status-active-bg text-status-active'
-          : invoice.status === 'pending'
-            ? 'bg-status-pending-bg text-status-pending'
-            : 'bg-red-500/10 text-red-400'
-      }`}>
-        {invoice.status === 'paid' ? 'Pago' : invoice.status === 'pending' ? 'Pendente' : 'Falhou'}
+      <span className={`text-sm font-semibold w-24 text-right ${isDebit ? 'text-surface-300' : 'text-status-active'}`}>
+        {isDebit ? '' : '+'}{credits.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}
+        <span className="text-xs text-surface-500"> cr</span>
       </span>
-      <span className="text-sm font-semibold text-surface-200 w-24 text-right">
-        R$&nbsp;{invoice.amount.toLocaleString('pt-BR')}
-      </span>
-      <button className="text-surface-500 hover:text-surface-300 transition-colors">
-        <ExternalLink className="w-4 h-4" />
-      </button>
     </div>
   )
 }
@@ -198,8 +187,32 @@ const MODULE_LABELS: Partial<Record<string, string>> = {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function BillingSettings() {
-  const { tier, creditsUsed, creditsTotal, periodEnd, nextRenewal, billingCycle, invoices } = MOCK_BILLING
-  const plan = PLANS[tier]
+  const { billing, transactions, loading, error } = useBilling({ transactions: true })
+
+  if (loading && !billing) {
+    return (
+      <div className="max-w-2xl flex items-center gap-2 text-surface-400 text-sm py-10">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Carregando informações de cobrança…
+      </div>
+    )
+  }
+
+  if (error && !billing) {
+    return (
+      <div className="max-w-2xl rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-sm text-red-300 flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4" />
+        Não foi possível carregar a cobrança. Tente novamente em instantes.
+      </div>
+    )
+  }
+
+  if (!billing) return null
+
+  const frontTier = mapBackendTier(billing.plan.tier)
+  const plan = PLANS[frontTier]
+  const priceMonthly = Math.round(billing.plan.priceMonthlyCents / 100)
+  const atendimentos = billing.plan.monthlyCredits
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -214,36 +227,33 @@ export function BillingSettings() {
               </div>
               <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">Plano atual</span>
             </div>
-            <h2 className="text-2xl font-bold text-surface-50">Oryon {plan.name}</h2>
+            <h2 className="text-2xl font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
             <p className="text-sm text-surface-400 mt-0.5">
-              Próxima renovação:{' '}
-              {new Date(nextRenewal).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-              {' · '}
-              {billingCycle === 'annual' ? 'Cobrança anual' : 'Cobrança mensal'}
+              {billing.planResetsAt
+                ? <>Próxima renovação: {new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</>
+                : 'Cobrança mensal'}
+              {atendimentos != null && <> {' · '} ≈ {atendimentos.toLocaleString('pt-BR')} atendimentos/mês</>}
             </p>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-surface-50">
-              R$&nbsp;{(plan.monthlyPrice ?? 0).toLocaleString('pt-BR')}
+              R$&nbsp;{priceMonthly.toLocaleString('pt-BR')}
             </p>
             <p className="text-xs text-surface-500">/mês</p>
           </div>
         </div>
 
         {/* Credit usage */}
-        <CreditBar used={creditsUsed} total={creditsTotal} />
+        <CreditBar used={billing.creditsUsed} total={billing.creditsTotal} />
 
-        {/* Period info */}
         <p className="text-xs text-surface-500">
-          Período de créditos: {new Date('2026-03-01').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} –{' '}
-          {new Date(periodEnd).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}.
-          Os créditos não acumulam entre períodos.
+          1 crédito ≈ 1 atendimento (~7.000 tokens de conteúdo). Os créditos não acumulam entre períodos.
         </p>
 
         {/* Limits grid */}
         <div className="border-t border-surface-800/50 pt-4">
           <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-3">Limites do plano</p>
-          <LimitRow icon={<TrendingUp className="w-4 h-4" />}  label="Créditos de IA / mês"    limit={plan.limits.creditsPerMonth} />
+          <LimitRow icon={<TrendingUp className="w-4 h-4" />}  label="Créditos de IA / mês"    limit={billing.creditsTotal} />
           <LimitRow icon={<Users className="w-4 h-4" />}       label="Usuários"                 limit={plan.limits.users} />
           <LimitRow icon={<Smartphone className="w-4 h-4" />}  label="Números WhatsApp"         limit={plan.limits.waNumbers} />
           <LimitRow icon={<Bot className="w-4 h-4" />}         label="Agentes de IA"            limit={plan.limits.agents} />
@@ -253,24 +263,20 @@ export function BillingSettings() {
       </div>
 
       {/* Upgrade CTA */}
-      <UpgradeCard currentTier={tier} />
+      <UpgradeCard currentTier={frontTier} />
 
-      {/* Invoices */}
-      {invoices.length > 0 && (
-        <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Receipt className="w-4 h-4 text-surface-400" />
-            <h3 className="text-sm font-semibold text-surface-300">Histórico de faturas</h3>
-          </div>
-          {invoices.map((inv) => (
-            <InvoiceRow key={inv.id} invoice={inv} />
-          ))}
-          <button className="mt-3 text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1.5 transition-colors">
-            <CreditCard className="w-3.5 h-3.5" />
-            Gerenciar método de pagamento
-          </button>
+      {/* Extrato de créditos */}
+      <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Receipt className="w-4 h-4 text-surface-400" />
+          <h3 className="text-sm font-semibold text-surface-300">Extrato de créditos</h3>
         </div>
-      )}
+        {transactions.length > 0 ? (
+          transactions.map((tx) => <TransactionRow key={tx.id} tx={tx} />)
+        ) : (
+          <p className="text-sm text-surface-500 py-2">Nenhuma movimentação de crédito ainda.</p>
+        )}
+      </div>
     </div>
   )
 }

@@ -27,6 +27,13 @@ import type {
   Message,
   MetaAdsReferral,
   PaginatedResponse,
+  Product,
+  Deal,
+  DealStatus,
+  Pipeline,
+  PipelineStage,
+  PipelineChannelRouting,
+  ContactDealsSummary,
   SendMessageDto,
   Department,
   Tag,
@@ -1162,6 +1169,137 @@ export const customFieldsApi = {
   },
   delete(key: string) {
     return api.delete(`/settings/custom-fields/${key}`)
+  },
+}
+
+/** Resposta paginada de /products (backend SCRUM-133): página de itens + metadados. */
+interface PaginatedProducts {
+  data: Product[]
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
+}
+
+export const productsApi = {
+  // O catálogo é a fonte única de preços (UI + IA), então a lista não pode truncar nos 50 do
+  // backend: paginamos por trás e juntamos TODAS as páginas. Na maioria dos tenants é 1 request.
+  async list() {
+    const limit = 100
+    const all: Product[] = []
+    let res = await api.get<PaginatedProducts | Product[]>(`/products?page=1&limit=${limit}`)
+    for (let page = 1; ; page++) {
+      const body = res.data
+      if (Array.isArray(body)) return { ...res, data: body } // compat: backend sem paginação
+      all.push(...body.data)
+      if (!body.hasMore || page >= 100) break
+      res = await api.get<PaginatedProducts | Product[]>(`/products?page=${page + 1}&limit=${limit}`)
+    }
+    return { ...res, data: all }
+  },
+  get(id: string) {
+    return api.get<Product>(`/products/${id}`)
+  },
+  create(dto: Partial<Product>) {
+    return api.post<Product>('/products', dto)
+  },
+  update(id: string, patch: Partial<Product>) {
+    return api.patch<Product>(`/products/${id}`, patch)
+  },
+  remove(id: string) {
+    return api.delete(`/products/${id}`)
+  },
+}
+
+/** Catálogo por agente (SCRUM-221): quais produtos do tenant um agente de IA pode usar. */
+export const agentCatalogApi = {
+  get(agentId: string) {
+    return api.get<Product[]>(`/agent-catalog/${agentId}`)
+  },
+  set(agentId: string, productIds: string[]) {
+    return api.put<Product[]>(`/agent-catalog/${agentId}`, { productIds })
+  },
+}
+
+/** Pipelines de negócio (múltiplos pipelines, Fase 2). Lista já vem com os estágios embutidos. */
+export const pipelinesApi = {
+  list() {
+    return api.get<Pipeline[]>('/settings/pipelines')
+  },
+  create(dto: { name: string; description?: string; color?: string }) {
+    return api.post<Pipeline>('/settings/pipelines', dto)
+  },
+  update(id: string, dto: { name?: string; description?: string; color?: string }) {
+    return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
+  },
+  remove(id: string) {
+    return api.delete(`/settings/pipelines/${id}`)
+  },
+  createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+    return api.post<PipelineStage>(`/settings/pipelines/${pipelineId}/stages`, dto)
+  },
+  listStages(pipelineId: string) {
+    return api.get<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages`)
+  },
+  updateStage(pipelineId: string, id: string, dto: { label?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+    return api.patch<PipelineStage>(`/settings/pipelines/${pipelineId}/stages/${id}`, dto)
+  },
+  removeStage(pipelineId: string, id: string) {
+    return api.delete(`/settings/pipelines/${pipelineId}/stages/${id}`)
+  },
+  reorderStages(pipelineId: string, ids: string[]) {
+    return api.patch<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages/reorder`, { ids })
+  },
+}
+
+/** Roteamento por canal (Fase 4): linha WhatsApp → pipeline. Leitura livre, escrita admin. */
+export const pipelineRoutingApi = {
+  list() {
+    return api.get<PipelineChannelRouting[]>('/settings/pipeline-routing')
+  },
+  upsert(whatsappNumberId: string, dto: Partial<Omit<PipelineChannelRouting, 'id' | 'tenantId' | 'whatsappNumberId'>>) {
+    return api.put<PipelineChannelRouting>(`/settings/pipeline-routing/${whatsappNumberId}`, dto)
+  },
+  remove(whatsappNumberId: string) {
+    return api.delete(`/settings/pipeline-routing/${whatsappNumberId}`)
+  },
+}
+
+export const dealsApi = {
+  list(contactId: string) {
+    return api.get<Deal[]>('/deals', { params: { contactId } })
+  },
+  /** Negócios de um pipeline (board). Um card por deal; agrupar por stageId no cliente. */
+  /** `filters` espelha o card de filtros da tabela de Contatos (busca, fonte,
+   *  etiqueta, intenção, sentimento, opt-in) — agora também filtra o board de
+   *  qualquer funil, não só a tabela. */
+  board(pipelineId: string, filters?: Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'source' | 'tagId' | 'optIn'>) {
+    return api.get<Deal[]>('/deals', { params: { pipelineId, ...filters } })
+  },
+  /** Move o negócio para um estágio do seu pipeline (deriva status no backend). */
+  moveStage(id: string, stageId: string) {
+    return api.patch<Deal>(`/deals/${id}/stage`, { stageId })
+  },
+  get(id: string) {
+    return api.get<Deal>(`/deals/${id}`)
+  },
+  create(dto: Partial<Deal>) {
+    return api.post<Deal>('/deals', dto)
+  },
+  update(id: string, patch: Partial<Deal>) {
+    return api.patch<Deal>(`/deals/${id}`, patch)
+  },
+  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string }) {
+    return api.patch<Deal>(`/deals/${id}/status`, body)
+  },
+  /** Agregados por contato (batch), p/ o card do Kanban. Só retorna contatos que têm negócios. */
+  summary(contactIds: string[]) {
+    return api.get<(ContactDealsSummary & { contactId: string })[]>('/deals/summary', {
+      params: { contactIds: contactIds.join(',') },
+    })
+  },
+  remove(id: string) {
+    return api.delete(`/deals/${id}`)
   },
 }
 

@@ -1,34 +1,42 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { stagesApi, customFieldsApi } from '@/services/api'
+import { stagesApi, customFieldsApi, productsApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
-import type { TenantStage, ContactCustomFieldDef } from '@/types'
+import type { TenantStage, ContactCustomFieldDef, Product } from '@/types'
 
 interface CRMConfig {
   stages: TenantStage[]
   fieldDefs: ContactCustomFieldDef[]
+  products: Product[]
   loadingStages: boolean
   loadingFields: boolean
+  loadingProducts: boolean
   refetchStages: () => void
   refetchFieldDefs: () => void
+  refetchProducts: () => void
   setStagesOptimistic: (stages: TenantStage[]) => void
 }
 
 const CRMConfigContext = createContext<CRMConfig>({
   stages: [],
   fieldDefs: [],
+  products: [],
   loadingStages: true,
   loadingFields: true,
+  loadingProducts: true,
   refetchStages: () => {},
   setStagesOptimistic: () => {},
   refetchFieldDefs: () => {},
+  refetchProducts: () => {},
 })
 
 export function CRMConfigProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth()
   const [stages, setStages] = useState<TenantStage[]>([])
   const [fieldDefs, setFieldDefs] = useState<ContactCustomFieldDef[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loadingStages, setLoadingStages] = useState(true)
   const [loadingFields, setLoadingFields] = useState(true)
+  const [loadingProducts, setLoadingProducts] = useState(true)
 
   const refetchStages = useCallback(() => {
     console.log('[CRMConfig] buscando stages...')
@@ -54,18 +62,41 @@ export function CRMConfigProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoadingFields(false))
   }, [])
 
+  const refetchProducts = useCallback(() => {
+    setLoadingProducts(true)
+    productsApi.list()
+      .then((r) => setProducts(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setProducts([]))
+      .finally(() => setLoadingProducts(false))
+  }, [])
+
   useEffect(() => {
     if (!isAuthenticated) {
       setLoadingStages(false)
       setLoadingFields(false)
+      setLoadingProducts(false)
       return
     }
     refetchStages()
     refetchFieldDefs()
-  }, [isAuthenticated, refetchStages, refetchFieldDefs])
+    refetchProducts()
+  }, [isAuthenticated, refetchStages, refetchFieldDefs, refetchProducts])
 
   return (
-    <CRMConfigContext.Provider value={{ stages, fieldDefs, loadingStages, loadingFields, refetchStages, refetchFieldDefs, setStagesOptimistic: setStages }}>
+    <CRMConfigContext.Provider
+      value={{
+        stages,
+        fieldDefs,
+        products,
+        loadingStages,
+        loadingFields,
+        loadingProducts,
+        refetchStages,
+        refetchFieldDefs,
+        refetchProducts,
+        setStagesOptimistic: setStages,
+      }}
+    >
       {children}
     </CRMConfigContext.Provider>
   )

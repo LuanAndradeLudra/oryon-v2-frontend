@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSearchParams } from 'react-router-dom'
-import { LayoutList, LayoutGrid, Plus, Upload, Settings2, AlertTriangle } from 'lucide-react'
+import { Plus, Upload, Settings2, AlertTriangle, Users, Pencil, Trash2 } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
@@ -10,39 +10,82 @@ import { isFeatureVisible } from '@/config/featureFlags'
 import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
 import { ContactsTable } from '@/components/contacts/ContactsTable'
-import { ContactsKanban } from '@/components/contacts/ContactsKanban'
 import { ContactsMobileList } from '@/components/contacts/ContactsMobileList'
 import { ContactDetailPanel } from '@/components/contacts/ContactDetailPanel'
+import type { TabId } from '@/components/contacts/ContactDetailTabs'
 import { CRMConfigDrawer } from '@/components/contacts/CRMConfigDrawer'
 import { NewContactDrawer } from '@/components/contacts/NewContactDrawer'
 import { ImportContactsDrawer } from '@/components/contacts/ImportContactsDrawer'
 import { BulkActionBar } from '@/components/contacts/BulkActionBar'
 import { CampaignWizard } from '@/components/campaigns/CampaignWizard'
-import { Modal } from '@/components/ui/Modal'
+import { DealsBoard } from '@/components/deals/DealsBoard'
+import { CreatePipelineModal } from '@/components/deals/CreatePipelineModal'
+import { Modal, ConfirmModal } from '@/components/ui/Modal'
+import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { Avatar } from '@/components/ui/Avatar'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useContacts } from '@/hooks/useContacts'
-import { useKanbanContacts } from '@/hooks/useKanbanContacts'
+import { useKanbanDeals } from '@/hooks/useKanbanDeals'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
-import { tagsApi } from '@/services/api'
+import { tagsApi, pipelinesApi, pipelineRoutingApi, whatsappNumbersApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { cn } from '@/lib/utils'
-import type { Contact, ContactFilters, ContactStage, Tag } from '@/types'
+import { formatBRL } from '@/utils/money'
+import { cn, getApiErrorMessage } from '@/lib/utils'
+import type { Contact, ContactFilters, ContactStage, Tag, Pipeline, Deal, PipelineChannelRouting, WhatsAppNumber } from '@/types'
 
-type ViewMode = 'table' | 'kanban'
+/**
+ * Faceta "Situação comercial" (D-10) — derivada em tempo real do `dealsSummary`
+ * já carregado em cada contato, sem dado novo. Filtra client-side os contatos
+ * exibidos (lista/board); os totais das colunas continuam vindo do servidor.
+ */
+type CommercialSituation = 'all' | 'no_deal' | 'open_deal' | 'customer'
 
+function matchesCommercial(summary: Contact['dealsSummary'], s: CommercialSituation): boolean {
+  if (s === 'all') return true
+  const openCount = summary?.openCount ?? 0
+  const wonCount = summary?.wonCount ?? 0
+  const count = summary?.count ?? 0
+  if (s === 'no_deal') return count === 0
+  if (s === 'open_deal') return openCount > 0
+  if (s === 'customer') return wonCount > 0
+  return true
+}
+
+const COMMERCIAL_OPTIONS: { key: CommercialSituation; label: string }[] = [
+  { key: 'all', label: 'Todos' },
+  { key: 'no_deal', label: 'Sem negócio' },
+  { key: 'open_deal', label: 'Com negócio aberto' },
+  { key: 'customer', label: 'Cliente' },
+]
+
+/** Mesma faceta, agora para os cards do board de um funil (não há dealsSummary
+ *  por card — cada card JÁ É um negócio, então usamos o próprio `status` do
+ *  deal). "Sem negócio" nunca combina dentro de um funil (todo card tem um
+ *  negócio, por definição), então filtra para nenhum resultado — é o
+ *  comportamento correto, não um bug. */
+function matchesCommercialDeal(deal: Deal, s: CommercialSituation): boolean {
+  if (s === 'all') return true
+  if (s === 'no_deal') return false
+  if (s === 'open_deal') return deal.status === 'open'
+  if (s === 'customer') return deal.status === 'won'
+  return true
+}
+
+/**
+ * Aba Leads (spec UX 2026-07-09 — "Leads · Contatos & Funis"): dois destinos
+ * irmãos e explícitos — Contatos (base de pessoas, sempre tabela) e cada Funil
+ * de negócio (quadro de oportunidades, Kanban). A troca entre eles é via um
+ * segmented control no topo, não um dropdown/toggle escondido. O Kanban legado
+ * por `contact.stage` foi aposentado desta view — todo Kanban agora é de funil.
+ */
 export function ContactsPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban')
   const isMobile = useIsMobile()
-  // In mobile, the table view is unusable (horizontal overflow + tiny rows).
-  // Force kanban regardless of user preference so they always get a usable
-  // layout. Desktop preference is preserved across viewport changes.
-  const effectiveViewMode: ViewMode = isMobile ? 'kanban' : viewMode
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
+  const [initialPanelTab, setInitialPanelTab] = useState<TabId | undefined>(undefined)
   const [searchParams, setSearchParams] = useSearchParams()
 
   // Auto-open contact from URL param (e.g. /contacts?contact=c1)
@@ -53,9 +96,44 @@ export function ContactsPage() {
       setSearchParams({}, { replace: true })
     }
   }, [searchParams, setSearchParams])
+
+  // Auto-seleciona um pipeline vindo por URL (ex: /contacts?pipeline=p1) —
+  // usado pelos links "Ver no board" da ficha do contato / painel da conversa.
+  useEffect(() => {
+    const pipelineParam = searchParams.get('pipeline')
+    if (pipelineParam) {
+      setSelectedPipelineId(pipelineParam)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
   const [showNewContact, setShowNewContact] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showCRMConfig, setShowCRMConfig] = useState(false)
+  const [commercial, setCommercial] = useState<CommercialSituation>('all')
+
+  // ── Funis de negócio (múltiplos pipelines) ──────────────────────────────
+  // `null` = destino "Contatos" (base de pessoas, sempre tabela). Selecionar
+  // um funil troca o conteúdo principal para o board de negócios daquele
+  // pipeline, mantendo os botões da página (Configurar, Importar, Novo
+  // contato) funcionando normalmente — são destinos peer, não filtros.
+  const [pipelines, setPipelines] = useState<Pipeline[]>([])
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
+  const [createPipelineModalOpen, setCreatePipelineModalOpen] = useState(false)
+  const [editPipelineModalOpen, setEditPipelineModalOpen] = useState(false)
+  const [deletePipelineConfirmOpen, setDeletePipelineConfirmOpen] = useState(false)
+  const [deletingPipeline, setDeletingPipeline] = useState(false)
+  const [funilMenuOpen, setFunilMenuOpen] = useState(false)
+  const [routing, setRouting] = useState<PipelineChannelRouting[]>([])
+  const [whatsappNumbers, setWhatsappNumbers] = useState<WhatsAppNumber[]>([])
+
+  // "Sem negócio" não existe dentro de um funil (todo card do board já é um
+  // negócio) — o botão some do segmentado ao entrar num funil (ver JSX), e
+  // se o usuário já estava com esse filtro ativo ao trocar de destino,
+  // reseta para "Todos" em vez de deixar o board silenciosamente vazio.
+  useEffect(() => {
+    if (selectedPipelineId && commercial === 'no_deal') setCommercial('all')
+  }, [selectedPipelineId, commercial])
+
   const { user } = useAuth()
   const currentUser = user
     ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl }
@@ -66,46 +144,19 @@ export function ContactsPage() {
   // implicitly via the RolesGuard so the helper already covers it.
   const canBulkDelete = isAdminTier(user?.role)
 
-  // Dual-hook setup: useContacts powers the table/mobile views with a flat
-  // paginated array; useKanbanContacts powers the kanban with per-column
-  // pagination + infinite scroll. Each is gated by `enabled` so only the
-  // active view fetches. Filters live inside useContacts so the same source
-  // of truth drives both — kanban consumes them as a prop.
-  const isKanbanView = effectiveViewMode === 'kanban'
-  const tableMode = useContacts({
-    sortBy: 'lastContactedAt',
-    sortDir: 'desc',
-  }, { enabled: !isKanbanView })
-  const { filters, setFilters } = tableMode
-  const kanbanMode = useKanbanContacts(filters, { enabled: isKanbanView })
+  // Fonte única de contatos: sempre paginado/tabela (o Kanban de contato por
+  // `stage` foi aposentado — spec UX 2026-07-09). Filtros vivem aqui.
+  const {
+    contacts, loading, loadingMore, hasMore, loadMore, error, total, filters, setFilters,
+    updateContact, createContact, bulkUpdateStage, bulkRemove,
+    bulkAddTag, bulkRemoveTag, removeContact, refetch,
+  } = useContacts({ sortBy: 'lastContactedAt', sortDir: 'desc' })
 
-  // Active fields routed by viewMode. Keeping the same variable names as
-  // before lets the rest of the page read these without caring which view
-  // is active.
-  const contacts = isKanbanView ? kanbanMode.flatContacts : tableMode.contacts
-  const total = isKanbanView ? kanbanMode.totalAcrossStages : tableMode.total
-  const loading = isKanbanView ? kanbanMode.initialLoading : tableMode.loading
-  const error = isKanbanView ? null : tableMode.error
-  const updateContact = isKanbanView ? kanbanMode.updateContact : tableMode.updateContact
-  const createContact = isKanbanView ? kanbanMode.createContact : tableMode.createContact
-  const bulkUpdateStage = isKanbanView ? kanbanMode.bulkUpdateStage : tableMode.bulkUpdateStage
-  const bulkRemove = isKanbanView ? kanbanMode.bulkRemove : tableMode.bulkRemove
-  const bulkAddTag = isKanbanView ? kanbanMode.bulkAddTag : tableMode.bulkAddTag
-  const bulkRemoveTag = isKanbanView ? kanbanMode.bulkRemoveTag : tableMode.bulkRemoveTag
-  const removeContact = isKanbanView ? kanbanMode.removeContact : tableMode.removeContact
-  const refetch = isKanbanView ? kanbanMode.refetchAll : tableMode.refetch
-
-  // Real per-stage totals for the StatsBar's "estágio predominante" widget.
-  // Only meaningful in kanban view; in table view the bar falls back to
-  // deriving counts from `contacts`.
-  const stageCounts = useMemo<Record<string, number> | undefined>(() => {
-    if (!isKanbanView) return undefined
-    const out: Record<string, number> = {}
-    for (const [k, v] of Object.entries(kanbanMode.columns)) {
-      out[k] = v.total
-    }
-    return out
-  }, [isKanbanView, kanbanMode.columns])
+  // Faceta "Situação comercial" (D-10): filtra client-side pelo dealsSummary já carregado.
+  const displayContacts = useMemo(
+    () => (commercial === 'all' ? contacts : contacts.filter((c) => matchesCommercial(c.dealsSummary, commercial))),
+    [contacts, commercial],
+  )
 
   // Tags are fetched once when the page mounts so the BulkActionBar can
   // show the picker without a round-trip on first selection.
@@ -119,6 +170,132 @@ export function ContactsPage() {
   }, [])
   const { vocab } = useTenantVocab()
   const { toasts, toast, dismiss } = useToast()
+
+  const fetchPipelines = useCallback((selectId?: string) => {
+    return pipelinesApi
+      .list()
+      .then((res) => {
+        const list = res.data ?? []
+        setPipelines(list)
+        if (selectId) setSelectedPipelineId(selectId)
+      })
+      .catch(() => toast('Não foi possível carregar os pipelines.', 'error'))
+  }, [toast])
+
+  useEffect(() => {
+    fetchPipelines()
+    Promise.all([pipelineRoutingApi.list(), whatsappNumbersApi.list()])
+      .then(([routingRes, numbersRes]) => {
+        setRouting(routingRes.data ?? [])
+        setWhatsappNumbers(numbersRes.data ?? [])
+      })
+      .catch(() => { /* strip de roteamento é best-effort — não bloqueia a página */ })
+    // Busca só na montagem; `fetchPipelines` é estável na prática mas não
+    // deve ser dep (identidade nova a cada render causaria loop de fetch).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const selectedPipeline = useMemo(
+    () => pipelines.find((p) => p.id === selectedPipelineId) ?? null,
+    [pipelines, selectedPipelineId],
+  )
+  // Mesmo card de filtros da tabela de Contatos (busca/fonte/etiqueta/intenção/
+  // sentimento/opt-in) — passado ao board para filtrar via join no backend,
+  // valendo para QUALQUER funil selecionado, não só a tabela.
+  const boardFilters = useMemo(
+    () => ({
+      search: filters.search,
+      intent: filters.intent,
+      sentiment: filters.sentiment,
+      source: filters.source,
+      tagId: filters.tagId,
+      optIn: filters.optIn,
+    }),
+    [filters.search, filters.intent, filters.sentiment, filters.source, filters.tagId, filters.optIn],
+  )
+  const { dealsByStage, loading: dealsLoading, moveStage: moveDealStage } = useKanbanDeals(selectedPipelineId, boardFilters)
+  const sortedPipelineStages = useMemo(
+    () => (selectedPipeline?.stages ?? []).slice().sort((a, b) => a.order - b.order),
+    [selectedPipeline],
+  )
+  const dealsSummaryLine = useMemo(() => {
+    const deals = Object.values(dealsByStage).flat()
+    const openCents = deals.reduce((sum, d) => sum + (d.amountCents ?? 0), 0)
+    return { count: deals.length, openCents }
+  }, [dealsByStage])
+
+  // Faceta "Situação comercial" no board — o filtro pelo backend já cobre
+  // busca/fonte/etiqueta/etc.; aqui só o status do próprio deal (disponível
+  // sem lookup extra) decide "Com negócio aberto"/"Cliente". "Sem negócio"
+  // nunca combina dentro de um funil — todo card já É um negócio.
+  const displayDealsByStage = useMemo(() => {
+    if (commercial === 'all') return dealsByStage
+    const out: typeof dealsByStage = {}
+    for (const [stageId, deals] of Object.entries(dealsByStage)) {
+      out[stageId] = deals.filter((d) => matchesCommercialDeal(d, commercial))
+    }
+    return out
+  }, [dealsByStage, commercial])
+
+  // Linhas de WhatsApp que alimentam o funil selecionado, via roteamento por canal.
+  const routingLinesForSelected = useMemo(() => {
+    if (!selectedPipelineId) return []
+    return routing
+      .filter((r) => r.pipelineId === selectedPipelineId)
+      .map((r) => whatsappNumbers.find((n) => n.id === r.whatsappNumberId))
+      .filter((n): n is WhatsAppNumber => !!n)
+  }, [routing, whatsappNumbers, selectedPipelineId])
+
+  const handleMoveDeal = (deal: Deal, toStageId: string) => {
+    moveDealStage(deal, toStageId).catch(() => toast('Não foi possível mover o negócio.', 'error'))
+  }
+
+  const handleOpenDealContact = (contactId: string) => {
+    setSelectedContactId(contactId)
+    setInitialPanelTab('deals')
+  }
+
+  const handleCreatePipeline = async (data: { name: string; color: string }) => {
+    let created
+    try {
+      // Backend provisiona os estágios padrão (Novo/Em negociação/Proposta
+      // enviada/Ganho/Perdido) numa única transação com a criação do
+      // pipeline — atômico, sem risco de faltar um estágio terminal.
+      const res = await pipelinesApi.create({ name: data.name, color: data.color })
+      created = res.data
+    } catch (e: unknown) {
+      throw new Error(getApiErrorMessage(e, 'Erro ao criar pipeline.'))
+    }
+    await fetchPipelines(created.id)
+    toast('Funil criado com sucesso.', 'success')
+  }
+
+  const handleEditPipeline = async (data: { name: string; color: string }) => {
+    if (!selectedPipelineId) return
+    try {
+      await pipelinesApi.update(selectedPipelineId, { name: data.name, color: data.color })
+    } catch (e: unknown) {
+      throw new Error(getApiErrorMessage(e, 'Erro ao editar pipeline.'))
+    }
+    await fetchPipelines(selectedPipelineId)
+    toast('Funil atualizado.', 'success')
+  }
+
+  const handleDeletePipeline = async () => {
+    if (!selectedPipelineId) return
+    setDeletingPipeline(true)
+    try {
+      await pipelinesApi.remove(selectedPipelineId)
+      toast('Funil excluído.', 'success')
+      setDeletePipelineConfirmOpen(false)
+      setSelectedPipelineId(null)
+      await fetchPipelines()
+    } catch (e: unknown) {
+      toast(getApiErrorMessage(e, 'Erro ao excluir pipeline.'), 'error')
+    } finally {
+      setDeletingPipeline(false)
+    }
+  }
 
   // ── Bulk selection state ───────────────────────────────────────────────
   const {
@@ -143,38 +320,12 @@ export function ContactsPage() {
   const handleFiltersChange = (f: ContactFilters) => setFilters(f)
 
   useRegisterTopBarActions(
-    <div className="flex items-center gap-2">
-      {/* Count badge */}
+    <div className="flex items-center gap-2 flex-wrap">
+      {/* Count badge — total de contatos. Fixo (spec: cabeçalho global não muda por funil). */}
       <span className="text-xs text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full border border-surface-700 font-medium">
         {total.toLocaleString('pt-BR')}
       </span>
-      {/* View toggle — desktop only; mobile is always kanban */}
-      <div className="hidden md:flex items-center bg-surface-800 border border-surface-700 rounded-lg p-0.5">
-        <button
-          onClick={() => setViewMode('table')}
-          className={cn(
-            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
-            viewMode === 'table'
-              ? 'bg-surface-700 text-surface-100 shadow-sm'
-              : 'text-surface-400 hover:text-surface-200'
-          )}
-        >
-          <LayoutList className="w-3.5 h-3.5" />
-          Tabela
-        </button>
-        <button
-          onClick={() => setViewMode('kanban')}
-          className={cn(
-            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
-            viewMode === 'kanban'
-              ? 'bg-surface-700 text-surface-100 shadow-sm'
-              : 'text-surface-400 hover:text-surface-200'
-          )}
-        >
-          <LayoutGrid className="w-3.5 h-3.5" />
-          Kanban
-        </button>
-      </div>
+
       <button
         onClick={() => setShowCRMConfig(true)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors"
@@ -197,10 +348,13 @@ export function ContactsPage() {
         Novo {vocab.contact}
       </button>
     </div>,
-    [viewMode, total, vocab.contact],
+    [total, vocab.contact],
   )
 
-  const handleOpenPanel = (contact: Contact) => setSelectedContactId(contact.id)
+  const handleOpenPanel = (contact: Contact) => {
+    setInitialPanelTab(undefined)
+    setSelectedContactId(contact.id)
+  }
 
   const handleMoveStage = async (contact: Contact, stage: ContactStage) => {
     await updateContact(contact.id, { stage })
@@ -217,17 +371,6 @@ export function ContactsPage() {
       toast('Falha ao mover contatos.', 'error')
     }
   }, [selectedIds, bulkUpdateStage, toast, clearSelection])
-
-  const handleBulkDragMoveStage = useCallback(async (ids: string[], stage: ContactStage) => {
-    if (ids.length === 0) return
-    try {
-      const res = await bulkUpdateStage(ids, stage)
-      toast(`${res.updated} contato(s) movido(s).`, 'success')
-      clearSelection()
-    } catch {
-      toast('Falha ao mover contatos.', 'error')
-    }
-  }, [bulkUpdateStage, toast, clearSelection])
 
   const handleBulkAddTag = useCallback(async (tag: Tag) => {
     const ids = Array.from(selectedIds)
@@ -294,10 +437,10 @@ export function ContactsPage() {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-black">
         {isMobile && <MobilePageHeader title="Contatos" />}
 
+        {/* Fixos para qualquer destino (Contatos ou funil) — só o card abaixo troca. */}
         <ContactsStatsBar
           contacts={contacts}
           total={total}
-          stageCounts={stageCounts}
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
@@ -305,13 +448,154 @@ export function ContactsPage() {
         {/* Quando o card de Insights está ativo, a busca + filtros ficam numa
             faixa própria abaixo. Com o card desligado, a ContactsStatsBar já
             hospeda os filtros no slot liberado — então esta faixa some e o
-            Kanban sobe. */}
+            card sobe. */}
         {isFeatureVisible('crmAiInsights') && (
           <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
         )}
 
-        <div className="flex-1 overflow-hidden">
-          {error ? (
+        {/* Faceta "Situação comercial" (D-10) — filtro opt-in derivado do dealsSummary.
+            Dentro de um funil, o significado muda: não há dealsSummary cross-pipeline
+            por card, então o filtro passa a olhar só o status DESTE negócio nesta
+            board. "Sem negócio" nunca combina ali (todo card já é um negócio) — por
+            isso some do segmentado, e um aviso deixa explícito o escopo do filtro. */}
+        <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto border-b border-surface-800/60">
+          {COMMERCIAL_OPTIONS.filter((opt) => !(selectedPipelineId && opt.key === 'no_deal')).map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => setCommercial(opt.key)}
+              className={cn(
+                'text-xs px-3 py-1 rounded-full whitespace-nowrap transition-colors border',
+                commercial === opt.key
+                  ? 'bg-brand-500/15 text-brand-300 border-brand-500/40'
+                  : 'bg-surface-900 text-surface-400 border-surface-800 hover:text-surface-200',
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+          {selectedPipelineId && commercial !== 'all' && (
+            <span className="text-[11px] text-surface-600 whitespace-nowrap">
+              considerando só o negócio neste funil
+            </span>
+          )}
+        </div>
+
+        {/* Card grande — segmented control (Contatos + Funis) no topo; só o
+            conteúdo interno troca entre Tabela de contatos e Kanban do funil. */}
+        <div className="flex-1 overflow-hidden min-w-0 flex flex-col mx-4 mb-4 mt-1 bg-surface-900 border border-surface-800 rounded-xl">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-surface-800 flex-wrap flex-shrink-0">
+            {/* Segmented control — Contatos (base) + cada Funil, destinos peer (spec UX 2026-07-09) */}
+            <div className="flex items-center gap-1 bg-surface-950 border border-surface-800 rounded-lg p-1 overflow-x-auto">
+              <button
+                onClick={() => setSelectedPipelineId(null)}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap',
+                  !selectedPipelineId
+                    ? 'bg-surface-700 text-surface-100 shadow-sm'
+                    : 'text-surface-400 hover:text-surface-200',
+                )}
+              >
+                <Users className="w-3.5 h-3.5" />
+                {vocab.contacts}
+                <span className="text-[9px] font-bold text-surface-500 bg-surface-950 px-1 py-0.5 rounded">BASE</span>
+              </button>
+              {pipelines.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPipelineId(p.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap',
+                    selectedPipelineId === p.id
+                      ? 'bg-surface-700 text-surface-100 shadow-sm'
+                      : 'text-surface-400 hover:text-surface-200',
+                  )}
+                >
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                  {p.name}
+                  <span className="text-[10px] tabular-nums opacity-70">{p.openDealsCount}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Editar funil — só aparece com um funil ativo (renomear/cor/excluir) */}
+              {selectedPipeline && (
+                <Dropdown
+                  open={funilMenuOpen}
+                  onClose={() => setFunilMenuOpen(false)}
+                  align="right"
+                  className="w-44"
+                  anchor={
+                    <button
+                      onClick={() => setFunilMenuOpen((v) => !v)}
+                      title="Editar funil"
+                      className="flex p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  }
+                >
+                  <div className="px-1 py-1 flex flex-col gap-0.5">
+                    <DropdownItem onClick={() => { setEditPipelineModalOpen(true); setFunilMenuOpen(false) }}>
+                      <Pencil className="w-3.5 h-3.5" /> Renomear / cor
+                    </DropdownItem>
+                    {!selectedPipeline.isDefault && (
+                      <DropdownItem onClick={() => { setDeletePipelineConfirmOpen(true); setFunilMenuOpen(false) }}>
+                        <Trash2 className="w-3.5 h-3.5" /> Excluir funil
+                      </DropdownItem>
+                    )}
+                  </div>
+                </Dropdown>
+              )}
+              <button
+                onClick={() => setCreatePipelineModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors whitespace-nowrap"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Novo funil
+              </button>
+            </div>
+          </div>
+
+          {/* Funil selecionado: callout de escopo + resumo + strip de roteamento (spec UX §6) */}
+          {selectedPipeline && (
+            <div className="border-b border-surface-800/60 bg-surface-950/40 flex-shrink-0">
+              <div className="flex items-center justify-between gap-3 px-4 py-2 text-xs">
+                <p className="text-surface-400">
+                  Este quadro mostra apenas negócios de <span className="text-surface-200 font-medium">{selectedPipeline.name}</span>. Contatos sem negócio aqui não aparecem —{' '}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPipelineId(null)}
+                    className="text-brand-400 hover:text-brand-300 underline underline-offset-2"
+                  >
+                    ver na tabela de contatos ›
+                  </button>
+                </p>
+                <p className="text-surface-500 whitespace-nowrap tabular-nums">
+                  {dealsSummaryLine.count} aberto{dealsSummaryLine.count === 1 ? '' : 's'} · {formatBRL(dealsSummaryLine.openCents)}
+                </p>
+              </div>
+              <div className="px-4 pb-2 text-[11px] text-surface-500">
+                {routingLinesForSelected.length > 0 ? (
+                  <span>Alimentado por: {routingLinesForSelected.map((n) => n.label || n.displayPhoneNumber).join(', ')}</span>
+                ) : (
+                  <span>Nenhuma linha WhatsApp roteada para este funil ainda — configure em Configurações › Roteamento por Canal.</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="flex-1 overflow-hidden min-w-0 flex flex-col">
+          {selectedPipelineId ? (
+            <DealsBoard
+              stages={sortedPipelineStages}
+              dealsByStage={displayDealsByStage}
+              onMoveStage={handleMoveDeal}
+              onOpenContact={handleOpenDealContact}
+              loading={dealsLoading}
+            />
+          ) : error ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
               <AlertTriangle className="w-8 h-8 text-red-400" />
               <p className="text-sm">{error}</p>
@@ -323,40 +607,32 @@ export function ContactsPage() {
               </button>
             </div>
           ) : isMobile ? (
-            // Mobile: lista vertical pura — kanban horizontal e table viraram
-            // inutilizaveis em viewport estreita. Tap no card abre detail.
+            // Mobile: lista vertical pura — tabela larga fica inutilizável em viewport estreita.
             <ContactsMobileList
-              contacts={contacts}
+              contacts={displayContacts}
               loading={loading}
               onOpenPanel={handleOpenPanel}
-            />
-          ) : effectiveViewMode === 'table' ? (
-            <ContactsTable
-              contacts={contacts}
-              loading={loading}
-              onOpenPanel={handleOpenPanel}
-              onMoveStage={handleMoveStage}
-              selectedIds={selectedIds}
-              onToggleSelect={toggleSelect}
-              onSelectAll={selectAll}
-              onBulkDelete={canBulkDelete ? requestBulkDelete : undefined}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
+              onLoadMore={loadMore}
             />
           ) : (
-            <ContactsKanban
-              columns={kanbanMode.columns}
-              onLoadMore={kanbanMode.loadMore}
+            <ContactsTable
+              contacts={displayContacts}
+              loading={loading}
               onOpenPanel={handleOpenPanel}
               onMoveStage={handleMoveStage}
+              onOpenDeals={handleOpenDealContact ? (c) => handleOpenDealContact(c.id) : undefined}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelect}
               onSelectAll={selectAll}
-              onBulkMoveStage={handleBulkDragMoveStage}
               onBulkDelete={canBulkDelete ? requestBulkDelete : undefined}
-              onNewContact={() => setShowNewContact(true)}
-              onImport={() => setShowImport(true)}
-              onConfigCRM={() => setShowCRMConfig(true)}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
+              onLoadMore={loadMore}
             />
           )}
+          </div>
         </div>
       </div>
 
@@ -465,7 +741,9 @@ export function ContactsPage() {
         open={showImport}
         onClose={() => setShowImport(false)}
         onCreate={createContact}
-        onDone={() => { setShowImport(false) }}
+        onDone={() => { setShowImport(false); refetch(); fetchPipelines() }}
+        pipelines={pipelines}
+        defaultPipelineId={selectedPipelineId}
       />
 
       {/* New Contact Drawer */}
@@ -473,11 +751,49 @@ export function ContactsPage() {
         open={showNewContact}
         onClose={() => setShowNewContact(false)}
         onCreate={createContact}
-        onCreated={(contact) => setSelectedContactId(contact.id)}
+        onCreated={(contact) => {
+          setSelectedContactId(contact.id)
+          // O negócio inicial já foi criado no funil escolhido (no próprio
+          // drawer) antes deste callback disparar — refetch traz o
+          // dealsSummary fresco pro chip "Negócios" da tabela, e
+          // fetchPipelines atualiza o badge de abertos no segmented control.
+          refetch()
+          fetchPipelines()
+        }}
+        pipelines={pipelines}
+        defaultPipelineId={selectedPipelineId}
       />
 
       {/* CRM Config Drawer */}
-      <CRMConfigDrawer open={showCRMConfig} onClose={() => setShowCRMConfig(false)} />
+      <CRMConfigDrawer
+        open={showCRMConfig}
+        onClose={() => setShowCRMConfig(false)}
+        pipelines={pipelines}
+        onPipelinesChanged={fetchPipelines}
+      />
+
+      {/* Funis de negócio (múltiplos pipelines) */}
+      <CreatePipelineModal
+        open={createPipelineModalOpen}
+        onClose={() => setCreatePipelineModalOpen(false)}
+        onSave={handleCreatePipeline}
+      />
+      <CreatePipelineModal
+        open={editPipelineModalOpen}
+        onClose={() => setEditPipelineModalOpen(false)}
+        onSave={handleEditPipeline}
+        editPipeline={selectedPipeline}
+      />
+      <ConfirmModal
+        open={deletePipelineConfirmOpen}
+        onClose={() => setDeletePipelineConfirmOpen(false)}
+        onConfirm={handleDeletePipeline}
+        title="Excluir funil"
+        description={`Tem certeza que deseja excluir "${selectedPipeline?.name}"? Só é possível excluir funis sem negócios.`}
+        confirmLabel="Excluir"
+        danger
+        loading={deletingPipeline}
+      />
 
       {/* Campaign wizard seeded from a bulk selection. The seed is captured
           at click time; closing the wizard resets it. On success we refetch
@@ -523,6 +839,7 @@ export function ContactsPage() {
             >
               <ContactDetailPanel
                 contactId={selectedContactId}
+                initialTab={initialPanelTab}
                 onClose={() => setSelectedContactId(null)}
                 onContactUpdate={handleContactUpdate}
                 onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}

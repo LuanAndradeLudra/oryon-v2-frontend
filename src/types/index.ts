@@ -173,6 +173,138 @@ export interface ContactCustomFieldDef {
   order: number
 }
 
+// ─── Catálogo de Produtos ───────────────────────────────────────────────────────
+export interface ProductPriceVariation {
+  id?: string
+  label: string
+  amountCents: number      // valor em centavos (BRL por padrão)
+  currency?: string        // default 'BRL'
+  description?: string
+  order?: number
+}
+
+export interface Product {
+  id: string
+  agentId?: string | null  // reservado: null = catálogo da empresa toda
+  name: string
+  sku?: string | null
+  description?: string | null
+  category?: string | null
+  active: boolean
+  order: number
+  priceVariations: ProductPriceVariation[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+// ─── Negócios / Propostas (Deals) ────────────────────────────────────────────
+export type DealStatus = 'open' | 'won' | 'lost'
+
+export interface DealLineItem {
+  id?: string
+  productId: string
+  productName?: string          // snapshot (vem do backend)
+  variationLabel?: string | null
+  unitPriceCents: number        // centavos
+  quantity?: number
+  discountCents?: number
+  order?: number
+}
+
+export interface Deal {
+  id: string
+  contactId: string
+  title: string
+  status: DealStatus
+  pipelineId: string            // Fase 2: pipeline de negócio
+  stageId: string               // estágio atual (fonte da verdade do status)
+  originConversationId?: string | null
+  createdByKind?: 'user' | 'automation' | 'ai'
+  amountCents: number           // total em centavos
+  currency?: string
+  note?: string | null
+  ownerUserId?: string | null
+  closedAt?: string | null
+  lineItems?: DealLineItem[]
+  createdAt?: string
+  updatedAt?: string
+  /** Resumo leve do contato — presente no board por pipeline (GET /deals?pipelineId=). */
+  contact?: { id: string; displayName: string; profilePicUrl: string | null }
+}
+
+/** Pipeline de negócio (múltiplos por tenant). O `isDefault` é o pipeline padrão. */
+export interface Pipeline {
+  id: string
+  tenantId: string
+  name: string
+  description?: string | null
+  color: string
+  order: number
+  isDefault: boolean
+  isArchived: boolean
+  stages: PipelineStage[]
+  /** Contagem de negócios abertos — badge do segmented control da aba Leads. */
+  openDealsCount: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Estágio de um pipeline. `isWon`/`isLost` marcam os terminais. */
+export interface PipelineStage {
+  id: string
+  tenantId: string
+  pipelineId: string
+  key: string
+  label: string
+  color: string
+  order: number
+  isWon: boolean
+  isLost: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Dono do negócio auto-criado pelo roteamento. */
+export type OwnerRule = 'unassigned' | 'conversation_assignee' | 'fixed_user'
+
+/** Roteamento por canal (Fase 4): linha WhatsApp → pipeline. No máx. 1 por linha. */
+export interface PipelineChannelRouting {
+  id: string
+  tenantId: string
+  whatsappNumberId: string
+  pipelineId: string
+  autoCreateDeal: boolean
+  defaultStageId: string | null
+  ownerRule: OwnerRule
+  ownerUserId: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Agregado de negócios de um contato (contagem + valor em centavos). Usado no card do Kanban. */
+/** Agregado por (contato, pipeline) — alimenta os chips "Negócios" da tabela de contatos. */
+export interface ContactDealsPipelineSummary {
+  pipelineId: string
+  pipelineName: string
+  pipelineColor: string
+  count: number
+  openCount: number
+  wonCount: number
+  totalCents: number
+  openCents: number
+  wonCents: number
+}
+
+export interface ContactDealsSummary {
+  count: number
+  openCount: number
+  wonCount: number
+  totalCents: number
+  openCents: number
+  wonCents: number
+  byPipeline: ContactDealsPipelineSummary[]
+}
+
 // ─── AI Onboarding ────────────────────────────────────────────────────────────
 
 export interface AIOnboardingConfig {
@@ -198,6 +330,7 @@ export type ContactHistoryEventType =
   | 'conversation_resolved' | 'note_added'
   | 'ad_attribution_created'
   | 'ai_analysis_completed' | 'conversion_confirmed' | 'capi_event_sent'
+  | 'deal_created' | 'deal_won' | 'deal_lost' | 'deal_updated'
 
 export interface ContactHistoryEvent {
   id: string
@@ -270,6 +403,9 @@ export interface Contact {
   conversationCount?: number
   lastContactedAt?: string
   firstContactedAt?: string
+
+  // ── Resumo de negócios (preenchido no client a partir de /deals/summary, p/ o card do Kanban) ──
+  dealsSummary?: ContactDealsSummary
 
   // ── Relações ──────────────────────────────────────────────────────────────
   tags?: Tag[]
