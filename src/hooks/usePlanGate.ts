@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import type { PlanTier, PlanModuleAccess } from '@/types'
 import { PLANS, PLAN_ORDER, canAccessModule } from '@/config/plans'
+import { useBilling } from '@/hooks/useBilling'
 
 interface PlanGateResult {
   /** true if current plan includes this module */
@@ -46,11 +47,11 @@ interface CreditGateResult {
 }
 
 export function useCreditGate(): CreditGateResult {
-  const { user } = useAuth()
-
-  // These would come from AuthContext / a useBilling() call in a real app.
-  const used  = (user as { creditsUsed?: number } | null)?.creditsUsed ?? 0
-  const total = (user as { creditsTotal?: number | null } | null)?.creditsTotal ?? null
+  // Saldo real do ledger no backend (SCRUM-172). Fail-open enquanto carrega:
+  // billing nulo → tratado como ilimitado para não bloquear a UI por latência.
+  const { billing } = useBilling()
+  const used  = billing?.creditsUsed ?? 0
+  const total = billing?.creditsTotal ?? null
 
   return useMemo(() => {
     const hasCredits = total === null || used < total

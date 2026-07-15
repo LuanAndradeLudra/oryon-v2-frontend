@@ -16,7 +16,7 @@ export const FEATURE_FLAGS = {
   settings: true,
   settingsAdAccounts: false,
   settingsVertical: false,
-  settingsBilling: false,
+  settingsBilling: true,
   // Phase 18+ — surfaces the customer-facing "Skills" tab on AgentDetail.
   // Skills assigned by Oryon staff are always executed; this flag only
   // governs whether the customer sees them in the UI.

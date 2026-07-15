@@ -1,54 +1,12 @@
 // ─── Plan Definitions ─────────────────────────────────────────────────────────
 // Single source of truth for all plan tiers, limits, prices, and feature gates.
 
-import type { PlanTier, PlanDefinition, CreditCost, CreditOperation, PlanModuleAccess } from '@/types'
+import type { PlanTier, PlanDefinition, PlanModuleAccess } from '@/types'
 
-// ─── Credit Costs ─────────────────────────────────────────────────────────────
-
-export const CREDIT_COSTS: Record<CreditOperation, CreditCost> = {
-  agent_message: {
-    operation: 'agent_message',
-    credits: 0.1,
-    model: 'haiku',
-    description: 'Mensagem do agente WhatsApp',
-  },
-  automation_eval: {
-    operation: 'automation_eval',
-    credits: 0.05,
-    model: 'haiku',
-    description: 'Avaliação de automação',
-  },
-  contact_summary: {
-    operation: 'contact_summary',
-    credits: 0.5,
-    model: 'sonnet',
-    description: 'Resumo / análise de contato',
-  },
-  copilot_simple: {
-    operation: 'copilot_simple',
-    credits: 2,
-    model: 'sonnet',
-    description: 'Copilot — resposta simples',
-  },
-  copilot_complex: {
-    operation: 'copilot_complex',
-    credits: 4,
-    model: 'sonnet',
-    description: 'Copilot — com ferramentas e dados',
-  },
-  artifact_generation: {
-    operation: 'artifact_generation',
-    credits: 5,
-    model: 'sonnet',
-    description: 'Geração de artefato (documento/HTML)',
-  },
-  agent_builder: {
-    operation: 'agent_builder',
-    credits: 3,
-    model: 'sonnet',
-    description: 'Agent Builder — passo do wizard',
-  },
-}
+// Nota (SCRUM-172): o antigo CREDIT_COSTS (custo de crédito por-operação) foi
+// aposentado. O modelo agora é token-based (1 crédito ≈ 7.000 tokens de
+// conteúdo) e a contabilidade vive no backend (ledger). O consumo real e o
+// saldo vêm do snapshot de /settings/billing — ver services/billingApi.ts.
 
 // ─── Module defaults ───────────────────────────────────────────────────────────
 
@@ -99,8 +57,9 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
   essential: {
     tier: 'essential',
     name: 'Essential',
-    monthlyPrice: 997,
-    annualMonthlyPrice: 797,
+    // v1 token-based (SCRUM-172) — equivale ao "Start" do backend.
+    monthlyPrice: 1497,
+    annualMonthlyPrice: 1497,
     limits: {
       creditsPerMonth:       1500,
       users:                 3,
@@ -121,8 +80,9 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
   pro: {
     tier: 'pro',
     name: 'Pro',
-    monthlyPrice: 1997,
-    annualMonthlyPrice: 1597,
+    // v1 token-based (SCRUM-172) — equivale ao "Professional" do backend.
+    monthlyPrice: 2797,
+    annualMonthlyPrice: 2797,
     limits: {
       creditsPerMonth:       4000,
       users:                 10,
@@ -146,8 +106,9 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
   business: {
     tier: 'business',
     name: 'Business',
+    // v1 token-based (SCRUM-172) — equivale ao "Scale" do backend.
     monthlyPrice: 3997,
-    annualMonthlyPrice: 3197,
+    annualMonthlyPrice: 3997,
     limits: {
       creditsPerMonth:       10000,
       users:                 30,
@@ -331,6 +292,23 @@ export function formatPlanPrice(plan: PlanDefinition, annual: boolean): string {
 }
 
 export const PLAN_ORDER: PlanTier[] = ['essential', 'pro', 'business', 'scale', 'enterprise']
+
+// ─── Backend tier mapping (SCRUM-172) ──────────────────────────────────────────
+// O backend (config-store) usa start/professional/scale/enterprise. O painel de
+// billing renderiza nome/preço/créditos direto do snapshot do backend; este mapa
+// só resolve a grade secundária de "limites do plano" para o PLANS do front.
+export type BackendPlanTier = 'start' | 'professional' | 'scale' | 'enterprise'
+
+const BACKEND_TIER_MAP: Record<BackendPlanTier, PlanTier> = {
+  start:        'essential',
+  professional: 'pro',
+  scale:        'business',
+  enterprise:   'enterprise',
+}
+
+export function mapBackendTier(tier: string | null | undefined): PlanTier {
+  return BACKEND_TIER_MAP[(tier ?? '') as BackendPlanTier] ?? 'essential'
+}
 
 export function isHigherTier(a: PlanTier, b: PlanTier): boolean {
   return PLAN_ORDER.indexOf(a) > PLAN_ORDER.indexOf(b)
