@@ -109,6 +109,13 @@ export function ContactsPage() {
   const [showNewContact, setShowNewContact] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showCRMConfig, setShowCRMConfig] = useState(false)
+  // SCRUM-293 — criar um funil redireciona direto pro editor de estágios
+  // (aba "Funis" do CRMConfigDrawer, já no funil recém-criado) em vez de só
+  // voltar pro board: o funil nasce SEM estágios agora (backend não semeia
+  // mais os 5 de venda), então sem isto o usuário ficaria com um funil
+  // invisível/inutilizável até lembrar de configurá-lo manualmente.
+  const [crmConfigInitialTab, setCrmConfigInitialTab] = useState<'stages' | 'pipelineStages' | 'fields'>('stages')
+  const [crmConfigInitialPipelineId, setCrmConfigInitialPipelineId] = useState<string | null>(null)
   const [commercial, setCommercial] = useState<CommercialSituation>('all')
 
   // ── Funis de negócio (múltiplos pipelines) ──────────────────────────────
@@ -258,16 +265,21 @@ export function ContactsPage() {
   const handleCreatePipeline = async (data: { name: string; color: string }) => {
     let created
     try {
-      // Backend provisiona os estágios padrão (Novo/Em negociação/Proposta
-      // enviada/Ganho/Perdido) numa única transação com a criação do
-      // pipeline — atômico, sem risco de faltar um estágio terminal.
+      // Funil nasce SEM estágios (SCRUM-293) — não herda os 5 estágios de
+      // VENDAS do preset antigo sem o usuário escolher nada. Por isso o
+      // redirect logo abaixo: sem estágio nenhum o funil não aceita deals
+      // (backend rejeita "Pipeline sem estágios configurados."), então o
+      // próximo passo natural é sempre configurar as colunas do board.
       const res = await pipelinesApi.create({ name: data.name, color: data.color })
       created = res.data
     } catch (e: unknown) {
       throw new Error(getApiErrorMessage(e, 'Erro ao criar pipeline.'))
     }
     await fetchPipelines(created.id)
-    toast('Funil criado com sucesso.', 'success')
+    toast('Funil criado — configure os estágios abaixo.', 'success')
+    setCrmConfigInitialTab('pipelineStages')
+    setCrmConfigInitialPipelineId(created.id)
+    setShowCRMConfig(true)
   }
 
   const handleEditPipeline = async (data: { name: string; color: string }) => {
@@ -327,7 +339,14 @@ export function ContactsPage() {
       </span>
 
       <button
-        onClick={() => setShowCRMConfig(true)}
+        onClick={() => {
+          // Acesso manual — sempre abre no default ("Estágios"), nunca com
+          // um funil forçado do último "criar funil" (esse reset só vale
+          // pra próxima criação).
+          setCrmConfigInitialTab('stages')
+          setCrmConfigInitialPipelineId(null)
+          setShowCRMConfig(true)
+        }}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors"
       >
         <Settings2 className="w-3.5 h-3.5" />
@@ -770,6 +789,8 @@ export function ContactsPage() {
         onClose={() => setShowCRMConfig(false)}
         pipelines={pipelines}
         onPipelinesChanged={fetchPipelines}
+        initialTab={crmConfigInitialTab}
+        initialPipelineId={crmConfigInitialPipelineId}
       />
 
       {/* Funis de negócio (múltiplos pipelines) */}

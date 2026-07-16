@@ -23,10 +23,28 @@ interface CRMConfigDrawerProps {
   /** Chamado após qualquer mudança de estágio de funil — refaz o fetch dos
    *  pipelines na página, refletindo direto no Kanban aberto. */
   onPipelinesChanged: () => void
+  /** Aba a abrir (SCRUM-293 — redirect "criar funil → configurar estágios"
+   *  abre já na aba "Funis"). Omitido = comportamento normal ("Estágios"). */
+  initialTab?: Tab
+  /** Repassado pra `PipelineStagesManager` — pré-seleciona o funil recém-criado. */
+  initialPipelineId?: string | null
 }
 
-export function CRMConfigDrawer({ open, onClose, pipelines, onPipelinesChanged }: CRMConfigDrawerProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('stages')
+export function CRMConfigDrawer({
+  open, onClose, pipelines, onPipelinesChanged, initialTab, initialPipelineId,
+}: CRMConfigDrawerProps) {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'stages')
+  // `CRMConfigDrawer` fica sempre montado (só o conteúdo interno é gated por
+  // `open` via AnimatePresence) — sem isto, `initialTab` só valeria na 1ª
+  // montagem da página inteira, não em cada abertura do drawer. Ajuste
+  // durante a renderização (não em efeito) — padrão recomendado pra
+  // "resetar estado quando uma prop muda" sem disparar um render extra via
+  // efeito: https://react.dev/learn/you-might-not-need-an-effect.
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) setActiveTab(initialTab ?? 'stages')
+  }
 
   return (
     <AnimatePresence>
@@ -92,7 +110,11 @@ export function CRMConfigDrawer({ open, onClose, pipelines, onPipelinesChanged }
             <div className="flex-1 overflow-y-auto px-5 py-5">
               {activeTab === 'stages' && <StagesManager />}
               {activeTab === 'pipelineStages' && (
-                <PipelineStagesManager pipelines={pipelines} onChanged={onPipelinesChanged} />
+                <PipelineStagesManager
+                  pipelines={pipelines}
+                  onChanged={onPipelinesChanged}
+                  initialPipelineId={initialPipelineId}
+                />
               )}
               {activeTab === 'fields' && <CustomFieldsManager />}
             </div>
