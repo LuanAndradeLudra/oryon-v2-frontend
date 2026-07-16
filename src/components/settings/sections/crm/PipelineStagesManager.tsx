@@ -17,13 +17,18 @@ interface PipelineStagesManagerProps {
    *  lista de pipelines (ContactsPage) refaz o fetch, e o Kanban do funil
    *  selecionado reflete as mudanças imediatamente. */
   onChanged: () => void
+  /** Funil a pré-selecionar ao montar (SCRUM-293) — usado pelo redirect
+   *  "criar funil → configurar estágios" logo após a criação, pra abrir já
+   *  no funil recém-criado em vez de cair no default do tenant. Ignorado se
+   *  o id não existir em `pipelines` (mesmo fallback de sempre). */
+  initialPipelineId?: string | null
 }
 
 /** Gerencia os estágios (colunas do Kanban) de UM funil de negócio por vez,
  *  escolhido pelo select acima da lista. Espelha StagesManager (estágios do
  *  ciclo de vida do contato), mas aponta para os endpoints de pipeline e usa
  *  isWon/isLost em vez de isTerminal. */
-export function PipelineStagesManager({ pipelines, onChanged }: PipelineStagesManagerProps) {
+export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId }: PipelineStagesManagerProps) {
   const { toast, toasts, dismiss } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
@@ -39,13 +44,18 @@ export function PipelineStagesManager({ pipelines, onChanged }: PipelineStagesMa
   // compartilhado (os pipelines vêm via prop), então a sobreposição é local.
   const [optimisticStages, setOptimisticStages] = useState<PipelineStage[] | null>(null)
 
-  // Default para o pipeline padrão do tenant assim que a lista chegar (ou
-  // se o funil selecionado for excluído noutro lugar enquanto isto está aberto).
+  // Default: `initialPipelineId` (funil recém-criado, se veio um) quando
+  // existir na lista, senão o pipeline padrão do tenant — assim que a lista
+  // chegar (ou se o funil selecionado for excluído noutro lugar enquanto
+  // isto está aberto).
   useEffect(() => {
     if (pipelines.length === 0) { setPipelineId(''); return }
     if (pipelineId && pipelines.some((p) => p.id === pipelineId)) return
-    setPipelineId(getDefaultPipeline(pipelines)?.id ?? '')
-  }, [pipelines, pipelineId])
+    const preferred = initialPipelineId && pipelines.some((p) => p.id === initialPipelineId)
+      ? initialPipelineId
+      : getDefaultPipeline(pipelines)?.id ?? ''
+    setPipelineId(preferred)
+  }, [pipelines, pipelineId, initialPipelineId])
 
   const selectedPipeline = pipelines.find((p) => p.id === pipelineId) ?? null
   const serverStages = (selectedPipeline?.stages ?? []).slice().sort((a, b) => a.order - b.order)
