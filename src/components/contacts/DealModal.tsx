@@ -8,7 +8,7 @@ import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { dealsApi } from '@/services/api'
-import { getDefaultPipeline, getApiErrorMessage } from '@/lib/utils'
+import { getDefaultPipeline, getPipelineStages, getApiErrorMessage } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
 import type { Deal, DealStatus, Pipeline } from '@/types'
 
@@ -56,6 +56,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   const [items, setItems] = useState<ItemRow[]>([])
   const [moveStageKey, setMoveStageKey] = useState('')
   const [pipelineId, setPipelineId] = useState('')
+  const [pipelineStageId, setPipelineStageId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -94,6 +95,20 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       setPipelineId(getDefaultPipeline(pipelines)?.id ?? '')
     }
   }, [open, editDeal, pipelines, pipelineId])
+
+  // "Estágio do funil" — eixo distinto do "Estágio do contato" (ciclo de
+  // vida, seletor "Mover contato para" abaixo). Reativo à troca de funil: se
+  // o estágio selecionado não existe mais no funil atual (trocou de funil,
+  // ou é a primeira carga), recai pro 1º estágio não-terminal dele. Só se
+  // aplica ao create — um deal existente não tem esse seletor.
+  useEffect(() => {
+    if (editDeal) return
+    const opts = getPipelineStages(pipelines, pipelineId)
+    if (!opts.some((s) => s.id === pipelineStageId)) {
+      setPipelineStageId(opts[0]?.id ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editDeal, pipelineId, pipelines])
 
   const addItem = () =>
     setItems([
@@ -168,6 +183,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           note: note.trim() || undefined,
           lineItems,
           pipelineId,
+          stageId: pipelineStageId || undefined,
         })
         // create não move o estágio do contato — se ganho com estágio, aplica via setStatus.
         if (stageKey) {
@@ -232,10 +248,22 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                   ))}
                 </Select>
               </FormField>
+              {/* Estágio do FUNIL — eixo distinto do "Estágio do contato"
+                  abaixo (ciclo de vida). Reativo ao funil escolhido acima. */}
+              <FormField label="Estágio do funil" hint="Coluna do board em que o negócio nasce.">
+                <Select value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
+                  {getPipelineStages(pipelines, pipelineId).length === 0 && (
+                    <option value="">Nenhum estágio disponível</option>
+                  )}
+                  {getPipelineStages(pipelines, pipelineId).map((s) => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
+                </Select>
+              </FormField>
             </>
           )}
           {status === 'won' && (
-            <FormField label="Mover contato para (opcional)" hint="Ao ganhar, move o contato a este estágio.">
+            <FormField label="Estágio do contato (opcional)" hint="Ao ganhar, move o contato a este estágio de ciclo de vida.">
               <Select value={moveStageKey} onChange={(e) => setMoveStageKey(e.target.value)}>
                 <option value="">— não mover —</option>
                 {stages.map((s) => (

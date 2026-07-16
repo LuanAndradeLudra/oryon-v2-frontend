@@ -5,7 +5,7 @@ import {
   Tag as TagIcon, ToggleLeft, ToggleRight, ChevronDown,
   Loader2, Check,
 } from 'lucide-react'
-import { cn, getDefaultPipeline } from '@/lib/utils'
+import { cn, getDefaultPipeline, getPipelineStages } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { tagsApi, dealsApi } from '@/services/api'
@@ -170,6 +170,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
   const [source, setSource]           = useState<ContactSource | ''>('')
   const [stage, setStage]             = useState('')
   const [pipelineId, setPipelineId]   = useState('')
+  const [pipelineStageId, setPipelineStageId] = useState('')
   const [optIn, setOptIn]             = useState(false)
   const [tags, setTags]               = useState<Tag[]>([])
   const [customValues, setCustomValues] = useState<Record<string, string>>({})
@@ -182,7 +183,8 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
   useEffect(() => {
     if (open) {
       setDisplayName(''); setWaId(''); setEmail(''); setCompany('')
-      setJobTitle(''); setSource(''); setStage(''); setPipelineId(''); setOptIn(false)
+      setJobTitle(''); setSource(''); setStage(''); setPipelineId('')
+      setPipelineStageId(''); setOptIn(false)
       setTags([]); setCustomValues({}); setErrors({}); setSaved(false)
     }
   }, [open])
@@ -201,6 +203,17 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
       setPipelineId(defaultPipelineId ?? getDefaultPipeline(pipelines)?.id ?? '')
     }
   }, [open, pipelines, defaultPipelineId, pipelineId])
+
+  // "Estágio do funil" — eixo distinto de `stage` acima (ciclo de vida do
+  // contato). Reativo à troca de funil: se o estágio selecionado não existe
+  // mais no funil atual, recai pro 1º estágio não-terminal dele.
+  useEffect(() => {
+    const opts = getPipelineStages(pipelines, pipelineId)
+    if (!opts.some((s) => s.id === pipelineStageId)) {
+      setPipelineStageId(opts[0]?.id ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pipelineId, pipelines])
 
   const validate = () => {
     const e: typeof errors = {}
@@ -239,7 +252,12 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
       // obrigatória de funil). Best-effort: o contato já foi criado com
       // sucesso, então uma falha aqui não desfaz o contato — só avisa.
       try {
-        await dealsApi.create({ contactId: created.id, title: created.displayName, pipelineId })
+        await dealsApi.create({
+          contactId: created.id,
+          title: created.displayName,
+          pipelineId,
+          stageId: pipelineStageId || undefined,
+        })
       } catch {
         toast('Contato criado, mas não foi possível criar o negócio no funil. Adicione manualmente pela ficha do contato.', 'error')
       }
@@ -406,7 +424,29 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                   </Field>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="Estágio">
+                    {/* Estágio do FUNIL — coluna do board em que o negócio
+                        nasce. Eixo distinto de "Estágio do contato" abaixo
+                        (ciclo de vida) — modelo híbrido, os dois não se
+                        confundem. Reativo ao funil escolhido acima. */}
+                    <Field label="Estágio do funil">
+                      <div className="relative">
+                        <select
+                          value={pipelineStageId}
+                          onChange={(e) => setPipelineStageId(e.target.value)}
+                          className={cn(inputCls(), 'appearance-none pr-8')}
+                        >
+                          {getPipelineStages(pipelines, pipelineId).length === 0 && (
+                            <option value="">Nenhum estágio disponível</option>
+                          )}
+                          {getPipelineStages(pipelines, pipelineId).map((s) => (
+                            <option key={s.id} value={s.id}>{s.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+                      </div>
+                    </Field>
+
+                    <Field label="Estágio do contato">
                       <div className="relative">
                         <select
                           value={stage}

@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { WhatsAppNumber } from '@/types'
-import type { Pipeline } from '@/types'
+import type { Pipeline, PipelineStage } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -53,6 +53,19 @@ export function getApiErrorMessage(e: unknown, fallback: string): string {
  *  PipelineStagesManager para não divergir entre elas. */
 export function getDefaultPipeline(pipelines: Pipeline[]): Pipeline | undefined {
   return pipelines.find((p) => p.isDefault) ?? pipelines[0]
+}
+
+/** Estágios NÃO-terminais (ganho/perdido de fora) de um funil, em ordem — para
+ *  o seletor "Estágio do funil" no create de negócio. Eixo distinto do
+ *  "Estágio do contato" (ciclo de vida, `useCRMConfig().stages`): modelo
+ *  híbrido, os dois nunca se confundem. `Pipeline.stages` já vem embutido
+ *  em `pipelinesApi.list()` — não precisa de um fetch à parte. */
+export function getPipelineStages(pipelines: Pipeline[], pipelineId: string): PipelineStage[] {
+  const pipeline = pipelines.find((p) => p.id === pipelineId)
+  return (pipeline?.stages ?? [])
+    .filter((s) => !s.isWon && !s.isLost)
+    .slice()
+    .sort((a, b) => a.order - b.order)
 }
 
 export function formatMessageTime(date: string | Date): string {
