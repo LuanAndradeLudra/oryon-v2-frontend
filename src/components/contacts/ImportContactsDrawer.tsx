@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { appLogger } from '@/services/appLogger'
 import { dealsApi } from '@/services/api'
-import { cn, getDefaultPipeline } from '@/lib/utils'
+import { cn, getDefaultPipeline, getPipelineStages } from '@/lib/utils'
 import type { Contact, ContactSource, Pipeline } from '@/types'
 
 // Anthropic SDK removed — AI-powered import mapping will use Agent Server in the future
@@ -36,7 +36,7 @@ const TARGET_FIELDS: FieldDef[] = [
   { key: 'company',     label: 'Empresa' },
   { key: 'jobTitle',    label: 'Cargo' },
   { key: 'source',      label: 'Origem' },
-  { key: 'stage',       label: 'Estágio' },
+  { key: 'stage',       label: 'Estágio do contato' },
   { key: '__skip__',    label: '— Ignorar coluna —' },
 ]
 
@@ -305,6 +305,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
   const [errors, setErrors]         = useState<string[]>([])
   const [dragging, setDragging]     = useState(false)
   const [pipelineId, setPipelineId] = useState('')
+  const [pipelineStageId, setPipelineStageId] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const reset = () => {
@@ -312,7 +313,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
     setColMap({}); setAiSuggestions({}); setAiLoading(false)
     setParseError(null); setProgress(0)
     setImportedCount(0); setErrors([]); setDragging(false)
-    setPasteText(''); setUploadMode('file'); setPipelineId('')
+    setPasteText(''); setUploadMode('file'); setPipelineId(''); setPipelineStageId('')
   }
 
   // Reseta ao abrir — o drawer fica sempre montado (o pai só alterna
@@ -334,6 +335,18 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
       setPipelineId(defaultPipelineId ?? getDefaultPipeline(pipelines)?.id ?? '')
     }
   }, [open, pipelines, defaultPipelineId, pipelineId])
+
+  // "Estágio do funil" — aplica-se a TODOS os negócios criados nesta
+  // importação (eixo distinto da coluna "Estágio do contato" mapeada por
+  // linha, ver TARGET_FIELDS). Reativo à troca de funil: se o estágio
+  // selecionado não existe mais no funil atual, recai pro 1º não-terminal.
+  useEffect(() => {
+    const opts = getPipelineStages(pipelines, pipelineId)
+    if (!opts.some((s) => s.id === pipelineStageId)) {
+      setPipelineStageId(opts[0]?.id ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pipelineId, pipelines])
 
   const handleClose = () => { reset(); onClose() }
 
@@ -457,7 +470,12 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
         // só entra na lista de falhas parciais mostrada no fim.
         if (pipelineId) {
           try {
-            await dealsApi.create({ contactId: created.id, title: created.displayName, pipelineId })
+            await dealsApi.create({
+              contactId: created.id,
+              title: created.displayName,
+              pipelineId,
+              stageId: pipelineStageId || undefined,
+            })
           } catch {
             errs.push(`Linha ${rows.indexOf(row) + 2}: contato criado, mas negócio no funil falhou`)
           }
@@ -858,29 +876,55 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                     )}
                   </div>
 
-                  {/* Funil de destino — todo contato importado nasce com um negócio
-                      neste funil (mesma regra do "Novo Lead" manual). */}
-                  <div>
-                    <label className="text-xs font-semibold text-surface-400 mb-1.5 block">
-                      Funil de destino <span className="text-red-400">*</span>
-                    </label>
-                    <div className="relative w-full sm:w-64">
-                      <select
-                        value={pipelineId}
-                        onChange={(e) => setPipelineId(e.target.value)}
-                        className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
-                      >
-                        {pipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
-                        {pipelines.map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
+                  {/* Funil + estágio de destino — todo contato importado nasce
+                      com um negócio neste funil (mesma regra do "Novo Lead"
+                      manual). "Estágio do funil" é a coluna do board em que o
+                      negócio nasce; eixo distinto do "Estágio do contato"
+                      mapeado por coluna acima (ciclo de vida). */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                      <label className="text-xs font-semibold text-surface-400 mb-1.5 block">
+                        Funil de destino <span className="text-red-400">*</span>
+                      </label>
+                      <div className="relative w-full">
+                        <select
+                          value={pipelineId}
+                          onChange={(e) => setPipelineId(e.target.value)}
+                          className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
+                        >
+                          {pipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
+                          {pipelines.map((p) => (
+                            <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
+                      </div>
                     </div>
-                    <p className="text-[11px] text-surface-600 mt-1">
-                      Cada contato importado nasce com um negócio aberto neste funil.
-                    </p>
+
+                    <div className="flex-1">
+                      <label className="text-xs font-semibold text-surface-400 mb-1.5 block">
+                        Estágio do funil
+                      </label>
+                      <div className="relative w-full">
+                        <select
+                          value={pipelineStageId}
+                          onChange={(e) => setPipelineStageId(e.target.value)}
+                          className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
+                        >
+                          {getPipelineStages(pipelines, pipelineId).length === 0 && (
+                            <option value="">Nenhum estágio disponível</option>
+                          )}
+                          {getPipelineStages(pipelines, pipelineId).map((s) => (
+                            <option key={s.id} value={s.id}>{s.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
+                      </div>
+                    </div>
                   </div>
+                  <p className="text-[11px] text-surface-600 -mt-1">
+                    Cada contato importado nasce com um negócio aberto neste funil e estágio.
+                  </p>
 
                   {/* Preview table */}
                   <div className="border border-surface-700/60 rounded-xl overflow-hidden">
