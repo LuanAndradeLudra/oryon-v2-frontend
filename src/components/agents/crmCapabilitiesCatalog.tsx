@@ -7,7 +7,7 @@
 //
 // IMPORTANT: when the server-side catalog changes, mirror the change here.
 
-import { CheckCircle, Tag as TagIcon, MoveRight, UserCog, MessageSquare } from 'lucide-react'
+import { CheckCircle, Tag as TagIcon, MoveRight, UserCog, MessageSquare, Briefcase } from 'lucide-react'
 import type {
   ConversationStatus,
   CrmCapabilityCategory,
@@ -82,6 +82,16 @@ export const CRM_CAPABILITIES_CATALOG: CrmCapabilityCatalogEntry[] = [
     description: 'O agente pode atualizar o estágio do contato (ex: Lead → Qualificado).',
     icon: <MoveRight className="w-4 h-4" />,
     supports: ['stages'],
+  },
+  {
+    id: 'manage_deal_pipeline',
+    category: 'pipeline',
+    label: 'Mover negócio no funil de vendas',
+    description: 'O agente move o negócio (deal) do contato entre estágios não-terminais do funil de vendas vinculado à conversa. Nunca fecha ganho/perdido — o backend recusa essa mudança.',
+    icon: <Briefcase className="w-4 h-4" />,
+    // Sem allowlist de estágios: a única barreira é estrutural (nunca terminal),
+    // não configurável pelo admin — por isso não entra em `supports`.
+    supports: [],
   },
 ]
 
