@@ -39,22 +39,15 @@ import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag, Pipeline, Deal, PipelineChannelRouting, WhatsAppNumber } from '@/types'
 
 /**
- * Faceta "Situação comercial" (D-10) — derivada em tempo real do `dealsSummary`
- * já carregado em cada contato, sem dado novo. Filtra client-side os contatos
- * exibidos (lista/board); os totais das colunas continuam vindo do servidor.
+ * Faceta "Situação comercial" (D-10). Na LISTA de contatos (base, fora de um
+ * funil), o filtro é aplicado no BACKEND (SCRUM-293 — `useContacts`/`?commercial=`)
+ * porque a lista é paginada no servidor; filtrar client-side só a página
+ * carregada escondia matches fora dela e deixava o badge de contagem
+ * enganoso. Dentro do board de um funil não há paginação server-side (todos
+ * os deals do pipeline vêm de uma vez) — ali o filtro continua client-side,
+ * ver `matchesCommercialDeal` abaixo.
  */
 type CommercialSituation = 'all' | 'no_deal' | 'open_deal' | 'customer'
-
-function matchesCommercial(summary: Contact['dealsSummary'], s: CommercialSituation): boolean {
-  if (s === 'all') return true
-  const openCount = summary?.openCount ?? 0
-  const wonCount = summary?.wonCount ?? 0
-  const count = summary?.count ?? 0
-  if (s === 'no_deal') return count === 0
-  if (s === 'open_deal') return openCount > 0
-  if (s === 'customer') return wonCount > 0
-  return true
-}
 
 const COMMERCIAL_OPTIONS: { key: CommercialSituation; label: string }[] = [
   { key: 'all', label: 'Todos' },
@@ -158,12 +151,9 @@ export function ContactsPage() {
     contacts, loading, loadingMore, hasMore, loadMore, error, total, filters, setFilters,
     updateContact, createContact, bulkUpdateStage, bulkRemove,
     bulkAddTag, bulkRemoveTag, removeContact, refetch,
-  } = useContacts({ sortBy: 'lastContactedAt', sortDir: 'desc' })
-
-  // Faceta "Situação comercial" (D-10): filtra client-side pelo dealsSummary já carregado.
-  const displayContacts = useMemo(
-    () => (commercial === 'all' ? contacts : contacts.filter((c) => matchesCommercial(c.dealsSummary, commercial))),
-    [contacts, commercial],
+  } = useContacts(
+    { sortBy: 'lastContactedAt', sortDir: 'desc' },
+    { commercial: commercial === 'all' ? undefined : commercial },
   )
 
   // Tags are fetched once when the page mounts so the BulkActionBar can
@@ -361,7 +351,9 @@ export function ContactsPage() {
 
   useRegisterTopBarActions(
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Count badge — total de contatos. Fixo (spec: cabeçalho global não muda por funil). */}
+      {/* Count badge — total de contatos, já refletindo a faceta "Situação
+          comercial" ativa (SCRUM-293: `total` vem do backend já filtrado).
+          Fixo só quanto a funil (spec: cabeçalho global não muda por funil). */}
       <span className="text-xs text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full border border-surface-700 font-medium">
         {total.toLocaleString('pt-BR')}
       </span>
@@ -658,7 +650,7 @@ export function ContactsPage() {
           ) : isMobile ? (
             // Mobile: lista vertical pura — tabela larga fica inutilizável em viewport estreita.
             <ContactsMobileList
-              contacts={displayContacts}
+              contacts={contacts}
               loading={loading}
               onOpenPanel={handleOpenPanel}
               hasMore={hasMore}
@@ -667,7 +659,7 @@ export function ContactsPage() {
             />
           ) : (
             <ContactsTable
-              contacts={displayContacts}
+              contacts={contacts}
               loading={loading}
               onOpenPanel={handleOpenPanel}
               onMoveStage={handleMoveStage}
