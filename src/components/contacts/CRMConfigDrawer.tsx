@@ -7,8 +7,8 @@ import { PipelineStagesManager } from '@/components/settings/sections/crm/Pipeli
 import type { Pipeline } from '@/types'
 
 const TABS = [
-  { id: 'stages', label: 'Estágios', icon: Columns },
-  { id: 'pipelineStages', label: 'Funis', icon: Workflow },
+  { id: 'stages', label: 'Estágios do contato', icon: Columns },
+  { id: 'pipelineStages', label: 'Estágios do funil', icon: Workflow },
   { id: 'fields', label: 'Campos', icon: SlidersHorizontal },
 ] as const
 
@@ -17,14 +17,15 @@ type Tab = (typeof TABS)[number]['id']
 interface CRMConfigDrawerProps {
   open: boolean
   onClose: () => void
-  /** Funis de negócio do tenant — a aba "Funis" edita os estágios (colunas do
-   *  Kanban) de um deles. */
+  /** Funis de negócio do tenant — a aba "Estágios do funil" edita os
+   *  estágios (colunas do Kanban) de um deles. */
   pipelines: Pipeline[]
   /** Chamado após qualquer mudança de estágio de funil — refaz o fetch dos
    *  pipelines na página, refletindo direto no Kanban aberto. */
   onPipelinesChanged: () => void
   /** Aba a abrir (SCRUM-293 — redirect "criar funil → configurar estágios"
-   *  abre já na aba "Funis"). Omitido = comportamento normal ("Estágios"). */
+   *  abre já na aba "Estágios do funil"). Omitido = comportamento normal
+   *  ("Estágios do contato"). */
   initialTab?: Tab
   /** Repassado pra `PipelineStagesManager` — pré-seleciona o funil recém-criado. */
   initialPipelineId?: string | null
@@ -72,7 +73,7 @@ export function CRMConfigDrawer({
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
               <div>
                 <h2 className="text-base font-semibold text-surface-50">Configurar CRM</h2>
-                <p className="text-xs text-surface-500 mt-0.5">Estágios do pipeline e campos personalizados</p>
+                <p className="text-xs text-surface-500 mt-0.5">Estágios (contato e funil) e campos personalizados</p>
               </div>
               <button
                 onClick={onClose}

@@ -2,6 +2,7 @@ import { ChevronRight, Phone, Building2, Mail, TrendingUp, Loader2 } from 'lucid
 import { Avatar } from '@/components/ui/Avatar'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { CardListView } from '@/components/common/CardListView'
+import { DealsSummaryChips } from './ContactRow'
 import { hexToRgba, relativeDate } from '@/lib/utils'
 import type { Contact } from '@/types'
 
@@ -9,6 +10,8 @@ interface ContactsMobileListProps {
   contacts: Contact[]
   loading: boolean
   onOpenPanel: (contact: Contact) => void
+  /** Abre o painel do contato direto na aba Negócios — toque num chip de negócio. */
+  onOpenDeals?: (contact: Contact) => void
   /** Scroll infinito — dispara ao chegar perto do fim da lista. */
   hasMore?: boolean
   loadingMore?: boolean
@@ -22,11 +25,13 @@ function ContactCard({
   stageColor,
   stageLabel,
   onClick,
+  onOpenDeals,
 }: {
   contact: Contact
   stageColor?: string
   stageLabel?: string
   onClick: () => void
+  onOpenDeals?: (contact: Contact) => void
 }) {
   const lastContactLabel = relativeDate(contact.lastContactedAt)
   const tags = contact.tags ?? []
@@ -35,10 +40,15 @@ function ContactCard({
   const companyLine = [contact.jobTitle, contact.company].filter(Boolean).join(' · ')
 
   return (
-    <button
-      type="button"
+    // `div role="button"` em vez de `<button>` — o chip de negócio (linha
+    // abaixo) precisa ser um `<button>` real clicável por conta própria
+    // (`DealsSummaryChips`), e `<button>` dentro de `<button>` é HTML inválido.
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="w-full flex items-stretch gap-3 px-4 py-3.5 bg-surface-900/40 border border-surface-800 rounded-xl hover:bg-surface-900 active:bg-surface-800 transition-colors text-left"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
+      className="w-full flex items-stretch gap-3 px-4 py-3.5 bg-surface-900/40 border border-surface-800 rounded-xl hover:bg-surface-900 active:bg-surface-800 transition-colors text-left cursor-pointer"
     >
       <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
       <div className="flex-1 min-w-0 flex flex-col gap-1.5">
@@ -125,13 +135,16 @@ function ContactCard({
             )}
           </div>
         )}
+
+        {/* Linha 7: negócios por funil — paridade com ContactRow (desktop) */}
+        <DealsSummaryChips contact={contact} onOpenDeals={onOpenDeals} />
       </div>
       <ChevronRight className="w-4 h-4 text-surface-600 flex-shrink-0 self-center" />
-    </button>
+    </div>
   )
 }
 
-export function ContactsMobileList({ contacts, loading, onOpenPanel, hasMore, loadingMore, onLoadMore }: ContactsMobileListProps) {
+export function ContactsMobileList({ contacts, loading, onOpenPanel, onOpenDeals, hasMore, loadingMore, onLoadMore }: ContactsMobileListProps) {
   const { stages } = useCRMConfig()
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -164,6 +177,7 @@ export function ContactsMobileList({ contacts, loading, onOpenPanel, hasMore, lo
               stageColor={stage?.color}
               stageLabel={stage?.label}
               onClick={() => onOpenPanel(contact)}
+              onOpenDeals={onOpenDeals}
             />
           )
         }}
