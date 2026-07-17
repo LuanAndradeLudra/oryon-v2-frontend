@@ -247,7 +247,10 @@ export function ContactsPage() {
     }),
     [filters.search, filters.intent, filters.sentiment, filters.source, filters.tagId, filters.optIn],
   )
-  const { dealsByStage, loading: dealsLoading, moveStage: moveDealStage, movePipeline: moveDealPipeline } = useKanbanDeals(selectedPipelineId, boardFilters)
+  const {
+    dealsByStage, loading: dealsLoading, error: dealsError,
+    moveStage: moveDealStage, movePipeline: moveDealPipeline, refetch: refetchDeals,
+  } = useKanbanDeals(selectedPipelineId, boardFilters)
   const sortedPipelineStages = useMemo(
     () => (selectedPipeline?.stages ?? []).slice().sort((a, b) => a.order - b.order),
     [selectedPipeline],
@@ -648,15 +651,28 @@ export function ContactsPage() {
 
           <div className="flex-1 overflow-hidden min-w-0 flex flex-col">
           {selectedPipelineId ? (
-            <DealsBoard
-              stages={sortedPipelineStages}
-              dealsByStage={displayDealsByStage}
-              onMoveStage={handleMoveDeal}
-              onOpenContact={handleOpenDealContact}
-              loading={dealsLoading}
-              pipelines={pipelines}
-              onMovePipeline={handleMovePipelineDeal}
-            />
+            dealsError ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
+                <AlertTriangle className="w-8 h-8 text-red-400" />
+                <p className="text-sm">Não foi possível carregar os negócios deste funil.</p>
+                <button
+                  onClick={refetchDeals}
+                  className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : (
+              <DealsBoard
+                stages={sortedPipelineStages}
+                dealsByStage={displayDealsByStage}
+                onMoveStage={handleMoveDeal}
+                onOpenContact={handleOpenDealContact}
+                loading={dealsLoading}
+                pipelines={pipelines}
+                onMovePipeline={handleMovePipelineDeal}
+              />
+            )
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
               <AlertTriangle className="w-8 h-8 text-red-400" />
