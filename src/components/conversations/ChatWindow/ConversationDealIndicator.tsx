@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { KanbanSquare } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { dealsApi, pipelinesApi, pipelineRoutingApi } from '@/services/api'
+import { dealsApi, pipelineRoutingApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { cn, hexToRgba } from '@/lib/utils'
+import type { Deal } from '@/types'
 
 interface DealChip {
   dealId: string
@@ -22,48 +24,33 @@ interface DealChip {
  * esta linha WhatsApp. Atualiza ao vivo via socket `deal:changed` (refetch
  * on-event). Não renderiza nada se o contato não tem negócio aberto. Clique
  * em qualquer chip leva ao board daquele funil.
+ *
+ * A lista de funis vem do cache compartilhado (`CRMConfigContext`, SCRUM-293)
+ * — este componente não faz seu próprio GET /settings/pipelines nem monta
+ * uma subscrição extra pra isso; só combina o cache com os deals abertos e o
+ * roteamento (que aí sim são específicos deste contato/linha).
  */
 export function ConversationDealIndicator({ contactId, whatsappNumberId }: { contactId: string; whatsappNumberId?: string }) {
-  const [chips, setChips] = useState<DealChip[]>([])
+  const { pipelines } = useCRMConfig()
+  const [openDeals, setOpenDeals] = useState<Deal[]>([])
+  const [routedPipelineId, setRoutedPipelineId] = useState<string | undefined>(undefined)
   const navigate = useNavigate()
 
   const load = useCallback(() => {
     Promise.all([
       dealsApi.list(contactId),
-      pipelinesApi.list(),
       whatsappNumberId ? pipelineRoutingApi.list() : Promise.resolve(null),
     ])
-      .then(([dealsRes, pipesRes, routingRes]) => {
+      .then(([dealsRes, routingRes]) => {
         const deals = Array.isArray(dealsRes.data) ? dealsRes.data : []
-        const openDeals = deals.filter((d) => d.status === 'open')
-        const pipes = pipesRes.data ?? []
-        const routedPipelineId = routingRes
-          ? (routingRes.data ?? []).find((r) => r.whatsappNumberId === whatsappNumberId)?.pipelineId
-          : undefined
-
-        const next: DealChip[] = []
-        for (const deal of openDeals) {
-          const pipe = pipes.find((p) => p.id === deal.pipelineId)
-          const stage = pipe?.stages.find((s) => s.id === deal.stageId)
-          if (!pipe || !stage) continue
-          next.push({
-            dealId: deal.id,
-            pipeline: pipe.name,
-            pipelineId: pipe.id,
-            stage: stage.label,
-            color: stage.color,
-            isRouted: pipe.id === routedPipelineId,
-          })
-        }
-        // Funil roteado primeiro, resto por nome — ordem estável, não depende
-        // da ordem em que o backend devolveu os deals.
-        next.sort((a, b) => {
-          if (a.isRouted !== b.isRouted) return a.isRouted ? -1 : 1
-          return a.pipeline.localeCompare(b.pipeline)
-        })
-        setChips(next)
+        setOpenDeals(deals.filter((d) => d.status === 'open'))
+        setRoutedPipelineId(
+          routingRes
+            ? (routingRes.data ?? []).find((r) => r.whatsappNumberId === whatsappNumberId)?.pipelineId
+            : undefined,
+        )
       })
-      .catch(() => setChips([]))
+      .catch(() => { setOpenDeals([]); setRoutedPipelineId(undefined) })
   }, [contactId, whatsappNumberId])
 
   useEffect(() => { load() }, [load])
@@ -76,6 +63,30 @@ export function ConversationDealIndicator({ contactId, whatsappNumberId }: { con
     socket.on('deal:changed', onDealChanged)
     return () => { socket.off('deal:changed', onDealChanged) }
   }, [contactId, load])
+
+  const chips = useMemo(() => {
+    const next: DealChip[] = []
+    for (const deal of openDeals) {
+      const pipe = pipelines.find((p) => p.id === deal.pipelineId)
+      const stage = pipe?.stages.find((s) => s.id === deal.stageId)
+      if (!pipe || !stage) continue
+      next.push({
+        dealId: deal.id,
+        pipeline: pipe.name,
+        pipelineId: pipe.id,
+        stage: stage.label,
+        color: stage.color,
+        isRouted: pipe.id === routedPipelineId,
+      })
+    }
+    // Funil roteado primeiro, resto por nome — ordem estável, não depende
+    // da ordem em que o backend devolveu os deals.
+    next.sort((a, b) => {
+      if (a.isRouted !== b.isRouted) return a.isRouted ? -1 : 1
+      return a.pipeline.localeCompare(b.pipeline)
+    })
+    return next
+  }, [openDeals, pipelines, routedPipelineId])
 
   if (chips.length === 0) return null
 

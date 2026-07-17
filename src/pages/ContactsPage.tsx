@@ -6,6 +6,7 @@ import { Plus, Upload, Settings2, AlertTriangle, Users, Pencil, Trash2 } from 'l
 import { useAuth } from '@/contexts/AuthContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
@@ -189,6 +190,12 @@ export function ContactsPage() {
   }, [])
   const { vocab } = useTenantVocab()
   const { toasts, toast, dismiss } = useToast()
+  // Cache compartilhado (SCRUM-293) — mantido em sincronia aqui só nas
+  // mutações reais de pipeline (criar/editar/excluir), não no refresh de
+  // badge por `deal:changed` abaixo (senão reintroduziria o GET redundante
+  // que esse cache existe pra eliminar em ConversationDealIndicator/
+  // ContactPanelDeals/DealsTab).
+  const { refetchPipelines } = useCRMConfig()
 
   const fetchPipelines = useCallback((selectId?: string) => {
     return pipelinesApi
@@ -318,6 +325,7 @@ export function ContactsPage() {
       throw new Error(getApiErrorMessage(e, 'Erro ao criar pipeline.'))
     }
     await fetchPipelines(created.id)
+    refetchPipelines()
     toast('Funil criado — configure os estágios abaixo.', 'success')
     setCrmConfigInitialTab('pipelineStages')
     setCrmConfigInitialPipelineId(created.id)
@@ -332,6 +340,7 @@ export function ContactsPage() {
       throw new Error(getApiErrorMessage(e, 'Erro ao editar pipeline.'))
     }
     await fetchPipelines(selectedPipelineId)
+    refetchPipelines()
     toast('Funil atualizado.', 'success')
   }
 
@@ -344,6 +353,7 @@ export function ContactsPage() {
       setDeletePipelineConfirmOpen(false)
       setSelectedPipelineId(null)
       await fetchPipelines()
+      refetchPipelines()
     } catch (e: unknown) {
       toast(getApiErrorMessage(e, 'Erro ao excluir pipeline.'), 'error')
     } finally {
