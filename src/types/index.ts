@@ -357,6 +357,11 @@ export interface ContactFilters {
   leadScoreBand?: 'high' | 'medium' | 'low'
   /** Recência do último contato (interpretada no backend a partir de lastContactedAt). */
   lastContact?: '24h' | '7d' | '30d' | 'none'
+  /** Faceta "Situação comercial" (SCRUM-293 — movida do client pro backend).
+   *  Omitido = sem filtro ("Todos"). Nunca fica guardado no estado `filters`
+   *  do useContacts (ContactsFiltersBar substitui esse objeto por inteiro a
+   *  cada mudança) — só existe no payload da requisição em si. */
+  commercial?: 'no_deal' | 'open_deal' | 'customer'
 }
 
 export interface Contact {
