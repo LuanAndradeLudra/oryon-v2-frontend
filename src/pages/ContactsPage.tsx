@@ -26,6 +26,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useContacts } from '@/hooks/useContacts'
 import { useKanbanDeals } from '@/hooks/useKanbanDeals'
+import { connectSocket } from '@/services/socket'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -202,6 +203,21 @@ export function ContactsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Badge de contagem do segmentado ("Vendas 3", "Suporte 1") só vinha do
+  // fetch inicial — mover/ganhar/perder um negócio deixava o número
+  // desatualizado até um F5. `deal:changed` já é emitido pelo backend pra
+  // qualquer mudança de negócio (inclusive as duas rooms quando o negócio
+  // troca de funil); reage aqui também, não só dentro do board de UM
+  // pipeline (useKanbanDeals), pra manter os badges de TODOS os funis
+  // corretos em tempo real — inclusive mudanças feitas por outra aba/pessoa.
+  useEffect(() => {
+    const socket = connectSocket()
+    const onDealChanged = () => { void fetchPipelines() }
+    socket.on('deal:changed', onDealChanged)
+    return () => { socket.off('deal:changed', onDealChanged) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const selectedPipeline = useMemo(
     () => pipelines.find((p) => p.id === selectedPipelineId) ?? null,
     [pipelines, selectedPipelineId],
@@ -259,7 +275,13 @@ export function ContactsPage() {
 
   const handleMovePipelineDeal = (deal: Deal, toPipelineId: string) => {
     moveDealPipeline(deal, toPipelineId)
-      .then(() => toast('Negócio movido de funil.', 'success'))
+      .then(() => {
+        toast('Negócio movido de funil.', 'success')
+        // Feedback imediato do badge de contagem — não espera o round-trip
+        // do socket `deal:changed` (que também dispara isso, redundante mas
+        // inofensivo: cobre outras abas/pessoas vendo a mesma mudança).
+        void fetchPipelines()
+      })
       .catch((e: unknown) => toast(getApiErrorMessage(e, 'Não foi possível mover o negócio para o funil.'), 'error'))
   }
 
