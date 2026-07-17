@@ -35,7 +35,7 @@ import { Fab } from '@/components/common/Fab'
 import { tagsApi, pipelinesApi, pipelineRoutingApi, whatsappNumbersApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { formatBRL } from '@/utils/money'
-import { cn, getApiErrorMessage, getActivePipelines } from '@/lib/utils'
+import { cn, getApiErrorMessage, getActivePipelines, getDefaultPipeline } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag, Pipeline, Deal, PipelineChannelRouting, WhatsAppNumber } from '@/types'
 
 /**
@@ -91,15 +91,6 @@ export function ContactsPage() {
     }
   }, [searchParams, setSearchParams])
 
-  // Auto-seleciona um pipeline vindo por URL (ex: /contacts?pipeline=p1) —
-  // usado pelos links "Ver no board" da ficha do contato / painel da conversa.
-  useEffect(() => {
-    const pipelineParam = searchParams.get('pipeline')
-    if (pipelineParam) {
-      setSelectedPipelineId(pipelineParam)
-      setSearchParams({}, { replace: true })
-    }
-  }, [searchParams, setSearchParams])
   const [showNewContact, setShowNewContact] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showCRMConfig, setShowCRMConfig] = useState(false)
@@ -118,7 +109,13 @@ export function ContactsPage() {
   // pipeline, mantendo os botões da página (Configurar, Importar, Novo
   // contato) funcionando normalmente — são destinos peer, não filtros.
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
-  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
+  // Estado inicial lê `?pipeline=` uma vez (link "Ver no board" da ficha do
+  // contato / painel da conversa, ou refresh/link copiado) — sem apagar o
+  // param, ao contrário do que a página fazia antes. Validado contra a lista
+  // real assim que ela chega (efeito abaixo), já que o fetch é assíncrono.
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(
+    () => searchParams.get('pipeline'),
+  )
   const [createPipelineModalOpen, setCreatePipelineModalOpen] = useState(false)
   const [editPipelineModalOpen, setEditPipelineModalOpen] = useState(false)
   const [deletePipelineConfirmOpen, setDeletePipelineConfirmOpen] = useState(false)
@@ -134,6 +131,30 @@ export function ContactsPage() {
   useEffect(() => {
     if (selectedPipelineId && commercial === 'no_deal') setCommercial('all')
   }, [selectedPipelineId, commercial])
+
+  // Sincroniza `?pipeline=` com o funil selecionado nos dois sentidos — sem
+  // isto, refresh/voltar/copiar link perdia o funil aberto (o estado inicial
+  // acima só lê a URL uma vez, no mount). `replace` evita empilhar histórico
+  // a cada clique no segmentado; só mexe na chave `pipeline`, preservando
+  // outros params (ex. `contact`, tratado em efeito à parte).
+  useEffect(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (selectedPipelineId) next.set('pipeline', selectedPipelineId)
+      else next.delete('pipeline')
+      return next
+    }, { replace: true })
+  }, [selectedPipelineId, setSearchParams])
+
+  // Se o id (vindo da URL ou de um link antigo) não existir mais ou tiver
+  // sido arquivado nesse meio tempo, cai pro pipeline padrão do tenant — o
+  // board nunca fica preso num funil inválido/escondido do segmentado.
+  useEffect(() => {
+    if (pipelines.length === 0 || selectedPipelineId === null) return
+    const match = pipelines.find((p) => p.id === selectedPipelineId)
+    if (match && !match.isArchived) return
+    setSelectedPipelineId(getDefaultPipeline(pipelines)?.id ?? null)
+  }, [pipelines, selectedPipelineId])
 
   const { user } = useAuth()
   const currentUser = user
@@ -360,9 +381,9 @@ export function ContactsPage() {
 
       <button
         onClick={() => {
-          // Acesso manual — sempre abre no default ("Estágios"), nunca com
-          // um funil forçado do último "criar funil" (esse reset só vale
-          // pra próxima criação).
+          // Acesso manual — sempre abre no default ("Estágios do contato"),
+          // nunca com um funil forçado do último "criar funil" (esse reset
+          // só vale pra próxima criação).
           setCrmConfigInitialTab('stages')
           setCrmConfigInitialPipelineId(null)
           setShowCRMConfig(true)
@@ -653,6 +674,7 @@ export function ContactsPage() {
               contacts={contacts}
               loading={loading}
               onOpenPanel={handleOpenPanel}
+              onOpenDeals={handleOpenDealContact ? (c) => handleOpenDealContact(c.id) : undefined}
               hasMore={hasMore}
               loadingMore={loadingMore}
               onLoadMore={loadMore}

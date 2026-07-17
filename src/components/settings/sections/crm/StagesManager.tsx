@@ -79,9 +79,9 @@ export function StagesManager() {
     <>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-surface-100">Estágios do pipeline</h3>
+          <h3 className="text-sm font-semibold text-surface-100">Estágios do contato</h3>
           <p className="text-xs text-surface-500 mt-0.5">
-            Defina as etapas do seu funil de vendas. Arraste para reordenar.
+            Defina as etapas do ciclo de vida do contato (eixo distinto dos estágios de funil/negócio). Arraste para reordenar.
           </p>
         </div>
         {canManageStages && (
