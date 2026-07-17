@@ -1229,7 +1229,7 @@ export const pipelinesApi = {
   create(dto: { name: string; description?: string; color?: string }) {
     return api.post<Pipeline>('/settings/pipelines', dto)
   },
-  update(id: string, dto: { name?: string; description?: string; color?: string }) {
+  update(id: string, dto: { name?: string; description?: string; color?: string; isArchived?: boolean }) {
     return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
   },
   remove(id: string) {

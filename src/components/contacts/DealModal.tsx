@@ -8,7 +8,7 @@ import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { dealsApi } from '@/services/api'
-import { getDefaultPipeline, getPipelineStages, getApiErrorMessage } from '@/lib/utils'
+import { getDefaultPipeline, getPipelineStages, getApiErrorMessage, getActivePipelines } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
 import type { Deal, DealStatus, Pipeline } from '@/types'
 
@@ -248,7 +248,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           <FormField
             label="Mover para funil"
             error={moveError}
-            hint={pipelines.length <= 1 ? 'Nenhum outro funil disponível pra mover.' : undefined}
+            hint={getActivePipelines(pipelines).length <= 1 ? 'Nenhum outro funil disponível pra mover.' : undefined}
           >
             <div className="flex gap-2">
               <div className="flex-1">
@@ -258,7 +258,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                   disabled={moving}
                 >
                   <option value="">— selecionar funil de destino —</option>
-                  {pipelines.filter((p) => p.id !== editDeal.pipelineId).map((p) => (
+                  {getActivePipelines(pipelines).filter((p) => p.id !== editDeal.pipelineId).map((p) => (
                     <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                   ))}
                 </Select>
@@ -290,8 +290,8 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             <>
               <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
                 <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
-                  {pipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
-                  {pipelines.map((p) => (
+                  {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
+                  {getActivePipelines(pipelines).map((p) => (
                     <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                   ))}
                 </Select>

@@ -7,6 +7,7 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { pipelineRoutingApi, pipelinesApi, whatsappNumbersApi, usersApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
+import { getActivePipelines } from '@/lib/utils'
 import type { Pipeline, PipelineChannelRouting, WhatsAppNumber, User, OwnerRule } from '@/types'
 
 /** Estado de edição de uma linha — sempre alinhado com a rota salva (ou os defaults, se não houver). */
@@ -150,6 +151,12 @@ export function PipelineRoutingSettings() {
             const hasRouting = routings.some((r) => r.whatsappNumberId === n.id)
             const selectedPipeline = pipelines.find((p) => p.id === draft.pipelineId)
             const stages = selectedPipeline?.stages ?? []
+            // Seletor só oferece funis ativos — mas se a rota já salva aponta pra
+            // um funil que foi arquivado depois, mantém ele visível (marcado) pra
+            // não quebrar a linha silenciosamente; só some quando o usuário troca.
+            const pipelineOptions = selectedPipeline?.isArchived
+              ? [...getActivePipelines(pipelines), selectedPipeline]
+              : getActivePipelines(pipelines)
 
             return (
               <div
@@ -175,9 +182,9 @@ export function PipelineRoutingSettings() {
                       disabled={!canManage}
                       onChange={(e) => updateDraft(n.id, { pipelineId: e.target.value, defaultStageId: '' })}
                     >
-                      {pipelines.length === 0 && <option value="">Nenhum pipeline</option>}
-                      {pipelines.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (default)' : ''}</option>
+                      {pipelineOptions.length === 0 && <option value="">Nenhum pipeline</option>}
+                      {pipelineOptions.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (default)' : ''}{p.isArchived ? ' (arquivado)' : ''}</option>
                       ))}
                     </Select>
                   </div>
