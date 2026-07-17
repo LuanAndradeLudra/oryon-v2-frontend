@@ -97,5 +97,20 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
     }
   }, [])
 
-  return { dealsByStage, loading, error, moveStage, refetch: load }
+  /** Move um deal ABERTO pra OUTRO pipeline (SCRUM-293) — diferente de
+   *  moveStage, não há "coluna de destino" local pra onde mover
+   *  otimisticamente: o card só sai deste board depois que o servidor
+   *  confirma (o board de destino é outro componente/room, atualizado via o
+   *  próprio socket `deal:changed` que o backend agora emite pros dois
+   *  pipelines). Erros propagam pro chamador tostar. */
+  const movePipeline = useCallback(async (deal: Deal, toPipelineId: string) => {
+    await dealsApi.movePipeline(deal.id, toPipelineId)
+    setDealsByStage((prev) => {
+      const next = { ...prev }
+      next[deal.stageId] = (next[deal.stageId] ?? []).filter((d) => d.id !== deal.id)
+      return next
+    })
+  }, [])
+
+  return { dealsByStage, loading, error, moveStage, movePipeline, refetch: load }
 }

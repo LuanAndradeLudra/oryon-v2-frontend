@@ -1280,6 +1280,11 @@ export const dealsApi = {
   moveStage(id: string, stageId: string) {
     return api.patch<Deal>(`/deals/${id}/stage`, { stageId })
   },
+  /** Move o negócio ABERTO pra outro funil — nasce lá no 1º estágio não-terminal.
+   *  409 se o contato já tem um negócio aberto no funil de destino. */
+  movePipeline(id: string, pipelineId: string) {
+    return api.patch<Deal>(`/deals/${id}/pipeline`, { pipelineId })
+  },
   get(id: string) {
     return api.get<Deal>(`/deals/${id}`)
   },
