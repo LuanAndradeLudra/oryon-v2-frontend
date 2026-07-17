@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2, GripVertical, Trophy, X, Archive, ArchiveRestore, Star } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { PipelineStageModal } from '@/components/settings/modals/PipelineStageModal'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -62,6 +63,12 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
   const selectedPipeline = pipelines.find((p) => p.id === pipelineId) ?? null
   const serverStages = (selectedPipeline?.stages ?? []).slice().sort((a, b) => a.order - b.order)
   const stages = optimisticStages ?? serverStages
+  // DealsService.resolveStageForStatus cai num fallback não-terminal quando
+  // não sobra NENHUM estágio isWon/isLost — um deal "ganho" viraria "open"
+  // em silêncio (ver assertNotLastTerminalStage no backend). Usado pra
+  // desabilitar excluir o último de cada um, com tooltip explicando por quê.
+  const wonCount = stages.filter((s) => s.isWon).length
+  const lostCount = stages.filter((s) => s.isLost).length
 
   // Assim que dados frescos do pai chegarem (nova identidade do array de
   // estágios do pipeline selecionado) ou o funil trocar, descarta a
@@ -229,7 +236,16 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
           <p className="text-sm text-surface-500 text-center py-10">Nenhum estágio configurado neste funil.</p>
         ) : (
           <ul className="divide-y divide-surface-800">
-            {stages.map((stage, idx) => (
+            {stages.map((stage, idx) => {
+              const isLastWon = stage.isWon && wonCount <= 1
+              const isLastLost = stage.isLost && lostCount <= 1
+              const deleteBlockedReason = isLastWon
+                ? 'O funil precisa de pelo menos um estágio de Ganho.'
+                : isLastLost
+                  ? 'O funil precisa de pelo menos um estágio de Perdido.'
+                  : null
+
+              return (
               <li
                 key={stage.id}
                 draggable={canManage}
@@ -281,16 +297,28 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => setDeleteStage(stage)}
-                      className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {deleteBlockedReason ? (
+                      <Tooltip content={deleteBlockedReason} side="top">
+                        <button
+                          disabled
+                          className="p-1.5 rounded-lg text-surface-600 opacity-40 cursor-not-allowed transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </Tooltip>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteStage(stage)}
+                        className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 )}
               </li>
-            ))}
+              )
+            })}
           </ul>
         )}
       </div>
