@@ -220,7 +220,7 @@ export function ContactsPage() {
     }),
     [filters.search, filters.intent, filters.sentiment, filters.source, filters.tagId, filters.optIn],
   )
-  const { dealsByStage, loading: dealsLoading, moveStage: moveDealStage } = useKanbanDeals(selectedPipelineId, boardFilters)
+  const { dealsByStage, loading: dealsLoading, moveStage: moveDealStage, movePipeline: moveDealPipeline } = useKanbanDeals(selectedPipelineId, boardFilters)
   const sortedPipelineStages = useMemo(
     () => (selectedPipeline?.stages ?? []).slice().sort((a, b) => a.order - b.order),
     [selectedPipeline],
@@ -255,6 +255,12 @@ export function ContactsPage() {
 
   const handleMoveDeal = (deal: Deal, toStageId: string) => {
     moveDealStage(deal, toStageId).catch(() => toast('Não foi possível mover o negócio.', 'error'))
+  }
+
+  const handleMovePipelineDeal = (deal: Deal, toPipelineId: string) => {
+    moveDealPipeline(deal, toPipelineId)
+      .then(() => toast('Negócio movido de funil.', 'success'))
+      .catch((e: unknown) => toast(getApiErrorMessage(e, 'Não foi possível mover o negócio para o funil.'), 'error'))
   }
 
   const handleOpenDealContact = (contactId: string) => {
@@ -613,6 +619,8 @@ export function ContactsPage() {
               onMoveStage={handleMoveDeal}
               onOpenContact={handleOpenDealContact}
               loading={dealsLoading}
+              pipelines={pipelines}
+              onMovePipeline={handleMovePipelineDeal}
             />
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">

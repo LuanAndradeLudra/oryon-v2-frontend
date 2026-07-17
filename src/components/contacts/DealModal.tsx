@@ -59,6 +59,12 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   const [pipelineStageId, setPipelineStageId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // "Mover para funil" (SCRUM-293) — ação independente do Salvar: troca o
+  // pipeline de um deal ABERTO já existente, algo que o create/edit normal
+  // nunca permitiu (funil era imutável fora da criação).
+  const [movePipelineId, setMovePipelineId] = useState('')
+  const [moving, setMoving] = useState(false)
+  const [moveError, setMoveError] = useState('')
 
   useEffect(() => {
     if (open) {
@@ -78,6 +84,8 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       )
       setMoveStageKey('')
       setError('')
+      setMovePipelineId('')
+      setMoveError('')
       // Sempre reseta pipelineId aqui — o modal nunca desmonta entre
       // aberturas (renderizado incondicionalmente pelo pai), então sem este
       // reset explícito o funil de um `editDeal` anterior vazava para a
@@ -198,6 +206,22 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     }
   }
 
+  const handleMovePipeline = async () => {
+    if (!editDeal || !movePipelineId) return
+    setMoving(true)
+    setMoveError('')
+    try {
+      await dealsApi.movePipeline(editDeal.id, movePipelineId)
+      onSaved()
+    } catch (e: unknown) {
+      // 409 do backend já vem com mensagem clara ("Este contato já tem um
+      // negócio aberto no funil de destino.") — só repassa.
+      setMoveError(getApiErrorMessage(e, 'Erro ao mover para o funil.'))
+    } finally {
+      setMoving(false)
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -217,6 +241,39 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             autoFocus
           />
         </FormField>
+
+        {/* Mover para funil (SCRUM-293) — só p/ deal ABERTO já existente; ação
+            própria, imediata, independente do "Salvar" abaixo. */}
+        {editDeal && editDeal.status === 'open' && (
+          <FormField
+            label="Mover para funil"
+            error={moveError}
+            hint={pipelines.length <= 1 ? 'Nenhum outro funil disponível pra mover.' : undefined}
+          >
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Select
+                  value={movePipelineId}
+                  onChange={(e) => { setMovePipelineId(e.target.value); setMoveError('') }}
+                  disabled={moving}
+                >
+                  <option value="">— selecionar funil de destino —</option>
+                  {pipelines.filter((p) => p.id !== editDeal.pipelineId).map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
+                  ))}
+                </Select>
+              </div>
+              <button
+                type="button"
+                onClick={handleMovePipeline}
+                disabled={!movePipelineId || moving}
+                className="px-3 py-2 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 disabled:opacity-50 transition-all whitespace-nowrap"
+              >
+                {moving ? 'Movendo...' : 'Mover'}
+              </button>
+            </div>
+          </FormField>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           {editDeal ? (
