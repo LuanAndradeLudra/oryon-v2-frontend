@@ -1235,6 +1235,9 @@ export const pipelinesApi = {
   remove(id: string) {
     return api.delete(`/settings/pipelines/${id}`)
   },
+  setDefault(id: string) {
+    return api.patch<Pipeline>(`/settings/pipelines/${id}/default`)
+  },
   createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
     return api.post<PipelineStage>(`/settings/pipelines/${pipelineId}/stages`, dto)
   },

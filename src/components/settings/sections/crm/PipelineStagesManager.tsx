@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, GripVertical, Trophy, X, Archive, ArchiveRestore } from 'lucide-react'
+import { Plus, Pencil, Trash2, GripVertical, Trophy, X, Archive, ArchiveRestore, Star } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { PipelineStageModal } from '@/components/settings/modals/PipelineStageModal'
 import { useToast } from '@/hooks/useToast'
@@ -44,6 +44,7 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
   // compartilhado (os pipelines vêm via prop), então a sobreposição é local.
   const [optimisticStages, setOptimisticStages] = useState<PipelineStage[] | null>(null)
   const [archiving, setArchiving] = useState(false)
+  const [settingDefault, setSettingDefault] = useState(false)
 
   // Default: `initialPipelineId` (funil recém-criado, se veio um) quando
   // existir na lista, senão o pipeline padrão do tenant — assim que a lista
@@ -126,6 +127,24 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
     }
   }
 
+  // Tornar padrão (SCRUM-293) — o backend garante exatamente 1 default por
+  // tenant numa transação (desmarca o atual, marca o novo). Rejeita funil
+  // arquivado (409) — deixa o backend ser dono do invariante, mesmo padrão
+  // já usado em handleToggleArchive acima.
+  const handleSetDefault = async () => {
+    if (!selectedPipeline) return
+    setSettingDefault(true)
+    try {
+      await pipelinesApi.setDefault(selectedPipeline.id)
+      toast('Funil definido como padrão.', 'success')
+      onChanged()
+    } catch (err: unknown) {
+      toast(getApiErrorMessage(err, 'Erro ao definir funil padrão.'), 'error')
+    } finally {
+      setSettingDefault(false)
+    }
+  }
+
   // ── Drag & Drop (mecânica compartilhada — ver useDragReorder) ──────────────
   const { overIdx, handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useDragReorder(
     stages,
@@ -165,6 +184,16 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
           <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-1 rounded-full mb-0.5">
             Arquivado
           </span>
+        )}
+        {canManage && selectedPipeline && !selectedPipeline.isDefault && (
+          <button
+            onClick={handleSetDefault}
+            disabled={settingDefault}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 disabled:opacity-50 transition-all"
+          >
+            <Star className="w-3.5 h-3.5" />
+            {settingDefault ? 'Salvando...' : 'Tornar padrão'}
+          </button>
         )}
         {canManage && selectedPipeline && (
           <button
