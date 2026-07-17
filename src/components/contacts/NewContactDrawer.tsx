@@ -5,7 +5,7 @@ import {
   Tag as TagIcon, ToggleLeft, ToggleRight, ChevronDown,
   Loader2, Check,
 } from 'lucide-react'
-import { cn, getDefaultPipeline, getPipelineStages } from '@/lib/utils'
+import { cn, getDefaultPipeline, getPipelineStages, getActivePipelines } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { tagsApi, dealsApi } from '@/services/api'
@@ -410,8 +410,8 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                         onChange={(e) => { setPipelineId(e.target.value); setErrors((v) => ({ ...v, pipelineId: undefined })) }}
                         className={cn(inputCls(!!errors.pipelineId), 'appearance-none pr-8')}
                       >
-                        {pipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
-                        {pipelines.map((p) => (
+                        {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
+                        {getActivePipelines(pipelines).map((p) => (
                           <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                         ))}
                       </select>

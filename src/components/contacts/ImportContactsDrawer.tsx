@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { appLogger } from '@/services/appLogger'
 import { dealsApi } from '@/services/api'
-import { cn, getDefaultPipeline, getPipelineStages } from '@/lib/utils'
+import { cn, getDefaultPipeline, getPipelineStages, getActivePipelines } from '@/lib/utils'
 import type { Contact, ContactSource, Pipeline } from '@/types'
 
 // Anthropic SDK removed — AI-powered import mapping will use Agent Server in the future
@@ -892,8 +892,8 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           onChange={(e) => setPipelineId(e.target.value)}
                           className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
                         >
-                          {pipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
-                          {pipelines.map((p) => (
+                          {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
+                          {getActivePipelines(pipelines).map((p) => (
                             <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                           ))}
                         </select>

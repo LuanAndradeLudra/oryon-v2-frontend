@@ -47,12 +47,22 @@ export function getApiErrorMessage(e: unknown, fallback: string): string {
   return fallback
 }
 
-/** Funil "default" de um tenant — o marcado `isDefault`, senão o primeiro da
- *  lista (ordem já vem por `order` do backend). Centraliza a regra de
- *  fallback repetida em NewContactDrawer/ImportContactsDrawer/DealModal/
- *  PipelineStagesManager para não divergir entre elas. */
+/** Funil "default" de um tenant — o marcado `isDefault`, senão o primeiro
+ *  ATIVO da lista (ordem já vem por `order` do backend). Centraliza a regra
+ *  de fallback repetida em NewContactDrawer/ImportContactsDrawer/DealModal/
+ *  PipelineStagesManager para não divergir entre elas. O default nunca pode
+ *  estar arquivado (backend bloqueia), mas o fallback também ignora
+ *  arquivados por segurança. */
 export function getDefaultPipeline(pipelines: Pipeline[]): Pipeline | undefined {
-  return pipelines.find((p) => p.isDefault) ?? pipelines[0]
+  return pipelines.find((p) => p.isDefault) ?? pipelines.find((p) => !p.isArchived)
+}
+
+/** Funis não-arquivados — para os seletores de USO (segmentado do board,
+ *  DealModal, NewContactDrawer, ImportContactsDrawer, PipelineRoutingSettings,
+ *  menu "mover para funil"). Funis arquivados continuam existindo e visíveis
+ *  na gestão (PipelineStagesManager), só somem daqui. */
+export function getActivePipelines(pipelines: Pipeline[]): Pipeline[] {
+  return pipelines.filter((p) => !p.isArchived)
 }
 
 /** Estágios NÃO-terminais (ganho/perdido de fora) de um funil, em ordem — para

@@ -35,7 +35,7 @@ import { Fab } from '@/components/common/Fab'
 import { tagsApi, pipelinesApi, pipelineRoutingApi, whatsappNumbersApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { formatBRL } from '@/utils/money'
-import { cn, getApiErrorMessage } from '@/lib/utils'
+import { cn, getApiErrorMessage, getActivePipelines } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag, Pipeline, Deal, PipelineChannelRouting, WhatsAppNumber } from '@/types'
 
 /**
@@ -539,7 +539,7 @@ export function ContactsPage() {
                 {vocab.contacts}
                 <span className="text-[9px] font-bold text-surface-500 bg-surface-950 px-1 py-0.5 rounded">BASE</span>
               </button>
-              {pipelines.map((p) => (
+              {getActivePipelines(pipelines).map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setSelectedPipelineId(p.id)}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Loader2, ArrowRight, MoreVertical, ArrowRightLeft } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
-import { cn, hexToRgba } from '@/lib/utils'
+import { cn, hexToRgba, getActivePipelines } from '@/lib/utils'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 interface DealsBoardProps {
@@ -35,7 +35,7 @@ export function DealsBoard({
   // Todos os `stages` recebidos são do MESMO pipeline (board de um funil só) —
   // basta ler de qualquer um pra saber qual funil excluir das opções do menu.
   const currentPipelineId = stages[0]?.pipelineId
-  const otherPipelines = pipelines.filter((p) => p.id !== currentPipelineId)
+  const otherPipelines = getActivePipelines(pipelines).filter((p) => p.id !== currentPipelineId)
 
   // Fecha o menu "Mover para funil" ao clicar fora dele.
   useEffect(() => {
