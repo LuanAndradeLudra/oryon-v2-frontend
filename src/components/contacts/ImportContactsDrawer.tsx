@@ -948,7 +948,13 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                             const { valid, issues } = validateRow(row, colMap)
                             return (
                               <tr key={i} className={cn('border-b border-surface-800/60 last:border-0', !valid && 'bg-red-500/5')}>
-                                <td className="px-3 py-2 text-surface-600">{i + 1}</td>
+                                {/* Número da linha no ARQUIVO, não a posição na prévia — rows já
+                                    exclui o cabeçalho (parseCSV faz lines.slice(1)), então a linha
+                                    1 do arquivo é o header e rows[0] é a linha 2. Mesma fórmula (+2)
+                                    usada nas mensagens de erro do import (`Linha ${idx+2}: ...`) —
+                                    antes mostrava i+1, divergindo do que o erro reportaria pra essa
+                                    mesma linha. */}
+                                <td className="px-3 py-2 text-surface-600">{i + 2}</td>
                                 {Object.entries(colMap)
                                   .filter(([, f]) => f !== '__skip__')
                                   .map(([col]) => (
