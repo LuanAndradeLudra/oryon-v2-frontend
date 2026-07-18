@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Loader2, ArrowRight, MoreVertical, ArrowRightLeft } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { cn, hexToRgba, getActivePipelines } from '@/lib/utils'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
@@ -29,6 +30,11 @@ function brl(cents: number): string {
 export function DealsBoard({
   stages, dealsByStage, onMoveStage, loading, onOpenContact, pipelines = [], onMovePipeline,
 }: DealsBoardProps) {
+  // `useIsMobile` (matchMedia + resize listener) em vez de `window.innerWidth`
+  // lido direto no render — o valor cru só era recalculado quando ALGUM
+  // OUTRO estado mudasse a re-renderizar o componente; redimensionar a janela
+  // sozinho não atualizava o layout (min-width da coluna) até isso acontecer.
+  const isDesktop = !useIsMobile()
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [overStageId, setOverStageId] = useState<string | null>(null)
   const [pipelineMenuDealId, setPipelineMenuDealId] = useState<string | null>(null)
@@ -74,7 +80,7 @@ export function DealsBoard({
     <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none">
       <div
         className="flex gap-3 p-4 h-full min-h-0"
-        style={{ minWidth: typeof window !== 'undefined' && window.innerWidth >= 768 ? stages.length * 280 : undefined }}
+        style={{ minWidth: isDesktop ? stages.length * 280 : undefined }}
       >
         {stages.map((stage) => {
           const cards = dealsByStage[stage.id] ?? []

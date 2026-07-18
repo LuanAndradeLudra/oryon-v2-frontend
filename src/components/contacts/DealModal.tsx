@@ -230,7 +230,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       className="max-w-2xl"
     >
       <div className="flex flex-col gap-4">
-        <FormField label="Título" required error={error}>
+        <FormField label="Título" required error={error === 'O título é obrigatório.' ? error : undefined}>
           <Input
             value={title}
             onChange={(e) => {
@@ -333,7 +333,10 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           )}
         </div>
 
-        <FormField label="Itens">
+        <FormField
+          label="Itens"
+          error={error === 'Selecione um produto em cada item (ou remova a linha).' ? error : undefined}
+        >
           <div className="flex flex-col gap-2">
             {items.map((it, i) => {
               const product = products.find((p) => p.id === it.productId)
