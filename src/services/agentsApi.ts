@@ -76,6 +76,7 @@ export type CrmCapabilityId =
   | 'manage_conversation_tags'
   | 'tag_contact'
   | 'manage_contact_pipeline'
+  | 'manage_deal_pipeline'
 
 export type CrmCapabilityCategory = 'conversation' | 'contact' | 'tags' | 'pipeline'
 export type ConversationStatus = 'open' | 'pending' | 'resolved' | 'abandoned'

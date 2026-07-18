@@ -1229,11 +1229,14 @@ export const pipelinesApi = {
   create(dto: { name: string; description?: string; color?: string }) {
     return api.post<Pipeline>('/settings/pipelines', dto)
   },
-  update(id: string, dto: { name?: string; description?: string; color?: string }) {
+  update(id: string, dto: { name?: string; description?: string; color?: string; isArchived?: boolean }) {
     return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
   },
   remove(id: string) {
     return api.delete(`/settings/pipelines/${id}`)
+  },
+  setDefault(id: string) {
+    return api.patch<Pipeline>(`/settings/pipelines/${id}/default`)
   },
   createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
     return api.post<PipelineStage>(`/settings/pipelines/${pipelineId}/stages`, dto)
@@ -1279,6 +1282,11 @@ export const dealsApi = {
   /** Move o negócio para um estágio do seu pipeline (deriva status no backend). */
   moveStage(id: string, stageId: string) {
     return api.patch<Deal>(`/deals/${id}/stage`, { stageId })
+  },
+  /** Move o negócio ABERTO pra outro funil — nasce lá no 1º estágio não-terminal.
+   *  409 se o contato já tem um negócio aberto no funil de destino. */
+  movePipeline(id: string, pipelineId: string) {
+    return api.patch<Deal>(`/deals/${id}/pipeline`, { pipelineId })
   },
   get(id: string) {
     return api.get<Deal>(`/deals/${id}`)

@@ -8,7 +8,7 @@ import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { dealsApi } from '@/services/api'
-import { getDefaultPipeline, getApiErrorMessage } from '@/lib/utils'
+import { getDefaultPipeline, getPipelineStages, getApiErrorMessage, getActivePipelines } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
 import type { Deal, DealStatus, Pipeline } from '@/types'
 
@@ -56,8 +56,15 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   const [items, setItems] = useState<ItemRow[]>([])
   const [moveStageKey, setMoveStageKey] = useState('')
   const [pipelineId, setPipelineId] = useState('')
+  const [pipelineStageId, setPipelineStageId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // "Mover para funil" (SCRUM-293) — ação independente do Salvar: troca o
+  // pipeline de um deal ABERTO já existente, algo que o create/edit normal
+  // nunca permitiu (funil era imutável fora da criação).
+  const [movePipelineId, setMovePipelineId] = useState('')
+  const [moving, setMoving] = useState(false)
+  const [moveError, setMoveError] = useState('')
 
   useEffect(() => {
     if (open) {
@@ -77,6 +84,8 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       )
       setMoveStageKey('')
       setError('')
+      setMovePipelineId('')
+      setMoveError('')
       // Sempre reseta pipelineId aqui — o modal nunca desmonta entre
       // aberturas (renderizado incondicionalmente pelo pai), então sem este
       // reset explícito o funil de um `editDeal` anterior vazava para a
@@ -94,6 +103,20 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       setPipelineId(getDefaultPipeline(pipelines)?.id ?? '')
     }
   }, [open, editDeal, pipelines, pipelineId])
+
+  // "Estágio do funil" — eixo distinto do "Estágio do contato" (ciclo de
+  // vida, seletor "Mover contato para" abaixo). Reativo à troca de funil: se
+  // o estágio selecionado não existe mais no funil atual (trocou de funil,
+  // ou é a primeira carga), recai pro 1º estágio não-terminal dele. Só se
+  // aplica ao create — um deal existente não tem esse seletor.
+  useEffect(() => {
+    if (editDeal) return
+    const opts = getPipelineStages(pipelines, pipelineId)
+    if (!opts.some((s) => s.id === pipelineStageId)) {
+      setPipelineStageId(opts[0]?.id ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editDeal, pipelineId, pipelines])
 
   const addItem = () =>
     setItems([
@@ -168,6 +191,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           note: note.trim() || undefined,
           lineItems,
           pipelineId,
+          stageId: pipelineStageId || undefined,
         })
         // create não move o estágio do contato — se ganho com estágio, aplica via setStatus.
         if (stageKey) {
@@ -182,6 +206,22 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     }
   }
 
+  const handleMovePipeline = async () => {
+    if (!editDeal || !movePipelineId) return
+    setMoving(true)
+    setMoveError('')
+    try {
+      await dealsApi.movePipeline(editDeal.id, movePipelineId)
+      onSaved()
+    } catch (e: unknown) {
+      // 409 do backend já vem com mensagem clara ("Este contato já tem um
+      // negócio aberto no funil de destino.") — só repassa.
+      setMoveError(getApiErrorMessage(e, 'Erro ao mover para o funil.'))
+    } finally {
+      setMoving(false)
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -190,7 +230,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       className="max-w-2xl"
     >
       <div className="flex flex-col gap-4">
-        <FormField label="Título" required error={error}>
+        <FormField label="Título" required error={error === 'O título é obrigatório.' ? error : undefined}>
           <Input
             value={title}
             onChange={(e) => {
@@ -201,6 +241,39 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             autoFocus
           />
         </FormField>
+
+        {/* Mover para funil (SCRUM-293) — só p/ deal ABERTO já existente; ação
+            própria, imediata, independente do "Salvar" abaixo. */}
+        {editDeal && editDeal.status === 'open' && (
+          <FormField
+            label="Mover para funil"
+            error={moveError}
+            hint={getActivePipelines(pipelines).length <= 1 ? 'Nenhum outro funil disponível pra mover.' : undefined}
+          >
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Select
+                  value={movePipelineId}
+                  onChange={(e) => { setMovePipelineId(e.target.value); setMoveError('') }}
+                  disabled={moving}
+                >
+                  <option value="">— selecionar funil de destino —</option>
+                  {getActivePipelines(pipelines).filter((p) => p.id !== editDeal.pipelineId).map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
+                  ))}
+                </Select>
+              </div>
+              <button
+                type="button"
+                onClick={handleMovePipeline}
+                disabled={!movePipelineId || moving}
+                className="px-3 py-2 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 disabled:opacity-50 transition-all whitespace-nowrap"
+              >
+                {moving ? 'Movendo...' : 'Mover'}
+              </button>
+            </div>
+          </FormField>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           {editDeal ? (
@@ -217,8 +290,8 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             <>
               <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
                 <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
-                  {pipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
-                  {pipelines.map((p) => (
+                  {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
+                  {getActivePipelines(pipelines).map((p) => (
                     <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                   ))}
                 </Select>
@@ -232,10 +305,22 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                   ))}
                 </Select>
               </FormField>
+              {/* Estágio do FUNIL — eixo distinto do "Estágio do contato"
+                  abaixo (ciclo de vida). Reativo ao funil escolhido acima. */}
+              <FormField label="Estágio do funil" hint="Coluna do board em que o negócio nasce.">
+                <Select value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
+                  {getPipelineStages(pipelines, pipelineId).length === 0 && (
+                    <option value="">Nenhum estágio disponível</option>
+                  )}
+                  {getPipelineStages(pipelines, pipelineId).map((s) => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
+                </Select>
+              </FormField>
             </>
           )}
           {status === 'won' && (
-            <FormField label="Mover contato para (opcional)" hint="Ao ganhar, move o contato a este estágio.">
+            <FormField label="Estágio do contato (opcional)" hint="Ao ganhar, move o contato a este estágio de ciclo de vida.">
               <Select value={moveStageKey} onChange={(e) => setMoveStageKey(e.target.value)}>
                 <option value="">— não mover —</option>
                 {stages.map((s) => (
@@ -248,7 +333,10 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           )}
         </div>
 
-        <FormField label="Itens">
+        <FormField
+          label="Itens"
+          error={error === 'Selecione um produto em cada item (ou remova a linha).' ? error : undefined}
+        >
           <div className="flex flex-col gap-2">
             {items.map((it, i) => {
               const product = products.find((p) => p.id === it.productId)

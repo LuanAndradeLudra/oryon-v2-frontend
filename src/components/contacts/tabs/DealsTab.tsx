@@ -5,11 +5,12 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { DealModal } from '@/components/contacts/DealModal'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/ui/Toast'
-import { dealsApi, pipelinesApi } from '@/services/api'
+import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { formatBRL } from '@/utils/money'
-import type { Deal, DealStatus, Pipeline } from '@/types'
+import type { Deal, DealStatus } from '@/types'
 
 /** Agrupa os negócios do contato por pipeline (contato pode ter deals em pipelines diferentes). */
 function groupByPipeline(deals: Deal[]): Array<[string, Deal[]]> {
@@ -33,8 +34,10 @@ export function DealsTab({ contactId }: { contactId: string }) {
   const { vocab } = useTenantVocab()
   const { toast, toasts, dismiss } = useToast()
   const navigate = useNavigate()
+  // Funis vêm do cache compartilhado (CRMConfigContext, SCRUM-293) — sem
+  // fetch próprio, só pro nome do cabeçalho de cada grupo.
+  const { pipelines } = useCRMConfig()
   const [deals, setDeals] = useState<Deal[]>([])
-  const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
@@ -53,11 +56,6 @@ export function DealsTab({ contactId }: { contactId: string }) {
   useEffect(() => {
     refetch()
   }, [refetch])
-
-  // Nome do pipeline p/ o cabeçalho de cada grupo. Carregado uma vez.
-  useEffect(() => {
-    pipelinesApi.list().then((r) => setPipelines(r.data ?? [])).catch(() => {})
-  }, [])
 
   // Realtime: recarrega quando um negócio deste contato muda em qualquer lugar (socket `deal:changed`)
   // — ex.: excluído/editado noutra aba ou por outro operador. Antes a lista ficava stale e abrir um

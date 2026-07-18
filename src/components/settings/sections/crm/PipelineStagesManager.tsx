@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, GripVertical, Trophy, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, GripVertical, Trophy, X, Archive, ArchiveRestore, Star } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { PipelineStageModal } from '@/components/settings/modals/PipelineStageModal'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -17,13 +18,18 @@ interface PipelineStagesManagerProps {
    *  lista de pipelines (ContactsPage) refaz o fetch, e o Kanban do funil
    *  selecionado reflete as mudanças imediatamente. */
   onChanged: () => void
+  /** Funil a pré-selecionar ao montar (SCRUM-293) — usado pelo redirect
+   *  "criar funil → configurar estágios" logo após a criação, pra abrir já
+   *  no funil recém-criado em vez de cair no default do tenant. Ignorado se
+   *  o id não existir em `pipelines` (mesmo fallback de sempre). */
+  initialPipelineId?: string | null
 }
 
 /** Gerencia os estágios (colunas do Kanban) de UM funil de negócio por vez,
  *  escolhido pelo select acima da lista. Espelha StagesManager (estágios do
  *  ciclo de vida do contato), mas aponta para os endpoints de pipeline e usa
  *  isWon/isLost em vez de isTerminal. */
-export function PipelineStagesManager({ pipelines, onChanged }: PipelineStagesManagerProps) {
+export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId }: PipelineStagesManagerProps) {
   const { toast, toasts, dismiss } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
@@ -38,18 +44,31 @@ export function PipelineStagesManager({ pipelines, onChanged }: PipelineStagesMa
   // via `setStagesOptimistic` do CRMConfigContext; aqui não há um contexto
   // compartilhado (os pipelines vêm via prop), então a sobreposição é local.
   const [optimisticStages, setOptimisticStages] = useState<PipelineStage[] | null>(null)
+  const [archiving, setArchiving] = useState(false)
+  const [settingDefault, setSettingDefault] = useState(false)
 
-  // Default para o pipeline padrão do tenant assim que a lista chegar (ou
-  // se o funil selecionado for excluído noutro lugar enquanto isto está aberto).
+  // Default: `initialPipelineId` (funil recém-criado, se veio um) quando
+  // existir na lista, senão o pipeline padrão do tenant — assim que a lista
+  // chegar (ou se o funil selecionado for excluído noutro lugar enquanto
+  // isto está aberto).
   useEffect(() => {
     if (pipelines.length === 0) { setPipelineId(''); return }
     if (pipelineId && pipelines.some((p) => p.id === pipelineId)) return
-    setPipelineId(getDefaultPipeline(pipelines)?.id ?? '')
-  }, [pipelines, pipelineId])
+    const preferred = initialPipelineId && pipelines.some((p) => p.id === initialPipelineId)
+      ? initialPipelineId
+      : getDefaultPipeline(pipelines)?.id ?? ''
+    setPipelineId(preferred)
+  }, [pipelines, pipelineId, initialPipelineId])
 
   const selectedPipeline = pipelines.find((p) => p.id === pipelineId) ?? null
   const serverStages = (selectedPipeline?.stages ?? []).slice().sort((a, b) => a.order - b.order)
   const stages = optimisticStages ?? serverStages
+  // DealsService.resolveStageForStatus cai num fallback não-terminal quando
+  // não sobra NENHUM estágio isWon/isLost — um deal "ganho" viraria "open"
+  // em silêncio (ver assertNotLastTerminalStage no backend). Usado pra
+  // desabilitar excluir o último de cada um, com tooltip explicando por quê.
+  const wonCount = stages.filter((s) => s.isWon).length
+  const lostCount = stages.filter((s) => s.isLost).length
 
   // Assim que dados frescos do pai chegarem (nova identidade do array de
   // estágios do pipeline selecionado) ou o funil trocar, descarta a
@@ -98,6 +117,41 @@ export function PipelineStagesManager({ pipelines, onChanged }: PipelineStagesMa
     }
   }
 
+  // Arquivar/Desarquivar (SCRUM-285) — some/volta dos seletores de uso, mas
+  // continua listado e gerenciável aqui. O backend rejeita arquivar o funil
+  // padrão do tenant (409) — o erro exato vem do getApiErrorMessage.
+  const handleToggleArchive = async () => {
+    if (!selectedPipeline) return
+    setArchiving(true)
+    try {
+      await pipelinesApi.update(selectedPipeline.id, { isArchived: !selectedPipeline.isArchived })
+      toast(selectedPipeline.isArchived ? 'Funil desarquivado.' : 'Funil arquivado.', 'success')
+      onChanged()
+    } catch (err: unknown) {
+      toast(getApiErrorMessage(err, 'Erro ao alterar arquivamento do funil.'), 'error')
+    } finally {
+      setArchiving(false)
+    }
+  }
+
+  // Tornar padrão (SCRUM-293) — o backend garante exatamente 1 default por
+  // tenant numa transação (desmarca o atual, marca o novo). Rejeita funil
+  // arquivado (409) — deixa o backend ser dono do invariante, mesmo padrão
+  // já usado em handleToggleArchive acima.
+  const handleSetDefault = async () => {
+    if (!selectedPipeline) return
+    setSettingDefault(true)
+    try {
+      await pipelinesApi.setDefault(selectedPipeline.id)
+      toast('Funil definido como padrão.', 'success')
+      onChanged()
+    } catch (err: unknown) {
+      toast(getApiErrorMessage(err, 'Erro ao definir funil padrão.'), 'error')
+    } finally {
+      setSettingDefault(false)
+    }
+  }
+
   // ── Drag & Drop (mecânica compartilhada — ver useDragReorder) ──────────────
   const { overIdx, handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useDragReorder(
     stages,
@@ -127,11 +181,40 @@ export function PipelineStagesManager({ pipelines, onChanged }: PipelineStagesMa
         </p>
       </div>
 
-      <FormFieldSelect
-        value={pipelineId}
-        onChange={setPipelineId}
-        pipelines={pipelines}
-      />
+      <div className="flex items-end gap-2 flex-wrap">
+        <FormFieldSelect
+          value={pipelineId}
+          onChange={setPipelineId}
+          pipelines={pipelines}
+        />
+        {selectedPipeline?.isArchived && (
+          <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-1 rounded-full mb-0.5">
+            Arquivado
+          </span>
+        )}
+        {canManage && selectedPipeline && !selectedPipeline.isDefault && (
+          <button
+            onClick={handleSetDefault}
+            disabled={settingDefault}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 disabled:opacity-50 transition-all"
+          >
+            <Star className="w-3.5 h-3.5" />
+            {settingDefault ? 'Salvando...' : 'Tornar padrão'}
+          </button>
+        )}
+        {canManage && selectedPipeline && (
+          <button
+            onClick={handleToggleArchive}
+            disabled={archiving}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 disabled:opacity-50 transition-all"
+          >
+            {selectedPipeline.isArchived
+              ? <ArchiveRestore className="w-3.5 h-3.5" />
+              : <Archive className="w-3.5 h-3.5" />}
+            {archiving ? 'Salvando...' : selectedPipeline.isArchived ? 'Desarquivar' : 'Arquivar'}
+          </button>
+        )}
+      </div>
 
       <div className="flex items-center justify-between mt-5 mb-3">
         <p className="text-xs text-surface-500">Arraste para reordenar.</p>
@@ -153,7 +236,16 @@ export function PipelineStagesManager({ pipelines, onChanged }: PipelineStagesMa
           <p className="text-sm text-surface-500 text-center py-10">Nenhum estágio configurado neste funil.</p>
         ) : (
           <ul className="divide-y divide-surface-800">
-            {stages.map((stage, idx) => (
+            {stages.map((stage, idx) => {
+              const isLastWon = stage.isWon && wonCount <= 1
+              const isLastLost = stage.isLost && lostCount <= 1
+              const deleteBlockedReason = isLastWon
+                ? 'O funil precisa de pelo menos um estágio de Ganho.'
+                : isLastLost
+                  ? 'O funil precisa de pelo menos um estágio de Perdido.'
+                  : null
+
+              return (
               <li
                 key={stage.id}
                 draggable={canManage}
@@ -205,16 +297,28 @@ export function PipelineStagesManager({ pipelines, onChanged }: PipelineStagesMa
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => setDeleteStage(stage)}
-                      className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {deleteBlockedReason ? (
+                      <Tooltip content={deleteBlockedReason} side="top">
+                        <button
+                          disabled
+                          className="p-1.5 rounded-lg text-surface-600 opacity-40 cursor-not-allowed transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </Tooltip>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteStage(stage)}
+                        className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 )}
               </li>
-            ))}
+              )
+            })}
           </ul>
         )}
       </div>
@@ -263,7 +367,7 @@ function FormFieldSelect({
         >
           {pipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
           {pipelines.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
+            <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}{p.isArchived ? ' (arquivado)' : ''}</option>
           ))}
         </select>
       </div>

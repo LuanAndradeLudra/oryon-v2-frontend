@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { WhatsAppNumber } from '@/types'
-import type { Pipeline } from '@/types'
+import type { Pipeline, PipelineStage } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -47,12 +47,35 @@ export function getApiErrorMessage(e: unknown, fallback: string): string {
   return fallback
 }
 
-/** Funil "default" de um tenant — o marcado `isDefault`, senão o primeiro da
- *  lista (ordem já vem por `order` do backend). Centraliza a regra de
- *  fallback repetida em NewContactDrawer/ImportContactsDrawer/DealModal/
- *  PipelineStagesManager para não divergir entre elas. */
+/** Funil "default" de um tenant — o marcado `isDefault`, senão o primeiro
+ *  ATIVO da lista (ordem já vem por `order` do backend). Centraliza a regra
+ *  de fallback repetida em NewContactDrawer/ImportContactsDrawer/DealModal/
+ *  PipelineStagesManager para não divergir entre elas. O default nunca pode
+ *  estar arquivado (backend bloqueia), mas o fallback também ignora
+ *  arquivados por segurança. */
 export function getDefaultPipeline(pipelines: Pipeline[]): Pipeline | undefined {
-  return pipelines.find((p) => p.isDefault) ?? pipelines[0]
+  return pipelines.find((p) => p.isDefault) ?? pipelines.find((p) => !p.isArchived)
+}
+
+/** Funis não-arquivados — para os seletores de USO (segmentado do board,
+ *  DealModal, NewContactDrawer, ImportContactsDrawer, PipelineRoutingSettings,
+ *  menu "mover para funil"). Funis arquivados continuam existindo e visíveis
+ *  na gestão (PipelineStagesManager), só somem daqui. */
+export function getActivePipelines(pipelines: Pipeline[]): Pipeline[] {
+  return pipelines.filter((p) => !p.isArchived)
+}
+
+/** Estágios NÃO-terminais (ganho/perdido de fora) de um funil, em ordem — para
+ *  o seletor "Estágio do funil" no create de negócio. Eixo distinto do
+ *  "Estágio do contato" (ciclo de vida, `useCRMConfig().stages`): modelo
+ *  híbrido, os dois nunca se confundem. `Pipeline.stages` já vem embutido
+ *  em `pipelinesApi.list()` — não precisa de um fetch à parte. */
+export function getPipelineStages(pipelines: Pipeline[], pipelineId: string): PipelineStage[] {
+  const pipeline = pipelines.find((p) => p.id === pipelineId)
+  return (pipeline?.stages ?? [])
+    .filter((s) => !s.isWon && !s.isLost)
+    .slice()
+    .sort((a, b) => a.order - b.order)
 }
 
 export function formatMessageTime(date: string | Date): string {

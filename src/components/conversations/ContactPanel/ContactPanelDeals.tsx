@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Briefcase, Plus, KanbanSquare } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { dealsApi, pipelinesApi } from '@/services/api'
+import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { DealModal } from '@/components/contacts/DealModal'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { formatBRL } from '@/utils/money'
 import { cn } from '@/lib/utils'
-import type { Deal, Pipeline } from '@/types'
+import type { Deal } from '@/types'
 
 /** Agrupa os negócios do contato por pipeline, preservando a ordem de chegada. */
 function groupByPipeline(deals: Deal[]): Array<[string, Deal[]]> {
@@ -42,16 +43,13 @@ export function ContactPanelDeals({
 }) {
   const { vocab } = useTenantVocab()
   const navigate = useNavigate()
+  // Funis vêm do cache compartilhado (CRMConfigContext, SCRUM-293) — sem
+  // fetch próprio, só pro nome do cabeçalho de cada grupo (contato pode ter
+  // negócios em pipelines diferentes).
+  const { pipelines } = useCRMConfig()
   const [deals, setDeals] = useState<Deal[] | null>(null)
-  const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
-
-  // Nome do pipeline para o cabeçalho de cada grupo (contato pode ter negócios
-  // em pipelines diferentes). Carregado uma vez.
-  useEffect(() => {
-    pipelinesApi.list().then((r) => setPipelines(r.data ?? [])).catch(() => {})
-  }, [])
 
   const load = useCallback(() => {
     dealsApi
