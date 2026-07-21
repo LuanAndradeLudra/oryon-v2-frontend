@@ -2,7 +2,7 @@ import { memo, useCallback } from 'react'
 import {
   Camera, Mic, FileText, Video, MapPin, Sticker,
   ExternalLink, Phone, Copy,
-  Bot, UserCheck, UserX, Clock, Megaphone, Users, AlertTriangle,
+  Bot, UserCheck, UserX, Clock, Megaphone, Users, AlertTriangle, Workflow,
 } from 'lucide-react'
 import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
@@ -42,10 +42,11 @@ function MessagePreview({ text }: { text: string }) {
 
 /** Icon shown before the preview indicating who sent the last message.
  *  Client (inbound) shows no icon — the contact avatar already implies it. */
-const SENDER_META: Record<'operator' | 'ai' | 'campaign', { icon: typeof Bot; title: string; className: string }> = {
+const SENDER_META: Record<'operator' | 'ai' | 'campaign' | 'rule', { icon: typeof Bot; title: string; className: string }> = {
   ai:       { icon: Bot,       title: 'Última mensagem enviada pela IA',                 className: 'text-brand-400' },
   campaign: { icon: Megaphone, title: 'Template enviado via campanha',                   className: 'text-amber-400' },
   operator: { icon: Users,     title: 'Enviada por um usuário da plataforma (Equipe)',   className: 'text-emerald-400' },
+  rule:     { icon: Workflow,  title: 'Resposta automática (encaminhamento/FAQ)',        className: 'text-surface-400' },
 }
 
 function SenderIndicator({ kind }: { kind?: Conversation['lastMessageSenderKind'] }) {

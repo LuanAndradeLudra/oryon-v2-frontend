@@ -702,7 +702,7 @@ export interface Conversation {
   lastMessageAt: string
   lastMessagePreview: string
   /** Who sent the last message — drives the sender indicator on the preview. */
-  lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | null
+  lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
   unreadCount: number
   /** Minimal shape — only the fields the conversation list/header actually
    *  read (id, firstName, lastName for the assignee pill). The realtime
@@ -766,7 +766,7 @@ export interface Message {
   /** Sender of the replied-to message (WhatsApp `context.from`). */
   contextFrom?: string | null
   /** Origin of the message — drives the per-bubble sender indicator. */
-  senderKind?: 'client' | 'operator' | 'ai' | 'campaign' | null
+  senderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
   sentAt: string
   deliveredAt?: string
   readAt?: string
