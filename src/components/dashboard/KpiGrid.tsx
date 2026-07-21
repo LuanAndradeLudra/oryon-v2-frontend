@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  TrendingUp, TrendingDown, Settings2, X, RotateCcw,
+  TrendingUp, TrendingDown, Settings2, X, RotateCcw, Check,
   MessageSquare, MessageCircle, Clock, CheckCircle2, XCircle,
   Target, Zap, Timer, ShieldCheck, Star, ThumbsUp, RefreshCw,
   ArrowDownLeft, ArrowUpRight, UserPlus, Bot, Users, Activity,
@@ -113,8 +113,8 @@ function KpiCard({ metric, hero }: { metric: KpiMetric; hero?: boolean }) {
       </div>
 
       <div className={cn(
-        'font-bold text-surface-50 tabular-nums leading-none font-display',
-        hero ? 'text-3xl' : 'text-xl',
+        'font-bold tabular-nums leading-none font-display',
+        hero ? 'text-3xl kpi-hero-value' : 'text-xl text-surface-50',
       )}>
         {formatKpiValue(metric.value, metric.unit)}
         {metric.unit === 'csat_score' && (
@@ -175,7 +175,7 @@ function CustomizerPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface-950 border-l border-surface-800 z-50 flex flex-col shadow-2xl"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface-950 border-l overlay-frame z-50 flex flex-col"
           >
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
           <div>
@@ -206,17 +206,19 @@ function CustomizerPanel({
                       className={cn(
                         'flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors',
                         isActive
-                          ? 'border-brand-500/40 bg-brand-900/20 text-brand-300'
+                          ? disabled
+                            ? 'border-transparent bg-brand-600/40 text-white/60 cursor-not-allowed'
+                            : 'border-transparent bg-brand-600 text-white hover:bg-brand-500'
                           : disabled
                             ? 'border-surface-800 text-surface-600 cursor-not-allowed'
-                            : 'border-surface-800 text-surface-300 hover:border-surface-700',
+                            : 'border-surface-800 text-surface-300 hover:border-surface-700 hover:bg-surface-900/50',
                       )}
                     >
                       <span className={cn(
-                        'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0',
-                        isActive ? 'bg-white border-white' : 'border-surface-600',
+                        'w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0',
+                        isActive ? 'bg-[#021816] border-black/40' : 'border-surface-600',
                       )}>
-                        {isActive && <span className="text-black text-[10px] font-bold">✓</span>}
+                        {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
                       </span>
                       <span className="text-xs font-medium">{def.label}</span>
                     </button>
@@ -242,7 +244,13 @@ function CustomizerPanel({
 
 // ── KPI Grid ──────────────────────────────────────────────────────────────────
 
-export function KpiGrid({ metrics }: { metrics: KpiMetric[] }) {
+export function KpiGrid({
+  metrics,
+  headerCenter,
+}: {
+  metrics: KpiMetric[]
+  headerCenter?: ReactNode
+}) {
   const [slots, setSlots] = useState<KpiId[]>(loadSlots)
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
@@ -260,15 +268,21 @@ export function KpiGrid({ metrics }: { metrics: KpiMetric[] }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest">Métricas Principais</p>
-        <button
-          onClick={() => setCustomizerOpen(true)}
-          className="flex items-center gap-1.5 text-xs text-surface-400 hover:text-surface-100 border border-surface-800 hover:border-surface-700 px-2.5 py-1.5 rounded-lg transition-colors"
-        >
-          <Settings2 className="w-3.5 h-3.5" />
-          Personalizar
-        </button>
+      <div className="flex items-center gap-3 mb-3">
+        <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest shrink-0">
+          Métricas Principais
+        </p>
+        <div className="flex-1" />
+        <div className="flex items-center gap-2 shrink-0">
+          {headerCenter}
+          <button
+            onClick={() => setCustomizerOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-surface-700/60 hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors shrink-0"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            Personalizar
+          </button>
+        </div>
       </div>
 
       {/* Hierarquia visual: os 4 primeiros KPIs da seleção do usuário são o

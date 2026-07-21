@@ -255,12 +255,6 @@ export function DashboardPage() {
         {isMobile && <MobilePageHeader title="Dashboard" />}
 
         <div className="flex-1 overflow-y-auto">
-          {/* Toolbar de período — sticky JUNTO do conteúdo que controla
-              (affordance: mudar o range e ver o efeito sem voltar ao topo).
-              Antes vivia no TopBar global, a uma tela de distância. */}
-          <div className="sticky top-0 z-20 bg-surface-950/95 backdrop-blur-sm border-b border-surface-800/60 px-3 sm:px-6 py-2 flex items-center justify-end">
-            {dateAndRefreshActions}
-          </div>
           <div className="px-3 py-4 sm:px-6 sm:py-6 max-w-[1440px] mx-auto space-y-4 sm:space-y-5">
 
             {/* Setup card */}
@@ -298,6 +292,16 @@ export function DashboardPage() {
               <div className="grid grid-cols-12 gap-4 items-start">
                 {/* Espelha o layout main + rail p/ evitar layout shift */}
                 <div className="col-span-12 xl:col-span-8 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest shrink-0">
+                      Métricas Principais
+                    </p>
+                    <div className="flex-1" />
+                    <div className="flex items-center gap-2 shrink-0">
+                      {dateAndRefreshActions}
+                      <div className="h-8 w-[104px] bg-surface-800 border border-surface-700/60 rounded-lg animate-pulse shrink-0" />
+                    </div>
+                  </div>
                   <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className="h-32 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
@@ -323,7 +327,7 @@ export function DashboardPage() {
                  vem primeiro (fila/espera são alerta, não rodapé). */
               <div className="grid grid-cols-12 gap-4 items-start">
                 <div className="col-span-12 xl:col-span-8 space-y-4">
-                  <KpiGrid metrics={snapshot.kpis} />
+                  <KpiGrid metrics={snapshot.kpis} headerCenter={dateAndRefreshActions} />
 
                   {/* Seção desligada por padrão (flag dashboardAiInsights) — não
                       montar evita a chamada generateDashboardInsights() e o gasto

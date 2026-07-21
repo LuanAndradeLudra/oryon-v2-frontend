@@ -18,26 +18,30 @@ export function LiveNowCard({ status }: { status: RealtimeStatus }) {
   const waitAlert = status.avgWaitSeconds > 180
   const critical = queueAlert || waitAlert
 
+  // Mesmos gradientes já usados nos KPIs do Dashboard (mesmas classes,
+  // mesmos valores — nada de variante nova): teal para as métricas neutras
+  // (usuários/conversas), laranja fixo para as de fila/espera — sem
+  // recolorir por alerta, isso já é o badge "Atenção".
   const metrics = [
     {
       icon: Users, label: 'Usuários online',
       value: `${status.agentsOnline}/${status.agentsTotal}`,
-      valueClass: 'text-online',
+      valueClass: 'kpi-hero-value',
     },
     {
       icon: MessageSquare, label: 'Conversas ativas',
       value: status.activeConversations.toLocaleString('pt-BR'),
-      valueClass: 'text-surface-50',
+      valueClass: 'kpi-hero-value',
     },
     {
       icon: Clock, label: 'Em fila',
       value: String(status.queued),
-      valueClass: queueAlert ? 'text-away' : 'text-surface-50',
+      valueClass: 'kpi-hero-orange',
     },
     {
       icon: CheckCircle2, label: 'Espera média',
       value: formatWait(status.avgWaitSeconds),
-      valueClass: waitAlert ? 'text-danger' : status.avgWaitSeconds > 90 ? 'text-away' : 'text-online',
+      valueClass: 'kpi-hero-orange',
     },
   ]
 
@@ -46,8 +50,10 @@ export function LiveNowCard({ status }: { status: RealtimeStatus }) {
       role="status"
       aria-label="Métricas em tempo real"
       className={cn(
-        'bg-surface-900 border rounded-xl p-5 transition-colors',
-        critical ? 'border-warning/40' : 'border-surface-800',
+        // Mesmo padrão de sombreamento dos demais cards (card-glow: sombra
+        // sutil em repouso no claro + glow teal no hover) + borda neutra
+        // igual às cartas vizinhas do rail (StatusDonut, ActivityFeed).
+        'card-glow bg-surface-900 border border-surface-800 rounded-xl p-5 transition-colors',
       )}
     >
       <div className="flex items-center gap-2 mb-4">
@@ -57,7 +63,7 @@ export function LiveNowCard({ status }: { status: RealtimeStatus }) {
         </span>
         <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Ao Vivo</p>
         {critical && (
-          <span className="ml-auto text-[10px] font-semibold text-warning bg-warning/10 border border-warning/25 px-1.5 py-0.5 rounded-full">
+          <span className="ml-auto text-[10px] font-semibold text-white bg-warning px-1.5 py-0.5 rounded-full">
             Atenção
           </span>
         )}

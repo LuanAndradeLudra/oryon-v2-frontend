@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, ReferenceLine,
@@ -6,7 +7,7 @@ import { chartTooltipProps } from './utils'
 import { useChartColors } from '@/hooks/useChartColors'
 import type { CsatDataPoint } from '@/types/dashboard'
 
-export function CsatChart({ data }: { data: CsatDataPoint[] }) {
+export const CsatChart = memo(function CsatChart({ data }: { data: CsatDataPoint[] }) {
   const C = useChartColors()
   return (
     <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 h-full">
@@ -31,12 +32,12 @@ export function CsatChart({ data }: { data: CsatDataPoint[] }) {
           <YAxis yAxisId="nps" orientation="right" domain={[0, 100]} tick={{ fill: C.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip {...chartTooltipProps(C)} />
           <ReferenceLine yAxisId="csat" y={4} stroke={C.online} strokeDasharray="4 2" strokeOpacity={0.3} />
-          <Line yAxisId="csat" type="monotone" dataKey="csat" name="CSAT"
+          <Line yAxisId="csat" type="monotone" dataKey="csat" name="CSAT" isAnimationActive={false}
             stroke={C.online} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-          <Line yAxisId="nps" type="monotone" dataKey="nps" name="NPS"
+          <Line yAxisId="nps" type="monotone" dataKey="nps" name="NPS" isAnimationActive={false}
             stroke={C.brand} strokeWidth={2} strokeDasharray="5 3" dot={false} activeDot={{ r: 4 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
   )
-}
+})

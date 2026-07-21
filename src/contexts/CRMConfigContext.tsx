@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
 import { stagesApi, customFieldsApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import type { TenantStage, ContactCustomFieldDef } from '@/types'
@@ -64,8 +64,15 @@ export function CRMConfigProvider({ children }: { children: ReactNode }) {
     refetchFieldDefs()
   }, [isAuthenticated, refetchStages, refetchFieldDefs])
 
+  // Valor memoizado — sem isso, todo render do provider criaria um objeto novo
+  // e re-renderizaria os ~26 consumidores de useCRMConfig() desnecessariamente.
+  const value = useMemo(
+    () => ({ stages, fieldDefs, loadingStages, loadingFields, refetchStages, refetchFieldDefs, setStagesOptimistic: setStages }),
+    [stages, fieldDefs, loadingStages, loadingFields, refetchStages, refetchFieldDefs],
+  )
+
   return (
-    <CRMConfigContext.Provider value={{ stages, fieldDefs, loadingStages, loadingFields, refetchStages, refetchFieldDefs, setStagesOptimistic: setStages }}>
+    <CRMConfigContext.Provider value={value}>
       {children}
     </CRMConfigContext.Provider>
   )

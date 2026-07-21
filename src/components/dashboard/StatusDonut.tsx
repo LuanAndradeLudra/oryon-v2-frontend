@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { chartTooltipProps } from './utils'
 import { useChartColors } from '@/hooks/useChartColors'
 import type { StatusDistribution } from '@/types/dashboard'
 
-export function StatusDonut({ data }: { data: StatusDistribution }) {
+export const StatusDonut = memo(function StatusDonut({ data }: { data: StatusDistribution }) {
   const C = useChartColors()
   const SLICES = [
     { key: 'pending' as const,   label: 'Em Fila',     color: C.away    },
@@ -25,6 +26,7 @@ export function StatusDonut({ data }: { data: StatusDistribution }) {
               innerRadius={50} outerRadius={72}
               paddingAngle={3} dataKey="value"
               startAngle={90} endAngle={-270}
+              isAnimationActive={false}
             >
               {slices.map((s) => <Cell key={s.name} fill={s.color} />)}
             </Pie>
@@ -56,4 +58,4 @@ export function StatusDonut({ data }: { data: StatusDistribution }) {
       </div>
     </div>
   )
-}
+})
