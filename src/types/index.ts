@@ -197,6 +197,18 @@ export interface Product {
   updatedAt?: string
 }
 
+// ─── Registro de Profissionais ──────────────────────────────────────────────
+export interface Practitioner {
+  id: string
+  agentId?: string | null  // reservado: null = registro da empresa toda
+  name: string
+  category?: string | null // especialidade
+  active: boolean
+  order: number
+  createdAt?: string
+  updatedAt?: string
+}
+
 // ─── Negócios / Propostas (Deals) ────────────────────────────────────────────
 export type DealStatus = 'open' | 'won' | 'lost'
 
