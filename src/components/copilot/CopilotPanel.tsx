@@ -70,7 +70,7 @@ function AttachmentChip({
           className="w-6 h-6 rounded object-cover flex-shrink-0"
         />
       ) : (
-        <FileText className="w-4 h-4 text-red-400 flex-shrink-0" />
+        <FileText className="w-4 h-4 text-accent-rose flex-shrink-0" />
       )}
       <span className="text-[10px] text-surface-300 truncate leading-none">{att.name}</span>
       <button
@@ -286,7 +286,7 @@ function ChatWindow() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-violet-600 flex items-center justify-center shadow-md shadow-brand-900/40">
               <CopilotMark className="w-4.5 h-4.5 text-white w-[18px] h-[18px]" />
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-surface-950 bg-emerald-500" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-surface-950 bg-online" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-surface-50 leading-none">Oryon AI</p>

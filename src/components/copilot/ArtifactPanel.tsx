@@ -1199,7 +1199,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                       canvaStatus === 'done'
                         ? 'bg-status-active-bg border-status-active-border text-status-active'
                         : canvaStatus === 'error'
-                        ? 'bg-red-600/10 border-red-500/30 text-red-400 hover:bg-red-500/10'
+                        ? 'bg-danger/10 border-danger/30 text-danger hover:bg-danger/10'
                         : 'border-[#8438FF]/40 text-[#c084fc] hover:bg-[#8438FF]/10 hover:border-[#8438FF]/70 hover:text-[#d8b4fe]',
                       (canvaStatus !== 'idle' && canvaStatus !== 'error') && 'opacity-60 cursor-not-allowed',
                     )}

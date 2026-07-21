@@ -26,7 +26,7 @@ const TYPE_CONFIG = {
 }
 
 const PRIORITY_DOT: Record<DashboardInsight['priority'], string> = {
-  high:   'bg-red-400',
+  high:   'bg-danger',
   medium: 'bg-status-pending',
   low:    'bg-surface-500',
 }

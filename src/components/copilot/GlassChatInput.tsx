@@ -272,7 +272,7 @@ export function GlassChatInput({
                     {att.kind === 'image' ? (
                       <img src={att.previewUrl} alt={att.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
                     ) : (
-                      <FileText className="w-4 h-4 text-red-400 flex-shrink-0" />
+                      <FileText className="w-4 h-4 text-accent-rose flex-shrink-0" />
                     )}
                     <span className="text-xs text-surface-300 truncate">{att.name}</span>
                     <button

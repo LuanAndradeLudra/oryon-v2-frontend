@@ -52,10 +52,10 @@ function groupByDate(sessions: CopilotSession[]) {
 // ─── Session preview renderer ─────────────────────────────────────────────────
 
 const ARTIFACT_ICON_CONFIG: Record<string, { icon: React.ReactElement; color: string }> = {
-  webpage:     { icon: <Globe className="w-2.5 h-2.5 flex-shrink-0" />,        color: 'text-sky-400' },
-  slides:      { icon: <Presentation className="w-2.5 h-2.5 flex-shrink-0" />, color: 'text-purple-400' },
-  spreadsheet: { icon: <Sheet className="w-2.5 h-2.5 flex-shrink-0" />,        color: 'text-emerald-400' },
-  document:    { icon: <FileText className="w-2.5 h-2.5 flex-shrink-0" />,     color: 'text-amber-400' },
+  webpage:     { icon: <Globe className="w-2.5 h-2.5 flex-shrink-0" />,        color: 'text-accent-cyan' },
+  slides:      { icon: <Presentation className="w-2.5 h-2.5 flex-shrink-0" />, color: 'text-accent-violet' },
+  spreadsheet: { icon: <Sheet className="w-2.5 h-2.5 flex-shrink-0" />,        color: 'text-accent-green' },
+  document:    { icon: <FileText className="w-2.5 h-2.5 flex-shrink-0" />,     color: 'text-accent-amber' },
 }
 
 function SessionPreview({ preview }: { preview: string }) {
@@ -257,7 +257,7 @@ export function SessionsSidebar({
                 />
               </div>
               {nearLimit && (
-                <p className="mb-2 text-[10px] text-amber-400/80 leading-relaxed">
+                <p className="mb-2 text-[10px] text-warning/80 leading-relaxed">
                   {atLimit
                     ? 'Limite de 30 conversas atingido.'
                     : `${30 - sessions.length} restante(s) antes do limite.`}

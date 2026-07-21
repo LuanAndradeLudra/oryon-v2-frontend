@@ -122,9 +122,9 @@ export function WelcomeArea({ onSend, atLimit, onNew, onOpenKnowledge, userId }:
           transition={{ delay: 0.25, duration: 0.5, ease: 'easeOut' }}
         >
           {atLimit ? (
-            <div className="text-center py-6 text-sm text-amber-400/80">
+            <div className="text-center py-6 text-sm text-warning/80">
               Limite de 30 conversas atingido.{' '}
-              <button onClick={onNew} className="underline hover:text-amber-300 transition-colors">
+              <button onClick={onNew} className="underline hover:text-warning transition-colors">
                 Exclua conversas antigas
               </button>{' '}
               para iniciar novas.

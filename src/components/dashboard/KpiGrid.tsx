@@ -216,7 +216,7 @@ function CustomizerPanel({
                     >
                       <span className={cn(
                         'w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0',
-                        isActive ? 'bg-[#021816] border-black/40' : 'border-surface-600',
+                        isActive ? 'bg-brand-950 border-black/40' : 'border-surface-600',
                       )}>
                         {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
                       </span>
