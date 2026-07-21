@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import { X, Sparkles, Send, Square, Loader2, Paperclip, FileText, Palette } from 'lucide-react'
+import { X, Send, Square, Loader2, Paperclip, FileText, Palette } from 'lucide-react'
+import { CopilotMark } from '@/lib/icons'
 import { useLocation } from 'react-router-dom'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import type { CopilotAttachment } from '@/contexts/CopilotContext'
@@ -96,7 +97,7 @@ function WelcomeState() {
     >
       <motion.div variants={messageVariants}>
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-600 to-violet-600 flex items-center justify-center shadow-lg shadow-brand-900/40">
-          <Sparkles className="w-7 h-7 text-white" />
+          <CopilotMark className="w-7 h-7 text-white" />
         </div>
       </motion.div>
       <motion.div variants={messageVariants}>
@@ -283,7 +284,7 @@ function ChatWindow() {
           {/* Avatar with status dot */}
           <div className="relative flex-shrink-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-violet-600 flex items-center justify-center shadow-md shadow-brand-900/40">
-              <Sparkles className="w-4.5 h-4.5 text-white w-[18px] h-[18px]" />
+              <CopilotMark className="w-4.5 h-4.5 text-white w-[18px] h-[18px]" />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-surface-950 bg-emerald-500" />
           </div>

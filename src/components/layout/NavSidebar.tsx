@@ -8,7 +8,6 @@ import {
   Zap,
   Home,
   Send,
-  Sparkles,
   Megaphone,
   Workflow,
   MessagesSquare,
@@ -21,6 +20,7 @@ import {
   Pin,
   PinOff,
 } from 'lucide-react'
+import { CopilotMark } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/hooks/useTheme'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -65,7 +65,11 @@ function LogoSection() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -6 }}
             transition={{ duration: 0.15 }}
-            className="h-[27px] w-auto select-none oryon-wordmark"
+            // SEM a classe oryon-wordmark: essa classe inverte a wordmark
+            // (branca→preta) no tema claro, mas a sidebar agora é sempre
+            // escura — a wordmark original (branca) precisa ficar como está
+            // nos dois temas, senão fica preta sobre fundo escuro.
+            className="h-[27px] w-auto select-none"
             draggable={false}
           />
         )}
@@ -102,9 +106,9 @@ function UserFooter({
         aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
         className="w-full text-left"
       >
-        <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-surface-400 hover:bg-surface-800 hover:text-surface-100">
+        <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-white hover:bg-white/10">
           <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {theme === 'dark' ? <Sun className="w-[14.7px] h-[14.7px]" /> : <Moon className="w-[14.7px] h-[14.7px]" />}
           </span>
           <AnimatePresence>
             {(!animate || open) && (
@@ -130,7 +134,7 @@ function UserFooter({
       >
         <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-danger hover:bg-danger/10">
           <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-[18.4px] h-[18.4px]" />
           </span>
           <AnimatePresence>
             {(!animate || open) && (
@@ -238,21 +242,21 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   }
 
   const geralItems = [
-    { icon: <Home className="w-4.5 h-4.5" />,          label: 'Home',       href: '/home' },
+    { icon: <Home className="w-[16.5px] h-[16.5px]" />,          label: 'Home',       href: '/home' },
     {
-      icon: <BarChart3 className="w-4.5 h-4.5" />,
+      icon: <BarChart3 className="w-[16.5px] h-[16.5px]" />,
       label: 'Relatórios',
       href: '/dashboard',
       nudge: !checklist.dashboard ? 'Novo' : undefined,
     },
     {
-      icon: <MessageSquare className="w-4.5 h-4.5" />,
+      icon: <MessageSquare className="w-[16.5px] h-[16.5px]" />,
       label: 'Conversas',
       href: '/conversations',
       badge: whatsappUnread > 0 ? whatsappUnread : undefined,
     },
     {
-      icon: <Users className="w-4.5 h-4.5" />,
+      icon: <Users className="w-[16.5px] h-[16.5px]" />,
       label: vocab.contacts,
       href: '/contacts',
       nudge: !organizationConfigured ? 'Configurar' : undefined,
@@ -261,20 +265,20 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
 
   const ferramentasItems = [
     {
-      icon: <Send className="w-4.5 h-4.5" />,
+      icon: <Send className="w-[16.5px] h-[16.5px]" />,
       label: 'Disparos',
       href: '/campaigns',
       nudge: !checklist.campaigns ? 'Novo' : undefined,
     },
-    { icon: <Megaphone className="w-4.5 h-4.5" />, label: 'Marketing',   href: '/marketing' },
-    { icon: <Workflow className="w-4.5 h-4.5" />,   label: 'Automações',  href: '/automations' },
-    { icon: <Bot className="w-4.5 h-4.5" />,        label: 'Agentes IA',  href: '/agents' },
-    { icon: <Sparkles className="w-4.5 h-4.5" />,   label: 'Copilot AI', href: '/copilot',
+    { icon: <Megaphone className="w-[16.5px] h-[16.5px]" />, label: 'Marketing',   href: '/marketing' },
+    { icon: <Workflow className="w-[16.5px] h-[16.5px]" />,   label: 'Automações',  href: '/automations' },
+    { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
+    { icon: <CopilotMark className="w-[16.5px] h-[16.5px]" />,   label: 'Copilot AI', href: '/copilot',
       nudge: !checklist.copilot ? 'Setup' : undefined },
   ].filter((item) => isRouteVisible(item.href))
 
   const internalChatItem = {
-    icon: <MessagesSquare className="w-4.5 h-4.5" />,
+    icon: <MessagesSquare className="w-[16.5px] h-[16.5px]" />,
     label: 'Nexus',
     href: '/team',
     badge: internalUnread > 0 ? internalUnread : undefined,
@@ -382,31 +386,31 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
               <nav className="flex flex-col gap-0.5 px-1.5">
                 <SidebarLink
                   href="/admin/skill-templates"
-                  icon={<ShieldCheck className="w-4.5 h-4.5" />}
+                  icon={<ShieldCheck className="w-[16.5px] h-[16.5px]" />}
                   label="Skills"
                   active={activeHref.startsWith('/admin/skill')}
                 />
                 <SidebarLink
                   href="/admin/agents"
-                  icon={<Bot className="w-4.5 h-4.5" />}
+                  icon={<Bot className="w-[16.5px] h-[16.5px]" />}
                   label="Agentes (cross-tenant)"
                   active={activeHref.startsWith('/admin/agents')}
                 />
                 <SidebarLink
                   href="/admin/audit"
-                  icon={<Activity className="w-4.5 h-4.5" />}
+                  icon={<Activity className="w-[16.5px] h-[16.5px]" />}
                   label="Auditoria"
                   active={activeHref === '/admin/audit'}
                 />
                 <SidebarLink
                   href="/admin/ai-observability"
-                  icon={<LineChart className="w-4.5 h-4.5" />}
+                  icon={<LineChart className="w-[16.5px] h-[16.5px]" />}
                   label="AI Observability"
                   active={activeHref === '/admin/ai-observability'}
                 />
                 <SidebarLink
                   href="/admin/ai-executions"
-                  icon={<Bot className="w-4.5 h-4.5" />}
+                  icon={<Bot className="w-[16.5px] h-[16.5px]" />}
                   label="AI Executions"
                   active={activeHref === '/admin/ai-executions'}
                 />
@@ -421,7 +425,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
               <nav className="flex flex-col gap-0.5 px-1.5">
                 <SidebarLink
                   href="/settings"
-                  icon={<Settings className="w-4.5 h-4.5" />}
+                  icon={<Settings className="w-[16.5px] h-[16.5px]" />}
                   label="Configurações"
                   active={activeHref === '/settings'}
                   nudge={(!checklist.company || !checklist.profile) ? 'Setup' : undefined}

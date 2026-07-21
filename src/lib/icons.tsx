@@ -65,11 +65,18 @@ export const MessagesSquare = make((N, G) =>
 export const Users = make((N, G) =>
   `<circle cx="12" cy="8" r="3.6" fill="${G}" stroke="none" opacity="0.45"/><path d="M4.5 20 a7.5 7.5 0 0 1 15 0"/>`)
 
+// IA genérica: usa a mesma faísca que era o ícone do Copilot (Sparkles). A
+// identidade do Copilot passou a ser o CopilotMark (órbita), definido abaixo.
 export const Bot = make((N, G) =>
-  `<line x1="12" y1="3" x2="12" y2="6.5"/><circle cx="12" cy="2.6" r="1.3" fill="${G}" stroke="none" opacity="0.45"/><path d="M7 7 h7 l4 4 v4 a2 2 0 0 1 -2 2 H7 a2 2 0 0 1 -2 -2 V9 a2 2 0 0 1 2 -2 Z"/><circle cx="9.5" cy="13" r="1.5" fill="${G}" stroke="none" opacity="0.45"/><circle cx="14.5" cy="13" r="1.5" fill="${G}" stroke="none" opacity="0.45"/>`)
+  `<path d="M11 3 C11.7 8 13 9.3 18 10.5 C13 11.7 11.7 13 11 18 C10.3 13 9 11.7 4 10.5 C9 9.3 10.3 8 11 3 Z" fill="${G}" stroke="none" opacity="0.45"/><path d="M18.5 14 l.55 1.9 l1.95 .6 l-1.95 .6 l-.55 1.9 l-.55 -1.9 l-1.95 -.6 l1.95 -.6 z" fill="${N}" stroke="none"/>`)
 
 export const Sparkles = make((N, G) =>
   `<path d="M11 3 C11.7 8 13 9.3 18 10.5 C13 11.7 11.7 13 11 18 C10.3 13 9 11.7 4 10.5 C9 9.3 10.3 8 11 3 Z" fill="${G}" stroke="none" opacity="0.45"/><path d="M18.5 14 l.55 1.9 l1.95 .6 l-1.95 .6 l-.55 1.9 l-.55 -1.9 l-1.95 -.6 l1.95 -.6 z" fill="${N}" stroke="none"/>`)
+
+// Copilot — orbe pulsante: núcleo sólido + 2 anéis concêntricos (sinal de IA
+// ativa). Funciona monocromático (nav) e como glifo branco sobre o gradiente.
+export const CopilotMark = make((N) =>
+  `<circle cx="12" cy="12" r="2.3" fill="${N}" stroke="none"/><circle cx="12" cy="12" r="5.2" fill="none" stroke="${N}" stroke-width="1.5" opacity="0.55"/><circle cx="12" cy="12" r="8.3" fill="none" stroke="${N}" stroke-width="1.5" opacity="0.3"/>`)
 
 export const BarChart3 = make((N, G) =>
   `<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2" fill="${G}" stroke="none" opacity="0.45"/>`)

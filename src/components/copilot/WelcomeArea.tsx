@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Sparkles, BookOpen } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
+import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
@@ -54,7 +55,7 @@ export function WelcomeArea({ onSend, atLimit, onNew, onOpenKnowledge, userId }:
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1, duration: 0.45, type: 'spring', stiffness: 280 }}
           >
-            <Sparkles style={{ width: '26px', height: '26px' }} className="text-white" />
+            <CopilotMark style={{ width: '26px', height: '26px' }} className="text-white" />
           </motion.div>
 
           <motion.div

@@ -150,10 +150,10 @@ export const SidebarLink = memo(function SidebarLink({
   const inner = (
     <span
       className={cn(
-        'flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-100',
+        'flex items-center w-full transition-colors duration-100',
         active
-          ? 'bg-surface-800 text-surface-50'
-          : 'text-surface-500 hover:bg-surface-800/60 hover:text-surface-200'
+          ? 'gap-2 px-2 py-1 rounded-lg bg-white/85 backdrop-blur-sm text-black'
+          : 'gap-3 px-3 py-2 rounded-xl text-white hover:bg-white/10',
       )}
     >
       {/* Icon wrapper — fixed size so it doesn't shift */}
@@ -181,7 +181,7 @@ export const SidebarLink = memo(function SidebarLink({
         className={cn(
           'flex items-center gap-2 text-sm font-medium whitespace-pre overflow-hidden flex-1',
           'transition-opacity duration-150',
-          animate && !open ? 'opacity-0 w-0' : 'opacity-100'
+          animate && !open ? 'opacity-0 w-0' : 'opacity-100',
         )}
       >
         {label}
