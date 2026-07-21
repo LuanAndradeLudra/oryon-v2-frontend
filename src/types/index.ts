@@ -604,6 +604,39 @@ export interface AutomationProposal {
   automation: Omit<Automation, 'id' | 'tenantId' | 'executionCount' | 'lastExecutedAt' | 'createdAt' | 'updatedAt'>
 }
 
+// ── Histórico de execuções ──────────────────────────────────────────────────
+// Espelha a entidade AutomationRun do backend (Phase B.2), lida via
+// GET /automations/:id/runs. O painel de detalhe consome isto para responder
+// "está funcionando?" — status por run + telemetria por ação. O tipo do admin
+// (adminAuditApi.AutomationRunRow) é um paralelo com actionsExecuted opaco;
+// este é o canônico do lado do cliente, com as ações tipadas.
+export type AutomationRunStatus = 'running' | 'success' | 'partial' | 'failed'
+export type AutomationActionStatus = 'success' | 'failed' | 'skipped'
+
+export interface AutomationActionExecuted {
+  type: string
+  status: AutomationActionStatus
+  durationMs?: number
+  errorMessage?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface AutomationRun {
+  id: string
+  automationId: string
+  contactId: string | null
+  conversationId: string | null
+  triggerType: string
+  triggeredBy: string | null
+  status: AutomationRunStatus
+  errorMessage: string | null
+  durationMs: number | null
+  correlationId: string | null
+  startedAt: string
+  completedAt: string | null
+  actionsExecuted: AutomationActionExecuted[]
+}
+
 export interface Tag {
   id: string
   name: string

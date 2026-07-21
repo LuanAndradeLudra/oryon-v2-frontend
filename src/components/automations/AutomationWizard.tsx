@@ -34,7 +34,7 @@ import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type WizardDraft = Omit<Automation, 'id' | 'tenantId' | 'executionCount' | 'lastExecutedAt' | 'createdAt' | 'updatedAt'>
+export type WizardDraft = Omit<Automation, 'id' | 'tenantId' | 'executionCount' | 'lastExecutedAt' | 'createdAt' | 'updatedAt'>
 
 interface WizardProps {
   open: boolean
@@ -371,7 +371,7 @@ function CustomTriggerForm({
 
 // ── Step 1 — Trigger ──────────────────────────────────────────────────────────
 
-function Step1({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void }) {
+export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void; hideMeta?: boolean }) {
   const types: AutomationType[] = ['boas_vindas', 'follow_up', 'fora_horario', 'triagem_keyword', 'estagio_crm', 'inatividade', 'custom']
   const [stages, setStages] = useState<TenantStage[]>([])
   useEffect(() => { stagesApi.list().then((r) => setStages(r.data)).catch(() => {}) }, [])
@@ -393,6 +393,8 @@ function Step1({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<
 
   return (
     <div className="space-y-5">
+      {!hideMeta && (
+      <>
       {/* Name */}
       <div>
         <label className="block text-xs font-medium text-surface-300 mb-1.5">Nome <span className="text-danger">*</span></label>
@@ -435,6 +437,8 @@ function Step1({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<
           ))}
         </div>
       </div>
+      </>
+      )}
 
       {/* Trigger type grid */}
       <div>
@@ -631,7 +635,7 @@ const INTENT_OPTIONS = [
   { value: 'unknown', label: 'Desconhecida' },
 ]
 
-function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void }) {
+export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void }) {
   const conditions = draft.conditions ?? []
   const [stages, setStages] = useState<TenantStage[]>([])
   const [tags, setTags]     = useState<Array<{ id: string; name: string }>>([])
@@ -1075,7 +1079,7 @@ function ActionSubForm({
   )
 }
 
-function Step3({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void }) {
+export function Step3({ draft, onChange, hideAgentBehavior }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void; hideAgentBehavior?: boolean }) {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [stages, setStages]       = useState<TenantStage[]>([])
   const [users, setUsers]         = useState<Array<{ id: string; name: string }>>([])
@@ -1179,7 +1183,7 @@ function Step3({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<
         </div>
       )}
 
-      <AgentBehaviorSelector draft={draft} onChange={onChange} />
+      {!hideAgentBehavior && <AgentBehaviorSelector draft={draft} onChange={onChange} />}
     </div>
   )
 }
@@ -1194,7 +1198,7 @@ function Step3({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<
  * most likely to surprise operators ("why isn't my agent replying?") so
  * every option ships with a one-liner explaining the exact outcome.
  */
-function AgentBehaviorSelector({
+export function AgentBehaviorSelector({
   draft,
   onChange,
 }: {
@@ -1264,7 +1268,7 @@ function AgentBehaviorSelector({
 
 // ── Wizard root ───────────────────────────────────────────────────────────────
 
-const EMPTY_DRAFT: WizardDraft = {
+export const EMPTY_DRAFT: WizardDraft = {
   name: '', description: '', type: 'boas_vindas', status: 'active',
   trigger: { type: 'boas_vindas' }, conditionsLogic: 'and', conditions: [], actions: [],
   agentBehavior: 'auto',
@@ -1399,7 +1403,7 @@ export function AutomationWizard({ open, onClose, onSaved, editTarget, preset }:
           <div className="absolute inset-0 bg-black/70" onClick={onClose} />
 
           <motion.div
-            className="relative z-10 w-full max-w-2xl bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl flex flex-col max-h-[92vh]"
+            className="relative z-10 w-full max-w-2xl bg-surface-900 overlay-frame border rounded-2xl flex flex-col max-h-[92vh]"
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 12 }}

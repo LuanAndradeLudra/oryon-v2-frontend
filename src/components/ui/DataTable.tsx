@@ -137,7 +137,7 @@ export function DataTable<Row>({
                   'border-b border-surface-800/60 transition-colors',
                   onRowClick && 'cursor-pointer',
                   activeKey === key
-                    ? 'bg-brand-500/5'
+                    ? 'bg-brand-500/15 [&>td:first-child]:shadow-[inset_3px_0_0_0_var(--color-brand-500)]'
                     : selected
                       ? 'bg-surface-800/60'
                       : 'hover:bg-surface-800/40',
