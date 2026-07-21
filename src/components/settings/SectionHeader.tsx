@@ -8,16 +8,19 @@ interface SectionHeaderProps {
   className?: string
 }
 
+// Título de PÁGINA das Configurações (nível acima do SettingsSection):
+// display font + hairline abaixo. Um só por aba — dá a âncora tipográfica
+// que os cards antigos tentavam dar com borda.
 export function SectionHeader({ title, description, action, className }: SectionHeaderProps) {
   return (
-    <div className={cn('flex items-start justify-between gap-4 mb-6', className)}>
+    <div className={cn('flex items-end justify-between gap-4 pb-6 mb-2 border-b border-surface-800/60', className)}>
       <div>
-        <h2 className="text-lg font-semibold text-surface-50">{title}</h2>
+        <h2 className="text-2xl font-display font-bold text-surface-50 tracking-tight">{title}</h2>
         {description && (
-          <p className="mt-0.5 text-sm text-surface-400">{description}</p>
+          <p className="mt-1.5 text-sm text-surface-400 max-w-xl">{description}</p>
         )}
       </div>
-      {action && <div className="flex-shrink-0">{action}</div>}
+      {action && <div className="flex-shrink-0 pb-0.5">{action}</div>}
     </div>
   )
 }

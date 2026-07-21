@@ -138,7 +138,7 @@ export function WhatsAppNumbers() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl">
+      <div>
         <SectionHeader
           title="Números WhatsApp"
           description="Gerencie os números WhatsApp Business conectados à plataforma."
@@ -153,7 +153,7 @@ export function WhatsAppNumbers() {
 
   if (fetchError) {
     return (
-      <div className="max-w-3xl">
+      <div>
         <SectionHeader
           title="Números WhatsApp"
           description="Gerencie os números WhatsApp Business conectados à plataforma."
@@ -164,7 +164,7 @@ export function WhatsAppNumbers() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <SectionHeader
         title="Números WhatsApp"
         description="Gerencie os números WhatsApp Business conectados à plataforma."
@@ -184,13 +184,14 @@ export function WhatsAppNumbers() {
         />
       )}
 
-      <div className="grid grid-cols-1 gap-4">
+      {/* Lista densa: linhas separadas por hairline — sem chrome de card. */}
+      <div className="divide-y divide-surface-800/60">
         {numbers.map((num) => {
           const status = STATUS_CONFIG[num.status] ?? DEFAULT_STATUS
           const quality = QUALITY_CONFIG[num.qualityRating]
 
           return (
-            <div key={num.id} className="bg-surface-900 border border-surface-800 rounded-2xl p-5">
+            <div key={num.id} className="py-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-xl bg-status-active-bg border border-status-active-border flex items-center justify-center flex-shrink-0">
@@ -235,7 +236,7 @@ export function WhatsAppNumbers() {
                     </div>
 
                     {/* Agent AI Assignment */}
-                    <div className="mt-4 p-4 border-t border-surface-800 rounded-lg">
+                    <div className="mt-4 pt-4 border-t border-surface-800/60">
                       <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-2">Agente de IA</p>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-2 flex-1">

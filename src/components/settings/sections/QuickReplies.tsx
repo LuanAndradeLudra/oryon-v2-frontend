@@ -45,7 +45,7 @@ function QuickReplyRow({
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
   return (
-    <tr onContextMenu={onContextMenu} className="hover:bg-surface-800/50 transition-colors">
+    <tr onContextMenu={onContextMenu} className="hover:bg-surface-900/60 transition-colors">
       <td className="px-5 py-4">
         <code className="shortcut-tag inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-brand-300 bg-brand-900/20 px-2 py-1 rounded-lg" title={response.shortcut}>
           {response.shortcut}
@@ -156,7 +156,7 @@ export function QuickReplies() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <SectionHeader
         title="Respostas Rápidas"
         description="Crie atalhos de texto para agilizar o atendimento."
@@ -178,13 +178,14 @@ export function QuickReplies() {
         />
       </div>
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-x-auto">
+      {/* Gramática nova: tabela densa é o conteúdo principal — largura total,
+          sem chrome de card; header hairline + divisores hairline. */}
+      <div className="overflow-x-auto">
         {loading ? (
-          <SkeletonTable rows={5} cols={4} className="p-3" />
+          <SkeletonTable rows={5} cols={4} className="py-3" />
         ) : fetchError ? (
           <ErrorState
             compact
-            className="border-0 rounded-none"
             onRetry={() => { setLoading(true); setReloadKey((k) => k + 1) }}
           />
         ) : filtered.length === 0 ? (
@@ -197,14 +198,13 @@ export function QuickReplies() {
               icon={Zap}
               title="Nenhuma resposta rápida criada ainda"
               hint="Crie atalhos de texto para responder mais rápido no atendimento."
-              className="border-0 rounded-none"
               action={{ label: 'Nova resposta', onClick: () => { setEditTarget(null); setModalOpen(true) } }}
             />
           )
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-800">
+              <tr className="border-b border-surface-800/60">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Atalho</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Título</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Preview</th>
@@ -212,7 +212,7 @@ export function QuickReplies() {
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800">
+            <tbody className="divide-y divide-surface-800/60">
               {filtered.map((cr) => (
                 <QuickReplyRow
                   key={cr.id}

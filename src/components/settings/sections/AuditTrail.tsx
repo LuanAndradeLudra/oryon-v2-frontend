@@ -113,18 +113,18 @@ export function AuditTrail() {
       )}
 
       {rows.length > 0 && (
-        <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-2.5 font-medium">Quando</th>
+            <thead className="text-surface-400 text-xs uppercase tracking-wider">
+              <tr className="border-b border-surface-800/60">
+                <th className="text-left pl-0 pr-4 py-2.5 font-medium">Quando</th>
                 <th className="text-left px-4 py-2.5 font-medium">Quem</th>
                 <th className="text-left px-4 py-2.5 font-medium">Ação</th>
                 <th className="text-left px-4 py-2.5 font-medium">Recurso</th>
                 <th className="text-left px-4 py-2.5 font-medium">Detalhes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800">
+            <tbody className="divide-y divide-surface-800/60">
               {rows.map(r => (
                 <Row key={r.id} row={r} />
               ))}
@@ -169,7 +169,7 @@ function Row({ row }: { row: TenantAuditRow }) {
   })
   return (
     <tr className="hover:bg-surface-800/30">
-      <td className="px-4 py-2.5 whitespace-nowrap text-surface-300 text-xs">
+      <td className="pl-0 pr-4 py-2.5 whitespace-nowrap text-surface-300 text-xs">
         {new Date(row.createdAt).toLocaleString('pt-BR')}
       </td>
       <td className="px-4 py-2.5 text-xs">
@@ -343,7 +343,7 @@ function FilterBar({
   )
 
   return (
-    <div className="mb-4 px-4 py-3 rounded-lg border border-surface-800 bg-surface-900/40 flex flex-wrap items-end gap-3">
+    <div className="mb-4 pb-4 border-b border-surface-800/60 flex flex-wrap items-end gap-3">
       <div className="flex items-center gap-2 text-xs text-surface-400">
         <Filter className="w-4 h-4" /> Filtros
       </div>

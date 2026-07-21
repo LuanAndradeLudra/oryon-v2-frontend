@@ -19,6 +19,7 @@ import { whatsappNumbersApi, type WhatsappLinesHealth, type WhatsappLineHealth }
 import { cn } from '@/lib/utils'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -121,40 +122,45 @@ export function WhatsAppHealth() {
   return (
     <div>
       {header}
-      <div className="flex flex-col gap-4">
+
       {/* Global summary — admin's "everything OK" / "something off" snapshot */}
-      <div className="grid grid-cols-3 gap-3">
-        <SummaryCard
-          label="Linhas ativas"
-          value={data.lines.filter((l) => l.isActive).length}
-          total={data.lines.length}
-          icon={Phone}
-        />
-        <SummaryCard
-          label="Recursos sem linha"
-          value={needsAttentionTotal}
-          tone={needsAttentionTotal > 0 ? 'warning' : 'ok'}
-          icon={AlertTriangle}
-        />
-        <SummaryCard
-          label="Recursos órfãos"
-          value={orphansTotal}
-          tone={orphansTotal > 0 ? 'warning' : 'ok'}
-          icon={Globe}
-          tooltip="Recursos apontando para uma linha desativada ou removida"
-        />
-      </div>
+      <SettingsSection
+        title="Visão geral"
+        description="Linhas ativas e recursos que precisam de atenção."
+      >
+        <div className="grid grid-cols-3 gap-6">
+          <SummaryStat
+            label="Linhas ativas"
+            value={data.lines.filter((l) => l.isActive).length}
+            total={data.lines.length}
+            icon={Phone}
+          />
+          <SummaryStat
+            label="Recursos sem linha"
+            value={needsAttentionTotal}
+            tone={needsAttentionTotal > 0 ? 'warning' : 'ok'}
+            icon={AlertTriangle}
+          />
+          <SummaryStat
+            label="Recursos órfãos"
+            value={orphansTotal}
+            tone={orphansTotal > 0 ? 'warning' : 'ok'}
+            icon={Globe}
+            tooltip="Recursos apontando para uma linha desativada ou removida"
+          />
+        </div>
+      </SettingsSection>
 
       {error && (
-        <div className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+        <div className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
           {error}
         </div>
       )}
 
-      {/* Per-line cards */}
-      <div className="flex flex-col gap-3">
+      {/* Per-line rows — lista densa em largura total, divisores hairline */}
+      <div className="divide-y divide-surface-800/60">
         {data.lines.map((line) => (
-          <LineHealthCard
+          <LineHealthRow
             key={line.id}
             line={line}
             onPromote={() => handlePromote(line.id)}
@@ -163,12 +169,11 @@ export function WhatsAppHealth() {
           />
         ))}
       </div>
-      </div>
     </div>
   )
 }
 
-function SummaryCard({
+function SummaryStat({
   label, value, total, tone = 'default', icon: Icon, tooltip,
 }: {
   label: string
@@ -178,15 +183,10 @@ function SummaryCard({
   icon: React.ComponentType<{ className?: string }>
   tooltip?: string
 }) {
-  const toneClass = tone === 'warning'
-    ? 'border-status-pending/30 bg-status-pending/5'
-    : tone === 'ok'
-    ? 'border-surface-700/40 bg-surface-800/40'
-    : 'border-surface-700/60 bg-surface-800/60'
   const valueClass = tone === 'warning' ? 'text-status-pending' : 'text-surface-100'
 
   return (
-    <div className={cn('rounded-xl border p-3', toneClass)} title={tooltip}>
+    <div title={tooltip}>
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-surface-400">
         <Icon className="w-3 h-3" />
         {label}
@@ -199,7 +199,7 @@ function SummaryCard({
   )
 }
 
-function LineHealthCard({
+function LineHealthRow({
   line,
   onPromote,
   promoting,
@@ -214,14 +214,7 @@ function LineHealthCard({
     line.templates.needsAssignment + line.campaigns.needsAssignment + line.automations.needsAssignment
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border p-4',
-        line.isPrimary
-          ? 'border-brand-500/30 bg-brand-500/5'
-          : 'border-surface-700/60 bg-surface-800/40',
-      )}
-    >
+    <div className="py-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
@@ -373,7 +366,7 @@ function CountBlock({
       : 'text-surface-400'
 
   return (
-    <div className="rounded-lg bg-surface-900/40 border border-surface-800/60 p-3">
+    <div>
       <div className="flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-wide text-surface-500">{label}</span>
         <span className="text-sm font-semibold text-surface-100">{total}</span>

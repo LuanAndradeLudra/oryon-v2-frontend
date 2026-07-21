@@ -3,7 +3,7 @@ import { BillingSettings } from './BillingSettings'
 
 export function BillingPlan() {
   return (
-    <div className="max-w-3xl">
+    <div>
       <SectionHeader
         title="Plano & Faturamento"
         description="Gerencie sua assinatura, créditos de IA e histórico de pagamentos."

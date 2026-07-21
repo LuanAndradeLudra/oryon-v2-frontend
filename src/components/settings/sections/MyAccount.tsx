@@ -3,6 +3,7 @@ import { Eye, EyeOff, Camera, Bell, UserCircle } from 'lucide-react'
 import axios from 'axios'
 import { AnimatePresence, motion } from 'framer-motion'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
@@ -86,7 +87,7 @@ export function MyAccount() {
 
   if (error) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <SectionHeader title="Minha Conta" description="Gerencie suas informações pessoais e preferências." />
         <ErrorState compact onRetry={() => { setUser(null); setReloadKey((k) => k + 1) }} />
       </div>
@@ -95,7 +96,7 @@ export function MyAccount() {
 
   if (!user) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <SectionHeader title="Minha Conta" description="Gerencie suas informações pessoais e preferências." />
         <div className="flex flex-col gap-6">
           <SkeletonCard lines={4} />
@@ -106,7 +107,7 @@ export function MyAccount() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <SectionHeader title="Minha Conta" description="Gerencie suas informações pessoais e preferências." />
 
       <AnimatePresence>
@@ -137,10 +138,12 @@ export function MyAccount() {
         )}
       </AnimatePresence>
 
-      {/* Personal info */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-4">Informações pessoais</h3>
-
+      {/* Gramática nova: seções em duas colunas separadas por hairline —
+          zero cards. O título à esquerda funciona como índice ao rolar. */}
+      <SettingsSection
+        title="Informações pessoais"
+        description="Seu nome aparece nas conversas, relatórios e para os clientes."
+      >
         <div className="flex items-center gap-5 mb-6">
           <div className="relative group cursor-pointer">
             <Avatar name={`${user.firstName} ${user.lastName}`} size="lg" />
@@ -181,12 +184,12 @@ export function MyAccount() {
         <div className="flex justify-end mt-4">
           <Button onClick={saveProfile} loading={savingProfile}>Salvar</Button>
         </div>
-      </div>
+      </SettingsSection>
 
-      {/* Password */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-4">Alterar senha</h3>
-
+      <SettingsSection
+        title="Alterar senha"
+        description="Use no mínimo 8 caracteres. Você continuará conectado nesta sessão."
+      >
         <div className="flex flex-col gap-4">
           {(['current', 'next', 'confirm'] as const).map((field) => {
             const labels = { current: 'Senha atual', next: 'Nova senha', confirm: 'Confirmar nova senha' }
@@ -223,23 +226,22 @@ export function MyAccount() {
             Alterar senha
           </Button>
         </div>
-      </div>
+      </SettingsSection>
 
       {/* Phase 19: notification preferences moved to their own Settings page
-          (backed by a real backend). This card now just points there. */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-2">Notificações</h3>
-        <p className="text-xs text-surface-400 mb-3">
-          Escolha quais eventos geram notificação para você e ajuste o som em uma página dedicada.
-        </p>
+          (backed by a real backend). This section now just points there. */}
+      <SettingsSection
+        title="Notificações"
+        description="Eventos que geram alerta para você e som de notificação."
+      >
         <a
           href="/settings/notifications"
-          className="inline-flex items-center gap-2 text-xs text-brand-300 hover:text-brand-200 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-brand-300 hover:text-brand-200 transition-colors"
         >
-          <Bell className="w-3.5 h-3.5" />
+          <Bell className="w-4 h-4" />
           Abrir preferências de notificação →
         </a>
-      </div>
+      </SettingsSection>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )

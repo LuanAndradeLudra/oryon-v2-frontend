@@ -47,7 +47,7 @@ function ConnectDrawer({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface-950 border-l border-surface-800 z-50 flex flex-col shadow-2xl">
+      <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface-950 border-l overlay-frame z-50 flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
           <p className="text-sm font-semibold text-surface-100">
             Conectar {isMeta ? 'Meta Ads' : 'Google Ads'}
@@ -152,8 +152,8 @@ function ConnectedCard({
     new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   return (
-    <div className="rounded-xl border border-surface-800 overflow-hidden">
-      <div className="px-5 py-4 flex items-center gap-3 bg-surface-900">
+    <div className="py-1">
+      <div className="py-4 flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: color + '1a', color }}>
           <CheckCircle2 className="w-5 h-5" />
@@ -190,7 +190,7 @@ function ConnectedCard({
         </div>
       </div>
 
-      <div className="px-5 py-2.5 border-t border-surface-800 flex items-center justify-between text-xs text-surface-500">
+      <div className="py-2.5 border-t border-surface-800/60 flex items-center justify-between text-xs text-surface-500">
         <span>Última sincronização: {account.lastSyncAt ? fmt(account.lastSyncAt) : '—'}</span>
         <button
           onClick={() => setExpanded(!expanded)}
@@ -202,11 +202,11 @@ function ConnectedCard({
       </div>
 
       {expanded && campaigns.length > 0 && (
-        <div className="border-t border-surface-800 overflow-x-auto">
+        <div className="border-t border-surface-800/60 overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-surface-800">
-                <th className="text-left px-5 py-2.5 text-surface-500 font-medium">Campanha</th>
+                <th className="text-left pl-0 pr-3 py-2.5 text-surface-500 font-medium">Campanha</th>
                 <th className="text-right px-3 py-2.5 text-surface-500 font-medium">Invest.</th>
                 <th className="text-right px-3 py-2.5 text-surface-500 font-medium">Leads</th>
                 <th className="text-right px-3 py-2.5 text-surface-500 font-medium">CPL</th>
@@ -216,7 +216,7 @@ function ConnectedCard({
             <tbody>
               {campaigns.map((c) => (
                 <tr key={c.platformCampaignId} className="border-b border-surface-800/50 hover:bg-surface-800/30">
-                  <td className="px-5 py-2 text-surface-300 truncate max-w-[200px]">{c.platformCampaignName}</td>
+                  <td className="pl-0 pr-3 py-2 text-surface-300 truncate max-w-[200px]">{c.platformCampaignName}</td>
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">R$ {c.spend.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</td>
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">{c.leadsGenerated}</td>
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">R$ {c.cpl.toFixed(2)}</td>
@@ -302,15 +302,17 @@ function PlatformTab({ platform, accounts, onAccountsChange }: {
         </div>
       ) : (
         <>
-          {platAccounts.map((acc) => (
-            <ConnectedCard
-              key={acc.id}
-              account={acc}
-              campaigns={campaigns[acc.id] ?? []}
-              onDisconnect={() => void handleDisconnect(acc.id)}
-              onSync={() => handleSync(acc.id)}
-            />
-          ))}
+          <div className="divide-y divide-surface-800/60">
+            {platAccounts.map((acc) => (
+              <ConnectedCard
+                key={acc.id}
+                account={acc}
+                campaigns={campaigns[acc.id] ?? []}
+                onDisconnect={() => void handleDisconnect(acc.id)}
+                onSync={() => handleSync(acc.id)}
+              />
+            ))}
+          </div>
           <button
             onClick={() => setDrawerOpen(true)}
             className="flex items-center gap-2 text-sm text-surface-400 hover:text-surface-200 transition-colors"
@@ -352,7 +354,7 @@ export function AdAccountsSettings() {
   useEffect(() => { void load() }, [load])
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div>
       <SectionHeader
         title="Contas de Anúncios"
         description="Conecte sua conta do Meta Ads para rastrear a origem dos leads via CTWA (Click-to-WhatsApp) no CRM e medir o ROAS real."

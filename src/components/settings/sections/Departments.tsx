@@ -262,7 +262,9 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
   const deptNeedsWa = hasConversationModule(dept.permissions ?? [])
 
   return (
-    <div className="group bg-surface-900 border border-surface-800 rounded-xl hover:border-surface-700 transition-colors">
+    // Gramática nova: linha de lista sem card — assenta direto no fundo,
+    // separada por hairline (divide-y no container), hover sutil.
+    <div className="group hover:bg-surface-900/60 transition-colors">
       <div className="flex items-center justify-between gap-3 px-4 py-3.5">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center"
@@ -376,7 +378,7 @@ export function Departments() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <SectionHeader
           title="Setores"
           description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
@@ -388,7 +390,7 @@ export function Departments() {
 
   if (fetchError) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <SectionHeader
           title="Setores"
           description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
@@ -399,7 +401,7 @@ export function Departments() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <SectionHeader
         title="Setores"
         description="Defina permissões por setor. Número WhatsApp só é necessário quando há acesso ao módulo de conversas."
@@ -415,7 +417,7 @@ export function Departments() {
       {creating && <DeptForm key="dept-form-new" title="Novo setor" initial={DEFAULT_FORM} saving={saving} waNumbers={waNumbers} onSave={handleCreate} onCancel={() => setCreating(false)} />}
       {editTarget && <DeptForm key={`dept-form-${editTarget.id}`} title="Editar setor" initial={editInitial} saving={saving} waNumbers={waNumbers} onSave={handleSaveEdit} onCancel={() => setEditTarget(null)} />}
 
-      <div className="flex flex-col gap-2">
+      <div className="divide-y divide-surface-800/60">
         {departments.map((dept) => <DeptCard key={dept.id} dept={dept} waNumbers={waNumbers} onEdit={setEditTarget} onDelete={setDeleteTarget} />)}
       </div>
 

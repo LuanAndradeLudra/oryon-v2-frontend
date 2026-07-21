@@ -11,7 +11,6 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
-import { cn } from '@/lib/utils'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { useAuth } from '@/contexts/AuthContext'
@@ -58,9 +57,11 @@ function TagCard({ tag, usageCount, onEdit, onDelete, canManage }: TagCardProps)
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
   return (
+    // Gramática nova: linha de lista sem card — assenta direto no fundo,
+    // separada por hairline (divide-y no container), hover sutil.
     <div
       onContextMenu={onContextMenu}
-      className="group flex items-center justify-between gap-3 bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 hover:border-surface-700 transition-colors"
+      className="group flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface-900/60 transition-colors"
     >
       <div className="flex items-center gap-3">
         <div
@@ -183,7 +184,7 @@ export function TagsSettings() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <SectionHeader title="Tags" description="Organize conversas com etiquetas personalizadas." />
         <SkeletonList items={5} />
       </div>
@@ -192,7 +193,7 @@ export function TagsSettings() {
 
   if (fetchError) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <SectionHeader title="Tags" description="Organize conversas com etiquetas personalizadas." />
         <ErrorState compact onRetry={() => { setLoading(true); setReloadKey((k) => k + 1) }} />
       </div>
@@ -200,7 +201,7 @@ export function TagsSettings() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <SectionHeader
         title="Tags"
         description="Organize conversas com etiquetas personalizadas."
@@ -275,7 +276,7 @@ export function TagsSettings() {
       )}
 
       {/* Tags list */}
-      <div className={cn('grid gap-2', tags.length > 3 ? 'grid-cols-1' : 'grid-cols-1')}>
+      <div className="divide-y divide-surface-800/60">
         {tags.map((tag) => (
           <TagCard
             key={tag.id}

@@ -4,6 +4,7 @@ import axios from 'axios'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ToastContainer } from '@/components/ui/Toast'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -89,7 +90,7 @@ export function CompanyProfile() {
 
   if (error) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <SectionHeader
           title="Perfil da Empresa"
           description="Informações da sua organização na plataforma Oryon."
@@ -101,7 +102,7 @@ export function CompanyProfile() {
 
   if (!tenant) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <SectionHeader
           title="Perfil da Empresa"
           description="Informações da sua organização na plataforma Oryon."
@@ -115,7 +116,7 @@ export function CompanyProfile() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <SectionHeader
         title="Perfil da Empresa"
         description="Informações da sua organização na plataforma Oryon."
@@ -149,10 +150,10 @@ export function CompanyProfile() {
         )}
       </AnimatePresence>
 
-      {/* Identity card */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-4">Identidade</h3>
-
+      <SettingsSection
+        title="Identidade"
+        description="O nome da empresa aparece em relatórios, templates e nas comunicações com clientes."
+      >
         {/* Logo + plan */}
         <div className="flex items-center gap-5 mb-6">
           <div className="relative group cursor-pointer">
@@ -194,12 +195,12 @@ export function CompanyProfile() {
             </div>
           </FormField>
         </div>
-      </div>
+      </SettingsSection>
 
-      {/* Config card */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-4">Configurações</h3>
-
+      <SettingsSection
+        title="Preferências regionais"
+        description="E-mail de contato, fuso horário e idioma usados em agendamentos e mensagens automáticas."
+      >
         <div className="grid grid-cols-1 gap-4">
           <FormField label="E-mail de contato" required>
             <Input
@@ -232,11 +233,11 @@ export function CompanyProfile() {
             </Select>
           </FormField>
         </div>
-      </div>
 
-      <div className="flex justify-end">
-        <Button onClick={save} loading={loading}>Salvar alterações</Button>
-      </div>
+        <div className="flex justify-end mt-4">
+          <Button onClick={save} loading={loading}>Salvar alterações</Button>
+        </div>
+      </SettingsSection>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )

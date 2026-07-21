@@ -285,7 +285,7 @@ export function AgentManagement() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <SectionHeader
         title="Usuários"
         description={`${users.length} membro${users.length !== 1 ? 's' : ''} na equipe`}
@@ -298,13 +298,15 @@ export function AgentManagement() {
         }
       />
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      {/* Gramática nova: tabela densa é o conteúdo principal — largura total,
+          assentada direto no fundo, sem chrome de card. Header hairline +
+          divisores hairline fazem o trabalho que a borda do card fazia. */}
+      <div className="overflow-x-auto">
         {loading ? (
-          <SkeletonTable rows={5} cols={4} className="p-3" />
+          <SkeletonTable rows={5} cols={4} className="py-3" />
         ) : fetchError ? (
           <ErrorState
             compact
-            className="border-0 rounded-none"
             onRetry={() => { setLoading(true); setReloadKey((k) => k + 1) }}
           />
         ) : users.length === 0 ? (
@@ -312,13 +314,12 @@ export function AgentManagement() {
             icon={Users}
             title="Nenhum usuário na equipe"
             hint="Crie o primeiro usuário para começar a atender."
-            className="border-0 rounded-none"
             action={canCreateUsers ? { label: 'Criar usuário', onClick: () => setDrawerOpen(true) } : undefined}
           />
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-800">
+              <tr className="border-b border-surface-800/60">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Usuário</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider hidden lg:table-cell">Cargo / Setor</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Papel</th>
@@ -326,9 +327,9 @@ export function AgentManagement() {
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800">
+            <tbody className="divide-y divide-surface-800/60">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-surface-800/50 transition-colors">
+                <tr key={user.id} className="hover:bg-surface-900/60 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" online={user.isActive && user.status !== 'pending'} />

@@ -1,8 +1,7 @@
 import { useParams, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { SettingsLayout } from '@/components/settings/SettingsLayout'
-import { SettingsHub } from '@/components/settings/SettingsHub'
+import { SettingsLayout, firstVisibleSection } from '@/components/settings/SettingsLayout'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
@@ -95,17 +94,13 @@ export function SettingsPage() {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
 
-  // Sem seção na URL → hub de navegação (mapa de tudo que é configurável).
-  if (!section) {
-    return (
-      <SettingsLayout currentRole={user?.role ?? 'admin'}>
-        <SettingsHub currentRole={user?.role ?? 'admin'} />
-      </SettingsLayout>
-    )
-  }
-
-  if (!VALID_SECTIONS.includes(section)) {
-    return <Navigate to="/settings" replace />
+  // Settings é superfície de INTENÇÃO, não de browsing: quem entra já sabe o
+  // que quer mudar. Sem hub/home — /settings cai direto na primeira seção
+  // visível do papel; a sidebar é o mapa permanente e a busca resolve o
+  // "achar em segundos". Uma home aqui seria uma segunda navegação (o
+  // problema que estamos eliminando).
+  if (!section || !VALID_SECTIONS.includes(section)) {
+    return <Navigate to={`/settings/${firstVisibleSection(user?.role ?? 'admin')}`} replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]
