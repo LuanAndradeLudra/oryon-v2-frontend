@@ -1,14 +1,15 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Plus, Pencil, Trash2, GripVertical, Lock } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { StageModal } from '@/components/settings/modals/StageModal'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/ui/Toast'
+import { useDragReorder } from '@/hooks/useDragReorder'
 import { stagesApi } from '@/services/api'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { TenantStage } from '@/types'
 
 export function StagesManager() {
@@ -24,10 +25,6 @@ export function StagesManager() {
   const [deleteStage, setDeleteStage] = useState<TenantStage | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Drag state
-  const dragIdx = useRef<number | null>(null)
-  const [overIdx, setOverIdx] = useState<number | null>(null)
-
   const handleSave = async (data: { label: string; color: string; isTerminal: boolean }) => {
     try {
       if (editStage) {
@@ -41,8 +38,7 @@ export function StagesManager() {
       setEditStage(null)
       refetchStages()
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      toast(typeof msg === 'string' ? msg : Array.isArray(msg) ? msg[0] : 'Erro ao salvar estágio.', 'error')
+      toast(getApiErrorMessage(err, 'Erro ao salvar estágio.'), 'error')
       throw err // Re-throw so StageModal keeps open
     }
   }
@@ -56,59 +52,36 @@ export function StagesManager() {
       refetchStages()
       setDeleteStage(null)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao excluir estágio.'
-      const axiosMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      toast(axiosMsg ?? msg, 'error')
+      toast(getApiErrorMessage(err, 'Erro ao excluir estágio.'), 'error')
     } finally {
       setDeleting(false)
     }
   }
 
-  // ── Drag & Drop handlers ────────────────────────────────────────────────────
-  const handleDragStart = (idx: number) => {
-    dragIdx.current = idx
-  }
-
-  const handleDragOver = (e: React.DragEvent, idx: number) => {
-    e.preventDefault()
-    setOverIdx(idx)
-  }
-
-  const handleDrop = async (targetIdx: number) => {
-    const fromIdx = dragIdx.current
-    dragIdx.current = null
-    setOverIdx(null)
-    if (fromIdx === null || fromIdx === targetIdx) return
-
-    // Optimistic: update UI instantly with new order
-    const reordered = [...stages]
-    const [moved] = reordered.splice(fromIdx, 1)
-    reordered.splice(targetIdx, 0, moved)
-    const withNewOrder = reordered.map((s, i) => ({ ...s, order: i + 1 }))
-    setStagesOptimistic(withNewOrder)
-
-    // Sync to backend
-    try {
-      await stagesApi.reorder(withNewOrder.map((s) => s.id))
-      toast('Pipeline reordenado.', 'success')
-    } catch {
-      toast('Erro ao reordenar. Recarregando...', 'error')
-      refetchStages()
-    }
-  }
-
-  const handleDragEnd = () => {
-    dragIdx.current = null
-    setOverIdx(null)
-  }
+  // ── Drag & Drop (mecânica compartilhada — ver useDragReorder) ──────────────
+  const { overIdx, handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useDragReorder(
+    stages,
+    async (reordered) => {
+      // Optimistic: update UI instantly with new order
+      const withNewOrder = reordered.map((s, i) => ({ ...s, order: i + 1 }))
+      setStagesOptimistic(withNewOrder)
+      try {
+        await stagesApi.reorder(withNewOrder.map((s) => s.id))
+        toast('Pipeline reordenado.', 'success')
+      } catch {
+        toast('Erro ao reordenar. Recarregando...', 'error')
+        refetchStages()
+      }
+    },
+  )
 
   return (
     <>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-surface-100">Estágios do pipeline</h3>
+          <h3 className="text-sm font-semibold text-surface-100">Estágios do contato</h3>
           <p className="text-xs text-surface-500 mt-0.5">
-            Defina as etapas do seu funil de vendas. Arraste para reordenar.
+            Defina as etapas do ciclo de vida do contato (eixo distinto dos estágios de funil/negócio). Arraste para reordenar.
           </p>
         </div>
         {canManageStages && (

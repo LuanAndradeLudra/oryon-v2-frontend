@@ -228,18 +228,85 @@ export interface Deal {
   contactId: string
   title: string
   status: DealStatus
-  pipelineStageKey?: string | null
+  pipelineId: string            // Fase 2: pipeline de negócio
+  stageId: string               // estágio atual (fonte da verdade do status)
+  originConversationId?: string | null
+  createdByKind?: 'user' | 'automation' | 'ai'
   amountCents: number           // total em centavos
   currency?: string
   note?: string | null
   ownerUserId?: string | null
   closedAt?: string | null
-  lineItems: DealLineItem[]
+  lineItems?: DealLineItem[]
+  createdAt?: string
+  updatedAt?: string
+  /** Resumo leve do contato — presente no board por pipeline (GET /deals?pipelineId=). */
+  contact?: { id: string; displayName: string; profilePicUrl: string | null }
+}
+
+/** Pipeline de negócio (múltiplos por tenant). O `isDefault` é o pipeline padrão. */
+export interface Pipeline {
+  id: string
+  tenantId: string
+  name: string
+  description?: string | null
+  color: string
+  order: number
+  isDefault: boolean
+  isArchived: boolean
+  stages: PipelineStage[]
+  /** Contagem de negócios abertos — badge do segmented control da aba Leads. */
+  openDealsCount: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Estágio de um pipeline. `isWon`/`isLost` marcam os terminais. */
+export interface PipelineStage {
+  id: string
+  tenantId: string
+  pipelineId: string
+  key: string
+  label: string
+  color: string
+  order: number
+  isWon: boolean
+  isLost: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Dono do negócio auto-criado pelo roteamento. */
+export type OwnerRule = 'unassigned' | 'conversation_assignee' | 'fixed_user'
+
+/** Roteamento por canal (Fase 4): linha WhatsApp → pipeline. No máx. 1 por linha. */
+export interface PipelineChannelRouting {
+  id: string
+  tenantId: string
+  whatsappNumberId: string
+  pipelineId: string
+  autoCreateDeal: boolean
+  defaultStageId: string | null
+  ownerRule: OwnerRule
+  ownerUserId: string | null
   createdAt?: string
   updatedAt?: string
 }
 
 /** Agregado de negócios de um contato (contagem + valor em centavos). Usado no card do Kanban. */
+/** Agregado por (contato, pipeline) — alimenta os chips "Negócios" da tabela de contatos. */
+export interface ContactDealsPipelineSummary {
+  pipelineId: string
+  pipelineName: string
+  pipelineColor: string
+  count: number
+  openCount: number
+  wonCount: number
+  totalCents: number
+  openCents: number
+  wonCents: number
+}
+
 export interface ContactDealsSummary {
   count: number
   openCount: number
@@ -247,6 +314,7 @@ export interface ContactDealsSummary {
   totalCents: number
   openCents: number
   wonCents: number
+  byPipeline: ContactDealsPipelineSummary[]
 }
 
 // ─── AI Onboarding ────────────────────────────────────────────────────────────
@@ -301,6 +369,11 @@ export interface ContactFilters {
   leadScoreBand?: 'high' | 'medium' | 'low'
   /** Recência do último contato (interpretada no backend a partir de lastContactedAt). */
   lastContact?: '24h' | '7d' | '30d' | 'none'
+  /** Faceta "Situação comercial" (SCRUM-293 — movida do client pro backend).
+   *  Omitido = sem filtro ("Todos"). Nunca fica guardado no estado `filters`
+   *  do useContacts (ContactsFiltersBar substitui esse objeto por inteiro a
+   *  cada mudança) — só existe no payload da requisição em si. */
+  commercial?: 'no_deal' | 'open_deal' | 'customer'
 }
 
 export interface Contact {

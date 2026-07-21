@@ -325,7 +325,7 @@ export function VerticalSettings() {
         <ul className="text-xs text-surface-400 space-y-1 list-disc list-inside">
           <li>O vocabulário é aplicado em <strong className="text-surface-300">toda a interface</strong> — labels, formulários e textos de ajuda.</li>
           <li>A <strong className="text-surface-300">IA (Copilot)</strong> usa o vocabulário do setor para contextualizar respostas e análises.</li>
-          <li>Os <strong className="text-surface-300">Estágios</strong> sugeridos pelo template são apenas referência — configure-os em <em>CRM → Estágios</em>.</li>
+          <li>Os <strong className="text-surface-300">Estágios</strong> sugeridos pelo template são apenas referência — configure-os em <em>Contatos → Configurar → Estágios do contato</em>.</li>
           <li>O vocabulário é salvo localmente até que o backend multi-tenant esteja disponível.</li>
         </ul>
       </div>

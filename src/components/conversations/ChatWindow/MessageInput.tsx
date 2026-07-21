@@ -1,9 +1,8 @@
 import { useCallback, useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import {
   Send, Paperclip, AlertTriangle, Zap, Image, FileText, Video, ChevronDown,
-  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X,
+  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2,
 } from 'lucide-react'
-import axios from 'axios'
 import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
@@ -11,7 +10,26 @@ import { cannedResponsesApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
+const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
+
+/** Um anexo "em espera" no input: fica no preview até o operador clicar em
+ *  Enviar (UX estilo Claude/ChatGPT). `id` serve de key de render/remoção;
+ *  `previewUrl` é uma objectURL só para imagens, revogada ao remover/desmontar. */
+type StagedAttachment = { id: string; file: File; previewUrl?: string }
+
+/** Tamanho legível para o preview do anexo (B / KB / MB). */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+/** Ícone por tipo de arquivo (fallback documento) para o card de preview. */
+function fileIcon(file: File) {
+  if (file.type.startsWith('video/')) return Video
+  if (file.type.startsWith('image/')) return Image
+  return FileText
+}
 
 interface MessageInputProps {
   /**
@@ -116,6 +134,10 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   const [pickerActive, setPickerActive] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
+  const [attachments, setAttachments] = useState<StagedAttachment[]>([])
+  const [dragOver, setDragOver] = useState(false)
+  // id do anexo cujo POST está em voo (envio sequencial) — dirige o spinner.
+  const [uploadingId, setUploadingId] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   // Refs used by the outside-click handler below so a mousedown on the
@@ -259,20 +281,58 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
   const handleSend = async () => {
     const trimmed = text.trim()
-    if (!trimmed || sending || disabled) return
-    // Snapshot before clearing so we can restore on failure.
+    // Envia com texto E/OU anexos. Só bloqueia quando não há nada dos dois.
+    if ((!trimmed && attachments.length === 0) || sending || disabled) return
+
+    // Snapshot para restaurar em caso de falha total.
     const previousText = text
+    const staged = attachments
+
+    // Limpa o texto de forma otimista (vira legenda do 1º anexo, se houver).
     setText('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
-    try {
-      await onSend({ body: trimmed, replyToWamid: replyTo?.wamid ?? undefined })
-      onCancelReply?.()
-    } catch {
-      // Send failed (e.g. backend rejected with 403 because user has no
-      // department). Restore the typed text so the operator can retry or
-      // copy it elsewhere — the toast is shown by the page-level handler.
-      setText(previousText)
+
+    // Caminho texto puro (sem anexos) — comportamento original.
+    if (staged.length === 0) {
+      try {
+        await onSend({ body: trimmed, replyToWamid: replyTo?.wamid ?? undefined })
+        onCancelReply?.()
+      } catch {
+        // Falha (ex.: 403 sem setor) — restaura o texto para retry/cópia; o
+        // toast é exibido pelo handler no nível da página.
+        setText(previousText)
+      }
+      return
     }
+
+    // Com anexos: 1 POST por arquivo, em sequência (cada um vira seu balão/
+    // status e evita burst na Meta API). O texto vira legenda só do 1º arquivo
+    // (decisão SCRUM-269); idem o reply. Cada card fica visível com um spinner
+    // enquanto seu upload está em voo (uploadingId) e some ao concluir; os que
+    // falham permanecem no preview para nova tentativa.
+    const failed: StagedAttachment[] = []
+    for (let i = 0; i < staged.length; i++) {
+      const item = staged[i]
+      setUploadingId(item.id)
+      try {
+        await onSend({
+          file: item.file,
+          mediaCaption: item.file.name,
+          body: i === 0 ? trimmed || undefined : undefined,
+          replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
+        })
+        setAttachments((prev) => prev.filter((a) => a.id !== item.id))
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
+      } catch {
+        failed.push(item)
+      }
+    }
+    setUploadingId(null)
+
+    if (failed.length < staged.length) onCancelReply?.()
+    // Se TUDO falhou, devolve o texto (era a legenda do 1º). Os anexos que
+    // falharam seguem no preview (nunca removidos do estado).
+    if (failed.length === staged.length) setText(previousText)
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -336,67 +396,78 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
     }
   }
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? [])
-    if (files.length === 0) return
+  // Mantém uma referência viva dos anexos para revogar as objectURLs no
+  // unmount sem re-registrar o efeito a cada mudança da lista.
+  const attachmentsRef = useRef(attachments)
+  useEffect(() => { attachmentsRef.current = attachments }, [attachments])
+  useEffect(() => () => {
+    attachmentsRef.current.forEach((a) => a.previewUrl && URL.revokeObjectURL(a.previewUrl))
+  }, [])
 
-    // Filter out anything over 16MB before sending — the backend will reject
-    // it anyway, and surfacing the oversize names up-front beats a partial
-    // batch that succeeds for some files and fails silently for others.
-    const maxSize = 16 * 1024 * 1024
-    const oversize = files.filter((f) => f.size > maxSize)
-    const valid = files.filter((f) => f.size <= maxSize)
+  // Filtra arquivos acima de 16MB (o backend rejeitaria de qualquer forma) e
+  // empilha os válidos no preview. Reaproveitado por seleção, drag-and-drop e
+  // colar (SCRUM-275), então concentra aqui a regra de validação/oversize.
+  const stageFiles = useCallback((files: File[]) => {
+    if (files.length === 0) return
+    const oversize = files.filter((f) => f.size > MAX_FILE_SIZE)
+    const valid = files.filter((f) => f.size <= MAX_FILE_SIZE)
     if (oversize.length > 0) {
       alert(
         `Arquivo${oversize.length > 1 ? 's' : ''} muito grande${oversize.length > 1 ? 's' : ''} (máx 16MB):\n` +
         oversize.map((f) => `• ${f.name}`).join('\n'),
       )
     }
-    if (valid.length === 0) {
-      e.target.value = ''
-      return
-    }
+    if (valid.length === 0) return
+    setAttachments((prev) => [
+      ...prev,
+      ...valid.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      })),
+    ])
+  }, [])
 
-    // Caption: only attach the typed text to the FIRST file in the batch.
-    // For the rest we leave body undefined so the bubbles don't all share
-    // the same caption — the operator usually writes the caption to
-    // describe the first/leading attachment, not every single one.
-    const previousText = text
-    setText('')
-    e.target.value = ''
+  const removeAttachment = useCallback((id: string) => {
+    setAttachments((prev) => {
+      const found = prev.find((a) => a.id === id)
+      if (found?.previewUrl) URL.revokeObjectURL(found.previewUrl)
+      return prev.filter((a) => a.id !== id)
+    })
+  }, [])
 
-    // Sequential dispatch: each file gets its own POST so each message has
-    // its own bubble + status icon, and we avoid bursting the Meta API.
-    // If one fails, we keep going (don't abort the batch) but collect the
-    // failures so the user can see which ones didn't go through.
-    const failed: string[] = []
-    for (let i = 0; i < valid.length; i++) {
-      const file = valid[i]
-      try {
-        await onSend({
-          file,
-          mediaCaption: file.name,
-          body: i === 0 ? previousText.trim() || undefined : undefined,
-          // Only the first attachment quotes the message being replied to.
-          replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
-        })
-      } catch {
-        failed.push(file.name)
-      }
-    }
+  // Drag-and-drop de arquivos sobre a caixa do input (SCRUM-275).
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes('Files')) return
+    e.preventDefault()
+    setDragOver(true)
+  }
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Ignora a saída para elementos-filhos (evita flicker do highlight).
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setDragOver(false)
+  }
+  const handleDrop = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes('Files')) return
+    e.preventDefault()
+    setDragOver(false)
+    stageFiles(Array.from(e.dataTransfer.files))
+  }
 
-    // Clear the reply context if at least one file went through.
-    if (failed.length < valid.length) onCancelReply?.()
+  // Colar imagem do clipboard (ex.: print de tela) direto no input (SCRUM-275).
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const images = Array.from(e.clipboardData.files ?? []).filter((f) => f.type.startsWith('image/'))
+    if (images.length === 0) return
+    e.preventDefault() // não colar o binário como texto
+    stageFiles(images)
+  }
 
-    if (failed.length > 0) {
-      // Page-level toast already fires per-failure; this restores the
-      // caption text only if every file failed, so a partial-batch
-      // success doesn't dump the user back into the textarea.
-      if (failed.length === valid.length) setText(previousText)
-    }
-
+  // Selecionar arquivo(s) NÃO envia mais na hora — só empilha no preview
+  // (staging). O envio de fato acontece no handleSend, ao clicar em Enviar.
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    stageFiles(Array.from(e.target.files ?? []))
+    e.target.value = '' // permite re-selecionar o mesmo arquivo
     setShowAttachMenu(false)
-    if (textareaRef.current) textareaRef.current.style.height = 'auto'
   }
 
   // Phase 29 — pre-detected blocker (no department, no WA line, etc.).
@@ -517,15 +588,81 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
         )}
 
         <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           className={cn(
-            'flex items-center gap-2 bg-surface-800 rounded-2xl px-3 py-2.5 transition-all',
-            'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-sm focus-within:shadow-brand-500/10'
+            'relative bg-surface-800 rounded-2xl px-3 py-2.5 transition-all',
+            'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-sm focus-within:shadow-brand-500/10',
+            dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
           )}
         >
+          {/* Dropzone: feedback "solte aqui" durante o arraste (SCRUM-275) */}
+          {dragOver && (
+            <div className="absolute inset-0 z-10 rounded-2xl bg-brand-950/50 border-2 border-dashed border-brand-500 flex items-center justify-center pointer-events-none">
+              <span className="text-xs font-semibold text-brand-200">Solte para anexar</span>
+            </div>
+          )}
+
+          {/* Preview dos anexos em espera (staging). Fica dentro da caixa, acima
+              da textarea — o operador confere/remove antes de enviar. */}
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2.5 pb-2.5 border-b border-surface-700/60">
+              {attachments.map((att) => {
+                const Icon = fileIcon(att.file)
+                const isUploading = att.id === uploadingId
+                return (
+                  <div
+                    key={att.id}
+                    className={cn(
+                      'flex items-center gap-2 bg-surface-700/60 border border-surface-600 rounded-lg pl-2 pr-1.5 py-1.5 max-w-[220px]',
+                      isUploading && 'opacity-80'
+                    )}
+                  >
+                    <div className="relative w-8 h-8 flex-shrink-0">
+                      {att.previewUrl ? (
+                        <img
+                          src={att.previewUrl}
+                          alt={att.file.name}
+                          className="w-8 h-8 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded bg-surface-800 flex items-center justify-center">
+                          <Icon className="w-4 h-4 text-surface-300" />
+                        </div>
+                      )}
+                      {isUploading && (
+                        <div className="absolute inset-0 rounded bg-black/55 flex items-center justify-center">
+                          <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-medium text-surface-200 truncate">{att.file.name}</p>
+                      <p className="text-[10px] text-surface-500">{formatFileSize(att.file.size)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(att.id)}
+                      disabled={uploadingId !== null}
+                      title="Remover anexo"
+                      aria-label={`Remover ${att.file.name}`}
+                      className="w-5 h-5 flex items-center justify-center rounded text-surface-400 hover:text-surface-100 hover:bg-surface-600 transition-colors flex-shrink-0 disabled:opacity-40 disabled:hover:bg-transparent"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Linha de composição (anexar · textarea · emoji · enviar) */}
+          <div className="flex items-center gap-2">
           {/* Hidden file inputs — `multiple` lets the operator pick a whole
-              batch in one go; handleFileSelect dispatches them sequentially
-              so each gets its own message bubble and the Meta API isn't hit
-              by a burst that would trip rate limits. */}
+              batch in one go; handleFileSelect stages them (preview) and
+              handleSend dispatches one POST per file, so each gets its own
+              message bubble and the Meta API isn't hit by a burst. */}
           <input
             ref={imageInputRef}
             type="file"
@@ -609,6 +746,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             onKeyDown={handleKeyDown}
             onInput={handleInput}
             onContextMenu={onInputContextMenu}
+            onPaste={handlePaste}
             placeholder="Digite uma mensagem ou / para respostas rápidas..."
             rows={1}
             disabled={disabled || sending}
@@ -626,8 +764,8 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             className="w-8 h-8"
           />
 
-          {/* Send */}
-          {text.trim() && (
+          {/* Send — aparece com texto E/OU anexos em espera */}
+          {(text.trim() || attachments.length > 0) && (
             <button
               onClick={handleSend}
               disabled={sending || disabled}
@@ -636,6 +774,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
               <Send className="w-4 h-4" />
             </button>
           )}
+          </div>
         </div>
       </div>
       <p className="text-[10px] text-surface-600 mt-1.5 text-center">

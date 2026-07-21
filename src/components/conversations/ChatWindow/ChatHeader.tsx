@@ -14,6 +14,7 @@ import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { cn, hexToRgba } from '@/lib/utils'
 import { HandoffChip } from './AiHandoffBanner'
+import { ConversationDealIndicator } from './ConversationDealIndicator'
 import type { Conversation, Tag as TagType, User } from '@/types'
 
 const STATUS_OPTIONS = [
@@ -205,6 +206,7 @@ export function ChatHeader({
             <WhatsAppIcon size={10} />
             <span className="truncate">{contact.waId}</span>
           </div>
+          <div className="mt-0.5"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} /></div>
           {tags.length > 0 && (
             <div className="flex items-center flex-wrap gap-1 mt-0.5">
               {visibleTags.map((t) => (
@@ -344,6 +346,7 @@ export function ChatHeader({
               </>
             )}
           </div>
+          <div className="mt-1"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} /></div>
         </div>
       </div>
 

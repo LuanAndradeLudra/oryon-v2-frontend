@@ -1,12 +1,26 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Briefcase, Plus } from 'lucide-react'
+import { Briefcase, Plus, KanbanSquare } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { DealModal } from '@/components/contacts/DealModal'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { formatBRL } from '@/utils/money'
 import { cn } from '@/lib/utils'
 import type { Deal } from '@/types'
+
+/** Agrupa os negócios do contato por pipeline, preservando a ordem de chegada. */
+function groupByPipeline(deals: Deal[]): Array<[string, Deal[]]> {
+  const map = new Map<string, Deal[]>()
+  for (const d of deals) {
+    const key = d.pipelineId || '—'
+    const arr = map.get(key) ?? []
+    arr.push(d)
+    map.set(key, arr)
+  }
+  return [...map.entries()]
+}
 
 const STATUS_META: Record<Deal['status'], { label: string; cls: string }> = {
   open: { label: 'Aberto', cls: 'text-amber-300 bg-amber-500/10 border-amber-500/25' },
@@ -28,6 +42,11 @@ export function ContactPanelDeals({
   conversationId: string
 }) {
   const { vocab } = useTenantVocab()
+  const navigate = useNavigate()
+  // Funis vêm do cache compartilhado (CRMConfigContext, SCRUM-293) — sem
+  // fetch próprio, só pro nome do cabeçalho de cada grupo (contato pode ter
+  // negócios em pipelines diferentes).
+  const { pipelines } = useCRMConfig()
   const [deals, setDeals] = useState<Deal[] | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
@@ -105,33 +124,54 @@ export function ContactPanelDeals({
               <p className="text-sm font-semibold text-emerald-300 tabular-nums">{formatBRL(wonCents)}</p>
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            {list.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => {
-                  setEditDeal(d)
-                  setModalOpen(true)
-                }}
-                className="w-full flex items-center gap-2.5 bg-surface-800/40 hover:bg-surface-800 border border-surface-700/40 rounded-lg px-2.5 py-2 text-left transition-colors"
-              >
-                <Briefcase className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-surface-200 truncate">{d.title}</p>
-                  <span
-                    className={cn(
-                      'inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full border',
-                      STATUS_META[d.status].cls,
-                    )}
-                  >
-                    {STATUS_META[d.status].label}
-                  </span>
+          <div className="flex flex-col gap-3">
+            {groupByPipeline(list).map(([pipelineId, groupDeals]) => {
+              const pipeline = pipelines.find((p) => p.id === pipelineId)
+              return (
+                <div key={pipelineId} className="flex flex-col gap-1.5">
+                  {/* Cabeçalho do grupo: nome do pipeline + link pro board */}
+                  <div className="flex items-center justify-between px-0.5">
+                    <span className="text-[10px] text-surface-500 font-medium truncate">
+                      {pipeline?.name ?? 'Sem pipeline'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/contacts?pipeline=${pipelineId}`)}
+                      title="Abrir no board de negócios"
+                      className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 transition-colors flex-shrink-0"
+                    >
+                      <KanbanSquare className="w-3 h-3" /> Ver no board
+                    </button>
+                  </div>
+                  {groupDeals.map((d) => (
+                    <button
+                      key={d.id}
+                      onClick={() => {
+                        setEditDeal(d)
+                        setModalOpen(true)
+                      }}
+                      className="w-full flex items-center gap-2.5 bg-surface-800/40 hover:bg-surface-800 border border-surface-700/40 rounded-lg px-2.5 py-2 text-left transition-colors"
+                    >
+                      <Briefcase className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-surface-200 truncate">{d.title}</p>
+                        <span
+                          className={cn(
+                            'inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full border',
+                            STATUS_META[d.status].cls,
+                          )}
+                        >
+                          {STATUS_META[d.status].label}
+                        </span>
+                      </div>
+                      <span className="text-xs text-surface-200 tabular-nums flex-shrink-0">
+                        {formatBRL(d.amountCents)}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <span className="text-xs text-surface-200 tabular-nums flex-shrink-0">
-                  {formatBRL(d.amountCents)}
-                </span>
-              </button>
-            ))}
+              )
+            })}
           </div>
         </>
       )}
@@ -140,6 +180,7 @@ export function ContactPanelDeals({
         open={modalOpen}
         contactId={contactId}
         editDeal={editDeal}
+        pipelines={pipelines}
         onClose={() => {
           setModalOpen(false)
           setEditDeal(null)

@@ -10,6 +10,7 @@ import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn, relativeDate } from '@/lib/utils'
+import { formatBRL } from '@/utils/money'
 import type { Contact, ContactStage } from '@/types'
 
 const SENTIMENT_ICON = {
@@ -26,12 +27,52 @@ const INTENT_CONFIG = {
   unknown: { label: '—',       className: 'text-surface-600 bg-surface-800' },
 }
 
+/** Chips de negócios por funil (spec UX 2026-07-09) — extraído pra ser
+ *  reusado igual entre `ContactRow` (desktop) e `ContactCard` (mobile,
+ *  `ContactsMobileList`), evitando duas cópias divergentes da mesma lógica. */
+export function DealsSummaryChips({
+  contact,
+  onOpenDeals,
+  className,
+}: {
+  contact: Contact
+  onOpenDeals?: (contact: Contact) => void
+  className?: string
+}) {
+  const byPipeline = contact.dealsSummary?.byPipeline ?? []
+  return (
+    <div className={cn('flex gap-1 flex-wrap', className)}>
+      {byPipeline.length === 0 ? (
+        <span className="text-[10px] text-surface-600 border border-dashed border-surface-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+          sem negócio
+        </span>
+      ) : (
+        byPipeline.map((p) => (
+          <button
+            key={p.pipelineId}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpenDeals?.(contact) }}
+            title={`${p.pipelineName} · ${p.openCount} aberto(s)`}
+            className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 transition-all"
+            style={{ color: p.pipelineColor, borderColor: `${p.pipelineColor}40`, backgroundColor: `${p.pipelineColor}18` }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.pipelineColor }} />
+            {p.pipelineName}
+            {p.openCents > 0 && <span className="opacity-80">· {formatBRL(p.openCents)}</span>}
+          </button>
+        ))
+      )}
+    </div>
+  )
+}
 
 interface ContactRowProps {
   contact: Contact
   onOpenPanel: (contact: Contact) => void
   onOpenConversation?: (contact: Contact) => void
   onMoveStage?: (contact: Contact, stage: ContactStage) => void
+  /** Abre o painel do contato direto na aba Negócios — clique num chip da coluna Negócios. */
+  onOpenDeals?: (contact: Contact) => void
   isSelected?: boolean
   onToggleSelect?: (id: string) => void
   hasSelection?: boolean
@@ -44,6 +85,7 @@ export function ContactRow({
   onOpenPanel,
   onOpenConversation,
   onMoveStage,
+  onOpenDeals,
   isSelected = false,
   onToggleSelect,
   hasSelection = false,
@@ -206,6 +248,11 @@ export function ContactRow({
             <span className="text-[10px] text-surface-500">+{(contact.tags ?? []).length - 2}</span>
           )}
         </div>
+      </td>
+
+      {/* Negócios — chips por funil (spec UX 2026-07-09) */}
+      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+        <DealsSummaryChips contact={contact} onOpenDeals={onOpenDeals} className="max-w-[220px]" />
       </td>
 
       {/* Fonte */}
