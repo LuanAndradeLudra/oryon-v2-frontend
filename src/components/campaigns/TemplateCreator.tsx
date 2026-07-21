@@ -627,7 +627,7 @@ function StepCategoria({
                 )}
               >
                 {comingSoon && (
-                  <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                  <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-wide text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded">
                     Em breve
                   </span>
                 )}
@@ -1113,7 +1113,7 @@ function StepBotoes({
                           <p className="text-[11px] text-surface-400">{bt.description}</p>
                         </div>
                         {bt.comingSoon ? (
-                          <span className="ml-auto text-[9px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">Em breve</span>
+                          <span className="ml-auto text-[9px] font-semibold uppercase tracking-wide text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded">Em breve</span>
                         ) : alreadyHasType ? (
                           <span className="ml-auto text-[10px] text-surface-400">Já adicionado</span>
                         ) : null}

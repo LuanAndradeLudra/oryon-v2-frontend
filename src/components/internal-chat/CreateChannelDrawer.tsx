@@ -729,8 +729,8 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all',
                   saving
-                    ? 'bg-blue-600/60 text-white/70 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white',
+                    ? 'bg-brand-600/60 text-white/70 cursor-not-allowed'
+                    : 'bg-brand-600 hover:bg-brand-500 text-surface-950',
                 )}
               >
                 {saving ? (

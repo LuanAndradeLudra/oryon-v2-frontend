@@ -147,7 +147,10 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
                 {isCopilot ? 'Copilot' : message.senderName}
               </span>
               {isCopilot && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/25 text-[9px] font-bold uppercase tracking-wide text-blue-200">
+                <span
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide color-chip"
+                  style={{ ['--chip']: 'var(--color-accent-violet)' } as React.CSSProperties}
+                >
                   <Sparkles className="w-2.5 h-2.5" />
                   Agente
                 </span>

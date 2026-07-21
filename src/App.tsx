@@ -130,8 +130,11 @@ function OnboardingGate({ children }: { children: ReactNode }) {
     if (isMobile) {
       return (
         <div className="h-screen w-screen bg-black flex flex-col items-center justify-center px-6 text-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-amber-950/40 border border-amber-700/40 flex items-center justify-center">
-            <Monitor className="w-8 h-8 text-amber-300" />
+          <div
+            className="w-16 h-16 rounded-2xl color-chip border flex items-center justify-center"
+            style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
+          >
+            <Monitor className="w-8 h-8" />
           </div>
           <h1 className="text-lg font-semibold text-surface-50">Configuração inicial requer desktop</h1>
           <p className="text-sm text-surface-400 leading-relaxed max-w-xs">

@@ -90,9 +90,9 @@ interface KPIData {
 const KPI_COLORS: Record<KPIColor, { bg: string; icon: string; ring: string }> = {
   brand:  { bg: 'bg-brand-500/10',   icon: 'text-brand-400',   ring: 'ring-brand-500/20' },
   green:  { bg: 'bg-status-active-bg', icon: 'text-status-active', ring: 'ring-status-active-border' },
-  blue:   { bg: 'bg-blue-500/10',    icon: 'text-blue-400',    ring: 'ring-blue-500/20' },
+  blue:   { bg: 'bg-accent-blue/10',    icon: 'text-accent-blue',    ring: 'ring-accent-blue/20' },
   amber:  { bg: 'bg-status-pending-bg',   icon: 'text-status-pending',   ring: 'ring-status-pending-border' },
-  purple: { bg: 'bg-purple-500/10',  icon: 'text-purple-400',  ring: 'ring-purple-500/20' },
+  purple: { bg: 'bg-accent-violet/10',  icon: 'text-accent-violet',  ring: 'ring-accent-violet/20' },
 }
 
 function KPICard({ data, hero }: { data: KPIData; hero?: boolean }) {
@@ -329,25 +329,25 @@ interface QuickAction {
 function getQuickActions(role: string): QuickAction[] {
   if (role === 'admin') return [
     { label: 'Conversas',         description: 'Ver todas as conversas',          icon: MessageSquare, iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/conversations' },
-    { label: 'Convidar usuário',  description: 'Adicionar à equipe',              icon: UserPlus,      iconColor: 'text-blue-400',    iconBg: 'bg-blue-500/10',    href: '/settings/agents' },
-    { label: 'Plano & Cobrança',  description: 'Gerenciar assinatura',            icon: CreditCard,    iconColor: 'text-amber-400',   iconBg: 'bg-amber-500/10',   href: '/settings/billing' },
-    { label: 'Configurar CRM',    description: 'Estágios e campos personalizados', icon: Settings,      iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10', href: '/contacts' },
+    { label: 'Convidar usuário',  description: 'Adicionar à equipe',              icon: UserPlus,      iconColor: 'text-accent-blue',    iconBg: 'bg-accent-blue/10',    href: '/settings/agents' },
+    { label: 'Plano & Cobrança',  description: 'Gerenciar assinatura',            icon: CreditCard,    iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/settings/billing' },
+    { label: 'Configurar CRM',    description: 'Estágios e campos personalizados', icon: Settings,      iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/contacts' },
     { label: 'Automações',         description: 'Fluxos automáticos',               icon: Workflow,      iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/automations' },
     { label: 'Relatórios',        description: 'Dashboard de métricas',            icon: BarChart3,     iconColor: 'text-surface-400', iconBg: 'bg-surface-700',    href: '/dashboard' },
   ]
   if (role === 'supervisor') return [
-    { label: 'Fila de espera',    description: 'Sem agente atribuído',            icon: Inbox,         iconColor: 'text-amber-400',   iconBg: 'bg-amber-500/10',   href: '/conversations' },
-    { label: 'Minha equipe',      description: 'Gerenciar usuários',              icon: Users,         iconColor: 'text-blue-400',    iconBg: 'bg-blue-500/10',    href: '/settings/agents' },
-    { label: 'Criar tag',         description: 'Organizar conversas',             icon: Tag,           iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10', href: '/settings/tags' },
+    { label: 'Fila de espera',    description: 'Sem agente atribuído',            icon: Inbox,         iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/conversations' },
+    { label: 'Minha equipe',      description: 'Gerenciar usuários',              icon: Users,         iconColor: 'text-accent-blue',    iconBg: 'bg-accent-blue/10',    href: '/settings/agents' },
+    { label: 'Criar tag',         description: 'Organizar conversas',             icon: Tag,           iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/settings/tags' },
     { label: 'Relatórios',        description: 'Métricas da equipe',              icon: BarChart3,     iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/dashboard' },
     { label: 'Respostas rápidas', description: 'Templates de mensagem',           icon: Zap,           iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/settings/quick-replies' },
     { label: 'CRM',               description: 'Pipeline de vendas',              icon: MessageSquare, iconColor: 'text-surface-400', iconBg: 'bg-surface-700',    href: '/contacts' },
   ]
   return [
     { label: 'Minhas conversas',  description: 'Ver atribuídas a mim',            icon: MessageSquare, iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/conversations' },
-    { label: 'Contatos',          description: 'Gerenciar CRM',                   icon: Users,         iconColor: 'text-blue-400',    iconBg: 'bg-blue-500/10',    href: '/contacts' },
-    { label: 'Respostas rápidas', description: 'Usar templates salvos',           icon: Zap,           iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10', href: '/settings/quick-replies' },
-    { label: 'Relatórios',        description: 'Meu desempenho',                  icon: BarChart3,     iconColor: 'text-amber-400',   iconBg: 'bg-amber-500/10',   href: '/dashboard' },
+    { label: 'Contatos',          description: 'Gerenciar CRM',                   icon: Users,         iconColor: 'text-accent-blue',    iconBg: 'bg-accent-blue/10',    href: '/contacts' },
+    { label: 'Respostas rápidas', description: 'Usar templates salvos',           icon: Zap,           iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/settings/quick-replies' },
+    { label: 'Relatórios',        description: 'Meu desempenho',                  icon: BarChart3,     iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/dashboard' },
   ]
 }
 

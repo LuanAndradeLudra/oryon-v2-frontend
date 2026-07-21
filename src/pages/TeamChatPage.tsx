@@ -285,7 +285,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
             className={cn(
               'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors',
               tab === t.id
-                ? 'bg-blue-500/10 text-blue-500'
+                ? 'bg-brand-500/10 text-brand-400'
                 : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800',
             )}
           >
@@ -663,7 +663,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
             )}
             <button
               onClick={onToggleInfo}
-              className={cn('p-2 rounded-full transition-colors', showInfo ? 'text-blue-500 bg-blue-500/15' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800')}
+              className={cn('p-2 rounded-full transition-colors', showInfo ? 'text-brand-400 bg-brand-500/15' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800')}
               title="Informações"
             >
               <Info className="w-4 h-4" />
