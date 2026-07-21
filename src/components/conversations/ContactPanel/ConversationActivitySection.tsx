@@ -284,7 +284,10 @@ export function ConversationActivitySection({ conversationId }: { conversationId
               <ChevronDown className={cn('w-3 h-3 transition-transform', filterOpen && 'rotate-180')} />
             </button>
             {filterOpen && (
-              <div className="absolute right-0 top-full mt-1 z-50 min-w-[100px] py-1 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden">
+              <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setFilterOpen(false)} />
+            )}
+            {filterOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 min-w-[100px] py-1 overlay-surface border rounded-xl overflow-hidden">
                 {(Object.keys(FILTER_LABELS) as TimeFilter[]).map(f => (
                   <button
                     key={f}

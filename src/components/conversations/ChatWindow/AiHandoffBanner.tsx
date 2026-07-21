@@ -22,7 +22,7 @@
 // cross-line interference.
 
 import { useEffect, useRef, useState } from 'react'
-import { Bot, UserCog, ChevronDown, RotateCcw, Loader2 } from 'lucide-react'
+import { Bot, UserCog, ChevronDown, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
@@ -82,6 +82,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
   const { user: currentUser } = useAuth()
   const [busy, setBusy] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [tipShow, setTipShow] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // "Você" when the logged-in operator is the one driving the conversation,
@@ -154,22 +155,37 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
   if (!isPaused) {
     return (
       <div
-        className="flex items-center h-8 pl-2 pr-1 gap-1.5 rounded-lg bg-surface-800 border border-surface-700"
-        title="A IA está respondendo automaticamente"
+        className="relative"
+        onMouseEnter={() => setTipShow(true)}
+        onMouseLeave={() => setTipShow(false)}
       >
-        <Bot className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
-        <span className="text-[11px] font-medium text-surface-300 leading-none">IA</span>
         <button
           type="button"
           disabled={busy}
-          onClick={handleIntervene}
-          title="Intervir agora — pausa a IA pelo período configurado no agente"
-          aria-label="Intervir agora"
-          className="inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-[11px] font-medium text-surface-200 hover:text-surface-50 hover:bg-surface-700/60 disabled:opacity-50 transition-colors"
+          onClick={() => { setTipShow(false); handleIntervene() }}
+          aria-label="Intervir agora — assumir a conversa da IA"
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/20 text-surface-100 hover:bg-amber-500/30 hover:border-amber-500/30 disabled:opacity-50 transition-all"
         >
-          {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserCog className="w-3 h-3" />}
-          Intervir agora
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
         </button>
+        <AnimatePresence>
+          {tipShow && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 520, damping: 30, mass: 0.6 }}
+              className="absolute top-full right-0 mt-2 z-50 w-60 origin-top-right rounded-xl overlay-surface border px-3 py-2.5 pointer-events-none"
+            >
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold text-surface-50">
+                <UserCog className="w-3 h-3 text-amber-400" /> Intervir agora
+              </p>
+              <p className="mt-1 text-[11px] leading-snug text-surface-400">
+                A IA está respondendo automaticamente. Clique para pausá-la e assumir a conversa você mesmo.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -181,32 +197,47 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
   // and the current operator would need to coordinate before assuming.
   const isMe = ownerLabel === 'Você'
   return (
-    <div
-      className="flex items-center h-8 pl-2 pr-1 gap-1.5 rounded-lg bg-surface-800 border border-surface-700"
-      title={
-        isMe
-          ? (isIndefinite
-              ? 'Você está atendendo. IA pausada até reativar.'
-              : `Você está atendendo. IA volta em ${formatRemaining(pausedUntilMs!)}`)
-          : (isIndefinite
-              ? `${ownerLabel} está atendendo. IA pausada até reativar.`
-              : `${ownerLabel} está atendendo. IA volta em ${formatRemaining(pausedUntilMs!)}`)
-      }
-    >
-      <UserCog className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
-      <span className="text-[11px] font-medium text-surface-300 leading-none whitespace-nowrap">
-        {ownerLabel} · {isIndefinite ? '∞' : formatRemaining(pausedUntilMs!)}
-      </span>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={handleResume}
-        title="Reativar IA agora"
-        aria-label="Reativar IA"
-        className="w-6 h-6 flex items-center justify-center rounded-md text-surface-300 hover:text-surface-50 hover:bg-surface-700/60 disabled:opacity-50 transition-colors"
+    <div className="flex items-center gap-1">
+      {/* Primary: quem está no controle (borda emerald) + reativar no clique,
+          com o mesmo tooltip animado da intervenção. */}
+      <div
+        className="relative"
+        onMouseEnter={() => setTipShow(true)}
+        onMouseLeave={() => setTipShow(false)}
       >
-        {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
-      </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => { setTipShow(false); handleResume() }}
+          aria-label="Reativar IA — devolver a conversa para a IA"
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/20 text-surface-100 hover:bg-emerald-500/30 hover:border-emerald-500/30 disabled:opacity-50 transition-all"
+        >
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCog className="w-4 h-4" />}
+        </button>
+        <AnimatePresence>
+          {tipShow && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 520, damping: 30, mass: 0.6 }}
+              className="absolute top-full right-0 mt-2 z-50 w-60 origin-top-right rounded-xl overlay-surface border px-3 py-2.5 pointer-events-none"
+            >
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold text-surface-50">
+                <UserCog className="w-3 h-3 text-emerald-400" /> {isMe ? 'Você está atendendo' : `${ownerLabel} está atendendo`}
+              </p>
+              <p className="mt-1 text-[11px] leading-snug text-surface-400">
+                {isIndefinite
+                  ? 'IA pausada até você reativar. '
+                  : `IA volta sozinha em ${formatRemaining(pausedUntilMs!)}. `}
+                Clique para reativar a IA agora.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Secondary: estender a pausa da IA */}
       <div ref={menuRef} className="relative">
         <button
           type="button"
@@ -214,10 +245,11 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
           onClick={() => setMenuOpen((v) => !v)}
           title="Estender pausa da IA"
           aria-label="Estender pausa"
-          className="w-6 h-6 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-100 hover:bg-surface-700/60 disabled:opacity-50 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-surface-400 hover:bg-surface-800 hover:text-surface-200 disabled:opacity-50 transition-all"
         >
-          <ChevronDown className={cn('w-3 h-3 transition-transform', menuOpen && 'rotate-180')} />
+          <ChevronDown className={cn('w-4 h-4 transition-transform', menuOpen && 'rotate-180')} />
         </button>
+        {menuOpen && <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setMenuOpen(false)} />}
         <AnimatePresence>
           {menuOpen && (
             <motion.div
@@ -225,7 +257,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.12 }}
-              className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg border border-surface-700 bg-surface-900 shadow-xl overflow-hidden"
+              className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg overlay-surface border overflow-hidden"
             >
               {EXTEND_OPTIONS.map((opt) => (
                 <button

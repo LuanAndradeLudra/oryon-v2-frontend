@@ -78,9 +78,9 @@ function QuickReplyPicker({
   return (
     <div
       ref={listRef}
-      className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden max-h-56 overflow-y-auto"
+      className="absolute bottom-full left-0 right-0 mb-2 z-50 overlay-surface border rounded-xl overflow-hidden max-h-56 overflow-y-auto"
     >
-      <div className="px-3 py-2 border-b border-surface-700/60 flex items-center gap-1.5 sticky top-0 bg-surface-800 z-10">
+      <div className="px-3 py-2 border-b border-surface-700/60 flex items-center gap-1.5 sticky top-0 overlay-bg z-10">
         <Zap className="w-3 h-3 text-brand-400" />
         <span className="text-[10px] font-semibold text-surface-400 uppercase tracking-wide">
           Respostas rápidas {query ? `— /${query}` : ''}
@@ -524,8 +524,11 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
 
         <div
           className={cn(
-            'flex items-center gap-2 bg-surface-800 rounded-2xl px-3 py-2.5 transition-all shadow-lg',
-            'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-brand-500/20'
+            // msg-composer traz bg/border via tokens que acompanham o tema
+            // (ver index.css) — por isso a cor base não vem de bg-surface-800/
+            // border-surface-700 aqui.
+            'msg-composer flex items-center gap-2 rounded-2xl px-3 py-2.5 transition-all shadow-lg',
+            'border focus-within:border-brand-500/50 focus-within:shadow-brand-500/20'
           )}
         >
           {/* Hidden file inputs — `multiple` lets the operator pick a whole
@@ -571,7 +574,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             {showAttachMenu && (
               <div
                 ref={attachMenuRef}
-                className="absolute bottom-full left-0 mb-2 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden z-50"
+                className="absolute bottom-full left-0 mb-2 overlay-surface border rounded-xl overflow-hidden z-50"
               >
                 <button
                   onClick={() => {

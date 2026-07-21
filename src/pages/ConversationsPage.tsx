@@ -468,11 +468,11 @@ export function ConversationsPage() {
           </div>
         ) : (
           <div className="flex flex-col min-h-0">
-            <div className="flex-1 min-h-0 flex">
-              <ConversationList {...listProps} />
+            <div className="chat-shell-bg flex-1 min-h-0 flex">
+              <ConversationList {...listProps} roundedBottomRight />
             </div>
             {/* Descoberta dos atalhos de triagem — discreto, só desktop */}
-            <div className="flex items-center justify-center gap-3 px-3 py-1.5 border-t border-r border-surface-800 bg-surface-950 text-[10px] text-surface-600 select-none flex-shrink-0">
+            <div className="chat-shell-bg flex items-center justify-center gap-3 px-3 py-1.5 text-[10px] text-surface-600 select-none flex-shrink-0">
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">J</kbd>/<kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">K</kbd> navegar</span>
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">E</kbd> resolver</span>
               <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">R</kbd> p/ mim</span>
@@ -542,7 +542,7 @@ export function ConversationsPage() {
                     animate={{ x: 0 }}
                     exit={{ x: '100%' }}
                     transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-                    className="fixed top-0 right-0 bottom-0 w-full sm:w-[440px] z-[61] bg-surface-900 border-l border-surface-800 shadow-2xl flex flex-col overflow-hidden"
+                    className="fixed top-0 right-0 bottom-0 w-full sm:w-[440px] z-[61] bg-surface-900 border-l overlay-frame flex flex-col overflow-hidden"
                   >
                     <ContactPanel
                       conversation={activeConversation}

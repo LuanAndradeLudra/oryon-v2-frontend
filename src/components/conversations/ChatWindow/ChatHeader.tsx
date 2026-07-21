@@ -1,13 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import {
-  ChevronDown, UserPlus, Info,
-  Tag, Check, Archive, ArrowLeft, MoreVertical,
+  ChevronDown, Info,
+  Check, Archive, ArrowLeft, MoreVertical,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { TagPickerContent } from '@/components/ui/TagPicker'
-import { UserPicker } from '@/components/ui/UserPicker'
-import { ConfirmModal, Modal } from '@/components/ui/Modal'
+import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -53,25 +51,22 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({
-  conversation, allTags, allUsers,
+  conversation,
   onStatusChange, onToggleInfo, infoOpen,
-  onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
-  onAssign, onArchive,
+  onArchive,
   onSetAiPause, onInterveneAi,
   onBack,
 }: ChatHeaderProps) {
   const isMobile = useIsMobile()
-  const { contact, status, whatsappNumber, assignedUser, tags = [] } = conversation
+  const { contact, status, whatsappNumber, assignedUser } = conversation
 
-  const [tagOpen,      setTagOpen]      = useState(false)
-  const [userOpen,     setUserOpen]     = useState(false)
   const [archiveOpen,  setArchiveOpen]  = useState(false)
   const [statusOpen,   setStatusOpen]   = useState(false)
   const [moreOpen,     setMoreOpen]     = useState(false)
   const statusRef = useRef<HTMLDivElement>(null)
 
   const closeAll = () => {
-    setTagOpen(false); setUserOpen(false); setStatusOpen(false); setMoreOpen(false)
+    setStatusOpen(false); setMoreOpen(false)
   }
 
   useEffect(() => {
@@ -88,22 +83,6 @@ export function ChatHeader({
   // Compartilhado entre mobile e desktop — Modals/Pickers
   const sharedOverlays = (
     <>
-      <Modal
-        open={tagOpen}
-        onClose={() => setTagOpen(false)}
-        title="Gerenciar etiquetas"
-        className="max-w-md"
-      >
-        <TagPickerContent
-          allTags={allTags}
-          selectedTags={tags}
-          onAdd={onAddTag}
-          onRemove={onRemoveTag}
-          onCreate={onCreateTag}
-          onDelete={onDeleteTag}
-        />
-      </Modal>
-
       <ConfirmModal
         open={archiveOpen}
         onClose={() => setArchiveOpen(false)}
@@ -121,20 +100,18 @@ export function ChatHeader({
     <div ref={statusRef} className="relative">
       <button
         type="button"
-        onClick={() => { setTagOpen(false); setUserOpen(false); setMoreOpen(false); setStatusOpen((v) => !v) }}
+        onClick={() => { setMoreOpen(false); setStatusOpen((v) => !v) }}
         title="Alterar status"
-        style={statusOpen
-          ? ({ ['--chip']: status === 'resolved'
-                ? 'var(--color-cstatus-resolved)'
-                : status === 'pending'
-                  ? 'var(--color-cstatus-pending)'
-                  : 'var(--color-status-open)' } as React.CSSProperties)
-          : undefined}
+        style={{ ['--chip']: status === 'resolved'
+              ? 'var(--color-cstatus-resolved)'
+              : status === 'pending'
+                ? 'var(--color-cstatus-pending)'
+                : 'var(--color-status-open)' } as React.CSSProperties}
         className={cn(
           'flex items-center gap-1 px-2.5 h-8 rounded-lg text-xs font-medium transition-all border',
           statusOpen
             ? 'color-chip'
-            : 'bg-surface-800 text-surface-300 border-surface-700 hover:bg-surface-700 hover:text-surface-200',
+            : 'status-trigger bg-surface-800 text-surface-300 border-surface-700',
         )}
       >
         <span className="max-w-[7rem] truncate">{statusTriggerLabel(status)}</span>
@@ -142,14 +119,17 @@ export function ChatHeader({
       </button>
 
       {statusOpen && (
-        <div className="absolute right-0 top-full mt-1 min-w-[11rem] py-1 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl z-50">
+        <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setStatusOpen(false)} />
+      )}
+      {statusOpen && (
+        <div className="absolute right-0 top-full mt-1 min-w-[11rem] py-1 overlay-surface border rounded-xl z-50 overflow-hidden">
           {STATUS_OPTIONS.map(({ value: v, label }) => {
             const active = status === v
             const statusBg = v === 'open'
-              ? 'bg-status-open/10 hover:bg-status-open/18'
+              ? 'bg-status-open/20 hover:bg-status-open/32'
               : v === 'pending'
-                ? 'bg-cstatus-pending/10 hover:bg-cstatus-pending/18'
-                : 'bg-cstatus-resolved/10 hover:bg-cstatus-resolved/18'
+                ? 'bg-cstatus-pending/20 hover:bg-cstatus-pending/32'
+                : 'bg-cstatus-resolved/20 hover:bg-cstatus-resolved/32'
             const statusText = v === 'open'
               ? 'text-status-open'
               : v === 'pending'
@@ -242,18 +222,6 @@ export function ChatHeader({
             }
           >
             <DropdownItem
-              icon={Tag}
-              onClick={() => { setMoreOpen(false); setTagOpen(true) }}
-            >
-              Gerenciar etiquetas
-            </DropdownItem>
-            <DropdownItem
-              icon={UserPlus}
-              onClick={() => { setMoreOpen(false); setUserOpen(true) }}
-            >
-              {assignedUser ? 'Trocar atribuição' : 'Atribuir usuário'}
-            </DropdownItem>
-            <DropdownItem
               icon={Info}
               onClick={() => { setMoreOpen(false); onToggleInfo() }}
               active={infoOpen}
@@ -268,18 +236,6 @@ export function ChatHeader({
               Arquivar conversa
             </DropdownItem>
           </Dropdown>
-
-          {/* UserPicker em mobile renderiza fora do dropdown — usa anchor invisivel
-              para aproveitar posicionamento existente. Trigger e' o item do dropdown. */}
-          <UserPicker
-            users={allUsers}
-            selectedUserId={assignedUser?.id}
-            onSelect={onAssign}
-            open={userOpen}
-            onClose={() => setUserOpen(false)}
-            align="right"
-            anchor={<span className="absolute right-0 top-full" aria-hidden />}
-          />
         </div>
 
         {sharedOverlays}
@@ -328,44 +284,9 @@ export function ChatHeader({
           onResume={() => onSetAiPause(null)}
           onIntervene={onInterveneAi}
         />
-        <span className="w-px h-5 bg-surface-800 mx-1" />
+        <span className="w-px h-5 bg-surface-800" />
 
-        <Tooltip content="Gerenciar etiquetas" side="bottom">
-          <button
-            onClick={() => { closeAll(); setTagOpen(true) }}
-            aria-label="Gerenciar etiquetas"
-            className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
-              tagOpen ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
-            )}
-          >
-            <Tag className="w-4 h-4" />
-          </button>
-        </Tooltip>
-
-        <UserPicker
-          users={allUsers}
-          selectedUserId={assignedUser?.id}
-          onSelect={onAssign}
-          open={userOpen}
-          onClose={() => setUserOpen(false)}
-          align="right"
-          anchor={
-            <Tooltip content="Atribuir usuário" side="bottom">
-              <button
-                onClick={() => { closeAll(); setUserOpen((v) => !v) }}
-                aria-label="Atribuir usuário"
-                className={cn(
-                  'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
-                  userOpen ? 'bg-surface-800 text-surface-200'
-                    : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
-                )}
-              >
-                <UserPlus className="w-4 h-4" />
-              </button>
-            </Tooltip>
-          }
-        />
+        {statusDropdown}
 
         <Tooltip content="Informações do contato" side="bottom">
           <button
@@ -373,7 +294,7 @@ export function ChatHeader({
             aria-label="Informações do contato"
             aria-expanded={infoOpen}
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
+              'ml-1 w-8 h-8 rounded-lg flex items-center justify-center transition-all',
               infoOpen ? 'bg-surface-700 text-surface-200' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
             )}
           >
@@ -385,8 +306,6 @@ export function ChatHeader({
             </div>
           </button>
         </Tooltip>
-
-        {statusDropdown}
 
         <Tooltip content="Arquivar conversa" side="bottom">
           <button

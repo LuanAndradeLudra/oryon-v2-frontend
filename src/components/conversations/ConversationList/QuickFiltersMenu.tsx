@@ -259,10 +259,12 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
 
       {/* ── Menu ─────────────────────────────────────────────────────────────── */}
       {open && menuPos && createPortal(
+        <div className="overlay-scrim z-[9998]" aria-hidden />, document.body)}
+      {open && menuPos && createPortal(
         <div
           ref={menuRef}
           style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, width: MENU_W }}
-          className="z-[9999] bg-surface-800 border border-surface-700 rounded-xl shadow-2xl py-1.5"
+          className="z-[9999] overlay-surface border rounded-xl py-1.5"
         >
           <GroupLabel>Período</GroupLabel>
           {PERIOD_ITEMS.map(({ value, label, icon }) => (
@@ -328,7 +330,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
             ['--rdp-day-width' as string]: '26px',
             ['--rdp-day-height' as string]: '26px',
           } as React.CSSProperties}
-          className="z-[9999] w-[280px] bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden p-2"
+          className="z-[9999] w-[280px] overlay-surface border rounded-xl overflow-hidden p-2"
         >
           <DayPicker
             mode="range"
@@ -392,7 +394,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
         <div
           ref={flyoutRef}
           style={{ position: 'fixed', top: flyoutPos.top, left: flyoutPos.left, width: 232 }}
-          className="z-[9999] bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden"
+          className="z-[9999] overlay-surface border rounded-xl overflow-hidden"
         >
           {allUsers.length > 5 && (
             <div className="p-2 border-b border-surface-700">

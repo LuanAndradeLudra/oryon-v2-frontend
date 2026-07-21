@@ -38,6 +38,12 @@ interface ConversationListProps {
    *  switch) preserve the user's position across remounts. Without this, the
    *  list goes back to the top whenever the wrapper unmounts. */
   scrollPositionRef?: MutableRefObject<number>
+  /** Desktop-only: arredonda o canto inferior direito do painel (onde ele
+   *  encontra a barrinha de atalhos de teclado abaixo). Precisa ir no root
+   *  do próprio componente (não num wrapper externo) porque a barra de
+   *  rolagem nativa do navegador só respeita o arredondamento do elemento
+   *  que de fato rola — um wrapper por fora não a recorta. */
+  roundedBottomRight?: boolean
 }
 
 export function ConversationList({
@@ -45,7 +51,7 @@ export function ConversationList({
   statusCounts, needsReviewCount = 0,
   activeId, filters, allTags, allUsers,
   onSelectConversation, onFiltersChange, onLoadMore,
-  scrollPositionRef,
+  scrollPositionRef, roundedBottomRight = false,
 }: ConversationListProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
@@ -128,7 +134,10 @@ export function ConversationList({
   // (360px em laptops, 420px em xl, 480px só em 2xl+). A lane interna fica
   // em max-w-[440px] + mx-auto, então segue centralizada em qualquer largura.
   return (
-    <div className="conv-surface flex flex-col h-full w-full sm:w-[360px] xl:w-[420px] 2xl:w-[480px] bg-surface-950 border-r border-surface-800 flex-shrink-0">
+    <div className={cn(
+      'conv-surface flex flex-col h-full w-full sm:w-[360px] xl:w-[420px] 2xl:w-[480px] bg-surface-950 border-r border-surface-800 flex-shrink-0',
+      roundedBottomRight && 'overflow-hidden rounded-br-lg',
+    )}>
       {/* Search header */}
       <div className="px-3 pt-3 pb-3 border-b border-surface-800">
         <div className="flex items-center gap-2">

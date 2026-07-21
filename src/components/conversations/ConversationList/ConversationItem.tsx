@@ -74,6 +74,17 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
   const assignment = getAssignment(conversation)
   const awaiting = getAwaitingReply(conversation)
 
+  // Status do atendimento (aberta/pendente/resolvida) como barra de acento —
+  // sinal periférico, sem texto novo. Mais útil na aba "Todas", onde status
+  // diferentes se misturam; nas abas filtradas é redundante mas inofensivo.
+  const statusColor = conversation.status === 'open'
+    ? 'var(--color-status-open)'
+    : conversation.status === 'pending'
+      ? 'var(--color-cstatus-pending)'
+      : conversation.status === 'resolved'
+        ? 'var(--color-cstatus-resolved)'
+        : undefined
+
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
       { label: 'Abrir conversa', icon: ExternalLink, onClick: () => onSelect(conversation) },
@@ -101,12 +112,20 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
       onContextMenu={onContextMenu}
       data-conv-id={conversation.id}
       className={cn(
-        'conv-item w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-all duration-100 rounded-xl border border-surface-800/60 mb-2',
+        'conv-item relative w-full flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-left transition-all duration-100 rounded-xl mb-2',
         isActive
-          ? 'conv-item-active bg-surface-800 border-surface-700'
-          : 'hover:border-surface-600',
+          ? 'conv-item-active bg-surface-800 border-[2.0px] border-surface-700'
+          : 'border border-surface-700/60 hover:border-surface-600',
       )}
     >
+      {/* Acento de status — fino e curto, centralizado na altura do card */}
+      {statusColor && (
+        <span
+          aria-hidden
+          className="absolute left-1 top-1/2 -translate-y-1/2 w-[2px] h-10 rounded-full"
+          style={{ backgroundColor: statusColor }}
+        />
+      )}
       {/* Avatar with WhatsApp badge */}
       <div className="relative mt-0.5 flex-shrink-0">
         <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
