@@ -241,7 +241,7 @@ function ToolsSection({ tools }: { tools: ChatExecutionToolRow[] }) {
               <td className="py-1.5 text-surface-300">{t.kind}</td>
               <td className="py-1.5 text-right">
                 {t.success ? (
-                  <span className="text-emerald-200">ok{t.status_code ? ` (${t.status_code})` : ''}</span>
+                  <span className="text-success">ok{t.status_code ? ` (${t.status_code})` : ''}</span>
                 ) : (
                   <span className="text-status-failed">
                     fail{t.status_code ? ` (${t.status_code})` : ''}

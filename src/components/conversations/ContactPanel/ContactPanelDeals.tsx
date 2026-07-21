@@ -120,7 +120,7 @@ export function ContactPanelDeals({
             </div>
             <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
               <p className="text-[9px] text-surface-500 uppercase tracking-wide">Ganho</p>
-              <p className="text-sm font-semibold text-emerald-300 tabular-nums">{formatBRL(wonCents)}</p>
+              <p className="text-sm font-semibold text-success tabular-nums">{formatBRL(wonCents)}</p>
             </div>
           </div>
           <div className="flex flex-col gap-3">

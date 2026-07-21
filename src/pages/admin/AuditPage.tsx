@@ -465,7 +465,7 @@ function IntegrationEventsTab() {
                     <Td className="max-w-md truncate" title={r.message}>{r.message}</Td>
                     <Td className="text-xs">
                       {r.resolvedAt ? (
-                        <span className="text-emerald-300" title={new Date(r.resolvedAt).toLocaleString('pt-BR')}>
+                        <span className="text-success" title={new Date(r.resolvedAt).toLocaleString('pt-BR')}>
                           ✓ {new Date(r.resolvedAt).toLocaleString('pt-BR')}
                         </span>
                       ) : (

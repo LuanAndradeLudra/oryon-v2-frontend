@@ -221,7 +221,7 @@ export function AiExecutionsPage() {
                         <td className="px-3 py-2 text-right text-surface-300">
                           {fmtCompact(r.tokens_input)} / {fmtCompact(r.tokens_output)}
                         </td>
-                        <td className="px-3 py-2 text-right text-emerald-200">
+                        <td className="px-3 py-2 text-right text-success">
                           ${Number(r.cost_usd).toFixed(6)}
                         </td>
                         <td className="px-3 py-2 text-right text-surface-300">

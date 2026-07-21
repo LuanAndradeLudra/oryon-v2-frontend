@@ -168,7 +168,7 @@ export function ConversationList({
                 'relative flex items-center justify-center w-9 h-9 rounded-lg transition-all border flex-shrink-0',
                 filters.needsReview
                   ? 'color-chip'
-                  : 'bg-surface-800 text-amber-400 border-surface-700 hover:bg-surface-700 hover:text-amber-300',
+                  : 'bg-surface-800 text-warning border-surface-700 hover:bg-surface-700 hover:text-warning',
               )}
             >
               <AlertTriangle className="w-4 h-4" />

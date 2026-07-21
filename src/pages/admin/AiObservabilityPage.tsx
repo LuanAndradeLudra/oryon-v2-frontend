@@ -158,7 +158,7 @@ export function AiObservabilityPage() {
                         <tr key={feature}>
                           <td className="py-1.5 text-surface-200 font-mono text-xs">{feature}</td>
                           <td className="py-1.5 text-right text-surface-300 text-xs">{v.exec.toLocaleString('pt-BR')}</td>
-                          <td className="py-1.5 text-right text-emerald-200 text-xs">${v.cost.toFixed(4)}</td>
+                          <td className="py-1.5 text-right text-success text-xs">${v.cost.toFixed(4)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -184,7 +184,7 @@ export function AiObservabilityPage() {
                           <td className="py-1 text-surface-300 font-mono">{r.tenant_id.slice(0, 8)}…</td>
                           <td className="py-1 text-surface-200 font-mono">{r.feature}</td>
                           <td className="py-1 text-right text-surface-300">{r.executions}</td>
-                          <td className="py-1 text-right text-emerald-200">${Number(r.total_cost_usd).toFixed(4)}</td>
+                          <td className="py-1 text-right text-success">${Number(r.total_cost_usd).toFixed(4)}</td>
                         </tr>
                       ))}
                     </tbody>

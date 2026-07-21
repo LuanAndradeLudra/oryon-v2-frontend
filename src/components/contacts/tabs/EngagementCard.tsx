@@ -238,8 +238,8 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
               </div>
               {lastAnalysis.dealValue != null && (
                 <div className="flex items-center gap-1.5">
-                  <Zap className="w-3 h-3 text-emerald-400" />
-                  <span className="text-xs text-emerald-300">R$ {lastAnalysis.dealValue.toLocaleString('pt-BR')}</span>
+                  <Zap className="w-3 h-3 text-success" />
+                  <span className="text-xs text-success">R$ {lastAnalysis.dealValue.toLocaleString('pt-BR')}</span>
                 </div>
               )}
               {lastAnalysis.status === 'confirmed' && (

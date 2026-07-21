@@ -1041,43 +1041,6 @@ h1, h2, h3 {
 [data-theme="light"] .ai-chip-btn { color: #92400e; }
 [data-theme="light"] .ai-chip-btn:hover { color: #78350f; background-color: rgba(217,119,6,0.15); }
 
-/* ── Activity log entries — light theme contrast fix ────────────────────────
- * Os itens usam bg-*-950 e text-*-300 (tons escuros/claros do dark).
- * No light invertemos: fundo claro da cor, texto e ícone escuros. */
-[data-theme="light"] .activity-entry { color: #1e293b; }
-[data-theme="light"] .activity-entry p { color: #374151; }
-[data-theme="light"] .activity-entry .activity-meta { color: #6b7280; }
-
-/* rowBg overrides por família de cor */
-[data-theme="light"] [class*="bg-amber-950"]  { background-color: rgba(254,243,199,0.8) !important; }
-[data-theme="light"] [class*="bg-indigo-950"] { background-color: rgba(238,242,255,0.8) !important; }
-[data-theme="light"] [class*="bg-violet-950"] { background-color: rgba(245,243,255,0.8) !important; }
-[data-theme="light"] [class*="bg-emerald-950"]{ background-color: rgba(236,253,245,0.8) !important; }
-[data-theme="light"] [class*="bg-sky-950"]    { background-color: rgba(240,249,255,0.8) !important; }
-[data-theme="light"] [class*="bg-orange-950"] { background-color: rgba(255,247,237,0.8) !important; }
-[data-theme="light"] [class*="bg-fuchsia-950"]{ background-color: rgba(253,244,255,0.8) !important; }
-[data-theme="light"] [class*="bg-zinc-900\/30"]{ background-color: rgba(243,244,246,0.8) !important; }
-
-/* iconClass overrides — fundo e cor do ícone */
-[data-theme="light"] [class*="bg-amber-900"]  { background-color: rgba(253,230,138,0.6) !important; color: #92400e !important; }
-[data-theme="light"] [class*="bg-indigo-900"] { background-color: rgba(199,210,254,0.6) !important; color: #3730a3 !important; }
-[data-theme="light"] [class*="bg-violet-900"] { background-color: rgba(221,214,254,0.6) !important; color: #5b21b6 !important; }
-[data-theme="light"] [class*="bg-emerald-900"]{ background-color: rgba(167,243,208,0.6) !important; color: #065f46 !important; }
-[data-theme="light"] [class*="bg-sky-900"]    { background-color: rgba(186,230,253,0.6) !important; color: #0369a1 !important; }
-[data-theme="light"] [class*="bg-orange-900"] { background-color: rgba(254,215,170,0.6) !important; color: #9a3412 !important; }
-[data-theme="light"] [class*="bg-fuchsia-900"]{ background-color: rgba(245,208,254,0.6) !important; color: #86198f !important; }
-[data-theme="light"] [class*="bg-zinc-800"]   { background-color: rgba(229,231,235,0.8) !important; color: #374151 !important; }
-
-/* texto dos itens */
-[data-theme="light"] [class*="text-amber-300"]  { color: #92400e !important; }
-[data-theme="light"] [class*="text-indigo-300"] { color: #3730a3 !important; }
-[data-theme="light"] [class*="text-violet-300"] { color: #5b21b6 !important; }
-[data-theme="light"] [class*="text-emerald-300"]{ color: #065f46 !important; }
-[data-theme="light"] [class*="text-sky-300"]    { color: #0369a1 !important; }
-[data-theme="light"] [class*="text-orange-300"] { color: #9a3412 !important; }
-[data-theme="light"] [class*="text-fuchsia-300"]{ color: #86198f !important; }
-[data-theme="light"] [class*="text-zinc-300"]   { color: #374151 !important; }
-
 /* ── Agente responsável tag — light theme contrast fix ──────────────────────*/
 [data-theme="light"] .assigned-agent-tag {
   background-color: rgba(20, 184, 166, 0.12);

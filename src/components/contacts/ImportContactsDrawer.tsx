@@ -939,7 +939,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           {rows.slice(0, 8).map((row, i) => {
                             const { valid, issues } = validateRow(row, colMap)
                             return (
-                              <tr key={i} className={cn('border-b border-surface-800/60 last:border-0', !valid && 'bg-red-500/5')}>
+                              <tr key={i} className={cn('border-b border-surface-800/60 last:border-0', !valid && 'bg-danger/5')}>
                                 {/* Número da linha no ARQUIVO, não a posição na prévia — rows já
                                     exclui o cabeçalho (parseCSV faz lines.slice(1)), então a linha
                                     1 do arquivo é o header e rows[0] é a linha 2. Mesma fórmula (+2)
