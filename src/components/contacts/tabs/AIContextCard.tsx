@@ -338,7 +338,8 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.05, duration: 0.25 }}
-                        className="text-[12px] font-medium px-3 py-1.5 rounded-full border border-red-500/30 bg-red-500/10 text-red-300"
+                        className="text-[12px] font-medium px-3 py-1.5 rounded-full border color-chip"
+                        style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
                       >
                         {item}
                       </motion.span>
@@ -357,7 +358,8 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.05, duration: 0.25 }}
-                        className="text-[12px] font-medium px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        className="text-[12px] font-medium px-3 py-1.5 rounded-full border color-chip"
+                        style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
                       >
                         {item}
                       </motion.span>

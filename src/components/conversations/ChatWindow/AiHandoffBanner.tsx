@@ -164,7 +164,8 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
           disabled={busy}
           onClick={() => { setTipShow(false); handleIntervene() }}
           aria-label="Intervir agora — assumir a conversa da IA"
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/20 text-surface-100 hover:bg-amber-500/30 hover:border-amber-500/30 disabled:opacity-50 transition-all"
+          className="w-8 h-8 flex items-center justify-center rounded-lg border color-chip disabled:opacity-50 hover:brightness-110 active:brightness-95 transition-all"
+          style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
         </button>
@@ -210,7 +211,8 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
           disabled={busy}
           onClick={() => { setTipShow(false); handleResume() }}
           aria-label="Reativar IA — devolver a conversa para a IA"
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/20 text-surface-100 hover:bg-emerald-500/30 hover:border-emerald-500/30 disabled:opacity-50 transition-all"
+          className="w-8 h-8 flex items-center justify-center rounded-lg border color-chip disabled:opacity-50 hover:brightness-110 active:brightness-95 transition-all"
+          style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCog className="w-4 h-4" />}
         </button>
@@ -286,9 +288,9 @@ export function HandoffStripe({ aiPausedUntil }: { aiPausedUntil: string | null 
       aria-hidden
       className={cn(
         'h-[2px] w-full flex-shrink-0 transition-colors',
-        // amber while AI is replying (caller may want to intervene),
-        // emerald once a human takes over (under manual control)
-        isPaused ? 'bg-emerald-500/70' : 'bg-amber-500/80',
+        // warning enquanto a IA responde (o atendente pode querer intervir),
+        // success quando um humano assume (sob controle manual)
+        isPaused ? 'bg-success/70' : 'bg-warning/80',
       )}
     />
   )

@@ -17,7 +17,7 @@
 import { Link } from 'react-router-dom'
 import { AlertTriangle, AlertCircle, CheckCircle, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/hooks/useTheme'
+import { Banner } from '@/components/ui/Banner'
 import {
   unmetBlockersAffecting,
   unmetChecks,
@@ -66,36 +66,35 @@ function InlineBanner({ checks, className }: { checks: WorkspaceCheck[]; classNa
   const remaining = checks.length - 1
 
   return (
-    <div
-      className={cn(
-        'flex items-center gap-3 px-4 py-2.5 border-b border-red-900/40 bg-red-950/20',
-        className,
-      )}
+    <Banner
+      variant="danger"
+      className={cn('rounded-none border-x-0 border-t-0', className)}
+      action={
+        <div className="flex items-center gap-2">
+          {primary.cta && (
+            <Link
+              to={primary.cta.href}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold border border-white/25 bg-white/15 hover:bg-white/25 text-white px-2.5 py-1 rounded-md transition-colors"
+            >
+              {primary.cta.label}
+              <ChevronRight className="w-3 h-3" />
+            </Link>
+          )}
+          {remaining > 0 && (
+            <Link
+              to="/home"
+              className="text-[11px] text-white/80 hover:text-white underline underline-offset-2"
+              title="Ver lista completa de pendências na Home"
+            >
+              +{remaining} pendente{remaining > 1 ? 's' : ''}
+            </Link>
+          )}
+        </div>
+      }
     >
-      <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-red-200 font-semibold truncate">{primary.label}</p>
-        <p className="text-[11px] text-red-300/90 line-clamp-2">{primary.description}</p>
-      </div>
-      {primary.cta && (
-        <Link
-          to={primary.cta.href}
-          className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-red-200 hover:text-white bg-red-700/20 hover:bg-red-700/40 border border-red-600/40 px-2.5 py-1 rounded-md transition-colors"
-        >
-          {primary.cta.label}
-          <ChevronRight className="w-3 h-3" />
-        </Link>
-      )}
-      {remaining > 0 && (
-        <Link
-          to="/home"
-          className="flex-shrink-0 text-[11px] text-red-300/80 hover:text-red-200"
-          title="Ver lista completa de pendências na Home"
-        >
-          +{remaining} pendente{remaining > 1 ? 's' : ''}
-        </Link>
-      )}
-    </div>
+      <p className="text-xs font-semibold truncate">{primary.label}</p>
+      <p className="text-[11px] opacity-90 line-clamp-2">{primary.description}</p>
+    </Banner>
   )
 }
 
@@ -105,68 +104,54 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
   const blockers = checks.filter((c) => c.severity === 'blocker')
   const warnings = checks.filter((c) => c.severity === 'warning')
   const hasBlockers = blockers.length > 0
-  const { theme } = useTheme()
-  const isLight = theme === 'light'
+
+  const title = hasBlockers
+    ? `Faltam ${blockers.length} passo${blockers.length > 1 ? 's' : ''} para sua plataforma estar 100%`
+    : `${warnings.length} sugest${warnings.length > 1 ? 'ões' : 'ão'} pendente${warnings.length > 1 ? 's' : ''}`
+  const description = hasBlockers
+    ? 'Resolva os itens abaixo para destravar o uso completo do CRM.'
+    : 'Estes itens não bloqueiam o uso, mas melhoram a experiência.'
+  const list = (
+    <ul className="space-y-2 mt-3">
+      {[...blockers, ...warnings].map((c) => (
+        <ChecklistItem key={c.id} check={c} />
+      ))}
+    </ul>
+  )
+
+  if (hasBlockers) {
+    return (
+      <Banner variant="danger" className={className}>
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <p className="text-xs opacity-90 mt-0.5">{description}</p>
+        {list}
+      </Banner>
+    )
+  }
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border p-5',
-        hasBlockers
-          ? isLight ? 'border-red-400 bg-red-50' : 'border-amber-700/40 bg-amber-950/30'
-          : 'border-surface-700 bg-surface-900/40',
-        className,
-      )}
-    >
-      <div className="flex items-start gap-3 mb-4">
-        <div
-          className={cn(
-            'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
-            hasBlockers ? isLight ? 'bg-red-700/20 text-red-400' : 'bg-amber-700/30 text-amber-300' : 'bg-surface-800 text-surface-400',
-          )}
-        >
-          {hasBlockers ? <AlertCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+    <div className={cn('rounded-xl border border-surface-700 bg-surface-900/40 p-5', className)}>
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-surface-800 text-surface-400">
+          <CheckCircle className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-surface-100">
-            {hasBlockers
-              ? `Faltam ${blockers.length} passo${blockers.length > 1 ? 's' : ''} para sua plataforma estar 100%`
-              : `${warnings.length} sugest${warnings.length > 1 ? 'ões' : 'ão'} pendente${warnings.length > 1 ? 's' : ''}`}
-          </h3>
-          <p className="text-xs text-surface-400 mt-0.5">
-            {hasBlockers
-              ? 'Resolva os itens em vermelho para destravar o uso completo do CRM.'
-              : 'Estes itens não bloqueiam o uso, mas melhoram a experiência.'}
-          </p>
+          <h3 className="text-sm font-semibold text-surface-100">{title}</h3>
+          <p className="text-xs text-surface-400 mt-0.5">{description}</p>
         </div>
       </div>
-      <ul className="space-y-2">
-        {[...blockers, ...warnings].map((c) => (
-          <ChecklistItem key={c.id} check={c} />
-        ))}
-      </ul>
+      {list}
     </div>
   )
 }
 
 function ChecklistItem({ check }: { check: WorkspaceCheck }) {
   const isBlocker = check.severity === 'blocker'
-  const { theme } = useTheme()
-  const isLight = theme === 'light'
   return (
-    <li
-      className={cn(
-        'flex items-start gap-3 px-3 py-2.5 rounded-lg',
-        isBlocker
-          ? isLight ? 'bg-red-200 border border-red-300' : 'bg-amber-950/40 border border-amber-900/30'
-          : 'bg-surface-900/40 border border-surface-800',
-      )}
-    >
+    <li className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-surface-900/40 border border-surface-800">
       <span
-        className={cn(
-          'mt-0.5 w-5 h-5 rounded flex items-center justify-center flex-shrink-0',
-          isBlocker ? isLight ? 'bg-red-700/20 text-red-400' : 'bg-amber-700/40 text-amber-200' : 'bg-surface-800 text-surface-400',
-        )}
+        className="mt-0.5 w-5 h-5 rounded flex items-center justify-center flex-shrink-0 color-chip border"
+        style={{ ['--chip']: isBlocker ? 'var(--color-danger)' : 'var(--color-warning)' } as React.CSSProperties}
       >
         {isBlocker ? <AlertTriangle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
       </span>
@@ -180,7 +165,7 @@ function ChecklistItem({ check }: { check: WorkspaceCheck }) {
           className={cn(
             'flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors border',
             isBlocker
-              ? isLight ? 'text-white hover:text-white bg-red-500 hover:bg-red-600 border-red-500' : 'text-amber-200 hover:text-white bg-amber-700/30 hover:bg-amber-700/50 border-amber-600/40'
+              ? 'text-danger hover:text-white hover:bg-danger border-danger/40'
               : 'text-surface-300 hover:text-white bg-surface-800 hover:bg-surface-700 border-surface-700',
           )}
         >

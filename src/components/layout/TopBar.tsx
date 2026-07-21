@@ -840,13 +840,11 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
       >
         <div className="flex items-start gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b border-surface-800">
           <div
-            className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-              catStyle.iconBg,
-            )}
+            className="w-10 h-10 rounded-xl color-chip border flex items-center justify-center flex-shrink-0"
+            style={{ ['--chip']: catStyle.chip } as React.CSSProperties}
             aria-hidden
           >
-            <Icon className={cn('w-5 h-5', catStyle.iconText)} />
+            <Icon className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 id="notif-modal-title" className="text-sm font-semibold text-surface-100 leading-snug">{n.title}</h3>

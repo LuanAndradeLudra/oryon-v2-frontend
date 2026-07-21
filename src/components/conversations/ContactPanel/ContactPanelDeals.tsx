@@ -7,7 +7,6 @@ import { DealModal } from '@/components/contacts/DealModal'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { formatBRL } from '@/utils/money'
-import { cn } from '@/lib/utils'
 import type { Deal } from '@/types'
 
 /** Agrupa os negócios do contato por pipeline, preservando a ordem de chegada. */
@@ -22,10 +21,10 @@ function groupByPipeline(deals: Deal[]): Array<[string, Deal[]]> {
   return [...map.entries()]
 }
 
-const STATUS_META: Record<Deal['status'], { label: string; cls: string }> = {
-  open: { label: 'Aberto', cls: 'text-amber-300 bg-amber-500/10 border-amber-500/25' },
-  won: { label: 'Ganho', cls: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/25' },
-  lost: { label: 'Perdido', cls: 'text-red-300 bg-red-500/10 border-red-500/25' },
+const STATUS_META: Record<Deal['status'], { label: string; chip: string }> = {
+  open: { label: 'Aberto', chip: 'var(--color-warning)' },
+  won: { label: 'Ganho', chip: 'var(--color-success)' },
+  lost: { label: 'Perdido', chip: 'var(--color-danger)' },
 }
 
 /**
@@ -156,10 +155,8 @@ export function ContactPanelDeals({
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-surface-200 truncate">{d.title}</p>
                         <span
-                          className={cn(
-                            'inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full border',
-                            STATUS_META[d.status].cls,
-                          )}
+                          className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full border color-chip"
+                          style={{ ['--chip']: STATUS_META[d.status].chip } as React.CSSProperties}
                         >
                           {STATUS_META[d.status].label}
                         </span>

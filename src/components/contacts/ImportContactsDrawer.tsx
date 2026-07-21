@@ -858,7 +858,10 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       {validCount} prontos para importar
                     </span>
                     {invalidCount > 0 && (
-                      <span className="flex items-center gap-1.5 text-[11px] font-medium text-red-400 bg-red-500/10 border border-red-500/25 px-2.5 py-1 rounded-full">
+                      <span
+                        className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full color-chip border"
+                        style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+                      >
                         <AlertCircle className="w-3 h-3" />
                         {invalidCount} com erros (serão ignorados)
                       </span>

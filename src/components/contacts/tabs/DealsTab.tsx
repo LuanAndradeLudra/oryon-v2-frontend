@@ -24,10 +24,10 @@ function groupByPipeline(deals: Deal[]): Array<[string, Deal[]]> {
   return [...map.entries()]
 }
 
-const STATUS_META: Record<DealStatus, { label: string; cls: string }> = {
-  open: { label: 'Aberto', cls: 'text-brand-300 border-brand-700 bg-brand-900/20' },
-  won: { label: 'Ganho', cls: 'text-emerald-300 border-emerald-700 bg-emerald-900/20' },
-  lost: { label: 'Perdido', cls: 'text-red-300 border-red-700 bg-red-900/20' },
+const STATUS_META: Record<DealStatus, { label: string; chip: string }> = {
+  open: { label: 'Aberto', chip: 'var(--color-warning)' },
+  won: { label: 'Ganho', chip: 'var(--color-success)' },
+  lost: { label: 'Perdido', chip: 'var(--color-danger)' },
 }
 
 export function DealsTab({ contactId }: { contactId: string }) {
@@ -147,7 +147,8 @@ export function DealsTab({ contactId }: { contactId: string }) {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-surface-100 truncate">{d.title}</span>
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-full border whitespace-nowrap ${meta.cls}`}
+                        className="text-[10px] px-1.5 py-0.5 rounded-full border whitespace-nowrap color-chip"
+                        style={{ ['--chip']: meta.chip } as React.CSSProperties}
                       >
                         {meta.label}
                       </span>

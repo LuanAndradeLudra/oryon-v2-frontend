@@ -6,6 +6,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
+import { Banner } from '@/components/ui/Banner'
 import { cannedResponsesApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -478,21 +479,21 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   if (blockedReason) {
     return (
       <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
-        <div className="bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
-          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-amber-200 font-semibold">Não é possível enviar mensagens agora</p>
-            <p className="text-[11px] text-amber-300/90 mt-0.5">{blockedReason.message}</p>
-          </div>
-          {blockedReason.ctaHref && blockedReason.ctaLabel && (
+        <Banner
+          variant="warning"
+          className="shadow-lg"
+          action={blockedReason.ctaHref && blockedReason.ctaLabel && (
             <a
               href={blockedReason.ctaHref}
-              className="flex-shrink-0 text-xs font-semibold text-amber-200 hover:text-white bg-amber-700/30 hover:bg-amber-700/50 border border-amber-600/40 px-3 py-1.5 rounded-lg transition-colors"
+              className="text-xs font-semibold border border-white/25 bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-lg transition-colors"
             >
               {blockedReason.ctaLabel}
             </a>
           )}
-        </div>
+        >
+          <p className="text-xs font-semibold">Não é possível enviar mensagens agora</p>
+          <p className="text-[11px] opacity-90 mt-0.5">{blockedReason.message}</p>
+        </Banner>
       </div>
     )
   }

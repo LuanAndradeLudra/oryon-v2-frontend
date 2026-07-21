@@ -853,20 +853,20 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               className={cn(
                 'flex items-start gap-1.5 text-left w-0 min-w-[calc(100%+1.5rem)] -mx-3 -mb-2 mt-2 px-3 py-1.5 rounded-b-2xl border-t transition-colors',
                 message.anomaly.kind === 'handoff'
-                  ? 'bg-amber-500/15 border-amber-500/25 hover:bg-amber-500/25'
+                  ? 'bg-warning/15 border-warning/25 hover:bg-warning/25'
                   : 'bg-surface-700/40 border-surface-600/40 hover:bg-surface-700/60',
               )}
             >
               <AlertTriangle
                 className={cn(
                   'w-3 h-3 mt-0.5 shrink-0',
-                  message.anomaly.kind === 'handoff' ? 'text-amber-400' : 'text-surface-400',
+                  message.anomaly.kind === 'handoff' ? 'text-warning' : 'text-surface-400',
                 )}
               />
               <span
                 className={cn(
                   'text-[10px] leading-tight flex-1 min-w-0',
-                  message.anomaly.kind === 'handoff' ? 'text-amber-200' : 'text-surface-300',
+                  message.anomaly.kind === 'handoff' ? 'text-warning' : 'text-surface-300',
                 )}
               >
                 {message.anomaly.kind === 'handoff'

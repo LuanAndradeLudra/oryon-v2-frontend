@@ -42,7 +42,14 @@ function Field({ label, required, children }: { label: string; required?: boolea
       <div className="flex items-center justify-between gap-2">
         <label className="text-xs font-medium text-surface-300">{label}</label>
         {required
-          ? <span className="text-[10px] font-semibold text-red-400 bg-red-400/10 border border-red-400/20 px-1.5 py-0.5 rounded-full leading-none">Obrigatório</span>
+          ? (
+            <span
+              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none color-chip border"
+              style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+            >
+              Obrigatório
+            </span>
+          )
           : <span className="text-[10px] font-medium text-surface-600 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full leading-none">Opcional</span>
         }
       </div>

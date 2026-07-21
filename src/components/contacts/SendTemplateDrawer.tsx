@@ -86,8 +86,11 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
             <div className="flex-1 overflow-y-auto">
               {sent ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3 px-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                  <div
+                    className="w-12 h-12 rounded-full color-chip flex items-center justify-center"
+                    style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
+                  >
+                    <CheckCircle2 className="w-6 h-6" />
                   </div>
                   <p className="text-sm font-medium text-surface-200">Template enviado com sucesso</p>
                   <p className="text-xs text-surface-500">A conversa foi criada e está aguardando resposta do contato.</p>

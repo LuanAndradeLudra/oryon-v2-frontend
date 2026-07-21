@@ -101,10 +101,20 @@ export function DealsBoard({
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} />
                   <span className="text-xs font-semibold truncate" style={{ color: stage.color }}>{stage.label}</span>
                   {stage.isWon && (
-                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30">ganho</span>
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded border color-chip"
+                      style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
+                    >
+                      ganho
+                    </span>
                   )}
                   {stage.isLost && (
-                    <span className="text-[10px] text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30">perdido</span>
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded border color-chip"
+                      style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+                    >
+                      perdido
+                    </span>
                   )}
                 </div>
                 <span
