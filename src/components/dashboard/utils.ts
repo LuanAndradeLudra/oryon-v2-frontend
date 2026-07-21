@@ -101,20 +101,3 @@ export function heatmapColor(intensity: number): string {
   const b = Math.round(b1 + (b2 - b1) * f)
   return `rgb(${r},${g},${b})`
 }
-
-// Legacy: paleta hex fixa, pré-redesign. Mantida só pros consumidores que
-// ainda não migraram pra useChartColors() (theme-aware) — CsatChart,
-// TagsChart, VolumeChart, AttributionTab. Não usar em código novo.
-export const C = {
-  brand:    '#6366f1',
-  online:   '#10b981',
-  away:     '#f59e0b',
-  danger:   '#ef4444',
-  purple:   '#8b5cf6',
-  cyan:     '#06b6d4',
-  grid:     '#112a3a',
-  axis:     '#5588b0',
-  surface8: '#0a1a26',
-  meta:     '#1877f2',
-  google:   '#EA4335',
-}

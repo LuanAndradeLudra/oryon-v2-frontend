@@ -29,10 +29,9 @@ export function WabaAssignmentBadge({
       : 'Linha WhatsApp não atribuída')
 
   const baseClasses = cn(
-    'inline-flex items-center gap-1 px-2 py-0.5 rounded-md',
-    'bg-status-pending/10 text-status-pending border border-status-pending/30',
+    'color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-md border',
     'text-[10px] font-medium uppercase tracking-wide',
-    onClick && 'cursor-pointer hover:bg-status-pending/20 transition-colors',
+    onClick && 'cursor-pointer transition-colors',
     className,
   )
 
@@ -48,6 +47,7 @@ export function WabaAssignmentBadge({
           onClick(e)
         }}
         className={baseClasses}
+        style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
         title={resolvedTitle}
       >
         <AlertTriangle className="w-3 h-3" />
@@ -57,7 +57,7 @@ export function WabaAssignmentBadge({
   }
 
   return (
-    <span className={baseClasses} title={resolvedTitle}>
+    <span className={baseClasses} style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties} title={resolvedTitle}>
       <AlertTriangle className="w-3 h-3" />
       Sem linha
     </span>

@@ -17,6 +17,7 @@
 import { Link } from 'react-router-dom'
 import { AlertTriangle, AlertCircle, CheckCircle, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/hooks/useTheme'
 import {
   unmetBlockersAffecting,
   unmetChecks,
@@ -67,19 +68,19 @@ function InlineBanner({ checks, className }: { checks: WorkspaceCheck[]; classNa
   return (
     <div
       className={cn(
-        'flex items-center gap-3 px-4 py-2.5 border-b border-amber-900/40 bg-amber-950/30',
+        'flex items-center gap-3 px-4 py-2.5 border-b border-red-900/40 bg-red-950/20',
         className,
       )}
     >
-      <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+      <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-amber-200 font-semibold truncate">{primary.label}</p>
-        <p className="text-[11px] text-amber-300/90 line-clamp-2">{primary.description}</p>
+        <p className="text-xs text-red-200 font-semibold truncate">{primary.label}</p>
+        <p className="text-[11px] text-red-300/90 line-clamp-2">{primary.description}</p>
       </div>
       {primary.cta && (
         <Link
           to={primary.cta.href}
-          className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-200 hover:text-white bg-amber-700/30 hover:bg-amber-700/50 border border-amber-600/40 px-2.5 py-1 rounded-md transition-colors"
+          className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-red-200 hover:text-white bg-red-700/20 hover:bg-red-700/40 border border-red-600/40 px-2.5 py-1 rounded-md transition-colors"
         >
           {primary.cta.label}
           <ChevronRight className="w-3 h-3" />
@@ -88,7 +89,7 @@ function InlineBanner({ checks, className }: { checks: WorkspaceCheck[]; classNa
       {remaining > 0 && (
         <Link
           to="/home"
-          className="flex-shrink-0 text-[11px] text-amber-300/80 hover:text-amber-200"
+          className="flex-shrink-0 text-[11px] text-red-300/80 hover:text-red-200"
           title="Ver lista completa de pendências na Home"
         >
           +{remaining} pendente{remaining > 1 ? 's' : ''}
@@ -104,13 +105,15 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
   const blockers = checks.filter((c) => c.severity === 'blocker')
   const warnings = checks.filter((c) => c.severity === 'warning')
   const hasBlockers = blockers.length > 0
+  const { theme } = useTheme()
+  const isLight = theme === 'light'
 
   return (
     <div
       className={cn(
         'rounded-xl border p-5',
         hasBlockers
-          ? 'border-amber-700/40 bg-amber-950/30'
+          ? isLight ? 'border-red-400 bg-red-50' : 'border-amber-700/40 bg-amber-950/30'
           : 'border-surface-700 bg-surface-900/40',
         className,
       )}
@@ -119,7 +122,7 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
         <div
           className={cn(
             'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
-            hasBlockers ? 'bg-amber-700/30 text-amber-300' : 'bg-surface-800 text-surface-400',
+            hasBlockers ? isLight ? 'bg-red-700/20 text-red-400' : 'bg-amber-700/30 text-amber-300' : 'bg-surface-800 text-surface-400',
           )}
         >
           {hasBlockers ? <AlertCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
@@ -148,17 +151,21 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
 
 function ChecklistItem({ check }: { check: WorkspaceCheck }) {
   const isBlocker = check.severity === 'blocker'
+  const { theme } = useTheme()
+  const isLight = theme === 'light'
   return (
     <li
       className={cn(
         'flex items-start gap-3 px-3 py-2.5 rounded-lg',
-        isBlocker ? 'bg-amber-950/40 border border-amber-900/30' : 'bg-surface-900/40 border border-surface-800',
+        isBlocker
+          ? isLight ? 'bg-red-200 border border-red-300' : 'bg-amber-950/40 border border-amber-900/30'
+          : 'bg-surface-900/40 border border-surface-800',
       )}
     >
       <span
         className={cn(
           'mt-0.5 w-5 h-5 rounded flex items-center justify-center flex-shrink-0',
-          isBlocker ? 'bg-amber-700/40 text-amber-200' : 'bg-surface-800 text-surface-400',
+          isBlocker ? isLight ? 'bg-red-700/20 text-red-400' : 'bg-amber-700/40 text-amber-200' : 'bg-surface-800 text-surface-400',
         )}
       >
         {isBlocker ? <AlertTriangle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
@@ -173,7 +180,7 @@ function ChecklistItem({ check }: { check: WorkspaceCheck }) {
           className={cn(
             'flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors border',
             isBlocker
-              ? 'text-amber-200 hover:text-white bg-amber-700/30 hover:bg-amber-700/50 border-amber-600/40'
+              ? isLight ? 'text-white hover:text-white bg-red-500 hover:bg-red-600 border-red-500' : 'text-amber-200 hover:text-white bg-amber-700/30 hover:bg-amber-700/50 border-amber-600/40'
               : 'text-surface-300 hover:text-white bg-surface-800 hover:bg-surface-700 border-surface-700',
           )}
         >

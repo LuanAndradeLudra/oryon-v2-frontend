@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
 import { stagesApi, customFieldsApi, productsApi, practitionersApi, pipelinesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import type { TenantStage, ContactCustomFieldDef, Product, Practitioner, Pipeline } from '@/types'
@@ -125,27 +125,36 @@ export function CRMConfigProvider({ children }: { children: ReactNode }) {
     refetchPipelines()
   }, [isAuthenticated, refetchStages, refetchFieldDefs, refetchProducts, refetchPractitioners, refetchPipelines])
 
+  // Valor memoizado — sem isso, todo render do provider criaria um objeto novo
+  // e re-renderizaria os ~26 consumidores de useCRMConfig() desnecessariamente.
+  const value = useMemo(
+    () => ({
+      stages,
+      fieldDefs,
+      products,
+      practitioners,
+      pipelines,
+      loadingStages,
+      loadingFields,
+      loadingProducts,
+      loadingPractitioners,
+      loadingPipelines,
+      refetchStages,
+      refetchFieldDefs,
+      refetchProducts,
+      refetchPractitioners,
+      refetchPipelines,
+      setStagesOptimistic: setStages,
+    }),
+    [
+      stages, fieldDefs, products, practitioners, pipelines,
+      loadingStages, loadingFields, loadingProducts, loadingPractitioners, loadingPipelines,
+      refetchStages, refetchFieldDefs, refetchProducts, refetchPractitioners, refetchPipelines,
+    ],
+  )
+
   return (
-    <CRMConfigContext.Provider
-      value={{
-        stages,
-        fieldDefs,
-        products,
-        practitioners,
-        pipelines,
-        loadingStages,
-        loadingFields,
-        loadingProducts,
-        loadingPractitioners,
-        loadingPipelines,
-        refetchStages,
-        refetchFieldDefs,
-        refetchProducts,
-        refetchPractitioners,
-        refetchPipelines,
-        setStagesOptimistic: setStages,
-      }}
-    >
+    <CRMConfigContext.Provider value={value}>
       {children}
     </CRMConfigContext.Provider>
   )

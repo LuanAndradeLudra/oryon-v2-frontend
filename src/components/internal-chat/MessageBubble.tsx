@@ -220,7 +220,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
         {/* Floating action bar */}
         {hovered && (
           <div className={cn(
-            'absolute -top-4 flex items-center gap-0.5 bg-surface-900 border border-surface-700 rounded-xl shadow-md px-1 py-0.5 z-10',
+            'absolute -top-4 flex items-center gap-0.5 overlay-surface border rounded-xl px-1 py-0.5 z-10',
             displayAsOwn ? 'right-0' : 'left-0',
           )}>
             <div className="relative">
@@ -232,7 +232,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
                 <SmilePlus className="w-4 h-4" />
               </button>
               {showEmoji && (
-                <div className="absolute right-0 bottom-full mb-1 flex gap-0.5 p-2 rounded-xl border border-surface-700 bg-surface-900 shadow-xl z-20">
+                <div className="absolute right-0 bottom-full mb-1 flex gap-0.5 p-2 rounded-xl overlay-surface border z-20">
                   {QUICK_REACTIONS.map((emoji) => (
                     <button
                       key={emoji}
@@ -263,7 +263,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
                 <MoreHorizontal className="w-4 h-4" />
               </button>
               {showMenu && (
-                <div className="absolute right-0 bottom-full mb-1 w-44 rounded-xl border border-surface-700 bg-surface-900 shadow-xl z-20 overflow-hidden py-1">
+                <div className="absolute right-0 bottom-full mb-1 w-44 rounded-xl overlay-surface border z-20 overflow-hidden py-1">
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(message.body)

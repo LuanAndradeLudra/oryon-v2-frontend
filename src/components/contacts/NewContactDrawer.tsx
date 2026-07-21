@@ -97,8 +97,8 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
             selected.map((tag) => (
               <span
                 key={tag.id}
-                className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                style={{ backgroundColor: tag.color + '33', color: tag.color }}
+                className="color-chip inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+                style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
                 {tag.name}
               </span>
@@ -115,7 +115,7 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute z-50 top-full mt-1 left-0 right-0 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden"
+            className="absolute z-50 top-full mt-1 left-0 right-0 overlay-surface border rounded-xl overflow-hidden"
           >
             <div className="p-2 border-b border-surface-700">
               <input
@@ -296,7 +296,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] z-40 bg-black border-l border-surface-800 flex flex-col shadow-2xl"
+            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">

@@ -78,7 +78,10 @@ export function LineFilterChip({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 w-64 rounded-lg border border-surface-700/60 bg-surface-900 shadow-xl z-30 overflow-hidden">
+        <div className="overlay-scrim z-20" aria-hidden onMouseDown={() => setOpen(false)} />
+      )}
+      {open && (
+        <div className="absolute left-0 top-full mt-1.5 w-64 rounded-lg overlay-surface border z-30 overflow-hidden">
           <ul className="max-h-72 overflow-y-auto py-1">
             <li>
               <button

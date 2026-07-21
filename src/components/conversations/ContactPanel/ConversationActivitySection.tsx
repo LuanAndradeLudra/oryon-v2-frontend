@@ -17,9 +17,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Bot, CheckCircle, AlertCircle, Loader2, UserPlus, UserMinus, Tag as TagIcon,
-  TagsIcon, UserCog, History, Pause, Play, ArrowRightLeft,
+  TagsIcon, UserCog, Pause, Play, ArrowRightLeft,
   CheckCircle2, Clock, Inbox, Archive, Send, MoveRight, Megaphone, CornerDownLeft,
-  MessageSquarePlus, RotateCcw, FileText, AlertTriangle,
+  MessageSquarePlus, RotateCcw, FileText, AlertTriangle, ChevronDown,
   Briefcase, Trophy, XCircle, Pencil, Trash2,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -30,12 +30,29 @@ import { fetchUserActivity, type UserActivity } from '@/services/userActivityApi
 import { getSocket } from '@/services/socket'
 import { Modal } from '@/components/ui/Modal'
 
-// Three rows fit comfortably in the contact panel without dominating it; six
-// rows is the most we render before pushing the user toward the full-history
-// modal, so the contact panel never becomes a scroll-heavy timeline of its
-// own. The modal lifts the cap entirely.
-const COLLAPSED_LIMIT = 3
-const EXPANDED_LIMIT = 6
+const COLLAPSED_LIMIT = 4
+const EXPANDED_LIMIT = 8
+
+type TimeFilter = 'today' | '7d' | '30d' | 'all'
+
+function matchesFilter(createdAt: string, filter: TimeFilter): boolean {
+  if (filter === 'all') return true
+  const now = Date.now()
+  const ts = new Date(createdAt).getTime()
+  const diff = now - ts
+  if (filter === 'today') {
+    const startOfDay = new Date(); startOfDay.setHours(0,0,0,0)
+    return ts >= startOfDay.getTime()
+  }
+  if (filter === '7d') return diff <= 7 * 86400_000
+  if (filter === '30d') return diff <= 30 * 86400_000
+  return true
+}
+
+function formatTime(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
 
 /** Discriminated union normalising the two backend shapes (agent and user)
  *  to a common timeline entry. Anything the row component reads must live
@@ -94,6 +111,9 @@ export function ConversationActivitySection({ conversationId }: { conversationId
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [filter, setFilter] = useState<TimeFilter>('today')
+  const [filterOpen, setFilterOpen] = useState(false)
+  const filterRef = useRef<HTMLDivElement>(null)
   // Tracks which conversationId the in-flight fetch belongs to so a slow
   // response from the previous conversation can't clobber the new one.
   // Also lets event handlers short-circuit refetches for events on
@@ -214,9 +234,23 @@ export function ConversationActivitySection({ conversationId }: { conversationId
     }
   }, [loadActivity])
 
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    if (!filterOpen) return
+    const handler = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [filterOpen])
+
+  const FILTER_LABELS: Record<TimeFilter, string> = {
+    today: 'Hoje', '7d': '7 dias', '30d': '30 dias', all: 'Tudo',
+  }
+
   if (loading && entries === null) {
     return (
-      <div className="px-4 py-3 border-t border-surface-800 flex items-center gap-2 text-xs text-surface-500">
+      <div className="panel-divider px-4 py-3 border-t border-surface-800 flex items-center gap-2 text-xs text-surface-500">
         <Loader2 className="w-3 h-3 animate-spin" />
         Carregando histórico…
       </div>
@@ -225,74 +259,82 @@ export function ConversationActivitySection({ conversationId }: { conversationId
 
   if (error) {
     return (
-      <div className="px-4 py-3 border-t border-surface-800 text-xs text-status-error-400 flex items-center gap-2">
+      <div className="panel-divider px-4 py-3 border-t border-surface-800 text-xs text-status-error-400 flex items-center gap-2">
         <AlertCircle className="w-3 h-3" />
         {error}
       </div>
     )
   }
 
-  const list = entries ?? []
+  const allEntries = entries ?? []
+  const filtered = allEntries.filter(e => matchesFilter(e.createdAt, filter))
   const visibleLimit = expanded ? EXPANDED_LIMIT : COLLAPSED_LIMIT
-  const visible = list.slice(0, visibleLimit)
-  // Three button states map onto three list-size regimes:
-  //   - "Mostrar mais": list goes past the collapsed cap and we have room
-  //     to expand inside the panel without spilling into the modal.
-  //   - "Mostrar menos": user already expanded; lets them collapse without
-  //     losing access to the full history.
-  //   - "Ver histórico completo": there are still rows beyond the in-panel
-  //     cap (>6) — pop the modal so the operator sees everything without
-  //     turning the sidebar into a tall scroll surface.
-  const canShowMore = !expanded && list.length > COLLAPSED_LIMIT
+  const visible = filtered.slice(0, visibleLimit)
+  const canShowMore = !expanded && filtered.length > COLLAPSED_LIMIT
   const canShowLess = expanded
-  const hasOverflow = list.length > EXPANDED_LIMIT
-  const moreInPanel = Math.min(list.length, EXPANDED_LIMIT) - COLLAPSED_LIMIT
+  const hasOverflow = filtered.length > EXPANDED_LIMIT
+  const moreInPanel = Math.min(filtered.length, EXPANDED_LIMIT) - COLLAPSED_LIMIT
 
   return (
     <>
-      <div className="px-4 py-3 border-t border-surface-800">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
-            <History className="w-3 h-3" />
-            Histórico da conversa
-          </p>
-          {list.length > 0 && (
-            <span className="text-[10px] text-surface-600">
-              {list.length} {list.length === 1 ? 'evento' : 'eventos'}
-            </span>
-          )}
+      <div className="panel-divider px-4 pt-4 pb-3 border-t border-surface-800">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold text-surface-200">Timeline</p>
+          <div ref={filterRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setFilterOpen(v => !v)}
+              className="flex items-center gap-1 text-xs text-surface-400 hover:text-surface-200 bg-surface-800 hover:bg-surface-700 border border-surface-700 rounded-lg px-2.5 py-1 transition-colors"
+            >
+              {FILTER_LABELS[filter]}
+              <ChevronDown className={cn('w-3 h-3 transition-transform', filterOpen && 'rotate-180')} />
+            </button>
+            {filterOpen && (
+              <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setFilterOpen(false)} />
+            )}
+            {filterOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 min-w-[100px] py-1 overlay-surface border rounded-xl overflow-hidden">
+                {(Object.keys(FILTER_LABELS) as TimeFilter[]).map(f => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => { setFilter(f); setFilterOpen(false); setExpanded(false) }}
+                    className={cn(
+                      'w-full text-left px-3 py-2 text-xs transition-colors',
+                      f === filter ? 'text-brand-300 bg-brand-600/10' : 'text-surface-300 hover:bg-surface-700',
+                    )}
+                  >
+                    {FILTER_LABELS[f]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        {list.length === 0 ? (
-          <p className="text-xs text-surface-500 py-1">Nenhum evento registrado nesta conversa ainda.</p>
+
+        {filtered.length === 0 ? (
+          <p className="text-xs text-surface-500 py-1">
+            {allEntries.length === 0 ? 'Nenhum evento registrado.' : 'Nenhum evento no período.'}
+          </p>
         ) : (
           <TimelineList entries={visible} />
         )}
+
         {(canShowMore || canShowLess || hasOverflow) && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 pl-[52px]">
             {canShowMore && (
-              <button
-                type="button"
-                onClick={() => setExpanded(true)}
-                className="text-[11px] text-brand-400 hover:text-brand-300 font-medium"
-              >
+              <button type="button" onClick={() => setExpanded(true)} className="text-[11px] text-brand-400 hover:text-brand-300 font-medium">
                 Mostrar mais{moreInPanel > 0 ? ` (${moreInPanel})` : ''}
               </button>
             )}
             {canShowLess && (
-              <button
-                type="button"
-                onClick={() => setExpanded(false)}
-                className="text-[11px] text-surface-400 hover:text-surface-200 font-medium"
-              >
+              <button type="button" onClick={() => setExpanded(false)} className="text-[11px] text-surface-400 hover:text-surface-200 font-medium">
                 Mostrar menos
               </button>
             )}
             {expanded && hasOverflow && (
-              <button
-                type="button"
-                onClick={() => setModalOpen(true)}
-                className="text-[11px] text-brand-400 hover:text-brand-300 font-medium"
-              >
+              <button type="button" onClick={() => setModalOpen(true)} className="text-[11px] text-brand-400 hover:text-brand-300 font-medium">
                 Ver histórico completo
               </button>
             )}
@@ -300,87 +342,65 @@ export function ConversationActivitySection({ conversationId }: { conversationId
         )}
       </div>
 
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Histórico da conversa"
-        className="w-full max-w-lg h-[80vh]"
-      >
-        <div className="px-4 py-3">
-          <p className="text-[11px] text-surface-500 mb-3">
-            {list.length} {list.length === 1 ? 'evento' : 'eventos'} nesta conversa
-          </p>
-          <TimelineList entries={list} />
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Histórico da conversa" className="w-full max-w-lg h-[80vh]">
+        <div className="px-2 py-3">
+          <TimelineList entries={allEntries} />
         </div>
       </Modal>
     </>
   )
 }
 
-/** Reusable list of timeline rows. Same component renders the in-panel
- *  preview (3 or 6 rows) and the full-history modal (everything), keeping
- *  visual treatment guaranteed-consistent across both surfaces. */
 function TimelineList({ entries }: { entries: TimelineEntry[] }) {
   return (
-    <ul className="space-y-2">
-      {entries.map((e) => (
-        <TimelineRow key={`${e.kind}-${e.id}`} entry={e} />
+    <ul className="relative">
+      {entries.map((e, i) => (
+        <TimelineRow key={`${e.kind}-${e.id}`} entry={e} isLast={i === entries.length - 1} />
       ))}
     </ul>
   )
 }
 
-function TimelineRow({ entry }: { entry: TimelineEntry }) {
+function TimelineRow({ entry, isLast }: { entry: TimelineEntry; isLast: boolean }) {
   const visual = visualForEntry(entry)
   const failed = entry.kind === 'agent' && !entry.success
+  const actor = entry.kind === 'user'
+    ? entry.actor
+    : (entry.agentName || 'Agente IA')
+
   return (
     <motion.li
       initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        'flex items-start gap-2.5 px-2 py-1.5 rounded-md',
-        failed
-          ? 'bg-status-error-950/30 border border-status-error-900/40'
-          : visual.rowBg,
-      )}
+      className="flex items-start gap-0"
     >
-      <span
-        className={cn(
-          'mt-0.5 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0',
-          failed ? 'bg-status-error-900/40 text-status-error-300' : 'color-chip border',
-        )}
-        style={!failed ? ({ '--chip': visual.chip } as React.CSSProperties) : undefined}
-      >
-        <visual.Icon className="w-3 h-3" />
-      </span>
-      <div className="flex-1 min-w-0">
+      {/* Time column */}
+      <div className="w-10 flex-shrink-0 pt-0.5 pr-2 text-right">
+        <span className="text-[10px] text-surface-500 font-medium tabular-nums leading-none">
+          {formatTime(entry.createdAt)}
+        </span>
+      </div>
+
+      {/* Line + dot column */}
+      <div className="flex flex-col items-center flex-shrink-0 w-4 mr-2.5">
+        <div
+          className="w-2 h-2 rounded-full flex-shrink-0 mt-0.5 ring-2 ring-surface-950"
+          style={{ backgroundColor: failed ? 'var(--color-danger)' : visual.chip }}
+        />
+        {!isLast && <div className="w-px flex-1 min-h-[20px] bg-surface-700 mt-1" />}
+      </div>
+
+      {/* Content column */}
+      <div className="flex-1 min-w-0 pb-3">
         <p className={cn(
-          'text-xs leading-snug',
+          'text-xs font-medium leading-snug',
           failed ? 'text-status-error-300' : 'text-surface-200',
         )}>
           {visual.label}
         </p>
-        <p className="text-[10px] text-surface-500 mt-0.5 flex items-center gap-1">
-          <span>{formatRelativeTime(entry.createdAt)}</span>
-          {entry.kind === 'user' && (
-            <>
-              <span>·</span>
-              <span className="truncate max-w-[140px]">{entry.actor}</span>
-            </>
-          )}
-          {entry.kind === 'agent' && (
-            <>
-              {/* Same actor slot the operator branch uses, so the timeline
-                  reads "Atribuiu a conversa... · há 2h · Agente Vendas".
-                  Legacy rows without agent_name fall back to a neutral
-                  "Agente IA" — the UUID is never exposed. */}
-              <span>·</span>
-              <span className="truncate max-w-[140px]">
-                {entry.agentName || 'Agente IA'}
-              </span>
-              {entry.success
-                ? <CheckCircle className="w-2.5 h-2.5 text-status-success-500" />
-                : <span className="text-status-error-400">· falhou</span>}
-            </>
+        <p className="text-[10px] text-surface-500 mt-0.5 truncate">
+          {actor}
+          {entry.kind === 'agent' && !entry.success && (
+            <span className="text-status-error-400 ml-1">· falhou</span>
           )}
         </p>
         {entry.kind === 'agent' && !entry.success && entry.errorMessage && (
@@ -389,6 +409,10 @@ function TimelineRow({ entry }: { entry: TimelineEntry }) {
       </div>
     </motion.li>
   )
+}
+
+function dotColorFromIconClass(_iconClass: string): string {
+  return 'bg-surface-500'
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

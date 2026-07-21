@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
@@ -20,9 +20,12 @@ interface ContactDetailPanelProps {
   onContactDeleted?: (contactId: string) => void
   /** Aba com que o painel deve abrir (ex: "deals" ao clicar num chip de negócio na tabela). */
   initialTab?: TabId
+  /** Abre a página completa do contato — recebe o contato já carregado para
+   *  a página nascer com dados (sem flash de skeleton na transição). */
+  onExpand?: (contact: Contact) => void
 }
 
-export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, initialTab }: ContactDetailPanelProps) {
+export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, initialTab, onExpand }: ContactDetailPanelProps) {
   const [contact, setContact] = useState<Contact | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? 'overview')
@@ -79,6 +82,14 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
       socket.off('contact:ai-failed', onFailed)
     }
   }, [contactId, onContactUpdate, toast])
+
+  // Ao trocar de contato, o corpo do painel volta ao topo e à aba Overview —
+  // sem isso, abrir o contato B herda o scroll/aba de onde A parou.
+  const bodyRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 })
+    setActiveTab('overview')
+  }, [contactId])
 
   const handleDelete = async () => {
     try {
@@ -149,9 +160,10 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
             contact={contact}
             onClose={onClose}
             onDelete={handleDelete}
+            onExpand={onExpand ? () => onExpand(contact) : undefined}
           />
           <ContactDetailTabs activeTab={activeTab} onChange={setActiveTab} />
-          <div className="flex-1 overflow-y-auto">
+          <div ref={bodyRef} className="flex-1 overflow-y-auto">
             {activeTab === 'overview'      && <OverviewTab
               contact={contact}
               onSave={handleSave}

@@ -1,8 +1,9 @@
+import { memo } from 'react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip,
 } from 'recharts'
-import { C } from './utils'
+import { useChartColors } from '@/hooks/useChartColors'
 import type { VolumeDataPoint } from '@/types/dashboard'
 
 function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
@@ -21,7 +22,10 @@ function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?:
   )
 }
 
-export function VolumeChart({ data }: { data: VolumeDataPoint[] }) {
+// memo + isAnimationActive={false}: sem isso o gráfico re-anima (~1s) a cada
+// re-render do DashboardPage, mesmo quando os dados não mudaram.
+export const VolumeChart = memo(function VolumeChart({ data }: { data: VolumeDataPoint[] }) {
+  const C = useChartColors()
   return (
     <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
@@ -44,13 +48,13 @@ export function VolumeChart({ data }: { data: VolumeDataPoint[] }) {
           <XAxis dataKey="date" tick={{ fill: C.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: C.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip content={<SimpleTooltip />} />
-          <Area type="monotone" dataKey="inbound" name="Recebidas"
+          <Area type="monotone" dataKey="inbound" name="Recebidas" isAnimationActive={false}
             stroke={C.brand} fill={C.brand} fillOpacity={0.08} strokeWidth={2} dot={false} />
-          <Area type="monotone" dataKey="outbound" name="Enviadas"
+          <Area type="monotone" dataKey="outbound" name="Enviadas" isAnimationActive={false}
             stroke={C.online} fill={C.online} fillOpacity={0.08} strokeWidth={2} dot={false} />
         </AreaChart>
       </ResponsiveContainer>
       </div>
     </div>
   )
-}
+})

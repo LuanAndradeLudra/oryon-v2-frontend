@@ -8,19 +8,25 @@
  */
 
 import { createElement, type ReactNode } from 'react'
-import { init } from 'emoji-mart'
-// Use the Apple-specific dataset — it contains x,y sprite-sheet coordinates
-// required for correct rendering. The generic @emoji-mart/data omits them.
-import data from '@emoji-mart/data/sets/15/apple.json'
 
-// Register the <em-emoji> web component globally once.
-// Sprite sheet and individual emoji PNGs served locally — no CDN needed.
-init({
-  data,
-  set: 'apple',
-  getSpritesheetURL: () => '/emoji-apple-sprite.png',
-  getImageURL: (_set: string, unified: string) => `/emoji-apple/${unified}.png`,
-})
+// Register the <em-emoji> web component globally once — async para manter a lib
+// emoji-mart (~200KB) e o dataset Apple (~478KB) fora do chunk de entrada.
+// Custom elements fazem upgrade automático quando definidos, então <em-emoji>
+// já renderizados no DOM passam a exibir o emoji assim que o init completa.
+// O dataset Apple é usado porque contém as coordenadas x,y do sprite sheet;
+// o @emoji-mart/data genérico as omite. Sprite e PNGs servidos localmente.
+void (async () => {
+  const [{ init }, data] = await Promise.all([
+    import('emoji-mart'),
+    import('@emoji-mart/data/sets/15/apple.json'),
+  ])
+  init({
+    data: data.default,
+    set: 'apple',
+    getSpritesheetURL: () => '/emoji-apple-sprite.png',
+    getImageURL: (_set: string, unified: string) => `/emoji-apple/${unified}.png`,
+  })
+})()
 
 // TypeScript types for the custom element
 declare global {

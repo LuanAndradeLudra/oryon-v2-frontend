@@ -310,6 +310,11 @@ function MediaContent({
       if (el) {
         el.pause()
         el.src = ''
+        // load() aborta qualquer download em andamento; soltar o ref permite o
+        // GC coletar o elemento junto com os 5 listeners anexados a ele —
+        // sem isso, sessões longas de inbox acumulam Audio elements órfãos.
+        el.load()
+        audioRef.current = null
       }
     }
   }, [stopRafLoop])
@@ -732,15 +737,15 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         className={cn(
           'relative max-w-[72%] px-3 py-2 rounded-2xl',
           isOutbound
-            ? 'bg-bubble-out text-bubble-out-fg rounded-br-sm'
-            : 'bg-bubble-in text-surface-100 rounded-bl-sm shadow-sm',
+            ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg rounded-br-sm'
+            : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-sm',
           !isSameDirection && isOutbound && 'rounded-br-2xl rounded-tr-sm',
           !isSameDirection && !isOutbound && 'rounded-bl-2xl rounded-tl-sm'
         )}
         style={isOutbound ? {
           boxShadow: outboundAccent
-            ? `0 1px 2px 0 rgb(0 0 0 / 0.05), inset -3px 0 0 0 ${outboundAccent}`
-            : '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+            ? `var(--bubble-shadow-soft), inset -3px 0 0 0 ${outboundAccent}`
+            : 'var(--bubble-shadow-soft)',
         } : undefined}
       >
         {message.contextWamid && <ReplyQuoteBar message={message} quoted={quotedMessage} />}

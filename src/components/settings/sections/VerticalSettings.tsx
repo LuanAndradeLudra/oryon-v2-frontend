@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, ChevronDown, ChevronUp, RefreshCw, Sparkles } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { VERTICAL_TEMPLATES } from '@/lib/verticalTemplates'
+import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
 import type { TenantVocabulary } from '@/types'
 
 // ─── Vocabulary keys and labels ───────────────────────────────────────────────
@@ -124,8 +126,8 @@ function StagePreview({ templateId }: { templateId: string }) {
         {template.suggestedStages.map((s) => (
           <span
             key={s.label}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border"
-            style={{ color: s.color, borderColor: `${s.color}40`, backgroundColor: `${s.color}12` }}
+            className="color-chip flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border"
+            style={{ ['--chip']: s.color } as React.CSSProperties}
           >
             {s.isTerminal && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />}
             {s.label}
@@ -182,22 +184,18 @@ export function VerticalSettings() {
   }
 
   return (
-    <div className="max-w-[62rem]">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-surface-50">Vertical & Vocabulário</h2>
-        <p className="text-sm text-surface-400 mt-0.5">
-          Adapte a terminologia da plataforma ao seu setor. A IA, o CRM e as automações usarão esses termos automaticamente.
-        </p>
-      </div>
+    <div>
+      <SectionHeader
+        title="Vertical & Vocabulário"
+        description="Adapte a terminologia da plataforma ao seu setor. A IA, o CRM e as automações usarão esses termos automaticamente."
+      />
 
       {/* Template selector */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-brand-400" />
-            Templates por Setor
-          </h3>
+      <SettingsSection
+        title="Templates por setor"
+        description="Escolher um setor troca os termos em toda a interface e no contexto da IA de uma só vez."
+      >
+        <div className="flex justify-end mb-3">
           <span className="text-[11px] text-surface-500 bg-surface-800 border border-surface-700 px-2.5 py-1 rounded-full">
             Ativo: {VERTICAL_TEMPLATES.find((t) => t.id === activeTemplateId)?.emoji}{' '}
             {VERTICAL_TEMPLATES.find((t) => t.id === activeTemplateId)?.label}
@@ -223,7 +221,7 @@ export function VerticalSettings() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.18 }}
-              className="mt-4 rounded-xl border border-surface-700 bg-surface-900 p-4"
+              className="mt-5 border-t border-surface-800/60 pt-4"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
@@ -257,25 +255,23 @@ export function VerticalSettings() {
             </motion.div>
           )}
         </AnimatePresence>
-      </section>
+      </SettingsSection>
 
       {/* Custom vocabulary editor */}
-      <section className="rounded-xl border border-surface-800 bg-surface-900 overflow-hidden">
+      <SettingsSection
+        title="Vocabulário personalizado"
+        description="Ajuste fino de cada termo, um a um. Sobrescreve o template ativo."
+      >
         <button
           type="button"
           onClick={() => setShowCustomEditor((v) => !v)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-surface-800/50 transition-colors"
+          className="flex items-center gap-2 text-sm font-medium text-surface-200 hover:text-surface-50 transition-colors"
         >
-          <div className="text-left">
-            <p className="text-sm font-semibold text-surface-100">Personalizar vocabulário manualmente</p>
-            <p className="text-[11px] text-surface-500 mt-0.5">
-              Edite cada termo individualmente para ajuste fino.
-            </p>
-          </div>
           {showCustomEditor
             ? <ChevronUp className="w-4 h-4 text-surface-400" />
             : <ChevronDown className="w-4 h-4 text-surface-400" />
           }
+          {showCustomEditor ? 'Ocultar editor' : 'Personalizar vocabulário manualmente'}
         </button>
 
         <AnimatePresence initial={false}>
@@ -287,7 +283,7 @@ export function VerticalSettings() {
               transition={{ duration: 0.22, ease: 'easeInOut' }}
               style={{ overflow: 'hidden' }}
             >
-              <div className="px-5 pb-5 border-t border-surface-800">
+              <div>
                 <div className="pt-4">
                   <VocabEditor vocab={customVocab} onChange={setCustomVocab} />
                 </div>
@@ -317,7 +313,7 @@ export function VerticalSettings() {
             </motion.div>
           )}
         </AnimatePresence>
-      </section>
+      </SettingsSection>
 
       {/* How it works note */}
       <div className="mt-6 rounded-xl border border-brand-500/20 bg-brand-500/5 px-5 py-4">

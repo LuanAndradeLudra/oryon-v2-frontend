@@ -1,7 +1,7 @@
 import { useParams, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { SettingsLayout } from '@/components/settings/SettingsLayout'
+import { SettingsLayout, firstVisibleSection } from '@/components/settings/SettingsLayout'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
@@ -93,7 +93,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
 }
 
 export function SettingsPage() {
-  const { section = 'account' } = useParams<{ section: string }>()
+  const { section } = useParams<{ section: string }>()
   // Use the AuthContext user — it's populated synchronously from the cached
   // session at app boot, so the sidebar role is correct on the very first
   // render. The previous code did its own GET /auth/me in a useEffect, which
@@ -104,8 +104,13 @@ export function SettingsPage() {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
 
-  if (!VALID_SECTIONS.includes(section)) {
-    return <Navigate to="/settings/account" replace />
+  // Settings é superfície de INTENÇÃO, não de browsing: quem entra já sabe o
+  // que quer mudar. Sem hub/home — /settings cai direto na primeira seção
+  // visível do papel; a sidebar é o mapa permanente e a busca resolve o
+  // "achar em segundos". Uma home aqui seria uma segunda navegação (o
+  // problema que estamos eliminando).
+  if (!section || !VALID_SECTIONS.includes(section)) {
+    return <Navigate to={`/settings/${firstVisibleSection(user?.role ?? 'admin')}`} replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]

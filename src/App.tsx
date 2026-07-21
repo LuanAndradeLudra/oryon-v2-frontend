@@ -22,15 +22,15 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: 40, fontFamily: 'sans-serif', color: '#fff', background: '#1a1a2e', minHeight: '100vh' }}>
-          <h2 style={{ color: '#ef4444', marginBottom: 12 }}>Algo deu errado</h2>
-          <p style={{ color: '#94a3b8', marginBottom: 20 }}>A página encontrou um erro. Tente recarregar.</p>
-          <pre style={{ background: '#0f0f23', padding: 16, borderRadius: 8, overflow: 'auto', fontSize: 13, color: '#f59e0b' }}>
+        <div style={{ padding: 40, fontFamily: 'var(--font-sans, sans-serif)', color: 'var(--color-surface-100, #ECF1F1)', background: 'var(--color-surface-950, #0A0F0F)', minHeight: '100vh' }}>
+          <h2 style={{ color: 'var(--color-danger, #EF4444)', marginBottom: 12 }}>Algo deu errado</h2>
+          <p style={{ color: 'var(--color-surface-400, #8FA5A5)', marginBottom: 20 }}>A página encontrou um erro. Tente recarregar.</p>
+          <pre style={{ background: 'var(--color-surface-800, #161E1E)', border: '1px solid var(--color-surface-700, #243333)', padding: 16, borderRadius: 12, overflow: 'auto', fontSize: 13, color: 'var(--color-warning, #F97316)' }}>
             {this.state.error.message}
           </pre>
           <button
             onClick={() => { this.setState({ error: null }); window.location.reload() }}
-            style={{ marginTop: 16, padding: '8px 20px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14 }}
+            style={{ marginTop: 16, padding: '8px 20px', background: 'var(--color-brand-500, #2DD4BF)', color: 'var(--color-surface-950, #0A0F0F)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
           >
             Recarregar página
           </button>
@@ -47,7 +47,6 @@ import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
-import { CopilotPanel } from '@/components/copilot/CopilotPanel'
 import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
@@ -59,9 +58,11 @@ import { Monitor }            from 'lucide-react'
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
+const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
 const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const HomePage          = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
+const WelcomePage       = lazyRoute(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })))
 const ForgotPasswordPage = lazyRoute(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
@@ -76,6 +77,11 @@ const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m 
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
 const NotificationsPage = lazyRoute(() => import('@/pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
+
+// CopilotPanel é lazy: junto com ArtifactPanel/CopilotMessage ele puxa ~1MB de
+// código (parsers, previews, export). Fora do chunk de entrada, o app pinta
+// primeiro e o painel baixa em paralelo depois do primeiro render.
+const CopilotPanel = lazyRoute(() => import('@/components/copilot/CopilotPanel').then(m => ({ default: m.CopilotPanel })))
 
 
 // Admin (Oryon staff only) — gated by RequireSuperAdmin inside the route.
@@ -172,7 +178,14 @@ function RequireGuest({ children }: { children: ReactNode }) {
 
 function AnimatedRoutes() {
   const location = useLocation()
-  const routeKey = '/' + location.pathname.split('/')[1]
+  const segments = location.pathname.split('/')
+  // Por padrão a chave é o 1º segmento (transição por seção). Exceção: o
+  // perfil do contato (/contacts/:id) ganha chave própria para que o drawer
+  // aberto na lista faça crossfade suave ao "Expandir" para a página — e
+  // vice-versa no voltar.
+  const routeKey = segments[1] === 'contacts' && segments[2]
+    ? '/contacts/:id'
+    : '/' + segments[1]
 
   return (
     <AnimatePresence initial={false}>
@@ -217,6 +230,11 @@ function AnimatedRoutes() {
           <Route path="/contacts" element={
             <ProtectedRoute><ContactsPage /></ProtectedRoute>
           } />
+          {/* Perfil completo do contato (Customer 360) — o drawer da lista
+              permanece como quick-view; esta rota é o deep-dive expandido. */}
+          <Route path="/contacts/:id" element={
+            <ProtectedRoute><ContactProfilePage /></ProtectedRoute>
+          } />
           <Route path="/more" element={
             <ProtectedRoute><MorePage /></ProtectedRoute>
           } />
@@ -226,8 +244,9 @@ function AnimatedRoutes() {
           <Route path="/campaigns" element={
             <ProtectedRoute><CampaignsPage /></ProtectedRoute>
           } />
+          {/* Raiz de settings = hub navegável (mapa das configurações) */}
           <Route path="/settings" element={
-            <RequireAuth><Navigate to="/settings/account" replace /></RequireAuth>
+            <ProtectedRoute><SettingsPage /></ProtectedRoute>
           } />
           <Route path="/settings/:section" element={
             <ProtectedRoute><SettingsPage /></ProtectedRoute>
@@ -283,8 +302,8 @@ function AnimatedRoutes() {
           {/* Canva OAuth callback — public, opened as popup */}
           <Route path="/canva/callback" element={<CanvaCallbackPage />} />
 
-          {/* Fallback */}
-          <Route path="/" element={<Navigate to="/home" replace />} />
+          {/* Welcome page — public */}
+          <Route path="/" element={<WelcomePage />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
         </Suspense>
@@ -320,7 +339,9 @@ export default function App() {
             <ContextMenuProvider>
               <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
                 <AnimatedRoutes />
-                <CopilotPanel />
+                <Suspense fallback={null}>
+                  <CopilotPanel />
+                </Suspense>
                 <GlobalToastContainer />
               </div>
             </ContextMenuProvider>

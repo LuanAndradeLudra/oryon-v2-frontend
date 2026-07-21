@@ -1,4 +1,4 @@
-import { createContext, useContext, useLayoutEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 
 type Ctx = {
   pageActions: ReactNode
@@ -12,8 +12,9 @@ const TopBarActionsContext = createContext<Ctx>({
 
 export function TopBarActionsProvider({ children }: { children: ReactNode }) {
   const [pageActions, setPageActions] = useState<ReactNode>(null)
+  const value = useMemo(() => ({ pageActions, setPageActions }), [pageActions])
   return (
-    <TopBarActionsContext.Provider value={{ pageActions, setPageActions }}>
+    <TopBarActionsContext.Provider value={value}>
       {children}
     </TopBarActionsContext.Provider>
   )

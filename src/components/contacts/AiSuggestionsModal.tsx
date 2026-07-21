@@ -112,7 +112,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          className="bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden"
+          className="bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

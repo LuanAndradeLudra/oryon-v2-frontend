@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronUp, ChevronDown, ChevronsUpDown, HelpCircle } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, HelpCircle, Search } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
@@ -41,23 +41,31 @@ function MiniBar({ value, color }: { value: number; color: string }) {
 }
 
 function slaColor(v: number): string {
-  if (v >= 90) return '#10b981'
-  if (v >= 70) return '#f59e0b'
-  return '#ef4444'
+  if (v >= 90) return 'var(--color-accent-green)'
+  if (v >= 70) return 'var(--color-accent-amber)'
+  return 'var(--color-danger)'
 }
 
 function utilizationColor(v: number): string {
-  if (v >= 85) return '#ef4444'
-  if (v >= 60) return '#6366f1'
-  return '#5588b0'
+  if (v >= 85) return 'var(--color-danger)'
+  if (v >= 60) return 'var(--color-accent-blue)'
+  return 'var(--color-status-muted)'
 }
 
 export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
     key: 'conversationsToday', dir: 'desc',
   })
+  const [search, setSearch] = useState('')
 
-  const sorted = [...agents].sort((a, b) => {
+  const query = search.trim().toLowerCase()
+  const filtered = query
+    ? agents.filter((a) =>
+        a.name.toLowerCase().includes(query) ||
+        (a.departmentName ?? '').toLowerCase().includes(query))
+    : agents
+
+  const sorted = [...filtered].sort((a, b) => {
     const va = a[sort.key]
     const vb = b[sort.key]
     const cmp = typeof va === 'string' ? va.localeCompare(vb as string) : (va as number) - (vb as number)
@@ -104,11 +112,24 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
           <p className="text-sm font-semibold text-surface-100">Performance da Equipe</p>
           <p className="text-xs text-surface-400 mt-0.5">Métricas individuais do período</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-online" />
-          <span className="text-xs text-surface-400">
-            {agents.filter((a) => a.isOnline).length} de {agents.length} online
-          </span>
+        <div className="flex items-center gap-3">
+          {/* Busca — indispensável em equipes grandes (50+ atendentes) */}
+          <div className="relative hidden sm:block">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar agente..."
+              aria-label="Buscar agente"
+              className="w-44 bg-surface-950 border border-surface-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-online" />
+            <span className="text-xs text-surface-400">
+              {agents.filter((a) => a.isOnline).length} de {agents.length} online
+            </span>
+          </div>
         </div>
       </div>
 
@@ -128,6 +149,13 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-800">
+            {sorted.length === 0 && (
+              <tr>
+                <td colSpan={9} className="px-4 py-8 text-center text-xs text-surface-500">
+                  Nenhum agente encontrado{query ? ` para "${search.trim()}"` : ''}.
+                </td>
+              </tr>
+            )}
             {sorted.map((agent) => (
               <tr key={agent.userId} className="hover:bg-surface-800/50 transition-colors">
                 {/* Agent */}

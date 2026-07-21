@@ -11,26 +11,17 @@ const TYPE_CONFIG = {
   alert: {
     icon: <AlertTriangle className="w-3.5 h-3.5" />,
     label: 'Alerta',
-    color: '#ef4444',
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/30',
-    text: 'text-red-400',
+    chip: 'var(--color-danger)',
   },
   opportunity: {
     icon: <Lightbulb className="w-3.5 h-3.5" />,
     label: 'Oportunidade',
-    color: '#10b981',
-    bg: 'bg-status-active-bg',
-    border: 'border-status-active-border',
-    text: 'text-status-active',
+    chip: 'var(--color-status-active)',
   },
   trend: {
     icon: <TrendingUp className="w-3.5 h-3.5" />,
     label: 'Tendência',
-    color: '#f59e0b',
-    bg: 'bg-status-pending-bg',
-    border: 'border-status-pending-border',
-    text: 'text-status-pending',
+    chip: 'var(--color-status-pending)',
   },
 }
 
@@ -56,7 +47,7 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className={cn('flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full', cfg.bg, cfg.border, cfg.text, 'border')}>
+          <span className={cn('color-chip flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border')} style={{ ['--chip']: cfg.chip } as React.CSSProperties}>
             {cfg.icon}
             {cfg.label}
           </span>

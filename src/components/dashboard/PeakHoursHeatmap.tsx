@@ -1,8 +1,9 @@
+import { memo, useMemo } from 'react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend,
 } from 'recharts'
-import { C } from './utils'
+import { useChartColors } from '@/hooks/useChartColors'
 import type { HeatmapCell } from '@/types/dashboard'
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
@@ -45,8 +46,10 @@ function CustomTooltip({ active, payload, label }: {
   )
 }
 
-export function PeakHoursHeatmap({ data }: { data: HeatmapCell[] }) {
-  const chartData = aggregate(data)
+export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data }: { data: HeatmapCell[] }) {
+  const C = useChartColors()
+  // aggregate() varre 168 células com 21 filter/reduce — só recalcula se data mudar
+  const chartData = useMemo(() => aggregate(data), [data])
 
   const BARS: { key: 'manha' | 'tarde' | 'noite'; label: string; color: string }[] = [
     { key: 'manha', label: 'Manhã (6h–12h)',  color: C.brand },
@@ -96,10 +99,11 @@ export function PeakHoursHeatmap({ data }: { data: HeatmapCell[] }) {
               fill={b.color}
               fillOpacity={0.85}
               radius={[3, 3, 0, 0]}
+              isAnimationActive={false}
             />
           ))}
         </BarChart>
       </ResponsiveContainer>
     </div>
   )
-}
+})

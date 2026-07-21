@@ -53,7 +53,7 @@ export function ContactsTable({
     if (!hasMore || loadingMore || !onLoadMore) return
     const el = e.currentTarget
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-    if (distanceFromBottom < 200) onLoadMore()
+    if (distanceFromBottom < 320) onLoadMore()
   }
 
   return (
@@ -126,7 +126,7 @@ export function ContactsTable({
               />
             ))
           )}
-          {loadingMore && (
+          {loadingMore && contacts.length > 0 && (
             <tr>
               <td colSpan={12} className="py-4 text-center">
                 <Loader2 className="w-4 h-4 text-surface-500 animate-spin inline-block" />

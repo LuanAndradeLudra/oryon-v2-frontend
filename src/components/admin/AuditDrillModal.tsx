@@ -85,7 +85,7 @@ export function AuditDrillModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="bg-surface-900 border border-surface-700 rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col"
+        className="bg-surface-900 overlay-frame border rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <header className="flex items-center justify-between px-5 py-4 border-b border-surface-800">

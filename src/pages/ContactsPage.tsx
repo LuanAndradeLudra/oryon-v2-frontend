@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Upload, Settings2, AlertTriangle, Users, Pencil, Trash2 } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -82,6 +82,7 @@ export function ContactsPage() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [initialPanelTab, setInitialPanelTab] = useState<TabId | undefined>(undefined)
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   // Auto-open contact from URL param (e.g. /contacts?contact=c1)
   useEffect(() => {
@@ -507,24 +508,18 @@ export function ContactsPage() {
 
   return (
     <>
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-black">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-surface-950">
         {isMobile && <MobilePageHeader title="Contatos" />}
 
         {/* Fixos para qualquer destino (Contatos ou funil) — só o card abaixo troca. */}
         <ContactsStatsBar
           contacts={contacts}
           total={total}
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
         />
 
-        {/* Quando o card de Insights está ativo, a busca + filtros ficam numa
-            faixa própria abaixo. Com o card desligado, a ContactsStatsBar já
-            hospeda os filtros no slot liberado — então esta faixa some e o
-            card sobe. */}
-        {isFeatureVisible('crmAiInsights') && (
-          <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
-        )}
+        {/* Busca + filtros: 2 mais usados inline (Fonte, Etiquetas) e o resto
+            dentro do botão "Filtros". */}
+        <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
 
         {/* Faceta "Situação comercial" (D-10) — filtro opt-in derivado do dealsSummary.
             Dentro de um funil, o significado muda: não há dealsSummary cross-pipeline
@@ -926,7 +921,7 @@ export function ContactsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full sm:w-[700px] z-40 bg-black border-l border-surface-800 flex flex-col shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
             >
               <ContactDetailPanel
                 contactId={selectedContactId}
@@ -934,6 +929,16 @@ export function ContactsPage() {
                 onClose={() => setSelectedContactId(null)}
                 onContactUpdate={handleContactUpdate}
                 onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}
+                onExpand={
+                  isFeatureVisible('contactProfilePage', user?.email)
+                    // O drawer fica aberto durante a navegação: a troca de rota
+                    // faz o crossfade da tela inteira (AnimatedRoutes dá chave
+                    // própria a /contacts/:id) — fechar antes causaria um
+                    // slide-out concorrente com o fade. O contato vai no state
+                    // para a página nascer sem skeleton.
+                    ? (contact) => navigate(`/contacts/${contact.id}`, { state: { contact } })
+                    : undefined
+                }
               />
             </motion.div>
           </>

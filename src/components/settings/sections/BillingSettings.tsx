@@ -9,6 +9,7 @@ import {
   Receipt, Loader2,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { SettingsSection } from '../SettingsSection'
 import type { PlanTier } from '@/types'
 import {
   PLANS, PLAN_ORDER, formatCredits, formatPlanPrice, annualSavings, mapBackendTier,
@@ -213,21 +214,25 @@ export function BillingSettings() {
   const plan = PLANS[frontTier]
   const priceMonthly = Math.round(billing.plan.priceMonthlyCents / 100)
   const atendimentos = billing.plan.monthlyCredits
+  // Mesma regra do UpgradeCard: só há upgrade se existir próximo tier não-enterprise.
+  const nextTier = PLAN_ORDER[PLAN_ORDER.indexOf(frontTier) + 1] as PlanTier | undefined
+  const hasUpgrade = !!nextTier && nextTier !== 'enterprise'
 
   return (
-    <div className="max-w-2xl space-y-6">
-
+    <div>
       {/* Current plan */}
-      <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5 space-y-5">
+      <SettingsSection
+        title="Plano atual"
+        description="Sua assinatura, ciclo de cobrança e consumo de créditos de IA."
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-brand-600 flex items-center justify-center">
                 <Zap className="w-3.5 h-3.5 text-surface-950" fill="currentColor" />
               </div>
-              <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">Plano atual</span>
+              <h2 className="text-xl font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
             </div>
-            <h2 className="text-2xl font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
             <p className="text-sm text-surface-400 mt-0.5">
               {billing.planResetsAt
                 ? <>Próxima renovação: {new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</>
@@ -244,39 +249,54 @@ export function BillingSettings() {
         </div>
 
         {/* Credit usage */}
-        <CreditBar used={billing.creditsUsed} total={billing.creditsTotal} />
+        <div className="mt-5">
+          <CreditBar used={billing.creditsUsed} total={billing.creditsTotal} />
+        </div>
 
-        <p className="text-xs text-surface-500">
+        <p className="text-xs text-surface-500 mt-3">
           1 crédito ≈ 1 atendimento (~7.000 tokens de conteúdo). Os créditos não acumulam entre períodos.
         </p>
+      </SettingsSection>
 
-        {/* Limits grid */}
-        <div className="border-t border-surface-800/50 pt-4">
-          <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-3">Limites do plano</p>
-          <LimitRow icon={<TrendingUp className="w-4 h-4" />}  label="Créditos de IA / mês"    limit={billing.creditsTotal} />
-          <LimitRow icon={<Users className="w-4 h-4" />}       label="Usuários"                 limit={plan.limits.users} />
-          <LimitRow icon={<Smartphone className="w-4 h-4" />}  label="Números WhatsApp"         limit={plan.limits.waNumbers} />
-          <LimitRow icon={<Bot className="w-4 h-4" />}         label="Agentes de IA"            limit={plan.limits.agents} />
-          <LimitRow icon={<RefreshCw className="w-4 h-4" />}   label="Automações ativas"        limit={plan.limits.automations} />
-          <LimitRow icon={<Zap className="w-4 h-4" />}         label="Interações Copilot / mês" limit={plan.limits.copilotInteractions} />
-        </div>
-      </div>
+      {/* Limits */}
+      <SettingsSection
+        title="Limites do plano"
+        description="Recursos incluídos na sua assinatura atual."
+      >
+        <LimitRow icon={<TrendingUp className="w-4 h-4" />}  label="Créditos de IA / mês"    limit={billing.creditsTotal} />
+        <LimitRow icon={<Users className="w-4 h-4" />}       label="Usuários"                 limit={plan.limits.users} />
+        <LimitRow icon={<Smartphone className="w-4 h-4" />}  label="Números WhatsApp"         limit={plan.limits.waNumbers} />
+        <LimitRow icon={<Bot className="w-4 h-4" />}         label="Agentes de IA"            limit={plan.limits.agents} />
+        <LimitRow icon={<RefreshCw className="w-4 h-4" />}   label="Automações ativas"        limit={plan.limits.automations} />
+        <LimitRow icon={<Zap className="w-4 h-4" />}         label="Interações Copilot / mês" limit={plan.limits.copilotInteractions} />
+      </SettingsSection>
 
-      {/* Upgrade CTA */}
-      <UpgradeCard currentTier={frontTier} />
+      {/* Upgrade CTA — card comparativo de plano é opção selecionável, pode continuar card */}
+      {hasUpgrade && (
+        <SettingsSection
+          title="Upgrade"
+          description="Desbloqueie mais módulos e créditos no próximo plano."
+        >
+          <UpgradeCard currentTier={frontTier} />
+        </SettingsSection>
+      )}
 
       {/* Extrato de créditos */}
-      <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Receipt className="w-4 h-4 text-surface-400" />
-          <h3 className="text-sm font-semibold text-surface-300">Extrato de créditos</h3>
+      <SettingsSection
+        title="Extrato de créditos"
+        description="Consumo e recargas de crédito, mais recentes primeiro."
+      >
+        <div className="flex items-center gap-2 mb-2 text-surface-400">
+          <Receipt className="w-3.5 h-3.5" />
         </div>
         {transactions.length > 0 ? (
           transactions.map((tx) => <TransactionRow key={tx.id} tx={tx} />)
         ) : (
           <p className="text-sm text-surface-500 py-2">Nenhuma movimentação de crédito ainda.</p>
         )}
-      </div>
+      </SettingsSection>
+      {/* Faturas (Asaas) entram na Fase 3 — não há dado real ainda, então não
+          renderizamos uma seção de invoices com placeholder/mock. */}
     </div>
   )
 }
