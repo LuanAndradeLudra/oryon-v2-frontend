@@ -17,9 +17,12 @@ interface ContactDetailPanelProps {
   onClose: () => void
   onContactUpdate?: (contact: Contact) => void
   onContactDeleted?: (contactId: string) => void
+  /** Abre a página completa do contato — recebe o contato já carregado para
+   *  a página nascer com dados (sem flash de skeleton na transição). */
+  onExpand?: (contact: Contact) => void
 }
 
-export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted }: ContactDetailPanelProps) {
+export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, onExpand }: ContactDetailPanelProps) {
   const [contact, setContact] = useState<Contact | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('overview')
@@ -147,6 +150,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
             contact={contact}
             onClose={onClose}
             onDelete={handleDelete}
+            onExpand={onExpand ? () => onExpand(contact) : undefined}
           />
           <ContactDetailTabs activeTab={activeTab} onChange={setActiveTab} />
           <div ref={bodyRef} className="flex-1 overflow-y-auto">

@@ -2,11 +2,13 @@ import { motion } from 'framer-motion'
 
 type TabId = 'overview' | 'history' | 'conversations' | 'campaigns'
 
+// Rótulos canônicos alinhados com a página de perfil (Atividade / Campanhas)
+// para o mesmo conteúdo não ter nomes diferentes entre drawer e página.
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview',      label: 'Visão Geral' },
-  { id: 'history',       label: 'Histórico' },
+  { id: 'history',       label: 'Atividade' },
   { id: 'conversations', label: 'Conversas' },
-  { id: 'campaigns',     label: 'Disparos' },
+  { id: 'campaigns',     label: 'Campanhas' },
 ]
 
 interface ContactDetailTabsProps {
@@ -16,7 +18,7 @@ interface ContactDetailTabsProps {
 
 export function ContactDetailTabs({ activeTab, onChange }: ContactDetailTabsProps) {
   return (
-    <div className="flex border-b border-surface-800 px-5 flex-shrink-0">
+    <div className="flex px-5 flex-shrink-0">
       {TABS.map((tab) => (
         <button
           key={tab.id}

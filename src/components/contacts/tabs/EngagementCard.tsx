@@ -5,6 +5,8 @@ import {
   TrendingUp, Target, UserCheck, Loader2, Zap,
 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { cn } from '@/lib/utils'
 
 type Stats = Awaited<ReturnType<typeof contactsApi.getStats>>['data']
 
@@ -59,19 +61,25 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 
 interface Props {
   contactId: string
+  /** Esconde o título "Engajamento" quando uma seção já o rotula. */
+  hideTitle?: boolean
 }
 
-export function EngagementCard({ contactId }: Props) {
+export function EngagementCard({ contactId, hideTitle = false }: Props) {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true)
+    setError(false)
     contactsApi.getStats(contactId)
       .then((r) => setStats(r.data))
-      .catch(() => {})
+      .catch(() => setError(true)) // nunca engolir: distingue falha de "sem dados"
       .finally(() => setLoading(false))
-  }, [contactId])
+  }
+
+  useEffect(load, [contactId])
 
   if (loading) {
     return (
@@ -81,6 +89,10 @@ export function EngagementCard({ contactId }: Props) {
         </div>
       </div>
     )
+  }
+
+  if (error) {
+    return <ErrorState compact title="Não foi possível carregar o engajamento." onRetry={load} />
   }
 
   if (!stats || (stats.messages.total === 0 && stats.conversations.total === 0)) {
@@ -94,11 +106,13 @@ export function EngagementCard({ contactId }: Props) {
   return (
     <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
-        <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-surface-400" /> Engajamento
-        </h3>
-        <span className="text-[10px] text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full">
+      <div className={cn('flex items-center px-4 py-3', hideTitle ? 'justify-start' : 'justify-between border-b border-surface-800')}>
+        {!hideTitle && (
+          <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-surface-400" /> Engajamento
+          </h3>
+        )}
+        <span className="text-[11px] text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">
           {totalMsgs} mensagens · {conversations.total} conversas
         </span>
       </div>
@@ -121,12 +135,12 @@ export function EngagementCard({ contactId }: Props) {
         {/* Direction bars */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-surface-500 w-16">Recebidas</span>
-            <MiniBar value={messages.totalInbound} max={maxDir} color="#3b82f6" />
+            <span className="text-[11px] text-surface-400 w-16">Recebidas</span>
+            <MiniBar value={messages.totalInbound} max={maxDir} color="var(--color-accent-blue)" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-surface-500 w-16">Enviadas</span>
-            <MiniBar value={messages.totalOutbound} max={maxDir} color="#10b981" />
+            <span className="text-[11px] text-surface-400 w-16">Enviadas</span>
+            <MiniBar value={messages.totalOutbound} max={maxDir} color="var(--color-accent-green)" />
           </div>
         </div>
 

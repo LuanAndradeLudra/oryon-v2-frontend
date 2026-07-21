@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { LayoutList, LayoutGrid, Plus, Upload, Settings2, AlertTriangle } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -29,6 +29,7 @@ import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
 import { tagsApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
+import { isFeatureVisible } from '@/config/featureFlags'
 import { cn } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag } from '@/types'
 
@@ -43,6 +44,7 @@ export function ContactsPage() {
   const effectiveViewMode: ViewMode = isMobile ? 'kanban' : viewMode
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   // Auto-open contact from URL param (e.g. /contacts?contact=c1)
   useEffect(() => {
@@ -515,13 +517,23 @@ export function ContactsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-40 bg-surface-950 border-l border-surface-800 flex flex-col shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
             >
               <ContactDetailPanel
                 contactId={selectedContactId}
                 onClose={() => setSelectedContactId(null)}
                 onContactUpdate={handleContactUpdate}
                 onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}
+                onExpand={
+                  isFeatureVisible('contactProfilePage', user?.email)
+                    // O drawer fica aberto durante a navegação: a troca de rota
+                    // faz o crossfade da tela inteira (AnimatedRoutes dá chave
+                    // própria a /contacts/:id) — fechar antes causaria um
+                    // slide-out concorrente com o fade. O contato vai no state
+                    // para a página nascer sem skeleton.
+                    ? (contact) => navigate(`/contacts/${contact.id}`, { state: { contact } })
+                    : undefined
+                }
               />
             </motion.div>
           </>

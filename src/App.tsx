@@ -47,7 +47,6 @@ import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
-import { CopilotPanel } from '@/components/copilot/CopilotPanel'
 import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
@@ -59,6 +58,7 @@ import { Monitor }            from 'lucide-react'
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
+const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
 const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const HomePage          = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
@@ -77,6 +77,11 @@ const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m 
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
 const NotificationsPage = lazyRoute(() => import('@/pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
+
+// CopilotPanel é lazy: junto com ArtifactPanel/CopilotMessage ele puxa ~1MB de
+// código (parsers, previews, export). Fora do chunk de entrada, o app pinta
+// primeiro e o painel baixa em paralelo depois do primeiro render.
+const CopilotPanel = lazyRoute(() => import('@/components/copilot/CopilotPanel').then(m => ({ default: m.CopilotPanel })))
 
 
 // Admin (Oryon staff only) — gated by RequireSuperAdmin inside the route.
@@ -173,7 +178,14 @@ function RequireGuest({ children }: { children: ReactNode }) {
 
 function AnimatedRoutes() {
   const location = useLocation()
-  const routeKey = '/' + location.pathname.split('/')[1]
+  const segments = location.pathname.split('/')
+  // Por padrão a chave é o 1º segmento (transição por seção). Exceção: o
+  // perfil do contato (/contacts/:id) ganha chave própria para que o drawer
+  // aberto na lista faça crossfade suave ao "Expandir" para a página — e
+  // vice-versa no voltar.
+  const routeKey = segments[1] === 'contacts' && segments[2]
+    ? '/contacts/:id'
+    : '/' + segments[1]
 
   return (
     <AnimatePresence initial={false}>
@@ -217,6 +229,11 @@ function AnimatedRoutes() {
           } />
           <Route path="/contacts" element={
             <ProtectedRoute><ContactsPage /></ProtectedRoute>
+          } />
+          {/* Perfil completo do contato (Customer 360) — o drawer da lista
+              permanece como quick-view; esta rota é o deep-dive expandido. */}
+          <Route path="/contacts/:id" element={
+            <ProtectedRoute><ContactProfilePage /></ProtectedRoute>
           } />
           <Route path="/more" element={
             <ProtectedRoute><MorePage /></ProtectedRoute>
@@ -322,7 +339,9 @@ export default function App() {
             <ContextMenuProvider>
               <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
                 <AnimatedRoutes />
-                <CopilotPanel />
+                <Suspense fallback={null}>
+                  <CopilotPanel />
+                </Suspense>
                 <GlobalToastContainer />
               </div>
             </ContextMenuProvider>

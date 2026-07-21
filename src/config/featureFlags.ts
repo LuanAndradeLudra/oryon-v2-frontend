@@ -51,6 +51,11 @@ export const FEATURE_FLAGS = {
   // Quando false, o painel inteiro fica oculto — análises já feitas também
   // não aparecem para evitar UI inconsistente.
   conversionAnalysisPanel: false,
+  // Página dedicada de perfil do contato (/contacts/:id) — Customer 360.
+  // Quando false: a rota redireciona para o drawer (/contacts?contact=<id>)
+  // e o botão "Expandir" do drawer some. O drawer continua funcionando
+  // normalmente em ambos os estados (quick-view e página coexistem).
+  contactProfilePage: true,
   // Seção "Oryon" do sidebar (Skills, Agentes cross-tenant, Auditoria,
   // AI Observability, AI Executions). Quando false, a seção inteira some
   // do menu lateral, mas as rotas continuam acessíveis via URL direta

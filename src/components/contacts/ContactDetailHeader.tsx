@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Copy, ExternalLink, Trash2 } from 'lucide-react'
+import { X, Copy, ExternalLink, Trash2, Maximize2 } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { StageBadge } from './StageBadge'
@@ -15,9 +15,12 @@ interface ContactDetailHeaderProps {
   contact: Contact
   onClose: () => void
   onDelete?: () => void
+  /** Abre a página completa do contato (/contacts/:id). O gate da feature
+   *  flag fica no caller — o header só renderiza o botão quando recebe o prop. */
+  onExpand?: () => void
 }
 
-export function ContactDetailHeader({ contact, onClose, onDelete }: ContactDetailHeaderProps) {
+export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: ContactDetailHeaderProps) {
   const { stages } = useCRMConfig()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -43,7 +46,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete }: ContactDetai
   }
 
   return (
-    <div className="flex items-start gap-3 px-5 pt-5 pb-4 border-b border-surface-800 flex-shrink-0">
+    <div className="flex items-start gap-3 px-5 pt-5 pb-4 flex-shrink-0">
       <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="lg" />
 
       <div className="flex-1 min-w-0">
@@ -69,7 +72,18 @@ export function ContactDetailHeader({ contact, onClose, onDelete }: ContactDetai
         )}
       </div>
 
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {onExpand && (
+          <button
+            onClick={onExpand}
+            title="Abrir o perfil completo do contato"
+            aria-label="Abrir o perfil completo do contato"
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-semibold text-surface-200 bg-surface-800 border border-surface-700 hover:bg-surface-700 hover:text-surface-50 transition-all cursor-pointer"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+            Perfil completo
+          </button>
+        )}
         {canDelete && onDelete && (
           <>
             <button

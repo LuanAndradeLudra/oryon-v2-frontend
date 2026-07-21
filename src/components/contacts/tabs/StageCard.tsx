@@ -11,6 +11,9 @@ interface StageCardProps {
   /** Parent updates the loaded Contact so the badge + timeline re-render
    *  without a full refetch after the operator moves the contact. */
   onStageChanged?: (next: string) => void
+  /** Esconde o título "Estágio no funil" quando uma seção já rotula o card
+   *  (evita headers duplicados). Mantém a posição e o botão "Mover". */
+  hideTitle?: boolean
 }
 
 /**
@@ -26,7 +29,7 @@ interface StageCardProps {
  * If the tenant has no stages configured yet, we show a clear CTA explaining
  * where to set them up — the operator shouldn't see a dead card.
  */
-export function StageCard({ contact, onStageChanged }: StageCardProps) {
+export function StageCard({ contact, onStageChanged, hideTitle = false }: StageCardProps) {
   const { stages, loadingStages } = useCRMConfig()
   const [modalOpen, setModalOpen] = useState(false)
   const [quickMovePending, setQuickMovePending] = useState<string | null>(null)
@@ -54,14 +57,14 @@ export function StageCard({ contact, onStageChanged }: StageCardProps) {
 
   return (
     <>
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-4 flex flex-col gap-4">
+      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-4 flex flex-col gap-4 overflow-hidden">
         {/* ── Header ───────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <KanbanSquare className="w-4 h-4 text-surface-500" />
-            <h3 className="text-sm font-semibold text-surface-100">Estágio no funil</h3>
+            {!hideTitle && <KanbanSquare className="w-4 h-4 text-surface-500" />}
+            {!hideTitle && <h3 className="text-sm font-semibold text-surface-100">Estágio no funil</h3>}
             {stages.length > 0 && currentIndex >= 0 && (
-              <span className="text-[11px] text-surface-500">
+              <span className="text-xs text-surface-400">
                 {currentIndex + 1} de {stages.length}
               </span>
             )}
@@ -149,13 +152,10 @@ export function StageCard({ contact, onStageChanged }: StageCardProps) {
 
             {/* ── Mini horizontal timeline ────────────────────────────── */}
             <div className="flex flex-col gap-1.5">
-              <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold">
+              <p className="text-[11px] text-surface-400 uppercase tracking-wide font-semibold">
                 Funil
               </p>
-              <div
-                className="flex gap-1 overflow-x-auto pb-1"
-                style={{ scrollbarWidth: 'thin' }}
-              >
+              <div className="flex gap-1 overflow-x-auto scroll-thin pb-1">
                 {stages.map((s, idx) => {
                   const isCurr = idx === currentIndex
                   const passed = idx < currentIndex
@@ -181,10 +181,10 @@ export function StageCard({ contact, onStageChanged }: StageCardProps) {
                       />
                       <span
                         className={cn(
-                          'text-[9px] truncate px-0.5',
-                          isCurr ? 'font-semibold' : 'text-surface-500',
+                          'text-[11px] truncate px-0.5',
+                          isCurr ? 'font-semibold' : 'text-surface-400',
                         )}
-                        style={isCurr ? { color: s.color, maxWidth: '60px' } : { maxWidth: '60px' }}
+                        style={isCurr ? { color: s.color, maxWidth: '68px' } : { maxWidth: '68px' }}
                       >
                         {s.label}
                       </span>
@@ -202,17 +202,17 @@ export function StageCard({ contact, onStageChanged }: StageCardProps) {
                   onClick={() => previous && quickMove(previous.key)}
                   disabled={!previous || !!quickMovePending}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-colors',
+                    'flex-1 min-w-0 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-colors',
                     !previous
-                      ? 'text-surface-600 cursor-not-allowed bg-surface-800/30'
+                      ? 'text-surface-500 cursor-not-allowed bg-surface-800/30'
                       : 'text-surface-300 bg-surface-800 hover:bg-surface-700',
                   )}
                   title={previous ? `Voltar para ${previous.label}` : 'Já está no início do funil'}
                 >
                   {quickMovePending === previous?.key ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
                   ) : (
-                    <ChevronLeft className="w-3 h-3" />
+                    <ChevronLeft className="w-3 h-3 flex-shrink-0" />
                   )}
                   <span className="truncate">
                     {previous ? previous.label : 'Início'}
@@ -223,9 +223,9 @@ export function StageCard({ contact, onStageChanged }: StageCardProps) {
                   onClick={() => next && quickMove(next.key)}
                   disabled={!next || !!quickMovePending}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-colors',
+                    'flex-1 min-w-0 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-colors',
                     !next
-                      ? 'text-surface-600 cursor-not-allowed bg-surface-800/30'
+                      ? 'text-surface-500 cursor-not-allowed bg-surface-800/30'
                       : 'text-surface-300 bg-surface-800 hover:bg-surface-700',
                   )}
                   title={next ? `Avançar para ${next.label}` : 'Já está no fim do funil'}
@@ -234,9 +234,9 @@ export function StageCard({ contact, onStageChanged }: StageCardProps) {
                     {next ? next.label : 'Fim'}
                   </span>
                   {quickMovePending === next?.key ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
                   ) : (
-                    <ChevronRight className="w-3 h-3" />
+                    <ChevronRight className="w-3 h-3 flex-shrink-0" />
                   )}
                 </button>
               </div>
