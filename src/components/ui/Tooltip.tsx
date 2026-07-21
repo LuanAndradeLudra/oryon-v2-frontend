@@ -53,14 +53,17 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
       className="relative flex items-center"
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => { setShow(false); setCoords(null) }}
+      onFocus={() => setShow(true)}
+      onBlur={() => { setShow(false); setCoords(null) }}
     >
       {children}
       {show && coords && createPortal(
         <div
+          role="tooltip"
           style={{ position: 'fixed', top: coords.top, left: coords.left }}
           className={cn(
-            'z-[9999] rounded-md bg-surface-800 px-2.5 py-1.5',
-            'text-xs text-surface-100 shadow-lg border border-surface-700',
+            'z-[9999] rounded-md px-2.5 py-1.5 overlay-surface border',
+            'text-xs text-surface-100',
             'pointer-events-none',
             wide ? 'whitespace-normal max-w-xs leading-snug' : 'whitespace-nowrap',
             transforms[side],

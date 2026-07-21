@@ -49,6 +49,20 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
   const menuRef = useRef<HTMLDivElement>(null)
   const pos = useDropdownPosition(open, align, wrapRef)
 
+  // Devolve o foco ao gatilho ao fechar (WCAG 2.4.3).
+  const returnFocusToTrigger = () => {
+    wrapRef.current?.querySelector<HTMLElement>('button, [tabindex], a[href]')?.focus()
+  }
+
+  // Ao abrir: move o foco para o primeiro item do menu.
+  useEffect(() => {
+    if (!open) return
+    const t = requestAnimationFrame(() => {
+      menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]:not([disabled])')?.focus()
+    })
+    return () => cancelAnimationFrame(t)
+  }, [open])
+
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
@@ -57,7 +71,7 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
       onClose()
     }
     const keyHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') { onClose(); returnFocusToTrigger() }
     }
     document.addEventListener('mousedown', handler)
     document.addEventListener('keydown', keyHandler)
@@ -67,25 +81,42 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
     }
   }, [open, onClose])
 
+  // Navegação por setas entre os itens do menu.
+  const handleMenuKeyDown = (e: React.KeyboardEvent) => {
+    const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [])
+    if (items.length === 0) return
+    const idx = items.indexOf(document.activeElement as HTMLElement)
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[(idx + 1) % items.length].focus() }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); items[(idx - 1 + items.length) % items.length].focus() }
+    else if (e.key === 'Home') { e.preventDefault(); items[0].focus() }
+    else if (e.key === 'End') { e.preventDefault(); items[items.length - 1].focus() }
+  }
+
   const menu =
     open && (
-      <div
-        ref={menuRef}
-        style={{
-          position: 'fixed',
-          top: pos.top,
-          ...(pos.left !== undefined ? { left: pos.left } : {}),
-          ...(pos.right !== undefined ? { right: pos.right } : {}),
-        }}
-        className={cn(
-          'z-50',
-          'bg-surface-800 border border-surface-700 rounded-xl shadow-2xl',
-          'min-w-[200px] overflow-hidden',
-          className
-        )}
-      >
-        {children}
-      </div>
+      <>
+        <div className="overlay-scrim z-40" aria-hidden />
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-orientation="vertical"
+          onKeyDown={handleMenuKeyDown}
+          style={{
+            position: 'fixed',
+            top: pos.top,
+            ...(pos.left !== undefined ? { left: pos.left } : {}),
+            ...(pos.right !== undefined ? { right: pos.right } : {}),
+          }}
+          className={cn(
+            'z-50',
+            'overlay-surface border rounded-xl',
+            'min-w-[200px] overflow-hidden',
+            className
+          )}
+        >
+          {children}
+        </div>
+      </>
     )
 
   return (
@@ -108,10 +139,13 @@ interface DropdownItemProps {
 export function DropdownItem({ onClick, children, icon: Icon, danger, active, disabled }: DropdownItemProps) {
   return (
     <button
+      role="menuitem"
+      tabIndex={-1}
       onClick={onClick}
       disabled={disabled}
       className={cn(
         'w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-all',
+        'focus-visible:outline-none focus-visible:bg-surface-700',
         danger
           ? 'text-danger hover:bg-danger/10'
           : active
@@ -127,5 +161,5 @@ export function DropdownItem({ onClick, children, icon: Icon, danger, active, di
 }
 
 export function DropdownSeparator() {
-  return <div className="h-px bg-surface-700 my-1" />
+  return <div className="h-px bg-surface-700 my-1" role="separator" />
 }

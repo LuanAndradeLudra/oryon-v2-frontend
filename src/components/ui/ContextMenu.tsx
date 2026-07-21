@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -12,40 +10,29 @@ import {
 import { createPortal } from 'react-dom'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  ContextMenuCtx,
+  type ContextMenuEntry,
+  type ContextMenuItemDef,
+  type ContextMenuSeparatorDef,
+  type ContextMenuState,
+} from './contextMenuCore'
+
+// O objeto de contexto + o hook vivem agora em ./contextMenuCore (módulo-folha)
+// para sobreviver ao HMR — ver a nota lá. Re-exportamos aqui para não quebrar os
+// `import { ... } from '@/components/ui/ContextMenu'` já espalhados pelo app.
+export { useContextMenuCtx } from './contextMenuCore'
+export type {
+  ContextMenuEntry,
+  ContextMenuItemDef,
+  ContextMenuSeparatorDef,
+  ContextMenuState,
+} from './contextMenuCore'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface ContextMenuItemDef {
-  label: string
-  icon?: React.ElementType
-  shortcut?: string
-  danger?: boolean
-  disabled?: boolean
-  onClick?: () => void
-  children?: ContextMenuEntry[]
-}
-export interface ContextMenuSeparatorDef {
-  separator: true
-}
-export type ContextMenuEntry = ContextMenuItemDef | ContextMenuSeparatorDef
-
 function isSeparator(e: ContextMenuEntry): e is ContextMenuSeparatorDef {
   return (e as ContextMenuSeparatorDef).separator === true
-}
-
-// ── Context ───────────────────────────────────────────────────────────────────
-
-interface ContextMenuState {
-  open: (x: number, y: number, items: ContextMenuEntry[]) => void
-  close: () => void
-}
-
-const Ctx = createContext<ContextMenuState | null>(null)
-
-export function useContextMenuCtx(): ContextMenuState {
-  const c = useContext(Ctx)
-  if (!c) throw new Error('useContextMenuCtx must be used within <ContextMenuProvider>')
-  return c
 }
 
 // ── Provider ──────────────────────────────────────────────────────────────────
@@ -77,12 +64,12 @@ export function ContextMenuProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ContextMenuState>(() => ({ open, close }), [open, close])
 
   return (
-    <Ctx.Provider value={value}>
+    <ContextMenuCtx.Provider value={value}>
       {children}
       {state.visible && (
         <ContextMenuPortal items={state.items} x={state.x} y={state.y} onClose={close} />
       )}
-    </Ctx.Provider>
+    </ContextMenuCtx.Provider>
   )
 }
 
@@ -164,7 +151,7 @@ function ContextMenuPortal({ items, x, y, onClose }: ContextMenuPortalProps) {
       tabIndex={-1}
       className={cn(
         'fixed z-[100]',
-        'bg-surface-800 border border-surface-700 rounded-xl shadow-2xl',
+        'overlay-surface border rounded-xl',
         'min-w-[200px] max-w-[280px] overflow-visible py-1',
       )}
       style={{ left: pos.x, top: pos.y }}
@@ -355,7 +342,7 @@ function SubmenuItem({
             onContextMenu={(e) => e.preventDefault()}
             className={cn(
               'fixed z-[101]',
-              'bg-surface-800 border border-surface-700 rounded-xl shadow-2xl',
+              'overlay-surface border rounded-xl',
               'min-w-[200px] max-w-[280px] overflow-visible py-1',
             )}
             style={{ left: subPos.left, top: subPos.top }}

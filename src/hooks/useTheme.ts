@@ -3,6 +3,16 @@ import { useState, useEffect } from 'react'
 type Theme = 'dark' | 'light'
 
 const STORAGE_KEY = 'oryon-theme'
+const THEME_EVENT = 'oryon:theme-change'
+
+function applyTheme(theme: Theme) {
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light')
+  } else {
+    document.documentElement.removeAttribute('data-theme')
+  }
+  localStorage.setItem(STORAGE_KEY, theme)
+}
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
@@ -10,15 +20,19 @@ export function useTheme() {
   })
 
   useEffect(() => {
-    if (theme === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light')
-    } else {
-      document.documentElement.removeAttribute('data-theme')
+    const handler = (e: Event) => {
+      setTheme((e as CustomEvent<Theme>).detail)
     }
-    localStorage.setItem(STORAGE_KEY, theme)
-  }, [theme])
+    window.addEventListener(THEME_EVENT, handler)
+    return () => window.removeEventListener(THEME_EVENT, handler)
+  }, [])
 
-  const toggle = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
+  const toggle = () => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark'
+    applyTheme(next)
+    setTheme(next)
+    window.dispatchEvent(new CustomEvent<Theme>(THEME_EVENT, { detail: next }))
+  }
 
   return { theme, toggle }
 }
