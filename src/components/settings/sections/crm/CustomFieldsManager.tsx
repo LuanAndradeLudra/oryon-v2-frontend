@@ -70,14 +70,19 @@ export function CustomFieldsManager() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
           <h3 className="text-sm font-semibold text-surface-100">Campos personalizados</h3>
           <p className="text-xs text-surface-500 mt-0.5">
             Adicione campos extras aos contatos para capturar dados do seu negócio.
           </p>
         </div>
-        <Button size="sm" onClick={() => { setEditField(null); setModalOpen(true) }} leftIcon={<Plus className="w-3.5 h-3.5" />}>
+        <Button
+          size="sm"
+          onClick={() => { setEditField(null); setModalOpen(true) }}
+          leftIcon={<Plus className="w-3.5 h-3.5" />}
+          className="crm-manager-new-btn px-4 whitespace-nowrap flex-shrink-0 hover:brightness-95"
+        >
           Novo campo
         </Button>
       </div>

@@ -535,7 +535,7 @@ export function ContactsPage() {
               className={cn(
                 'text-xs px-3 py-1 rounded-full whitespace-nowrap transition-colors border',
                 commercial === opt.key
-                  ? 'bg-brand-500/15 text-brand-300 border-brand-500/40'
+                  ? 'commercial-filter-chip-active bg-brand-500/15 text-brand-300 border-brand-500/40'
                   : 'bg-surface-900 text-surface-400 border-surface-800 hover:text-surface-200',
               )}
             >

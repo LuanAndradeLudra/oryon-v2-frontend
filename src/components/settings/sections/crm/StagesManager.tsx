@@ -79,15 +79,20 @@ export function StagesManager() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
           <h3 className="text-sm font-semibold text-surface-100">Estágios do contato</h3>
           <p className="text-xs text-surface-500 mt-0.5">
             Defina as etapas do ciclo de vida do contato (eixo distinto dos estágios de funil/negócio). Arraste para reordenar.
           </p>
         </div>
         {canManageStages && (
-          <Button size="sm" onClick={() => { setEditStage(null); setModalOpen(true) }} leftIcon={<Plus className="w-3.5 h-3.5" />}>
+          <Button
+            size="sm"
+            onClick={() => { setEditStage(null); setModalOpen(true) }}
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+            className="crm-manager-new-btn px-4 whitespace-nowrap flex-shrink-0 hover:brightness-95"
+          >
             Novo estágio
           </Button>
         )}

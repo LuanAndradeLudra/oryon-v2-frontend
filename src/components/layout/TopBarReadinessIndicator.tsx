@@ -54,18 +54,15 @@ export function TopBarReadinessIndicator() {
   if (issues.length === 1) {
     const issue = issues[0]
     return (
-      <div
-        className="hidden md:inline-flex items-center gap-2 h-8 pl-2 pr-1 rounded-lg border max-w-[360px] color-chip"
-        style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
-      >
-        <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-        <span className="text-[11px] font-medium truncate" title={issue.description}>
+      <div className="hidden md:inline-flex items-center gap-2 h-8 pl-2 pr-1 rounded-lg border border-warning/30 bg-warning/10 max-w-[360px]">
+        <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 text-warning" />
+        <span className="text-[11px] font-medium truncate text-surface-200" title={issue.description}>
           {issue.label}
         </span>
         {issue.cta && (
           <Link
             to={issue.cta.href}
-            className="inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md text-[11px] font-semibold transition-colors flex-shrink-0 border border-white/25 bg-white/15 hover:bg-white/25"
+            className="inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md text-[11px] font-semibold transition-colors flex-shrink-0 border border-warning/40 text-warning hover:bg-warning hover:text-white"
           >
             {issue.cta.label}
             <ChevronRight className="w-3 h-3" />

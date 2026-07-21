@@ -153,7 +153,7 @@ function CopilotPageInner() {
         className={cn(
           'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all',
           sessionsOpen
-            ? 'bg-brand-600/20 border-brand-500/40 text-brand-300'
+            ? 'copilot-sessions-btn-active bg-brand-600/20 border-brand-500/40 text-brand-300'
             : 'bg-surface-800/60 border-surface-700/60 text-surface-400 hover:text-surface-200 hover:border-surface-600',
         )}
         title="Conversas (Ctrl/Cmd+B)"
@@ -161,7 +161,10 @@ function CopilotPageInner() {
         <PanelLeft className="w-3.5 h-3.5 flex-shrink-0" />
         <span>Sessões</span>
         {sessions.length > 0 && (
-          <span className="px-1.5 py-0.5 rounded-full bg-brand-600/25 text-brand-300 text-[10px] font-semibold">
+          <span className={cn(
+            'px-1.5 py-0.5 rounded-full text-[10px] font-semibold',
+            sessionsOpen ? 'copilot-sessions-badge-active bg-brand-600/25 text-brand-300' : 'bg-brand-600/25 text-brand-300',
+          )}>
             {sessions.length}
           </span>
         )}

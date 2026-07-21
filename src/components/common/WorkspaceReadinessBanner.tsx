@@ -119,22 +119,31 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
     </ul>
   )
 
-  if (hasBlockers) {
-    return (
-      <Banner variant="danger" className={className}>
-        <h3 className="text-sm font-semibold">{title}</h3>
-        <p className="text-xs opacity-90 mt-0.5">{description}</p>
-        {list}
-      </Banner>
-    )
-  }
-
+  // Fundo neutro nos dois casos — só o ícone e a borda carregam o acento de
+  // cor (danger/neutro). Um card cheio de vermelho sólido pra um checklist de
+  // setup rotineiro é saturação demais; cada item já tem seu próprio chip de
+  // severidade, que basta como sinal.
   return (
-    <div className={cn('rounded-xl border border-surface-700 bg-surface-900/40 p-5', className)}>
+    <div
+      className={cn(
+        'rounded-xl border bg-surface-900/40 p-5',
+        hasBlockers ? 'border-danger/30' : 'border-surface-700',
+        className,
+      )}
+    >
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-surface-800 text-surface-400">
-          <CheckCircle className="w-5 h-5" />
-        </div>
+        {hasBlockers ? (
+          <span
+            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 color-chip"
+            style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+          >
+            <AlertTriangle className="w-5 h-5" />
+          </span>
+        ) : (
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-surface-800 text-surface-400">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-surface-100">{title}</h3>
           <p className="text-xs text-surface-400 mt-0.5">{description}</p>

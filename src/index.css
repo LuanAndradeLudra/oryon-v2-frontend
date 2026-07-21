@@ -796,6 +796,38 @@ code, pre, kbd, samp {
 /* (Conversation list "background container"/lane removed — the previews now sit
    directly on the white list surface as shadowed cards.) */
 
+/* Faceta "Situação comercial" (Contatos) — pedido do usuário: o chip ativo usa
+   o mesmo verde escuro do CTA "Novo {lead/contato}" (brand-600) no tema claro,
+   em vez do brand-500/15 translúcido (que fica pouco legível em fundo claro). */
+[data-theme="light"] .commercial-filter-chip-active {
+  background-color: var(--color-brand-600) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-brand-600) !important;
+}
+
+/* Botões "Novo estágio"/"Novo campo" (CRMConfigDrawer > Estágios do contato /
+   Campos) — mesmo pedido: verde mais escuro (brand-600) no tema claro em vez
+   do brand-500 padrão do <Button variant="primary">. Hover usa brightness()
+   em vez de trocar a cor (o :hover do Button aponta pro brand-cta-hover, que
+   nosso !important bloquearia sem reagir ao toque). */
+[data-theme="light"] .crm-manager-new-btn {
+  background-color: var(--color-brand-600) !important;
+}
+
+/* Botão "Sessões" (topbar da /copilot) — mesmo pedido: verde mais escuro
+   (brand-600) no tema claro em vez do brand-600/20 translúcido, que fica
+   claro/pouco contrastante em fundo branco. Badge de contagem vira chip
+   translúcido branco pra continuar legível sobre o verde sólido. */
+[data-theme="light"] .copilot-sessions-btn-active {
+  background-color: var(--color-brand-600) !important;
+  border-color: var(--color-brand-600) !important;
+  color: #FFFFFF !important;
+}
+[data-theme="light"] .copilot-sessions-badge-active {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: #FFFFFF !important;
+}
+
 /* ── Scrollbar light ─────────────────────────────────────────────────────── */
 [data-theme="light"] ::-webkit-scrollbar-thumb       { background: var(--color-surface-700); }
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: var(--color-surface-600); }
