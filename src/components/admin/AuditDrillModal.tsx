@@ -25,11 +25,12 @@ const AI_TYPE_LABEL: Record<DrillEvent['type'], string> = {
   anti_loop: 'Anti-loop',
 }
 
-const AI_TYPE_STYLE: Record<DrillEvent['type'], string> = {
-  chat_execution: 'bg-emerald-700/30 text-emerald-200',
-  tool_execution: 'bg-amber-700/30 text-amber-200',
-  rag_query:      'bg-sky-700/30 text-sky-200',
-  anti_loop:      'bg-status-failed-bg text-status-failed',
+// Cor categórica (não status) — mesmo critério do AgentDetail.tsx pros métodos HTTP.
+const AI_TYPE_CHIP: Record<DrillEvent['type'], string> = {
+  chat_execution: 'var(--color-accent-green)',
+  tool_execution: 'var(--color-accent-amber)',
+  rag_query:      'var(--color-accent-cyan)',
+  anti_loop:      'var(--color-danger)',
 }
 
 export function AuditDrillModal({
@@ -126,11 +127,17 @@ export function AuditDrillModal({
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-surface-400 font-mono">{new Date(entry.at).toLocaleTimeString('pt-BR', { hour12: false })}</span>
                     {entry.kind === 'activity' ? (
-                      <span className="px-2 py-0.5 rounded bg-brand-700/30 text-brand-200 font-medium">
+                      <span
+                        className="px-2 py-0.5 rounded font-medium color-chip"
+                        style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}
+                      >
                         backend · {entry.row.actorType}
                       </span>
                     ) : (
-                      <span className={`px-2 py-0.5 rounded font-medium ${AI_TYPE_STYLE[entry.ev.type]}`}>
+                      <span
+                        className="px-2 py-0.5 rounded font-medium color-chip"
+                        style={{ ['--chip']: AI_TYPE_CHIP[entry.ev.type] } as React.CSSProperties}
+                      >
                         {AI_TYPE_LABEL[entry.ev.type]}
                       </span>
                     )}

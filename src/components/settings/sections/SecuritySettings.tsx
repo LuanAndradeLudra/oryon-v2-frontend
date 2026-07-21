@@ -114,7 +114,10 @@ export function SecuritySettings() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-surface-100">{sess.device}</p>
                       {sess.isCurrent && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-online bg-emerald-900/30 border border-emerald-800 px-1.5 py-0.5 rounded-full">
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full color-chip border"
+                          style={{ ['--chip']: 'var(--color-online)' } as React.CSSProperties}
+                        >
                           Atual
                         </span>
                       )}

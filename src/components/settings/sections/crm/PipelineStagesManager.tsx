@@ -188,7 +188,10 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
           pipelines={pipelines}
         />
         {selectedPipeline?.isArchived && (
-          <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-1 rounded-full mb-0.5">
+          <span
+            className="text-[10px] font-semibold px-2 py-1 rounded-full mb-0.5 color-chip border"
+            style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
+          >
             Arquivado
           </span>
         )}
@@ -274,12 +277,18 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-surface-100">{stage.label}</span>
                     {stage.isWon && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded-full">
+                      <span
+                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border"
+                        style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
+                      >
                         <Trophy className="w-2.5 h-2.5" /> Ganho
                       </span>
                     )}
                     {stage.isLost && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-red-400 bg-red-500/10 border border-red-500/25 px-1.5 py-0.5 rounded-full">
+                      <span
+                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border"
+                        style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+                      >
                         <X className="w-2.5 h-2.5" /> Perdido
                       </span>
                     )}

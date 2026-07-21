@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { SettingsSection } from '../SettingsSection'
+import { Banner } from '@/components/ui/Banner'
 import type { PlanTier } from '@/types'
 import {
   PLANS, PLAN_ORDER, formatCredits, formatPlanPrice, annualSavings, mapBackendTier,
@@ -201,10 +202,9 @@ export function BillingSettings() {
 
   if (error && !billing) {
     return (
-      <div className="max-w-2xl rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-sm text-red-300 flex items-center gap-2">
-        <AlertTriangle className="w-4 h-4" />
+      <Banner variant="danger" className="max-w-2xl">
         Não foi possível carregar a cobrança. Tente novamente em instantes.
-      </div>
+      </Banner>
     )
   }
 

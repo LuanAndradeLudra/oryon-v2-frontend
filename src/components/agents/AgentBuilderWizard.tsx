@@ -241,7 +241,7 @@ function CapabilityPicker({
   const [custom, setCustom] = useState('')
   const activeCls = color === 'green'
     ? 'bg-status-active-bg border-status-active-border text-status-active ring-1 ring-status-active-border'
-    : 'bg-red-500/15 border-red-500/30 text-red-300 ring-1 ring-red-500/20'
+    : 'bg-danger/15 border-danger/30 text-danger ring-1 ring-danger/20'
   const idleCls = 'bg-surface-800 border-surface-700 text-surface-400 hover:border-surface-600 hover:text-surface-300'
 
   const toggle = (item: string) =>
@@ -507,12 +507,20 @@ function Step3({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-5 h-5 rounded-full bg-red-500/20 ring-1 ring-red-500/40 flex items-center justify-center flex-shrink-0">
-            <X className="w-3 h-3 text-red-400" />
+          <div
+            className="w-5 h-5 rounded-full color-chip flex items-center justify-center flex-shrink-0"
+            style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+          >
+            <X className="w-3 h-3" />
           </div>
           <span className="text-xs font-semibold text-surface-300 uppercase tracking-wide">Não deve fazer</span>
           {data.cannot_do.length > 0 && (
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-500/15 text-red-400">{data.cannot_do.length}</span>
+            <span
+              className="text-xs px-1.5 py-0.5 rounded-md color-chip"
+              style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+            >
+              {data.cannot_do.length}
+            </span>
           )}
         </div>
         <CapabilityPicker

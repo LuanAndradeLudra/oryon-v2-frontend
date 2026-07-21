@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { chatWithAgent, startTestSession, endTestSession } from '@/services/agentsApi'
 import type { AgentConfigWithTools } from '@/services/agentsApi'
 import { AgentIcon } from '@/components/agents/AgentIcons'
+import { Banner } from '@/components/ui/Banner'
 
 interface Message {
   id: string
@@ -254,13 +255,17 @@ export function AgentTestModal({
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 p-3 bg-red-500/8 border border-red-500/20 rounded-xl"
             >
-              <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
-              <p className="text-xs text-red-400 flex-1">{error}</p>
-              <button onClick={() => setError(null)} className="text-surface-500 hover:text-surface-300 transition">
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <Banner
+                variant="danger"
+                action={
+                  <button onClick={() => setError(null)} className="opacity-80 hover:opacity-100 transition">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                }
+              >
+                <p className="text-xs">{error}</p>
+              </Banner>
             </motion.div>
           )}
 
