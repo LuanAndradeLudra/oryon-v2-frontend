@@ -99,7 +99,7 @@ export function Drawer({
             aria-modal="true"
             aria-label={ariaLabel}
             className={cn(
-              'absolute z-10 bg-surface-900 border-surface-700 shadow-2xl flex flex-col overflow-hidden',
+              'absolute z-10 bg-surface-900 overlay-frame flex flex-col overflow-hidden',
               panelPos,
               className,
             )}

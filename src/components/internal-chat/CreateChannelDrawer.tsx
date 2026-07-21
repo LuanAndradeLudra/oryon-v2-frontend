@@ -362,7 +362,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-        className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-surface-900 border-l border-surface-800 z-50 flex flex-col shadow-2xl"
+        className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-surface-900 border-l overlay-frame z-50 flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

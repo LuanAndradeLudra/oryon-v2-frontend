@@ -2194,8 +2194,8 @@ export function AgentDetail({
           </button>
           {moreOpen && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
-              <div className="absolute right-0 top-full mt-1 min-w-[13rem] py-1 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl z-50">
+              <div className="overlay-scrim z-40" aria-hidden onClick={() => setMoreOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 min-w-[13rem] py-1 overlay-surface border rounded-xl z-50">
                 <button
                   onClick={() => {
                     setMoreOpen(false)

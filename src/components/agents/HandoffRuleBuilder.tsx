@@ -62,7 +62,7 @@ function RuleModal({
         transition={{ duration: 0.15 }}
         onClick={e => e.stopPropagation()}
         className={cn(
-          'relative z-10 bg-surface-900 border border-surface-800 rounded-2xl shadow-2xl flex flex-col w-full',
+          'relative z-10 bg-surface-900 overlay-frame border rounded-2xl flex flex-col w-full',
           wide ? 'max-w-2xl' : 'max-w-lg',
           tall ? 'h-[78vh]' : 'max-h-[80vh]',
         )}

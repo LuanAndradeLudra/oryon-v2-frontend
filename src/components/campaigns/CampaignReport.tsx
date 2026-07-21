@@ -311,7 +311,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
       <motion.div
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[600px] bg-surface-950 border-l border-surface-800 flex flex-col shadow-2xl"
+        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[600px] bg-surface-950 border-l overlay-frame flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">

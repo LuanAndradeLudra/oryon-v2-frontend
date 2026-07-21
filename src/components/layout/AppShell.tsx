@@ -17,7 +17,7 @@ function ShellLayout({ children }: { children: ReactNode }) {
   // profundo) e todo o conteúdo flutua num cartão arredondado e elevado.
   // Uma única mudança estrutural que reenquadra todas as telas do app.
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-shell">
+    <div className="workspace-shell flex h-screen w-screen overflow-hidden">
       {/* Navegação por teclado: pula os 15+ itens da sidebar direto ao conteúdo */}
       <a
         href="#main-content"

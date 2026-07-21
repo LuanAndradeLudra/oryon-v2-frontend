@@ -135,7 +135,7 @@ export function BulkActionBar({
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className={cn(
         'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-        'bg-surface-800 border border-surface-700 rounded-xl shadow-2xl',
+        'overlay-surface border rounded-xl',
         'flex items-center gap-2 pl-4 pr-2 py-2',
       )}
     >
@@ -162,7 +162,7 @@ export function BulkActionBar({
             className={cn(
               'absolute bottom-full mb-2 left-0',
               'min-w-[220px] max-h-64 overflow-y-auto',
-              'bg-surface-800 border border-surface-700 rounded-xl shadow-2xl py-1',
+              'overlay-surface border rounded-xl py-1',
             )}
           >
             {stages.length === 0 && (
@@ -200,7 +200,7 @@ export function BulkActionBar({
                 'absolute bottom-full mb-2 left-1/2 -translate-x-1/2',
                 // No overflow here so tag submenus can fly out to the side.
                 'min-w-[240px]',
-                'bg-surface-800 border border-surface-700 rounded-xl shadow-2xl py-1',
+                'overlay-surface border rounded-xl py-1',
               )}
             >
               {onAddTag && (
@@ -371,7 +371,7 @@ function SubmenuRow({
           className={cn(
             'absolute left-full top-0 ml-1 z-10',
             'min-w-[200px] max-h-64 overflow-y-auto',
-            'bg-surface-800 border border-surface-700 rounded-xl shadow-2xl py-1',
+            'overlay-surface border rounded-xl py-1',
           )}
         >
           {children}

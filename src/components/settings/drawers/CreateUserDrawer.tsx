@@ -302,7 +302,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-[520px] bg-surface-950 border-l border-surface-800 z-50 flex flex-col shadow-2xl"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-[520px] bg-surface-950 border-l overlay-frame z-50 flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-surface-800 flex-shrink-0">

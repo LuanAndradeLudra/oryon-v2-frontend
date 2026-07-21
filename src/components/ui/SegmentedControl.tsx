@@ -20,13 +20,23 @@ interface SegmentedControlProps<T extends string> {
   onChange: (value: T) => void
   size?: 'sm' | 'md'
   className?: string
+  /**
+   * Estilo do estado ativo:
+   * - `subtle` (default): pílula cinza discreta (bg-surface-700). Usado em
+   *   toolbars/abas por todo o app — NÃO alterar sem revisar os callers.
+   * - `solid`: pílula saturada teal + texto/ícone brancos (padrão .color-chip
+   *   dos badges de tags); o contador do item ativo fica branco com número
+   *   preto para contraste. Para filtros de destaque.
+   */
+  variant?: 'subtle' | 'solid'
   /** aria-label do grupo (obrigatório para leitores de tela). */
   label: string
 }
 
 export function SegmentedControl<T extends string>({
-  options, value, onChange, size = 'sm', className, label,
+  options, value, onChange, size = 'sm', className, label, variant = 'subtle',
 }: SegmentedControlProps<T>) {
+  const solid = variant === 'solid'
   return (
     <div
       role="tablist"
@@ -45,11 +55,14 @@ export function SegmentedControl<T extends string>({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(opt.value)}
+            style={active && solid ? ({ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties) : undefined}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-lg font-medium transition-all cursor-pointer',
               size === 'sm' ? 'px-3 py-1 text-xs' : 'px-3.5 py-1.5 text-sm',
               active
-                ? 'bg-surface-700 text-surface-100 shadow-sm'
+                ? solid
+                  ? 'color-chip border shadow-sm'
+                  : 'bg-surface-700 text-surface-100 shadow-sm'
                 : 'text-surface-500 hover:text-surface-300',
             )}
           >
@@ -59,7 +72,11 @@ export function SegmentedControl<T extends string>({
               <span
                 className={cn(
                   'min-w-[18px] px-1 rounded-full text-[10px] font-semibold text-center tabular-nums',
-                  active ? 'bg-surface-600 text-surface-100' : 'bg-surface-700 text-surface-400',
+                  active
+                    ? solid
+                      ? 'bg-white text-black'
+                      : 'bg-surface-600 text-surface-100'
+                    : 'bg-surface-700 text-surface-400',
                 )}
               >
                 {opt.count > 99 ? '99+' : opt.count}

@@ -205,9 +205,14 @@
   --color-offline: #6B8080;
 
   /* ── Bubbles (dark defaults) ─────────────────────────────────────────── */
-  --color-bubble-out:      #1C2E2D;
-  --color-bubble-out-fg:   rgba(236, 241, 241, 0.92);
-  --color-bubble-out-time: rgba(236, 241, 241, 0.55);
+  /* Outbound: teal-carvão da marca — calmo, mas visivelmente teal (não um
+     cinza neutro emprestado de outro componente). */
+  --color-bubble-out:      #16443C;
+  --color-bubble-out-fg:   #FFFFFF;
+  --color-bubble-out-time: rgba(255, 255, 255, 0.62);
+  /* Sombra suave compartilhada (in/outbound) — invisível no escuro (0 0
+     #0000 fica seguro pra combinar com outros box-shadow em lista). */
+  --bubble-shadow-soft: 0 0 #0000;
   --color-bubble-in:       #161E1E;
   --color-bubble-in-fg:    #f1f5f9;
 
@@ -224,6 +229,22 @@
   /* ── Card Janela 24h ─────────────────────────────────────────────────── */
   --color-card-24h-bg:     #161E1E;
   --color-card-24h-border: #243333;
+
+  /* ── Composer (campo de mensagem) ─────────────────────────────────────── */
+  --color-composer-bg:     #161E1E;
+  --color-composer-border: #243333;
+
+  /* ── Elevação nível 3: overlays (dropdown/popover/tooltip/notificações) ──
+     No escuro a superfície flutuante é a MAIS CLARA do app (mais perto da
+     luz = mais claro); sombra sozinha é invisível sobre fundo escuro, então
+     borda sobe um degrau e um highlight interno de 1px marca a aresta. */
+  --color-overlay:        #1E2A2A;
+  --color-overlay-border: #324646;
+  --shadow-overlay: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                    0 4px 12px rgba(0, 0, 0, 0.45),
+                    0 12px 32px rgba(0, 0, 0, 0.55);
+  /* Scrim suave: "reduz a luminosidade" da página sob menus abertos por clique */
+  --color-scrim-soft: rgba(0, 0, 0, 0.35);
 
   /* ── Copilot / IA gradient (assinatura dark) ─────────────────────────── */
   --copilot-gradient-from: #5EEAD4;
@@ -383,6 +404,63 @@ code, pre, kbd, samp {
   background-clip: text;
 }
 
+:root {
+  --kpi-gradient-start: #0D9488;
+  --kpi-gradient-end:   #FFFFFF;
+
+  --kpi-gradient-green-start: #16A34A;
+  --kpi-gradient-green-end:   #86EFAC;
+
+  --kpi-gradient-orange-start: #EA580C;
+  --kpi-gradient-orange-end:   #FDBA74;
+}
+
+[data-theme="light"] {
+  --kpi-gradient-start: #042F2C;
+  --kpi-gradient-end:   #0D9488;
+
+  --kpi-gradient-green-start: #14532D;
+  --kpi-gradient-green-end:   #16A34A;
+
+  --kpi-gradient-orange-start: #7C2D12;
+  --kpi-gradient-orange-end:   #EA580C;
+}
+
+/* KPI hero cards — gradiente horizontal proporcional nos valores */
+.kpi-hero-value {
+  background: linear-gradient(
+    to right,
+    var(--kpi-gradient-start) 0%,
+    var(--kpi-gradient-end) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kpi-hero-green {
+  background: linear-gradient(
+    to right,
+    var(--kpi-gradient-green-start) 0%,
+    var(--kpi-gradient-green-end) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kpi-hero-orange {
+  background: linear-gradient(
+    to right,
+    var(--kpi-gradient-orange-start) 0%,
+    var(--kpi-gradient-orange-end) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+
 /* ── Chat animations ─────────────────────────────────────────────────────── */
 @keyframes msg-slide-in-left {
   from { opacity: 0; transform: translateX(-12px) scale(0.97); }
@@ -427,6 +505,15 @@ code, pre, kbd, samp {
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-surface-600); }
 
+/* Scroll fino com track TRANSPARENTE nos dois motores. Necessário porque
+ * `scrollbar-width: thin` (Chromium 121+) desativa os pseudo-elementos
+ * ::-webkit-scrollbar acima — sem `scrollbar-color`, o track volta ao padrão
+ * claro do sistema (aparecia branco no tema escuro). O 2º valor = track. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-700) transparent;
+}
+
 .filter-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--color-surface-700) transparent;
@@ -445,6 +532,43 @@ code, pre, kbd, samp {
   border-color: color-mix(in srgb, var(--chip) 85%, #000);
 }
 .chip-dot { background-color: currentColor; }
+
+/* Status trigger button — neutral at rest, colors like .color-chip on hover
+   (same --chip var), matching the "clicked/open" look one step early. */
+.status-trigger:hover {
+  background-color: color-mix(in srgb, var(--chip) 85%, #000);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--chip) 85%, #000);
+}
+
+/* ── Elevação nível 3: superfície de overlay (dropdown, popover, tooltip,
+   notificações). Um único lugar define fundo + borda + sombra por tema —
+   ver tokens --color-overlay / --shadow-overlay. */
+.overlay-surface {
+  background-color: var(--color-overlay);
+  border-color: var(--color-overlay-border);
+  box-shadow: var(--shadow-overlay);
+}
+/* Fundo do overlay para elementos internos (headers sticky etc.) */
+.overlay-bg { background-color: var(--color-overlay); }
+/* Nível 4 (Modal/Drawer): mantém o bg próprio (o scrim já separa) e herda
+   apenas a borda forte + sombra do overlay. */
+.overlay-frame {
+  border-color: var(--color-overlay-border);
+  box-shadow: var(--shadow-overlay);
+}
+/* Scrim suave para menus click-to-open: escurece a página enquanto o menu
+   está aberto (z-index definido no ponto de uso, logo abaixo do popover). */
+.overlay-scrim {
+  position: fixed;
+  inset: 0;
+  background-color: var(--color-scrim-soft);
+  animation: scrim-in 160ms ease-out;
+}
+@keyframes scrim-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
 .kanban-scroll::-webkit-scrollbar             { height: 10px; }
 .kanban-scroll::-webkit-scrollbar-track       { background: var(--color-surface-900); border-radius: 999px; }
@@ -502,16 +626,29 @@ code, pre, kbd, samp {
   --color-accent-soft:  rgba(20, 184, 166, 0.10);
   --color-accent-on:    #FFFFFF;
 
-  /* Bubbles (light) */
-  --color-bubble-out:      #C9ECE6;
-  --color-bubble-out-fg:   #1A1F2E;
-  --color-bubble-out-time: rgba(26, 31, 46, 0.55);
+  /* Bubbles (light) — outbound: teal-mint claro, texto escuro para legibilidade. */
+  --color-bubble-out:      #BEE5DD;
+  --color-bubble-out-fg:   #000000;
+  --color-bubble-out-time: rgba(18, 59, 53, 0.62);
   --color-bubble-in:       #FFFFFF;
   --color-bubble-in-fg:    #111827;
 
   /* Card 24h */
   --color-card-24h-bg:     #FAFAFC;
   --color-card-24h-border: #E4E6EC;
+
+  /* Composer */
+  --color-composer-bg:     #F5F6F8;
+  --color-composer-border: #E4E6EC;
+
+  /* Elevação nível 3 (light): overlay branco; a separação vem da sombra em
+     3 camadas (anel de recorte + contato + altura) e da borda nítida. */
+  --color-overlay:        #FFFFFF;
+  --color-overlay-border: #D5DAE3;
+  --shadow-overlay: 0 0 0 1px rgba(15, 23, 42, 0.03),
+                    0 4px 12px rgba(15, 23, 42, 0.10),
+                    0 16px 40px rgba(15, 23, 42, 0.16);
+  --color-scrim-soft: rgba(15, 23, 42, 0.18);
 
   /* Status open (light: blue-700) */
   --color-status-open:        #1D4ED8;
@@ -568,9 +705,45 @@ code, pre, kbd, samp {
  * reais. Exclui divisores full-width (header, nav, filter bar) que usam
  * border-b mas não têm rounded — esses criariam um contorno retangular
  * indesejado no light mode.                                                */
-[data-theme="light"] [class*="rounded"][class*="border-surface-7"],
-[data-theme="light"] [class*="rounded"][class*="border-surface-8"] {
+[data-theme="light"] [class*="rounded"][class*="border-surface-8"],
+[data-theme="light"] [class*="rounded"][class*="border-surface-7"] {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.09), 0 4px 12px rgba(15, 23, 42, 0.09);
+}
+
+/* ── Página de perfil — painel esquerdo (accordion) ──────────────────────────
+ * Os cards internos são compartilhados com o drawer e usam bg-surface-900 (=
+ * o MESMO tom do painel que os abriga aqui → se fundiam, sem overlay). Nesta
+ * página eles "sobem" para surface-800 (superfície elevada do sistema) e a
+ * borda para surface-700, criando o overlay/contraste em ambos os temas. A
+ * classe da borda (border-surface-800) não muda, então a sombra sutil do
+ * tema claro (regra acima) continua sendo aplicada. Escopado ao painel — o
+ * drawer, que usa os mesmos cards sobre surface-950, fica intacto. */
+.profile-accordion [class~="bg-surface-900"] {
+  background-color: var(--color-surface-800);
+}
+.profile-accordion [class~="border-surface-800"] {
+  border-color: var(--color-surface-700);
+}
+/* Como os cards subiram para surface-800, os ELEMENTOS INTERNOS que também
+ * usavam surface-800 (tiles de ícone, trilhos de barra, hover dos botões
+ * editar/cancelar) ficariam com delta zero contra o novo fundo. Sobem mais um
+ * degrau (→ surface-700) para preservar a hierarquia interna nos dois temas. */
+.profile-accordion [class~="bg-surface-800"] {
+  background-color: var(--color-surface-700);
+}
+.profile-accordion [class~="hover:bg-surface-800"]:hover {
+  background-color: var(--color-surface-700);
+}
+
+/* ── Foco de teclado global (WCAG 2.4.7) ─────────────────────────────────────
+ * Fallback visível para qualquer controle interativo que não defina o próprio
+ * indicador. `:where()` mantém especificidade 0, então componentes com foco
+ * próprio (ex.: Button com focus-visible:ring + outline-none) continuam
+ * vencendo — sem contorno duplicado. */
+:where(button, a[href], [role="tab"], [role="menuitem"], [role="switch"], summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 /* ── Conversas (tema claro) — lista e painel em branco sobre o canvas cinza;
@@ -579,20 +752,40 @@ code, pre, kbd, samp {
 [data-theme="light"] .conv-surface {
   background-color: var(--color-surface-800);
   border-color: var(--color-surface-700);
+  /* Painel de altura inteira, não um "card" — não deve herdar a sombra
+     automática que a regra de cards arredondados (mais acima) aplicaria
+     agora que este painel também ganhou um canto arredondado. */
+  box-shadow: none !important;
 }
 /* Light: contact-panel section dividers use surface-800 (= #FFFFFF in light, so
    invisible). Remap them to surface-700 (#D9DCE5). Dark keeps surface-800. */
 [data-theme="light"] .panel-divider {
   border-color: var(--color-surface-700);
 }
+/* Bubbles: sombra suave só no claro (sem borda), pra se destacar do canvas
+   quase-branco. No escuro --bubble-shadow-soft fica invisível (0 0 #0000). */
+[data-theme="light"] {
+  --bubble-shadow-soft: 0 1px 3px rgba(15, 23, 42, 0.10), 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.bubble-in-elevate {
+  box-shadow: var(--bubble-shadow-soft);
+}
+/* Outbound bubble (light only, teste): gradiente radial no lugar da cor
+   sólida. Escuro segue com --color-bubble-out (bg-bubble-out) normal. */
+[data-theme="light"] .bubble-out-surface {
+  background: radial-gradient(circle at top left, #D2FFF5 0%, #A2E7D8 100%);
+}
 [data-theme="light"] .conv-item { background-color: #FFFFFF; }
 /* Hover: only the border reacts — no fill change (intense teal). */
 [data-theme="light"] .conv-item:hover { border-color: #4ECBB8; }
-/* Active (conversa aberta): thin 1.5px border with a dark teal gradient.
-   Double background-clip trick so the gradient rides the rounded border while
-   the card stays white inside. */
+/* Active (conversa aberta): borda com gradiente teal escuro. A largura é
+   fixada aqui (não vem do Tailwind) porque o truque de gradiente exige um
+   border-color: transparent — mantenha em sincronia com o border-[Npx] do
+   componente (ConversationItem.tsx) sempre que ajustar a espessura. */
 [data-theme="light"] .conv-item.conv-item-active {
-  border: 1.5px solid transparent;
+  border-width: 2.0px;
+  border-style: solid;
+  border-color: transparent;
   background-image:
     linear-gradient(#FFFFFF, #FFFFFF),
     linear-gradient(135deg, #00A896 0%, #0A4A44 100%);
@@ -608,8 +801,11 @@ code, pre, kbd, samp {
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: var(--color-surface-600); }
 [data-theme="light"] .filter-scroll { scrollbar-color: var(--color-surface-700) transparent; }
 
-/* ── Sidebar — dark por padrão, herda light quando data-theme="light" ──────
- * No dark: superfícies teal-black. No light: branco/cinza claro + teal.    */
+/* ── Sidebar — SEMPRE escura, nos dois temas ────────────────────────────────
+ * A sidebar é parte da moldura do workspace (shell), não do conteúdo — fica
+ * escura mesmo quando o tema claro deixa o canvas branco. Por isso não há
+ * mais um bloco [data-theme="light"] .nav-sidebar sobrescrevendo estes
+ * tokens: os valores abaixo valem em qualquer tema. */
 .nav-sidebar {
   --color-surface-950: #0A0F0F;
   --color-surface-900: #0E1414;
@@ -633,28 +829,20 @@ code, pre, kbd, samp {
   --color-accent-dark:   #14B8A6;
 }
 
-/* Sidebar no tema claro — branco com teal */
-[data-theme="light"] .nav-sidebar {
-  --color-surface-950: #FFFFFF;
-  --color-surface-900: #FAFAFC;
-  --color-surface-800: #F5F6F8;
-  --color-surface-700: #E4E6EC;
-  --color-surface-600: #C8CDD8;
-  --color-surface-500: #9098AA;
-  --color-surface-400: #5C657A;
-  --color-surface-300: #3A4252;
-  --color-surface-200: #2E3548;
-  --color-surface-100: #1A1F2E;
-  --color-surface-50:  #0F1422;
-  --color-brand-cta:     #14B8A6;
-  --color-brand-surface: #F5F6F8;
-  --color-brand-text:    #5C657A;
-  --color-brand-icon:    #9098AA;
-  --color-brand-400:     #14B8A6;
-  --color-brand-500:     #14B8A6;
-  --color-brand-600:     #1A1F2E;
-  --color-accent:        #14B8A6;
-  --color-accent-dark:   #0F766E;
+/* ── Settings: hairlines legíveis no tema claro ─────────────────────────────
+ * A gramática das Configurações separa seções/linhas com border-surface-800,
+ * que no CLARO resolve para #F5F6F8 (quase branco) — divisores invisíveis e
+ * tudo parece "misturado". Remap escopado: dentro de .settings-scope, esses
+ * fios usam surface-700 (#E4E6EC), o token de borda correto do claro. */
+[data-theme="light"] .settings-scope [class*="border-surface-800"] {
+  border-color: var(--color-surface-700);
+}
+[data-theme="light"] .settings-scope [class*="divide-surface-800"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-surface-700);
+}
+/* Idem para o hover de linhas de lista (surface-900 ≈ branco no claro). */
+[data-theme="light"] .settings-scope [class*="hover:bg-surface-900"]:hover {
+  background-color: var(--color-surface-800);
 }
 
 /* Wordmark branca → preta no tema claro */
@@ -667,10 +855,17 @@ code, pre, kbd, samp {
   background: var(--color-card-24h-bg);
   border: 1.5px solid var(--color-card-24h-border);
 }
-/* Light: alert icon + copy inside the 24h card match the "Escolher template"
-   chip fill (same darkened brand-600 as .color-chip). Dark keeps its own tones. */
+/* No tema claro o card 24h é quase-branco, então o ícone/texto escurece
+   (toward brand-600) para ler bem ali. No escuro o card é escuro e o texto
+   claro já contrasta. */
 [data-theme="light"] .card-24h-accent {
   color: color-mix(in srgb, var(--color-brand-600) 85%, #000);
+}
+
+/* ── Composer (campo de mensagem) — acompanha o tema (escuro/claro) ──────── */
+.msg-composer {
+  background: var(--color-composer-bg);
+  border-color: var(--color-composer-border);
 }
 
 /* ── Copilot / IA icon — gradiente teal ─────────────────────────────────── */
@@ -725,7 +920,7 @@ svg[data-oryon-icon] {
 }
 .card-glow:hover {
   border-color: rgba(20, 184, 166, 0.4) !important;
-  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.35);
+  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.12);
 }
 .card-glow:hover::before {
   opacity: 1;
@@ -741,7 +936,30 @@ svg[data-oryon-icon] {
 }
 [data-theme="light"] .card-glow:hover {
   border-color: rgba(15, 118, 110, 0.35) !important;
-  box-shadow: 0 6px 20px rgba(15, 118, 110, 0.16);
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.07);
+}
+
+/* ── Workspace shell — vinheta radial de profundidade ────────────────────────
+ * O shell é a única superfície visível atrás do canvas (a sidebar não tem
+ * fundo próprio, então este gradiente É o que se vê ali). Ponto mais escuro
+ * no canto superior esquerdo (acima da logo), clareando até o tom base do
+ * shell no canto inferior direito — farthest-corner faz a distância se
+ * ajustar sozinha ao tamanho da tela.
+ * SEMPRE escuro — de propósito, independente do tema. Shell + sidebar são a
+ * "moldura" do app e ficam escuros mesmo com o conteúdo (canvas) no tema
+ * claro; por isso não há override [data-theme="light"] aqui. */
+.workspace-shell {
+  background: radial-gradient(ellipse farthest-corner at 0% 0%, #000000 0%, #050808 60%);
+}
+
+/* Chat background — no escuro usa a MESMA cor do shell/sidebar (não o
+   surface-950 do canvas), por pedido explícito. No claro segue o canvas
+   normal (o shell é sempre escuro por design, não faria sentido no claro). */
+.chat-shell-bg {
+  background: radial-gradient(ellipse farthest-corner at 0% 0%, #000000 0%, #050808 60%);
+}
+[data-theme="light"] .chat-shell-bg {
+  background: #E4E7ED;
 }
 
 /* ── Workspace canvas — o conteúdo flutua sobre o shell ─────────────────────

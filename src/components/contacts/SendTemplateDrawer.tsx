@@ -69,7 +69,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-            className="fixed top-0 right-0 bottom-0 w-full sm:w-[420px] z-50 bg-surface-900 border-l border-surface-800 flex flex-col shadow-2xl"
+            className="fixed top-0 right-0 bottom-0 w-full sm:w-[420px] z-50 bg-surface-900 border-l overlay-frame flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800 flex-shrink-0">

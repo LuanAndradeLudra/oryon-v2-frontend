@@ -84,7 +84,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
               while the header/footer stay pinned. */}
           <motion.div
             className={cn(
-              'relative z-10 bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-lg',
+              'relative z-10 bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg',
               'flex flex-col max-h-[90vh] overflow-hidden',
               className,
             )}

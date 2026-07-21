@@ -129,7 +129,10 @@ function TagFilter({ selected, onChange }: {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 w-52 bg-surface-800 border border-surface-700 rounded-xl shadow-xl shadow-black/40 overflow-hidden">
+        <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setOpen(false)} />
+      )}
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 w-52 overlay-surface border rounded-xl overflow-hidden">
           <div className="p-2 border-b border-surface-700">
             <input
               autoFocus
@@ -302,7 +305,10 @@ export function ContactsFiltersBar({ filters, onFiltersChange }: ContactsFilters
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-surface-800 border border-surface-700 rounded-xl shadow-xl shadow-black/40 p-3 flex flex-col gap-3">
+              <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setMenuOpen(false)} />
+            )}
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 w-64 overlay-surface border rounded-xl p-3 flex flex-col gap-3">
                 <FilterGroup label="IA">
                   <FilterSelect fullWidth value={filters.intent ?? ''} onChange={(v) => set({ intent: (v || undefined) as ContactIntent | undefined })} placeholder="Intenção">
                     {INTENTS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}

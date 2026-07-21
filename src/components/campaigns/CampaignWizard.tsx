@@ -421,7 +421,7 @@ export function CampaignWizard({
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-surface-900 border border-surface-800 rounded-2xl shadow-2xl w-full max-w-3xl pointer-events-auto flex flex-col max-h-[90vh]"
+              className="bg-surface-900 overlay-frame border rounded-2xl w-full max-w-3xl pointer-events-auto flex flex-col max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -1697,7 +1697,7 @@ function ContactListModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.15 }}
-        className="relative bg-surface-900 border border-surface-800 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]"
+        className="relative bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg flex flex-col max-h-[80vh]"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
