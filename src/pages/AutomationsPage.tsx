@@ -1,66 +1,41 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
-  Workflow, Plus, ToggleLeft, ToggleRight, Pencil, Trash2, Play,
-  BookOpen, Search, ChevronRight, Zap, ChevronDown, ChevronUp,
-  Lightbulb, ListChecks, GitBranch, Layers, Copy, Check, ListFilter,
+  Plus, Search, Zap, ChevronRight, ChevronDown, Check, ListFilter,
+  Workflow, AlertTriangle, Sparkles, ToggleLeft, ToggleRight,
+  Pencil, Copy, Trash2, CopyPlus, Phone, X,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSearchParams } from 'react-router-dom'
 
-import { useAuth } from '@/contexts/AuthContext'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
-import { AutomationWizard } from '@/components/automations/AutomationWizard'
+import { useCopilotContext } from '@/contexts/CopilotContext'
+import { AutomationBuilder } from '@/components/automations/AutomationBuilder'
+import { AutomationDetail, type AutomationBuilderSection } from '@/components/automations/AutomationDetail'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequiredBanner'
-import { TypeBadge, TYPE_CONFIG } from '@/components/automations/TypeBadge'
 import { automationsApi } from '@/services/api'
 import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
 import { AssignWabaModal } from '@/components/common/AssignWabaModal'
 import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/common/LineFilterChip'
-import { useContextMenu } from '@/hooks/useContextMenu'
+import { useContextMenuCtx } from '@/components/ui/contextMenuCore'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
-import { cn } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { DataTable, type DataTableColumn, type DataTableSort } from '@/components/ui/DataTable'
+import { Switch } from '@/components/ui/Switch'
+import { useTableSelection } from '@/hooks/useTableSelection'
+import {
+  triggerChipLabel, actionLabel, agentBehaviorDeviates,
+  deriveAttention, attentionCount, type AttentionFlag,
+} from '@/components/automations/automationText'
+import { TYPE_CONFIG } from '@/components/automations/TypeBadge'
+import { showToast } from '@/hooks/useToast'
+import { relativeDate, cn } from '@/lib/utils'
 import type { Automation, AutomationType, AutomationStatus } from '@/types'
 
-// ── Status strip ──────────────────────────────────────────────────────────────
-
-function StatusStrip({ automations }: { automations: Automation[] }) {
-  const total   = automations.length
-  const active  = automations.filter(a => a.status === 'active').length
-  const inactive = automations.filter(a => a.status === 'inactive').length
-  const draft   = automations.filter(a => a.status === 'draft').length
-  const totalExec = automations.reduce((s, a) => s + a.executionCount, 0)
-
-  const items = [
-    { label: 'Total',      value: total,     color: 'text-surface-200' },
-    { label: 'Ativas',     value: active,    color: 'text-status-active' },
-    { label: 'Inativas',   value: inactive,  color: 'text-surface-400' },
-    { label: 'Rascunho',   value: draft,     color: 'text-status-pending'   },
-    { label: 'Execuções',  value: totalExec.toLocaleString('pt-BR'), color: 'text-brand-400' },
-  ]
-
-  return (
-    <div className="flex items-center gap-6 px-6 py-3 border-b border-surface-800 bg-black flex-shrink-0">
-      {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-2">
-          <span className={cn('text-sm font-bold', item.color)}>{item.value}</span>
-          <span className="text-xs text-surface-400">{item.label}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── Filter bar ────────────────────────────────────────────────────────────────
-
-const STATUS_OPTIONS: { value: AutomationStatus | 'all'; label: string }[] = [
-  { value: 'all',      label: 'Todas'     },
-  { value: 'active',   label: 'Ativas'    },
-  { value: 'inactive', label: 'Inativas'  },
-  { value: 'draft',    label: 'Rascunho'  },
-]
+// ── Filtros ──────────────────────────────────────────────────────────────────
 
 const TYPE_OPTIONS: { value: AutomationType | 'all'; label: string }[] = [
   { value: 'all',             label: 'Todos os tipos'   },
@@ -73,31 +48,28 @@ const TYPE_OPTIONS: { value: AutomationType | 'all'; label: string }[] = [
   { value: 'custom',          label: 'Personalizado'    },
 ]
 
-interface FilterBarProps {
-  search: string
-  onSearch: (v: string) => void
-  status: AutomationStatus | 'all'
-  onStatus: (v: AutomationStatus | 'all') => void
-  typeFilter: AutomationType | 'all'
-  onType: (v: AutomationType | 'all') => void
-  lineFilter: LineFilterValue
-  onLineFilter: (v: LineFilterValue) => void
+// Um código de cor por tipo — a pista de "bate o olho e sabe o que é". Não
+// recria a poluição antiga (TypeBadge + grupo + chip); é só o ícone líder do
+// nome, tingido por categoria. O ícone vem do TYPE_CONFIG (usa currentColor).
+const TYPE_ACCENT: Record<AutomationType, string> = {
+  boas_vindas:     '#4ADE80', // verde — acolhimento
+  follow_up:       '#60A5FA', // azul — retomada
+  fora_horario:    '#A78BFA', // violeta — fora do expediente
+  triagem_keyword: '#FBBF24', // âmbar — triagem/alerta
+  estagio_crm:     '#22D3EE', // ciano — pipeline
+  inatividade:     '#FB7185', // rosa — esfriando
+  custom:          '#2DD4BF', // teal — personalizado
 }
 
-/**
- * Type-filter dropdown styled to match LineFilterChip so the filter row
- * reads as a single coherent chip cluster.
- */
-function TypeFilterChip({
-  value,
-  onChange,
-}: {
-  value: AutomationType | 'all'
-  onChange: (v: AutomationType | 'all') => void
-}) {
+// Prompt diagnóstico para "Resolver com IA" — despacha o problema pro Copilot,
+// que já tem a tool update_automation com card de aprovação editável.
+function resolvePrompt(a: Automation, flag: AttentionFlag): string {
+  return `A automação "${a.name}" está com um problema: ${flag.hint} Analise o gatilho, as condições e as ações dela e proponha uma correção.`
+}
+
+function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; onChange: (v: AutomationType | 'all') => void }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
@@ -106,9 +78,7 @@ function TypeFilterChip({
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
-
   const label = TYPE_OPTIONS.find(o => o.value === value)?.label ?? 'Todos os tipos'
-
   return (
     <div className="relative" ref={rootRef}>
       <button
@@ -124,9 +94,8 @@ function TypeFilterChip({
         <span className="max-w-[160px] truncate">{label}</span>
         <ChevronDown className={cn('w-3 h-3 text-surface-500 transition-transform', open && 'rotate-180')} />
       </button>
-
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 w-56 rounded-lg border border-surface-700/60 bg-surface-900 shadow-xl z-30 overflow-hidden">
+        <div className="absolute left-0 top-full mt-1.5 w-56 rounded-lg overlay-surface border z-30 overflow-hidden">
           <ul className="max-h-72 overflow-y-auto py-1">
             {TYPE_OPTIONS.map((opt, i) => {
               const isActive = value === opt.value
@@ -138,9 +107,7 @@ function TypeFilterChip({
                     onClick={() => { onChange(opt.value); setOpen(false) }}
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors',
-                      isActive
-                        ? 'bg-brand-500/10 text-surface-100'
-                        : 'text-surface-300 hover:bg-surface-800',
+                      isActive ? 'bg-brand-500/10 text-surface-100' : 'text-surface-300 hover:bg-surface-800',
                     )}
                   >
                     <span className="flex-1 font-medium">{opt.label}</span>
@@ -156,347 +123,13 @@ function TypeFilterChip({
   )
 }
 
-function FilterBar({ search, onSearch, status, onStatus, typeFilter, onType, lineFilter, onLineFilter }: FilterBarProps) {
-  return (
-    <div className="flex items-center gap-3 px-6 py-3 border-b border-surface-800 flex-shrink-0">
-      {/* Search */}
-      <div className="relative flex-1 max-w-xs">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-        <input
-          value={search}
-          onChange={e => onSearch(e.target.value)}
-          placeholder="Buscar automação..."
-          className="w-full bg-surface-900 border border-surface-700 rounded-xl pl-8 pr-3 py-1.5 text-sm text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
-        />
-      </div>
+// ── Contagens de status (alimentam o SegmentedControl) ───────────────────────
 
-      {/* Status filter */}
-      <div className="flex items-center bg-surface-800 border border-surface-700 rounded-xl p-0.5">
-        {STATUS_OPTIONS.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => onStatus(opt.value)}
-            className={cn(
-              'px-3 py-1 rounded-lg text-xs font-medium transition-colors',
-              status === opt.value
-                ? 'bg-surface-700 text-surface-100'
-                : 'text-surface-500 hover:text-surface-300'
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+interface Counts { total: number; active: number; inactive: number; draft: number; totalExec: number }
 
-      {/* Type filter chip — matches LineFilterChip visual treatment */}
-      <TypeFilterChip value={typeFilter} onChange={onType} />
+// ── Empty state (nenhuma automação) ──────────────────────────────────────────
 
-      {/* Line filter — multi-WABA only; hides itself in single-line tenants. */}
-      <LineFilterChip value={lineFilter} onChange={onLineFilter} />
-    </div>
-  )
-}
-
-// ── Automation card (horizontal row) ─────────────────────────────────────────
-
-const ACTION_LABELS: Record<string, string> = {
-  send_message:        'Enviar template',
-  send_text:           'Enviar texto',
-  assign_agent:        'Atribuir agente',
-  assign_dept:         'Transferir setor',
-  add_tag:             'Adicionar tag',
-  remove_tag:          'Remover tag',
-  change_stage:        'Mover estágio',
-  set_lead_score:      'Definir score',
-  resolve_conversation:'Resolver conv.',
-  send_note:           'Nota interna',
-  send_webhook:        'Webhook',
-}
-
-interface AutomationCardProps {
-  automation: Automation
-  onEdit: (a: Automation) => void
-  onToggle: (a: Automation) => void
-  onDelete: (a: Automation) => void
-  onAssignWaba: (a: Automation) => void
-}
-
-function AutomationCard({ automation, onEdit, onToggle, onDelete, onAssignWaba }: AutomationCardProps) {
-  const cfg      = TYPE_CONFIG[automation.type]
-  const isActive = automation.status === 'active'
-  const isDraft  = automation.status === 'draft'
-
-  const actionChips = automation.actions.map((a, i) => (
-    <span
-      key={i}
-      className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-700 border border-surface-600 text-[11px] text-surface-200 whitespace-nowrap"
-    >
-      {ACTION_LABELS[a.type] ?? a.type}
-    </span>
-  ))
-
-  const buildContextMenu = useCallback((): ContextMenuEntry[] => [
-    { label: 'Editar', icon: Pencil, onClick: () => onEdit(automation) },
-    {
-      label: 'Copiar nome',
-      icon: Copy,
-      onClick: () => navigator.clipboard.writeText(automation.name).catch(() => {}),
-    },
-    { separator: true },
-    {
-      label: isActive ? 'Desativar' : 'Ativar',
-      icon: isActive ? ToggleLeft : ToggleRight,
-      onClick: () => onToggle(automation),
-    },
-    { separator: true },
-    { label: 'Excluir', icon: Trash2, danger: true, onClick: () => onDelete(automation) },
-  ], [automation, isActive, onEdit, onToggle, onDelete])
-
-  const { onContextMenu } = useContextMenu(buildContextMenu)
-
-  return (
-    <div
-      onContextMenu={onContextMenu}
-      className={cn(
-        'group relative bg-surface-800 border rounded-2xl px-4 py-3 flex items-center gap-4 transition-colors duration-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)]',
-        isActive  ? 'border-surface-600 hover:border-surface-500'  :
-        isDraft   ? 'border-surface-600/60 opacity-70'             :
-                    'border-surface-600/50 opacity-60',
-      )}
-    >
-      {/* Status indicator bar */}
-      <div
-        className={cn(
-          'absolute left-0 top-3 bottom-3 w-[3px] rounded-full',
-          isActive ? 'bg-status-active' : isDraft ? 'bg-status-pending/50' : 'bg-surface-700',
-        )}
-      />
-
-      {/* Type icon */}
-      <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-surface-200 border border-surface-600"
-        style={{ backgroundColor: cfg.bg }}
-      >
-        {cfg.icon}
-      </div>
-
-      {/* Name + description — fixed width col */}
-      <div className="w-52 flex-shrink-0 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-sm font-semibold text-surface-100 truncate">{automation.name}</span>
-          {isDraft && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-status-pending-bg text-status-pending flex-shrink-0">
-              Rascunho
-            </span>
-          )}
-          {/* Explicit override of the AI-agent silencing rule — only shown
-              when it differs from the default ('auto'), so the card stays
-              uncluttered for the common case. */}
-          {automation.agentBehavior === 'always_silence' && (
-            <span
-              title="Quando esta automação dispara, a IA não responde."
-              className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-surface-700 text-surface-200 border border-surface-600 flex-shrink-0"
-            >
-              IA silenciada
-            </span>
-          )}
-          {automation.agentBehavior === 'never_silence' && (
-            <span
-              title="A IA continua respondendo em paralelo a esta automação."
-              className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-brand-600/15 text-brand-400 border border-brand-600/30 flex-shrink-0"
-            >
-              IA em paralelo
-            </span>
-          )}
-          {automation.needsWabaAssignment && (
-            <WabaAssignmentBadge
-              className="flex-shrink-0"
-              onClick={() => onAssignWaba(automation)}
-            />
-          )}
-          <WhatsappLineChip
-            whatsappNumberId={automation.whatsappNumberId}
-            className="flex-shrink-0"
-          />
-        </div>
-        {automation.description && (
-          <p className="text-[11px] text-surface-400 mt-0.5 truncate">{automation.description}</p>
-        )}
-      </div>
-
-      {/* Type badge */}
-      <div className="flex-shrink-0">
-        <TypeBadge type={automation.type} size="sm" />
-      </div>
-
-      {/* Flow: trigger → actions */}
-      <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
-        <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-700 border border-surface-600 text-[11px] text-surface-200 flex-shrink-0">
-          <Zap className="w-3 h-3" />
-          {automation.trigger.type === 'custom' && automation.trigger.eventLabel
-            ? automation.trigger.eventLabel
-            : cfg.triggerLabel}
-        </span>
-        {actionChips.length > 0 && (
-          <>
-            <ChevronRight className="w-3 h-3 text-surface-600 flex-shrink-0" />
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-              {actionChips}
-            </div>
-          </>
-        )}
-        {actionChips.length === 0 && (
-          <>
-            <ChevronRight className="w-3 h-3 text-surface-600 flex-shrink-0" />
-            <span className="text-[11px] text-surface-600 italic">Sem ações configuradas</span>
-          </>
-        )}
-      </div>
-
-      {/* Executions */}
-      <div className="flex-shrink-0 flex items-center gap-1 text-xs text-surface-400 w-32 justify-end">
-        <Play className="w-3 h-3" />
-        <span>{automation.executionCount.toLocaleString('pt-BR')}</span>
-        {automation.lastExecutedAt && (
-          <span className="text-surface-500 hidden xl:inline">
-            · {new Date(automation.lastExecutedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-          </span>
-        )}
-      </div>
-
-      {/* Toggle */}
-      <button
-        onClick={() => onToggle(automation)}
-        className="flex-shrink-0 transition-opacity hover:opacity-80"
-        title={isActive ? 'Desativar' : 'Ativar'}
-      >
-        {isActive
-          ? <ToggleRight className="w-6 h-6 text-status-active" />
-          : <ToggleLeft  className="w-6 h-6 text-surface-600" />
-        }
-      </button>
-
-      {/* Actions — visible on hover */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        <button
-          onClick={() => onEdit(automation)}
-          className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors"
-          title="Editar"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => onDelete(automation)}
-          className="p-1.5 rounded-lg text-surface-500 hover:text-danger hover:bg-danger/10 transition-colors"
-          title="Excluir"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Guide card ─────────────────────────────────────────────────────────────────
-
-const GUIDE_STEPS = [
-  {
-    icon: <Zap className="w-4 h-4" />,
-    color: '#f59e0b',
-    title: 'Escolha um gatilho',
-    desc: 'O gatilho é o evento que dispara a automação. Ex: nova mensagem recebida, mudança de estágio no CRM, palavra-chave detectada, inatividade ou horário fora do expediente.',
-  },
-  {
-    icon: <GitBranch className="w-4 h-4" />,
-    color: '#6366f1',
-    title: 'Defina condições (opcional)',
-    desc: 'Filtre em quais situações a automação deve agir. Combine condições com lógica E/OU: estágio do contato, tags, canal, setor, score do lead, intenção detectada etc.',
-  },
-  {
-    icon: <Layers className="w-4 h-4" />,
-    color: '#10b981',
-    title: 'Adicione ações em sequência',
-    desc: 'Cada automação pode executar até 5 ações em ordem. Envie mensagens, atribua agentes, mude o estágio, adicione tags, defina o score, resolva a conversa ou acione um webhook externo.',
-  },
-  {
-    icon: <ListChecks className="w-4 h-4" />,
-    color: '#3b82f6',
-    title: 'Dicas de boas práticas',
-    desc: 'Use "Rascunho" para testar antes de ativar. Combine triagem por palavra-chave + mudança de estágio + atribuição para criar fluxos completos de qualificação automática.',
-  },
-]
-
-function GuideCard() {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <div className="mx-6 mt-4 mb-2 bg-surface-900 border border-brand-500/20 rounded-2xl overflow-hidden">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-800/50 transition-colors"
-      >
-        <div className="w-7 h-7 rounded-lg bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
-          <Lightbulb className="w-3.5 h-3.5 text-brand-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <span className="text-xs font-semibold text-surface-200">Como criar automações eficientes</span>
-          <span className="text-[11px] text-surface-500 ml-2">— clique para ver o guia completo</span>
-        </div>
-        {open
-          ? <ChevronUp   className="w-4 h-4 text-surface-500 flex-shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-surface-500 flex-shrink-0" />
-        }
-      </button>
-
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {GUIDE_STEPS.map((step, i) => (
-                <div key={i} className="bg-surface-950 border border-surface-800 rounded-xl p-3">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center mb-2"
-                    style={{ backgroundColor: step.color + '20', color: step.color }}
-                  >
-                    {step.icon}
-                  </div>
-                  <p className="text-xs font-semibold text-surface-200 mb-1">{step.title}</p>
-                  <p className="text-[11px] text-surface-500 leading-relaxed">{step.desc}</p>
-                </div>
-              ))}
-            </div>
-            <div className="px-4 pb-4">
-              <div className="bg-surface-950 border border-surface-800 rounded-xl p-3">
-                <p className="text-[11px] font-semibold text-surface-300 mb-1.5">Exemplo de fluxo completo:</p>
-                <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                  <span className="px-2 py-0.5 rounded-md bg-status-pending-bg border border-status-pending-border text-status-pending">Gatilho: Palavra-chave "preço"</span>
-                  <ChevronRight className="w-3 h-3 text-surface-600" />
-                  <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">Condição: Estágio = Novo</span>
-                  <ChevronRight className="w-3 h-3 text-surface-600" />
-                  <span className="px-2 py-0.5 rounded-md bg-status-active-bg border border-status-active-border text-status-active">Ação 1: Adicionar tag "Interesse"</span>
-                  <ChevronRight className="w-3 h-3 text-surface-600" />
-                  <span className="px-2 py-0.5 rounded-md bg-status-active-bg border border-status-active-border text-status-active">Ação 2: Mover → Qualificado</span>
-                  <ChevronRight className="w-3 h-3 text-surface-600" />
-                  <span className="px-2 py-0.5 rounded-md bg-status-active-bg border border-status-active-border text-status-active">Ação 3: Atribuir agente de vendas</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-// ── Empty state ────────────────────────────────────────────────────────────────
-
-function EmptyState({ onNew, onGallery }: { onNew: () => void; onGallery: () => void }) {
+function EmptyStateBlank({ onNew }: { onNew: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center flex-1 gap-5 py-20">
       <div className="w-16 h-16 rounded-2xl bg-brand-600/10 border border-brand-500/20 flex items-center justify-center">
@@ -508,212 +141,21 @@ function EmptyState({ onNew, onGallery }: { onNew: () => void; onGallery: () => 
           Automatize respostas, follow-ups e atribuições para economizar tempo e responder mais rápido.
         </p>
       </div>
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onGallery}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-surface-700 text-surface-300 hover:text-surface-100 hover:border-surface-600 text-sm font-medium transition-colors"
-        >
-          <BookOpen className="w-4 h-4" />
-          Ver modelos prontos
-        </button>
-        <button
-          onClick={onNew}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-colors shadow-lg shadow-brand-900/30"
-        >
-          <Plus className="w-4 h-4" />
-          Criar automação
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Template gallery modal ─────────────────────────────────────────────────────
-
-const GALLERY_TEMPLATES: Array<{
-  type: AutomationType
-  name: string
-  description: string
-  preset: Partial<Omit<Automation, 'id' | 'tenantId' | 'executionCount' | 'lastExecutedAt' | 'createdAt' | 'updatedAt'>>
-}> = [
-  {
-    type: 'boas_vindas',
-    name: 'Boas-vindas automático',
-    description: 'Envia uma mensagem de boas-vindas imediatamente quando um novo contato inicia a primeira conversa.',
-    preset: {
-      name: 'Boas-vindas automático',
-      description: 'Mensagem de boas-vindas para novos contatos',
-      type: 'boas_vindas',
-      status: 'active',
-      trigger: { type: 'boas_vindas' },
-      conditionsLogic: 'and',
-      conditions: [],
-      actions: [{ type: 'send_text', body: 'Olá! 👋 Bem-vindo(a). Como posso te ajudar hoje?' }],
-    },
-  },
-  {
-    type: 'follow_up',
-    name: 'Follow-up após 24h',
-    description: 'Envia um lembrete automaticamente quando não há resposta do cliente por 24 horas.',
-    preset: {
-      name: 'Follow-up 24h',
-      description: 'Lembrete quando cliente não responde',
-      type: 'follow_up',
-      status: 'active',
-      trigger: { type: 'follow_up', afterHours: 24 },
-      conditionsLogic: 'and',
-      conditions: [],
-      actions: [{ type: 'send_text', body: 'Oi! Ainda posso te ajudar com algo? 😊' }],
-    },
-  },
-  {
-    type: 'fora_horario',
-    name: 'Mensagem fora do horário',
-    description: 'Informa ao cliente o horário de atendimento quando mensagens chegam fora do expediente.',
-    preset: {
-      name: 'Fora do horário comercial',
-      description: 'Resposta automática fora do expediente',
-      type: 'fora_horario',
-      status: 'active',
-      trigger: { type: 'fora_horario' },
-      conditionsLogic: 'and',
-      conditions: [],
-      actions: [{ type: 'send_text', body: 'Olá! Nosso horário de atendimento é seg–sex das 9h às 18h. Retornaremos em breve!' }],
-    },
-  },
-  {
-    type: 'triagem_keyword',
-    name: 'Triagem por palavra-chave',
-    description: 'Detecta palavras como "problema", "urgente" e transfere para o time de suporte automaticamente.',
-    preset: {
-      name: 'Triagem — Suporte urgente',
-      description: 'Detecta palavras de urgência e encaminha para suporte',
-      type: 'triagem_keyword',
-      status: 'active',
-      trigger: { type: 'triagem_keyword', keywords: ['problema', 'urgente', 'erro'], matchMode: 'any' },
-      conditionsLogic: 'and',
-      conditions: [],
-      actions: [{ type: 'assign_dept', departmentId: 'suporte', departmentName: 'Suporte' }],
-    },
-  },
-  {
-    type: 'estagio_crm',
-    name: 'Ação ao mudar de estágio',
-    description: 'Quando um contato atinge o estágio "Qualificado", atribui automaticamente a um agente de vendas.',
-    preset: {
-      name: 'Qualificado → Atribuir vendedor',
-      description: 'Atribui contato qualificado a um vendedor',
-      type: 'estagio_crm',
-      status: 'draft',
-      trigger: { type: 'estagio_crm', stageKey: 'qualified' },
-      conditionsLogic: 'and',
-      conditions: [],
-      actions: [],
-    },
-  },
-  {
-    type: 'inatividade',
-    name: 'Reengajamento por inatividade',
-    description: 'Envia uma mensagem de reengajamento quando um contato fica sem interação por 7 dias.',
-    preset: {
-      name: 'Reengajamento 7 dias',
-      description: 'Recupera contatos inativos há 7 dias',
-      type: 'inatividade',
-      status: 'active',
-      trigger: { type: 'inatividade', afterDays: 7 },
-      conditionsLogic: 'and',
-      conditions: [],
-      actions: [{ type: 'send_text', body: 'Olá! Faz um tempo que não conversamos. Posso te ajudar com algo? 😊' }],
-    },
-  },
-  {
-    type: 'custom',
-    name: 'Evento personalizado (webhook)',
-    description: 'Dispara a automação via webhook externo quando ocorre qualquer evento no seu sistema.',
-    preset: {
-      name: 'Evento externo — webhook',
-      description: 'Automação disparada por webhook do sistema externo',
-      type: 'custom',
-      status: 'draft',
-      trigger: { type: 'custom', eventCategory: 'conversa', eventKey: 'conversa_iniciada', eventLabel: 'Nova conversa iniciada' },
-      conditionsLogic: 'and',
-      conditions: [],
-      actions: [],
-    },
-  },
-]
-
-function TemplateGallery({
-  onSelect,
-  onClose,
-}: {
-  onSelect: (preset: typeof GALLERY_TEMPLATES[number]['preset']) => void
-  onClose: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 8 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97, y: 8 }}
-        transition={{ duration: 0.18 }}
-        className="relative z-10 bg-surface-950 border border-surface-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+      <button
+        onClick={onNew}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-colors shadow-lg shadow-brand-900/30"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
-          <div>
-            <h2 className="text-sm font-semibold text-surface-100">Modelos prontos</h2>
-            <p className="text-xs text-surface-500 mt-0.5">Escolha um modelo para começar rapidamente</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Grid */}
-        <div className="overflow-y-auto p-5 grid grid-cols-2 gap-3">
-          {GALLERY_TEMPLATES.map((tpl) => {
-            const cfg = TYPE_CONFIG[tpl.type]
-            return (
-              <button
-                key={tpl.type}
-                onClick={() => { onSelect(tpl.preset); onClose() }}
-                className="text-left p-4 bg-surface-900 border border-surface-800 hover:border-surface-700 rounded-xl transition-colors group"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-surface-400 border border-surface-700"
-                    style={{ backgroundColor: cfg.bg }}
-                  >
-                    {cfg.icon}
-                  </span>
-                  <span className="text-xs font-semibold text-surface-200 group-hover:text-surface-100 transition-colors">
-                    {tpl.name}
-                  </span>
-                </div>
-                <p className="text-[11px] text-surface-500 leading-relaxed">{tpl.description}</p>
-                <div className="mt-3">
-                  <TypeBadge type={tpl.type} size="sm" />
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </motion.div>
+        <Plus className="w-4 h-4" />
+        Criar automação
+      </button>
     </div>
   )
 }
 
-// ── Delete confirm ─────────────────────────────────────────────────────────────
+// ── Delete confirm ────────────────────────────────────────────────────────────
 
 function DeleteConfirm({ automation, onConfirm, onCancel }: {
-  automation: Automation
-  onConfirm: () => void
-  onCancel: () => void
+  automation: Automation; onConfirm: () => void; onCancel: () => void
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -722,7 +164,7 @@ function DeleteConfirm({ automation, onConfirm, onCancel }: {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-950 border border-surface-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center"
+        className="relative z-10 bg-surface-950 overlay-frame border rounded-2xl w-full max-w-sm p-6 text-center"
       >
         <div className="w-12 h-12 rounded-2xl bg-danger/10 border border-danger/20 flex items-center justify-center mx-auto mb-4">
           <Trash2 className="w-5 h-5 text-danger" />
@@ -732,16 +174,10 @@ function DeleteConfirm({ automation, onConfirm, onCancel }: {
           "<span className="text-surface-300">{automation.name}</span>" será removida permanentemente.
         </p>
         <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2 rounded-xl border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors"
-          >
+          <button onClick={onCancel} className="flex-1 py-2 rounded-xl border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
             Cancelar
           </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 py-2 rounded-xl bg-danger hover:bg-danger/90 text-white text-sm font-semibold transition-colors"
-          >
+          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl bg-danger hover:bg-danger/90 text-white text-sm font-semibold transition-colors">
             Excluir
           </button>
         </div>
@@ -750,33 +186,132 @@ function DeleteConfirm({ automation, onConfirm, onCancel }: {
   )
 }
 
-// ── Main page ──────────────────────────────────────────────────────────────────
+function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
+  automation: Automation
+  lines: { id: string; label?: string; displayPhoneNumber: string }[]
+  onPick: (lineId: string) => void
+  onCancel: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+        className="relative z-10 bg-surface-950 overlay-frame border rounded-2xl w-full max-w-sm p-5"
+      >
+        <h3 className="text-sm font-semibold text-surface-100 mb-1">Duplicar para outra linha</h3>
+        <p className="text-xs text-surface-500 mb-4">
+          Cria uma cópia de "<span className="text-surface-300">{automation.name}</span>" como rascunho na linha escolhida.
+        </p>
+        <div className="space-y-1.5 max-h-72 overflow-y-auto">
+          {lines.map((l) => {
+            const isCurrent = l.id === automation.whatsappNumberId
+            return (
+              <button
+                key={l.id}
+                onClick={() => onPick(l.id)}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-surface-800 bg-surface-900 hover:border-brand-500/40 hover:bg-surface-800 transition-colors text-left"
+              >
+                <Phone className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
+                <span className="text-xs font-medium text-surface-200 flex-1 truncate">{l.label || l.displayPhoneNumber}</span>
+                {isCurrent && <span className="text-[10px] text-surface-500 flex-shrink-0">atual</span>}
+              </button>
+            )
+          })}
+        </div>
+        <button onClick={onCancel} className="w-full mt-4 py-2 rounded-xl border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
+          Cancelar
+        </button>
+      </motion.div>
+    </div>
+  )
+}
+
+// Barra de ações em massa — enxuta (Ativar/Desativar/Excluir), com confirmação
+// inline pra exclusão. Kill-switch de incidente: pausar tudo de uma linha ruim.
+function BulkBar({ count, onActivate, onDeactivate, onDelete, onClear }: {
+  count: number
+  onActivate: () => void
+  onDeactivate: () => void
+  onDelete: () => void
+  onClear: () => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+  const btn = 'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors'
+  return (
+    <motion.div
+      initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 overlay-surface border rounded-xl flex items-center gap-1 pl-4 pr-2 py-2"
+    >
+      {confirming ? (
+        <>
+          <span className="text-sm text-surface-200">Excluir <span className="font-semibold text-danger">{count}</span> {count === 1 ? 'automação' : 'automações'}?</span>
+          <div className="h-5 w-px bg-surface-700 mx-1" />
+          <button onClick={() => setConfirming(false)} className={cn(btn, 'text-surface-300 hover:bg-surface-700')}>Cancelar</button>
+          <button onClick={() => { onDelete(); setConfirming(false) }} className={cn(btn, 'text-white bg-danger hover:bg-danger/90')}>
+            <Trash2 className="w-3.5 h-3.5" /> Excluir
+          </button>
+        </>
+      ) : (
+        <>
+          <div className="text-sm text-surface-200 pr-1">
+            <span className="font-semibold text-brand-300">{count}</span> {count === 1 ? 'selecionada' : 'selecionadas'}
+          </div>
+          <div className="h-5 w-px bg-surface-700 mx-1" />
+          <button onClick={onActivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
+            <ToggleRight className="w-4 h-4 text-status-active" /> Ativar
+          </button>
+          <button onClick={onDeactivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
+            <ToggleLeft className="w-4 h-4 text-surface-400" /> Desativar
+          </button>
+          <div className="h-5 w-px bg-surface-700 mx-1" />
+          <button onClick={() => setConfirming(true)} className={cn(btn, 'text-danger hover:bg-danger/10')}>
+            <Trash2 className="w-3.5 h-3.5" /> Excluir
+          </button>
+          <button onClick={onClear} aria-label="Limpar seleção" className="p-1.5 ml-1 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-lg transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </>
+      )}
+    </motion.div>
+  )
+}
+
+// ── Página ────────────────────────────────────────────────────────────────────
+
+const STATUS_OPTIONS_BASE: { value: AutomationStatus | 'all'; label: string }[] = [
+  { value: 'all',      label: 'Todas'     },
+  { value: 'active',   label: 'Ativas'    },
+  { value: 'inactive', label: 'Inativas'  },
+  { value: 'draft',    label: 'Rascunho'  },
+]
 
 export function AutomationsPage() {
-  const { user } = useAuth()
   const isMobile = useIsMobile()
-  // Gate on active WhatsApp lines — backend rejects create_automation
-  // with a 400 when tenant has no line, so we block the UI to avoid
-  // letting the user fill out a long wizard that would fail at submit.
   const { numbers: whatsappLines, loading: waLoading } = useWorkspaceNumber()
   const hasWhatsappLine = whatsappLines.length > 0
+  const multiLine = whatsappLines.length > 1
+  const { open: openContextMenu } = useContextMenuCtx()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { open: openCopilot } = useCopilotContext()
 
-  const [automations, setAutomations]     = useState<Automation[]>([])
-  const [loading, setLoading]             = useState(true)
-  const [search, setSearch]               = useState('')
-  const [statusFilter, setStatusFilter]   = useState<AutomationStatus | 'all'>('all')
-  const [typeFilter, setTypeFilter]       = useState<AutomationType | 'all'>('all')
-  const [wizardOpen, setWizardOpen]       = useState(false)
-  const [editTarget, setEditTarget]       = useState<Automation | null>(null)
-  const [wizardPreset, setWizardPreset]   = useState<Partial<typeof GALLERY_TEMPLATES[number]['preset']> | null>(null)
-  const [galleryOpen, setGalleryOpen]     = useState(false)
-  const [deleteTarget, setDeleteTarget]   = useState<Automation | null>(null)
+  const [automations, setAutomations]   = useState<Automation[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [search, setSearch]             = useState('')
+  const [statusFilter, setStatusFilter] = useState<AutomationStatus | 'all'>('all')
+  const [typeFilter, setTypeFilter]     = useState<AutomationType | 'all'>('all')
+  const [lineFilter, setLineFilter]     = useState<LineFilterValue>('all')
+  const [attentionOnly, setAttentionOnly] = useState(false)
+  const [sort, setSort]                 = useState<DataTableSort>({ key: 'atividade', dir: 'desc' })
+  const [selectedId, setSelectedId]     = useState<string | null>(null)
+
+  const [wizardOpen, setWizardOpen]         = useState(false)
+  const [editTarget, setEditTarget]         = useState<Automation | null>(null)
+  const [editSection, setEditSection]       = useState<AutomationBuilderSection | undefined>(undefined)
+  const [deleteTarget, setDeleteTarget]     = useState<Automation | null>(null)
   const [assignWabaTarget, setAssignWabaTarget] = useState<Automation | null>(null)
-  // Local filter chip state — per-page, not persisted. Admin narrows
-  // this view to a single line without affecting other pages.
-  const [lineFilter, setLineFilter] = useState<LineFilterValue>('all')
-
-  const currentUser = user ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl } : undefined
+  const [dupToLineTarget, setDupToLineTarget]   = useState<Automation | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -787,14 +322,26 @@ export function AutomationsPage() {
       setLoading(false)
     }
   }, [])
-
   useEffect(() => { load() }, [load])
+
+  // Deep-link: /automations?automation=:id abre o detalhe; ?atencao=1 filtra.
+  // Consumido uma vez e limpo da URL (padrão ContactsPage).
+  useEffect(() => {
+    const autoParam = searchParams.get('automation')
+    const atencaoParam = searchParams.get('atencao')
+    if (!autoParam && atencaoParam !== '1') return
+    if (autoParam) setSelectedId(autoParam)
+    if (atencaoParam === '1') setAttentionOnly(true)
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const handleToggle = async (automation: Automation) => {
     try {
       const res = await automationsApi.toggle(automation.id)
       setAutomations(prev => prev.map(a => a.id === automation.id ? res.data : a))
-    } catch { /* ignore */ }
+    } catch {
+      showToast('Não foi possível alterar o status da automação', 'error')
+    }
   }
 
   const handleDelete = async () => {
@@ -802,56 +349,109 @@ export function AutomationsPage() {
     try {
       await automationsApi.delete(deleteTarget.id)
       setAutomations(prev => prev.filter(a => a.id !== deleteTarget.id))
+      if (selectedId === deleteTarget.id) setSelectedId(null)
+      showToast('Automação excluída', 'success')
+    } catch {
+      showToast('Não foi possível excluir', 'error')
     } finally {
       setDeleteTarget(null)
     }
   }
 
+  const handleDuplicate = async (a: Automation) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, tenantId, executionCount, lastExecutedAt, createdAt, updatedAt, ...rest } = a
+    try {
+      const res = await automationsApi.create({ ...rest, name: `${a.name} (cópia)`, status: 'draft' })
+      setAutomations(prev => [res.data, ...prev])
+      setSelectedId(res.data.id)
+      showToast('Automação duplicada como rascunho', 'success')
+    } catch {
+      showToast('Não foi possível duplicar', 'error')
+    }
+  }
+
+  const handleDuplicateToLine = async (a: Automation, lineId: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, tenantId, executionCount, lastExecutedAt, createdAt, updatedAt, ...rest } = a
+    try {
+      const res = await automationsApi.create({
+        ...rest, name: `${a.name} (cópia)`, status: 'draft',
+        whatsappNumberId: lineId, needsWabaAssignment: false,
+      })
+      setAutomations(prev => [res.data, ...prev])
+      setSelectedId(res.data.id)
+      showToast('Automação duplicada para a linha escolhida', 'success')
+    } catch {
+      showToast('Não foi possível duplicar', 'error')
+    } finally {
+      setDupToLineTarget(null)
+    }
+  }
+
+  const bulkSetActive = async (activate: boolean) => {
+    const targets = selectedItems.filter(a => activate ? a.status !== 'active' : a.status === 'active')
+    clearSelection()
+    if (targets.length === 0) return
+    const results = await Promise.allSettled(targets.map(a => automationsApi.toggle(a.id)))
+    const updated: Automation[] = []
+    let failed = 0
+    results.forEach((r) => { if (r.status === 'fulfilled') updated.push(r.value.data); else failed++ })
+    if (updated.length) setAutomations(prev => prev.map(a => updated.find(u => u.id === a.id) ?? a))
+    const verb = activate ? 'ativada(s)' : 'desativada(s)'
+    if (failed === 0) showToast(`${updated.length} ${verb}`, 'success')
+    else showToast(`${updated.length} ${verb}, ${failed} falhou`, 'warning')
+  }
+
+  const bulkDelete = async () => {
+    const targets = [...selectedItems]
+    clearSelection()
+    if (targets.length === 0) return
+    const results = await Promise.allSettled(targets.map(a => automationsApi.delete(a.id)))
+    const deleted = new Set<string>()
+    let failed = 0
+    results.forEach((r, i) => { if (r.status === 'fulfilled') deleted.add(targets[i].id); else failed++ })
+    if (deleted.size) {
+      setAutomations(prev => prev.filter(a => !deleted.has(a.id)))
+      if (selectedId && deleted.has(selectedId)) setSelectedId(null)
+    }
+    if (failed === 0) showToast(`${deleted.size} excluída(s)`, 'success')
+    else showToast(`${deleted.size} excluída(s), ${failed} falhou`, 'warning')
+  }
+
   const handleSaved = (automation: Automation) => {
     setAutomations(prev => {
       const idx = prev.findIndex(a => a.id === automation.id)
-      if (idx >= 0) {
-        const next = [...prev]
-        next[idx] = automation
-        return next
-      }
+      if (idx >= 0) { const next = [...prev]; next[idx] = automation; return next }
       return [automation, ...prev]
     })
+    setSelectedId(automation.id)
     setWizardOpen(false)
     setEditTarget(null)
-    setWizardPreset(null)
   }
 
   const openNew = () => {
-    if (!hasWhatsappLine) return // blocked — banner explains why
+    if (!hasWhatsappLine) return
     setEditTarget(null)
-    setWizardPreset(null)
+    setEditSection(undefined)
     setWizardOpen(true)
   }
-
-  const openEdit = (a: Automation) => {
+  const openEdit = (a: Automation, section?: AutomationBuilderSection) => {
     setEditTarget(a)
-    setWizardPreset(null)
-    setWizardOpen(true)
-  }
-
-  const openFromGallery = (preset: typeof GALLERY_TEMPLATES[number]['preset']) => {
-    if (!hasWhatsappLine) return // blocked — banner explains why
-    setEditTarget(null)
-    setWizardPreset(preset)
+    setEditSection(section)
     setWizardOpen(true)
   }
 
   useRegisterTopBarActions(
     <div className="flex items-center gap-2">
       <button
-        onClick={() => setGalleryOpen(true)}
+        onClick={() => openCopilot('Quero criar uma automação. Objetivo: ')}
         disabled={!hasWhatsappLine}
         title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar automações' : undefined}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-surface-400 disabled:hover:border-surface-700"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-surface-700 text-surface-300 hover:text-surface-100 hover:border-surface-600 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <BookOpen className="w-3.5 h-3.5" />
-        Modelos prontos
+        <Sparkles className="w-3.5 h-3.5" />
+        Descrever com IA
       </button>
       <button
         onClick={openNew}
@@ -866,159 +466,311 @@ export function AutomationsPage() {
     [hasWhatsappLine],
   )
 
-  // Filter (memoized to avoid recalculating on unrelated renders). Rows
-  // without a whatsappNumberId stay visible regardless of the line
-  // filter so the WabaAssignmentBadge can do its job — see lineMatches
-  // helper for the rule.
-  const filtered = useMemo(() => automations.filter(a => {
-    if (!lineMatches(lineFilter, { whatsappNumberId: a.whatsappNumberId })) return false
-    if (statusFilter !== 'all' && a.status !== statusFilter) return false
-    if (typeFilter   !== 'all' && a.type   !== typeFilter)   return false
-    if (search && !a.name.toLowerCase().includes(search.toLowerCase()) &&
-        !a.description.toLowerCase().includes(search.toLowerCase())) return false
-    return true
-  }), [automations, statusFilter, typeFilter, search, lineFilter])
+  // Derivados
+  const counts = useMemo<Counts>(() => ({
+    total: automations.length,
+    active: automations.filter(a => a.status === 'active').length,
+    inactive: automations.filter(a => a.status === 'inactive').length,
+    draft: automations.filter(a => a.status === 'draft').length,
+    totalExec: automations.reduce((s, a) => s + a.executionCount, 0),
+  }), [automations])
 
-  // Group by type for display
-  const groups = useMemo(() => TYPE_OPTIONS.slice(1).reduce<Record<string, Automation[]>>((acc, opt) => {
-    const list = filtered.filter(a => a.type === opt.value)
-    if (list.length > 0) acc[opt.value] = list
-    return acc
-  }, {}), [filtered])
+  const attentionK = useMemo(() => attentionCount(automations), [automations])
+
+  const statusOptions = useMemo(() => STATUS_OPTIONS_BASE.map(o => ({
+    ...o,
+    count: o.value === 'all' ? counts.total
+      : o.value === 'active' ? counts.active
+      : o.value === 'inactive' ? counts.inactive
+      : counts.draft,
+  })), [counts])
+
+  const filtered = useMemo(() => {
+    const s = search.toLowerCase()
+    return automations.filter(a => {
+      if (!lineMatches(lineFilter, { whatsappNumberId: a.whatsappNumberId })) return false
+      if (statusFilter !== 'all' && a.status !== statusFilter) return false
+      if (typeFilter !== 'all' && a.type !== typeFilter) return false
+      if (attentionOnly && deriveAttention(a).length === 0) return false
+      if (s && !a.name.toLowerCase().includes(s) && !a.description.toLowerCase().includes(s)) return false
+      return true
+    })
+  }, [automations, statusFilter, typeFilter, search, lineFilter, attentionOnly])
+
+  const sortedRows = useMemo(() => {
+    const rows = [...filtered]
+    rows.sort((a, b) => {
+      if (sort.key === 'nome') {
+        const c = a.name.localeCompare(b.name, 'pt-BR')
+        return sort.dir === 'asc' ? c : -c
+      }
+      const ta = a.lastExecutedAt ? new Date(a.lastExecutedAt).getTime() : -Infinity
+      const tb = b.lastExecutedAt ? new Date(b.lastExecutedAt).getTime() : -Infinity
+      let c = ta - tb
+      if (c === 0) c = a.executionCount - b.executionCount
+      return sort.dir === 'asc' ? c : -c
+    })
+    return rows
+  }, [filtered, sort])
+
+  const selected = useMemo(() => automations.find(a => a.id === selectedId) ?? null, [automations, selectedId])
+
+  const getId = useCallback((a: Automation) => a.id, [])
+  const { selectedIds, toggle: toggleSelect, selectAll, clear: clearSelection, count: selCount, selectedItems } = useTableSelection(automations, getId)
+  const allVisibleSelected = sortedRows.length > 0 && sortedRows.every(a => selectedIds.has(a.id))
+
+  const rowMenu = (a: Automation, e: React.MouseEvent) => {
+    e.preventDefault()
+    const isActive = a.status === 'active'
+    const items: ContextMenuEntry[] = [
+      { label: 'Editar', icon: Pencil, onClick: () => openEdit(a) },
+      { label: 'Duplicar', icon: CopyPlus, onClick: () => handleDuplicate(a) },
+      { label: 'Copiar nome', icon: Copy, onClick: () => navigator.clipboard?.writeText(a.name).catch(() => {}) },
+      { separator: true },
+      { label: isActive ? 'Desativar' : 'Ativar', icon: isActive ? ToggleLeft : ToggleRight, onClick: () => handleToggle(a) },
+      { separator: true },
+      { label: 'Excluir', icon: Trash2, danger: true, onClick: () => setDeleteTarget(a) },
+    ]
+    openContextMenu(e.clientX, e.clientY, items)
+  }
+
+  // Colunas
+  const columns = useMemo<DataTableColumn<Automation>[]>(() => {
+    const cols: DataTableColumn<Automation>[] = [
+      {
+        key: 'estado', header: '', widthClass: 'w-20',
+        render: (a) => (
+          <div onClick={(e) => e.stopPropagation()}>
+            <Switch checked={a.status === 'active'} onChange={() => handleToggle(a)} />
+          </div>
+        ),
+      },
+      {
+        key: 'nome', header: 'Nome', sortable: true,
+        render: (a) => {
+          const accent = TYPE_ACCENT[a.type] ?? '#2DD4BF'
+          return (
+            <div className="flex items-center gap-3 min-w-0 max-w-[280px]">
+              <span
+                className="color-chip w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
+                style={{ ['--chip']: accent } as React.CSSProperties}
+                title={TYPE_CONFIG[a.type]?.label}
+              >
+                {TYPE_CONFIG[a.type]?.icon}
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <p className="text-sm font-medium text-surface-100 truncate min-w-0">{a.name}</p>
+                  {a.status === 'draft' && (
+                    <span className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+                      Rascunho
+                    </span>
+                  )}
+                </div>
+                {a.description && <p className="text-[11px] text-surface-500 truncate">{a.description}</p>}
+              </div>
+            </div>
+          )
+        },
+      },
+      {
+        key: 'fluxo', header: 'Fluxo',
+        render: (a) => {
+          const acts = a.actions ?? []
+          return (
+            <div className="flex items-center gap-1.5 min-w-0 max-w-[420px]">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap flex-shrink-0">
+                <Zap className="w-3 h-3 text-surface-400" />{triggerChipLabel(a)}
+              </span>
+              {acts.length > 0 ? (
+                <>
+                  <ChevronRight className="w-3 h-3 text-surface-600 flex-shrink-0" />
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-800 border border-surface-700 text-[11px] text-surface-200 whitespace-nowrap truncate">
+                    {actionLabel(acts[0])}
+                  </span>
+                  {acts.length > 1 && <span className="text-[11px] text-surface-500 flex-shrink-0">+{acts.length - 1}</span>}
+                </>
+              ) : (
+                <span className="text-[11px] text-surface-600 italic flex-shrink-0">sem ações</span>
+              )}
+              {agentBehaviorDeviates(a) && (
+                <span title="Comportamento de IA personalizado" className="flex-shrink-0">
+                  <Sparkles className="w-3 h-3 text-brand-400/70" />
+                </span>
+              )}
+            </div>
+          )
+        },
+      },
+      ...(multiLine ? [{
+        key: 'linha', header: 'Linha', responsiveClass: 'hidden xl:table-cell',
+        render: (a: Automation) => (
+          <div onClick={(e) => e.stopPropagation()}>
+            {a.needsWabaAssignment
+              ? <WabaAssignmentBadge onClick={() => setAssignWabaTarget(a)} />
+              : <WhatsappLineChip whatsappNumberId={a.whatsappNumberId} />}
+          </div>
+        ),
+      } as DataTableColumn<Automation>] : []),
+      {
+        key: 'atividade', header: 'Atividade', align: 'right', sortable: true, responsiveClass: 'hidden md:table-cell',
+        render: (a) => (
+          <div className="text-right whitespace-nowrap">
+            <span className="text-xs text-surface-200 tabular-nums">{a.executionCount.toLocaleString('pt-BR')}</span>
+            <span className="text-[11px] text-surface-500"> · {a.lastExecutedAt ? relativeDate(a.lastExecutedAt) : '—'}</span>
+          </div>
+        ),
+      },
+      {
+        key: 'atencao', header: '', align: 'center', widthClass: 'w-10',
+        render: (a) => {
+          const flags = deriveAttention(a)
+          return flags.length > 0
+            ? <span title={flags[0].hint} className="inline-flex"><AlertTriangle className="w-3.5 h-3.5 text-warning" /></span>
+            : null
+        },
+      },
+    ]
+    return cols
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [multiLine])
+
+  const showToolbar = !loading && automations.length > 0
 
   return (
     <>
-    <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* WhatsApp gate — rendered above everything so operator sees
-            the blocker before scrolling through filters/lists. */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Gate WhatsApp */}
         {!waLoading && !hasWhatsappLine && (
           <div className="px-6 pt-5">
             <WhatsappLineRequiredBanner resource="automações" />
           </div>
         )}
 
-        {/* Status strip */}
-        {!loading && <StatusStrip automations={automations} />}
-
-        {/* Filter bar */}
-        <FilterBar
-          search={search}
-          onSearch={setSearch}
-          status={statusFilter}
-          onStatus={setStatusFilter}
-          typeFilter={typeFilter}
-          onType={setTypeFilter}
-          lineFilter={lineFilter}
-          onLineFilter={setLineFilter}
-        />
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        {/* Toolbar */}
+        {showToolbar && (
+          <div className="flex items-center gap-3 px-6 py-3 flex-shrink-0">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar automação..."
+                className="w-full bg-surface-900 border border-surface-700 rounded-xl pl-8 pr-3 py-1.5 text-sm text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
+              />
             </div>
-          ) : filtered.length === 0 ? (
-            <>
-              <GuideCard />
-              <EmptyState onNew={openNew} onGallery={() => setGalleryOpen(true)} />
-            </>
-          ) : typeFilter !== 'all' ? (
-            /* Flat list (horizontal rows) when filtering by type */
-            <>
-              <GuideCard />
-              <div className="px-6 py-4 flex flex-col gap-2">
-                {filtered.map(a => (
-                  <AutomationCard
-                    key={a.id}
-                    automation={a}
-                    onEdit={openEdit}
-                    onToggle={handleToggle}
-                    onDelete={setDeleteTarget}
-                    onAssignWaba={setAssignWabaTarget}
-                  />
-                ))}
-              </div>
-            </>
-          ) : (
-            /* Grouped by type — each group is a horizontal list */
-            <>
-              <GuideCard />
-              <div className="px-6 py-4 flex flex-col gap-6">
-                {Object.entries(groups).map(([typeKey, list]) => {
-                  const cfg = TYPE_CONFIG[typeKey as AutomationType]
-                  return (
-                    <div key={typeKey}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-surface-200">{cfg.icon}</span>
-                        <h2 className="text-xs font-semibold text-surface-200 uppercase tracking-wider">{cfg.label}</h2>
-                        <span className="text-xs text-surface-300">({list.length})</span>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                          {list.map(a => (
-                            <AutomationCard
-                              key={a.id}
-                              automation={a}
-                              onEdit={openEdit}
-                              onToggle={handleToggle}
-                              onDelete={setDeleteTarget}
-                              onAssignWaba={setAssignWabaTarget}
-                            />
-                          ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          )}
-        </div>
+            <SegmentedControl label="Filtrar por status" options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
+            <TypeFilterChip value={typeFilter} onChange={setTypeFilter} />
+            <LineFilterChip value={lineFilter} onChange={setLineFilter} />
+            <div className="flex-1" />
+            {attentionK > 0 && (
+              <button
+                onClick={() => setAttentionOnly(v => !v)}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                  attentionOnly
+                    ? 'bg-warning/15 border-warning/40 text-warning'
+                    : 'bg-surface-800 border-surface-700/60 text-surface-300 hover:border-warning/40 hover:text-warning',
+                )}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Atenção
+                <span className="min-w-[18px] px-1 rounded-full bg-warning/20 text-[10px] text-center tabular-nums">{attentionK}</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Conteúdo */}
+        {!loading && automations.length === 0 && !waLoading && hasWhatsappLine ? (
+          <EmptyStateBlank onNew={openNew} />
+        ) : (
+          <div className="flex-1 min-w-0 overflow-hidden flex flex-col px-4 py-3">
+            <div className="flex-1 min-h-0 flex flex-col rounded-xl border border-surface-800 overflow-hidden bg-surface-900/20">
+              <DataTable
+                columns={columns}
+                rows={sortedRows}
+                rowKey={(a) => a.id}
+                loading={loading}
+                emptyIcon={Workflow}
+                emptyTitle="Nenhuma automação encontrada"
+                emptyHint="Ajuste os filtros ou crie uma nova automação."
+                sort={sort}
+                onSortChange={setSort}
+                onRowClick={(a) => setSelectedId(a.id)}
+                onRowContextMenu={rowMenu}
+                selectedKeys={selectedIds}
+                onToggleSelect={toggleSelect}
+                onToggleSelectAll={() => allVisibleSelected ? clearSelection() : selectAll(sortedRows.map(a => a.id))}
+                activeKey={selectedId}
+                className="flex-1 min-h-0"
+              />
+            </div>
+          </div>
+        )}
       </main>
 
-      {/* Wizard — desktop only; mobile mostra gate */}
+      {/* Detalhe em drawer — desliza da direita em todas as telas (mesmo modelo do builder) */}
+      <AnimatePresence>
+        {selected && (
+          <>
+            <motion.div
+              key="detail-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 bg-black/40 z-[39]"
+              onClick={() => setSelectedId(null)}
+            />
+            <motion.div
+              key="detail-panel"
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-[34rem] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
+            >
+              <AutomationDetail
+                automation={selected}
+                onToggle={handleToggle}
+                onEdit={(a, section) => openEdit(a, section)}
+                onDuplicate={handleDuplicate}
+                onDuplicateToLine={multiLine ? (a) => setDupToLineTarget(a) : undefined}
+                onDelete={setDeleteTarget}
+                onResolveWithAI={(a, flag) => openCopilot(resolvePrompt(a, flag))}
+                onClose={() => setSelectedId(null)}
+                variant="overlay"
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Wizard (criação/edição — será substituído pelo builder) */}
       {isMobile ? (
         <MobileFeatureGate
           open={wizardOpen}
-          onClose={() => { setWizardOpen(false); setEditTarget(null); setWizardPreset(null) }}
+          onClose={() => { setWizardOpen(false); setEditTarget(null) }}
           featureName={editTarget ? 'Editar automação' : 'Criar automação'}
-          description="Wizard de automações tem múltiplos passos com gatilhos, condições e ações encadeadas. No celular fica apertado — abra no desktop para configurar com tranquilidade."
+          description="O construtor de automações tem gatilhos, condições e ações encadeadas. No celular fica apertado — abra no desktop para configurar com tranquilidade."
         />
       ) : (
-        <AnimatePresence>
-          {wizardOpen && (
-            <AutomationWizard
-              open={wizardOpen}
-              onClose={() => { setWizardOpen(false); setEditTarget(null); setWizardPreset(null) }}
-              onSaved={handleSaved}
-              editTarget={editTarget}
-              preset={wizardPreset}
-            />
-          )}
-        </AnimatePresence>
+        <AutomationBuilder
+          open={wizardOpen}
+          onClose={() => { setWizardOpen(false); setEditTarget(null); setEditSection(undefined) }}
+          onSaved={handleSaved}
+          editTarget={editTarget}
+          preset={null}
+          initialSection={editSection}
+          onDescribeWithAI={() => { setWizardOpen(false); setEditTarget(null); openCopilot('Quero criar uma automação. Objetivo: ') }}
+        />
       )}
-
-      {/* Template gallery */}
-      <AnimatePresence>
-        {galleryOpen && (
-          <TemplateGallery
-            onSelect={openFromGallery}
-            onClose={() => setGalleryOpen(false)}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Delete confirm */}
       <AnimatePresence>
         {deleteTarget && (
-          <DeleteConfirm
-            automation={deleteTarget}
-            onConfirm={handleDelete}
-            onCancel={() => setDeleteTarget(null)}
-          />
+          <DeleteConfirm automation={deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
         )}
       </AnimatePresence>
 
-      {/* Assign-WABA modal for legacy rows flagged by Migration #045 */}
+      {/* Assign-WABA */}
       {assignWabaTarget && (
         <AssignWabaModal
           resourceType="automation"
@@ -1026,12 +778,34 @@ export function AutomationsPage() {
           resourceName={assignWabaTarget.name}
           currentNumberId={assignWabaTarget.whatsappNumberId}
           onClose={() => setAssignWabaTarget(null)}
-          onSaved={() => {
-            setAssignWabaTarget(null)
-            load() // refetch list — card loses the badge + gains the chip
-          }}
+          onSaved={() => { setAssignWabaTarget(null); load() }}
         />
       )}
+
+      {/* Duplicar para outra linha */}
+      <AnimatePresence>
+        {dupToLineTarget && (
+          <DuplicateToLineModal
+            automation={dupToLineTarget}
+            lines={whatsappLines}
+            onPick={(lineId) => handleDuplicateToLine(dupToLineTarget, lineId)}
+            onCancel={() => setDupToLineTarget(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Ações em massa */}
+      <AnimatePresence>
+        {selCount > 0 && (
+          <BulkBar
+            count={selCount}
+            onActivate={() => bulkSetActive(true)}
+            onDeactivate={() => bulkSetActive(false)}
+            onDelete={bulkDelete}
+            onClear={clearSelection}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }

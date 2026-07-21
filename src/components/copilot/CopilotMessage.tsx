@@ -8,6 +8,7 @@ import {
   Phone, CornerDownLeft, ImageIcon, AlertTriangle, Clock, Users, Palette, Mail, Building2, Hash,
   BookOpen, HelpCircle, Shield, Plus, Minus, FilePlus, FilePenLine, FileMinus, PlayCircle, PauseCircle, RefreshCw,
 } from 'lucide-react'
+import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { getReadableTextColor } from '@/lib/colorPalette'
@@ -51,7 +52,7 @@ export function CopilotIcon({ spinning = false, size = 'sm' }: { spinning?: bool
           : { transition: 'transform 0.4s ease-out' }
         }
       >
-        <Sparkles className={`${icon} text-white`} />
+        <CopilotMark className={`${icon} text-white`} />
       </div>
     </div>
   )

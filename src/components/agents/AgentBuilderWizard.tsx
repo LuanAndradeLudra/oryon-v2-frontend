@@ -32,6 +32,7 @@ import { HandoffRulesPanel } from '@/components/agents/HandoffRuleBuilder'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
+import { Banner } from '@/components/ui/Banner'
 import { AGENT_ICONS, AgentIcon } from '@/components/agents/AgentIcons'
 import { STEP_TEACHINGS } from './agentBuilderTeachings'
 
@@ -631,12 +632,18 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             </p>
           </div>
           {dirty && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-status-pending-bg text-status-pending border border-status-pending-border">
+            <span
+              className="color-chip text-[10px] px-2 py-0.5 rounded-full border"
+              style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
+            >
               Não salvo
             </span>
           )}
           {!dirty && savedAt && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-status-active-bg text-status-active border border-status-active-border inline-flex items-center gap-1">
+            <span
+              className="color-chip text-[10px] px-2 py-0.5 rounded-full border inline-flex items-center gap-1"
+              style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
+            >
               <Check className="w-3 h-3" /> Salvo
             </span>
           )}
@@ -1681,7 +1688,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           )}
         </div>
         {data.objective && (
-          <p className="text-xs text-surface-500 mt-2 pt-2 border-t border-surface-800">{data.objective}</p>
+          <p className="text-xs text-surface-500 mt-2 p-2 border-t border-surface-800 rounded-lg">{data.objective}</p>
         )}
       </div>
 
@@ -1714,10 +1721,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             onExpand={() => setReviewOpen(true)}
           />
         ) : (
-          <div className="flex items-center gap-2 p-3 bg-status-pending-bg border border-status-pending-border rounded-xl">
-            <AlertCircle className="w-4 h-4 text-status-pending flex-shrink-0" />
-            <p className="text-xs text-status-pending">Volte ao passo anterior e gere o system prompt antes de publicar.</p>
-          </div>
+          <Banner variant="warning">Volte ao passo anterior e gere o system prompt antes de publicar.</Banner>
         )}
       </div>
 

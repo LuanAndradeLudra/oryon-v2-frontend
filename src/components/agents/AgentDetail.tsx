@@ -30,6 +30,7 @@ import type {
 import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Select } from '@/components/ui/Select'
+import { Banner } from '@/components/ui/Banner'
 import { conversationsApi } from '@/services/api'
 import { HandoffRulesPanel } from '@/components/agents/HandoffRuleBuilder'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
@@ -43,18 +44,20 @@ import { isFeatureVisible } from '@/config/featureFlags'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG = {
-  active:  { label: 'Ativo',     color: 'bg-status-active-bg text-status-active ring-status-active-border', dot: 'bg-status-active' },
-  draft:   { label: 'Rascunho',  color: 'bg-status-pending-bg   text-status-pending   ring-status-pending-border',   dot: 'bg-status-pending'   },
-  paused:  { label: 'Pausado',   color: 'bg-surface-700/40 text-surface-400 ring-surface-600/30', dot: 'bg-surface-400' },
+const STATUS_CONFIG: Record<string, { label: string; chip: string }> = {
+  active:  { label: 'Ativo',     chip: 'var(--color-status-active)'  },
+  draft:   { label: 'Rascunho',  chip: 'var(--color-status-pending)' },
+  paused:  { label: 'Pausado',   chip: 'var(--color-status-muted)'   },
 }
 
-const METHOD_COLOR = {
-  GET:    'bg-blue-500/15    text-blue-400    ring-blue-500/20',
-  POST:   'bg-emerald-500/15 text-emerald-400 ring-emerald-500/20',
-  PUT:    'bg-amber-500/15   text-amber-400   ring-amber-500/20',
-  PATCH:  'bg-orange-500/15  text-orange-400  ring-orange-500/20',
-  DELETE: 'bg-red-500/15     text-red-400     ring-red-500/20',
+// Métodos HTTP — cor categórica (não status), matizes convencionais do
+// mercado via tokens theme-aware (o claro escurece para manter contraste).
+const METHOD_COLOR: Record<string, string> = {
+  GET:    'var(--color-accent-blue)',
+  POST:   'var(--color-accent-green)',
+  PUT:    'var(--color-accent-amber)',
+  PATCH:  'var(--color-warning)',
+  DELETE: 'var(--color-danger)',
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -62,8 +65,11 @@ const METHOD_COLOR = {
 function StatusBadge({ status }: { status: AgentConfig['status'] }) {
   const cfg = STATUS_CONFIG[status]
   return (
-    <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ring-1', cfg.color)}>
-      <span className={cn('w-1.5 h-1.5 rounded-full', cfg.dot)} />
+    <span
+      className="color-chip inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border"
+      style={{ ['--chip']: cfg.chip } as React.CSSProperties}
+    >
+      <span className="chip-dot w-1.5 h-1.5 rounded-full" />
       {cfg.label}
     </span>
   )
@@ -323,9 +329,10 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
                 className={cn(
                   'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
                   active
-                    ? cn(cfg.color, 'ring-1 border-transparent cursor-default')
+                    ? 'color-chip cursor-default'
                     : 'border-surface-800 text-surface-500 hover:border-surface-700 hover:text-surface-300 bg-surface-900 cursor-pointer',
                 )}
+                style={active ? { ['--chip']: cfg.chip } as React.CSSProperties : undefined}
               >
                 {s === 'active'  && <Power       className="w-3.5 h-3.5" />}
                 {s === 'paused'  && <PauseCircle className="w-3.5 h-3.5" />}
@@ -355,12 +362,15 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
                   {row.label}
                 </p>
               </div>
-              <span className={cn(
-                'text-xs px-2 py-0.5 rounded-full ring-1 font-medium',
-                row.highlighted
-                  ? 'text-status-active bg-status-active-bg ring-status-active-border'
-                  : 'text-surface-500 bg-surface-800/40 ring-surface-700/30',
-              )}>
+              <span
+                className={cn(
+                  'text-xs px-2 py-0.5 rounded-full font-medium',
+                  row.highlighted
+                    ? 'color-chip border'
+                    : 'text-surface-500 bg-surface-800/40 ring-1 ring-surface-700/30',
+                )}
+                style={row.highlighted ? { ['--chip']: 'var(--color-status-active)' } as React.CSSProperties : undefined}
+              >
                 {row.value}
               </span>
             </div>
@@ -431,23 +441,23 @@ function SystemPromptTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onU
 
       {/* Stale warning banner */}
       {isStale && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-status-pending-bg border border-status-pending-border flex-shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <AlertCircle className="w-4 h-4 text-status-pending flex-shrink-0" />
-            <p className="text-xs text-status-pending">
-              O Contexto da IA foi atualizado depois que este prompt foi gerado.
-            </p>
-          </div>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-status-pending-bg hover:bg-status-pending-bg/80 text-status-pending text-xs font-medium border border-status-pending-border transition-colors flex-shrink-0 disabled:opacity-50"
-          >
-            {syncing
-              ? <><RefreshCw className="w-3 h-3 animate-spin" /> Sincronizando…</>
-              : <><Sparkles className="w-3 h-3" /> Sincronizar com Hub</>}
-          </button>
-        </div>
+        <Banner
+          variant="warning"
+          className="flex-shrink-0"
+          action={
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/25 bg-white/15 hover:bg-white/25 text-white text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              {syncing
+                ? <><RefreshCw className="w-3 h-3 animate-spin" /> Sincronizando…</>
+                : <><Sparkles className="w-3 h-3" /> Sincronizar com Hub</>}
+            </button>
+          }
+        >
+          O Contexto da IA foi atualizado depois que este prompt foi gerado.
+        </Banner>
       )}
 
       {/* Artifact — editable */}
@@ -734,7 +744,10 @@ function ToolsTab({
               <>
                 {/* Tool header row */}
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <span className={cn('text-xs font-bold px-1.5 py-0.5 rounded-md ring-1 font-mono', METHOD_COLOR[tool.method])}>
+                  <span
+                    className="color-chip text-xs font-bold px-1.5 py-0.5 rounded-md border font-mono"
+                    style={{ ['--chip']: METHOD_COLOR[tool.method] } as React.CSSProperties}
+                  >
                     {tool.method}
                   </span>
                   <div className="flex-1 min-w-0">
@@ -805,7 +818,7 @@ function ToolsTab({
                                   <code className="text-brand-300 font-mono">{p.name}</code>
                                   <span className="text-surface-700">·</span>
                                   <span className="text-surface-600">{p.type}</span>
-                                  {p.required && <span className="text-status-pending text-[10px] px-1 bg-status-pending-bg rounded">obrigatório</span>}
+                                  {p.required && <span className="color-chip border text-[10px] px-1 rounded" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>obrigatório</span>}
                                   <span className="text-surface-500">—</span>
                                   <span className="text-surface-400">{p.description}</span>
                                 </div>
@@ -941,22 +954,34 @@ function HandoffTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate
 
 function DocStatusBadge({ status }: { status: string }) {
   if (status === 'ready') return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-status-active px-1.5 py-0.5 bg-status-active-bg border border-status-active-border rounded">
+    <span
+      className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 border rounded"
+      style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
+    >
       <CheckCircle2 className="w-3 h-3" />Pronto
     </span>
   )
   if (status === 'processing') return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-amber-400 px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded">
+    <span
+      className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 border rounded"
+      style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
+    >
       <Loader2 className="w-3 h-3 animate-spin" />Processando
     </span>
   )
   if (status === 'error') return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-red-400 px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded">
+    <span
+      className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 border rounded"
+      style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+    >
       <AlertCircle className="w-3 h-3" />Erro
     </span>
   )
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-surface-500 px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded">
+    <span
+      className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 border rounded"
+      style={{ ['--chip']: 'var(--color-status-muted)' } as React.CSSProperties}
+    >
       <Clock className="w-3 h-3" />Pendente
     </span>
   )
@@ -1634,10 +1659,7 @@ function FaqRuleForm({
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-          {error}
-        </div>
+        <Banner variant="danger">{error}</Banner>
       )}
 
       <div className="flex items-center justify-end gap-2 pt-1">
@@ -1953,13 +1975,10 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
       {/* Error */}
       {error && (
-        <div className="flex items-start gap-2 px-3 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium">Não foi possível carregar as métricas</p>
-            <p className="opacity-80 mt-0.5">{error}</p>
-          </div>
-        </div>
+        <Banner variant="danger">
+          <p className="font-medium">Não foi possível carregar as métricas</p>
+          <p className="opacity-80 mt-0.5">{error}</p>
+        </Banner>
       )}
 
       {/* Loading */}
@@ -2053,6 +2072,8 @@ export function AgentDetail({
   // outer scroll/flex layout depends on which sub-panel is active.
   const [rulesSubTab, setRulesSubTab] = useState<RulesSubTab>('handoff')
   const [deletingAgent, setDeletingAgent] = useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const [showTest, setShowTest] = useState(false)
   const [togglingStatus, setTogglingStatus] = useState(false)
 
@@ -2105,9 +2126,12 @@ export function AgentDetail({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-surface-800/60 flex-shrink-0">
-        <AgentIcon iconId={agent.icon} className="w-10 h-10" />
+      {/* Header de identidade — ícone maior ancora o agente; ações
+          hierarquizadas: Testar (primária), Ativar/Pausar (estado) e o
+          destrutivo escondido no menu "..." (padrão enterprise: excluir
+          nunca fica a 1 clique na superfície). */}
+      <div className="flex items-center gap-4 px-6 pt-5 pb-4 flex-shrink-0">
+        <AgentIcon iconId={agent.icon} className="w-12 h-12" />
         <div className="flex-1 min-w-0">
           <InlineEdit
             value={agent.name}
@@ -2115,19 +2139,26 @@ export function AgentDetail({
               const updated = await updateAgent(agent.id, { name })
               handleAgentUpdate(updated)
             }}
-            className="text-base font-bold text-surface-100"
+            className="text-lg font-display font-bold text-surface-50"
           />
-          <div className="flex items-center gap-3 mt-0.5">
+          <div className="flex items-center gap-2.5 mt-1">
             <StatusBadge status={agent.status} />
-            <span className="text-xs text-surface-600">
-              {agent.tools.length} ferramenta(s)
+            <span className="text-xs text-surface-600">·</span>
+            <span className="text-xs text-surface-500">
+              Atualizado {new Date(agent.updated_at).toLocaleDateString('pt-BR')}
             </span>
+            {advancedMode && agent.tools.length > 0 && (
+              <>
+                <span className="text-xs text-surface-600">·</span>
+                <span className="text-xs text-surface-500">{agent.tools.length} ferramenta(s)</span>
+              </>
+            )}
           </div>
         </div>
         {/* Testar Agente */}
         <button
           onClick={() => setShowTest(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-medium ring-1 ring-brand-500/30 transition-colors hover:ring-brand-500/50"
+          className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-xl bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-semibold ring-1 ring-brand-500/30 transition-colors hover:ring-brand-500/50 cursor-pointer"
         >
           <Sparkles className="w-3.5 h-3.5" />
           Testar
@@ -2137,9 +2168,9 @@ export function AgentDetail({
           onClick={toggleStatus}
           disabled={togglingStatus}
           className={cn(
-            'inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium ring-1 transition-colors disabled:opacity-50',
+            'inline-flex items-center gap-1.5 px-3.5 h-9 rounded-xl text-xs font-semibold ring-1 transition-colors disabled:opacity-50 cursor-pointer',
             agent.status === 'active'
-              ? 'bg-surface-800 text-surface-400 ring-surface-700 hover:bg-red-500/10 hover:text-red-400 hover:ring-red-500/30'
+              ? 'bg-surface-800 text-surface-400 ring-surface-700 hover:bg-danger/10 hover:text-danger hover:ring-danger/30'
               : 'bg-status-active-bg text-status-active ring-status-active-border hover:bg-status-active-bg/80',
           )}
         >
@@ -2149,22 +2180,65 @@ export function AgentDetail({
               ? <><PauseCircle className="w-3.5 h-3.5" /> Pausar</>
               : <><Power className="w-3.5 h-3.5" /> Ativar</>}
         </button>
-        {/* Excluir */}
-        <button
-          onClick={() => {
-            if (!confirm(`Excluir o agente "${agent.name}"? Esta ação não pode ser desfeita.`)) return
-            setDeletingAgent(true)
-            updateAgent(agent.id, { status: 'draft' })
-              .then(() => onDeleted())
-              .catch(() => setDeletingAgent(false))
-          }}
-          disabled={deletingAgent}
-          className="p-2 rounded-xl border border-surface-800 text-surface-600 hover:border-red-500/30 hover:text-red-400 hover:bg-red-500/5 transition"
-          title="Excluir agente"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        {/* Overflow — ações raras/destrutivas */}
+        <div className="relative">
+          <button
+            onClick={() => setMoreOpen((v) => !v)}
+            aria-label="Mais ações"
+            className={cn(
+              'w-9 h-9 rounded-xl border flex items-center justify-center transition-colors cursor-pointer',
+              moreOpen
+                ? 'border-surface-600 bg-surface-800 text-surface-200'
+                : 'border-surface-800 text-surface-500 hover:border-surface-700 hover:text-surface-300',
+            )}
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+          {moreOpen && (
+            <>
+              <div className="overlay-scrim z-40" aria-hidden onClick={() => setMoreOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 min-w-[13rem] py-1 overlay-surface border rounded-xl z-50">
+                <button
+                  onClick={() => {
+                    setMoreOpen(false)
+                    navigator.clipboard.writeText(agent.name).catch(() => {})
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-surface-300 hover:bg-surface-700 transition-colors text-left cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copiar nome
+                </button>
+                <div className="my-1 border-t border-surface-700/60" />
+                <button
+                  onClick={() => { setMoreOpen(false); setConfirmDeleteOpen(true) }}
+                  disabled={deletingAgent}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 transition-colors text-left cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Excluir agente
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
+      <ConfirmModal
+        open={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={() => {
+          setConfirmDeleteOpen(false)
+          setDeletingAgent(true)
+          updateAgent(agent.id, { status: 'draft' })
+            .then(() => onDeleted())
+            .catch(() => setDeletingAgent(false))
+        }}
+        title="Excluir agente"
+        description={`Excluir o agente "${agent.name}"? Ele será movido para rascunho e deixará de responder conversas.`}
+        confirmLabel="Excluir"
+        danger
+        loading={deletingAgent}
+      />
 
       {/* Setup notification — show when agent not yet tested */}
       <AnimatePresence>
@@ -2176,33 +2250,42 @@ export function AgentDetail({
             transition={{ duration: 0.2 }}
             className="flex-shrink-0 overflow-hidden"
           >
-            <div className="flex items-center gap-3 mx-6 my-3 px-4 py-3 bg-status-pending-bg border border-status-pending-border rounded-xl">
-              <AlertCircle className="w-4 h-4 text-status-pending flex-shrink-0" />
-              <p className="text-xs text-status-pending flex-1">
-                Agente ainda não testado — recomendamos testar antes de ativar para garantir o comportamento correto.
-              </p>
-              <button
-                onClick={() => setShowTest(true)}
-                className="text-xs font-medium text-status-pending hover:text-status-pending/80 underline underline-offset-2 transition flex-shrink-0"
-              >
-                Testar agora
-              </button>
-            </div>
+            <Banner
+              variant="warning"
+              className="mx-6 my-3"
+              action={
+                <button
+                  onClick={() => setShowTest(true)}
+                  className="text-xs font-medium text-white hover:text-white/80 underline underline-offset-2 transition flex-shrink-0"
+                >
+                  Testar agora
+                </button>
+              }
+            >
+              Agente ainda não testado — recomendamos testar antes de ativar para garantir o comportamento correto.
+            </Banner>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-0.5 px-6 py-2 border-b border-surface-800/60 flex-shrink-0">
+      {/* Tabs — underline (mais leve que pílulas com 9 opções; o indicador
+          de 2px comunica seleção sem competir com o conteúdo) */}
+      <div
+        role="tablist"
+        aria-label="Seções do agente"
+        className="flex items-center gap-1 px-6 border-b border-surface-800/60 flex-shrink-0 overflow-x-auto"
+      >
         {tabs.map(tab => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+              'inline-flex items-center gap-1.5 px-3 py-2.5 -mb-px border-b-2 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
               activeTab === tab.id
-                ? 'bg-surface-800 text-surface-100'
-                : 'text-surface-500 hover:text-surface-300 hover:bg-surface-900',
+                ? 'text-surface-50 border-brand-500'
+                : 'text-surface-500 border-transparent hover:text-surface-300',
             )}
           >
             {tab.icon}

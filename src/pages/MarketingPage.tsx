@@ -27,10 +27,12 @@ import { cn } from '@/lib/utils'
 import { CampaignLeadsDrawer } from '@/components/campaigns/CampaignLeadsDrawer'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useChartColors } from '@/hooks/useChartColors'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { useNavigate } from 'react-router-dom'
 
 const META_BLUE = '#1877f2'
-const C = { grid: '#1e293b', axis: '#475569' }
 
 type ChartMetric = 'leads' | 'spend'
 
@@ -75,13 +77,17 @@ function FrequencyBar({ frequency }: { frequency: number }) {
 function CreativesPanel({ adSetId }: { adSetId: string }) {
   const [creatives, setCreatives] = useState<AdCreativeMetrics[]>([])
   const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    setLoading(true)
+    setError(false)
     adSetsApi.getCreatives(adSetId)
       .then((r) => setCreatives(r.data))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [adSetId])
+  }, [adSetId, reloadKey])
 
   if (loading) {
     return (
@@ -89,6 +95,14 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
         {[1, 2].map((i) => (
           <div key={i} className="h-40 bg-surface-800/60 rounded-xl animate-pulse" />
         ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <ErrorState compact title="Erro ao carregar criativos" onRetry={() => setReloadKey((k) => k + 1)} />
       </div>
     )
   }
@@ -124,8 +138,8 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide"
-                    style={{ backgroundColor: fmt.color + '20', color: fmt.color }}
+                    className="color-chip inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide"
+                    style={{ ['--chip']: fmt.color } as React.CSSProperties}
                   >
                     {fmt.icon}
                     {fmt.label}
@@ -191,19 +205,31 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
 function AdSetsTable({ campaignId }: { campaignId: string }) {
   const [adSets, setAdSets]     = useState<AdSetMetrics[]>([])
   const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [openSet, setOpenSet]   = useState<string | null>(null)
 
   useEffect(() => {
+    setLoading(true)
+    setError(false)
     adSetsApi.list(campaignId)
       .then((r) => setAdSets(r.data))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [campaignId])
+  }, [campaignId, reloadKey])
 
   if (loading) {
     return (
       <div className="space-y-2 p-4">
         {[1, 2].map((i) => <div key={i} className="h-10 bg-surface-800/60 rounded-lg animate-pulse" />)}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <ErrorState compact title="Erro ao carregar conjuntos de anúncios" onRetry={() => setReloadKey((k) => k + 1)} />
       </div>
     )
   }
@@ -339,7 +365,7 @@ function KpiStrip({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   ]
 
   return (
-    <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {kpis.map((kpi) => (
         <div
           key={kpi.label}
@@ -367,6 +393,7 @@ function KpiStrip({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
 // ── Performance Chart ─────────────────────────────────────────────────────────
 
 function PerformanceChart({ data, metric }: { data: PerfPoint[]; metric: ChartMetric }) {
+  const C = useChartColors()
   const dataKey = metric === 'spend' ? 'meta_spend' : 'meta_leads'
 
   if (!data.length) return <div className="h-48 bg-surface-800 rounded-xl animate-pulse" />
@@ -744,16 +771,16 @@ function CampaignTable({
 
 function ConversionFunnel({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   const stages = [
-    { label: 'Impressões', value: campaigns.reduce((s, c) => s + c.impressions, 0),      color: '#5588b0' },
-    { label: 'Cliques',    value: campaigns.reduce((s, c) => s + c.clicks, 0),           color: '#6366f1' },
-    { label: 'Leads',      value: campaigns.reduce((s, c) => s + c.leadsGenerated, 0),   color: '#f59e0b' },
-    { label: 'Qualif.',    value: campaigns.reduce((s, c) => s + c.qualified, 0),        color: '#8b5cf6' },
-    { label: 'Clientes',   value: campaigns.reduce((s, c) => s + c.customers, 0),        color: '#10b981' },
+    { label: 'Impressões', value: campaigns.reduce((s, c) => s + c.impressions, 0),      color: 'var(--color-status-muted)' },
+    { label: 'Cliques',    value: campaigns.reduce((s, c) => s + c.clicks, 0),           color: 'var(--color-accent-blue)' },
+    { label: 'Leads',      value: campaigns.reduce((s, c) => s + c.leadsGenerated, 0),   color: 'var(--color-accent-amber)' },
+    { label: 'Qualif.',    value: campaigns.reduce((s, c) => s + c.qualified, 0),        color: 'var(--color-accent-violet)' },
+    { label: 'Clientes',   value: campaigns.reduce((s, c) => s + c.customers, 0),        color: 'var(--color-accent-green)' },
   ]
   const max = stages[0].value || 1
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 lg:col-span-2">
+    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
       <p className="text-sm font-semibold text-surface-100 mb-0.5">Funil de Conversão</p>
       <p className="text-xs text-surface-400 mb-4">Do clique no anúncio ao cliente no CRM</p>
       <div className="space-y-2.5">
@@ -797,10 +824,10 @@ function SummaryPanel({ campaigns, totals }: { campaigns: AdCampaignMetrics[]; t
 
   const items = [
     { label: 'Total Investido', value: `R$ ${spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,  icon: <DollarSign className="w-3.5 h-3.5" />,   color: META_BLUE },
-    { label: 'Leads Gerados',   value: leads.toLocaleString('pt-BR'),                                         icon: <Users className="w-3.5 h-3.5" />,        color: '#f59e0b' },
-    { label: 'CPL Médio',       value: `R$ ${avgCpl.toFixed(2)}`,                                             icon: <Target className="w-3.5 h-3.5" />,       color: '#8b5cf6' },
-    { label: 'ROAS Médio',      value: `${avgRoas.toFixed(1)}x`,                                              icon: <BarChart2 className="w-3.5 h-3.5" />,    color: '#10b981' },
-    { label: 'Novos Clientes',  value: customers.toLocaleString('pt-BR'),                                     icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: '#10b981' },
+    { label: 'Leads Gerados',   value: leads.toLocaleString('pt-BR'),                                         icon: <Users className="w-3.5 h-3.5" />,        color: 'var(--color-accent-amber)' },
+    { label: 'CPL Médio',       value: `R$ ${avgCpl.toFixed(2)}`,                                             icon: <Target className="w-3.5 h-3.5" />,       color: 'var(--color-accent-violet)' },
+    { label: 'ROAS Médio',      value: `${avgRoas.toFixed(1)}x`,                                              icon: <BarChart2 className="w-3.5 h-3.5" />,    color: 'var(--color-accent-green)' },
+    { label: 'Novos Clientes',  value: customers.toLocaleString('pt-BR'),                                     icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: 'var(--color-accent-green)' },
   ]
 
   return (
@@ -850,21 +877,25 @@ const EVENT_LABEL: Record<MetaCapiEvent['eventName'], string> = {
 }
 
 const STATUS_CFG = {
-  sent:    { label: 'Enviado',  color: '#10b981', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-  failed:  { label: 'Falhou',   color: '#ef4444', icon: <XCircle      className="w-3.5 h-3.5" /> },
-  pending: { label: 'Pendente', color: '#f59e0b', icon: <AlertCircle  className="w-3.5 h-3.5" /> },
+  sent:    { label: 'Enviado',  color: 'var(--color-accent-green)', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  failed:  { label: 'Falhou',   color: 'var(--color-danger)',       icon: <XCircle      className="w-3.5 h-3.5" /> },
+  pending: { label: 'Pendente', color: 'var(--color-accent-amber)', icon: <AlertCircle  className="w-3.5 h-3.5" /> },
 }
 
 function CapiEventsSection() {
   const [events, setEvents] = useState<MetaCapiEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    setLoading(true)
+    setError(false)
     conversionApi.getCapiEvents()
       .then((r) => setEvents(r.data))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [])
+  }, [reloadKey])
 
   const totalRevenue = events.filter((e) => e.status === 'sent' && e.value).reduce((s, e) => s + (e.value ?? 0), 0)
   const sentCount    = events.filter((e) => e.status === 'sent').length
@@ -919,9 +950,18 @@ function CapiEventsSection() {
         <div className="px-5 py-6 flex items-center gap-2 text-xs text-surface-500">
           <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Carregando eventos...
         </div>
+      ) : error ? (
+        <div className="p-4">
+          <ErrorState compact title="Erro ao carregar eventos CAPI" onRetry={() => setReloadKey((k) => k + 1)} />
+        </div>
       ) : events.length === 0 ? (
-        <div className="px-5 py-8 text-center text-xs text-surface-500">
-          Nenhum evento enviado. Confirme uma conversão nas conversas para gerar o primeiro evento.
+        <div className="p-4">
+          <EmptyState
+            icon={Send}
+            title="Nenhum evento enviado"
+            hint="Confirme uma conversão nas conversas para gerar o primeiro evento."
+            className="py-8"
+          />
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -1016,6 +1056,7 @@ function MarketingPageDesktop() {
   const [perfData, setPerfData]   = useState<PerfPoint[]>([])
   const [account, setAccount]     = useState<AdAccount | null>(null)
   const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [chartMetric, setChartMetric] = useState<ChartMetric>('leads')
   const [leadsDrawer, setLeadsDrawer] = useState<{ campaignId: string; campaignName: string } | null>(null)
@@ -1023,7 +1064,7 @@ function MarketingPageDesktop() {
   const currentUser = user ? { firstName: user.firstName, lastName: user.lastName, avatarUrl: user.avatarUrl } : undefined
 
   const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true)
+    if (!silent) { setLoading(true); setError(false) }
     else setRefreshing(true)
     try {
       const [funnelRes, perfRes, accountsRes] = await Promise.all([
@@ -1035,7 +1076,7 @@ function MarketingPageDesktop() {
       setTotals(funnelRes.data.totals)
       setPerfData(perfRes.data.map(p => ({ ...p, google_spend: (p as unknown as PerfPoint).google_spend ?? 0, google_leads: (p as unknown as PerfPoint).google_leads ?? 0 })))
       setAccount(accountsRes.data.find((a) => a.platform === 'meta') ?? null)
-    } catch { /* ignore */ }
+    } catch { if (!silent) setError(true) }
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
@@ -1070,38 +1111,35 @@ function MarketingPageDesktop() {
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {loading ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="h-16 bg-surface-900 border border-surface-800 rounded-xl" />
-                ))}
-              </div>
-              <div className="h-72 bg-surface-900 border border-surface-800 rounded-xl" />
-              <div className="grid grid-cols-3 gap-4">
-                <div className="lg:col-span-2 h-48 bg-surface-900 border border-surface-800 rounded-xl" />
+            <div className="grid grid-cols-12 gap-4 items-start animate-pulse">
+              {/* Espelha o layout main + rail */}
+              <div className="col-span-12 xl:col-span-8 space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="h-16 bg-surface-900 border border-surface-800 rounded-xl" />
+                  ))}
+                </div>
+                <div className="h-72 bg-surface-900 border border-surface-800 rounded-xl" />
                 <div className="h-48 bg-surface-900 border border-surface-800 rounded-xl" />
               </div>
-              <div className="h-40 bg-surface-900 border border-surface-800 rounded-xl" />
+              <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
+                <div className="h-28 bg-surface-900 border border-surface-800 rounded-xl" />
+                <div className="h-56 bg-surface-900 border border-surface-800 rounded-xl" />
+              </div>
             </div>
+          ) : error ? (
+            <ErrorState
+              title="Erro ao carregar dados de marketing"
+              onRetry={() => void load()}
+            />
           ) : (
-            <div className="space-y-4">
-              {/* Account bar */}
-              {account && (
-                <div className="flex items-center gap-3 px-4 py-2.5 bg-surface-900 border border-surface-800 rounded-xl">
-                  <div className="w-2 h-2 rounded-full bg-online flex-shrink-0" />
-                  <span className="text-xs font-semibold text-surface-200">{account.accountName}</span>
-                  <span className="text-xs text-surface-600">·</span>
-                  <span className="text-xs text-surface-500 font-mono">{account.accountId}</span>
-                  <div className="flex-1" />
-                  <span className="text-xs text-surface-500">
-                    Sincronizado:{' '}
-                    {account.lastSyncAt
-                      ? new Date(account.lastSyncAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-                      : '—'}
-                  </span>
-                </div>
-              )}
-
+            /* ── Arquitetura main + rail (mesmo padrão de Home/Relatórios) ──
+               MAIN (8/12): narrativa de performance — KPIs, evolução diária,
+               tabela de campanhas com drill-down e eventos CAPI.
+               RAIL (4/12): o contexto vivo — conta conectada, resumo
+               executivo e funil de conversão sempre à vista. */
+            <div className="grid grid-cols-12 gap-4 items-start">
+              <div className="col-span-12 xl:col-span-8 space-y-4">
               {/* KPI strip */}
               <KpiStrip campaigns={campaigns} />
 
@@ -1130,12 +1168,6 @@ function MarketingPageDesktop() {
                 <PerformanceChart data={perfData} metric={chartMetric} />
               </div>
 
-              {/* Funnel + Summary */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <ConversionFunnel campaigns={campaigns} />
-                <SummaryPanel campaigns={campaigns} totals={platformTotals} />
-              </div>
-
               {/* Campaign table with ad sets + creatives drill-down */}
               <CampaignTable
                 campaigns={campaigns}
@@ -1144,6 +1176,34 @@ function MarketingPageDesktop() {
 
               {/* CAPI Events */}
               <CapiEventsSection />
+              </div>
+
+              {/* ── Rail ── */}
+              <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
+                {/* Conta conectada — status vivo da integração Meta */}
+                {account && (
+                  <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="relative flex w-2 h-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-online opacity-60" />
+                        <span className="relative inline-flex rounded-full w-2 h-2 bg-online" />
+                      </span>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Conta conectada</p>
+                    </div>
+                    <p className="text-sm font-display font-bold text-surface-50 truncate">{account.accountName}</p>
+                    <p className="text-xs text-surface-500 font-mono mt-0.5 truncate">{account.accountId}</p>
+                    <p className="text-[11px] text-surface-500 mt-2">
+                      Sincronizado:{' '}
+                      {account.lastSyncAt
+                        ? new Date(account.lastSyncAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                        : '—'}
+                    </p>
+                  </div>
+                )}
+
+                <SummaryPanel campaigns={campaigns} totals={platformTotals} />
+                <ConversionFunnel campaigns={campaigns} />
+              </div>
             </div>
           )}
         </div>

@@ -201,7 +201,7 @@ export function GlassChatInput({
         {showCommands && (
           <motion.div
             ref={commandsRef}
-            className="absolute bottom-full mb-2 left-0 right-0 z-50 rounded-xl overflow-hidden border border-surface-700/60 bg-surface-900/95 backdrop-blur-xl shadow-2xl"
+            className="absolute bottom-full mb-2 left-0 right-0 z-50 rounded-xl overflow-hidden overlay-frame border bg-surface-900/95 backdrop-blur-xl"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}

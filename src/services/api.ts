@@ -8,6 +8,7 @@ import type {
   AdSetMetrics,
   AdAttributionTouchpoint,
   Automation,
+  AutomationRun,
   AutomationStatus,
   Campaign,
   CampaignSegment,
@@ -1523,6 +1524,16 @@ export const automationsApi = {
   },
   delete(id: string) {
     return api.delete(`/automations/${id}`)
+  },
+  // Histórico de execuções de UMA automação — GET /automations/:id/runs
+  // (ADMIN/BUSINESS_ADMIN, os mesmos papéis que veem a lista). Paginação por
+  // cursor via `before`; `failedOnly` filtra só incidentes. O backend já grava
+  // tudo isto (Phase B.2) — aqui apenas passamos a consumir.
+  runs(id: string, query: { before?: string; failedOnly?: boolean; limit?: number } = {}) {
+    return api.get<{ data: AutomationRun[]; nextCursor: string | null }>(
+      `/automations/${id}/runs`,
+      { params: query },
+    )
   },
 }
 

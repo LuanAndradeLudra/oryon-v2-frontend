@@ -35,12 +35,12 @@ function relativeTime(date: string) {
 
 // ── Personal header ────────────────────────────────────────────────────────────
 
-const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
-  super_admin:    { label: 'Equipe Oryon', cls: 'bg-brand-700/20 text-brand-300 border border-brand-600/40' },
-  business_admin: { label: 'Admin',        cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
-  admin:          { label: 'Admin',        cls: 'bg-brand-600/15 text-brand-400 border border-brand-600/30' },
-  supervisor:     { label: 'Supervisor',   cls: 'bg-status-pending-bg text-status-pending border border-status-pending-border' },
-  agent:          { label: 'Agente',       cls: 'bg-surface-700 text-surface-300 border border-surface-600' },
+const ROLE_CONFIG: Record<string, { label: string; chip: string }> = {
+  super_admin:    { label: 'Equipe Oryon', chip: 'var(--color-brand-500)' },
+  business_admin: { label: 'Admin',        chip: 'var(--color-brand-500)' },
+  admin:          { label: 'Admin',        chip: 'var(--color-brand-500)' },
+  supervisor:     { label: 'Supervisor',   chip: 'var(--color-status-pending)' },
+  agent:          { label: 'Agente',       chip: 'var(--color-status-muted)' },
 }
 
 function PersonalHeader({ user }: { user: User }) {
@@ -53,11 +53,11 @@ function PersonalHeader({ user }: { user: User }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-surface-50">
-        {greeting}, {user.firstName} <Hand className="w-6 h-6 inline text-surface-400" />
+      <h1 className="text-2xl font-display font-bold text-surface-50">
+        {greeting}, {user.firstName} <Hand className="w-6 h-6 inline text-brand-400" />
       </h1>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', role.cls)}>
+        <span className={cn('color-chip inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border')} style={{ ['--chip']: role.chip } as React.CSSProperties}>
           {role.label}
         </span>
         {user.departmentName && (
@@ -95,7 +95,7 @@ const KPI_COLORS: Record<KPIColor, { bg: string; icon: string; ring: string }> =
   purple: { bg: 'bg-purple-500/10',  icon: 'text-purple-400',  ring: 'ring-purple-500/20' },
 }
 
-function KPICard({ data }: { data: KPIData }) {
+function KPICard({ data, hero }: { data: KPIData; hero?: boolean }) {
   const c = KPI_COLORS[data.color] ?? KPI_COLORS.brand
   const Icon = data.icon
   return (
@@ -103,7 +103,7 @@ function KPICard({ data }: { data: KPIData }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="bg-surface-900 border border-surface-800 rounded-2xl p-5 flex flex-col gap-3"
+      className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 flex flex-col gap-3"
     >
       <div className="flex items-start justify-between">
         <div className={cn('w-10 h-10 rounded-xl ring-1 flex items-center justify-center', c.bg, c.ring)}>
@@ -123,7 +123,7 @@ function KPICard({ data }: { data: KPIData }) {
       <div>
         <p className="text-3xl font-bold text-surface-50 leading-none tabular-nums">{data.value}</p>
         {data.subtext && <p className="text-xs text-surface-500 mt-1">{data.subtext}</p>}
-        <p className="text-xs text-surface-400 uppercase tracking-wide mt-1.5">{data.label}</p>
+        <p className="text-xs uppercase tracking-wide mt-1.5 text-surface-400">{data.label}</p>
       </div>
     </motion.div>
   )
@@ -154,8 +154,8 @@ function getKPIs(stats: HomeStats, role: string): KPIData[] {
 function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {getKPIs(stats, role).map((kpi) => (
-        <KPICard key={kpi.label} data={kpi} />
+      {getKPIs(stats, role).map((kpi, i) => (
+        <KPICard key={kpi.label} data={kpi} hero={i === 0} />
       ))}
     </div>
   )
@@ -267,7 +267,7 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
   const myAvgMin    = stats.myAvgResponseMinutes ?? 0
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-brand-400" />
@@ -355,7 +355,7 @@ function QuickActions({ role }: { role: string }) {
   const navigate = useNavigate()
   const actions = getQuickActions(role)
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full">
+    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Ações rápidas</h3>
       <div className="grid grid-cols-2 gap-1.5">
         {actions.map((a) => {
@@ -396,7 +396,7 @@ const ACTION_MAP: Record<string, { label: string; dot: string }> = {
 
 function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean }) {
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full">
+    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Atividade recente</h3>
       {loading ? (
         <div className="flex justify-center py-10">
@@ -446,7 +446,7 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
 function TeamCard({ stats }: { stats: HomeStats }) {
   const navigate = useNavigate()
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Equipe</h4>
         <Users className="w-4 h-4 text-surface-600" />
@@ -485,7 +485,7 @@ function WhatsAppNumbersCard() {
   }, [])
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Números WhatsApp</h4>
         <Smartphone className="w-4 h-4 text-surface-600" />
@@ -531,7 +531,7 @@ function WhatsAppNumbersCard() {
 function LiveServiceCard({ stats }: { stats: HomeStats }) {
   const navigate = useNavigate()
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Atendimento agora</h4>
         <div className="flex items-center gap-1.5">
@@ -597,7 +597,7 @@ function SupervisorBlock() {
   }, [])
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5">
+    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Fila de espera</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : `${queue.length} sem usuário`}</span>
@@ -653,7 +653,7 @@ function AgentBlock() {
   }, [])
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5">
+    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Minhas conversas abertas</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : `${convs.length} abertas`}</span>
@@ -772,64 +772,39 @@ export function HomePage() {
               <WorkspaceReadinessBanner mode="checklist" />
             </div>
 
-            {/* ── Linha 3: 4 KPIs ───────────────────────────────────────── */}
-            <div className="lg:col-span-12">
-              {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
-            </div>
+            {/* ── Arquitetura main + rail ────────────────────────────────
+                MAIN (8/12): a narrativa do MEU dia — desempenho pessoal,
+                números do workspace, insights da IA, gestão e fila.
+                RAIL (4/12): o que eu FAÇO e o que ACONTECE — atendimento ao
+                vivo (admin), ações rápidas e atividade recente, sempre à
+                mão sem competir com a leitura principal. */}
+            <div className="lg:col-span-12 xl:col-span-8">
+              <div className="flex flex-col gap-5 sm:gap-6">
+                {stats && <MyPerformanceCard stats={stats} />}
 
-            {/* ── Linha 4: Insights da Oryon AI + Seu desempenho hoje ────
-                Insights (esquerda) é narrativa em texto; Performance (direita)
-                é KPI compacto. Cada um span-6 — o grid alinha as alturas
-                automaticamente já que estão na mesma linha. */}
-            {stats && (
-              <>
-                <div className="lg:col-span-6">
-                  <AIInsightsWidget stats={stats} />
-                </div>
-                <div className="lg:col-span-6">
-                  <MyPerformanceCard stats={stats} />
-                </div>
-              </>
-            )}
+                {stats ? <KPIGrid stats={stats} role={role} /> : <KPIGridSkeleton />}
 
-            {/* ── Linha 5: 3 cards admin (Equipe / WhatsApp / Atendimento) ─
-                Cada card é célula independente do grid principal. Como estão
-                na mesma linha (col-span-4 × 3), o grid alinha as alturas
-                automaticamente. */}
-            {stats && isAdminRole && !isMobile && (
-              <>
-                <div className="lg:col-span-4">
-                  <TeamCard stats={stats} />
-                </div>
-                <div className="lg:col-span-4">
-                  <WhatsAppNumbersCard />
-                </div>
-                <div className="lg:col-span-4">
-                  <LiveServiceCard stats={stats} />
-                </div>
-              </>
-            )}
+                {stats && <AIInsightsWidget stats={stats} />}
 
-            {/* ── Linha 6: Quick Actions + Activity Feed ────────────────── */}
-            <div className="lg:col-span-8">
-              <QuickActions role={role} />
-            </div>
-            <div className="lg:col-span-4">
-              <ActivityFeed logs={logs} loading={logsLoading} />
-            </div>
+                {stats && isAdminRole && !isMobile && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+                    <TeamCard stats={stats} />
+                    <WhatsAppNumbersCard />
+                  </div>
+                )}
 
-            {/* ── Roles supervisor/agent: bloco contextual de largura total
-                (refator simétrico desses fluxos fica como follow-up). */}
-            {role === 'supervisor' && !isMobile && (
-              <div className="lg:col-span-12">
-                <SupervisorBlock />
+                {role === 'supervisor' && !isMobile && <SupervisorBlock />}
+                {role === 'agent' && !isMobile && <AgentBlock />}
               </div>
-            )}
-            {role === 'agent' && !isMobile && (
-              <div className="lg:col-span-12">
-                <AgentBlock />
+            </div>
+
+            <div className="lg:col-span-12 xl:col-span-4">
+              <div className="flex flex-col gap-5 sm:gap-6">
+                {stats && isAdminRole && !isMobile && <LiveServiceCard stats={stats} />}
+                <QuickActions role={role} />
+                <ActivityFeed logs={logs} loading={logsLoading} />
               </div>
-            )}
+            </div>
 
           </div>
 

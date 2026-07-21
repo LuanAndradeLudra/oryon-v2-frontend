@@ -1,7 +1,5 @@
-import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { Send, FileText, X, Target } from 'lucide-react'
-import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -24,32 +22,15 @@ export function CampaignsPage() {
   const { user } = useAuth()
   const { isFeatureVisible } = useFeatureVisibility()
   const { checklist, markDone } = useSetupChecklist(user?.id)
-  const [activeTab, setActiveTab] = useState<Tab>('campaigns')
+  // Tab na URL (?tab=) — deep-linkável e sobrevive a reload; os tabs vivem
+  // IN-PAGE (padrão underline do app), não no TopBar global, onde eram
+  // invisíveis para quem escaneia a página.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const rawTab = searchParams.get('tab')
+  const activeTab: Tab = rawTab === 'templates' || rawTab === 'attribution' ? rawTab : 'campaigns'
+  const setActiveTab = (tab: Tab) =>
+    setSearchParams(tab === 'campaigns' ? {} : { tab }, { replace: true })
   const campaignsEnabled = isFeatureVisible('campaigns')
-
-  useRegisterTopBarActions(
-    <div className="flex items-center bg-surface-800 border border-surface-700 rounded-lg p-0.5">
-      {TABS.map((tab) => {
-        const Icon = tab.icon
-        return (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-              activeTab === tab.id
-                ? 'bg-surface-700 text-surface-100 shadow-sm'
-                : 'text-surface-400 hover:text-surface-200'
-            )}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            {tab.label}
-          </button>
-        )
-      })}
-    </div>,
-    [activeTab],
-  )
 
   if (!campaignsEnabled) {
     return <Navigate to="/home" replace />
@@ -57,6 +38,33 @@ export function CampaignsPage() {
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Tabs in-page — mesmo padrão underline do detalhe de Agentes */}
+        <div
+          role="tablist"
+          aria-label="Seções de campanhas"
+          className="flex items-center gap-1 px-6 border-b border-surface-800/60 flex-shrink-0 overflow-x-auto"
+        >
+          {TABS.map((tab) => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-2.5 -mb-px border-b-2 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
+                  activeTab === tab.id
+                    ? 'text-surface-50 border-brand-500'
+                    : 'text-surface-500 border-transparent hover:text-surface-300',
+                )}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
         {/* Setup card */}
         <AnimatePresence>
           {!checklist.campaigns && (
