@@ -346,8 +346,9 @@ function TimelineRow({ entry }: { entry: TimelineEntry }) {
       <span
         className={cn(
           'mt-0.5 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0',
-          failed ? 'bg-status-error-900/40 text-status-error-300' : visual.iconClass,
+          failed ? 'bg-status-error-900/40 text-status-error-300' : 'color-chip border',
         )}
+        style={!failed ? ({ '--chip': visual.chip } as React.CSSProperties) : undefined}
       >
         <visual.Icon className="w-3 h-3" />
       </span>
@@ -442,7 +443,8 @@ export interface RowVisual {
   label: string
   Icon: typeof UserPlus
   rowBg: string
-  iconClass: string
+  /** CSS color (token/var) consumed via .color-chip + --chip on the icon badge. */
+  chip: string
 }
 
 function visualForEntry(entry: TimelineEntry): RowVisual {
@@ -489,12 +491,12 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
       const isUnassign = userId === null || userId === undefined || userId === ''
       if (isUnassign) {
         return { label: 'Removeu atribuição da conversa', Icon: UserMinus,
-                 rowBg: 'bg-zinc-900/30', iconClass: 'bg-zinc-800 text-zinc-300' }
+                 rowBg: 'bg-zinc-900/30', chip: 'var(--color-status-muted)' }
       }
       return {
         label: userName ? `Atribuiu a conversa para ${userName}` : 'Atribuiu a conversa',
         Icon: UserPlus,
-        rowBg: 'bg-indigo-950/25', iconClass: 'bg-indigo-900/40 text-indigo-300',
+        rowBg: 'bg-indigo-950/25', chip: 'var(--color-accent-blue)',
       }
     }
     case 'conversation_transferred': {
@@ -502,7 +504,7 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
       return {
         label: toUserName ? `Transferiu a conversa para ${toUserName}` : 'Transferiu a conversa',
         Icon: ArrowRightLeft,
-        rowBg: 'bg-violet-950/25', iconClass: 'bg-violet-900/40 text-violet-300',
+        rowBg: 'bg-violet-950/25', chip: 'var(--color-accent-violet)',
       }
     }
     case 'conversation_status_updated': {
@@ -510,19 +512,19 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
       switch (status) {
         case 'resolved':
           return { label: 'Marcou como resolvida', Icon: CheckCircle2,
-                   rowBg: 'bg-emerald-950/25', iconClass: 'bg-emerald-900/40 text-emerald-300' }
+                   rowBg: 'bg-emerald-950/25', chip: 'var(--color-cstatus-resolved)' }
         case 'pending':
           return { label: 'Moveu para a fila', Icon: Clock,
-                   rowBg: 'bg-amber-950/25', iconClass: 'bg-amber-900/40 text-amber-300' }
+                   rowBg: 'bg-amber-950/25', chip: 'var(--color-cstatus-pending)' }
         case 'open':
           return { label: 'Reabriu a conversa', Icon: Inbox,
-                   rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+                   rowBg: 'bg-sky-950/25', chip: 'var(--color-status-open)' }
         case 'abandoned':
           return { label: 'Arquivou a conversa', Icon: Archive,
-                   rowBg: 'bg-zinc-900/30', iconClass: 'bg-zinc-800 text-zinc-300' }
+                   rowBg: 'bg-zinc-900/30', chip: 'var(--color-status-muted)' }
         default:
           return { label: 'Atualizou status da conversa', Icon: MoveRight,
-                   rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300' }
+                   rowBg: 'bg-surface-900/40', chip: 'var(--color-status-muted)' }
       }
     }
     case 'conversation_tag_added': {
@@ -530,7 +532,7 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
       return {
         label: tagName ? `Adicionou a etiqueta "${tagName}"` : 'Adicionou uma etiqueta',
         Icon: TagIcon,
-        rowBg: 'bg-orange-950/25', iconClass: 'bg-orange-900/40 text-orange-300',
+        rowBg: 'bg-orange-950/25', chip: 'var(--color-accent-amber)',
       }
     }
     case 'conversation_tag_removed': {
@@ -538,7 +540,7 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
       return {
         label: tagName ? `Removeu a etiqueta "${tagName}"` : 'Removeu uma etiqueta',
         Icon: TagsIcon,
-        rowBg: 'bg-zinc-900/30', iconClass: 'bg-zinc-800 text-zinc-300',
+        rowBg: 'bg-zinc-900/30', chip: 'var(--color-status-muted)',
       }
     }
     case 'conversation_ai_pause_updated': {
@@ -546,39 +548,39 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
       const resumed = pauseUntil === null
       return resumed
         ? { label: 'Reativou o agente IA', Icon: Play,
-            rowBg: 'bg-emerald-950/25', iconClass: 'bg-emerald-900/40 text-emerald-300' }
+            rowBg: 'bg-emerald-950/25', chip: 'var(--color-accent-green)' }
         : { label: 'Pausou o agente IA', Icon: Pause,
-            rowBg: 'bg-amber-950/25', iconClass: 'bg-amber-900/40 text-amber-300' }
+            rowBg: 'bg-amber-950/25', chip: 'var(--color-accent-amber)' }
     }
     case 'conversation_created':
       return { label: 'Conversa iniciada', Icon: MessageSquarePlus,
-               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+               rowBg: 'bg-sky-950/25', chip: 'var(--color-accent-cyan)' }
     case 'conversation_reopened':
       return { label: 'Conversa reaberta', Icon: RotateCcw,
-               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+               rowBg: 'bg-sky-950/25', chip: 'var(--color-accent-cyan)' }
     case 'conversation_ai_auto_paused':
       return { label: 'IA pausada (atendente assumiu)', Icon: Pause,
-               rowBg: 'bg-amber-950/25', iconClass: 'bg-amber-900/40 text-amber-300' }
+               rowBg: 'bg-amber-950/25', chip: 'var(--color-accent-amber)' }
     case 'template_sent': {
       const tplName = typeof metadata.templateName === 'string' ? metadata.templateName : null
       return {
         label: tplName ? `Template enviado: ${tplName}` : 'Template enviado',
         Icon: FileText,
-        rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300',
+        rowBg: 'bg-sky-950/25', chip: 'var(--color-accent-cyan)',
       }
     }
     case 'message_sent':
       return { label: 'Enviou uma mensagem', Icon: Send,
-               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+               rowBg: 'bg-sky-950/25', chip: 'var(--color-accent-cyan)' }
     case 'contact_updated':
       return { label: 'Atualizou contato', Icon: UserCog,
-               rowBg: 'bg-fuchsia-950/25', iconClass: 'bg-fuchsia-900/40 text-fuchsia-300' }
+               rowBg: 'bg-fuchsia-950/25', chip: 'var(--color-accent-violet)' }
     case 'automated_message_sent': {
       const name = typeof metadata.name === 'string' ? metadata.name : null
       return {
         label: name ? `Disparo enviado: ${name}` : 'Disparo automático enviado',
         Icon: Megaphone,
-        rowBg: 'bg-amber-950/25', iconClass: 'bg-amber-900/40 text-amber-300',
+        rowBg: 'bg-amber-950/25', chip: 'var(--color-accent-amber)',
       }
     }
     case 'interactive_reply_received': {
@@ -586,7 +588,7 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
       return {
         label: title ? `Cliente respondeu: ${title}` : 'Resposta interativa do cliente',
         Icon: CornerDownLeft,
-        rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300',
+        rowBg: 'bg-sky-950/25', chip: 'var(--color-accent-cyan)',
       }
     }
     // Phase 33c — anti-claim guard outcomes. Handoff = the AI claimed an action
@@ -596,49 +598,49 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
       return {
         label: `Verificação necessária: a IA afirmou ${phantomClaimLabel(metadata.claimType)} sem executar a operação — transferido para atendente`,
         Icon: AlertTriangle,
-        rowBg: 'bg-amber-950/40', iconClass: 'bg-amber-900/50 text-amber-200',
+        rowBg: 'bg-amber-950/40', chip: 'var(--color-warning)',
       }
     case 'agent_phantom_confirmation_corrected':
       return {
         label: `A IA tentou confirmar ${phantomClaimLabel(metadata.claimType)} sem executar — corrigido automaticamente`,
         Icon: AlertCircle,
-        rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300',
+        rowBg: 'bg-surface-900/40', chip: 'var(--color-status-muted)',
       }
     case 'deal_created': {
       const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
       const v = typeof metadata.amountCents === 'number' ? ` · ${formatBRL(metadata.amountCents)}` : ''
       return { label: `Negócio "${t}" criado${v}`, Icon: Briefcase,
-               rowBg: 'bg-emerald-950/25', iconClass: 'bg-emerald-900/40 text-emerald-300' }
+               rowBg: 'bg-emerald-950/25', chip: 'var(--color-accent-green)' }
     }
     case 'deal_won': {
       const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
       const v = typeof metadata.amountCents === 'number' ? ` · ${formatBRL(metadata.amountCents)}` : ''
       return { label: `Negócio "${t}" ganho${v}`, Icon: Trophy,
-               rowBg: 'bg-emerald-950/25', iconClass: 'bg-emerald-900/40 text-emerald-300' }
+               rowBg: 'bg-emerald-950/25', chip: 'var(--color-success)' }
     }
     case 'deal_lost': {
       const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
       return { label: `Negócio "${t}" perdido`, Icon: XCircle,
-               rowBg: 'bg-red-950/25', iconClass: 'bg-red-900/40 text-red-300' }
+               rowBg: 'bg-red-950/25', chip: 'var(--color-danger)' }
     }
     case 'deal_updated': {
       const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
       return { label: `Negócio "${t}" atualizado`, Icon: Pencil,
-               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+               rowBg: 'bg-sky-950/25', chip: 'var(--color-accent-cyan)' }
     }
     case 'deal_reopened': {
       const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
       return { label: `Negócio "${t}" reaberto`, Icon: RotateCcw,
-               rowBg: 'bg-sky-950/25', iconClass: 'bg-sky-900/40 text-sky-300' }
+               rowBg: 'bg-sky-950/25', chip: 'var(--color-accent-cyan)' }
     }
     case 'deal_deleted': {
       const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
       return { label: `Negócio "${t}" excluído`, Icon: Trash2,
-               rowBg: 'bg-red-950/25', iconClass: 'bg-red-900/40 text-red-300' }
+               rowBg: 'bg-red-950/25', chip: 'var(--color-danger)' }
     }
     default:
       return { label: key, Icon: Bot,
-               rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300' }
+               rowBg: 'bg-surface-900/40', chip: 'var(--color-status-muted)' }
   }
 }
 

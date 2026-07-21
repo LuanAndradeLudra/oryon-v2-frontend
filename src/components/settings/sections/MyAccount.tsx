@@ -11,6 +11,7 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
+import { TipCard } from '@/components/ui/TipCard'
 import type { User } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
@@ -93,29 +94,19 @@ export function MyAccount() {
 
       <AnimatePresence>
         {!checklist.profile && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3 }}
-            className="flex items-start gap-4 bg-brand-950/50 border border-brand-500/20 rounded-2xl px-5 py-4 mb-6"
+          <TipCard
+            icon={<UserCircle className="w-4 h-4 text-brand-400" />}
+            title="Complete seu perfil"
+            description="Seu nome e cargo aparecem nas conversas, relatórios e para os clientes no atendimento."
+            className="mb-6"
           >
-            <div className="w-8 h-8 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <UserCircle className="w-4 h-4 text-brand-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-surface-100">Complete seu perfil</p>
-              <p className="text-xs text-surface-400 mt-0.5 leading-relaxed">
-                Seu nome e cargo aparecem nas conversas, relatórios e para os clientes no atendimento.
-              </p>
-              <button
-                onClick={() => markDone('profile')}
-                className="mt-2 text-xs text-surface-500 hover:text-surface-300 transition-colors"
-              >
-                Já entendi, ocultar
-              </button>
-            </div>
-          </motion.div>
+            <button
+              onClick={() => markDone('profile')}
+              className="mt-2 text-xs text-surface-500 hover:text-surface-300 transition-colors"
+            >
+              Já entendi, ocultar
+            </button>
+          </TipCard>
         )}
       </AnimatePresence>
 

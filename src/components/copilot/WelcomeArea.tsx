@@ -4,6 +4,7 @@ import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
+import { TipCard } from '@/components/ui/TipCard'
 import type { CopilotAttachment } from '@/contexts/CopilotContext'
 import { GlassChatInput } from './GlassChatInput'
 
@@ -88,40 +89,28 @@ export function WelcomeArea({ onSend, atLimit, onNew, onOpenKnowledge, userId }:
       {/* ── Setup nudge banner ── */}
       <AnimatePresence>
         {!checklist.copilot && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
+          <TipCard
+            icon={<BookOpen className="w-4 h-4 text-brand-400" />}
+            title="Configure sua base de conhecimento"
+            description="Adicione instruções, dados da empresa e documentos para que o Copilot responda com muito mais precisão."
             className="relative z-10 w-full max-w-2xl mx-auto mb-4"
           >
-            <div className="flex items-start gap-4 bg-brand-950/50 border border-brand-500/20 rounded-2xl px-5 py-4">
-              <div className="w-8 h-8 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <BookOpen className="w-4 h-4 text-brand-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-surface-100">Configure sua base de conhecimento</p>
-                <p className="text-xs text-surface-400 mt-0.5 leading-relaxed">
-                  Adicione instruções, dados da empresa e documentos para que o Copilot responda com muito mais precisão.
-                </p>
-                <div className="flex items-center gap-2 mt-3">
-                  <button
-                    onClick={() => { onOpenKnowledge(); markDone('copilot') }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-xs font-semibold rounded-lg transition-colors"
-                  >
-                    <BookOpen className="w-3 h-3" />
-                    Abrir base de conhecimento
-                  </button>
-                  <button
-                    onClick={() => markDone('copilot')}
-                    className="text-xs text-surface-500 hover:text-surface-300 transition-colors px-2 py-1.5"
-                  >
-                    Já configurei
-                  </button>
-                </div>
-              </div>
+            <div className="flex items-center gap-2 mt-3">
+              <button
+                onClick={() => { onOpenKnowledge(); markDone('copilot') }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-xs font-semibold rounded-lg transition-colors"
+              >
+                <BookOpen className="w-3 h-3" />
+                Abrir base de conhecimento
+              </button>
+              <button
+                onClick={() => markDone('copilot')}
+                className="text-xs text-surface-500 hover:text-surface-300 transition-colors px-2 py-1.5"
+              >
+                Já configurei
+              </button>
             </div>
-          </motion.div>
+          </TipCard>
         )}
       </AnimatePresence>
 
