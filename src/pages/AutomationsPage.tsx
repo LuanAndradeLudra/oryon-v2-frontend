@@ -13,6 +13,7 @@ import { useCopilotContext } from '@/contexts/CopilotContext'
 import { AutomationBuilder } from '@/components/automations/AutomationBuilder'
 import { AutomationDetail, type AutomationBuilderSection } from '@/components/automations/AutomationDetail'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
+import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequiredBanner'
 import { automationsApi } from '@/services/api'
@@ -28,8 +29,9 @@ import { Switch } from '@/components/ui/Switch'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import {
   triggerChipLabel, actionLabel, agentBehaviorDeviates,
-  deriveAttention, attentionCount, type AttentionFlag,
+  deriveAttention, attentionCount, TYPE_ACCENT, type AttentionFlag,
 } from '@/components/automations/automationText'
+import { AutomationsMobileList } from '@/components/automations/AutomationsMobileList'
 import { TYPE_CONFIG } from '@/components/automations/TypeBadge'
 import { showToast } from '@/hooks/useToast'
 import { relativeDate, cn } from '@/lib/utils'
@@ -47,19 +49,6 @@ const TYPE_OPTIONS: { value: AutomationType | 'all'; label: string }[] = [
   { value: 'inatividade',     label: 'Inatividade'      },
   { value: 'custom',          label: 'Personalizado'    },
 ]
-
-// Um código de cor por tipo — a pista de "bate o olho e sabe o que é". Não
-// recria a poluição antiga (TypeBadge + grupo + chip); é só o ícone líder do
-// nome, tingido por categoria. O ícone vem do TYPE_CONFIG (usa currentColor).
-const TYPE_ACCENT: Record<AutomationType, string> = {
-  boas_vindas:     '#4ADE80', // verde — acolhimento
-  follow_up:       '#60A5FA', // azul — retomada
-  fora_horario:    '#A78BFA', // violeta — fora do expediente
-  triagem_keyword: '#FBBF24', // âmbar — triagem/alerta
-  estagio_crm:     '#22D3EE', // ciano — pipeline
-  inatividade:     '#FB7185', // rosa — esfriando
-  custom:          '#2DD4BF', // teal — personalizado
-}
 
 // Prompt diagnóstico para "Resolver com IA" — despacha o problema pro Copilot,
 // que já tem a tool update_automation com card de aprovação editável.
@@ -640,6 +629,8 @@ export function AutomationsPage() {
   return (
     <>
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {isMobile && <MobilePageHeader title="Automações" />}
+
         {/* Gate WhatsApp */}
         {!waLoading && !hasWhatsappLine && (
           <div className="px-6 pt-5">
@@ -684,6 +675,16 @@ export function AutomationsPage() {
         {/* Conteúdo */}
         {!loading && automations.length === 0 && !waLoading && hasWhatsappLine ? (
           <EmptyStateBlank onNew={openNew} />
+        ) : isMobile ? (
+          // Mobile: lista vertical de cards — a tabela larga (Fluxo, Atividade,
+          // Linha) fica inutilizável em viewport estreita.
+          <AutomationsMobileList
+            automations={sortedRows}
+            loading={loading}
+            multiLine={multiLine}
+            onOpenDetail={(a) => setSelectedId(a.id)}
+            onToggle={handleToggle}
+          />
         ) : (
           <div className="flex-1 min-w-0 overflow-hidden flex flex-col px-4 py-3">
             <div className="flex-1 min-h-0 flex flex-col rounded-xl border border-surface-800 overflow-hidden bg-surface-900/20">

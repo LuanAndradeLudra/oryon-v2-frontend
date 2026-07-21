@@ -5,7 +5,23 @@ import type {
   AutomationConditionField,
   AutomationConditionOperator,
   AutomationAction,
+  AutomationType,
 } from '@/types'
+
+// Um código de cor por tipo — a pista de "bate o olho e sabe o que é". Não
+// recria a poluição antiga (TypeBadge + grupo + chip); é só o ícone líder do
+// nome, tingido por categoria. O ícone vem do TYPE_CONFIG (usa currentColor).
+// Compartilhado entre a tabela desktop (AutomationsPage) e o card mobile
+// (AutomationsMobileList) — mesma pista visual nas duas superfícies.
+export const TYPE_ACCENT: Record<AutomationType, string> = {
+  boas_vindas:     '#4ADE80', // verde — acolhimento
+  follow_up:       '#60A5FA', // azul — retomada
+  fora_horario:    '#A78BFA', // violeta — fora do expediente
+  triagem_keyword: '#FBBF24', // âmbar — triagem/alerta
+  estagio_crm:     '#22D3EE', // ciano — pipeline
+  inatividade:     '#FB7185', // rosa — esfriando
+  custom:          '#2DD4BF', // teal — personalizado
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tradução automação → linguagem natural (PT-BR).
