@@ -63,9 +63,7 @@ function StatusBadge({ user }: { user: User }) {
 }
 
 function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: (updated: User) => void }) {
-  const [departmentIds, setDepartmentIds] = useState<string[]>(
-    user.departmentIds ?? (user.departmentId ? [user.departmentId] : [])
-  )
+  const [departmentId, setDepartmentId] = useState<string>(user.departmentId ?? '')
   const [departments, setDepartments] = useState<Department[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,23 +73,17 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
     axios.get<{ data: Department[] } | Department[]>(`${API}/departments`).then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
   }, [API])
 
-  const toggleDept = (id: string) => {
-    setDepartmentIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
-  }
-
   const handleSave = async () => {
     setSaving(true)
     setError(null)
     try {
       // NestJS UpdateUserDto only accepts: firstName, lastName, role, isActive, departmentId
       const payload = {
-        departmentId: departmentIds[0] ?? null,
+        departmentId: departmentId || null,
       }
       await axios.patch(`${API}/users/${user.id}`, payload)
-      const selectedDepts = departments.filter((d) => departmentIds.includes(d.id))
-      onSaved({ ...user, departmentId: departmentIds[0], departmentName: selectedDepts[0]?.name, departmentIds, departmentNames: selectedDepts.map((d) => d.name) })
+      const selectedDept = departments.find((d) => d.id === departmentId)
+      onSaved({ ...user, departmentId, departmentName: selectedDept?.name, departmentIds: undefined, departmentNames: undefined })
       onClose()
     } catch (err: any) {
       setError(err?.response?.data?.message?.[0] ?? 'Erro ao salvar.')
@@ -118,10 +110,10 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">Setores</label>
+        <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">Setor</label>
         <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
           {departments.map((d) => {
-            const checked = departmentIds.includes(d.id)
+            const checked = departmentId === d.id
             return (
               <label
                 key={d.id}
@@ -131,9 +123,10 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
                 )}
               >
                 <input
-                  type="checkbox"
+                  type="radio"
+                  name="departmentId"
                   checked={checked}
-                  onChange={() => toggleDept(d.id)}
+                  onChange={() => setDepartmentId(d.id)}
                   className="accent-brand-500"
                 />
                 <span className="text-sm text-surface-200">{d.name}</span>
@@ -241,7 +234,7 @@ export function AgentManagement() {
       target_user_id: updated.id,
       target_user_name: `${updated.firstName} ${updated.lastName}`.trim(),
       action: 'user_updated',
-      details: { department_ids: updated.departmentIds },
+      details: { department_id: updated.departmentId },
     })
   }
 
