@@ -31,7 +31,6 @@ interface Step1Data {
   firstName: string
   lastName: string
   email: string
-  cargo: string
   departmentId: string
 }
 
@@ -82,7 +81,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   const [step, setStep] = useState(1)
   const [departments, setDepartments] = useState<Department[]>([])
 
-  const [s1, setS1] = useState<Step1Data>({ firstName: '', lastName: '', email: '', cargo: '', departmentId: '' })
+  const [s1, setS1] = useState<Step1Data>({ firstName: '', lastName: '', email: '', departmentId: '' })
   const [errors, setErrors] = useState<Partial<Record<keyof Step1Data, string>>>({})
   const [emailChecking, setEmailChecking] = useState(false)
 
@@ -109,7 +108,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   useEffect(() => {
     if (open) {
       setStep(1)
-      setS1({ firstName: '', lastName: '', email: '', cargo: '', departmentId: '' })
+      setS1({ firstName: '', lastName: '', email: '', departmentId: '' })
       setErrors({})
       setEmailChecking(false)
       setS2({ role: 'agent' })
@@ -146,7 +145,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     const e: typeof errors = {}
     if (!s1.firstName.trim() || s1.firstName.trim().length < 2) e.firstName = 'Mínimo 2 caracteres'
     if (!s1.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email)) e.email = 'E-mail inválido'
-    if (!s1.cargo.trim() || s1.cargo.trim().length < 2) e.cargo = 'Mínimo 2 caracteres'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -154,7 +152,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   const step1Invalid =
     s1.firstName.trim().length < 2 ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email.trim()) ||
-    s1.cargo.trim().length < 2 ||
     !!errors.email ||
     emailChecking
 
@@ -323,22 +320,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                       </div>
                     </FormField>
 
-                    <FormField label="Cargo" required error={errors.cargo}>
-                      <Input
-                        value={s1.cargo}
-                        onChange={(e) => setS1((p) => ({ ...p, cargo: e.target.value }))}
-                        onBlur={() => {
-                          if (!s1.cargo.trim() || s1.cargo.trim().length < 2) {
-                            setErrors((e) => ({ ...e, cargo: 'Mínimo 2 caracteres' }))
-                          } else {
-                            setErrors((e) => { const n = { ...e }; delete n.cargo; return n })
-                          }
-                        }}
-                        placeholder="Agente de Suporte"
-                        error={errors.cargo}
-                      />
-                    </FormField>
-
                     <FormField label="Setor">
                       <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
                         {departments.map((d) => {
@@ -433,10 +414,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                         <div>
                           <p className="text-[10px] uppercase tracking-wide text-surface-500">E-mail</p>
                           <p className="text-sm text-surface-100 mt-0.5 break-all">{s1.email}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wide text-surface-500">Cargo</p>
-                          <p className="text-sm text-surface-100 mt-0.5">{s1.cargo}</p>
                         </div>
                         <div>
                           <p className="text-[10px] uppercase tracking-wide text-surface-500">Setor</p>
