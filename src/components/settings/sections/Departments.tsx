@@ -8,6 +8,7 @@ import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
+import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
 import { SkeletonList } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { cn, formatWaSelectLabel } from '@/lib/utils'
@@ -182,7 +183,7 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-brand-400" />
               <span className="text-sm font-medium text-surface-200">Permissões</span>
-              <span className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-surface-700 text-surface-300">Em breve</span>
+              <ComingSoonBadge />
               <span className="text-xs text-surface-500">{form.permissions.length}/{ALL_PERMISSIONS.length} selecionadas</span>
             </div>
             <ChevronDown className={cn('w-4 h-4 text-surface-400 transition-transform', permOpen && 'rotate-180')} />
