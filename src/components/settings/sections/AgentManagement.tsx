@@ -63,7 +63,6 @@ function StatusBadge({ user }: { user: User }) {
 }
 
 function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: (updated: User) => void }) {
-  const [cargo, setCargo] = useState(user.cargo ?? '')
   const [departmentIds, setDepartmentIds] = useState<string[]>(
     user.departmentIds ?? (user.departmentId ? [user.departmentId] : [])
   )
@@ -92,7 +91,7 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
       }
       await axios.patch(`${API}/users/${user.id}`, payload)
       const selectedDepts = departments.filter((d) => departmentIds.includes(d.id))
-      onSaved({ ...user, cargo: cargo.trim(), departmentId: departmentIds[0], departmentName: selectedDepts[0]?.name, departmentIds, departmentNames: selectedDepts.map((d) => d.name) })
+      onSaved({ ...user, departmentId: departmentIds[0], departmentName: selectedDepts[0]?.name, departmentIds, departmentNames: selectedDepts.map((d) => d.name) })
       onClose()
     } catch (err: any) {
       setError(err?.response?.data?.message?.[0] ?? 'Erro ao salvar.')
@@ -116,16 +115,6 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
           <p className="text-sm font-medium text-surface-100">{user.firstName} {user.lastName}</p>
           <p className="text-xs text-surface-400">{user.email}</p>
         </div>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">Cargo</label>
-        <input
-          value={cargo}
-          onChange={(e) => setCargo(e.target.value)}
-          placeholder="Ex: Atendente Sênior"
-          className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
-        />
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -252,7 +241,7 @@ export function AgentManagement() {
       target_user_id: updated.id,
       target_user_name: `${updated.firstName} ${updated.lastName}`.trim(),
       action: 'user_updated',
-      details: { cargo: updated.cargo, department_ids: updated.departmentIds },
+      details: { department_ids: updated.departmentIds },
     })
   }
 
@@ -321,7 +310,7 @@ export function AgentManagement() {
             <thead>
               <tr className="border-b border-surface-800/60">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Usuário</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider hidden lg:table-cell">Cargo / Setor</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider hidden lg:table-cell">Setor</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Papel</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Status</th>
                 <th className="px-5 py-3" />
@@ -340,12 +329,11 @@ export function AgentManagement() {
                     </div>
                   </td>
                   <td className="px-5 py-4 hidden lg:table-cell">
-                    <p className="text-sm text-surface-300">{user.cargo ?? '—'}</p>
                     {(() => {
                       const names = user.departmentNames?.length
                         ? user.departmentNames.join(', ')
                         : user.departmentName ?? null
-                      return names ? <p className="text-xs text-surface-500">{names}</p> : null
+                      return names ? <p className="text-sm text-surface-300">{names}</p> : <p className="text-sm text-surface-500">—</p>
                     })()}
                   </td>
                   <td className="px-5 py-4">
@@ -375,7 +363,7 @@ export function AgentManagement() {
                       >
                         <span className="flex items-center gap-2">
                           <Pencil className="w-3.5 h-3.5" />
-                          Editar cargo e setor
+                          Editar setor
                         </span>
                       </DropdownItem>
                       {(['agent', 'supervisor', 'admin', 'business_admin'] as UserRole[]).map((role) => (
