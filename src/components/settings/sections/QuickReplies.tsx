@@ -2,6 +2,8 @@ import { useCallback, useState, useEffect } from 'react'
 import { Plus, Search, Pencil, Trash2, Copy, Zap } from 'lucide-react'
 import axios from 'axios'
 import { cannedResponsesApi } from '@/services/api'
+import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { SectionHeader } from '../SectionHeader'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -21,15 +23,17 @@ import type { CannedResponse } from '@/types'
 
 function QuickReplyRow({
   response,
+  canManage,
   onEdit,
   onDelete,
 }: {
   response: CannedResponse
+  canManage: boolean
   onEdit: (r: CannedResponse) => void
   onDelete: (r: CannedResponse) => void
 }) {
   const buildContextMenu = useCallback((): ContextMenuEntry[] => [
-    { label: 'Editar', icon: Pencil, onClick: () => onEdit(response) },
+    ...(canManage ? [{ label: 'Editar', icon: Pencil, onClick: () => onEdit(response) }] : []),
     {
       label: 'Copiar atalho',
       icon: Copy,
@@ -40,9 +44,8 @@ function QuickReplyRow({
       icon: Copy,
       onClick: () => navigator.clipboard.writeText(response.body).catch(() => {}),
     },
-    { separator: true },
-    { label: 'Excluir', icon: Trash2, danger: true, onClick: () => onDelete(response) },
-  ], [response, onEdit, onDelete])
+    ...(canManage ? [{ separator: true } as ContextMenuEntry, { label: 'Excluir', icon: Trash2, danger: true, onClick: () => onDelete(response) }] : []),
+  ], [response, canManage, onEdit, onDelete])
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
   return (
@@ -65,20 +68,22 @@ function QuickReplyRow({
         </div>
       </td>
       <td className="px-5 py-4">
-        <div className="flex items-center gap-1 justify-end">
-          <button
-            onClick={() => onEdit(response)}
-            className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onDelete(response)}
-            className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        {canManage && (
+          <div className="flex items-center gap-1 justify-end">
+            <button
+              onClick={() => onEdit(response)}
+              className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onDelete(response)}
+              className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </td>
     </tr>
   )
@@ -98,6 +103,12 @@ function errorMessage(e: unknown, fallback: string): string {
 
 export function QuickReplies() {
   const { toast, toasts, dismiss } = useToast()
+  const { user: actor } = useAuth()
+  // Backend's create/update/delete on /canned-responses is gated to
+  // ADMIN, BUSINESS_ADMIN (+ SUPER_ADMIN, which bypasses @Roles entirely)
+  // via canned-responses.controller.ts. Mirror that here so non-admins
+  // don't see actions that always 403. Matches the pattern in AgentManagement.tsx.
+  const canManage = isAdminTier(actor?.role)
   const [responses, setResponses] = useState<CannedResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -161,9 +172,11 @@ export function QuickReplies() {
         title="Respostas Rápidas"
         description="Crie atalhos de texto para agilizar o atendimento."
         action={
-          <Button onClick={() => { setEditTarget(null); setModalOpen(true) }} leftIcon={<Plus className="w-4 h-4" />}>
-            Nova resposta
-          </Button>
+          canManage ? (
+            <Button onClick={() => { setEditTarget(null); setModalOpen(true) }} leftIcon={<Plus className="w-4 h-4" />}>
+              Nova resposta
+            </Button>
+          ) : null
         }
       />
 
@@ -198,7 +211,7 @@ export function QuickReplies() {
               icon={Zap}
               title="Nenhuma resposta rápida criada ainda"
               hint="Crie atalhos de texto para responder mais rápido no atendimento."
-              action={{ label: 'Nova resposta', onClick: () => { setEditTarget(null); setModalOpen(true) } }}
+              action={canManage ? { label: 'Nova resposta', onClick: () => { setEditTarget(null); setModalOpen(true) } } : undefined}
             />
           )
         ) : (
@@ -217,6 +230,7 @@ export function QuickReplies() {
                 <QuickReplyRow
                   key={cr.id}
                   response={cr}
+                  canManage={canManage}
                   onEdit={(r) => { setEditTarget(r); setModalOpen(true) }}
                   onDelete={(r) => setDeleteTarget(r)}
                 />
