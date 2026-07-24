@@ -32,7 +32,7 @@ interface Step1Data {
   lastName: string
   email: string
   cargo: string
-  departmentIds: string[]
+  departmentId: string
 }
 
 interface Step2Data {
@@ -82,7 +82,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   const [step, setStep] = useState(1)
   const [departments, setDepartments] = useState<Department[]>([])
 
-  const [s1, setS1] = useState<Step1Data>({ firstName: '', lastName: '', email: '', cargo: '', departmentIds: [] })
+  const [s1, setS1] = useState<Step1Data>({ firstName: '', lastName: '', email: '', cargo: '', departmentId: '' })
   const [errors, setErrors] = useState<Partial<Record<keyof Step1Data, string>>>({})
   const [emailChecking, setEmailChecking] = useState(false)
 
@@ -109,7 +109,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   useEffect(() => {
     if (open) {
       setStep(1)
-      setS1({ firstName: '', lastName: '', email: '', cargo: '', departmentIds: [] })
+      setS1({ firstName: '', lastName: '', email: '', cargo: '', departmentId: '' })
       setErrors({})
       setEmailChecking(false)
       setS2({ role: 'agent' })
@@ -165,7 +165,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   }
 
   const handleSubmit = async () => {
-    const selectedDepts = departments.filter((d) => s1.departmentIds.includes(d.id))
     setSubmitting(true)
     setSubmitError(null)
     try {
@@ -175,7 +174,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
         lastName:     s1.lastName.trim(),
         email:        s1.email.trim(),
         role:         s2.role,
-        departmentId: s1.departmentIds[0] ?? undefined,
+        departmentId: s1.departmentId || undefined,
       })
       appLogger.logWizardEvent({
         wizard_type: 'user_create',
@@ -212,8 +211,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   }
 
   // Review helpers
-  const selectedDeptNames = departments.filter((d) => s1.departmentIds.includes(d.id)).map((d) => d.name)
-  const deptName = selectedDeptNames.length ? selectedDeptNames.join(', ') : '—'
+  const deptName = departments.find((d) => d.id === s1.departmentId)?.name ?? '—'
 
   return (
     <AnimatePresence>
@@ -341,10 +339,10 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                       />
                     </FormField>
 
-                    <FormField label="Setores">
+                    <FormField label="Setor">
                       <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
                         {departments.map((d) => {
-                          const checked = s1.departmentIds.includes(d.id)
+                          const checked = s1.departmentId === d.id
                           return (
                             <label
                               key={d.id}
@@ -354,14 +352,10 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                               )}
                             >
                               <input
-                                type="checkbox"
+                                type="radio"
+                                name="departmentId"
                                 checked={checked}
-                                onChange={() => setS1((p) => ({
-                                  ...p,
-                                  departmentIds: checked
-                                    ? p.departmentIds.filter((x) => x !== d.id)
-                                    : [...p.departmentIds, d.id],
-                                }))}
+                                onChange={() => setS1((p) => ({ ...p, departmentId: d.id }))}
                                 className="accent-brand-500"
                               />
                               <span className="text-sm text-surface-200">{d.name}</span>
