@@ -8,6 +8,7 @@ import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -155,8 +156,8 @@ export function CompanyProfile() {
             <span className={`mt-1 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${planBadge[tenant.plan]}`}>
               {tenant.plan}
             </span>
-            <p className="mt-1.5 flex items-center gap-1 text-xs text-surface-500">
-              <Lock className="w-3 h-3" />Upload de logo em breve
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-surface-500">
+              Upload de logo <ComingSoonBadge />
             </p>
           </div>
         </div>
@@ -200,7 +201,7 @@ export function CompanyProfile() {
             />
           </FormField>
 
-          <FormField label="Fuso horário" hint="Em breve — ainda não é possível personalizar por conta.">
+          <FormField label="Fuso horário" comingSoon hint="Ainda não é possível personalizar por conta.">
             <Select value={form.timezone} disabled>
               {TIMEZONES.map((tz) => (
                 <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -208,7 +209,7 @@ export function CompanyProfile() {
             </Select>
           </FormField>
 
-          <FormField label="Idioma" hint="Em breve — ainda não é possível personalizar por conta.">
+          <FormField label="Idioma" comingSoon hint="Ainda não é possível personalizar por conta.">
             <Select value={form.language} disabled>
               {LANGUAGES.map((l) => (
                 <option key={l.value} value={l.value}>{l.label}</option>

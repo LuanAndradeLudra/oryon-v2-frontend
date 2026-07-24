@@ -6,6 +6,7 @@ import { appLogger } from '@/services/appLogger'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
 
@@ -321,32 +322,15 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     </FormField>
 
                     <FormField label="Setor">
-                      <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
-                        {departments.map((d) => {
-                          const checked = s1.departmentId === d.id
-                          return (
-                            <label
-                              key={d.id}
-                              className={cn(
-                                'flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors select-none',
-                                checked ? 'border-brand-500/60 bg-brand-900/20' : 'border-surface-700 hover:border-surface-600',
-                              )}
-                            >
-                              <input
-                                type="radio"
-                                name="departmentId"
-                                checked={checked}
-                                onChange={() => setS1((p) => ({ ...p, departmentId: d.id }))}
-                                className="accent-brand-500"
-                              />
-                              <span className="text-sm text-surface-200">{d.name}</span>
-                            </label>
-                          )
-                        })}
-                        {departments.length === 0 && (
-                          <p className="text-xs text-surface-500 px-1">Nenhum setor cadastrado.</p>
-                        )}
-                      </div>
+                      <RadioOptionList
+                        name="departmentId"
+                        options={departments.map((d) => ({ id: d.id, label: d.name }))}
+                        value={s1.departmentId}
+                        onChange={(id) => setS1((p) => ({ ...p, departmentId: id }))}
+                        noneLabel="Nenhum setor"
+                        emptyMessage="Nenhum setor cadastrado."
+                        className="max-h-36"
+                      />
                     </FormField>
                   </motion.div>
                 )}

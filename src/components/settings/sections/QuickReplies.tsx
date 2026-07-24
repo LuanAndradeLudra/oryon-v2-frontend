@@ -32,20 +32,24 @@ function QuickReplyRow({
   onEdit: (r: CannedResponse) => void
   onDelete: (r: CannedResponse) => void
 }) {
-  const buildContextMenu = useCallback((): ContextMenuEntry[] => [
-    ...(canManage ? [{ label: 'Editar', icon: Pencil, onClick: () => onEdit(response) }] : []),
-    {
-      label: 'Copiar atalho',
-      icon: Copy,
-      onClick: () => navigator.clipboard.writeText(`/${response.shortcut}`).catch(() => {}),
-    },
-    {
-      label: 'Copiar conteúdo',
-      icon: Copy,
-      onClick: () => navigator.clipboard.writeText(response.body).catch(() => {}),
-    },
-    ...(canManage ? [{ separator: true } as ContextMenuEntry, { label: 'Excluir', icon: Trash2, danger: true, onClick: () => onDelete(response) }] : []),
-  ], [response, canManage, onEdit, onDelete])
+  const buildContextMenu = useCallback((): ContextMenuEntry[] => {
+    const entries: (ContextMenuEntry & { adminOnly?: boolean })[] = [
+      { label: 'Editar', icon: Pencil, onClick: () => onEdit(response), adminOnly: true },
+      {
+        label: 'Copiar atalho',
+        icon: Copy,
+        onClick: () => navigator.clipboard.writeText(`/${response.shortcut}`).catch(() => {}),
+      },
+      {
+        label: 'Copiar conteúdo',
+        icon: Copy,
+        onClick: () => navigator.clipboard.writeText(response.body).catch(() => {}),
+      },
+      { separator: true, adminOnly: true },
+      { label: 'Excluir', icon: Trash2, danger: true, onClick: () => onDelete(response), adminOnly: true },
+    ]
+    return canManage ? entries : entries.filter((e) => !e.adminOnly)
+  }, [response, canManage, onEdit, onDelete])
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
   return (

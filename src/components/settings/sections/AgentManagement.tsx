@@ -13,6 +13,7 @@ import { SkeletonTable } from '@/components/ui/Skeleton'
 import { FormDialog } from '@/components/ui/FormDialog'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { CreateUserDrawer } from '../drawers/CreateUserDrawer'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
@@ -111,32 +112,14 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
 
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">Setor</label>
-        <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
-          {departments.map((d) => {
-            const checked = departmentId === d.id
-            return (
-              <label
-                key={d.id}
-                className={cn(
-                  'flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors select-none',
-                  checked ? 'border-brand-500/60 bg-brand-900/20' : 'border-surface-700 hover:border-surface-600',
-                )}
-              >
-                <input
-                  type="radio"
-                  name="departmentId"
-                  checked={checked}
-                  onChange={() => setDepartmentId(d.id)}
-                  className="accent-brand-500"
-                />
-                <span className="text-sm text-surface-200">{d.name}</span>
-              </label>
-            )
-          })}
-          {departments.length === 0 && (
-            <p className="text-xs text-surface-500 px-1">Nenhum setor cadastrado.</p>
-          )}
-        </div>
+        <RadioOptionList
+          name="departmentId"
+          options={departments.map((d) => ({ id: d.id, label: d.name }))}
+          value={departmentId}
+          onChange={setDepartmentId}
+          noneLabel="Nenhum setor"
+          emptyMessage="Nenhum setor cadastrado."
+        />
       </div>
     </FormDialog>
   )

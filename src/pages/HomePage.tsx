@@ -403,8 +403,11 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
           <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : logs.length === 0 ? (
+        // /audit-logs ainda e um stub no backend (sempre retorna lista vazia --
+        // ver SecuritySettings.tsx), entao "nenhuma atividade" seria enganoso:
+        // nao e que nada aconteceu, e que o rastreamento ainda nao existe.
         <div className="flex flex-col items-center justify-center py-10 gap-2">
-          <p className="text-sm text-surface-500">Nenhuma atividade registrada ainda.</p>
+          <p className="text-sm text-surface-500">Em breve — o feed de atividade ainda está em desenvolvimento.</p>
         </div>
       ) : (
         <div className="flex flex-col">
