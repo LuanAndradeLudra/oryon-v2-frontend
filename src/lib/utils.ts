@@ -2,9 +2,16 @@ import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import type { WhatsAppNumber } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/** "Label — displayPhoneNumber", falling back to just the phone number when unlabeled. */
+export function formatWaSelectLabel(n: WhatsAppNumber): string {
+  if (n.label?.trim()) return `${n.label.trim()} — ${n.displayPhoneNumber}`
+  return n.displayPhoneNumber
 }
 
 /**
