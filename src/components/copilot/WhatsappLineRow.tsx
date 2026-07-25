@@ -19,8 +19,8 @@
 //   - 'callout'  highlighted box for wizards — makes the target line the
 //                first thing the operator notices above every field.
 
+import type { CSSProperties } from 'react'
 import { Info, Phone } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 
 function formatPhone(raw?: string | null): string {
@@ -57,53 +57,44 @@ export function WhatsappLineRow({
   const line = findById(whatsappNumberId)
 
   if (variant === 'callout') {
-    // Prominent wizard callout: the line target is the first thing the
-    // operator reads. If there's no resolved line we render a warning
-    // so the operator picks before submit — silent "backend will pick"
-    // in multi-WABA is exactly the UX that caused the original incident.
-    const containerClass = line
-      ? 'rounded-lg border border-brand-500/25 bg-brand-500/5'
-      : 'rounded-lg border border-status-pending/40 bg-status-pending/10'
-    const iconClass = line
-      ? 'w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5'
-      : 'w-4 h-4 text-status-pending flex-shrink-0 mt-0.5'
-
+    // Padrão canônico saturado (.color-chip): fundo SÓLIDO da cor semântica +
+    // texto/ícone branco nos dois temas — igual aos badges/banners. "Linha não
+    // definida" é aviso (warning/laranja); "criando na linha" confirma o alvo
+    // (brand/teal). O select embutido vira um controle branco translúcido,
+    // legível sobre o fundo cheio. O aviso segue sendo a primeira coisa que o
+    // operador nota, evitando o incidente `novos_clientes` de 2026-04-20.
+    const chip = line ? 'var(--color-brand-500)' : 'var(--color-warning)'
     return (
-      <div className={cn('flex items-center gap-3 px-4 py-3', containerClass)}>
-        <Info className={iconClass} />
+      <div
+        className="color-chip flex items-center gap-3 px-4 py-3 rounded-lg border"
+        style={{ ['--chip']: chip } as CSSProperties}
+      >
+        <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-surface-400">
+          <div className="text-[10px] font-semibold uppercase tracking-wide opacity-90">
             {line ? 'Criando na linha' : 'Linha não definida'}
           </div>
           {line ? (
-            <div className="text-sm font-medium text-surface-100 mt-0.5 flex items-center gap-1.5 flex-wrap">
+            <div className="text-sm font-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
               {line.label || formatPhone(line.displayPhoneNumber)}
               {line.label && (
-                <span className="text-[11px] text-surface-400 font-normal">
+                <span className="text-[11px] opacity-80 font-normal">
                   ({formatPhone(line.displayPhoneNumber)})
                 </span>
               )}
             </div>
           ) : (
-            <div className="text-[11px] text-status-pending mt-0.5">
+            <div className="text-[11px] opacity-90 mt-0.5">
               Este tenant tem {numbers.length} linhas ativas. Escolha uma antes de salvar.
             </div>
           )}
         </div>
 
-        {/* Right-side inline select — bigger presence than the earlier
-            chip so the operator spots it instantly. Palette still
-            tracks the card state (low-saturation brand/pending tones). */}
         {onLineChange && (
           <select
             value={whatsappNumberId ?? ''}
             onChange={(e) => onLineChange(e.target.value)}
-            className={cn(
-              'flex-shrink-0 min-w-[200px] max-w-[280px] rounded-lg px-3.5 py-2.5 text-sm font-medium text-surface-100 border-2 transition-colors focus:outline-none focus:ring-2 cursor-pointer',
-              line
-                ? 'bg-brand-500/5 border-brand-500/30 hover:bg-brand-500/10 hover:border-brand-500/50 focus:ring-brand-500/25 focus:border-brand-500/60'
-                : 'bg-status-pending/10 border-status-pending/40 hover:bg-status-pending/15 hover:border-status-pending/60 focus:ring-status-pending/25 focus:border-status-pending/70',
-            )}
+            className="flex-shrink-0 min-w-[200px] max-w-[280px] rounded-lg px-3.5 py-2.5 text-sm font-medium text-white bg-white/15 border-2 border-white/25 hover:bg-white/25 hover:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 cursor-pointer transition-colors"
           >
             <option value="" className="bg-surface-900 text-surface-200">Selecione a linha...</option>
             {numbers.map((n) => (

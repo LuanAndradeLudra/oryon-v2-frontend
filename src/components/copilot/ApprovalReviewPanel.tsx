@@ -104,7 +104,7 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
           {remainingLabel && (
             <span className={cn(
               'flex items-center gap-1 text-[10px]',
-              isExpired ? 'text-red-400' : 'text-surface-500',
+              isExpired ? 'text-danger' : 'text-surface-500',
             )}>
               <Clock className="h-3 w-3" />
               {remainingLabel}

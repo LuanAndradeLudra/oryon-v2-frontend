@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Zap, Loader2, Check, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { Banner } from '@/components/ui/Banner'
 
 interface Requirement {
   label: string
@@ -199,9 +200,7 @@ export function SetPasswordPage() {
 
           {/* Error */}
           {error && (
-            <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
-              {error}
-            </p>
+            <Banner variant="danger">{error}</Banner>
           )}
 
           {/* Submit */}

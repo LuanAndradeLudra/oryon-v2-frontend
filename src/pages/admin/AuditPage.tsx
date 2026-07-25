@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Loader2, Search, AlertCircle, Filter, X, Activity, ShieldCheck, Plug, Workflow,
+  Loader2, Search, Filter, X, Activity, ShieldCheck, Plug, Workflow,
 } from 'lucide-react'
 import {
   listAuditFeed,
@@ -37,6 +37,9 @@ import {
 } from '@/services/adminAuditApi'
 import { AuditDrillModal } from '@/components/admin/AuditDrillModal'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SkeletonTable } from '@/components/ui/Skeleton'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { cn } from '@/lib/utils'
@@ -65,19 +68,13 @@ export function AuditPage() {
         onDismiss={banner.dismiss}
         message="Auditoria foi pensada para desktop — colunas largas, filtros laterais e drill modais. No celular você pode dar uma olhada rápida, mas para investigar use seu computador."
       />
-      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-brand-700/30 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-brand-300" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-surface-100">Auditoria — feeds cross-tenant</h1>
-            <p className="text-xs text-surface-400">{TABS.find(t => t.id === tab)?.hint}</p>
-          </div>
-        </div>
-      </header>
+      <div className="border-r border-surface-700">
+      <PageHeader
+        title="Auditoria — feeds cross-tenant"
+        subtitle={TABS.find(t => t.id === tab)?.hint}
+      />
 
-      <nav className="px-6 border-b border-surface-800 bg-surface-900/40 flex gap-1">
+      <nav className="px-6 border-b border-surface-700 bg-surface-900/40 flex gap-1">
         {TABS.map(t => {
           const Icon = t.icon
           const active = t.id === tab
@@ -98,6 +95,7 @@ export function AuditPage() {
           )
         })}
       </nav>
+      </div>
 
       {tab === 'activity'    && <ActivityFeedTab />}
       {tab === 'auth'        && <AuthEventsTab />}
@@ -112,18 +110,21 @@ export function AuditPage() {
 const ACTOR_TYPE_OPTIONS: AuditActorType[] = ['user', 'system', 'agent', 'webhook', 'job']
 const SEVERITY_OPTIONS: AuditSeverity[] = ['info', 'warn', 'error']
 
+// Maps now hold a chip color (token/hex) rendered as a filled .color-chip.
 const SEVERITY_STYLE: Record<AuditSeverity, string> = {
-  info: 'bg-surface-700/40 text-surface-200 border-surface-600',
-  warn: 'bg-status-pending-bg text-status-pending border-status-pending/40',
-  error: 'bg-status-failed-bg text-status-failed border-status-failed/40',
+  info:  'var(--color-status-muted)',
+  warn:  'var(--color-status-pending)',
+  error: 'var(--color-danger)',
 }
 
+// Actor types are categorical — keep their distinct hues via direct hex
+// (the original Tailwind *-700 palette colors, so the chips stay recognizable).
 const ACTOR_TYPE_STYLE: Record<AuditActorType, string> = {
-  user:    'bg-brand-700/30 text-brand-200',
-  agent:   'bg-emerald-700/30 text-emerald-200',
-  system:  'bg-surface-600/40 text-surface-200',
-  webhook: 'bg-violet-700/30 text-violet-200',
-  job:     'bg-amber-700/30 text-amber-200',
+  user:    'var(--color-brand-500)', // brand accent
+  agent:   '#047857',                // emerald-700
+  system:  'var(--color-status-muted)',
+  webhook: '#6d28d9',                // violet-700
+  job:     '#b45309',                // amber-700
 }
 
 function ActivityFeedTab() {
@@ -181,13 +182,21 @@ function ActivityFeedTab() {
       </FilterBar>
 
       <div className="flex-1 overflow-auto px-6 py-4">
-        {error && <ErrorBanner message={error} />}
+        {error && (
+          <ErrorState
+            compact
+            hint={error}
+            onRetry={() => void load(filters, false)}
+            className="mb-4"
+          />
+        )}
+        {loading && rows.length === 0 && !error && <SkeletonTable rows={8} cols={5} />}
         {!loading && rows.length === 0 && !error && (
           <EmptyState icon={Search} title="Nenhuma atividade encontrada" hint="Ajuste os filtros ou amplie a janela temporal." />
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -199,11 +208,17 @@ function ActivityFeedTab() {
                   <tr key={r.id} className="hover:bg-surface-800/30">
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
                     <Td>
-                      <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', ACTOR_TYPE_STYLE[r.actorType])}>
+                      <span
+                        className="color-chip border inline-block px-2 py-0.5 rounded text-xs font-medium"
+                        style={{ ['--chip']: ACTOR_TYPE_STYLE[r.actorType] } as React.CSSProperties}
+                      >
                         {r.actorType}
                       </span>
                       {r.severity !== 'info' && (
-                        <span className={cn('ml-1 inline-block px-2 py-0.5 rounded text-xs font-medium border', SEVERITY_STYLE[r.severity])}>
+                        <span
+                          className="color-chip border ml-1 inline-block px-2 py-0.5 rounded text-xs font-medium"
+                          style={{ ['--chip']: SEVERITY_STYLE[r.severity] } as React.CSSProperties}
+                        >
                           {r.severity}
                         </span>
                       )}
@@ -250,15 +265,15 @@ const AUTH_EVENT_OPTIONS: AuthEventType[] = [
 ]
 
 const AUTH_EVENT_STYLE: Record<AuthEventType, string> = {
-  login_success:            'bg-emerald-700/30 text-emerald-200',
-  login_failed:             'bg-status-failed-bg text-status-failed',
-  token_refresh:            'bg-surface-600/40 text-surface-200',
-  password_change:          'bg-amber-700/30 text-amber-200',
-  logout:                   'bg-brand-700/30 text-brand-200',
-  account_activated:        'bg-emerald-700/30 text-emerald-200',
-  account_deactivated:      'bg-status-failed-bg text-status-failed',
-  password_reset_requested: 'bg-amber-700/30 text-amber-200',
-  password_reset_completed: 'bg-emerald-700/30 text-emerald-200',
+  login_success:            'var(--color-status-active)',
+  login_failed:             'var(--color-danger)',
+  token_refresh:            'var(--color-status-muted)',
+  password_change:          'var(--color-status-pending)',
+  logout:                   'var(--color-brand-500)',
+  account_activated:        'var(--color-status-active)',
+  account_deactivated:      'var(--color-danger)',
+  password_reset_requested: 'var(--color-status-pending)',
+  password_reset_completed: 'var(--color-status-active)',
 }
 
 function AuthEventsTab() {
@@ -300,13 +315,21 @@ function AuthEventsTab() {
       </FilterBar>
 
       <div className="flex-1 overflow-auto px-6 py-4">
-        {error && <ErrorBanner message={error} />}
+        {error && (
+          <ErrorState
+            compact
+            hint={error}
+            onRetry={() => void load(filters, false)}
+            className="mb-4"
+          />
+        )}
+        {loading && rows.length === 0 && !error && <SkeletonTable rows={8} cols={5} />}
         {!loading && rows.length === 0 && !error && (
           <EmptyState icon={Search} title="Nenhum evento de auth" hint="Ajuste os filtros — login/logout/password change vão aparecer aqui." />
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -318,7 +341,10 @@ function AuthEventsTab() {
                   <tr key={r.id} className="hover:bg-surface-800/30">
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
                     <Td>
-                      <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', AUTH_EVENT_STYLE[r.event] ?? 'bg-surface-700 text-surface-200')}>
+                      <span
+                        className="color-chip border inline-block px-2 py-0.5 rounded text-xs font-medium"
+                        style={{ ['--chip']: AUTH_EVENT_STYLE[r.event] ?? 'var(--color-status-muted)' } as React.CSSProperties}
+                      >
                         {r.event}
                       </span>
                     </Td>
@@ -345,9 +371,9 @@ const INTEGRATION_SOURCES: IntegrationSource[] = ['meta', 'whatsapp', 'system']
 const INTEGRATION_SEVERITIES: IntegrationSeverity[] = ['info', 'warning', 'error']
 
 const INTEGRATION_SEVERITY_STYLE: Record<IntegrationSeverity, string> = {
-  info:    'bg-surface-700/40 text-surface-200 border-surface-600',
-  warning: 'bg-status-pending-bg text-status-pending border-status-pending/40',
-  error:   'bg-status-failed-bg text-status-failed border-status-failed/40',
+  info:    'var(--color-status-muted)',
+  warning: 'var(--color-status-pending)',
+  error:   'var(--color-danger)',
 }
 
 function IntegrationEventsTab() {
@@ -401,13 +427,21 @@ function IntegrationEventsTab() {
       </FilterBar>
 
       <div className="flex-1 overflow-auto px-6 py-4">
-        {error && <ErrorBanner message={error} />}
+        {error && (
+          <ErrorState
+            compact
+            hint={error}
+            onRetry={() => void load(filters, false)}
+            className="mb-4"
+          />
+        )}
+        {loading && rows.length === 0 && !error && <SkeletonTable rows={8} cols={5} />}
         {!loading && rows.length === 0 && !error && (
           <EmptyState icon={Search} title="Nenhum evento de integração" hint="Erros Meta/WhatsApp aparecem aqui (token expirado, template rejeitado, etc.)." />
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -419,7 +453,10 @@ function IntegrationEventsTab() {
                   <tr key={r.id} className="hover:bg-surface-800/30">
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
                     <Td>
-                      <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium border', INTEGRATION_SEVERITY_STYLE[r.severity])}>
+                      <span
+                        className="color-chip border inline-block px-2 py-0.5 rounded text-xs font-medium"
+                        style={{ ['--chip']: INTEGRATION_SEVERITY_STYLE[r.severity] } as React.CSSProperties}
+                      >
                         {r.severity}
                       </span>
                     </Td>
@@ -428,7 +465,7 @@ function IntegrationEventsTab() {
                     <Td className="max-w-md truncate" title={r.message}>{r.message}</Td>
                     <Td className="text-xs">
                       {r.resolvedAt ? (
-                        <span className="text-emerald-300" title={new Date(r.resolvedAt).toLocaleString('pt-BR')}>
+                        <span className="text-success" title={new Date(r.resolvedAt).toLocaleString('pt-BR')}>
                           ✓ {new Date(r.resolvedAt).toLocaleString('pt-BR')}
                         </span>
                       ) : (
@@ -454,10 +491,10 @@ function IntegrationEventsTab() {
 const AUTOMATION_STATUSES: AutomationRunStatus[] = ['running', 'success', 'partial', 'failed']
 
 const AUTOMATION_STATUS_STYLE: Record<AutomationRunStatus, string> = {
-  running: 'bg-amber-700/30 text-amber-200',
-  success: 'bg-emerald-700/30 text-emerald-200',
-  partial: 'bg-status-pending-bg text-status-pending border border-status-pending/40',
-  failed:  'bg-status-failed-bg text-status-failed',
+  running: 'var(--color-status-pending)',
+  success: 'var(--color-status-active)',
+  partial: 'var(--color-status-pending)',
+  failed:  'var(--color-danger)',
 }
 
 function AutomationRunsTab() {
@@ -499,13 +536,21 @@ function AutomationRunsTab() {
       </FilterBar>
 
       <div className="flex-1 overflow-auto px-6 py-4">
-        {error && <ErrorBanner message={error} />}
+        {error && (
+          <ErrorState
+            compact
+            hint={error}
+            onRetry={() => void load(filters, false)}
+            className="mb-4"
+          />
+        )}
+        {loading && rows.length === 0 && !error && <SkeletonTable rows={8} cols={5} />}
         {!loading && rows.length === 0 && !error && (
           <EmptyState icon={Search} title="Nenhuma execução de automation" hint="Cada vez que uma automation roda, gera uma linha aqui." />
         )}
 
         {rows.length > 0 && (
-          <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+          <div className="rounded-xl border border-surface-700 overflow-x-auto bg-surface-900">
             <table className="w-full text-sm">
               <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
                 <tr>
@@ -517,7 +562,10 @@ function AutomationRunsTab() {
                   <tr key={r.id} className="hover:bg-surface-800/30">
                     <Td>{new Date(r.startedAt).toLocaleString('pt-BR')}</Td>
                     <Td>
-                      <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', AUTOMATION_STATUS_STYLE[r.status])}>
+                      <span
+                        className="color-chip border inline-block px-2 py-0.5 rounded text-xs font-medium"
+                        style={{ ['--chip']: AUTOMATION_STATUS_STYLE[r.status] } as React.CSSProperties}
+                      >
                         {r.status}
                       </span>
                     </Td>
@@ -575,7 +623,7 @@ function FilterBar<T extends { tenantId?: string; limit?: number }>({
   const hasFilters = Object.entries(draft).some(([k, v]) => k !== 'limit' && v !== undefined && v !== '')
 
   return (
-    <div className="px-6 py-3 border-b border-surface-800 bg-surface-900/40 flex flex-wrap items-end gap-3">
+    <div className="px-6 py-3 border-b border-r border-surface-700 bg-surface-900/40 flex flex-wrap items-end gap-3">
       <div className="flex items-center gap-2 text-xs text-surface-400">
         <Filter className="w-4 h-4" /> Filtros
       </div>
@@ -642,15 +690,6 @@ function FilterSelect({
         ))}
       </select>
     </label>
-  )
-}
-
-function ErrorBanner({ message }: { message: string }) {
-  return (
-    <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-lg border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
-      <AlertCircle className="w-4 h-4" />
-      {message}
-    </div>
   )
 }
 

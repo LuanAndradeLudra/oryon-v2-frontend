@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Modal } from '@/components/ui/Modal'
+import { FormDialog } from '@/components/ui/FormDialog'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
@@ -46,50 +46,36 @@ export function StageModal({ open, onClose, onSave, editStage }: StageModalProps
   }
 
   return (
-    <Modal
+    <FormDialog
       open={open}
       onClose={onClose}
       title={editStage ? 'Editar estágio' : 'Novo estágio'}
+      onSubmit={handleSave}
+      submitLabel={editStage ? 'Salvar alterações' : 'Criar estágio'}
+      loading={saving}
+      error={error || null}
       className="max-w-md"
     >
-      <div className="flex flex-col gap-4">
-        <FormField label="Nome do estágio" error={error} required>
-          <Input
-            value={label}
-            onChange={(e) => { setLabel(e.target.value); setError('') }}
-            placeholder="Ex: Proposta Enviada"
-            autoFocus
-          />
-        </FormField>
+      <FormField label="Nome do estágio" required>
+        <Input
+          value={label}
+          onChange={(e) => { setLabel(e.target.value); setError('') }}
+          placeholder="Ex: Proposta Enviada"
+          autoFocus
+        />
+      </FormField>
 
-        <FormField label="Cor">
-          <ColorPicker value={color} onChange={setColor} />
-        </FormField>
+      <FormField label="Cor">
+        <ColorPicker value={color} onChange={setColor} />
+      </FormField>
 
-        <div className="flex items-center justify-between py-2 border-t border-surface-800">
-          <div>
-            <p className="text-sm font-medium text-surface-200">Estágio terminal</p>
-            <p className="text-xs text-surface-500 mt-0.5">Ficará oculto por padrão no Kanban (ex: Churned, Inativo)</p>
-          </div>
-          <Switch checked={isTerminal} onChange={setIsTerminal} />
+      <div className="flex items-center justify-between py-2 border-t border-surface-800">
+        <div>
+          <p className="text-sm font-medium text-surface-200">Estágio terminal</p>
+          <p className="text-xs text-surface-500 mt-0.5">Ficará oculto por padrão no Kanban (ex: Churned, Inativo)</p>
         </div>
-
-        <div className="flex gap-2 justify-end pt-1">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-all"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
-          >
-            {saving ? 'Salvando...' : editStage ? 'Salvar alterações' : 'Criar estágio'}
-          </button>
-        </div>
+        <Switch checked={isTerminal} onChange={setIsTerminal} />
       </div>
-    </Modal>
+    </FormDialog>
   )
 }

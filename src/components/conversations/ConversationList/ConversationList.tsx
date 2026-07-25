@@ -1,12 +1,10 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect, type MutableRefObject } from 'react'
-import {
-  Loader2, MessageSquareOff, SlidersHorizontal,
-  Mail, Hourglass, Tag as TagIcon, Check, RotateCcw, AlertTriangle,
-} from 'lucide-react'
+import { Loader2, MessageSquareOff, AlertTriangle } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
-import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { QuickFiltersMenu } from './QuickFiltersMenu'
+import { TagFilterMenu } from './TagFilterMenu'
 import { cn } from '@/lib/utils'
 import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
 
@@ -40,25 +38,24 @@ interface ConversationListProps {
    *  switch) preserve the user's position across remounts. Without this, the
    *  list goes back to the top whenever the wrapper unmounts. */
   scrollPositionRef?: MutableRefObject<number>
+  /** Desktop-only: arredonda o canto inferior direito do painel (onde ele
+   *  encontra a barrinha de atalhos de teclado abaixo). Precisa ir no root
+   *  do próprio componente (não num wrapper externo) porque a barra de
+   *  rolagem nativa do navegador só respeita o arredondamento do elemento
+   *  que de fato rola — um wrapper por fora não a recorta. */
+  roundedBottomRight?: boolean
 }
 
 export function ConversationList({
   conversations, loading, loadingMore = false, hasMore = false,
   statusCounts, needsReviewCount = 0,
-  activeId, filters, allTags, allContacts, allUsers,
+  activeId, filters, allTags, allUsers,
   onSelectConversation, onFiltersChange, onLoadMore,
-  scrollPositionRef,
+  scrollPositionRef, roundedBottomRight = false,
 }: ConversationListProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
   const [newConvIds, setNewConvIds] = useState<Set<string>>(new Set())
-  const [filterMenuOpen, setFilterMenuOpen] = useState(false)
-
-  const advancedFiltersActive = !!(filters.unreadOnly || filters.awaitingReply || filters.untagged)
-  const toggleFilter = (key: 'unreadOnly' | 'awaitingReply' | 'untagged') =>
-    onFiltersChange({ ...filters, [key]: !filters[key] })
-  const clearAdvancedFilters = () =>
-    onFiltersChange({ ...filters, unreadOnly: false, awaitingReply: false, untagged: false })
 
   // Restore scroll position BEFORE the browser paints in two scenarios:
   //
@@ -132,8 +129,15 @@ export function ConversationList({
     ? { ...statusCounts }
     : { all: 0, open: 0, pending: 0, resolved: 0 }
 
+  // Painel da lista (desktop): largura responsiva — a CONVERSA é o foco
+  // absoluto do Inbox, então a lista cede espaço em telas menores
+  // (360px em laptops, 420px em xl, 480px só em 2xl+). A lane interna fica
+  // em max-w-[440px] + mx-auto, então segue centralizada em qualquer largura.
   return (
-    <div className="flex flex-col h-full w-full sm:w-[418px] bg-black border-r border-surface-800 flex-shrink-0">
+    <div className={cn(
+      'conv-surface flex flex-col h-full w-full sm:w-[360px] xl:w-[420px] 2xl:w-[480px] bg-surface-950 border-r border-surface-800 flex-shrink-0',
+      roundedBottomRight && 'overflow-hidden rounded-br-lg',
+    )}>
       {/* Search header */}
       <div className="px-3 pt-3 pb-3 border-b border-surface-800">
         <div className="flex items-center gap-2">
@@ -143,7 +147,7 @@ export function ConversationList({
               onChange={(search) => onFiltersChange({ ...filters, search })}
             />
           </div>
-          {loading && <Loader2 className="w-4 h-4 text-brand-400 animate-spin flex-shrink-0" />}
+          {loading && <Loader2 className="w-4 h-4 text-surface-400 animate-spin flex-shrink-0" />}
 
           {/* Phase 33c — verification badge. Contextual indicator: appears
               ONLY when there are conversations needing review. Clicking
@@ -157,83 +161,37 @@ export function ConversationList({
               }
               aria-label="Conversas que precisam de verificação"
               title={`${needsReviewCount} ${needsReviewCount === 1 ? 'conversa precisa' : 'conversas precisam'} de verificação`}
+              style={filters.needsReview
+                ? ({ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties)
+                : undefined}
               className={cn(
                 'relative flex items-center justify-center w-9 h-9 rounded-lg transition-all border flex-shrink-0',
                 filters.needsReview
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                  : 'bg-surface-800 text-amber-400 border-surface-700 hover:bg-surface-700 hover:text-amber-300',
+                  ? 'color-chip'
+                  : 'bg-surface-800 text-warning border-surface-700 hover:bg-surface-700 hover:text-warning',
               )}
             >
               <AlertTriangle className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-[10px] font-bold text-surface-950 flex items-center justify-center ring-2 ring-black">
+              <span
+                className="color-chip absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center ring-2 ring-black"
+                style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
+              >
                 {needsReviewCount > 99 ? '99+' : needsReviewCount}
               </span>
             </button>
           )}
 
-          <Dropdown
-            open={filterMenuOpen}
-            onClose={() => setFilterMenuOpen(false)}
-            align="right"
-            className="w-60"
-            anchor={
-              <button
-                onClick={() => setFilterMenuOpen((v) => !v)}
-                aria-label="Filtros rápidos"
-                title="Filtros rápidos"
-                className={cn(
-                  'relative flex items-center justify-center w-9 h-9 rounded-lg transition-all border flex-shrink-0',
-                  advancedFiltersActive || filterMenuOpen
-                    ? 'bg-brand-600/20 text-brand-300 border-brand-500/30'
-                    : 'bg-surface-800 text-surface-400 border-surface-700 hover:bg-surface-700 hover:text-surface-200'
-                )}
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                {advancedFiltersActive && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-brand-400 ring-2 ring-black" />
-                )}
-              </button>
-            }
-          >
-            <div className="px-2 pt-2 pb-2 flex flex-col gap-0.5">
-              <p className="px-2 pt-1 pb-1.5 text-[10px] uppercase tracking-wide text-surface-500 font-semibold">
-                Filtros rápidos
-              </p>
-              {([
-                { key: 'unreadOnly',    label: 'Apenas não lidas',          icon: Mail },
-                { key: 'awaitingReply', label: 'Aguardando resposta',       icon: Hourglass },
-                { key: 'untagged',      label: 'Sem etiqueta',              icon: TagIcon },
-              ] as const).map(({ key, label, icon: Icon }) => {
-                const active = !!filters[key]
-                return (
-                  <DropdownItem
-                    key={key}
-                    icon={Icon}
-                    active={active}
-                    onClick={() => toggleFilter(key)}
-                  >
-                    <span className="flex-1">{label}</span>
-                    {active && <Check className="w-4 h-4 flex-shrink-0 text-brand-400" />}
-                  </DropdownItem>
-                )
-              })}
+          <TagFilterMenu
+            filters={filters}
+            onFiltersChange={onFiltersChange}
+            allTags={allTags}
+          />
 
-              {advancedFiltersActive && (
-                <>
-                  <DropdownSeparator />
-                  <DropdownItem
-                    icon={RotateCcw}
-                    onClick={() => {
-                      clearAdvancedFilters()
-                      setFilterMenuOpen(false)
-                    }}
-                  >
-                    Limpar filtros rápidos
-                  </DropdownItem>
-                </>
-              )}
-            </div>
-          </Dropdown>
+          <QuickFiltersMenu
+            filters={filters}
+            onFiltersChange={onFiltersChange}
+            allUsers={allUsers}
+          />
         </div>
       </div>
 
@@ -244,7 +202,6 @@ export function ConversationList({
           onFiltersChange={onFiltersChange}
           counts={counts}
           allTags={allTags}
-          allContacts={allContacts}
           allUsers={allUsers}
         />
       </div>
@@ -253,7 +210,7 @@ export function ConversationList({
       <div ref={listRef} onScroll={handleScroll} className="flex-1 overflow-y-auto" style={{ contain: 'layout style', willChange: 'transform' }}>
         {loading && conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 gap-2">
-            <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+            <Loader2 className="w-5 h-5 text-surface-400 animate-spin" />
             <span className="text-xs text-surface-500">Carregando...</span>
           </div>
         ) : conversations.length === 0 ? (
@@ -270,6 +227,7 @@ export function ConversationList({
           </div>
         ) : (
           <>
+            <div className="max-w-[440px] mx-auto pt-2">
             {conversations.map((conv) => (
               <div key={conv.id} className={newConvIds.has(conv.id) ? 'animate-conv-in' : undefined}>
                 <ConversationItem
@@ -279,10 +237,11 @@ export function ConversationList({
                 />
               </div>
             ))}
+            </div>
             {hasMore && (
               <div className="flex items-center justify-center py-4" aria-hidden="true">
                 {loadingMore && (
-                  <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-surface-400 animate-spin" />
                 )}
               </div>
             )}

@@ -9,10 +9,15 @@ interface ContactsTableProps {
   onOpenPanel: (contact: Contact) => void
   onOpenConversation?: (contact: Contact) => void
   onMoveStage?: (contact: Contact, stage: ContactStage) => void
+  onOpenDeals?: (contact: Contact) => void
   selectedIds?: Set<string>
   onToggleSelect?: (id: string) => void
   onSelectAll?: (ids: string[]) => void
   onBulkDelete?: () => void
+  /** Scroll infinito — dispara ao chegar perto do fim da tabela. */
+  hasMore?: boolean
+  loadingMore?: boolean
+  onLoadMore?: () => void
 }
 
 export function ContactsTable({
@@ -21,10 +26,14 @@ export function ContactsTable({
   onOpenPanel,
   onOpenConversation,
   onMoveStage,
+  onOpenDeals,
   selectedIds,
   onToggleSelect,
   onSelectAll,
   onBulkDelete,
+  hasMore,
+  loadingMore,
+  onLoadMore,
 }: ContactsTableProps) {
   const hasSelection = (selectedIds?.size ?? 0) > 0
   const allSelected =
@@ -40,8 +49,15 @@ export function ContactsTable({
     }
   }
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore || loadingMore || !onLoadMore) return
+    const el = e.currentTarget
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    if (distanceFromBottom < 320) onLoadMore()
+  }
+
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto" onScroll={handleScroll}>
       <table className="w-full border-collapse">
         <thead className="sticky top-0 z-10 bg-surface-900 border-b border-surface-800">
           <tr>
@@ -62,7 +78,7 @@ export function ContactsTable({
                 </button>
               ) : null}
             </th>
-            {['Contato', 'Estágio', 'Score', 'Intenção', 'Sentimento', 'Tags', 'Fonte', 'Último contato', 'Opt-in', ''].map((col) => (
+            {['Contato', 'Estágio', 'Score', 'Intenção', 'Sentimento', 'Tags', 'Negócios', 'Fonte', 'Último contato', 'Opt-in', ''].map((col) => (
               <th key={col} className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-surface-500 whitespace-nowrap">
                 {col}
               </th>
@@ -72,7 +88,7 @@ export function ContactsTable({
         <tbody>
           {loading && contacts.length === 0 ? (
             <tr>
-              <td colSpan={11} className="py-20 text-center">
+              <td colSpan={12} className="py-20 text-center">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="w-6 h-6 text-brand-400 animate-spin" />
                   <span className="text-sm text-surface-500">Carregando contatos...</span>
@@ -81,7 +97,7 @@ export function ContactsTable({
             </tr>
           ) : contacts.length === 0 ? (
             <tr>
-              <td colSpan={11} className="py-24 text-center">
+              <td colSpan={12} className="py-24 text-center">
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-surface-800 flex items-center justify-center">
                     <UserX className="w-6 h-6 text-surface-500" />
@@ -101,6 +117,7 @@ export function ContactsTable({
                 onOpenPanel={onOpenPanel}
                 onOpenConversation={onOpenConversation}
                 onMoveStage={onMoveStage}
+                onOpenDeals={onOpenDeals}
                 isSelected={selectedIds?.has(contact.id) ?? false}
                 onToggleSelect={onToggleSelect}
                 hasSelection={hasSelection}
@@ -108,6 +125,13 @@ export function ContactsTable({
                 onDeleteSelected={onBulkDelete}
               />
             ))
+          )}
+          {loadingMore && contacts.length > 0 && (
+            <tr>
+              <td colSpan={12} className="py-4 text-center">
+                <Loader2 className="w-4 h-4 text-surface-500 animate-spin inline-block" />
+              </td>
+            </tr>
           )}
         </tbody>
       </table>

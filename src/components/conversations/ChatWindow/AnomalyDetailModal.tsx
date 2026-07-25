@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { AlertTriangle, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
-import { cn } from '@/lib/utils'
+import { Banner } from '@/components/ui/Banner'
 import type { Message } from '@/types'
 
 type Anomaly = NonNullable<Message['anomaly']>
@@ -89,24 +89,20 @@ export function AnomalyDetailModal({
       {anomaly && (
         <div className="space-y-4">
           {/* Status banner */}
-          <div
-            className={cn(
-              'flex items-start gap-2.5 rounded-lg px-3 py-2.5 border',
-              isHandoff ? 'bg-amber-500/10 border-amber-500/30' : 'bg-surface-800/60 border-surface-700',
-            )}
-          >
-            {isHandoff ? (
-              <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-            ) : (
+          {isHandoff ? (
+            <Banner variant="warning">
+              <p className="text-sm font-medium">Transferido para atendente</p>
+              <p className="text-xs opacity-90 mt-0.5">{outcomeReason(anomaly.outcome)}</p>
+            </Banner>
+          ) : (
+            <div className="flex items-start gap-2.5 rounded-lg px-3 py-2.5 border bg-surface-800/60 border-surface-700">
               <ShieldCheck className="w-4 h-4 text-surface-300 flex-shrink-0 mt-0.5" />
-            )}
-            <div>
-              <p className={cn('text-sm font-medium', isHandoff ? 'text-amber-200' : 'text-surface-200')}>
-                {isHandoff ? 'Transferido para atendente' : 'Corrigido automaticamente'}
-              </p>
-              <p className="text-xs text-surface-400 mt-0.5">{outcomeReason(anomaly.outcome)}</p>
+              <div>
+                <p className="text-sm font-medium text-surface-200">Corrigido automaticamente</p>
+                <p className="text-xs text-surface-400 mt-0.5">{outcomeReason(anomaly.outcome)}</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Skill failures — the technical "why" when a tool was called and failed */}
           {failures.length > 0 && (
@@ -115,14 +111,18 @@ export function AnomalyDetailModal({
                 <XCircle className="w-3.5 h-3.5 text-red-400" /> Falha no retorno da skill
               </p>
               {failures.map((f, i) => (
-                <div key={i} className="rounded-lg bg-red-500/10 border border-red-500/25 px-3 py-2">
+                <div
+                  key={i}
+                  className="rounded-lg color-chip border px-3 py-2"
+                  style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-red-200 truncate">{f.name}</span>
+                    <span className="text-xs font-medium truncate">{f.name}</span>
                     {f.statusCode != null && (
-                      <span className="text-[10px] font-mono text-red-300/80 flex-shrink-0">HTTP {f.statusCode}</span>
+                      <span className="text-[10px] font-mono opacity-80 flex-shrink-0">HTTP {f.statusCode}</span>
                     )}
                   </div>
-                  {f.message && <p className="text-xs text-surface-300 mt-1 break-words">{f.message}</p>}
+                  {f.message && <p className="text-xs mt-1 break-words opacity-90">{f.message}</p>}
                 </div>
               ))}
             </div>

@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import { DollarSign, Users, Target, BarChart2, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
-import { C } from './utils'
+import { useChartColors } from '@/hooks/useChartColors'
 import { attributionApi } from '@/services/api'
 import type { AdCampaignMetrics, MarketingFunnelTotals } from '@/types'
 import type { DateRange } from '@/types/dashboard'
@@ -15,6 +15,7 @@ import { CampaignLeadsDrawer } from '@/components/campaigns/CampaignLeadsDrawer'
 // ── Funnel Chart ──────────────────────────────────────────────────────────────
 
 function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
+  const C = useChartColors()
   if (!campaigns.length) return null
 
   // Aggregate across all selected campaigns
@@ -25,11 +26,11 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   const customers = campaigns.reduce((s, c) => s + c.customers, 0)
 
   const stages = [
-    { label: 'Impressões', value: impressions, color: '#5588b0' },
-    { label: 'Cliques',    value: clicks,      color: '#6366f1' },
-    { label: 'Leads',      value: leads,       color: '#f59e0b' },
-    { label: 'Qualif.',    value: qualified,   color: '#8b5cf6' },
-    { label: 'Clientes',   value: customers,   color: '#10b981' },
+    { label: 'Impressões', value: impressions, color: C.cyan },
+    { label: 'Cliques',    value: clicks,      color: C.brand },
+    { label: 'Leads',      value: leads,       color: C.away },
+    { label: 'Qualif.',    value: qualified,   color: C.purple },
+    { label: 'Clientes',   value: customers,   color: C.online },
   ]
 
   // Normalize to percentage of first step for visual funnel
@@ -130,6 +131,7 @@ function AdCampaignsTable({
   campaigns: AdCampaignMetrics[]
   onLeadsClick: (campaignId: string, campaignName: string) => void
 }) {
+  const C = useChartColors()
   const [expanded, setExpanded] = useState<string | null>(null)
   type SortKey = 'spend' | 'leadsGenerated' | 'cpl' | 'customers' | 'roas' | 'conversionRate'
   const [sortKey, setSortKey] = useState<SortKey>('spend')
@@ -193,7 +195,7 @@ function AdCampaignsTable({
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
-                        style={{ backgroundColor: '#1877f21a', color: '#1877f2' }}>
+                        style={{ backgroundColor: C.meta + '1a', color: C.meta }}>
                         Meta Ads
                       </span>
                       <span className="text-surface-200 font-medium truncate max-w-[200px]">{camp.platformCampaignName}</span>
@@ -205,7 +207,7 @@ function AdCampaignsTable({
                   <td className="px-3 py-3 text-right tabular-nums">
                     <button
                       onClick={(e) => { e.stopPropagation(); onLeadsClick(camp.platformCampaignId, camp.platformCampaignName) }}
-                      className="text-[#f59e0b] font-medium hover:underline transition-colors"
+                      className="text-accent-amber font-medium hover:underline transition-colors"
                     >
                       {camp.leadsGenerated}
                     </button>
@@ -266,30 +268,31 @@ function AdCampaignsTable({
 // ── Totals strip ──────────────────────────────────────────────────────────────
 
 function TotalsStrip({ totals }: { totals: MarketingFunnelTotals }) {
+  const C = useChartColors()
   const items = [
     {
       label: 'Total Investido',
       value: `R$ ${totals.spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: <DollarSign className="w-4 h-4" />,
-      color: '#1877f2',
+      color: C.brand,
     },
     {
       label: 'Total de Leads',
       value: totals.leads.toLocaleString('pt-BR'),
       icon: <Users className="w-4 h-4" />,
-      color: '#f59e0b',
+      color: C.away,
     },
     {
       label: 'CPL Médio',
       value: `R$ ${totals.avgCpl.toFixed(2)}`,
       icon: <Target className="w-4 h-4" />,
-      color: '#8b5cf6',
+      color: C.purple,
     },
     {
       label: 'ROAS Médio',
       value: `${totals.avgRoas.toFixed(1)}x`,
       icon: <BarChart2 className="w-4 h-4" />,
-      color: '#10b981',
+      color: C.online,
     },
   ]
 

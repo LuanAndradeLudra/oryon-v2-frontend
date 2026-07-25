@@ -8,6 +8,7 @@ import {
   Phone, CornerDownLeft, ImageIcon, AlertTriangle, Clock, Users, Palette, Mail, Building2, Hash,
   BookOpen, HelpCircle, Shield, Plus, Minus, FilePlus, FilePenLine, FileMinus, PlayCircle, PauseCircle, RefreshCw,
 } from 'lucide-react'
+import { CopilotMark } from '@/lib/icons'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { getReadableTextColor } from '@/lib/colorPalette'
@@ -51,7 +52,7 @@ export function CopilotIcon({ spinning = false, size = 'sm' }: { spinning?: bool
           : { transition: 'transform 0.4s ease-out' }
         }
       >
-        <Sparkles className={`${icon} text-white`} />
+        <CopilotMark className={`${icon} text-white`} />
       </div>
     </div>
   )
@@ -246,9 +247,9 @@ function isErrorLine(t: string): boolean {
 
 function ErrorCard({ text }: { text: string }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 my-1">
-      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-400" />
-      <p className="text-sm leading-relaxed text-red-200">{text}</p>
+    <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 my-1">
+      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-danger" />
+      <p className="text-sm leading-relaxed text-danger">{text}</p>
     </div>
   )
 }
@@ -1191,8 +1192,8 @@ function TemplateApprovalPreview({
                 />
               ) : null}
               <div className="flex items-center gap-2.5 px-2.5 py-1.5">
-                <div className="w-6 h-6 rounded bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-3 h-3 text-red-400" />
+                <div className="w-6 h-6 rounded bg-accent-rose/10 border border-accent-rose/20 flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-3 h-3 text-accent-rose" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-medium text-surface-300 truncate">Documento PDF</p>
@@ -1791,7 +1792,7 @@ function ConversationApprovalPreview({
           )}
           {(toolName === 'add_tag_to_conversation' || toolName === 'remove_tag_from_conversation') && (
             <div className="flex items-center gap-2">
-              <Tag className={cn('w-3 h-3 flex-shrink-0', toolName === 'remove_tag_from_conversation' ? 'text-red-400' : 'text-brand-400')} />
+              <Tag className={cn('w-3 h-3 flex-shrink-0', toolName === 'remove_tag_from_conversation' ? 'text-danger' : 'text-brand-400')} />
               <span className="text-xs text-surface-300">
                 Tag ID: <span className="font-mono">{String(input.tagId ?? '')}</span>
               </span>
@@ -1857,20 +1858,20 @@ function DestructiveApprovalPreview({
   const { type: itemType, icon: Icon } = labelMap[toolName] ?? { type: 'Item', icon: Trash2 }
 
   return (
-    <div className="rounded-xl border border-red-500/20 bg-red-500/5 overflow-hidden">
+    <div className="rounded-xl border border-danger/20 bg-danger/5 overflow-hidden">
       <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
-          <Icon className="w-4 h-4 text-red-400" />
+        <div className="w-8 h-8 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4 h-4 text-danger" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-red-300 font-medium">Excluir {itemType}</p>
+          <p className="text-xs text-danger font-medium">Excluir {itemType}</p>
           {targetName && <p className="text-xs text-surface-300 mt-0.5">{targetName}</p>}
-          <p className="text-[10px] text-red-400/60 font-mono mt-0.5">{targetId}</p>
+          <p className="text-[10px] text-danger/60 font-mono mt-0.5">{targetId}</p>
         </div>
       </div>
-      <div className="flex items-center gap-1.5 px-3 py-2 bg-red-500/5 border-t border-red-500/15">
-        <AlertTriangle className="w-3 h-3 text-red-400/70 flex-shrink-0" />
-        <span className="text-[10px] text-red-400/70">Esta ação não pode ser desfeita.</span>
+      <div className="flex items-center gap-1.5 px-3 py-2 bg-danger/5 border-t border-danger/15">
+        <AlertTriangle className="w-3 h-3 text-danger/70 flex-shrink-0" />
+        <span className="text-[10px] text-danger/70">Esta ação não pode ser desfeita.</span>
       </div>
     </div>
   )
@@ -2055,7 +2056,7 @@ export function ApprovalItemPreview({
   // sync_brain_to_rag has no editable fields — just a confirmation
   if (item.name === 'sync_brain_to_rag')
     return (
-      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-200">
+      <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
         Reindexa todos os brand files do Company Brain no RAG. Afeta todos os agentes.
       </div>
     )
@@ -2099,18 +2100,18 @@ function SetupRequiredCard({
   setup: { reason: string; message: string; cta: { href: string; label: string } }
 }) {
   return (
-    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+    <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-300">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-warning/20 text-warning">
           <AlertTriangle className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-amber-100">Configuração necessária</p>
-          <p className="mt-0.5 text-[13px] text-amber-200/85">{setup.message}</p>
+          <p className="text-xs font-semibold text-warning">Configuração necessária</p>
+          <p className="mt-0.5 text-[13px] text-warning/85">{setup.message}</p>
         </div>
         <a
           href={setup.cta.href}
-          className="flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-100 transition-colors hover:bg-amber-500/30"
+          className="flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg bg-warning/20 px-3 py-1.5 text-xs font-semibold text-warning transition-colors hover:bg-warning/30"
         >
           {setup.cta.label}
         </a>
@@ -2130,18 +2131,18 @@ function RequiresSetupCard({ tc }: { tc: ToolCallRecord }) {
   const message = result.message ?? 'Uma configuração prévia é necessária para concluir esta operação.'
 
   return (
-    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+    <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-300">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-warning/20 text-warning">
           <AlertTriangle className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-amber-100">Configuração necessária</p>
-          <p className="mt-0.5 text-[13px] text-amber-200/85">{message}</p>
+          <p className="text-xs font-semibold text-warning">Configuração necessária</p>
+          <p className="mt-0.5 text-[13px] text-warning/85">{message}</p>
         </div>
         <a
           href={href}
-          className="flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-100 transition-colors hover:bg-amber-500/30"
+          className="flex flex-shrink-0 items-center gap-1.5 self-center rounded-lg bg-warning/20 px-3 py-1.5 text-xs font-semibold text-warning transition-colors hover:bg-warning/30"
         >
           {label}
         </a>
@@ -2346,7 +2347,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                     href={fetchUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-amber-400/80 hover:text-amber-300 break-all hover:underline leading-relaxed"
+                    className="text-[10px] text-accent-amber/80 hover:text-accent-amber break-all hover:underline leading-relaxed"
                   >
                     {fetchUrl}
                   </a>
@@ -2359,7 +2360,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                     href={`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-amber-400/80 hover:text-amber-300 italic hover:underline"
+                    className="text-[10px] text-accent-amber/80 hover:text-accent-amber italic hover:underline"
                   >
                     "{searchQuery}" ↗
                   </a>
@@ -2381,7 +2382,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                         href={s.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] text-surface-400 hover:text-amber-300 truncate hover:underline"
+                        className="text-[10px] text-surface-400 hover:text-accent-amber truncate hover:underline"
                       >
                         {s.title ?? getDomain(s.url)}
                       </a>
@@ -2621,7 +2622,7 @@ function UserAttachments({ attachments }: { attachments: CopilotAttachment[] }) 
           key={att.id}
           className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-700/60 border border-brand-500/30 max-w-[180px]"
         >
-          <FileText className="w-4 h-4 text-red-300 flex-shrink-0" />
+          <FileText className="w-4 h-4 text-accent-rose flex-shrink-0" />
           <span className="text-xs text-white truncate">{att.name}</span>
         </div>
       ))}

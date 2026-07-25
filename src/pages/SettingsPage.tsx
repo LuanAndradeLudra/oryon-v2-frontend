@@ -1,7 +1,7 @@
 import { useParams, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { SettingsLayout } from '@/components/settings/SettingsLayout'
+import { SettingsLayout, firstVisibleSection } from '@/components/settings/SettingsLayout'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
@@ -16,6 +16,7 @@ import { AgentManagement }  from '@/components/settings/sections/AgentManagement
 import { Departments }      from '@/components/settings/sections/Departments'
 import { WhatsAppNumbers }  from '@/components/settings/sections/WhatsAppNumbers'
 import { WhatsAppHealth }   from '@/components/settings/sections/WhatsAppHealth'
+import { WhatsAppBusinessProfile } from '@/components/settings/sections/WhatsAppBusinessProfile'
 import { QuickReplies }     from '@/components/settings/sections/QuickReplies'
 import { TagsSettings }     from '@/components/settings/sections/TagsSettings'
 import { BillingPlan }      from '@/components/settings/sections/BillingPlan'
@@ -26,11 +27,14 @@ import { CompanyBrain }        from '@/components/settings/sections/CompanyBrain
 import { Notifications }       from '@/components/settings/sections/Notifications'
 import { AuditTrail }          from '@/components/settings/sections/AuditTrail'
 import { ProductsManager }     from '@/components/settings/sections/crm/ProductsManager'
+import { PractitionersManager } from '@/components/settings/sections/crm/PractitionersManager'
+import { PipelineRoutingSettings } from '@/components/settings/sections/crm/PipelineRoutingSettings'
+import { PipelineStagesSettings } from '@/components/settings/sections/crm/PipelineStagesSettings'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
-  'whatsapp-health',
+  'whatsapp-health', 'whatsapp-profile',
   'quick-replies', 'tags', 'billing', 'security', 'ad-accounts', 'vertical',
-  'audit', 'crm-products',
+  'audit', 'crm-products', 'crm-practitioners', 'pipeline-stages', 'pipeline-routing',
 ]
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
@@ -74,6 +78,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   departments:      Departments,
   numbers:          WhatsAppNumbers,
   'whatsapp-health': WhatsAppHealth,
+  'whatsapp-profile': WhatsAppBusinessProfile,
   'quick-replies':  QuickReplies,
   tags:             TagsSettings,
   billing:          BillingPlan,
@@ -82,10 +87,13 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   vertical:         VerticalSettings,
   audit:            AuditTrail,
   'crm-products':   ProductsManager,
+  'crm-practitioners': PractitionersManager,
+  'pipeline-stages': PipelineStagesSettings,
+  'pipeline-routing': PipelineRoutingSettings,
 }
 
 export function SettingsPage() {
-  const { section = 'account' } = useParams<{ section: string }>()
+  const { section } = useParams<{ section: string }>()
   // Use the AuthContext user — it's populated synchronously from the cached
   // session at app boot, so the sidebar role is correct on the very first
   // render. The previous code did its own GET /auth/me in a useEffect, which
@@ -96,8 +104,13 @@ export function SettingsPage() {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
 
-  if (!VALID_SECTIONS.includes(section)) {
-    return <Navigate to="/settings/account" replace />
+  // Settings é superfície de INTENÇÃO, não de browsing: quem entra já sabe o
+  // que quer mudar. Sem hub/home — /settings cai direto na primeira seção
+  // visível do papel; a sidebar é o mapa permanente e a busca resolve o
+  // "achar em segundos". Uma home aqui seria uma segunda navegação (o
+  // problema que estamos eliminando).
+  if (!section || !VALID_SECTIONS.includes(section)) {
+    return <Navigate to={`/settings/${firstVisibleSection(user?.role ?? 'admin')}`} replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]

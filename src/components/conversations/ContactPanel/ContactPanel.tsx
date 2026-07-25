@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  X, Clock, MessageSquare, UserCheck, Search, Check, UserX,
+  X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink,
-  Bot, UserCog, KanbanSquare,
+  KanbanSquare, MapPin, Phone, Plus, Filter,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { TagPickerContent } from '@/components/ui/TagPicker'
@@ -19,6 +19,19 @@ import { MoveStageModal } from '@/components/contacts/MoveStageModal'
 import { StageBadge } from '@/components/contacts/StageBadge'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { Conversation, Tag, User } from '@/types'
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatAbsDate(iso: string): string {
+  const d = new Date(iso)
+  const today = new Date()
+  const isToday = d.toDateString() === today.toDateString()
+  const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (isToday) return `Hoje ${time}`
+  return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${time}`
+}
+
+// ─── UserPickerList ───────────────────────────────────────────────────────────
 
 function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; selectedUserId?: string; onSelect: (user: User | null) => void }) {
   const [search, setSearch] = useState('')
@@ -58,6 +71,99 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
   )
 }
 
+// ─── Section wrapper ──────────────────────────────────────────────────────────
+
+function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="panel-divider px-4 pt-4 pb-3 border-t border-surface-800">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-widest">{title}</p>
+        {action}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+// ─── Informações section ──────────────────────────────────────────────────────
+
+function InfoTable({ rows }: { rows: { label: string; value: React.ReactNode }[] }) {
+  return (
+    <div className="divide-y divide-surface-800/60">
+      {rows.map(({ label, value }) => (
+        <div key={label} className="flex items-baseline justify-between gap-2 py-2 first:pt-0 last:pb-0">
+          <span className="text-[11px] text-surface-500 flex-shrink-0">{label}</span>
+          <span className="text-[12px] text-surface-200 text-right">{value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Notas section ────────────────────────────────────────────────────────────
+
+function NotasSection() {
+  const [notes, setNotes] = useState<string[]>([])
+  const [adding, setAdding] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  const handleSave = () => {
+    const trimmed = draft.trim()
+    if (trimmed) setNotes(prev => [...prev, trimmed])
+    setDraft('')
+    setAdding(false)
+  }
+
+  return (
+    <Section
+      title="Notas"
+      action={
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="w-6 h-6 rounded-md flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      }
+    >
+      {notes.length === 0 && !adding && (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="w-full text-left text-xs text-surface-500 hover:text-surface-300 transition-colors"
+        >
+          Adicionar uma nota…
+        </button>
+      )}
+      {notes.map((note, i) => (
+        <div key={i} className="text-xs text-surface-300 bg-surface-800/50 rounded-lg px-3 py-2 mb-2 last:mb-0">
+          {note}
+        </div>
+      ))}
+      {adding && (
+        <div className="mt-1">
+          <textarea
+            autoFocus
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave() } if (e.key === 'Escape') { setAdding(false); setDraft('') } }}
+            placeholder="Escreva uma nota…"
+            rows={3}
+            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-xs text-surface-200 placeholder:text-surface-500 resize-none outline-none focus:border-brand-500 transition-colors"
+          />
+          <div className="flex gap-2 mt-1.5">
+            <button type="button" onClick={handleSave} className="text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors">Salvar</button>
+            <button type="button" onClick={() => { setAdding(false); setDraft('') }} className="text-[11px] text-surface-500 hover:text-surface-300 transition-colors">Cancelar</button>
+          </div>
+        </div>
+      )}
+    </Section>
+  )
+}
+
+// ─── ContactPanelProps ────────────────────────────────────────────────────────
+
 interface ContactPanelProps {
   conversation: Conversation
   allTags: Tag[]
@@ -72,83 +178,7 @@ interface ContactPanelProps {
   onArchive: () => void
 }
 
-function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-surface-800 last:border-0">
-      <div className="w-7 h-7 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <Icon className="w-3.5 h-3.5 text-surface-400" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] text-surface-500 uppercase tracking-wide font-medium">{label}</p>
-        <p className="text-sm text-surface-200 truncate mt-0.5">{value}</p>
-      </div>
-    </div>
-  )
-}
-
-/**
- * Phase 27 — "Atendimento" row with live countdown when AI is paused.
- * Mounts a 60s ticker only while paused; dormant when AI is active.
- * Uses the same 60s precision as the chat banner — sub-minute granularity
- * is overkill for this surface and would re-render the whole panel.
- */
-function AiStatusInfoRow({ aiPausedUntil }: { aiPausedUntil: string | null | undefined }) {
-  const pausedUntilMs = aiPausedUntil ? new Date(aiPausedUntil).getTime() : null
-  const isPaused = pausedUntilMs !== null && pausedUntilMs > Date.now()
-  // Indefinite is anything past the year 9999 sentinel (we use a small skew
-  // in case the backend round-trip adjusted ms).
-  const isIndefinite = isPaused && pausedUntilMs! > new Date('9999-01-01').getTime()
-
-  const [, setTick] = useState(0)
-  useEffect(() => {
-    if (!isPaused || isIndefinite) return
-    const id = setInterval(() => setTick((t) => t + 1), 60_000)
-    return () => clearInterval(id)
-  }, [isPaused, isIndefinite])
-
-  if (!isPaused) {
-    return (
-      <div className="flex items-start gap-3 py-2.5 border-b border-surface-800">
-        <div className="w-7 h-7 rounded-lg bg-emerald-700/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <Bot className="w-3.5 h-3.5 text-emerald-300" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] text-surface-500 uppercase tracking-wide font-medium">Atendimento</p>
-          <p className="text-sm text-emerald-200 mt-0.5">Em atendimento por IA</p>
-        </div>
-      </div>
-    )
-  }
-
-  const remaining = isIndefinite
-    ? 'até reativar manualmente'
-    : `IA volta em ${formatRemainingMin(pausedUntilMs!)}`
-  return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-surface-800">
-      <div className="w-7 h-7 rounded-lg bg-amber-700/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <UserCog className="w-3.5 h-3.5 text-amber-300" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] text-surface-500 uppercase tracking-wide font-medium">Atendimento</p>
-        <p className="text-sm text-amber-200 mt-0.5">Atendimento humano</p>
-        <p className="text-[11px] text-amber-300/80 mt-0.5">{remaining}</p>
-      </div>
-    </div>
-  )
-}
-
-function formatRemainingMin(untilMs: number): string {
-  const ms = untilMs - Date.now()
-  if (ms < 60_000) return '<1min'
-  const totalMin = Math.floor(ms / 60_000)
-  if (totalMin < 60) return `${totalMin}min`
-  const hours = Math.floor(totalMin / 60)
-  const mins = totalMin % 60
-  if (hours < 24) return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`
-  const days = Math.floor(hours / 24)
-  const remHours = hours % 24
-  return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`
-}
+// ─── ContactPanel ─────────────────────────────────────────────────────────────
 
 export function ContactPanel({
   conversation, allTags, allUsers, onClose,
@@ -162,25 +192,54 @@ export function ContactPanel({
 
   const [tagOpen,     setTagOpen]     = useState(false)
   const [assignOpen,  setAssignOpen]  = useState(false)
-  const [xferModal,   setXferModal]   = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [stageOpen,   setStageOpen]   = useState(false)
-  // Mirror the contact.stage prop into local state so a successful move
-  // reflects immediately in the panel without waiting for the parent to
-  // refetch the conversation. Resets to the prop value if the parent
-  // pushes a different contact (e.g. operator switched conversations).
   const [localStage, setLocalStage] = useState<string | undefined | null>(contact.stage)
   useEffect(() => { setLocalStage(contact.stage) }, [contact.id, contact.stage])
 
+  // Build Informações rows
+  const location = [contact.city, contact.state].filter(Boolean).join(', ')
+  const infoRows: { label: string; value: React.ReactNode }[] = [
+    {
+      label: 'Origem',
+      value: (
+        <span className="flex items-center gap-1 justify-end">
+          <WhatsAppIcon className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+          WhatsApp
+        </span>
+      ),
+    },
+    {
+      label: 'Primeiro contato',
+      value: formatAbsDate(contact.firstContactedAt ?? contact.createdAt ?? createdAt),
+    },
+    {
+      label: 'Último contato',
+      value: formatAbsDate(contact.lastContactedAt ?? lastMessageAt),
+    },
+    ...(location ? [{ label: 'Localização', value: (
+      <span className="flex items-center gap-1 justify-end">
+        <MapPin className="w-3 h-3 flex-shrink-0 text-surface-500" />
+        {location}
+      </span>
+    ) }] : []),
+    ...(contact.email ? [{ label: 'E-mail', value: contact.email }] : []),
+    ...(contact.company ? [{ label: 'Empresa', value: contact.company }] : []),
+    ...(contact.waId ? [{ label: 'WhatsApp', value: (
+      <span className="flex items-center gap-1 justify-end">
+        <Phone className="w-3 h-3 flex-shrink-0 text-surface-500" />
+        +{contact.waId}
+      </span>
+    ) }] : []),
+  ]
+
+  // Largura do painel (desktop): 308px = 280px +10%. Reverter = voltar para md:w-[280px].
   return (
-    <aside className="w-full md:w-[280px] flex-shrink-0 flex flex-col h-full bg-black md:border-l md:border-surface-800">
-      {/* Action bar — replaces the standalone header. Left side shows the
-          current stage as a colored badge (or "Sem estágio" hint); right
-          side groups the icon-only actions including the panel close.
-          Keeping everything on one strip avoids a near-empty title bar
-          stacked on a near-empty actions bar. */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-surface-800 bg-black">
-        <div className="min-w-0">
+    <aside className="conv-surface w-full md:w-[308px] flex-shrink-0 flex flex-col h-full bg-surface-950 md:border-l md:border-surface-800">
+      {/* Action bar */}
+      <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-950">
+        <div className="min-w-0 flex items-center gap-1.5">
+          <Filter className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Estágio do funil" />
           {localStage ? (
             <StageBadge stage={localStage} stages={stages} />
           ) : (
@@ -188,28 +247,16 @@ export function ContactPanel({
           )}
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          <button
-            onClick={() => setStageOpen(true)}
-            title="Mover para estágio"
-            aria-label="Mover para estágio"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all"
-          >
+          <button onClick={() => setStageOpen(true)} title="Mover para estágio"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <KanbanSquare className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => navigate(`/contacts?contact=${contact.id}`)}
-            title="Ver no CRM"
-            aria-label="Ver no CRM"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all"
-          >
+          <button onClick={() => navigate(`/contacts?contact=${contact.id}`)} title="Ver no CRM"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <ExternalLink className="w-4 h-4" />
           </button>
-          <button
-            onClick={onClose}
-            title="Fechar"
-            aria-label="Fechar painel"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all"
-          >
+          <button onClick={onClose} title="Fechar"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -225,21 +272,11 @@ export function ContactPanel({
       />
 
       <div className="flex-1 overflow-y-auto">
-        {/* Contact card — horizontal layout to use the panel's width better.
-            Avatar on the left, name + phone + last-seen stacked on the right.
-            We surface the phone here so the "Número de contato" InfoRow below
-            isn't a duplicate and can be dropped from the details list. */}
-        <div className="flex items-center gap-3 py-4 px-4 border-b border-surface-800">
-          <Avatar
-            name={contact.displayName}
-            imageUrl={contact.profilePicUrl}
-            size="md"
-            className="flex-shrink-0"
-          />
+        {/* Contact header */}
+        <div className="flex items-center gap-3 py-4 px-4">
+          <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" className="flex-shrink-0" />
           <div className="min-w-0 flex-1">
-            <h4 className="text-base font-semibold text-surface-50 truncate">
-              {contact.displayName}
-            </h4>
+            <h4 className="text-base font-semibold text-surface-50 truncate">{contact.displayName}</h4>
             {contact.waId && (
               <p className="flex items-center gap-1.5 text-xs text-surface-400 mt-0.5 truncate">
                 <WhatsAppIcon className="w-3 h-3 flex-shrink-0 text-emerald-500" />
@@ -247,116 +284,32 @@ export function ContactPanel({
               </p>
             )}
             {contact.lastSeenAt && (
-              <p className="text-[10px] text-surface-500 mt-0.5">
-                Visto {formatRelativeTime(contact.lastSeenAt)}
-              </p>
+              <p className="text-[10px] text-surface-500 mt-0.5">Visto {formatRelativeTime(contact.lastSeenAt)}</p>
             )}
           </div>
         </div>
 
-        <ContactPanelDeals contactId={contact.id} conversationId={conversation.id} />
-
-        {/* Hidden when conversionAnalysisPanel is off — covers both the
-            "Analisar conversa com IA" CTA and any previously-rendered
-            results, so the contact panel doesn't show a half-disabled
-            feature. */}
-        {isFeatureVisible('conversionAnalysisPanel') && (
-          <ConversionAnalysisPanel
-            conversationId={conversation.id}
-            contact={contact}
-          />
-        )}
-
-        <ConversationActivitySection conversationId={conversation.id} />
-
-        {/* Details */}
-        <div className="px-4 py-3">
-          <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-2">Conversa</p>
-          <AiStatusInfoRow aiPausedUntil={conversation.aiPausedUntil} />
-          <InfoRow icon={Clock}         label="Iniciada"        value={formatRelativeTime(createdAt)} />
-          <InfoRow icon={MessageSquare} label="Última mensagem" value={formatRelativeTime(lastMessageAt)} />
-          {assignedUser && (
-            <InfoRow
-              icon={UserCheck}
-              label="Responsável"
-              value={`${assignedUser.firstName} ${assignedUser.lastName}`}
-            />
-          )}
-        </div>
-
-        {/* Assign agent */}
-        <div className="px-4 py-3 border-t border-surface-800">
-          <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-2">Agente responsável</p>
-          <button
-            onClick={() => setAssignOpen(true)}
-            className={cn(
-              'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-all',
-              assignedUser
-                ? 'bg-brand-600/10 text-brand-300 hover:bg-brand-600/20'
-                : 'bg-surface-800 text-surface-400 hover:bg-surface-700'
-            )}
-          >
-            {assignedUser ? (
-              <>
-                <Avatar name={`${assignedUser.firstName} ${assignedUser.lastName}`} size="xs" />
-                <span className="truncate">{assignedUser.firstName} {assignedUser.lastName}</span>
-              </>
-            ) : (
-              <><UserCheck className="w-4 h-4" /><span>Atribuir usuário</span></>
-            )}
-          </button>
-          <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Atribuir usuário" className="max-w-sm">
-            <UserPickerList
-              users={allUsers}
-              selectedUserId={assignedUser?.id}
-              onSelect={(user) => { onAssign(user); setAssignOpen(false) }}
-            />
-          </Modal>
-        </div>
-
-        {/* Tags */}
-        <div className="px-4 py-3 border-t border-surface-800">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold">Etiquetas</p>
-            <button
-              onClick={() => setTagOpen(true)}
-              className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
-            >
+        {/* Etiquetas — logo abaixo do header (avatar + telefone) */}
+        <Section
+          title="Etiquetas"
+          action={
+            <button onClick={() => setTagOpen(true)} className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors">
               <TagIcon className="w-3 h-3" />
               Gerenciar
             </button>
-          </div>
-          {/* Tag manager opens as a centered modal so its content isn't clipped
-              by the narrow contact panel. */}
-          <Modal
-            open={tagOpen}
-            onClose={() => setTagOpen(false)}
-            title="Gerenciar etiquetas"
-            className="max-w-md"
-          >
-            <TagPickerContent
-              allTags={allTags}
-              selectedTags={tags}
-              onAdd={onAddTag}
-              onRemove={onRemoveTag}
-              onCreate={onCreateTag}
-              onDelete={onDeleteTag}
-            />
+          }
+        >
+          <Modal open={tagOpen} onClose={() => setTagOpen(false)} title="Gerenciar etiquetas" className="max-w-md">
+            <TagPickerContent allTags={allTags} selectedTags={tags} onAdd={onAddTag} onRemove={onRemoveTag} onCreate={onCreateTag} onDelete={onDeleteTag} />
           </Modal>
           {tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium"
-                  style={{ backgroundColor: tag.color + '28', color: tag.color }}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
+                <span key={tag.id} className="color-chip flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium"
+                  style={{ ['--chip']: tag.color } as React.CSSProperties}>
+                  <span className="w-1.5 h-1.5 rounded-full chip-dot" />
                   {tag.name}
-                  <button
-                    onClick={() => onRemoveTag(tag.id)}
-                    className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
-                  >
+                  <button onClick={() => onRemoveTag(tag.id)} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </span>
@@ -365,48 +318,70 @@ export function ContactPanel({
           ) : (
             <p className="text-xs text-surface-600">Nenhuma etiqueta. Clique em "Gerenciar" para adicionar.</p>
           )}
-        </div>
+        </Section>
 
+        {/* Agente responsável — ação mais frequente do atendente; vive logo
+            após etiquetas, acima da dobra (antes ficava depois da timeline). */}
+        <Section
+          title="Agente responsável"
+          action={
+            <button
+              onClick={() => setAssignOpen(true)}
+              className="text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
+            >
+              {assignedUser ? 'Trocar' : 'Atribuir'}
+            </button>
+          }
+        >
+          {assignedUser ? (
+            <button
+              onClick={() => setAssignOpen(true)}
+              className={cn(
+                'assigned-agent-tag w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-all',
+                'bg-brand-600/10 text-brand-300 hover:bg-brand-600/20',
+              )}
+            >
+              <Avatar name={`${assignedUser.firstName} ${assignedUser.lastName}`} size="xs" />
+              <span className="truncate">{assignedUser.firstName} {assignedUser.lastName}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setAssignOpen(true)}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-all bg-surface-800 text-surface-400 hover:bg-surface-700"
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>Ninguém atribuído</span>
+            </button>
+          )}
+          <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Atribuir usuário" className="max-w-sm">
+            <UserPickerList users={allUsers} selectedUserId={assignedUser?.id}
+              onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
+          </Modal>
+        </Section>
+
+        <ContactPanelDeals contactId={contact.id} conversationId={conversation.id} />
+
+        {/* Hidden when conversionAnalysisPanel is off — covers both the
+            "Analisar conversa com IA" CTA and any previously-rendered
+            results, so the contact panel doesn't show a half-disabled
+            feature. */}
+        {isFeatureVisible('conversionAnalysisPanel') && (
+          <ConversionAnalysisPanel conversationId={conversation.id} contact={contact} />
+        )}
+
+        {/* Informações — referência estática, acima da timeline dinâmica */}
+        <Section title="Informações">
+          <InfoTable rows={infoRows} />
+        </Section>
+
+        {/* Timeline */}
+        <ConversationActivitySection conversationId={conversation.id} />
+
+        {/* Notas */}
+        <NotasSection />
       </div>
 
-      {/* Transfer modal */}
-      <Modal open={xferModal} onClose={() => setXferModal(false)} title="Transferir conversa">
-        <p className="text-xs text-surface-500 mb-3">
-          Selecione o usuário que receberá esta conversa:
-        </p>
-        <div className="max-h-72 overflow-y-auto -mx-5 px-5">
-          {allUsers.map((user) => {
-            const isCurrent = user.id === assignedUser?.id
-            return (
-              <button
-                key={user.id}
-                onClick={() => { onTransfer(user); setXferModal(false) }}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all mb-1',
-                  isCurrent ? 'bg-brand-600/10' : 'hover:bg-surface-800'
-                )}
-              >
-                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
-                <div className="flex-1 text-left min-w-0">
-                  <p className={cn('text-sm font-medium', isCurrent ? 'text-brand-300' : 'text-surface-200')}>
-                    {user.firstName} {user.lastName}
-                    {isCurrent && <span className="text-[10px] ml-2 text-brand-400/70">atual</span>}
-                  </p>
-                  <p className="text-[11px] text-surface-500 truncate">{user.email}</p>
-                </div>
-                <span className={cn(
-                  'text-[10px] px-2 py-0.5 rounded-full font-medium',
-                  isAdminTier(user.role) ? 'bg-brand-600/20 text-brand-300' : 'bg-surface-700 text-surface-400'
-                )}>
-                  {roleLabel(user.role)}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </Modal>
-
-      {/* Archive confirm modal */}
+      {/* Transfer / Archive modals */}
       <ConfirmModal
         open={archiveOpen}
         onClose={() => setArchiveOpen(false)}

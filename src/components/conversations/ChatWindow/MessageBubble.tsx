@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, AlertTriangle, MapPin, Mic, Download, Play, Pause,
-  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2, Megaphone, CornerUpLeft,
+  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2, Megaphone, CornerUpLeft, Workflow,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -310,6 +310,11 @@ function MediaContent({
       if (el) {
         el.pause()
         el.src = ''
+        // load() aborta qualquer download em andamento; soltar o ref permite o
+        // GC coletar o elemento junto com os 5 listeners anexados a ele —
+        // sem isso, sessões longas de inbox acumulam Audio elements órfãos.
+        el.load()
+        audioRef.current = null
       }
     }
   }, [stopRafLoop])
@@ -589,9 +594,10 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       ? (message.metadata as { campaignName: string }).campaignName
       : undefined
   // Faixa lateral do bubble outbound: verde = operador humano, âmbar = IA
-  // (agente conversacional). Disparos de campanha/automação NÃO têm faixa.
+  // (agente conversacional). Disparos de campanha/automação e respostas por
+  // regra (encaminhamento/FAQ) NÃO têm faixa — não são geradas pelo LLM.
   const outboundAccent =
-    message.senderKind === 'campaign'
+    message.senderKind === 'campaign' || message.senderKind === 'rule'
       ? null
       : message.sentByUser
         ? 'rgba(16,185,129,0.7)'
@@ -731,15 +737,15 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         className={cn(
           'relative max-w-[72%] px-3 py-2 rounded-2xl',
           isOutbound
-            ? 'bg-bubble-out text-bubble-out-fg rounded-br-sm'
-            : 'bg-bubble-in text-surface-100 rounded-bl-sm shadow-sm',
+            ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg rounded-br-sm'
+            : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-sm',
           !isSameDirection && isOutbound && 'rounded-br-2xl rounded-tr-sm',
           !isSameDirection && !isOutbound && 'rounded-bl-2xl rounded-tl-sm'
         )}
         style={isOutbound ? {
           boxShadow: outboundAccent
-            ? `0 1px 2px 0 rgb(0 0 0 / 0.05), inset -3px 0 0 0 ${outboundAccent}`
-            : '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+            ? `var(--bubble-shadow-soft), inset -3px 0 0 0 ${outboundAccent}`
+            : 'var(--bubble-shadow-soft)',
         } : undefined}
       >
         {message.contextWamid && <ReplyQuoteBar message={message} quoted={quotedMessage} />}
@@ -779,6 +785,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           >
             {isOutbound && (
               // Author indicator: 📣 Campanha for campaign/template sends,
+              // ⚙️ Resposta automática for rule-based (handoff/FAQ) sends,
               // icon + first name for human operators, bot icon for AI.
               // `leading-none` keeps the text baseline matching the icon's
               // visual center so the row aligns cleanly with the timestamp.
@@ -789,6 +796,14 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                 >
                   <Megaphone className="w-3 h-3 shrink-0" />
                   <span className="leading-none truncate">{campaignName ?? 'Campanha'}</span>
+                </span>
+              ) : message.senderKind === 'rule' ? (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] leading-none text-bubble-out-time"
+                  title="Resposta automática (encaminhamento/FAQ) — não gerada pela IA"
+                >
+                  <Workflow className="w-3 h-3 shrink-0" />
+                  <span className="leading-none">Resposta automática</span>
                 </span>
               ) : (
                 <span
@@ -838,20 +853,20 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               className={cn(
                 'flex items-start gap-1.5 text-left w-0 min-w-[calc(100%+1.5rem)] -mx-3 -mb-2 mt-2 px-3 py-1.5 rounded-b-2xl border-t transition-colors',
                 message.anomaly.kind === 'handoff'
-                  ? 'bg-amber-500/15 border-amber-500/25 hover:bg-amber-500/25'
+                  ? 'bg-warning/15 border-warning/25 hover:bg-warning/25'
                   : 'bg-surface-700/40 border-surface-600/40 hover:bg-surface-700/60',
               )}
             >
               <AlertTriangle
                 className={cn(
                   'w-3 h-3 mt-0.5 shrink-0',
-                  message.anomaly.kind === 'handoff' ? 'text-amber-400' : 'text-surface-400',
+                  message.anomaly.kind === 'handoff' ? 'text-warning' : 'text-surface-400',
                 )}
               />
               <span
                 className={cn(
                   'text-[10px] leading-tight flex-1 min-w-0',
-                  message.anomaly.kind === 'handoff' ? 'text-amber-200' : 'text-surface-300',
+                  message.anomaly.kind === 'handoff' ? 'text-warning' : 'text-surface-300',
                 )}
               >
                 {message.anomaly.kind === 'handoff'

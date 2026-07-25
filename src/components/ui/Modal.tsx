@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { Button } from './Button'
 
 interface ModalProps {
   open: boolean
@@ -76,14 +77,14 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
         >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/70" />
+          {/* Backdrop — blur sutil separa o modal do contexto sem apagá-lo */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
 
           {/* Panel — flex column with capped height so the body scrolls
               while the header/footer stay pinned. */}
           <motion.div
             className={cn(
-              'relative z-10 bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl w-full max-w-sm',
+              'relative z-10 bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg',
               'flex flex-col max-h-[90vh] overflow-hidden',
               className,
             )}
@@ -95,10 +96,11 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
-              <h2 className="text-sm font-semibold text-surface-50">{title}</h2>
+              <h2 className="text-base font-display font-semibold text-surface-50">{title}</h2>
               <button
                 onClick={onClose}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all"
+                aria-label="Fechar"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -149,28 +151,17 @@ export function ConfirmModal({
   confirmLabel = 'Confirmar', danger = false, loading = false,
 }: ConfirmModalProps) {
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose} title={title} className="max-w-sm">
       <p className="text-sm text-surface-400 mb-5">{description}</p>
       <div className="flex gap-2 justify-end">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-all"
-        >
-          Cancelar
-        </button>
-        <button
+        <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+        <Button
+          variant={danger ? 'danger' : 'primary'}
           onClick={onConfirm}
-          disabled={loading}
-          className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-            danger
-              ? 'bg-danger text-white hover:bg-red-600'
-              : 'bg-brand-600 text-surface-950 hover:bg-brand-500',
-            loading && 'opacity-60 cursor-not-allowed'
-          )}
+          loading={loading}
         >
-          {loading ? 'Aguarde...' : confirmLabel}
-        </button>
+          {confirmLabel}
+        </Button>
       </div>
     </Modal>
   )

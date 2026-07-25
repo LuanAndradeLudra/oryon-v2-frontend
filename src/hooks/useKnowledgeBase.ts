@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react'
-import mammoth from 'mammoth'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -124,6 +123,8 @@ export async function fileToKBDocument(
   if (isDocx || isWord) {
     try {
       const arrayBuffer = await file.arrayBuffer()
+      // mammoth (~700KB) só é necessário para upload de .docx — carrega sob demanda
+      const { default: mammoth } = await import('mammoth')
       const result = await mammoth.extractRawText({ arrayBuffer })
       const text = result.value.trim()
       if (!text) return { doc: null, error: `"${file.name}" está vazio ou não foi possível extrair o texto.` }

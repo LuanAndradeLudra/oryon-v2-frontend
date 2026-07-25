@@ -43,7 +43,7 @@ import {
 const PAGE_TITLES: Record<string, string> = {
   '/home': 'Home',
   '/conversations': 'Conversas',
-  '/dashboard': 'Dashboard',
+  '/dashboard': 'Relatórios',
   '/contacts': 'Contatos',
   '/campaigns': 'Disparos',
   '/marketing': 'Marketing',
@@ -59,9 +59,9 @@ const PAGE_TITLES: Record<string, string> = {
  *  pattern stays single-line even on laptop widths; the longer-form copy
  *  belongs in section headers inside each page, not in the topbar. */
 const PAGE_SUBTITLES: Record<string, string> = {
-  '/home': 'Visão geral',
+  '/home': 'Seu dia num relance',
   '/conversations': 'Chat com clientes',
-  '/dashboard': 'Métricas e indicadores',
+  '/dashboard': 'Relatórios e análises',
   '/contacts': 'CRM e pipeline',
   '/campaigns': 'Campanhas em massa',
   '/marketing': 'Estratégia e canais',
@@ -69,7 +69,7 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/agents': 'Construtor de IA',
   '/copilot': 'Assistente Oryon',
   '/team': 'Habilidades dos agentes',
-  '/settings': 'Conta e equipe',
+  '/settings': 'Central do workspace',
 }
 
 // ── Search index ───────────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ const SEARCH_INDEX = ([
   // ── Páginas principais
   { type: 'page', label: 'Home', description: 'Visão geral e atalhos rápidos', href: '/home', Icon: Home, keywords: ['início', 'painel', 'overview'] },
   { type: 'page', label: 'Conversas', description: 'Atendimento via WhatsApp', href: '/conversations', Icon: MessageSquare, keywords: ['whatsapp', 'chat', 'atendimento', 'mensagens'] },
-  { type: 'page', label: 'Dashboard', description: 'Métricas, relatórios e KPIs', href: '/dashboard', Icon: BarChart3, keywords: ['métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
+  { type: 'page', label: 'Relatórios', description: 'Métricas, análises e KPIs', href: '/dashboard', Icon: BarChart3, keywords: ['dashboard', 'métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
   { type: 'page', label: 'Contatos', description: 'CRM e pipeline de leads', href: '/contacts', Icon: Users, keywords: ['crm', 'leads', 'clientes', 'pipeline', 'kanban'] },
   { type: 'page', label: 'Disparos', description: 'Campanhas de mensagens em massa', href: '/campaigns', Icon: Send, keywords: ['campanhas', 'broadcast', 'envio', 'massa'] },
   { type: 'page', label: 'Marketing', description: 'Meta Ads e funil de conversão', href: '/marketing', Icon: Megaphone, keywords: ['meta', 'ads', 'facebook', 'instagram', 'funil', 'tráfego'] },
@@ -475,13 +475,11 @@ function NotificationItem({
         </div>
       ) : (
         <div
-          className={cn(
-            'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5',
-            style.iconBg,
-          )}
+          style={{ ['--chip']: style.chip } as React.CSSProperties}
+          className="color-chip w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border"
           aria-hidden
         >
-          <Icon className={cn('w-4 h-4', style.iconText)} />
+          <Icon className="w-4 h-4 text-white" />
         </div>
       )}
 
@@ -498,8 +496,9 @@ function NotificationItem({
           </p>
           {priority === 'urgent' && (
             <span
+              style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
               className={cn(
-                'shrink-0 text-[9px] font-bold uppercase tracking-wider text-danger px-1.5 py-0.5 rounded bg-danger/10 border border-danger/30',
+                'color-chip shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border',
                 priorityStyle.showPulse && 'animate-pulse',
               )}
             >
@@ -524,12 +523,8 @@ function NotificationItem({
           {onCategoryClick && (
             <button
               onClick={handleCategoryChip}
-              className={cn(
-                'text-[10px] font-medium px-1.5 py-0.5 rounded transition-colors',
-                style.iconBg,
-                style.iconText,
-                'hover:brightness-125',
-              )}
+              style={{ ['--chip']: style.chip } as React.CSSProperties}
+              className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded border transition-[filter] hover:brightness-125"
               title="Filtrar por este tipo"
             >
               {style.label}
@@ -840,18 +835,16 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
       <motion.div
         ref={modalRef}
         {...motionProps}
-        className="w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border border-surface-700 bg-surface-900 shadow-2xl"
+        className="w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col rounded-2xl overlay-frame border bg-surface-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b border-surface-800">
           <div
-            className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-              catStyle.iconBg,
-            )}
+            className="w-10 h-10 rounded-xl color-chip border flex items-center justify-center flex-shrink-0"
+            style={{ ['--chip']: catStyle.chip } as React.CSSProperties}
             aria-hidden
           >
-            <Icon className={cn('w-5 h-5', catStyle.iconText)} />
+            <Icon className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 id="notif-modal-title" className="text-sm font-semibold text-surface-100 leading-snug">{n.title}</h3>
@@ -1160,7 +1153,7 @@ function NotificationsPanel() {
         {ariaAnnouncement}
       </div>
 
-      <div className="absolute top-full right-0 mt-2 w-[26rem] max-w-[calc(100vw-1rem)] bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl z-50 overflow-hidden animate-slide-in-right">
+      <div className="absolute top-full right-0 mt-2 w-[26rem] max-w-[calc(100vw-1rem)] overlay-surface border rounded-2xl z-50 overflow-hidden animate-slide-in-right">
         <div className="px-4 py-3 border-b border-surface-700/60 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-surface-100">Notificações</span>
@@ -1200,10 +1193,13 @@ function NotificationsPanel() {
               <button
                 key={chip.key}
                 onClick={() => handleCategoryClick(chip)}
+                style={activeCategory === chip.key
+                  ? ({ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties)
+                  : undefined}
                 className={cn(
                   'px-2 py-0.5 rounded-md text-[10px] font-medium border shrink-0 transition-colors',
                   activeCategory === chip.key
-                    ? 'bg-brand-600/20 border-brand-600/40 text-brand-200'
+                    ? 'color-chip'
                     : 'bg-surface-800/40 border-surface-700 text-surface-400 hover:text-surface-200',
                 )}
               >
@@ -1226,7 +1222,7 @@ function NotificationsPanel() {
                   for new and archived items. Reduced-motion disables transitions. */}
               {groups.map((g) => (
                 <div key={g.label}>
-                  <div className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-surface-500 bg-surface-950/40 sticky top-0 backdrop-blur-sm">
+                  <div className="px-4 pt-2.5 pb-2 text-[10px] font-semibold uppercase tracking-wider text-surface-500 bg-[var(--color-overlay)] border-b border-surface-700/50 sticky top-0 z-10">
                     {g.label}
                   </div>
                   <AnimatePresence initial={false}>
@@ -1479,14 +1475,14 @@ export function TopBar() {
   }
 
   return (
-    <div className="h-12 flex-shrink-0 bg-black border-b border-surface-700/50 px-4 flex items-center gap-3">
+    <div className="conv-surface h-12 flex-shrink-0 bg-surface-950 border-b border-surface-800/60 px-4 flex items-center gap-3">
 
       {/* Left: page title + subtitle (inline with "·" bullet separator).
           Subtitle hidden on small viewports so the row stays single-line
           on phones. Title stays bold; bullet + subtitle use the muted
           surface-500/600 ramp so the secondary copy doesn't compete. */}
       <div className="flex items-baseline gap-2 min-w-0">
-        <span className="text-sm font-semibold text-surface-100 flex-shrink-0 truncate">
+        <span className="text-sm font-display font-bold text-surface-50 flex-shrink-0 truncate">
           {pageTitle}
         </span>
         {pageSubtitle && (
@@ -1573,7 +1569,12 @@ export function TopBar() {
             )}
           </button>
 
-          {notifOpen && <NotificationsPanel />}
+          {notifOpen && (
+            <>
+              <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setNotifOpen(false)} />
+              <NotificationsPanel />
+            </>
+          )}
         </div>
       </div>
 
@@ -1597,7 +1598,7 @@ export function TopBar() {
               <div className="absolute inset-0 bg-black/70" />
               <motion.div
                 ref={searchRef}
-                className="relative z-10 w-full max-w-xl bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl overflow-hidden"
+                className="relative z-10 w-full max-w-xl bg-surface-900 overlay-frame border rounded-2xl overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
                 initial={{ opacity: 0, y: -6, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}

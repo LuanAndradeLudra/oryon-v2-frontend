@@ -3,7 +3,7 @@ import { Tag as TagIcon, X, Plus, Loader2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { TagPickerContent } from '@/components/ui/TagPicker'
 import { tagsApi } from '@/services/api'
-import { hexToRgba, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { Contact, Tag } from '@/types'
 
 interface TagsCardProps {
@@ -82,16 +82,11 @@ export function TagsCard({ contact, onAddTag, onRemoveTag }: TagsCardProps) {
             {selectedTags.map((tag) => (
               <span
                 key={tag.id}
-                className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full font-medium border"
-                style={{
-                  backgroundColor: hexToRgba(tag.color, 0.18),
-                  color: tag.color,
-                  borderColor: hexToRgba(tag.color, 0.4),
-                }}
+                className="color-chip inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full font-medium border"
+                style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
                 <span
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: tag.color }}
+                  className="w-1.5 h-1.5 rounded-full chip-dot"
                 />
                 {tag.name}
                 <button

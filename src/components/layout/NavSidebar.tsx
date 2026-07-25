@@ -8,7 +8,6 @@ import {
   Zap,
   Home,
   Send,
-  Sparkles,
   Megaphone,
   Workflow,
   MessagesSquare,
@@ -16,7 +15,14 @@ import {
   ShieldCheck,
   Activity,
   LineChart,
+  Sun,
+  Moon,
+  Pin,
+  PinOff,
 } from 'lucide-react'
+import { CopilotMark } from '@/lib/icons'
+import { cn } from '@/lib/utils'
+import { useTheme } from '@/hooks/useTheme'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
@@ -59,6 +65,10 @@ function LogoSection() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -6 }}
             transition={{ duration: 0.15 }}
+            // SEM a classe oryon-wordmark: essa classe inverte a wordmark
+            // (branca→preta) no tema claro, mas a sidebar agora é sempre
+            // escura — a wordmark original (branca) precisa ficar como está
+            // nos dois temas, senão fica preta sobre fundo escuro.
             className="h-[27px] w-auto select-none"
             draggable={false}
           />
@@ -77,6 +87,7 @@ function UserFooter({
 }) {
   const { open, animate } = useSidebar()
   const { user } = useAuth()
+  const { theme, toggle } = useTheme()
 
   const name = currentUser
     ? `${currentUser.firstName} ${currentUser.lastName}`
@@ -88,14 +99,42 @@ function UserFooter({
     <div className="flex flex-col gap-0.5">
       <div className="mx-3 mb-2 border-t border-surface-800/60" />
 
+      {/* Theme toggle */}
+      <button
+        onClick={toggle}
+        title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+        aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+        className="w-full text-left"
+      >
+        <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-white hover:bg-white/10">
+          <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
+            {theme === 'dark' ? <Sun className="w-[14.7px] h-[14.7px]" /> : <Moon className="w-[14.7px] h-[14.7px]" />}
+          </span>
+          <AnimatePresence>
+            {(!animate || open) && (
+              <motion.span
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.15 }}
+                className="text-sm font-medium whitespace-pre overflow-hidden"
+              >
+                {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
+      </button>
+
       {/* Logout */}
       <button
         onClick={onLogout}
+        aria-label="Sair da conta"
         className="w-full text-left"
       >
         <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-danger hover:bg-danger/10">
           <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-[18.4px] h-[18.4px]" />
           </span>
           <AnimatePresence>
             {(!animate || open) && (
@@ -149,6 +188,14 @@ function UserFooter({
 
 export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false }: NavSidebarProps) {
   const [open, setOpen] = useState(false)
+  const [pinned, setPinned] = useState(() => {
+    try { return localStorage.getItem('oryon:sidebar-pinned') === '1' } catch { return false }
+  })
+  const togglePinned = () => setPinned((p) => {
+    const next = !p
+    try { localStorage.setItem('oryon:sidebar-pinned', next ? '1' : '0') } catch { /* ignore */ }
+    return next
+  })
   const [whatsappUnread, setWhatsappUnread] = useState(totalUnread)
   const location = useLocation()
   const navigate = useNavigate()
@@ -195,21 +242,21 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   }
 
   const geralItems = [
-    { icon: <Home className="w-4.5 h-4.5" />,          label: 'Home',       href: '/home' },
+    { icon: <Home className="w-[16.5px] h-[16.5px]" />,          label: 'Home',       href: '/home' },
     {
-      icon: <BarChart3 className="w-4.5 h-4.5" />,
-      label: 'Dashboard',
+      icon: <BarChart3 className="w-[16.5px] h-[16.5px]" />,
+      label: 'Relatórios',
       href: '/dashboard',
       nudge: !checklist.dashboard ? 'Novo' : undefined,
     },
     {
-      icon: <MessageSquare className="w-4.5 h-4.5" />,
+      icon: <MessageSquare className="w-[16.5px] h-[16.5px]" />,
       label: 'Conversas',
       href: '/conversations',
       badge: whatsappUnread > 0 ? whatsappUnread : undefined,
     },
     {
-      icon: <Users className="w-4.5 h-4.5" />,
+      icon: <Users className="w-[16.5px] h-[16.5px]" />,
       label: vocab.contacts,
       href: '/contacts',
       nudge: !organizationConfigured ? 'Configurar' : undefined,
@@ -218,20 +265,20 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
 
   const ferramentasItems = [
     {
-      icon: <Send className="w-4.5 h-4.5" />,
+      icon: <Send className="w-[16.5px] h-[16.5px]" />,
       label: 'Disparos',
       href: '/campaigns',
       nudge: !checklist.campaigns ? 'Novo' : undefined,
     },
-    { icon: <Megaphone className="w-4.5 h-4.5" />, label: 'Marketing',   href: '/marketing' },
-    { icon: <Workflow className="w-4.5 h-4.5" />,   label: 'Automações',  href: '/automations' },
-    { icon: <Bot className="w-4.5 h-4.5" />,        label: 'Agentes IA',  href: '/agents' },
-    { icon: <Sparkles className="w-4.5 h-4.5" />,   label: 'Copilot AI', href: '/copilot',
+    { icon: <Megaphone className="w-[16.5px] h-[16.5px]" />, label: 'Marketing',   href: '/marketing' },
+    { icon: <Workflow className="w-[16.5px] h-[16.5px]" />,   label: 'Automações',  href: '/automations' },
+    { icon: <Bot className="w-[16.5px] h-[16.5px]" />,        label: 'Agentes IA',  href: '/agents' },
+    { icon: <CopilotMark className="w-[16.5px] h-[16.5px]" />,   label: 'Copilot AI', href: '/copilot',
       nudge: !checklist.copilot ? 'Setup' : undefined },
   ].filter((item) => isRouteVisible(item.href))
 
   const internalChatItem = {
-    icon: <MessagesSquare className="w-4.5 h-4.5" />,
+    icon: <MessagesSquare className="w-[16.5px] h-[16.5px]" />,
     label: 'Nexus',
     href: '/team',
     badge: internalUnread > 0 ? internalUnread : undefined,
@@ -246,15 +293,36 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   // (via inline style). The wrapper className `[&_.nav-sidebar]:!w-full`
   // overrides that inline width so the sidebar fills its parent — used when
   // embedded in a mobile drawer that is wider than 228px.
-  const sidebarOpen = forceExpanded ? true : open
-  const sidebarSetOpen = forceExpanded ? () => {} : setOpen
-  const sidebarAnimate = !forceExpanded
+  //
+  // PIN: quem trabalha 8h/dia pode FIXAR a sidebar expandida — o hover-expand
+  // padrão re-layouta a tela a cada passagem do mouse (jank acumulado). O pin
+  // persiste em localStorage e reaproveita o caminho do forceExpanded.
+  const expanded = forceExpanded || pinned
+  const sidebarOpen = expanded ? true : open
+  const sidebarSetOpen = expanded ? () => {} : setOpen
+  const sidebarAnimate = !expanded
 
   const body = (
     <Sidebar open={sidebarOpen} setOpen={sidebarSetOpen} animate={sidebarAnimate}>
       <SidebarBody className="justify-between">
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-          <LogoSection />
+          <div className="relative">
+            <LogoSection />
+            {/* Pin — visível só com a sidebar aberta (hover ou fixada) */}
+            {!forceExpanded && sidebarOpen && (
+              <button
+                onClick={togglePinned}
+                aria-label={pinned ? 'Soltar navegação' : 'Fixar navegação'}
+                title={pinned ? 'Soltar navegação (expande no hover)' : 'Fixar navegação expandida'}
+                className={cn(
+                  'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center transition-colors cursor-pointer',
+                  pinned ? 'text-brand-400 hover:text-brand-300' : 'text-surface-600 hover:text-surface-300',
+                )}
+              >
+                {pinned ? <Pin className="w-3.5 h-3.5" /> : <PinOff className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
 
           {/* GERAL */}
           {geralItems.length > 0 && (
@@ -318,31 +386,31 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
               <nav className="flex flex-col gap-0.5 px-1.5">
                 <SidebarLink
                   href="/admin/skill-templates"
-                  icon={<ShieldCheck className="w-4.5 h-4.5" />}
+                  icon={<ShieldCheck className="w-[16.5px] h-[16.5px]" />}
                   label="Skills"
                   active={activeHref.startsWith('/admin/skill')}
                 />
                 <SidebarLink
                   href="/admin/agents"
-                  icon={<Bot className="w-4.5 h-4.5" />}
+                  icon={<Bot className="w-[16.5px] h-[16.5px]" />}
                   label="Agentes (cross-tenant)"
                   active={activeHref.startsWith('/admin/agents')}
                 />
                 <SidebarLink
                   href="/admin/audit"
-                  icon={<Activity className="w-4.5 h-4.5" />}
+                  icon={<Activity className="w-[16.5px] h-[16.5px]" />}
                   label="Auditoria"
                   active={activeHref === '/admin/audit'}
                 />
                 <SidebarLink
                   href="/admin/ai-observability"
-                  icon={<LineChart className="w-4.5 h-4.5" />}
+                  icon={<LineChart className="w-[16.5px] h-[16.5px]" />}
                   label="AI Observability"
                   active={activeHref === '/admin/ai-observability'}
                 />
                 <SidebarLink
                   href="/admin/ai-executions"
-                  icon={<Bot className="w-4.5 h-4.5" />}
+                  icon={<Bot className="w-[16.5px] h-[16.5px]" />}
                   label="AI Executions"
                   active={activeHref === '/admin/ai-executions'}
                 />
@@ -357,7 +425,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
               <nav className="flex flex-col gap-0.5 px-1.5">
                 <SidebarLink
                   href="/settings"
-                  icon={<Settings className="w-4.5 h-4.5" />}
+                  icon={<Settings className="w-[16.5px] h-[16.5px]" />}
                   label="Configurações"
                   active={activeHref === '/settings'}
                   nudge={(!checklist.company || !checklist.profile) ? 'Setup' : undefined}

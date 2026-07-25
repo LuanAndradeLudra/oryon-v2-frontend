@@ -7,13 +7,14 @@ import { DollarSign, Users, Target, BarChart2, ChevronDown, ChevronUp, ArrowRigh
 import { AnimatePresence } from 'framer-motion'
 import { attributionApi } from '@/services/api'
 import type { AdCampaignMetrics, MarketingFunnelTotals } from '@/types'
-import { C } from '@/components/dashboard/utils'
+import { useChartColors } from '@/hooks/useChartColors'
 import { cn } from '@/lib/utils'
 import { CampaignLeadsDrawer } from './CampaignLeadsDrawer'
 
 // ── Leads over time chart ─────────────────────────────────────────────────────
 
 function AttributedLeadsChart() {
+  const C = useChartColors()
   const [data, setData] = useState<Array<{ date: string; meta: number }>>([])
   const [loading, setLoading] = useState(true)
 
@@ -77,6 +78,7 @@ function PerCampaignBreakdown({
   campaigns: AdCampaignMetrics[]
   onLeadsClick: (campaignId: string, campaignName: string) => void
 }) {
+  const C = useChartColors()
   const [expanded, setExpanded] = useState<string | null>(null)
 
   return (
@@ -166,31 +168,32 @@ function TotalsStrip({
 }) {
   const items = [
     { label: 'Total Investido', value: `R$ ${totals.spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: <DollarSign className="w-4 h-4" />, color: '#1877f2', clickable: false },
-    { label: 'Total de Leads',  value: totals.leads.toLocaleString('pt-BR'), icon: <Users className="w-4 h-4" />, color: '#f59e0b', clickable: true },
-    { label: 'CPL Médio',       value: `R$ ${totals.avgCpl.toFixed(2)}`,     icon: <Target className="w-4 h-4" />, color: '#8b5cf6', clickable: false },
-    { label: 'ROAS Médio',      value: `${totals.avgRoas.toFixed(1)}x`,      icon: <BarChart2 className="w-4 h-4" />, color: '#10b981', clickable: false },
+    { label: 'Total de Leads',  value: totals.leads.toLocaleString('pt-BR'), icon: <Users className="w-4 h-4" />, color: 'var(--color-accent-amber)', clickable: true },
+    { label: 'CPL Médio',       value: `R$ ${totals.avgCpl.toFixed(2)}`,     icon: <Target className="w-4 h-4" />, color: 'var(--color-accent-violet)', clickable: false },
+    { label: 'ROAS Médio',      value: `${totals.avgRoas.toFixed(1)}x`,      icon: <BarChart2 className="w-4 h-4" />, color: 'var(--color-accent-green)', clickable: false },
   ]
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    // No rail, os totais empilham em coluna única (2 col em telas médias)
+    <div className="grid grid-cols-2 xl:grid-cols-1 gap-3">
       {items.map((item) => (
         <div
           key={item.label}
           className={cn(
             'bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 flex items-center gap-3',
-            item.clickable && 'cursor-pointer hover:border-[#f59e0b]/40 hover:bg-surface-800/50 transition-all group',
+            item.clickable && 'cursor-pointer hover:border-accent-amber/40 hover:bg-surface-800/50 transition-all group',
           )}
           onClick={item.clickable ? onLeadsClick : undefined}
           title={item.clickable ? 'Clique para ver os leads' : undefined}
         >
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: item.color + '1a', color: item.color }}>
+            style={{ backgroundColor: `color-mix(in srgb, ${item.color} 10%, transparent)`, color: item.color }}>
             {item.icon}
           </div>
           <div>
             <p className="text-[10px] text-surface-400 leading-tight">{item.label}</p>
             <div className="flex items-center gap-1">
               <p className="text-base font-bold text-surface-100 tabular-nums">{item.value}</p>
-              {item.clickable && <ChevronDown className="w-3 h-3 text-surface-500 group-hover:text-[#f59e0b] transition-colors" />}
+              {item.clickable && <ChevronDown className="w-3 h-3 text-surface-500 group-hover:text-accent-amber transition-colors" />}
             </div>
           </div>
         </div>
@@ -229,18 +232,26 @@ export function AttributionTab() {
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+      <div className="flex-1 overflow-y-auto px-6 py-6">
         {/* Header */}
-        <div>
-          <p className="text-sm font-bold text-surface-100">Atribuição de Anúncios</p>
+        <div className="mb-5">
+          <p className="text-sm font-display font-bold text-surface-100">Atribuição de Anúncios</p>
           <p className="text-xs text-surface-400 mt-0.5">Rastreamento de leads gerados por Meta Ads nos últimos 30 dias</p>
         </div>
 
-        {totals && <TotalsStrip totals={totals} onLeadsClick={handleTotalLeadsClick} />}
-        <AttributedLeadsChart />
-        {campaigns.length > 0 && (
-          <PerCampaignBreakdown campaigns={campaigns} onLeadsClick={handleLeadsClick} />
-        )}
+        {/* Main (série temporal + funil por campanha) + rail (totais) —
+            mesmo padrão de Home/Relatórios/Marketing. */}
+        <div className="grid grid-cols-12 gap-4 items-start">
+          <div className="col-span-12 xl:col-span-8 space-y-4">
+            <AttributedLeadsChart />
+            {campaigns.length > 0 && (
+              <PerCampaignBreakdown campaigns={campaigns} onLeadsClick={handleLeadsClick} />
+            )}
+          </div>
+          <div className="col-span-12 xl:col-span-4 order-first xl:order-none">
+            {totals && <TotalsStrip totals={totals} onLeadsClick={handleTotalLeadsClick} />}
+          </div>
+        </div>
       </div>
 
       <AnimatePresence>

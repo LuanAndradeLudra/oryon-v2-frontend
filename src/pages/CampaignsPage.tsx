@@ -1,13 +1,12 @@
-import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { Send, FileText, X, Target } from 'lucide-react'
-import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
+import { TipCard } from '@/components/ui/TipCard'
 import { CampaignsTab } from '@/components/campaigns/CampaignsTab'
 import { TemplatesTab } from '@/components/campaigns/TemplatesTab'
 import { AttributionTab } from '@/components/campaigns/AttributionTab'
@@ -24,32 +23,15 @@ export function CampaignsPage() {
   const { user } = useAuth()
   const { isFeatureVisible } = useFeatureVisibility()
   const { checklist, markDone } = useSetupChecklist(user?.id)
-  const [activeTab, setActiveTab] = useState<Tab>('campaigns')
+  // Tab na URL (?tab=) — deep-linkável e sobrevive a reload; os tabs vivem
+  // IN-PAGE (padrão underline do app), não no TopBar global, onde eram
+  // invisíveis para quem escaneia a página.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const rawTab = searchParams.get('tab')
+  const activeTab: Tab = rawTab === 'templates' || rawTab === 'attribution' ? rawTab : 'campaigns'
+  const setActiveTab = (tab: Tab) =>
+    setSearchParams(tab === 'campaigns' ? {} : { tab }, { replace: true })
   const campaignsEnabled = isFeatureVisible('campaigns')
-
-  useRegisterTopBarActions(
-    <div className="flex items-center bg-surface-800 border border-surface-700 rounded-lg p-0.5">
-      {TABS.map((tab) => {
-        const Icon = tab.icon
-        return (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-              activeTab === tab.id
-                ? 'bg-surface-700 text-surface-100 shadow-sm'
-                : 'text-surface-400 hover:text-surface-200'
-            )}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            {tab.label}
-          </button>
-        )
-      })}
-    </div>,
-    [activeTab],
-  )
 
   if (!campaignsEnabled) {
     return <Navigate to="/home" replace />
@@ -57,41 +39,52 @@ export function CampaignsPage() {
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Tabs in-page — mesmo padrão underline do detalhe de Agentes */}
+        <div
+          role="tablist"
+          aria-label="Seções de campanhas"
+          className="flex items-center gap-1 px-6 border-b border-surface-800/60 flex-shrink-0 overflow-x-auto"
+        >
+          {TABS.map((tab) => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-2.5 -mb-px border-b-2 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
+                  activeTab === tab.id
+                    ? 'text-surface-50 border-brand-500'
+                    : 'text-surface-500 border-transparent hover:text-surface-300',
+                )}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
         {/* Setup card */}
         <AnimatePresence>
           {!checklist.campaigns && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.3 }}
-              className="flex items-start gap-4 bg-brand-950/50 border border-brand-500/20 rounded-2xl px-5 py-4 mx-6 mt-4"
+            <TipCard
+              icon={<Send className="w-4 h-4 text-brand-400" />}
+              title="Configure sua primeira campanha"
+              description="Crie templates de mensagem aprovados pelo WhatsApp e dispare campanhas em massa para seus contatos segmentados."
+              onDismiss={() => markDone('campaigns')}
+              className="mx-6 mt-4"
             >
-              <div className="w-8 h-8 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Send className="w-4 h-4 text-brand-400" />
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  onClick={() => { setActiveTab('templates'); markDone('campaigns') }}
+                  className="text-xs text-brand-400 hover:text-brand-300 font-medium transition-colors"
+                >
+                  Criar template →
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-surface-100">Configure sua primeira campanha</p>
-                <p className="text-xs text-surface-400 mt-0.5 leading-relaxed">
-                  Crie templates de mensagem aprovados pelo WhatsApp e dispare campanhas em massa para seus contatos segmentados.
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <button
-                    onClick={() => { setActiveTab('templates'); markDone('campaigns') }}
-                    className="text-xs text-brand-400 hover:text-brand-300 font-medium transition-colors"
-                  >
-                    Criar template →
-                  </button>
-                </div>
-              </div>
-              <button
-                onClick={() => markDone('campaigns')}
-                className="flex-shrink-0 text-surface-500 hover:text-surface-300 transition-colors mt-0.5"
-                title="Fechar"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </motion.div>
+            </TipCard>
           )}
         </AnimatePresence>
 

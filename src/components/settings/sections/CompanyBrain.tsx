@@ -5,9 +5,11 @@ import {
   UploadCloud, FileText, FileImage, File, X, Loader2, CheckCircle2, AlertCircle, RefreshCw,
 } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -432,13 +434,12 @@ export function CompanyBrain() {
         </div>
       </div>
 
-      {/* ── Row 1: Identidade + Sobre o Negócio ─────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
-
-        {/* Identidade */}
-        <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col">
-          <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-3">Identidade</h3>
-          <div className="space-y-3 flex-1">
+      {/* Identidade */}
+      <SettingsSection
+        title="Identidade"
+        description="Nome, setor e porte orientam o tom e o contexto das respostas da IA."
+      >
+        <div className="space-y-3">
             <FormField label="Nome da empresa" required>
               <Input
                 value={form.companyName}
@@ -469,13 +470,15 @@ export function CompanyBrain() {
                 ))}
               </div>
             </FormField>
-          </div>
         </div>
+      </SettingsSection>
 
-        {/* Sobre o Negócio */}
-        <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col">
-          <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-3">Sobre o Negócio</h3>
-          <div className="space-y-3 flex-1">
+      {/* Sobre o Negócio */}
+      <SettingsSection
+        title="Sobre o negócio"
+        description="É daqui que o Copilot e os agentes tiram o que dizer sobre sua empresa, produtos e preços."
+      >
+        <div className="space-y-3">
             <FormField
               label="O que você faz?"
               hint="Missão, público-alvo e principais diferenciais."
@@ -501,17 +504,15 @@ export function CompanyBrain() {
                 className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors resize-none"
               />
             </FormField>
-          </div>
         </div>
-      </div>
+      </SettingsSection>
 
-      {/* ── Row 2: Presença Online + Arquivos da Marca ───────────────────── */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-
-        {/* Presença Online */}
-        <div className="bg-surface-900 border border-surface-800 rounded-xl p-4">
-          <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-3">Presença Online</h3>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+      {/* Presença Online */}
+      <SettingsSection
+        title="Presença online"
+        description="Site e redes sociais que a IA pode citar ao responder seus clientes."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             {([
               { key: 'website',   label: 'Site',               icon: Globe,      placeholder: 'https://seusite.com.br' },
               { key: 'whatsapp',  label: 'WhatsApp',            icon: Phone,      placeholder: '(11) 99999-9999 ou link' },
@@ -530,27 +531,26 @@ export function CompanyBrain() {
                 </div>
               </div>
             ))}
-          </div>
         </div>
+      </SettingsSection>
 
-        {/* Arquivos da Marca */}
-        <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide">Arquivos da Marca</h3>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 font-medium">Analisado por IA</span>
-          </div>
-          <p className="text-[11px] text-surface-500 mb-3 leading-relaxed">
-            PDFs, DOCX, imagens e textos são lidos pela IA e o conteúdo é usado automaticamente no Copilot e nos agentes.
-          </p>
-          <BrandFilesSection
-            files={form.brandFiles ?? []}
-            onChange={brandFiles => patch({ brandFiles })}
-          />
+      {/* Arquivos da Marca */}
+      <SettingsSection
+        title="Arquivos da marca"
+        description="PDFs, DOCX, imagens e textos são lidos pela IA e o conteúdo alimenta o Copilot e os agentes."
+      >
+        <div className="flex justify-end mb-2">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 font-medium">Analisado por IA</span>
         </div>
-      </div>
+        <BrandFilesSection
+          files={form.brandFiles ?? []}
+          onChange={brandFiles => patch({ brandFiles })}
+        />
+      </SettingsSection>
 
-      <div className="flex justify-end gap-3">
-        <button
+      <div className="flex justify-end gap-3 mt-6">
+        <Button
+          variant="secondary"
           onClick={async () => {
             setSyncing(true)
             try {
@@ -562,20 +562,13 @@ export function CompanyBrain() {
               setSyncing(false)
             }
           }}
-          disabled={syncing || !(form.brandFiles?.length)}
-          className="px-4 py-2.5 bg-surface-800 hover:bg-surface-700 disabled:opacity-50 border border-surface-700 text-surface-200 text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
+          disabled={!(form.brandFiles?.length)}
+          loading={syncing}
+          leftIcon={<RefreshCw className="w-4 h-4" />}
         >
-          {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Sincronizar com IA
-        </button>
-        <button
-          onClick={save}
-          disabled={loading}
-          className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
-        >
-          {loading && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-          Salvar contexto
-        </button>
+        </Button>
+        <Button onClick={save} loading={loading}>Salvar contexto</Button>
       </div>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />

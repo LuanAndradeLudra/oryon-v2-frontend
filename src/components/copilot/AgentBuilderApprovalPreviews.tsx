@@ -196,7 +196,7 @@ export function MatchCountHint({
   const count = currentText.split(find).length - 1
   if (count === 0) {
     return (
-      <p className="text-[10px] flex items-center gap-1 text-red-400">
+      <p className="text-[10px] flex items-center gap-1 text-danger">
         <AlertTriangle className="h-3 w-3" />
         <span><strong>0 ocorrências</strong> encontradas — a tool vai falhar. Verifique pontuação/acentos exatos.</span>
       </p>
@@ -204,7 +204,7 @@ export function MatchCountHint({
   }
   if (count === 1) {
     return (
-      <p className="text-[10px] flex items-center gap-1 text-emerald-400">
+      <p className="text-[10px] flex items-center gap-1 text-success">
         <Sparkles className="h-3 w-3" />
         <span><strong>1 ocorrência</strong> encontrada — substituição segura.</span>
       </p>
@@ -213,14 +213,14 @@ export function MatchCountHint({
   // Multiple matches
   if (replaceAll) {
     return (
-      <p className="text-[10px] flex items-center gap-1 text-amber-400">
+      <p className="text-[10px] flex items-center gap-1 text-warning">
         <AlertTriangle className="h-3 w-3" />
         <span><strong>{count} ocorrências</strong> — todas serão substituídas (replaceAll).</span>
       </p>
     )
   }
   return (
-    <p className="text-[10px] flex items-center gap-1 text-red-400">
+    <p className="text-[10px] flex items-center gap-1 text-danger">
       <AlertTriangle className="h-3 w-3" />
       <span><strong>{count} ocorrências</strong> — a tool vai falhar sem replaceAll. Use find mais específico OU ative replaceAll.</span>
     </p>
@@ -261,17 +261,17 @@ export function DiffContextPreview({ find, replace, currentText }: DiffContextPr
         Pré-visualização (primeira ocorrência)
       </div>
       {/* BEFORE — red-highlighted find */}
-      <div className="rounded-md border border-red-500/20 bg-red-500/5 px-2.5 py-1.5">
-        <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-red-400">antes</div>
+      <div className="rounded-md border border-danger/20 bg-danger/5 px-2.5 py-1.5">
+        <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-danger">antes</div>
         <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-snug text-surface-300">
-{truncBefore ? '… ' : ''}{leading}<span className="rounded bg-red-500/30 px-0.5 text-red-100 line-through decoration-red-400/70">{find}</span>{trailing}{truncAfter ? ' …' : ''}
+{truncBefore ? '… ' : ''}{leading}<span className="rounded bg-danger/30 px-0.5 text-danger line-through decoration-danger/70">{find}</span>{trailing}{truncAfter ? ' …' : ''}
         </pre>
       </div>
       {/* AFTER — green-highlighted replace */}
-      <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-1.5">
-        <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-400">depois</div>
+      <div className="rounded-md border border-success/20 bg-success/5 px-2.5 py-1.5">
+        <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-success">depois</div>
         <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-snug text-surface-300">
-{truncBefore ? '… ' : ''}{leading}<span className="rounded bg-emerald-500/30 px-0.5 text-emerald-100">{replace || <span className="italic text-emerald-400/70">(vazio)</span>}</span>{trailing}{truncAfter ? ' …' : ''}
+{truncBefore ? '… ' : ''}{leading}<span className="rounded bg-success/30 px-0.5 text-success">{replace || <span className="italic text-success/70">(vazio)</span>}</span>{trailing}{truncAfter ? ' …' : ''}
         </pre>
       </div>
     </div>
@@ -432,14 +432,14 @@ export function SystemPromptApprovalPreview({
 
       {isUpdate && (
         <div className="space-y-2.5">
-          <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+          <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <div>
               <strong>Reescrita TOTAL do system prompt.</strong> O conteúdo anterior será substituído inteiramente.
               Se o objetivo é só adicionar/alterar um trecho, peça para o copiloto usar
-              <code className="mx-1 rounded bg-red-500/20 px-1 py-0.5">append_*</code>
+              <code className="mx-1 rounded bg-danger/20 px-1 py-0.5">append_*</code>
               ou
-              <code className="mx-1 rounded bg-red-500/20 px-1 py-0.5">replace_in_*</code>.
+              <code className="mx-1 rounded bg-danger/20 px-1 py-0.5">replace_in_*</code>.
             </div>
           </div>
           <ExpandableTextarea
@@ -584,7 +584,7 @@ export function KnowledgeDocApprovalPreview({
 
       {isUpdate && (
         <div className="space-y-2.5">
-          <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+          <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <div>
               <strong>Reescrita TOTAL do documento.</strong> O conteúdo anterior será substituído e o RAG re-indexado.
@@ -631,7 +631,7 @@ export function HandoffRuleApprovalPreview({
           <div className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Agente</div>
           <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
         </div>
-        <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+        <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div>Remover uma regra de handoff do agente. Esta ação <strong>não pode ser desfeita</strong>.</div>
         </div>
@@ -988,7 +988,7 @@ export function CompanyBrainApprovalPreview({
 
   return (
     <div className="space-y-2.5">
-      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-200">
+      <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
         Esta alteração afeta <strong>TODOS os agentes</strong> do tenant.
       </div>
 

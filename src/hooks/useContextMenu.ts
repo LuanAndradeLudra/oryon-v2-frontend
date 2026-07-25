@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useContextMenuCtx, type ContextMenuEntry } from '@/components/ui/ContextMenu'
+import { useContextMenuCtx, type ContextMenuEntry } from '@/components/ui/contextMenuCore'
 
 type ItemsBuilder = (e: React.MouseEvent) => ContextMenuEntry[]
 

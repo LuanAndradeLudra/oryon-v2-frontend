@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Monitor, Smartphone, Globe, Shield, ShieldAlert } from 'lucide-react'
+import { Monitor, Smartphone, Globe } from 'lucide-react'
 import axios from 'axios'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonList, SkeletonTable } from '@/components/ui/Skeleton'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
@@ -44,53 +47,65 @@ export function SecuritySettings() {
   const [revokeTarget, setRevokeTarget] = useState<ActiveSession | null>(null)
   const [logsPage, setLogsPage] = useState(1)
   const [logsTotal, setLogsTotal] = useState(0)
+  const [sessionsError, setSessionsError] = useState(false)
+  const [sessionsReloadKey, setSessionsReloadKey] = useState(0)
+  const [logsError, setLogsError] = useState(false)
+  const [logsReloadKey, setLogsReloadKey] = useState(0)
 
   useEffect(() => {
+    setSessionsError(false)
     axios.get<ActiveSession[]>(`${API}/sessions`).then((r) => {
       setSessions(Array.isArray(r.data) ? r.data : [])
       setSessionsLoading(false)
-    }).catch(() => { setSessions([]); setSessionsLoading(false) })
-  }, [])
+    }).catch(() => { setSessionsError(true); setSessionsLoading(false) })
+  }, [sessionsReloadKey])
 
   useEffect(() => {
     setLogsLoading(true)
+    setLogsError(false)
     axios.get<{ data: AuditLog[]; total: number }>(`${API}/audit-logs?page=${logsPage}&limit=10`).then((r) => {
       setLogs(r.data.data ?? [])
       setLogsTotal(r.data.total ?? 0)
       setLogsLoading(false)
-    }).catch(() => { setLogs([]); setLogsTotal(0); setLogsLoading(false) })
-  }, [logsPage])
+    }).catch(() => { setLogsError(true); setLogsLoading(false) })
+  }, [logsPage, logsReloadKey])
 
   const handleRevoke = async () => {
     if (!revokeTarget) return
-    await axios.delete(`${API}/sessions/${revokeTarget.id}`)
-    setSessions((s) => s.filter((x) => x.id !== revokeTarget.id))
-    toast('Sessão encerrada.', 'success')
-    setRevokeTarget(null)
+    try {
+      await axios.delete(`${API}/sessions/${revokeTarget.id}`)
+      setSessions((s) => s.filter((x) => x.id !== revokeTarget.id))
+      toast('Sessão encerrada.', 'success')
+    } catch {
+      toast('Erro ao encerrar sessão.', 'error')
+    } finally {
+      setRevokeTarget(null)
+    }
   }
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <SectionHeader title="Segurança" description="Monitore acessos e atividades da sua conta." />
 
       {/* Sessions */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden mb-6">
-        <div className="px-5 py-4 border-b border-surface-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-brand-400" />
-            <p className="text-sm font-semibold text-surface-100">Sessões ativas</p>
-          </div>
-          <span className="text-xs text-surface-400">{sessions.length} sessão{sessions.length !== 1 ? 'ões' : ''}</span>
-        </div>
-
+      <SettingsSection
+        title="Sessões ativas"
+        description="Dispositivos conectados à sua conta. Encerre as sessões que você não reconhece."
+      >
         {sessionsLoading ? (
-          <div className="flex items-center justify-center h-24">
-            <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <SkeletonList items={2} />
+        ) : sessionsError ? (
+          <ErrorState
+            compact
+            onRetry={() => { setSessionsLoading(true); setSessionsReloadKey((k) => k + 1) }}
+          />
         ) : (
-          <div className="divide-y divide-surface-800">
+          <div className="divide-y divide-surface-800/60">
+            <p className="text-xs text-surface-400 pb-2">
+              {sessions.length} sessão{sessions.length !== 1 ? 'ões' : ''} ativa{sessions.length !== 1 ? 's' : ''}
+            </p>
             {sessions.map((sess) => (
-              <div key={sess.id} className="flex items-center justify-between gap-4 px-5 py-4">
+              <div key={sess.id} className="flex items-center justify-between gap-4 py-4">
                 <div className="flex items-center gap-4">
                   <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', sess.isCurrent ? 'bg-brand-900/40 text-brand-400' : 'bg-surface-800 text-surface-400')}>
                     {getDeviceIcon(sess.device)}
@@ -99,7 +114,10 @@ export function SecuritySettings() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-surface-100">{sess.device}</p>
                       {sess.isCurrent && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-online bg-emerald-900/30 border border-emerald-800 px-1.5 py-0.5 rounded-full">
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full color-chip border"
+                          style={{ ['--chip']: 'var(--color-online)' } as React.CSSProperties}
+                        >
                           Atual
                         </span>
                       )}
@@ -129,54 +147,57 @@ export function SecuritySettings() {
             ))}
           </div>
         )}
-      </div>
+      </SettingsSection>
 
       {/* Audit logs */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-surface-800 flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-brand-400" />
-          <p className="text-sm font-semibold text-surface-100">Log de auditoria</p>
-        </div>
-
+      <SettingsSection
+        title="Log de auditoria"
+        description="Ações recentes realizadas pela equipe na sua conta."
+      >
         {logsLoading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <SkeletonTable rows={5} cols={4} />
+        ) : logsError ? (
+          <ErrorState
+            compact
+            onRetry={() => setLogsReloadKey((k) => k + 1)}
+          />
         ) : (
           <>
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-surface-800">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Ação</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Usuário</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Recurso</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Data</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-800">
-                {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-surface-800/50 transition-colors">
-                    <td className="px-5 py-3">
-                      <p className="text-sm text-surface-200">{ACTION_LABELS[log.action] ?? log.action}</p>
-                    </td>
-                    <td className="px-5 py-3">
-                      <p className="text-sm text-surface-300">{log.userName}</p>
-                      <p className="text-xs text-surface-500 font-mono">{log.ipAddress}</p>
-                    </td>
-                    <td className="px-5 py-3">
-                      <code className="text-xs text-surface-400 font-mono">{log.resourceType}/{log.resourceId}</code>
-                    </td>
-                    <td className="px-5 py-3 text-xs text-surface-400 whitespace-nowrap">
-                      {format(new Date(log.createdAt), "dd/MM/yy HH:mm", { locale: ptBR })}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-surface-800/60">
+                    <th className="text-left pl-0 pr-4 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Ação</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Usuário</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Recurso</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Data</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-surface-800/60">
+                  {logs.map((log) => (
+                    <tr key={log.id} className="hover:bg-surface-800/50 transition-colors">
+                      <td className="pl-0 pr-4 py-3">
+                        <p className="text-sm text-surface-200">{ACTION_LABELS[log.action] ?? log.action}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-sm text-surface-300">{log.userName}</p>
+                        <p className="text-xs text-surface-500 font-mono">{log.ipAddress}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <code className="text-xs text-surface-400 font-mono">{log.resourceType}/{log.resourceId}</code>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-surface-400 whitespace-nowrap">
+                        {format(new Date(log.createdAt), "dd/MM/yy HH:mm", { locale: ptBR })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {/* Pagination */}
             {logsTotal > 10 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-surface-800">
+              <div className="flex items-center justify-between py-3 border-t border-surface-800/60">
                 <p className="text-xs text-surface-500">{logsTotal} registros no total</p>
                 <div className="flex gap-2">
                   <button
@@ -199,7 +220,7 @@ export function SecuritySettings() {
             )}
           </>
         )}
-      </div>
+      </SettingsSection>
 
       <ConfirmModal
         open={!!revokeTarget}

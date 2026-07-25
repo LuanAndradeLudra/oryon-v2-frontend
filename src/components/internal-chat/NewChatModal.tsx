@@ -54,7 +54,7 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.16, ease: 'easeOut' }}
-        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface-900 rounded-2xl border border-surface-700 shadow-2xl overflow-hidden"
+        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface-900 rounded-2xl overlay-frame border overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">

@@ -52,10 +52,10 @@ function groupByDate(sessions: CopilotSession[]) {
 // ─── Session preview renderer ─────────────────────────────────────────────────
 
 const ARTIFACT_ICON_CONFIG: Record<string, { icon: React.ReactElement; color: string }> = {
-  webpage:     { icon: <Globe className="w-2.5 h-2.5 flex-shrink-0" />,        color: 'text-sky-400' },
-  slides:      { icon: <Presentation className="w-2.5 h-2.5 flex-shrink-0" />, color: 'text-purple-400' },
-  spreadsheet: { icon: <Sheet className="w-2.5 h-2.5 flex-shrink-0" />,        color: 'text-emerald-400' },
-  document:    { icon: <FileText className="w-2.5 h-2.5 flex-shrink-0" />,     color: 'text-amber-400' },
+  webpage:     { icon: <Globe className="w-2.5 h-2.5 flex-shrink-0" />,        color: 'text-accent-cyan' },
+  slides:      { icon: <Presentation className="w-2.5 h-2.5 flex-shrink-0" />, color: 'text-accent-violet' },
+  spreadsheet: { icon: <Sheet className="w-2.5 h-2.5 flex-shrink-0" />,        color: 'text-accent-green' },
+  document:    { icon: <FileText className="w-2.5 h-2.5 flex-shrink-0" />,     color: 'text-accent-amber' },
 }
 
 function SessionPreview({ preview }: { preview: string }) {
@@ -203,7 +203,7 @@ export function SessionsSidebar({
     <motion.div
       animate={{ width: open ? SIDEBAR_WIDTH : 0 }}
       transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
-      className="flex-shrink-0 flex flex-col border-r border-surface-800/60 bg-black overflow-hidden"
+      className="flex-shrink-0 flex flex-col border-r border-surface-800/60 bg-surface-950 overflow-hidden"
       style={{ minWidth: 0 }}
       // No hover handlers — sidebar is now controlled exclusively by the
       // toggle button in the topbar (and Cmd/Ctrl+B). This eliminates the
@@ -257,7 +257,7 @@ export function SessionsSidebar({
                 />
               </div>
               {nearLimit && (
-                <p className="mb-2 text-[10px] text-amber-400/80 leading-relaxed">
+                <p className="mb-2 text-[10px] text-warning/80 leading-relaxed">
                   {atLimit
                     ? 'Limite de 30 conversas atingido.'
                     : `${30 - sessions.length} restante(s) antes do limite.`}

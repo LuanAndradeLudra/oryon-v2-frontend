@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Search, AlertCircle, Filter, X } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonTable } from '@/components/ui/Skeleton'
 import { ActorChip } from '@/components/ui/ActorChip'
 import { formatActivity } from '@/components/dashboard/activityFormatter'
 import {
@@ -41,9 +43,9 @@ const ENTITY_BUCKETS: Array<{ value: string; label: string }> = [
 const SEVERITY_OPTIONS = ['', 'info', 'warn', 'error'] as const
 
 const SEVERITY_STYLE: Record<string, string> = {
-  info:  'bg-surface-700/40 text-surface-200 border-surface-600',
-  warn:  'bg-status-pending-bg text-status-pending border-status-pending/40',
-  error: 'bg-status-failed-bg text-status-failed border-status-failed/40',
+  info:  'var(--color-status-muted)',
+  warn:  'var(--color-status-pending)',
+  error: 'var(--color-danger)',
 }
 
 export function AuditTrail() {
@@ -87,11 +89,19 @@ export function AuditTrail() {
 
       <FilterBar filters={filters} onApply={onApply} loading={loading} />
 
-      {error && (
+      {error && rows.length > 0 && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-lg border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
+      )}
+
+      {error && rows.length === 0 && (
+        <ErrorState compact hint={error} onRetry={() => { void load(filters, false) }} />
+      )}
+
+      {loading && rows.length === 0 && !error && (
+        <SkeletonTable rows={6} cols={4} />
       )}
 
       {!loading && rows.length === 0 && !error && (
@@ -103,18 +113,18 @@ export function AuditTrail() {
       )}
 
       {rows.length > 0 && (
-        <div className="rounded-lg border border-surface-800 overflow-hidden bg-surface-900">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-surface-800/50 text-surface-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-2.5 font-medium">Quando</th>
+            <thead className="text-surface-400 text-xs uppercase tracking-wider">
+              <tr className="border-b border-surface-800/60">
+                <th className="text-left pl-0 pr-4 py-2.5 font-medium">Quando</th>
                 <th className="text-left px-4 py-2.5 font-medium">Quem</th>
                 <th className="text-left px-4 py-2.5 font-medium">Ação</th>
                 <th className="text-left px-4 py-2.5 font-medium">Recurso</th>
                 <th className="text-left px-4 py-2.5 font-medium">Detalhes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800">
+            <tbody className="divide-y divide-surface-800/60">
               {rows.map(r => (
                 <Row key={r.id} row={r} />
               ))}
@@ -159,7 +169,7 @@ function Row({ row }: { row: TenantAuditRow }) {
   })
   return (
     <tr className="hover:bg-surface-800/30">
-      <td className="px-4 py-2.5 whitespace-nowrap text-surface-300 text-xs">
+      <td className="pl-0 pr-4 py-2.5 whitespace-nowrap text-surface-300 text-xs">
         {new Date(row.createdAt).toLocaleString('pt-BR')}
       </td>
       <td className="px-4 py-2.5 text-xs">
@@ -174,7 +184,7 @@ function Row({ row }: { row: TenantAuditRow }) {
         <div className="flex items-center gap-2">
           <span className="text-surface-100 text-sm">{verb}</span>
           {row.severity !== 'info' && (
-            <span className={cn('inline-block px-1.5 py-0.5 rounded text-[11px] font-medium border', SEVERITY_STYLE[row.severity])}>
+            <span className={cn('color-chip inline-block px-1.5 py-0.5 rounded text-[11px] font-medium border')} style={{ ['--chip']: SEVERITY_STYLE[row.severity] } as React.CSSProperties}>
               {row.severity}
             </span>
           )}
@@ -333,7 +343,7 @@ function FilterBar({
   )
 
   return (
-    <div className="mb-4 px-4 py-3 rounded-lg border border-surface-800 bg-surface-900/40 flex flex-wrap items-end gap-3">
+    <div className="mb-4 pb-4 border-b border-surface-800/60 flex flex-wrap items-end gap-3">
       <div className="flex items-center gap-2 text-xs text-surface-400">
         <Filter className="w-4 h-4" /> Filtros
       </div>
@@ -361,7 +371,7 @@ function FilterBar({
         <button
           onClick={apply}
           disabled={loading}
-          className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-black text-xs disabled:opacity-50"
+          className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-xs disabled:opacity-50"
         >
           Aplicar
         </button>

@@ -32,9 +32,12 @@ const SOURCES: { value: ContactSource; label: string }[] = [
 interface QualificationCardProps {
   contact: Contact
   onSave: (patch: Partial<Contact>) => Promise<void>
+  /** Esconde o campo Estágio (quando um StageCard dedicado já o gerencia na
+   *  mesma tela) — evita a triplicação e o duplo caminho de escrita do estágio. */
+  hideStage?: boolean
 }
 
-export function QualificationCard({ contact, onSave }: QualificationCardProps) {
+export function QualificationCard({ contact, onSave, hideStage = false }: QualificationCardProps) {
   const [editing, setEditing] = useState(false)
   const { stages } = useCRMConfig()
   const { vocab } = useTenantVocab()
@@ -50,7 +53,11 @@ export function QualificationCard({ contact, onSave }: QualificationCardProps) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      await onSave(form)
+      // Quando o Estágio é gerido por um StageCard dedicado, não reenviamos
+      // stage daqui (evita concorrência de escrita com o StageCard).
+      const payload: Partial<typeof form> = { ...form }
+      if (hideStage) delete payload.stage
+      await onSave(payload)
       setEditing(false)
     } catch (err) {
       console.error('[QualificationCard] save failed:', err)
@@ -100,11 +107,13 @@ export function QualificationCard({ contact, onSave }: QualificationCardProps) {
       <div className="px-4 py-4 flex flex-col gap-4">
         {editing ? (
           <>
-            <FormField label="Estágio">
-              <Select value={form.stage} onChange={(e) => setForm((f) => ({ ...f, stage: e.target.value as ContactStage }))}>
-                {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-              </Select>
-            </FormField>
+            {!hideStage && (
+              <FormField label="Estágio">
+                <Select value={form.stage} onChange={(e) => setForm((f) => ({ ...f, stage: e.target.value as ContactStage }))}>
+                  {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                </Select>
+              </FormField>
+            )}
             <FormField label={`${vocab.leadScore}: ${form.leadScore}`}>
               <Input
                 type="number" min={0} max={100}
@@ -133,7 +142,9 @@ export function QualificationCard({ contact, onSave }: QualificationCardProps) {
           </>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <ReadField label="Estágio" value={contact.stage ? (stages.find(s => s.key === contact.stage)?.label ?? contact.stage) : '—'} />
+            {!hideStage && (
+              <ReadField label="Estágio" value={contact.stage ? (stages.find(s => s.key === contact.stage)?.label ?? contact.stage) : '—'} />
+            )}
             <ReadField label={vocab.leadScore} value={contact.leadScore != null ? String(contact.leadScore) : '—'} />
             {contact.leadScore != null && (
               <div className="col-span-2">

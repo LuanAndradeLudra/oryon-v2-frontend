@@ -9,10 +9,10 @@ import { cn } from '@/lib/utils'
 // ── Outcome config ────────────────────────────────────────────────────────────
 
 const OUTCOME_CONFIG: Record<CampaignLeadSummary['outcome'], { label: string; color: string }> = {
-  converted: { label: 'Cliente',     color: '#10b981' },
-  qualified:  { label: 'Qualificado', color: '#f59e0b' },
-  lead:       { label: 'Lead',        color: '#6366f1' },
-  lost:       { label: 'Perdido',     color: '#f43f5e' },
+  converted: { label: 'Cliente',     color: 'var(--color-accent-green)' },
+  qualified:  { label: 'Qualificado', color: 'var(--color-accent-amber)' },
+  lead:       { label: 'Lead',        color: 'var(--color-accent-blue)' },
+  lost:       { label: 'Perdido',     color: 'var(--color-accent-rose)' },
 }
 
 // ── Main drawer ───────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
       <motion.div
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[480px] bg-surface-950 border-l border-surface-800 flex flex-col shadow-2xl"
+        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[480px] bg-surface-950 border-l overlay-frame flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
@@ -101,10 +101,10 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                     className={cn(
                       'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
                       outcomeFilter === key
-                        ? 'border-current'
+                        ? 'color-chip'
                         : 'border-surface-800 text-surface-400 hover:text-surface-200',
                     )}
-                    style={outcomeFilter === key ? { backgroundColor: cfg.color + '18', borderColor: cfg.color + '50', color: cfg.color } : {}}
+                    style={outcomeFilter === key ? ({ ['--chip']: cfg.color } as React.CSSProperties) : {}}
                   >
                     {cfg.label} ({count})
                   </button>
@@ -159,8 +159,8 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-surface-200">{lead.name}</span>
                         <span
-                          className="px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-                          style={{ backgroundColor: outcome.color + '20', color: outcome.color }}
+                          className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                          style={{ ['--chip']: outcome.color } as React.CSSProperties}
                         >
                           {outcome.label}
                         </span>

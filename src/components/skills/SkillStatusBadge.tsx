@@ -5,7 +5,6 @@
 // (eventually) anywhere else we surface a skill instance.
 
 import { ShieldAlert, AlertTriangle } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface Props {
   /** Per-instance toggle (agent_skills.enabled). */
@@ -50,11 +49,11 @@ export function SkillStatusBadge({
 
 type Tone = 'success' | 'muted' | 'warning' | 'danger'
 
-const TONE_CLASSES: Record<Tone, string> = {
-  success: 'bg-status-active-bg text-status-active ring-status-active-border',
-  muted:   'bg-surface-800 text-surface-400 ring-surface-700',
-  warning: 'bg-status-pending-bg text-status-pending ring-status-pending-border',
-  danger:  'bg-danger/10 text-danger ring-danger/30',
+// Cor "cheia" via --chip. O tom `muted` permanece neutro (surface).
+const TONE_CHIP: Partial<Record<Tone, string>> = {
+  success: 'var(--color-status-active)',
+  warning: 'var(--color-status-pending)',
+  danger:  'var(--color-danger)',
 }
 
 function Chip({
@@ -66,12 +65,18 @@ function Chip({
   icon?: React.ReactNode
   children: React.ReactNode
 }) {
+  if (tone === 'muted') {
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-medium ring-1 bg-surface-800 text-surface-400 ring-surface-700">
+        {icon}
+        {children}
+      </span>
+    )
+  }
   return (
     <span
-      className={cn(
-        'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-medium ring-1',
-        TONE_CLASSES[tone],
-      )}
+      className="color-chip inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-medium border"
+      style={{ ['--chip']: TONE_CHIP[tone] } as React.CSSProperties}
     >
       {icon}
       {children}

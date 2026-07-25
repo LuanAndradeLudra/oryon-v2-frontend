@@ -1,6 +1,9 @@
 import { Bell, Volume2, Lock, RotateCcw } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
 import { Switch } from '@/components/ui/Switch'
+import { Banner } from '@/components/ui/Banner'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import {
   useNotificationPreferences,
   type ResolvedPreference,
@@ -30,6 +33,14 @@ const CATEGORY_ORDER: NotificationCategory[] = [
   'security',
 ]
 
+const CATEGORY_DESCRIPTIONS: Record<NotificationCategory, string> = {
+  conversations: 'Novas mensagens e conversas atribuídas a você.',
+  team: 'Convites, entradas e mudanças na sua equipe.',
+  campaigns: 'Andamento e resultado dos envios em massa.',
+  automations: 'Execuções e falhas das suas automações.',
+  security: 'Alertas críticos e erros de integração. Alguns são obrigatórios e não podem ser desativados.',
+}
+
 export function Notifications() {
   const { preferences, loading, saving, error, update, reset } = useNotificationPreferences()
   const { enabled: soundEnabled, toggle: toggleSound } = useNotificationSound()
@@ -38,8 +49,10 @@ export function Notifications() {
     return (
       <div className="space-y-6">
         <SectionHeader title="Notificações" description="Controle quais notificações você recebe e como." />
-        <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 text-sm text-surface-400">
-          Carregando preferências…
+        <div className="flex flex-col gap-6">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={4} />
         </div>
       </div>
     )
@@ -54,15 +67,23 @@ export function Notifications() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       <SectionHeader
         title="Notificações"
         description="Controle quais eventos geram notificação no sino e como você é avisado."
       />
 
+      {error && (
+        <div className="mb-6">
+          <Banner variant="danger">{error}</Banner>
+        </div>
+      )}
+
       {/* Sound preference — stored locally in the browser via useNotificationSound */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-4">Som de notificação</h3>
+      <SettingsSection
+        title="Som de notificação"
+        description="Preferência salva neste navegador — não afeta outros dispositivos."
+      >
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 text-surface-400">
@@ -71,28 +92,21 @@ export function Notifications() {
             <div>
               <p className="text-sm font-medium text-surface-100">Tocar som</p>
               <p className="text-xs text-surface-400">
-                Som curto toca a cada notificação nova. Preferência salva neste navegador.
+                Som curto toca a cada notificação nova.
               </p>
             </div>
           </div>
           <Switch checked={soundEnabled} onChange={toggleSound} />
         </div>
-      </div>
-
-      {error && (
-        <div className="bg-danger/10 border border-danger/30 rounded-xl p-3 text-xs text-danger">
-          {error}
-        </div>
-      )}
+      </SettingsSection>
 
       {/* Per-type preferences grouped by category */}
       {CATEGORY_ORDER.map((cat) => {
         const items = byCategory.get(cat)
         if (!items || items.length === 0) return null
         return (
-          <div key={cat} className="bg-surface-900 border border-surface-800 rounded-2xl p-6">
-            <h3 className="text-sm font-semibold text-surface-300 mb-4">{CATEGORY_LABELS[cat]}</h3>
-            <div className="flex flex-col gap-4">
+          <SettingsSection key={cat} title={CATEGORY_LABELS[cat]} description={CATEGORY_DESCRIPTIONS[cat]}>
+            <div className="divide-y divide-surface-800/60">
               {items.map((pref) => (
                 <PreferenceRow
                   key={pref.type}
@@ -103,11 +117,11 @@ export function Notifications() {
                 />
               ))}
             </div>
-          </div>
+          </SettingsSection>
         )
       })}
 
-      <p className="text-[11px] text-surface-500">
+      <p className="text-[11px] text-surface-500 mt-6">
         <Bell className="w-3 h-3 inline mr-1" />
         Notificações obrigatórias (como alertas de segurança) não podem ser desativadas por motivo de conformidade.
       </p>
@@ -127,7 +141,7 @@ function PreferenceRow({
   onReset: () => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
       <div className="flex items-start gap-3 min-w-0">
         {pref.mandatory ? (
           <span className="mt-0.5 text-warning" title="Obrigatória">

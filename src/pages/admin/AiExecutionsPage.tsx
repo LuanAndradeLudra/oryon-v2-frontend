@@ -7,13 +7,16 @@
 // while this one zooms into the AI agent runtime itself.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, AlertCircle, Bot, Search, RotateCcw } from 'lucide-react'
+import { Loader2, Search, RotateCcw } from 'lucide-react'
 import {
   fetchChatExecutions,
   type ChatExecutionRow,
 } from '@/services/adminAiObservabilityApi'
 import { ChatExecutionDrillModal } from '@/components/admin/ChatExecutionDrillModal'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SkeletonTable } from '@/components/ui/Skeleton'
 
 const PAGE_SIZE = 50
 
@@ -25,11 +28,12 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'max_turns',    label: 'max_turns' },
 ]
 
+// Holds a chip color (token) rendered as a filled .color-chip.
 const STATUS_STYLE: Record<string, string> = {
-  answered:     'bg-emerald-700/30 text-emerald-200',
-  aborted_loop: 'bg-status-failed-bg text-status-failed',
-  error:        'bg-status-failed-bg text-status-failed',
-  max_turns:    'bg-amber-700/30 text-amber-200',
+  answered:     'var(--color-status-active)',
+  aborted_loop: 'var(--color-danger)',
+  error:        'var(--color-danger)',
+  max_turns:    'var(--color-status-pending)',
 }
 
 export function AiExecutionsPage() {
@@ -105,21 +109,13 @@ export function AiExecutionsPage() {
 
   return (
     <div className="flex flex-col h-full bg-surface-950">
-      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-surface-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-brand-700/30 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-brand-300" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-surface-100">Execuções de Agentes</h1>
-            <p className="text-xs text-surface-400">
-              Cada linha é uma chamada <code className="font-mono text-surface-300">POST /chat</code> — clique para ver input, output, tools e RAG.
-            </p>
-          </div>
-        </div>
-      </header>
+      <div className="border-r border-surface-700">
+      <PageHeader
+        title="Execuções de Agentes"
+        subtitle="Cada linha é uma chamada POST /chat — clique para ver input, output, tools e RAG."
+      />
 
-      <div className="px-6 py-3 border-b border-surface-800 bg-surface-900/40 flex flex-wrap items-end gap-3">
+      <div className="px-6 py-3 border-b border-r border-surface-700 bg-surface-900/40 flex flex-wrap items-end gap-3">
         <Field label="tenantId" value={tenantId} onChange={setTenantId} placeholder="opcional — UUID" wide />
         <Field label="agentId" value={agentId} onChange={setAgentId} placeholder="opcional — UUID" wide />
         <SelectField
@@ -139,9 +135,10 @@ export function AiExecutionsPage() {
           Atualizar
         </button>
       </div>
+      </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="px-6 py-4 grid grid-cols-2 md:grid-cols-5 gap-3 border-b border-surface-800">
+        <div className="px-6 py-4 grid grid-cols-2 md:grid-cols-5 gap-3 border-b border-r border-surface-700">
           <KpiCard label="Execuções" value={totals.exec.toLocaleString('pt-BR')} />
           <KpiCard label="Custo total" value={`$${totals.cost.toFixed(4)}`} />
           <KpiCard label="Input tokens" value={fmtCompact(totals.input)} />
@@ -155,17 +152,15 @@ export function AiExecutionsPage() {
 
         <section className="px-6 py-4">
           {error && (
-            <div className="mb-3 flex items-center gap-2 px-4 py-3 rounded-lg border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
-              <AlertCircle className="w-4 h-4" />
-              {error}
-            </div>
+            <ErrorState
+              compact
+              hint={error}
+              onRetry={() => void load()}
+              className="mb-3"
+            />
           )}
 
-          {loading && rows.length === 0 && (
-            <div className="flex items-center justify-center py-12 text-surface-400">
-              <Loader2 className="w-4 h-4 animate-spin mr-2" /> carregando…
-            </div>
-          )}
+          {loading && rows.length === 0 && <SkeletonTable rows={8} cols={6} />}
 
           {!loading && rows.length === 0 && !error && (
             <EmptyState
@@ -176,9 +171,10 @@ export function AiExecutionsPage() {
           )}
 
           {rows.length > 0 && (
-            <div className="rounded-lg border border-surface-800 bg-surface-900 overflow-hidden">
+            <div className="rounded-xl border border-surface-700 bg-surface-900 overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead className="bg-surface-900 text-surface-500 text-left border-b border-surface-800">
+                <thead className="bg-surface-900 text-surface-500 text-left border-b border-surface-700">
                   <tr>
                     <th className="px-3 py-2 font-medium">Quando</th>
                     <th className="px-3 py-2 font-medium">Status</th>
@@ -193,7 +189,7 @@ export function AiExecutionsPage() {
                 </thead>
                 <tbody className="divide-y divide-surface-800">
                   {rows.map(r => {
-                    const statusClass = STATUS_STYLE[r.final_status] ?? 'bg-surface-700 text-surface-200'
+                    const statusChip = STATUS_STYLE[r.final_status] ?? 'var(--color-status-muted)'
                     return (
                       <tr
                         key={r.id}
@@ -204,7 +200,10 @@ export function AiExecutionsPage() {
                           {new Date(r.created_at).toLocaleString('pt-BR', { hour12: false })}
                         </td>
                         <td className="px-3 py-2">
-                          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${statusClass}`}>
+                          <span
+                            className="color-chip border px-1.5 py-0.5 rounded text-[11px] font-medium"
+                            style={{ ['--chip']: statusChip } as React.CSSProperties}
+                          >
                             {r.final_status}
                           </span>
                           {r.error_code && (
@@ -222,7 +221,7 @@ export function AiExecutionsPage() {
                         <td className="px-3 py-2 text-right text-surface-300">
                           {fmtCompact(r.tokens_input)} / {fmtCompact(r.tokens_output)}
                         </td>
-                        <td className="px-3 py-2 text-right text-emerald-200">
+                        <td className="px-3 py-2 text-right text-success">
                           ${Number(r.cost_usd).toFixed(6)}
                         </td>
                         <td className="px-3 py-2 text-right text-surface-300">
@@ -233,6 +232,7 @@ export function AiExecutionsPage() {
                   })}
                 </tbody>
               </table>
+              </div>
 
               {nextCursor && (
                 <div className="border-t border-surface-800 px-3 py-2 flex justify-center">
@@ -327,7 +327,7 @@ function SelectField({
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-lg border border-surface-800 bg-surface-900 p-3">
+    <div className="rounded-xl border border-surface-700 bg-surface-900 p-3">
       <p className="text-[11px] uppercase tracking-wider text-surface-400">{label}</p>
       <p className="mt-1 text-lg font-semibold text-surface-100">{value}</p>
       {hint && <p className="text-[11px] text-surface-500 mt-0.5">{hint}</p>}

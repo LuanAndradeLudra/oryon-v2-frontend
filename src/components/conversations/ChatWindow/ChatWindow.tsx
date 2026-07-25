@@ -116,23 +116,46 @@ export function ChatWindow({
     : false
 
   if (!conversation) {
+    // Estado vazio como CENTRO DE COMANDO — o espaço morto vira onboarding
+    // dos atalhos de triagem. Quem aprende J/K/E/R atende sem tirar a mão
+    // do teclado; quem já sabe, ignora.
+    const shortcuts = [
+      { keys: ['J', 'K'], label: 'navegar na fila' },
+      { keys: ['E'],      label: 'resolver e pular p/ a próxima' },
+      { keys: ['R'],      label: 'atribuir a mim' },
+      { keys: ['/'],      label: 'respostas rápidas ao digitar' },
+    ]
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-black gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-surface-800 flex items-center justify-center">
-          <MessageSquare className="w-8 h-8 text-surface-600" />
+      <div className="chat-shell-bg flex-1 flex flex-col items-center justify-center gap-6 px-8">
+        <div className="w-16 h-16 rounded-2xl bg-brand-600/10 ring-1 ring-brand-500/15 flex items-center justify-center">
+          <MessageSquare className="w-8 h-8 text-brand-500/70" />
         </div>
         <div className="text-center">
-          <p className="text-surface-300 font-medium">Selecione uma conversa</p>
+          <p className="text-surface-100 font-display font-bold text-lg">Pronto para atender</p>
           <p className="text-surface-500 text-sm mt-1">
-            Escolha uma conversa na lista para começar a atender
+            Escolha uma conversa na lista — ou triage direto pelo teclado
           </p>
+        </div>
+        <div className="hidden md:grid grid-cols-2 gap-x-8 gap-y-2.5">
+          {shortcuts.map((s) => (
+            <div key={s.label} className="flex items-center gap-2.5 text-xs text-surface-500">
+              <span className="flex items-center gap-1">
+                {s.keys.map((k) => (
+                  <kbd key={k} className="min-w-[22px] px-1.5 py-1 rounded-md bg-surface-800 border border-surface-700 text-surface-300 font-mono text-[11px] text-center leading-none">
+                    {k}
+                  </kbd>
+                ))}
+              </span>
+              {s.label}
+            </div>
+          ))}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black relative overflow-hidden">
+    <div className="chat-shell-bg flex-1 flex flex-col min-w-0 min-h-0 relative overflow-hidden">
       {/* Phase 32 — the tenant-wide setup blockers banner moved into the
           topbar (TopBarReadinessIndicator). The user_in_department blocker
           still surfaces inline above the message input via
