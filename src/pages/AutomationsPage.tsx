@@ -481,7 +481,7 @@ export function AutomationsPage() {
       if (statusFilter !== 'all' && a.status !== statusFilter) return false
       if (typeFilter !== 'all' && a.type !== typeFilter) return false
       if (attentionOnly && deriveAttention(a).length === 0) return false
-      if (s && !a.name.toLowerCase().includes(s) && !a.description.toLowerCase().includes(s)) return false
+      if (s && !(a.name ?? '').toLowerCase().includes(s) && !(a.description ?? '').toLowerCase().includes(s)) return false
       return true
     })
   }, [automations, statusFilter, typeFilter, search, lineFilter, attentionOnly])

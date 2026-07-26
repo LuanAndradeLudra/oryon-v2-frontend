@@ -1,7 +1,7 @@
 import { cn, getInitials } from '@/lib/utils'
 
 interface AvatarProps {
-  name: string
+  name?: string | null
   imageUrl?: string
   size?: 'xs' | 'sm' | 'md' | 'lg'
   online?: boolean
@@ -23,13 +23,15 @@ const dotSizes = {
 }
 
 // Deterministic color from name
-function colorFromName(name: string) {
+function colorFromName(name?: string | null) {
   const colors = [
     'bg-violet-500', 'bg-indigo-500', 'bg-blue-500', 'bg-cyan-500',
     'bg-teal-500', 'bg-emerald-500', 'bg-rose-500', 'bg-orange-500',
   ]
-  const idx = name.charCodeAt(0) % colors.length
-  return colors[idx]
+  // name pode vir null/undefined (dado do backend com tipo mentiroso):
+  // charCodeAt em undefined derruba a tela, e ''.charCodeAt(0) é NaN.
+  const code = name && name.length ? name.charCodeAt(0) : 0
+  return colors[code % colors.length]
 }
 
 export function Avatar({ name, imageUrl, size = 'md', online, className }: AvatarProps) {
@@ -38,7 +40,7 @@ export function Avatar({ name, imageUrl, size = 'md', online, className }: Avata
       {imageUrl ? (
         <img
           src={imageUrl}
-          alt={name}
+          alt={name ?? ''}
           className={cn('rounded-full object-cover', sizes[size])}
         />
       ) : (

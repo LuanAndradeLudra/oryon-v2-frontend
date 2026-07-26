@@ -30,7 +30,7 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
   const filtered = users.filter((u) =>
     search.trim() === '' ||
     `${u.firstName} ${u.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+    (u.email ?? '').toLowerCase().includes(search.toLowerCase())
   )
 
   async function handleOpenDM(user: User) {
@@ -102,7 +102,7 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
                 >
                   <div className="relative flex-shrink-0">
                     <div className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-sm font-semibold text-surface-200">
-                      {u.firstName.charAt(0)}
+                      {(u.firstName || '?').charAt(0)}
                     </div>
                     <PresenceDot status={presenceStatus} className="absolute -bottom-0.5 -right-0.5" />
                   </div>

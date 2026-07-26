@@ -23,7 +23,7 @@ export function UserPicker({
 
   const filtered = users.filter((u) =>
     `${u.firstName} ${u.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+    (u.email ?? '').toLowerCase().includes(search.toLowerCase())
   )
 
   const roleLabel: Record<string, string> = {

@@ -69,7 +69,7 @@ export function MessageBubble({ message, isOwn, showHeader, onReply, searchQuery
     )
   }
 
-  const senderInitial = isCopilot ? 'C' : message.senderName.charAt(0).toUpperCase()
+  const senderInitial = isCopilot ? 'C' : (message.senderName ?? '?').charAt(0).toUpperCase()
   const avatarClass = isCopilot
     ? 'bg-gradient-to-br from-blue-500 to-blue-700'
     : avatarColor(message.senderName)

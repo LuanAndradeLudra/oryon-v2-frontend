@@ -93,9 +93,16 @@ export function formatFullTime(date: string | Date): string {
   return format(new Date(date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
 }
 
-export function getInitials(name: string): string {
+export function getInitials(name?: string | null): string {
+  // Blindado contra null/undefined: o backend pode devolver `userName`
+  // (auditoria de sistema/IA) ou `contact.displayName` (contato só com
+  // telefone) vazios, mesmo os tipos declarando `string` — sem o guard,
+  // `name.split(...)` derruba a tela inteira com o error boundary.
+  if (!name) return '?'
   return name
-    .split(' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
     .slice(0, 2)
     .map((n) => n[0])
     .join('')
@@ -142,8 +149,10 @@ export const AVATAR_COLORS = [
 ] as const
 
 /** Stable color class for an avatar based on the first character of a name. */
-export function avatarColor(name: string): string {
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
+export function avatarColor(name?: string | null): string {
+  // Mesmo guard do Avatar: name pode vir null/undefined do backend.
+  const code = name && name.length ? name.charCodeAt(0) : 0
+  return AVATAR_COLORS[code % AVATAR_COLORS.length]
 }
 
 /**

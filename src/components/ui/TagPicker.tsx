@@ -39,7 +39,7 @@ export function TagPickerContent({
   const [hoverId, setHoverId]         = useState<string | null>(null)
 
   const filtered = allTags.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase())
+    (t.name ?? '').toLowerCase().includes(search.toLowerCase())
   )
   const isSelected = (id: string) => selectedTags.some((t) => t.id === id)
 

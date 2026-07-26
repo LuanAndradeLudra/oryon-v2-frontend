@@ -266,7 +266,7 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
       const filtered = allResponses.filter(
         (r) =>
           r.shortcut.toLowerCase().startsWith(query) ||
-          r.title.toLowerCase().includes(query)
+          (r.title ?? '').toLowerCase().includes(query)
       )
       setPickerResponses(filtered)
       setPickerActive(filtered.length > 0)

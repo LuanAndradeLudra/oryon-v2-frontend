@@ -145,7 +145,7 @@ export function TemplatesTab() {
   const filtered = templates.filter((t) => {
     if (!lineMatches(lineFilter, { whatsappNumberId: t.whatsappNumberId })) return false
     if (statusFilter !== 'all' && t.status !== statusFilter) return false
-    if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false
+    if (search && !(t.name ?? '').toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
 

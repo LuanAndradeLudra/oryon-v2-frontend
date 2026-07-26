@@ -78,7 +78,7 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
   }, [])
 
   const filtered = allTags.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase()),
+    (t.name ?? '').toLowerCase().includes(search.toLowerCase()),
   )
 
   const toggle = (tag: Tag) => {

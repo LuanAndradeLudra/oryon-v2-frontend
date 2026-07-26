@@ -260,7 +260,7 @@ export function CampaignWizard({
       if (filterSentiment.length)  f = f.filter((c) => filterSentiment.includes(c.aiSentiment ?? 'unknown'))
       if (filterContactSearch.trim()) {
         const q = filterContactSearch.toLowerCase()
-        f = f.filter((c) => c.displayName.toLowerCase().includes(q) || c.waId.includes(q))
+        f = f.filter((c) => (c.displayName ?? '').toLowerCase().includes(q) || c.waId.includes(q))
       }
       if (filterHasConversations !== undefined)
         f = f.filter((c) => filterHasConversations ? (c.conversationCount ?? 0) > 0 : (c.conversationCount ?? 0) === 0)
@@ -721,7 +721,7 @@ function Step1({
                     <span className="text-[11px] text-surface-600">{tpl.language}</span>
                   </div>
                 </div>
-                <p className="text-xs text-surface-500 line-clamp-1">{tpl.body.replace(/\n/g, ' ')}</p>
+                <p className="text-xs text-surface-500 line-clamp-1">{(tpl.body ?? '').replace(/\n/g, ' ')}</p>
                 {tpl.bodyVariables && tpl.bodyVariables.length > 0 && (
                   <p className="text-[11px] text-brand-400/70 mt-1">
                     {tpl.bodyVariables.length} variáve{tpl.bodyVariables.length === 1 ? 'l' : 'is'}: {tpl.bodyVariables.map((v, i) => `{{${i + 1}}} ${v}`).join(', ')}
@@ -811,7 +811,7 @@ function Step2({
 
   const filteredContacts = contacts.filter((c) =>
     !contactSearch ||
-    c.displayName.toLowerCase().includes(contactSearch.toLowerCase()) ||
+    (c.displayName ?? '').toLowerCase().includes(contactSearch.toLowerCase()) ||
     c.waId.includes(contactSearch)
   )
 
@@ -965,7 +965,7 @@ function Step2({
                       {selected && <Check className="w-2.5 h-2.5 text-white" />}
                     </div>
                     <div className="w-7 h-7 rounded-full bg-brand-500/15 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
-                      {contact.displayName.slice(0, 1).toUpperCase()}
+                      {(contact.displayName || '?').slice(0, 1).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-surface-200 truncate">{contact.displayName}</p>
@@ -1673,7 +1673,7 @@ function ContactListModal({
     if (filterSentiment.length) f = f.filter((c) => filterSentiment.includes(c.aiSentiment ?? 'unknown'))
     if (filterContactSearch.trim()) {
       const q = filterContactSearch.toLowerCase()
-      f = f.filter((c) => c.displayName.toLowerCase().includes(q) || c.waId.includes(q))
+      f = f.filter((c) => (c.displayName ?? '').toLowerCase().includes(q) || c.waId.includes(q))
     }
     if (filterHasConversations !== undefined)
       f = f.filter((c) => filterHasConversations ? (c.conversationCount ?? 0) > 0 : (c.conversationCount ?? 0) === 0)
@@ -1684,7 +1684,7 @@ function ContactListModal({
 
   const displayed = search.trim()
     ? segmented.filter((c) =>
-        c.displayName.toLowerCase().includes(search.toLowerCase()) ||
+        (c.displayName ?? '').toLowerCase().includes(search.toLowerCase()) ||
         c.waId.includes(search)
       )
     : segmented
@@ -1737,7 +1737,7 @@ function ContactListModal({
                 return (
                   <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-surface-800/50 transition-colors">
                     <div className="w-8 h-8 rounded-full bg-brand-500/15 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
-                      {c.displayName.slice(0, 1).toUpperCase()}
+                      {(c.displayName || '?').slice(0, 1).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-surface-100 truncate">{c.displayName}</p>

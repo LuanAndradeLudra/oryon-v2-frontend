@@ -39,7 +39,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
 
   const filtered = leads.filter((l) => {
     if (outcomeFilter !== 'all' && l.outcome !== outcomeFilter) return false
-    if (search && !l.name.toLowerCase().includes(search.toLowerCase()) && !l.phone.includes(search)) return false
+    if (search && !(l.name ?? '').toLowerCase().includes(search.toLowerCase()) && !(l.phone ?? '').includes(search)) return false
     return true
   })
 

@@ -98,7 +98,7 @@ function ChannelRow({ channel, currentUserId, isActive, onClick }: {
         {isDM ? (
           <>
             <div className={cn('w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-white', avatarColor(displayName))}>
-              {displayName.charAt(0).toUpperCase()}
+              {(displayName || '?').charAt(0).toUpperCase()}
             </div>
             {status && <PresenceDot status={status} size="sm" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
           </>
@@ -514,7 +514,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
                   <div key={uid} className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface-800 transition-colors">
                     <div className="relative flex-shrink-0">
                       <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white', avatarColor(name))}>
-                        {name.charAt(0).toUpperCase()}
+                        {(name || '?').charAt(0).toUpperCase()}
                       </div>
                       <PresenceDot status={status} size="sm" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />
                     </div>
@@ -632,7 +632,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
             {isDM ? (
               <div className="relative flex-shrink-0">
                 <div className={cn('w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-white', avatarColor(displayName))}>
-                  {displayName.charAt(0).toUpperCase()}
+                  {(displayName || '?').charAt(0).toUpperCase()}
                 </div>
                 {presenceStatus && <PresenceDot status={presenceStatus} size="md" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
               </div>

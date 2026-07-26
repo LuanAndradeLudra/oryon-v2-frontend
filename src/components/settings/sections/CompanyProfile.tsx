@@ -149,7 +149,7 @@ export function CompanyProfile() {
         <div className="flex items-center gap-5 mb-6">
           <div className="relative group cursor-pointer">
             <div className="w-16 h-16 rounded-2xl bg-brand-600 flex items-center justify-center text-xl font-bold text-surface-950 select-none">
-              {tenant.name.slice(0, 2).toUpperCase()}
+              {(tenant.name ?? '?').slice(0, 2).toUpperCase()}
             </div>
             <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <Camera className="w-5 h-5 text-white" />

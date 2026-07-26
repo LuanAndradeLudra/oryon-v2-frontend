@@ -155,7 +155,7 @@ function MemberRow({
         'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0',
         avatarColor(name),
       )}>
-        {name.charAt(0).toUpperCase()}
+        {(name || '?').charAt(0).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -305,7 +305,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
       const q = memberSearch.trim().toLowerCase()
       if (!q) return true
       return `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q)
+        (u.email ?? '').toLowerCase().includes(q)
     })
     .sort((a, b) => {
       const aInSector = sectorUserIds.has(a.id) ? 0 : 1

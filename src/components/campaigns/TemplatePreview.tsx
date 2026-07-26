@@ -39,7 +39,7 @@ export function TemplatePreview({ template, variables = {}, compact = false }: T
             {/* Status bar */}
             <div className="bg-[#075E54] text-white px-4 py-2 flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
-                {template.name.slice(0, 2).toUpperCase()}
+                {(template.name ?? '?').slice(0, 2).toUpperCase()}
               </div>
               <div>
                 <p className="text-xs font-semibold leading-none">Empresa</p>
