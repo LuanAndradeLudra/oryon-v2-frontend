@@ -17,6 +17,13 @@ export const INDEFINITE_PAUSE_ISO = '9999-12-31T23:59:59.000Z'
  *  under 300ms while filling a typical viewport without immediate load-more. */
 const PAGE_SIZE = 50
 
+/** SCRUM-526 — settle window for the server-authoritative counter refresh.
+ *  Long enough to collapse the backend's double emit of
+ *  `conversation:ai-pause-updated` (emitToConversation + emitToTenant fire the
+ *  same event name, so a socket in both rooms sees it twice) and a burst of
+ *  handoffs, short enough that the badge feels immediate. */
+const COUNTS_DEBOUNCE_MS = 1500
+
 export function useConversations(filters: ConversationFilters = {}) {
   const { user } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -119,6 +126,49 @@ export function useConversations(filters: ConversationFilters = {}) {
     filters.unreadOnly, filters.awaitingReply, filters.untagged, filters.needsReview,
     filters.startDate, filters.endDate,
   ])
+
+  // ── Server-authoritative counters ──────────────────────────────────────────
+
+  /**
+   * SCRUM-526 — refresh `statusCounts` + `needsReviewCount` from the server.
+   *
+   * Both are computed backend-side under the same non-status filters as the
+   * list — including the period filter, which ConversationsPage defaults to
+   * "today". That rules out optimistic ±1 arithmetic: a conversation that
+   * flips status may well sit outside the active period/line/assignment scope,
+   * and a blind increment would drift from the truth with no way back.
+   *
+   * So we just re-ask the server, with `limit: 1` (the counters don't depend on
+   * page size) and keep ONLY the counters — never the list. Debounced, which
+   * also makes it idempotent under the backend's double emit.
+   *
+   * Fixes the shipped defect where `handleAiPauseUpdated` set `hasRecentAnomaly`
+   * on the row but never moved `needsReviewCount`: since the header badge is
+   * gated on `needsReviewCount > 0`, a session that started at 0 never showed
+   * the indicator or the filter toggle, no matter how many handoffs fired.
+   */
+  const countsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const refetchCounts = useCallback(() => {
+    if (countsDebounceRef.current) clearTimeout(countsDebounceRef.current)
+    countsDebounceRef.current = setTimeout(async () => {
+      countsDebounceRef.current = null
+      try {
+        const { data } = await conversationsApi.list(filtersRef.current, 1, 1)
+        setStatusCounts(data.statusCounts)
+        setNeedsReviewCount(data.needsReviewCount ?? 0)
+      } catch {
+        // Counters are advisory. On failure keep the previous values — the next
+        // event or filter change refreshes them. Deliberately no error surface:
+        // the list itself is unaffected and still usable.
+      }
+    }, COUNTS_DEBOUNCE_MS)
+  }, [])
+
+  // Drop a pending refresh on unmount so it can't setState on a dead component.
+  useEffect(() => () => {
+    if (countsDebounceRef.current) clearTimeout(countsDebounceRef.current)
+  }, [])
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -233,7 +283,15 @@ export function useConversations(filters: ConversationFilters = {}) {
       patch.hasRecentAnomaly = payload.hasRecentAnomaly
     }
     patchConv(payload.conversationId, patch)
-  }, [patchConv])
+    // SCRUM-526 — the row badge above was already handled; the HEADER indicator
+    // and its filter toggle read `needsReviewCount`, which nothing was updating.
+    // Only a handoff moves that number: a manual pause/resume carries no
+    // `hasRecentAnomaly` and leaves both counters untouched, so don't spend a
+    // request on it.
+    if (payload.hasRecentAnomaly !== undefined) {
+      refetchCounts()
+    }
+  }, [patchConv, refetchCounts])
 
   const markAsRead = useCallback((conversationId: string) => {
     patchConv(conversationId, { unreadCount: 0 })
@@ -336,6 +394,7 @@ export function useConversations(filters: ConversationFilters = {}) {
     needsReviewCount,
     error,
     refetch: fetchConversations,
+    refetchCounts,
     handleNewMessage,
     handleAiPauseUpdated,
     markAsRead,
