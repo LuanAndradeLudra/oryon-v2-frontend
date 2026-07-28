@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
-import { getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
+import { conversationMatchesFilters } from '@/lib/conversationFilterPredicate'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketMessageNew, Tag, User } from '@/types'
+import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User } from '@/types'
 
 /**
  * Phase 27 — sentinel timestamp used by the UI to mean "pause indefinitely
@@ -178,6 +178,33 @@ export function useConversations(filters: ConversationFilters = {}) {
     )
   }, [])
 
+  /**
+   * SCRUM-561 — patch a row and then EVICT it if it no longer belongs.
+   *
+   * `patchConv` alone leaves a contradiction on screen: a conversation that
+   * flips to `pending` while the operator is on the "Abertas" tab keeps its
+   * place in the list and renders a "Pendente" badge. Nothing in this hook ever
+   * removed a row on predicate violation before.
+   *
+   * `loadedConvIds` is cleared alongside, so if the conversation flips back it
+   * goes through the membership branch and gets re-fetched instead of silently
+   * no-op'ing.
+   */
+  const patchAndReconcile = useCallback((id: string, patch: Partial<Conversation>) => {
+    setConversations((prev) => {
+      const idx = prev.findIndex((c) => c.id === id)
+      if (idx === -1) return prev
+      const updated = { ...prev[idx], ...patch }
+      if (!conversationMatchesFilters(updated, filtersRef.current, userRef.current)) {
+        loadedConvIds.current.delete(id)
+        return prev.filter((c) => c.id !== id)
+      }
+      const next = [...prev]
+      next[idx] = updated
+      return next
+    })
+  }, [])
+
   // ── Socket handlers ────────────────────────────────────────────────────────
 
   /**
@@ -191,34 +218,11 @@ export function useConversations(filters: ConversationFilters = {}) {
     pendingFetches.current.add(conversationId)
     try {
       const { data: conv } = await conversationsApi.get(conversationId)
-      const f = filtersRef.current
-      const currentUser = userRef.current
 
-      // Skip if the conversation wouldn't appear under the active filters.
-      if (f.status && f.status !== 'all' && conv.status !== f.status) return
-      if (f.whatsappNumberId && conv.whatsappNumber?.id !== f.whatsappNumberId) return
-      if (f.contactId && conv.contact?.id !== f.contactId) return
-      if (f.assignedTo === 'unassigned' && conv.assignedUser) return
-      if (f.assignedTo === 'me' && currentUser && conv.assignedUser?.id !== currentUser.id) return
-      // UUID branch — the "Equipe" picker lets the operator filter to a
-      // specific colleague's queue (e.g. taking over Maria's conversations
-      // after she logs off). Same realtime gate as the static buckets above.
-      if (f.assignedTo
-          && f.assignedTo !== 'me'
-          && f.assignedTo !== 'unassigned'
-          && f.assignedTo !== 'all'
-          && conv.assignedUser?.id !== f.assignedTo) return
-      if (f.aiHandling === 'active' && !isAiActive(conv)) return
-      if (f.aiHandling === 'paused' && isAiActive(conv)) return
-      if (f.unreadOnly && conv.unreadCount === 0) return
-      if (f.awaitingReply && !getAwaitingReply(conv)) return
-      if (f.untagged && conv.tags && conv.tags.length > 0) return
-      if (f.needsReview && !conv.hasRecentAnomaly) return
-      // Period filter — drop conversations whose lastMessageAt falls outside
-      // the active range. Same comparison the backend uses (>= start, < end)
-      // so the realtime prepend stays consistent with the paginated list.
-      if (f.startDate && conv.lastMessageAt && conv.lastMessageAt < f.startDate) return
-      if (f.endDate && conv.lastMessageAt && conv.lastMessageAt >= f.endDate) return
+      // SCRUM-561 — the 13-filter chain that used to be inlined here now lives
+      // in conversationFilterPredicate, shared with the eviction path so the
+      // two can't drift.
+      if (!conversationMatchesFilters(conv, filtersRef.current, userRef.current)) return
 
       setConversations((prev) => {
         if (prev.some((c) => c.id === conversationId)) return prev
@@ -282,7 +286,19 @@ export function useConversations(filters: ConversationFilters = {}) {
     if (payload.hasRecentAnomaly !== undefined) {
       patch.hasRecentAnomaly = payload.hasRecentAnomaly
     }
-    patchConv(payload.conversationId, patch)
+
+    // SCRUM-561 — membership branch, mirroring handleNewMessage.
+    //
+    // `patchConv` is `prev.map(...)`: a NO-OP when the conversation isn't in
+    // the loaded list. Under the "Pendentes" filter — the very tab this feature
+    // drives the operator to — a conversation that is still `open` is not in
+    // the list, so patching it rendered nothing at all. The fix has to FETCH.
+    if (!loadedConvIds.current.has(payload.conversationId)) {
+      fetchAndPrependConversation(payload.conversationId)
+    } else {
+      patchAndReconcile(payload.conversationId, patch)
+    }
+
     // SCRUM-526 — the row badge above was already handled; the HEADER indicator
     // and its filter toggle read `needsReviewCount`, which nothing was updating.
     // Only a handoff moves that number: a manual pause/resume carries no
@@ -291,7 +307,25 @@ export function useConversations(filters: ConversationFilters = {}) {
     if (payload.hasRecentAnomaly !== undefined) {
       refetchCounts()
     }
-  }, [patchConv, refetchCounts])
+  }, [patchAndReconcile, fetchAndPrependConversation, refetchCounts])
+
+  /**
+   * SCRUM-562 — dedicated status event from `applyStatusTransition`.
+   *
+   * Status changes emitted NO socket at all before: resolving a conversation
+   * was invisible to other operators and to the same user's other tabs.
+   */
+  const handleStatusUpdated = useCallback((payload: SocketConversationStatusUpdated) => {
+    if (!loadedConvIds.current.has(payload.conversationId)) {
+      // Not loaded — it may now BELONG in the active filter (open → pending
+      // while sitting on the "Pendentes" tab). Fetch and let the predicate decide.
+      fetchAndPrependConversation(payload.conversationId)
+    } else {
+      patchAndReconcile(payload.conversationId, { status: payload.status })
+    }
+    // Tab badges are server-authoritative; a status flip moves them.
+    refetchCounts()
+  }, [patchAndReconcile, fetchAndPrependConversation, refetchCounts])
 
   const markAsRead = useCallback((conversationId: string) => {
     patchConv(conversationId, { unreadCount: 0 })
@@ -397,6 +431,7 @@ export function useConversations(filters: ConversationFilters = {}) {
     refetchCounts,
     handleNewMessage,
     handleAiPauseUpdated,
+    handleStatusUpdated,
     markAsRead,
     updateStatus,
     assignUser,

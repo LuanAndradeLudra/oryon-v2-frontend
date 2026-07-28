@@ -201,6 +201,83 @@ describe('useConversations — "Verificar" badge and counters', () => {
     expect(result.current.conversations[0].aiPausedUntil).toBe('2026-07-28T14:00:00.000Z')
   })
 
+  // ── SCRUM-561/562 — status realtime ──────────────────────────────────────
+
+  it('inserts a conversation that only NOW matches the active filter', async () => {
+    // THE case the feature exists for, and the one the naive fix misses:
+    // filter = "Pendentes", the conversation is still `open` so it is NOT in the
+    // list, and `patchConv` is `prev.map(...)` — a pure no-op. Nothing would
+    // ever render. The handler has to FETCH.
+    listMock.mockResolvedValue(listResponse({ data: [] }) as never)
+    const view = renderHook(() => useConversations({ status: 'pending' }))
+    await act(async () => { await Promise.resolve() })
+
+    vi.mocked(conversationsApi.get).mockResolvedValue(
+      { data: conv('c-new', { status: 'pending' }) } as never,
+    )
+
+    await act(async () => {
+      view.result.current.handleStatusUpdated({
+        conversationId: 'c-new', status: 'pending', previousStatus: 'open', changedBy: 'ai-guard',
+      } as never)
+      await Promise.resolve()
+    })
+
+    expect(conversationsApi.get).toHaveBeenCalledWith('c-new')
+    expect(view.result.current.conversations.map((c) => c.id)).toContain('c-new')
+  })
+
+  it('EVICTS a row that no longer matches the active filter', async () => {
+    // Filter = "Abertas". The conversation flips to `pending`. Without eviction
+    // it stays on screen rendering a "Pendente" badge inside the "Abertas" tab —
+    // a plausible, wrong state. Nothing in the hook removed rows before this.
+    const { result } = await mountHook(
+      listResponse({ data: [conv('c-1'), conv('c-2')] }),
+    )
+    // Re-mount under an explicit status filter.
+    listMock.mockResolvedValue(listResponse({ data: [conv('c-1'), conv('c-2')] }) as never)
+    const view = renderHook(() => useConversations({ status: 'open' }))
+    await act(async () => { await Promise.resolve() })
+    expect(view.result.current.conversations).toHaveLength(2)
+
+    await act(async () => {
+      view.result.current.handleStatusUpdated({
+        conversationId: 'c-1', status: 'pending', previousStatus: 'open', changedBy: 'ai-guard',
+      } as never)
+      await Promise.resolve()
+    })
+
+    expect(view.result.current.conversations.map((c) => c.id)).toEqual(['c-2'])
+    expect(result.current.conversations).toBeDefined()   // first hook untouched
+  })
+
+  it('a flip back re-fetches instead of silently no-op-ing', async () => {
+    // Eviction also clears `loadedConvIds`. If it didn't, a conversation that
+    // came back to the filter would hit the membership branch, be considered
+    // "already loaded", and never reappear.
+    listMock.mockResolvedValue(listResponse({ data: [conv('c-1')] }) as never)
+    const view = renderHook(() => useConversations({ status: 'open' }))
+    await act(async () => { await Promise.resolve() })
+
+    await act(async () => {
+      view.result.current.handleStatusUpdated({
+        conversationId: 'c-1', status: 'pending', previousStatus: 'open', changedBy: 'ai-guard',
+      } as never)
+      await Promise.resolve()
+    })
+    expect(view.result.current.conversations).toHaveLength(0)
+
+    vi.mocked(conversationsApi.get).mockResolvedValue({ data: conv('c-1', { status: 'open' }) } as never)
+    await act(async () => {
+      view.result.current.handleStatusUpdated({
+        conversationId: 'c-1', status: 'open', previousStatus: 'pending', changedBy: 'user-7',
+      } as never)
+      await Promise.resolve()
+    })
+
+    expect(conversationsApi.get).toHaveBeenCalledWith('c-1')
+  })
+
   it('keeps the previous counters when the refresh request fails', async () => {
     const { result } = await mountHook(
       listResponse({

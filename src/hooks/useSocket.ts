@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { connectSocket, disconnectSocket, getSocket } from '@/services/socket'
 import type {
   SocketAiPauseUpdated,
+  SocketConversationStatusUpdated,
   SocketMessageNew,
   SocketMessageStatus,
   SocketConversationAssigned,
@@ -19,6 +20,10 @@ interface SocketHandlers {
    *  manual pause endpoint; also fan-out to the tenant room so the list
    *  view stays in sync even when the conversation isn't currently open. */
   onConversationAiPauseUpdated?: (payload: SocketAiPauseUpdated) => void
+  /** SCRUM-562 — conversation status changed server-side (manual endpoint or
+   *  the AI guard's move to `pending`). Message-less by design, like the
+   *  ai-pause event. */
+  onConversationStatusUpdated?: (payload: SocketConversationStatusUpdated) => void
   onUnreadUpdate?: (payload: SocketUnreadUpdate) => void
   onNotificationNew?: (payload: unknown) => void
   onNotificationUpdated?: (payload: unknown) => void
@@ -41,6 +46,7 @@ export function useSocket(handlers: SocketHandlers = {}) {
     socket.on('conversation:resolved', (p) => handlersRef.current.onConversationResolved?.(p))
     socket.on('conversation:updated', (p) => handlersRef.current.onConversationUpdated?.(p))
     socket.on('conversation:ai-pause-updated', (p) => handlersRef.current.onConversationAiPauseUpdated?.(p))
+    socket.on('conversation:status-updated', (p) => handlersRef.current.onConversationStatusUpdated?.(p))
     socket.on('unread:update', (p) => handlersRef.current.onUnreadUpdate?.(p))
     socket.on('notification:new', (p) => {
       // Fan-out the notification two ways:
@@ -96,6 +102,7 @@ export function useSocket(handlers: SocketHandlers = {}) {
       socket.off('conversation:resolved')
       socket.off('conversation:updated')
       socket.off('conversation:ai-pause-updated')
+      socket.off('conversation:status-updated')
       socket.off('unread:update')
       socket.off('notification:new')
       socket.off('notification:updated')
