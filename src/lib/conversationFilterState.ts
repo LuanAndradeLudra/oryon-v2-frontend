@@ -6,10 +6,11 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 // Mutually-exclusive handling filter — collapses the (assignedTo × aiHandling)
 // matrix into a single radio. 'team' covers both "Sem atribuição" and a
 // specific colleague (the exact pick lives in filters.assignedTo).
-export type HandlingFilterValue = 'all' | 'ai' | 'me' | 'team'
+export type HandlingFilterValue = 'all' | 'ai' | 'paused' | 'me' | 'team'
 
 export function resolveHandlingValue(f: ConversationFilters): HandlingFilterValue {
   if (f.aiHandling === 'active') return 'ai'
+  if (f.aiHandling === 'paused') return 'paused'
   if (f.assignedTo === 'me') return 'me'
   if (f.assignedTo === 'unassigned') return 'team'
   if (f.assignedTo && f.assignedTo !== 'all' && UUID_REGEX.test(f.assignedTo)) return 'team'
