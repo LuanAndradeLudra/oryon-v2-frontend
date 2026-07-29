@@ -113,19 +113,26 @@ export function useNotifications() {
     [filterTypes, showArchived],
   )
 
+  // See useConversations.fetchTokenRef for the rationale — a request-id
+  // token so a slower, superseded `load()` (fast filter toggling) can't
+  // overwrite state with stale data after a newer call already landed (R41).
+  const loadTokenRef = useRef(0)
+
   const load = useCallback(async () => {
     if (!isAuthenticated) { setLoading(false); return }
+    const token = ++loadTokenRef.current
     try {
       const { data } = await axios.get<{ data: AppNotification[]; unreadCount: number; nextCursor: string | null }>(
         `${API}/notifications?${buildQuery(null)}`,
       )
+      if (loadTokenRef.current !== token) return
       setNotifications(data.data)
       setUnreadCount(data.unreadCount)
       setNextCursor(data.nextCursor)
     } catch {
       // silent
     } finally {
-      setLoading(false)
+      if (loadTokenRef.current === token) setLoading(false)
     }
   }, [isAuthenticated, buildQuery])
 
