@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink,
-  KanbanSquare, MapPin, Phone, Plus, Filter,
+  KanbanSquare, MapPin, Phone, Plus, Filter, ArrowRightLeft,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { TagPickerContent } from '@/components/ui/TagPicker'
@@ -192,6 +192,7 @@ export function ContactPanel({
 
   const [tagOpen,     setTagOpen]     = useState(false)
   const [assignOpen,  setAssignOpen]  = useState(false)
+  const [transferOpen, setTransferOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [stageOpen,   setStageOpen]   = useState(false)
   const [localStage, setLocalStage] = useState<string | undefined | null>(contact.stage)
@@ -325,12 +326,24 @@ export function ContactPanel({
         <Section
           title="Agente responsável"
           action={
-            <button
-              onClick={() => setAssignOpen(true)}
-              className="text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
-            >
-              {assignedUser ? 'Trocar' : 'Atribuir'}
-            </button>
+            <div className="flex items-center gap-2">
+              {assignedUser && (
+                <button
+                  onClick={() => setTransferOpen(true)}
+                  title="Transferir conversa"
+                  className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
+                >
+                  <ArrowRightLeft className="w-3 h-3" />
+                  Transferir
+                </button>
+              )}
+              <button
+                onClick={() => setAssignOpen(true)}
+                className="text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
+              >
+                {assignedUser ? 'Trocar' : 'Atribuir'}
+              </button>
+            </div>
           }
         >
           {assignedUser ? (
@@ -356,6 +369,13 @@ export function ContactPanel({
           <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Atribuir usuário" className="max-w-sm">
             <UserPickerList users={allUsers} selectedUserId={assignedUser?.id}
               onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
+          </Modal>
+          {/* Transferir — endpoint/handler distinto de "Atribuir" (R13): já
+              existia no hook (useConversations.transferUser → PATCH .../transfer)
+              mas não tinha nenhum gatilho na UI. */}
+          <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transferir conversa" className="max-w-sm">
+            <UserPickerList users={allUsers.filter((u) => u.id !== assignedUser?.id)}
+              onSelect={(user) => { if (user) onTransfer(user); setTransferOpen(false) }} />
           </Modal>
         </Section>
 
