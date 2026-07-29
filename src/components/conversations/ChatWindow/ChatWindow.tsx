@@ -186,6 +186,7 @@ export function ChatWindow({
       <MessageList messages={messages} loading={loading} hasMore={hasMore} onLoadMore={fetchMore} onReply={setReplyTo} />
       <MessageInput
         onSend={handleSendWithErrorReporting}
+        contactId={conversation.contact.id}
         sending={sending}
         windowOpen={windowOpen}
         blockedReason={sendBlockedReason}

@@ -777,7 +777,9 @@ let refreshPromise: Promise<boolean> | null = null
  *  re-enters the interceptor and deadlocks waiting on its own promise. */
 export const SKIP_AUTH_REFRESH = { _skipAuthRefresh: true } as const
 
-async function attemptRefresh(): Promise<boolean> {
+/** Exported so useSocket can renew the HTTP session before reconnecting
+ *  the websocket after an `auth:expired` event (R39). */
+export async function attemptRefresh(): Promise<boolean> {
   try {
     if (isNativePlatform()) {
       const refreshToken = getRefreshToken()
@@ -816,7 +818,9 @@ async function attemptRefresh(): Promise<boolean> {
   }
 }
 
-function clearSessionAndRedirect() {
+/** Exported so useSocket can force a re-login when the websocket's
+ *  auth:expired can't be recovered by a session refresh (R39). */
+export function clearSessionAndRedirect() {
   localStorage.removeItem(SESSION_KEY)
   clearTokens()
   if (!PUBLIC_PATHS.includes(window.location.pathname)) {
@@ -1630,6 +1634,9 @@ export const whatsappNumbersApi = {
   // Pre-flight before showing a delete confirmation — surfaces how many
   // resources would be orphaned by the removal.
   dependencies(id: string) { return api.get<WhatsappLineDependencies>(`/meta/numbers/${id}/dependencies`) },
+  // Forces unsubscribe → subscribe on a WABA (Meta's App Webhooks). Self-serve
+  // fix for the common "webhook stopped delivering" support ticket (R16).
+  resubscribeWaba(wabaId: string) { return api.post<{ message: string }>(`/meta/waba/${wabaId}/resubscribe`) },
 }
 
 export interface WhatsappLineHealth {
