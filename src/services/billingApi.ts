@@ -43,6 +43,65 @@ export interface CreditTransaction {
   createdAt: string
 }
 
+// ─── Asaas (Fase 3 / SCRUM-154) ────────────────────────────────────────────────
+
+export type BillingMethod = 'PIX' | 'CREDIT_CARD'
+
+export interface PlanOption {
+  tier: BackendPlanTier
+  displayName: string
+  priceMonthlyCents: number
+  currency: string
+  monthlyCredits: number | null
+  tokensPerCredit: number
+  features: Record<string, unknown>
+}
+
+/** Pacote avulso de crédito — fonte de verdade no backend (SCRUM-154). */
+export interface CreditPack {
+  credits: number
+  valueCents: number
+}
+
+export interface AsaasStatus {
+  subscribed: boolean
+  tier: BackendPlanTier | null
+  status: string | null
+  billingType: string | null
+  nextDueDate: string | null
+  pendingTier: BackendPlanTier | null
+  autoRechargeEnabled: boolean
+}
+
+export interface PayerInput {
+  name?: string
+  email?: string
+  cpfCnpj?: string
+  postalCode?: string
+  addressNumber?: string
+  phone?: string
+}
+
+export interface CardInput {
+  holderName: string
+  number: string
+  expiryMonth: string
+  expiryYear: string
+  ccv: string
+}
+
+export interface CheckoutResult {
+  subscriptionId?: string
+  payment: {
+    id: string
+    status: string
+    value: number
+    billingType: string
+    invoiceUrl?: string
+    pix?: { encodedImage: string; payload: string; expirationDate?: string }
+  }
+}
+
 export const billingApi = {
   async getBilling(): Promise<BillingSnapshot> {
     const res = await api.get<BillingSnapshot>('/settings/billing')
@@ -52,6 +111,46 @@ export const billingApi = {
     const res = await api.get<CreditTransaction[]>('/settings/billing/transactions', {
       params: { limit },
     })
+    return res.data
+  },
+  async getPlans(): Promise<PlanOption[]> {
+    const res = await api.get<PlanOption[]>('/settings/billing/plans')
+    return res.data
+  },
+  async getAsaasStatus(): Promise<AsaasStatus> {
+    const res = await api.get<AsaasStatus>('/settings/billing/asaas-status')
+    return res.data
+  },
+  /** Catálogo de pacotes de crédito (preços definidos no backend, não no front). */
+  async getCreditPacks(): Promise<CreditPack[]> {
+    const res = await api.get<CreditPack[]>('/settings/billing/credit-packs')
+    return res.data
+  },
+  async subscribe(input: {
+    tier: BackendPlanTier
+    billingType: BillingMethod
+    payer?: PayerInput
+    card?: CardInput
+  }): Promise<CheckoutResult> {
+    const res = await api.post<CheckoutResult>('/settings/billing/subscribe', input)
+    return res.data
+  },
+  async changePlan(tier: BackendPlanTier): Promise<{ applied: 'now' | 'next_cycle' }> {
+    const res = await api.post('/settings/billing/change-plan', { tier })
+    return res.data
+  },
+  async cancel(): Promise<{ canceled: boolean; accessUntil: string | null }> {
+    const res = await api.post('/settings/billing/cancel')
+    return res.data
+  },
+  async buyCredits(input: {
+    packCredits: number
+    valueCents: number
+    billingType: BillingMethod
+    payer?: PayerInput
+    card?: CardInput
+  }): Promise<CheckoutResult> {
+    const res = await api.post<CheckoutResult>('/settings/billing/buy-credits', input)
     return res.data
   },
 }
