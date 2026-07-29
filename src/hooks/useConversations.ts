@@ -334,21 +334,38 @@ export function useConversations(filters: ConversationFilters = {}) {
 
   // ── API actions ────────────────────────────────────────────────────────────
 
+  // ── Ações locais: reconciliar, não só patchar ──────────────────────────────
+  //
+  // Toda ação abaixo muda um campo que o filtro ativo usa, então precisa passar
+  // por `patchAndReconcile` — `patchConv` é `prev.map`, que atualiza a linha e
+  // a deixa visível num filtro que ela deixou de satisfazer.
+  //
+  // Achado no UAT: operador em "Abertas" muda o status para Pendente e a linha
+  // FICA, exibindo o badge "Pendente" dentro da aba "Abertas". Só sumia depois
+  // de um refetch. A evicção existia, mas só no caminho do SOCKET — e depender
+  // do socket dar a volta para corrigir a própria aba que agiu é frágil: em
+  // qualquer hipótese de perda ou atraso do evento, o operador fica olhando um
+  // estado plausível e errado.
+  //
+  // Fora daqui de propósito: `markAsRead` (evictar a conversa que a pessoa
+  // acabou de abrir, sob o filtro "não lidas", seria hostil) e as tags, cujo
+  // caminho de patch é próprio.
+
   const updateStatus = useCallback(async (id: string, status: 'resolved' | 'open' | 'pending') => {
     const { data } = await conversationsApi.updateStatus(id, status)
-    patchConv(id, { status: data.status })
+    patchAndReconcile(id, { status: data.status })
     return data
-  }, [patchConv])
+  }, [patchAndReconcile])
 
   const assignUser = useCallback(async (id: string, user: User | null) => {
     await conversationsApi.assign(id, user?.id ?? null)
-    patchConv(id, { assignedUser: user ?? undefined })
-  }, [patchConv])
+    patchAndReconcile(id, { assignedUser: user ?? undefined })
+  }, [patchAndReconcile])
 
   const transferUser = useCallback(async (id: string, user: User) => {
     await conversationsApi.transfer(id, user.id)
-    patchConv(id, { assignedUser: user })
-  }, [patchConv])
+    patchAndReconcile(id, { assignedUser: user })
+  }, [patchAndReconcile])
 
   const addTag = useCallback(async (id: string, tag: Tag) => {
     await conversationsApi.addTag(id, tag.id)
@@ -373,8 +390,8 @@ export function useConversations(filters: ConversationFilters = {}) {
 
   const archiveConversation = useCallback(async (id: string) => {
     await conversationsApi.archive(id)
-    patchConv(id, { status: 'abandoned' })
-  }, [patchConv])
+    patchAndReconcile(id, { status: 'abandoned' })
+  }, [patchAndReconcile])
 
   /**
    * Phase 27 — manually pause/resume the WhatsApp AI for one conversation.
@@ -394,6 +411,11 @@ export function useConversations(filters: ConversationFilters = {}) {
     })
     try {
       await conversationsApi.setAiPause(id, pauseUntil)
+      // Reconciliar só DEPOIS da confirmação, não no patch otimista. Se a
+      // evicção acontecesse antes e a requisição falhasse, o rollback via
+      // `prev.map` seria no-op numa linha que já saiu da lista — o operador
+      // veria a conversa desaparecer para sempre por causa de um 500.
+      patchAndReconcile(id, { aiPausedUntil: pauseUntil })
     } catch (err) {
       // Rollback on failure
       setConversations((prev) =>
@@ -401,7 +423,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       )
       throw err
     }
-  }, [])
+  }, [patchAndReconcile])
 
   /**
    * Phase 34 — "Intervir agora": server-authoritative pause. The backend
@@ -414,9 +436,9 @@ export function useConversations(filters: ConversationFilters = {}) {
   const interveneAi = useCallback(async (id: string) => {
     const r = await conversationsApi.interveneAiDefault(id)
     const until = (r.data as { aiPausedUntil?: string | null }).aiPausedUntil ?? null
-    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, aiPausedUntil: until } : c)))
+    patchAndReconcile(id, { aiPausedUntil: until })
     return until
-  }, [])
+  }, [patchAndReconcile])
 
   return {
     conversations,

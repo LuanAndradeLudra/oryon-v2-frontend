@@ -32,6 +32,12 @@ vi.mock('@/services/api', () => ({
     list: vi.fn(),
     get: vi.fn(),
     markAsRead: vi.fn(() => Promise.resolve({ data: {} })),
+    updateStatus: vi.fn(),
+    assign: vi.fn(() => Promise.resolve({ data: {} })),
+    transfer: vi.fn(() => Promise.resolve({ data: {} })),
+    archive: vi.fn(() => Promise.resolve({ data: {} })),
+    setAiPause: vi.fn(() => Promise.resolve({ data: {} })),
+    interveneAiDefault: vi.fn(() => Promise.resolve({ data: { aiPausedUntil: null } })),
   },
 }))
 
@@ -276,6 +282,84 @@ describe('useConversations — "Verificar" badge and counters', () => {
     })
 
     expect(conversationsApi.get).toHaveBeenCalledWith('c-1')
+  })
+
+  // ── Ações locais reconciliam, não só patcham ─────────────────────────────
+  // Bug do UAT: operador em "Abertas" muda o status para Pendente e a linha
+  // FICA na lista, exibindo o badge "Pendente" dentro da aba "Abertas". Só
+  // sumia depois de um refetch.
+  //
+  // A evicção existia — mas só no caminho do SOCKET. A aba que EXECUTOU a ação
+  // usava `patchConv` (um `prev.map`), que atualiza o campo e não reavalia o
+  // filtro. Depender do socket dar a volta para corrigir a própria aba que
+  // agiu é frágil: perdido ou atrasado o evento, o operador fica olhando um
+  // estado plausível e errado.
+
+  it('EVICTA ao mudar o status pela própria aba — o bug do UAT', async () => {
+    listMock.mockResolvedValue(listResponse({ data: [conv('c-1'), conv('c-2')] }) as never)
+    const view = renderHook(() => useConversations({ status: 'open' }))
+    await act(async () => { await Promise.resolve() })
+    expect(view.result.current.conversations).toHaveLength(2)
+
+    vi.mocked(conversationsApi.updateStatus).mockResolvedValue(
+      { data: { id: 'c-1', status: 'pending' } } as never,
+    )
+
+    await act(async () => { await view.result.current.updateStatus('c-1', 'pending') })
+
+    expect(view.result.current.conversations.map((c) => c.id)).toEqual(['c-2'])
+  })
+
+  it('mantém a linha quando ela ainda casa com o filtro', async () => {
+    // Sob "Todas", mudar o status não deve remover nada.
+    listMock.mockResolvedValue(listResponse({ data: [conv('c-1')] }) as never)
+    const view = renderHook(() => useConversations({}))
+    await act(async () => { await Promise.resolve() })
+
+    vi.mocked(conversationsApi.updateStatus).mockResolvedValue(
+      { data: { id: 'c-1', status: 'pending' } } as never,
+    )
+    await act(async () => { await view.result.current.updateStatus('c-1', 'pending') })
+
+    expect(view.result.current.conversations).toHaveLength(1)
+    expect(view.result.current.conversations[0].status).toBe('pending')
+  })
+
+  it('a mesma falha existia em atribuição e em pausa da IA', async () => {
+    // Mesma classe de bug, outros campos: `assignedUser` sob "Minhas" e
+    // `aiPausedUntil` sob "IA ativa". Todas as ações locais que tocam um campo
+    // filtrado precisam reconciliar.
+    listMock.mockResolvedValue(
+      listResponse({ data: [conv('c-1', { assignedUser: { id: 'user-1' } as Conversation['assignedUser'] })] }) as never,
+    )
+    const atribuidas = renderHook(() => useConversations({ assignedTo: 'me' }))
+    await act(async () => { await Promise.resolve() })
+    await act(async () => { await atribuidas.result.current.assignUser('c-1', null) })
+    expect(atribuidas.result.current.conversations).toHaveLength(0)
+
+    listMock.mockResolvedValue(listResponse({ data: [conv('c-2', { aiPausedUntil: null })] }) as never)
+    const iaAtiva = renderHook(() => useConversations({ aiHandling: 'active' }))
+    await act(async () => { await Promise.resolve() })
+    await act(async () => { await iaAtiva.result.current.setAiPause('c-2', '2099-01-01T00:00:00.000Z') })
+    expect(iaAtiva.result.current.conversations).toHaveLength(0)
+  })
+
+  it('uma pausa que FALHA não some com a conversa', async () => {
+    // O patch otimista não evicta; a reconciliação só roda após confirmação.
+    // Se evictasse antes, o rollback (`prev.map`) seria no-op numa linha já
+    // removida — a conversa sumiria para sempre por causa de um 500.
+    listMock.mockResolvedValue(listResponse({ data: [conv('c-1', { aiPausedUntil: null })] }) as never)
+    const view = renderHook(() => useConversations({ aiHandling: 'active' }))
+    await act(async () => { await Promise.resolve() })
+
+    vi.mocked(conversationsApi.setAiPause).mockRejectedValueOnce(new Error('500'))
+
+    await act(async () => {
+      await view.result.current.setAiPause('c-1', '2099-01-01T00:00:00.000Z').catch(() => {})
+    })
+
+    expect(view.result.current.conversations).toHaveLength(1)
+    expect(view.result.current.conversations[0].aiPausedUntil).toBeNull()
   })
 
   it('keeps the previous counters when the refresh request fails', async () => {
