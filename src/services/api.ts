@@ -1634,6 +1634,9 @@ export const whatsappNumbersApi = {
   // Pre-flight before showing a delete confirmation — surfaces how many
   // resources would be orphaned by the removal.
   dependencies(id: string) { return api.get<WhatsappLineDependencies>(`/meta/numbers/${id}/dependencies`) },
+  // Forces unsubscribe → subscribe on a WABA (Meta's App Webhooks). Self-serve
+  // fix for the common "webhook stopped delivering" support ticket (R16).
+  resubscribeWaba(wabaId: string) { return api.post<{ message: string }>(`/meta/waba/${wabaId}/resubscribe`) },
 }
 
 export interface WhatsappLineHealth {
