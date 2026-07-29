@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { Banner } from '@/components/ui/Banner'
-import { cannedResponsesApi, templatesApi } from '@/services/api'
+import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 
@@ -43,6 +43,9 @@ interface MessageInputProps {
    * copy it elsewhere.
    */
   onSend: (dto: SendMessageDto) => Promise<unknown> | void
+  /** Used only by the "Escolher template" flow (24h window closed) to call
+   *  contactsApi.sendTemplate — a real WhatsApp template, not a text message. */
+  contactId: string
   sending: boolean
   windowOpen: boolean
   disabled?: boolean
@@ -130,7 +133,7 @@ function QuickReplyPicker({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MessageInput({ onSend, sending, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
+export function MessageInput({ onSend, contactId, sending, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
   const [allResponses, setAllResponses] = useState<CannedResponse[]>([])
@@ -392,7 +395,10 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   const handleSelectTemplate = async (tpl: WhatsAppTemplate) => {
     setTemplatePickerOpen(false)
     try {
-      await onSend({ body: tpl.body, replyToWamid: replyTo?.wamid ?? undefined })
+      // R10: must go through the real WhatsApp template flow — sending
+      // `tpl.body` as a plain text message (the old behavior) fails outside
+      // the 24h window, which is exactly when this picker is shown.
+      await contactsApi.sendTemplate(contactId, tpl.name, tpl.language)
       onCancelReply?.()
       setTemplateSent(true)
     } catch {
