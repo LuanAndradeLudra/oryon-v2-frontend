@@ -31,7 +31,9 @@ export interface KpiDefinition {
 }
 
 export interface KpiMetric extends KpiDefinition {
-  value: number
+  /** null quando o backend ainda não calcula esse KPI — nunca renderizar
+   *  como "0" ou "0.0%", que pareceria um valor real medido. */
+  value: number | null
   trend: number    // % change vs previous period
   sparkline: number[] // 7 data points (oldest → newest)
 }
@@ -217,11 +219,13 @@ export const DEFAULT_KPI_SLOTS: KpiId[] = [
   'campaign_optout_rate',
 ]
 
-/** Creates an empty dashboard snapshot with zero-valued KPIs from the catalog */
+/** Creates an empty dashboard snapshot with no-data KPIs from the catalog
+ *  (used before the first fetch resolves and when the fetch fails — value
+ *  null renders "—" instead of a fabricated "0"/"0.0%"). */
 export function buildEmptySnapshot(): DashboardSnapshot {
   const kpis: KpiMetric[] = KPI_CATALOG.map((def) => ({
     ...def,
-    value: 0,
+    value: null,
     trend: 0,
     sparkline: [0, 0, 0, 0, 0, 0, 0],
   }))

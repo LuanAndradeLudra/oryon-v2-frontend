@@ -117,7 +117,7 @@ function KpiCard({ metric, hero }: { metric: KpiMetric; hero?: boolean }) {
         hero ? 'text-3xl kpi-hero-value' : 'text-xl text-surface-50',
       )}>
         {formatKpiValue(metric.value, metric.unit)}
-        {metric.unit === 'csat_score' && (
+        {metric.unit === 'csat_score' && metric.value !== null && (
           <span className={cn('font-normal text-surface-400 ml-1 font-sans', hero ? 'text-base' : 'text-sm')}>/ 5</span>
         )}
       </div>
