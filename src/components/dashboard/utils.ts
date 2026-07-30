@@ -1,6 +1,7 @@
 import type { KpiUnit } from '@/types/dashboard'
 
-export function formatKpiValue(value: number, unit: KpiUnit): string {
+export function formatKpiValue(value: number | null, unit: KpiUnit): string {
+  if (value === null) return '—'
   switch (unit) {
     case 'count':
       return value.toLocaleString('pt-BR')
