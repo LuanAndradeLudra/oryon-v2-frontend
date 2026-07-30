@@ -242,9 +242,6 @@ function CampaignCard({
   const isSent = campaign.status === 'sent'
   const canSend = campaign.status === 'draft' || campaign.status === 'scheduled'
 
-  const readRate = stats.sent > 0 ? Math.round((stats.read / stats.sent) * 100) : 0
-  const deliveredRate = stats.sent > 0 ? Math.round((stats.delivered / stats.sent) * 100) : 0
-
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
       {
@@ -317,24 +314,19 @@ function CampaignCard({
             )}
           </div>
 
-          {/* Stats (only when sent) */}
+          {/* Stats (only when sent). Sem chips de Entregues/Lidas: o backend
+              nunca atualiza stats.delivered/stats.read (não há webhook de
+              confirmação de entrega/leitura para disparos em massa), então
+              a taxa sempre daria 0% — um número inventado, não medido (R21). */}
           {isSent && stats.total > 0 && (
             <div className="flex items-center gap-4">
               <StatChip label="Enviadas" value={stats.sent} color="text-brand-400" />
-              <StatChip label="Entregues" value={stats.delivered} color="text-emerald-400" suffix={`${deliveredRate}%`} />
-              <StatChip label="Lidas" value={stats.read} color="text-amber-400" suffix={`${readRate}%`} />
               {stats.failed > 0 && (
                 <StatChip label="Falhas" value={stats.failed} color="text-danger" />
               )}
-              {/* Progress bar */}
-              <div className="flex-1 max-w-xs">
-                <div className="h-1.5 bg-surface-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-brand-600 to-emerald-500 rounded-full"
-                    style={{ width: `${readRate}%` }}
-                  />
-                </div>
-              </div>
+              <span className="text-[11px] text-surface-600">
+                Confirmação de entrega e leitura indisponível
+              </span>
             </div>
           )}
         </div>
