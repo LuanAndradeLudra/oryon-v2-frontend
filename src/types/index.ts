@@ -794,6 +794,9 @@ export interface Tag {
   id: string
   name: string
   color: string
+  /** Quantas conversas usam essa tag — só presente quando a API devolve
+   *  (GET /tags já calcula isso; nem todo endpoint que retorna Tag inclui). */
+  usageCount?: number
 }
 
 export interface WhatsAppNumber {
