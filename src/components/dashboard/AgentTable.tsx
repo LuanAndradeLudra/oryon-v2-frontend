@@ -60,6 +60,13 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
   const sorted = [...agents].sort((a, b) => {
     const va = a[sort.key]
     const vb = b[sort.key]
+    // Dado desconhecido (null) sempre vai para o fim, nas duas direções —
+    // não pode competir como se fosse um valor real (null - true === -1
+    // em JS, o que colocaria "sem dado" empatado com/abaixo de "offline"/
+    // pior nota, o mesmo erro que este componente corrige na coluna Status).
+    if (va === null && vb === null) return 0
+    if (va === null) return 1
+    if (vb === null) return -1
     const cmp = typeof va === 'string' ? va.localeCompare(vb as string) : (va as number) - (vb as number)
     return sort.dir === 'asc' ? cmp : -cmp
   })
@@ -109,7 +116,12 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
             <>
               <span className="w-2 h-2 rounded-full bg-online" />
               <span className="text-xs text-surface-400">
-                {agents.filter((a) => a.isOnline).length} de {agents.length} online
+                {/* Denominador é só quem tem presença conhecida — misturar
+                    agentes com isOnline null no total faria a razão parecer
+                    completa quando na verdade parte dos agentes é "sem
+                    dado" (mesmo princípio do R20 para a coluna Status). */}
+                {agents.filter((a) => a.isOnline).length} de{' '}
+                {agents.filter((a) => a.isOnline !== null).length} online
               </span>
             </>
           ) : (
