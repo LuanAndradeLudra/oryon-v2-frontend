@@ -1274,63 +1274,6 @@ export interface CampaignStats {
   churnCount?: number
 }
 
-export interface CampaignChurnBreakdown {
-  optOut:        number   // descadastraram / bloquearam
-  blocked:       number   // reportaram spam
-  invalidNumber: number   // número inválido/inexistente
-  undelivered:   number   // não entregue (falha de rede/servidor)
-  noInteraction: number   // entregue mas sem nenhuma interação (soft churn)
-}
-
-export interface CampaignConversionEvent {
-  contactId:   string
-  contactName: string
-  convertedAt: string
-  type: 'replied' | 'clicked_link' | 'stage_changed' | 'purchase'
-  detail?: string
-}
-
-export interface CampaignEngagementPoint {
-  label:     string   // "0h", "1h", "6h", "12h", "24h"
-  read:      number
-  replied:   number
-  converted: number
-}
-
-export interface CampaignAttributionBreakdown {
-  source:          string            // 'meta_ads' | 'google_ads' | 'whatsapp' | 'import' | 'manual'
-  platform?:       'meta' | 'google'
-  label:           string
-  adCampaignName?: string
-  contactCount:    number
-  readCount:       number
-  replyCount:      number
-  conversionCount: number
-  readRate:        number
-  conversionRate:  number
-}
-
-export interface CampaignConversationSummary {
-  contactId:        string
-  contactName:      string
-  conversationId:   string
-  sentiment:        string
-  outcome:          'converted' | 'churned' | 'pending' | 'no_response'
-  lastMessageSnippet: string
-  lastMessageAt:    string
-  adSource?:        string
-  adCampaignName?:  string
-}
-
-export interface CampaignAnalytics {
-  campaignId:         string
-  churnBreakdown:     CampaignChurnBreakdown
-  conversionEvents:   CampaignConversionEvent[]
-  engagementTimeline: CampaignEngagementPoint[]
-  attributionBreakdown: CampaignAttributionBreakdown[]
-  aiInsights:         string[]
-}
-
 export interface Campaign {
   id: string
   tenantId: string
