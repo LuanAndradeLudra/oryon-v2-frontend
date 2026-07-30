@@ -72,13 +72,17 @@ export interface AgentMetrics {
   userId: string
   name: string
   role: string
-  departmentName: string
-  isOnline: boolean
+  /** null quando o agente não tem setor configurado. */
+  departmentName: string | null
+  /** null enquanto não houver rastreamento de presença — nunca renderizar
+   *  como "Offline" nesse caso, é "sem dado", não "sabemos que está offline". */
+  isOnline: boolean | null
   conversationsToday: number
   resolvedToday: number
   avgResponseTime: number   // seconds
   avgResolutionTime: number // seconds
-  csat: number              // 0-5
+  /** null enquanto não houver pesquisa de satisfação. */
+  csat: number | null       // 0-5
   slaCompliance: number     // 0-100
   utilization: number       // 0-100
 }
