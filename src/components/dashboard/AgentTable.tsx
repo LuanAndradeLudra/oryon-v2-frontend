@@ -105,10 +105,20 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
           <p className="text-xs text-surface-400 mt-0.5">Métricas individuais do período</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-online" />
-          <span className="text-xs text-surface-400">
-            {agents.filter((a) => a.isOnline).length} de {agents.length} online
-          </span>
+          {agents.some((a) => a.isOnline !== null) ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-online" />
+              <span className="text-xs text-surface-400">
+                {agents.filter((a) => a.isOnline).length} de {agents.length} online
+              </span>
+            </>
+          ) : (
+            // Nenhum agente tem dado de presença (feature ainda não existe no
+            // backend) — "0 de N online" pareceria fato real, não ausência (R20).
+            <Tooltip content="Rastreamento de presença ainda não disponível." side="top">
+              <span className="text-xs text-surface-600">Presença indisponível</span>
+            </Tooltip>
+          )}
         </div>
       </div>
 
@@ -134,20 +144,24 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <Avatar name={agent.name} size="sm" online={agent.isOnline} />
+                      <Avatar name={agent.name} size="sm" online={agent.isOnline ?? undefined} />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-surface-100">{agent.name}</p>
-                      <p className="text-xs text-surface-500">{agent.departmentName}</p>
+                      <p className="text-xs text-surface-500">{agent.departmentName ?? 'Sem setor'}</p>
                     </div>
                   </div>
                 </td>
 
-                {/* Status */}
+                {/* Status — null (sem rastreamento de presença) é distinto de
+                    false (offline de verdade); nunca cair no "Offline" por
+                    engano (R20). */}
                 <td className="px-4 py-3.5">
-                  {agent.isOnline
-                    ? <span className="text-xs text-online font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-online" />Online</span>
-                    : <span className="text-xs text-surface-500 font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-surface-600" />Offline</span>
+                  {agent.isOnline === null
+                    ? <span className="text-xs text-surface-600">—</span>
+                    : agent.isOnline
+                      ? <span className="text-xs text-online font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-online" />Online</span>
+                      : <span className="text-xs text-surface-500 font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-surface-600" />Offline</span>
                   }
                 </td>
 
@@ -173,7 +187,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
 
                 {/* CSAT */}
                 <td className="px-4 py-3.5">
-                  {agent.csat > 0 ? (
+                  {agent.csat !== null && agent.csat > 0 ? (
                     <div className="flex items-center gap-1">
                       <span className="text-sm font-semibold text-surface-100 tabular-nums">{agent.csat.toFixed(1)}</span>
                       <span className="text-xs text-away">★</span>
