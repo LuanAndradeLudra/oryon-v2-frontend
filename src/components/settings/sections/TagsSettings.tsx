@@ -74,7 +74,7 @@ function TagCard({ tag, usageCount, onEdit, onDelete, canManage }: TagCardProps)
         </div>
         <div>
           <p className="text-sm font-semibold text-surface-100">{tag.name}</p>
-          <p className="text-xs text-surface-500">{usageCount} conversa{usageCount !== 1 ? 's' : ''}</p>
+          <p className="text-xs text-surface-500">{usageCount} uso{usageCount !== 1 ? 's' : ''}</p>
         </div>
       </div>
       {canManage && (
