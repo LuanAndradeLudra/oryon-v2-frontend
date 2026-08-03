@@ -6,7 +6,7 @@ import {
   ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Shield,
   Link2, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
   Pencil, CheckCircle2, Upload, MessageCircleQuestion, BarChart3,
-  Workflow, Info, ShieldCheck, Package,
+  Workflow, Info, ShieldCheck, Package, Archive,
 } from 'lucide-react'
 import { CapabilitiesTab } from './CapabilitiesTab'
 import { DecisionCriteriaTab } from './DecisionCriteriaTab'
@@ -2214,8 +2214,8 @@ export function AgentDetail({
                   disabled={deletingAgent}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 transition-colors text-left cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Excluir agente
+                  <Archive className="w-3.5 h-3.5" />
+                  Arquivar agente
                 </button>
               </div>
             </>
@@ -2233,9 +2233,9 @@ export function AgentDetail({
             .then(() => onDeleted())
             .catch(() => setDeletingAgent(false))
         }}
-        title="Excluir agente"
-        description={`Excluir o agente "${agent.name}"? Ele será movido para rascunho e deixará de responder conversas.`}
-        confirmLabel="Excluir"
+        title="Arquivar agente"
+        description={`Arquivar o agente "${agent.name}"? Ele será movido para rascunho e deixará de responder conversas.`}
+        confirmLabel="Arquivar"
         danger
         loading={deletingAgent}
       />

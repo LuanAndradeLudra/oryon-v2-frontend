@@ -21,6 +21,7 @@ import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { SkeletonList, SkeletonCard } from '@/components/ui/Skeleton'
+import { useToast } from '@/hooks/useToast'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -191,6 +192,7 @@ export function AgentsPage() {
   const isMobile = useIsMobile()
   const [statusFilter, setStatusFilter] = useState<'all' | AgentConfig['status']>('all')
   const [testedAgentIds, setTestedAgentIds] = useState<Set<string>>(new Set())
+  const { toast } = useToast()
 
   useRegisterTopBarActions(
     <button
@@ -208,10 +210,15 @@ export function AgentsPage() {
       const updated = await updateAgent(id, { status })
       setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, ...updated } : a)))
       setSelectedAgent((prev) => (prev && prev.id === id ? { ...prev, ...updated } : prev))
-    } catch {
-      // swallow — AgentCard has no toast; a page-level toast can be added later.
+    } catch (err) {
+      // Erro visível em vez de engolido em silêncio (R36) — sem isso o
+      // usuário achava que o status mudou quando o backend rejeitou a
+      // troca. Nada no estado local foi alterado ainda (só acontece após
+      // o await acima ter sucesso), então não há nada a reverter aqui.
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      toast(typeof msg === 'string' ? msg : 'Não foi possível alterar o status do agente.', 'error')
     }
-  }, [])
+  }, [toast])
 
   const load = useCallback(async () => {
     setLoadingList(true)

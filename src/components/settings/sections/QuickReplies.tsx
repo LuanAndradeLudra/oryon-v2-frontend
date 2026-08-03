@@ -33,7 +33,7 @@ function QuickReplyRow({
     {
       label: 'Copiar atalho',
       icon: Copy,
-      onClick: () => navigator.clipboard.writeText(`/${response.shortcut}`).catch(() => {}),
+      onClick: () => navigator.clipboard.writeText(response.shortcut).catch(() => {}),
     },
     {
       label: 'Copiar conteúdo',
