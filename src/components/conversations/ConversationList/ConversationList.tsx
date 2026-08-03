@@ -8,9 +8,6 @@ import { TagFilterMenu } from './TagFilterMenu'
 import { cn } from '@/lib/utils'
 import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
 
-// TODO: substituir por dado real da API de billing
-const USAGE_MOCK = { used: 847, total: 1000 }
-
 interface ConversationListProps {
   conversations: Conversation[]
   loading: boolean
