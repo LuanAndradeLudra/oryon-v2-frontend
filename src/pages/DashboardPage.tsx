@@ -131,9 +131,15 @@ export function DashboardPage() {
       // even a single hour can produce dozens of conversation_assigned /
       // resolved rows.
       const sinceIso = new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+      // R46: dateRange (seletor "Hoje/7 dias/30 dias/Este mês") propagado
+      // pra /home/snapshot e /home/stats — os dois endpoints que o backend
+      // (A-71) já sabe filtrar por período. /activity-feed fica de fora de
+      // propósito: é um "vislumbre" das últimas 4h, não uma visão do período
+      // selecionado (ver comentário acima) — atividade mais antiga pertence
+      // à tela de auditoria dedicada.
       const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.all([
-        axios.get(`${API}/home/snapshot`).catch(() => ({ data: null })),
-        axios.get<HomeStats>(`${API}/home/stats`),
+        axios.get(`${API}/home/snapshot?range=${dateRange}`).catch(() => ({ data: null })),
+        axios.get<HomeStats>(`${API}/home/stats?range=${dateRange}`),
         axios.get<{ data: ActivityFeedApiRow[] }>(`${API}/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
       ])
 
