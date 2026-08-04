@@ -1069,6 +1069,10 @@ export interface HomeStats {
   /** Taxa de recontato (R48/A-70) — % de conversas resolvidas no período
    *  que foram reabertas (activity_logs `conversation_reopened`). */
   recontactRate?: number
+  /** Taxa de resolução (R45/A-66) — resolvidas no período ÷ conversas
+   *  criadas no mesmo período. Substitui o cálculo antigo do frontend, que
+   *  misturava "resolvidas hoje" com "total histórico". */
+  resolutionRate?: number
 }
 
 // ─── Templates & Campaigns ────────────────────────────────────────────────────

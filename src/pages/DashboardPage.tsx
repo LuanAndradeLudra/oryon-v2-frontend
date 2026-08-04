@@ -151,7 +151,11 @@ export function DashboardPage() {
         'queued':                   s.queueCount ?? 0,
         'resolved':                 s.conversationsResolvedToday ?? 0,
         'abandoned':                null,
-        'resolution_rate':          s.totalConversations ? Math.round(((s.conversationsResolvedToday ?? 0) / Math.max(s.totalConversations, 1)) * 100) : 0,
+        // R45: antes calculado aqui como conversationsResolvedToday / totalConversations
+        // (histórico) — duas janelas de tempo incompatíveis, tendia a 0
+        // conforme a base crescia. Backend (A-66) já calcula com as duas
+        // pontas na mesma janela.
+        'resolution_rate':          s.resolutionRate ?? 0,
         'abandon_rate':             null,
         'first_response_time':      (s.avgResponseMinutes ?? 0) * 60,
         'avg_resolution_time':      null,
