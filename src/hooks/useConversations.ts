@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
-import { getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
+import { conversationMatchesFilters } from '@/lib/conversationFilterPredicate'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketMessageNew, Tag, User } from '@/types'
+import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User } from '@/types'
 
 /**
  * Phase 27 — sentinel timestamp used by the UI to mean "pause indefinitely
@@ -16,6 +16,13 @@ export const INDEFINITE_PAUSE_ISO = '9999-12-31T23:59:59.000Z'
  *  query in the backend (batch tag/contact/user fetch); 50 keeps p95 well
  *  under 300ms while filling a typical viewport without immediate load-more. */
 const PAGE_SIZE = 50
+
+/** SCRUM-526 — settle window for the server-authoritative counter refresh.
+ *  Long enough to collapse the backend's double emit of
+ *  `conversation:ai-pause-updated` (emitToConversation + emitToTenant fire the
+ *  same event name, so a socket in both rooms sees it twice) and a burst of
+ *  handoffs, short enough that the badge feels immediate. */
+const COUNTS_DEBOUNCE_MS = 1500
 
 export function useConversations(filters: ConversationFilters = {}) {
   const { user } = useAuth()
@@ -127,12 +134,82 @@ export function useConversations(filters: ConversationFilters = {}) {
     filters.startDate, filters.endDate,
   ])
 
+  // ── Server-authoritative counters ──────────────────────────────────────────
+
+  /**
+   * SCRUM-526 — refresh `statusCounts` + `needsReviewCount` from the server.
+   *
+   * Both are computed backend-side under the same non-status filters as the
+   * list — including the period filter, which ConversationsPage defaults to
+   * "today". That rules out optimistic ±1 arithmetic: a conversation that
+   * flips status may well sit outside the active period/line/assignment scope,
+   * and a blind increment would drift from the truth with no way back.
+   *
+   * So we just re-ask the server, with `limit: 1` (the counters don't depend on
+   * page size) and keep ONLY the counters — never the list. Debounced, which
+   * also makes it idempotent under the backend's double emit.
+   *
+   * Fixes the shipped defect where `handleAiPauseUpdated` set `hasRecentAnomaly`
+   * on the row but never moved `needsReviewCount`: since the header badge is
+   * gated on `needsReviewCount > 0`, a session that started at 0 never showed
+   * the indicator or the filter toggle, no matter how many handoffs fired.
+   */
+  const countsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const refetchCounts = useCallback(() => {
+    if (countsDebounceRef.current) clearTimeout(countsDebounceRef.current)
+    countsDebounceRef.current = setTimeout(async () => {
+      countsDebounceRef.current = null
+      try {
+        const { data } = await conversationsApi.list(filtersRef.current, 1, 1)
+        setStatusCounts(data.statusCounts)
+        setNeedsReviewCount(data.needsReviewCount ?? 0)
+      } catch {
+        // Counters are advisory. On failure keep the previous values — the next
+        // event or filter change refreshes them. Deliberately no error surface:
+        // the list itself is unaffected and still usable.
+      }
+    }, COUNTS_DEBOUNCE_MS)
+  }, [])
+
+  // Drop a pending refresh on unmount so it can't setState on a dead component.
+  useEffect(() => () => {
+    if (countsDebounceRef.current) clearTimeout(countsDebounceRef.current)
+  }, [])
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   const patchConv = useCallback((id: string, patch: Partial<Conversation>) => {
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...patch } : c))
     )
+  }, [])
+
+  /**
+   * SCRUM-561 — patch a row and then EVICT it if it no longer belongs.
+   *
+   * `patchConv` alone leaves a contradiction on screen: a conversation that
+   * flips to `pending` while the operator is on the "Abertas" tab keeps its
+   * place in the list and renders a "Pendente" badge. Nothing in this hook ever
+   * removed a row on predicate violation before.
+   *
+   * `loadedConvIds` is cleared alongside, so if the conversation flips back it
+   * goes through the membership branch and gets re-fetched instead of silently
+   * no-op'ing.
+   */
+  const patchAndReconcile = useCallback((id: string, patch: Partial<Conversation>) => {
+    setConversations((prev) => {
+      const idx = prev.findIndex((c) => c.id === id)
+      if (idx === -1) return prev
+      const updated = { ...prev[idx], ...patch }
+      if (!conversationMatchesFilters(updated, filtersRef.current, userRef.current)) {
+        loadedConvIds.current.delete(id)
+        return prev.filter((c) => c.id !== id)
+      }
+      const next = [...prev]
+      next[idx] = updated
+      return next
+    })
   }, [])
 
   // ── Socket handlers ────────────────────────────────────────────────────────
@@ -148,34 +225,11 @@ export function useConversations(filters: ConversationFilters = {}) {
     pendingFetches.current.add(conversationId)
     try {
       const { data: conv } = await conversationsApi.get(conversationId)
-      const f = filtersRef.current
-      const currentUser = userRef.current
 
-      // Skip if the conversation wouldn't appear under the active filters.
-      if (f.status && f.status !== 'all' && conv.status !== f.status) return
-      if (f.whatsappNumberId && conv.whatsappNumber?.id !== f.whatsappNumberId) return
-      if (f.contactId && conv.contact?.id !== f.contactId) return
-      if (f.assignedTo === 'unassigned' && conv.assignedUser) return
-      if (f.assignedTo === 'me' && currentUser && conv.assignedUser?.id !== currentUser.id) return
-      // UUID branch — the "Equipe" picker lets the operator filter to a
-      // specific colleague's queue (e.g. taking over Maria's conversations
-      // after she logs off). Same realtime gate as the static buckets above.
-      if (f.assignedTo
-          && f.assignedTo !== 'me'
-          && f.assignedTo !== 'unassigned'
-          && f.assignedTo !== 'all'
-          && conv.assignedUser?.id !== f.assignedTo) return
-      if (f.aiHandling === 'active' && !isAiActive(conv)) return
-      if (f.aiHandling === 'paused' && isAiActive(conv)) return
-      if (f.unreadOnly && conv.unreadCount === 0) return
-      if (f.awaitingReply && !getAwaitingReply(conv)) return
-      if (f.untagged && conv.tags && conv.tags.length > 0) return
-      if (f.needsReview && !conv.hasRecentAnomaly) return
-      // Period filter — drop conversations whose lastMessageAt falls outside
-      // the active range. Same comparison the backend uses (>= start, < end)
-      // so the realtime prepend stays consistent with the paginated list.
-      if (f.startDate && conv.lastMessageAt && conv.lastMessageAt < f.startDate) return
-      if (f.endDate && conv.lastMessageAt && conv.lastMessageAt >= f.endDate) return
+      // SCRUM-561 — the 13-filter chain that used to be inlined here now lives
+      // in conversationFilterPredicate, shared with the eviction path so the
+      // two can't drift.
+      if (!conversationMatchesFilters(conv, filtersRef.current, userRef.current)) return
 
       setConversations((prev) => {
         if (prev.some((c) => c.id === conversationId)) return prev
@@ -239,8 +293,46 @@ export function useConversations(filters: ConversationFilters = {}) {
     if (payload.hasRecentAnomaly !== undefined) {
       patch.hasRecentAnomaly = payload.hasRecentAnomaly
     }
-    patchConv(payload.conversationId, patch)
-  }, [patchConv])
+
+    // SCRUM-561 — membership branch, mirroring handleNewMessage.
+    //
+    // `patchConv` is `prev.map(...)`: a NO-OP when the conversation isn't in
+    // the loaded list. Under the "Pendentes" filter — the very tab this feature
+    // drives the operator to — a conversation that is still `open` is not in
+    // the list, so patching it rendered nothing at all. The fix has to FETCH.
+    if (!loadedConvIds.current.has(payload.conversationId)) {
+      fetchAndPrependConversation(payload.conversationId)
+    } else {
+      patchAndReconcile(payload.conversationId, patch)
+    }
+
+    // SCRUM-526 — the row badge above was already handled; the HEADER indicator
+    // and its filter toggle read `needsReviewCount`, which nothing was updating.
+    // Only a handoff moves that number: a manual pause/resume carries no
+    // `hasRecentAnomaly` and leaves both counters untouched, so don't spend a
+    // request on it.
+    if (payload.hasRecentAnomaly !== undefined) {
+      refetchCounts()
+    }
+  }, [patchAndReconcile, fetchAndPrependConversation, refetchCounts])
+
+  /**
+   * SCRUM-562 — dedicated status event from `applyStatusTransition`.
+   *
+   * Status changes emitted NO socket at all before: resolving a conversation
+   * was invisible to other operators and to the same user's other tabs.
+   */
+  const handleStatusUpdated = useCallback((payload: SocketConversationStatusUpdated) => {
+    if (!loadedConvIds.current.has(payload.conversationId)) {
+      // Not loaded — it may now BELONG in the active filter (open → pending
+      // while sitting on the "Pendentes" tab). Fetch and let the predicate decide.
+      fetchAndPrependConversation(payload.conversationId)
+    } else {
+      patchAndReconcile(payload.conversationId, { status: payload.status })
+    }
+    // Tab badges are server-authoritative; a status flip moves them.
+    refetchCounts()
+  }, [patchAndReconcile, fetchAndPrependConversation, refetchCounts])
 
   const markAsRead = useCallback((conversationId: string) => {
     patchConv(conversationId, { unreadCount: 0 })
@@ -249,21 +341,38 @@ export function useConversations(filters: ConversationFilters = {}) {
 
   // ── API actions ────────────────────────────────────────────────────────────
 
+  // ── Ações locais: reconciliar, não só patchar ──────────────────────────────
+  //
+  // Toda ação abaixo muda um campo que o filtro ativo usa, então precisa passar
+  // por `patchAndReconcile` — `patchConv` é `prev.map`, que atualiza a linha e
+  // a deixa visível num filtro que ela deixou de satisfazer.
+  //
+  // Achado no UAT: operador em "Abertas" muda o status para Pendente e a linha
+  // FICA, exibindo o badge "Pendente" dentro da aba "Abertas". Só sumia depois
+  // de um refetch. A evicção existia, mas só no caminho do SOCKET — e depender
+  // do socket dar a volta para corrigir a própria aba que agiu é frágil: em
+  // qualquer hipótese de perda ou atraso do evento, o operador fica olhando um
+  // estado plausível e errado.
+  //
+  // Fora daqui de propósito: `markAsRead` (evictar a conversa que a pessoa
+  // acabou de abrir, sob o filtro "não lidas", seria hostil) e as tags, cujo
+  // caminho de patch é próprio.
+
   const updateStatus = useCallback(async (id: string, status: 'resolved' | 'open' | 'pending') => {
     const { data } = await conversationsApi.updateStatus(id, status)
-    patchConv(id, { status: data.status })
+    patchAndReconcile(id, { status: data.status })
     return data
-  }, [patchConv])
+  }, [patchAndReconcile])
 
   const assignUser = useCallback(async (id: string, user: User | null) => {
     await conversationsApi.assign(id, user?.id ?? null)
-    patchConv(id, { assignedUser: user ?? undefined })
-  }, [patchConv])
+    patchAndReconcile(id, { assignedUser: user ?? undefined })
+  }, [patchAndReconcile])
 
   const transferUser = useCallback(async (id: string, user: User) => {
     await conversationsApi.transfer(id, user.id)
-    patchConv(id, { assignedUser: user })
-  }, [patchConv])
+    patchAndReconcile(id, { assignedUser: user })
+  }, [patchAndReconcile])
 
   const addTag = useCallback(async (id: string, tag: Tag) => {
     await conversationsApi.addTag(id, tag.id)
@@ -288,8 +397,8 @@ export function useConversations(filters: ConversationFilters = {}) {
 
   const archiveConversation = useCallback(async (id: string) => {
     await conversationsApi.archive(id)
-    patchConv(id, { status: 'abandoned' })
-  }, [patchConv])
+    patchAndReconcile(id, { status: 'abandoned' })
+  }, [patchAndReconcile])
 
   /**
    * Phase 27 — manually pause/resume the WhatsApp AI for one conversation.
@@ -309,6 +418,11 @@ export function useConversations(filters: ConversationFilters = {}) {
     })
     try {
       await conversationsApi.setAiPause(id, pauseUntil)
+      // Reconciliar só DEPOIS da confirmação, não no patch otimista. Se a
+      // evicção acontecesse antes e a requisição falhasse, o rollback via
+      // `prev.map` seria no-op numa linha que já saiu da lista — o operador
+      // veria a conversa desaparecer para sempre por causa de um 500.
+      patchAndReconcile(id, { aiPausedUntil: pauseUntil })
     } catch (err) {
       // Rollback on failure
       setConversations((prev) =>
@@ -316,7 +430,7 @@ export function useConversations(filters: ConversationFilters = {}) {
       )
       throw err
     }
-  }, [])
+  }, [patchAndReconcile])
 
   /**
    * Phase 34 — "Intervir agora": server-authoritative pause. The backend
@@ -329,9 +443,9 @@ export function useConversations(filters: ConversationFilters = {}) {
   const interveneAi = useCallback(async (id: string) => {
     const r = await conversationsApi.interveneAiDefault(id)
     const until = (r.data as { aiPausedUntil?: string | null }).aiPausedUntil ?? null
-    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, aiPausedUntil: until } : c)))
+    patchAndReconcile(id, { aiPausedUntil: until })
     return until
-  }, [])
+  }, [patchAndReconcile])
 
   return {
     conversations,
@@ -343,8 +457,10 @@ export function useConversations(filters: ConversationFilters = {}) {
     needsReviewCount,
     error,
     refetch: fetchConversations,
+    refetchCounts,
     handleNewMessage,
     handleAiPauseUpdated,
+    handleStatusUpdated,
     markAsRead,
     updateStatus,
     assignUser,
