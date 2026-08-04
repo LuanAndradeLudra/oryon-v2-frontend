@@ -1066,6 +1066,9 @@ export interface HomeStats {
   myConversationsResolvedToday: number
   myAvgResponseMinutes: number
   myMessagesSentToday: number
+  /** Taxa de recontato (R48/A-70) — % de conversas resolvidas no período
+   *  que foram reabertas (activity_logs `conversation_reopened`). */
+  recontactRate?: number
 }
 
 // ─── Templates & Campaigns ────────────────────────────────────────────────────

@@ -155,10 +155,11 @@ export function DashboardPage() {
         'abandon_rate':             null,
         'first_response_time':      (s.avgResponseMinutes ?? 0) * 60,
         'avg_resolution_time':      null,
-        'sla_compliance':           null,
-        'csat':                     null,
-        'nps':                      null,
-        'recontact_rate':           null,
+        // R48: csat/nps/sla_compliance removidos do KPI_CATALOG (ver
+        // types/dashboard.ts) — sem entrada aqui, essas keys nem existem
+        // mais em snap.kpis. recontact_rate agora é calculado de verdade
+        // (A-70) em vez de ficar null.
+        'recontact_rate':           s.recontactRate ?? 0,
         'msgs_received':            s.messagesReceivedToday ?? 0,
         'msgs_sent':                s.messagesSentToday ?? 0,
         'new_contacts':             s.newContactsThisWeek ?? 0,

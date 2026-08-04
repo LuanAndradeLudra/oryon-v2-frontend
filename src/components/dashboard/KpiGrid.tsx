@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   TrendingUp, TrendingDown, Settings2, X, RotateCcw,
   MessageSquare, MessageCircle, Clock, CheckCircle2, XCircle,
-  Target, Zap, Timer, ShieldCheck, Star, ThumbsUp, RefreshCw,
+  Target, Zap, Timer, Star, RefreshCw,
   ArrowDownLeft, ArrowUpRight, UserPlus, Bot, Users, Activity,
   Send, Eye, Reply, MousePointer, AlertTriangle, UserX, Radio, Megaphone,
   DollarSign, BarChart2,
@@ -23,9 +23,7 @@ const KPI_ICONS: Record<KpiId, React.ReactNode> = {
   abandon_rate:         <XCircle className="w-4 h-4" />,
   first_response_time:  <Zap className="w-4 h-4" />,
   avg_resolution_time:  <Timer className="w-4 h-4" />,
-  sla_compliance:       <ShieldCheck className="w-4 h-4" />,
-  csat:                 <Star className="w-4 h-4" />,
-  nps:                  <ThumbsUp className="w-4 h-4" />,
+  // R48: csat/nps/sla_compliance removidos do catálogo — ver types/dashboard.ts
   recontact_rate:       <RefreshCw className="w-4 h-4" />,
   msgs_received:        <ArrowDownLeft className="w-4 h-4" />,
   msgs_sent:            <ArrowUpRight className="w-4 h-4" />,
@@ -59,7 +57,6 @@ const KPI_ICONS: Record<KpiId, React.ReactNode> = {
 const CATEGORY_COLORS: Record<string, string> = {
   Atendimento: '#6366f1',
   Velocidade:  '#f59e0b',
-  Qualidade:   '#10b981',
   Volume:      '#06b6d4',
   Bot:         '#8b5cf6',
   Equipe:      '#5588b0',
@@ -103,9 +100,6 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
 
       <div className="text-2xl font-bold text-surface-50 tabular-nums leading-none">
         {formatKpiValue(metric.value, metric.unit)}
-        {metric.unit === 'csat_score' && metric.value !== null && (
-          <span className="text-sm font-normal text-surface-400 ml-1">/ 5</span>
-        )}
       </div>
 
       {metric.trend !== 0 && (

@@ -2,11 +2,17 @@
 
 export type DateRange = 'today' | '7d' | '30d' | 'month'
 
+// R48: csat/nps/sla_compliance removidos do catálogo — nenhuma das três tem
+// fonte de dado real hoje (sem tabela de pesquisa de satisfação, sem config
+// de SLA por tenant), então em vez de mostrar "0"/"0.0%" fabricado, elas
+// somem completamente do dashboard (inclusive do customizer "Personalizar")
+// até a feature correspondente existir. Ver plano do épico SCRUM-341 pra
+// contexto de follow-up.
 export type KpiId =
   | 'total_conversations' | 'active_conversations' | 'queued'
   | 'resolved' | 'abandoned' | 'resolution_rate' | 'abandon_rate'
-  | 'first_response_time' | 'avg_resolution_time' | 'sla_compliance'
-  | 'csat' | 'nps' | 'recontact_rate'
+  | 'first_response_time' | 'avg_resolution_time'
+  | 'recontact_rate'
   | 'msgs_received' | 'msgs_sent' | 'new_contacts'
   | 'bot_deflection' | 'bot_resolved'
   | 'agents_online' | 'team_utilization'
@@ -20,12 +26,14 @@ export type KpiId =
   | 'ads_avg_cpl' | 'ads_avg_roas' | 'ads_conversion_rate'
   | 'ads_qualified_rate' | 'ads_customer_rate'
 
-export type KpiUnit = 'count' | 'percent' | 'seconds' | 'csat_score' | 'nps_score' | 'currency'
+// R48: csat_score/nps_score removidos junto com os KPIs csat/nps (nenhum
+// outro campo do catálogo usa essas unidades).
+export type KpiUnit = 'count' | 'percent' | 'seconds' | 'currency'
 
 export interface KpiDefinition {
   id: KpiId
   label: string
-  category: 'Atendimento' | 'Velocidade' | 'Qualidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing'
+  category: 'Atendimento' | 'Velocidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing'
   unit: KpiUnit
   trendIsGood: 'up' | 'down' | 'neutral' // whether an increasing trend is good
 }
@@ -163,12 +171,12 @@ export const KPI_CATALOG: KpiDefinition[] = [
   { id: 'abandoned',            label: 'Abandonadas',              category: 'Atendimento', unit: 'count',      trendIsGood: 'down'   },
   { id: 'resolution_rate',      label: 'Taxa de Resolução',        category: 'Atendimento', unit: 'percent',    trendIsGood: 'up'     },
   { id: 'abandon_rate',         label: 'Taxa de Abandono',         category: 'Atendimento', unit: 'percent',    trendIsGood: 'down'   },
+  // R48: recontact_rate move de "Qualidade" pra "Atendimento" — agora
+  // calculado de verdade (A-70), a categoria "Qualidade" deixa de existir
+  // no catálogo (csat/nps/sla_compliance removidos, ver comentário no KpiId).
+  { id: 'recontact_rate',       label: 'Taxa de Recontato',        category: 'Atendimento', unit: 'percent',    trendIsGood: 'down'   },
   { id: 'first_response_time',  label: 'TMR (1ª Resposta)',        category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down'   },
   { id: 'avg_resolution_time',  label: 'Tempo Médio Resolução',    category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down'   },
-  { id: 'sla_compliance',       label: 'SLA Compliance',           category: 'Velocidade',  unit: 'percent',    trendIsGood: 'up'     },
-  { id: 'csat',                 label: 'Satisfação (CSAT)',        category: 'Qualidade',   unit: 'csat_score', trendIsGood: 'up'     },
-  { id: 'nps',                  label: 'NPS',                      category: 'Qualidade',   unit: 'nps_score',  trendIsGood: 'up'     },
-  { id: 'recontact_rate',       label: 'Taxa de Recontato',        category: 'Qualidade',   unit: 'percent',    trendIsGood: 'down'   },
   { id: 'msgs_received',        label: 'Msgs Recebidas',           category: 'Volume',      unit: 'count',      trendIsGood: 'neutral'},
   { id: 'msgs_sent',            label: 'Msgs Enviadas',            category: 'Volume',      unit: 'count',      trendIsGood: 'neutral'},
   { id: 'new_contacts',         label: 'Novos Contatos',           category: 'Volume',      unit: 'count',      trendIsGood: 'up'     },
@@ -207,8 +215,6 @@ export const DEFAULT_KPI_SLOTS: KpiId[] = [
   'resolved',
   'resolution_rate',
   'first_response_time',
-  'csat',
-  'sla_compliance',
   'new_contacts',
   'bot_deflection',
   // Campaign defaults (Meta WhatsApp metrics)

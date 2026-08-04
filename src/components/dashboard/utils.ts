@@ -19,10 +19,6 @@ export function formatKpiValue(value: number | null, unit: KpiUnit): string {
       const m = Math.round((value % 3600) / 60)
       return m > 0 ? `${h}h ${m}m` : `${h}h`
     }
-    case 'csat_score':
-      return value === 0 ? '—' : `${value.toFixed(1)}`
-    case 'nps_score':
-      return value > 0 ? `+${Math.round(value)}` : `${Math.round(value)}`
     case 'currency':
       return 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     default:
