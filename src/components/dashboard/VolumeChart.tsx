@@ -23,7 +23,7 @@ function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?:
 
 export function VolumeChart({ data }: { data: VolumeDataPoint[] }) {
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 h-full flex flex-col">
+    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 flex flex-col">
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <p className="text-sm font-semibold text-surface-100">Volume de Mensagens</p>
         <div className="flex items-center gap-4 text-xs text-surface-400">
@@ -37,7 +37,14 @@ export function VolumeChart({ data }: { data: VolumeDataPoint[] }) {
           </span>
         </div>
       </div>
-      <div className="flex-1 min-h-0">
+      {/* height="100%" no ResponsiveContainer precisa de um ancestral com
+          altura resolvida em px — o container pai aqui é uma coluna de
+          altura automática (col-span-12 xl:col-span-8 space-y-4 no
+          DashboardPage), então h-full/flex-1 nunca tinham altura real pra
+          herdar e o gráfico colapsava pra 0px (mesmo bug já existia antes
+          desta sessão). Mesmo padrão de altura fixa em px já usado em
+          PeakHoursHeatmap. */}
+      <div style={{ height: 280 }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
