@@ -266,7 +266,7 @@ export function DashboardPage() {
 
         {/* Strip realtime — em mobile vira scroll horizontal para caber */}
         <div className={isMobile ? 'overflow-x-auto' : ''}>
-          <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
+          <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.agentMetrics.length, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
         </div>
 
         {/* Mobile-only toolbar de filtros (date range + refresh) */}
