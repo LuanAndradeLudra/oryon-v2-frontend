@@ -158,8 +158,15 @@ export function DashboardPage() {
       const s = stats
       const realKpis: Record<string, number | null> = {
         'total_conversations':      s.totalConversations ?? ((s.conversationsOpen ?? 0) + (s.conversationsResolvedToday ?? 0) + (s.queueCount ?? 0)),
-        'active_conversations':     s.conversationsOpen ?? 0,
-        'queued':                   s.queueCount ?? 0,
+        // QA ao vivo: usar s.conversationsOpen/s.queueCount aqui (estado
+        // atual, sem filtro) fazia esses dois cards nunca reagirem ao
+        // seletor de período — são os mesmos campos que a Home usa pra
+        // mostrar a fila "ao vivo" e por isso não podem ser escopados por
+        // período. O backend expõe uma versão dedicada pro Dashboard,
+        // conversationsOpenInRange/queueCountInRange (mesmo critério
+        // updatedAt >= rangeStart do resto dos KPIs "do período" aqui).
+        'active_conversations':     s.conversationsOpenInRange ?? 0,
+        'queued':                   s.queueCountInRange ?? 0,
         'resolved':                 s.conversationsResolvedToday ?? 0,
         // R47/A-65: abandonedCount/abandonRate agora calculados no backend
         // (updatedAt dentro do período, mesmo espírito de conversationsResolvedToday).

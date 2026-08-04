@@ -1089,6 +1089,11 @@ export interface HomeStats {
   // conversas do período que nunca tiveram intervenção humana.
   botResolved?: number
   botDeflectionRate?: number
+  // QA ao vivo: versão de conversationsOpen/queueCount escopada ao período
+  // selecionado, específica pro Dashboard — conversationsOpen/queueCount
+  // continuam sendo o estado atual (sem filtro), usado pela Home.
+  conversationsOpenInRange?: number
+  queueCountInRange?: number
 }
 
 // ─── Templates & Campaigns ────────────────────────────────────────────────────
