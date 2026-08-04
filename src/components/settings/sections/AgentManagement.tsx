@@ -8,6 +8,7 @@ import { SectionHeader } from '../SectionHeader'
 import { Avatar } from '@/components/ui/Avatar'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { CreateUserDrawer } from '../drawers/CreateUserDrawer'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
@@ -58,10 +59,7 @@ function StatusBadge({ user }: { user: User }) {
 }
 
 function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: (updated: User) => void }) {
-  const [cargo, setCargo] = useState(user.cargo ?? '')
-  const [departmentIds, setDepartmentIds] = useState<string[]>(
-    user.departmentIds ?? (user.departmentId ? [user.departmentId] : [])
-  )
+  const [departmentId, setDepartmentId] = useState<string>(user.departmentId ?? '')
   const [departments, setDepartments] = useState<Department[]>([])
   const [saving, setSaving] = useState(false)
   const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
@@ -70,22 +68,16 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
     axios.get<{ data: Department[] } | Department[]>(`${API}/departments`).then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
   }, [API])
 
-  const toggleDept = (id: string) => {
-    setDepartmentIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
-  }
-
   const handleSave = async () => {
     setSaving(true)
     try {
       // NestJS UpdateUserDto only accepts: firstName, lastName, role, isActive, departmentId
       const payload = {
-        departmentId: departmentIds[0] ?? null,
+        departmentId: departmentId || null,
       }
       await axios.patch(`${API}/users/${user.id}`, payload)
-      const selectedDepts = departments.filter((d) => departmentIds.includes(d.id))
-      onSaved({ ...user, cargo: cargo.trim(), departmentId: departmentIds[0], departmentName: selectedDepts[0]?.name, departmentIds, departmentNames: selectedDepts.map((d) => d.name) })
+      const selectedDept = departments.find((d) => d.id === departmentId)
+      onSaved({ ...user, departmentId, departmentName: selectedDept?.name, departmentIds: undefined, departmentNames: undefined })
     } catch (err: any) {
       alert(err?.response?.data?.message?.[0] ?? 'Erro ao salvar.')
     } finally {
@@ -106,42 +98,15 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">Cargo</label>
-          <input
-            value={cargo}
-            onChange={(e) => setCargo(e.target.value)}
-            placeholder="Ex: Atendente Sênior"
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
+          <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">Setor</label>
+          <RadioOptionList
+            name="departmentId"
+            options={departments.map((d) => ({ id: d.id, label: d.name }))}
+            value={departmentId}
+            onChange={setDepartmentId}
+            noneLabel="Nenhum setor"
+            emptyMessage="Nenhum setor cadastrado."
           />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">Setores</label>
-          <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
-            {departments.map((d) => {
-              const checked = departmentIds.includes(d.id)
-              return (
-                <label
-                  key={d.id}
-                  className={cn(
-                    'flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors select-none',
-                    checked ? 'border-brand-500/60 bg-brand-900/20' : 'border-surface-700 hover:border-surface-600',
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleDept(d.id)}
-                    className="accent-brand-500"
-                  />
-                  <span className="text-sm text-surface-200">{d.name}</span>
-                </label>
-              )
-            })}
-            {departments.length === 0 && (
-              <p className="text-xs text-surface-500 px-1">Nenhum setor cadastrado.</p>
-            )}
-          </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-1">
@@ -253,7 +218,7 @@ export function AgentManagement() {
       target_user_id: updated.id,
       target_user_name: `${updated.firstName} ${updated.lastName}`.trim(),
       action: 'user_updated',
-      details: { cargo: updated.cargo, department_ids: updated.departmentIds },
+      details: { department_id: updated.departmentId },
     })
   }
 
@@ -313,7 +278,7 @@ export function AgentManagement() {
             <thead>
               <tr className="border-b border-surface-800">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Usuário</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider hidden lg:table-cell">Cargo / Setor</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider hidden lg:table-cell">Setor</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Papel</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Status</th>
                 <th className="px-5 py-3" />
@@ -332,12 +297,11 @@ export function AgentManagement() {
                     </div>
                   </td>
                   <td className="px-5 py-4 hidden lg:table-cell">
-                    <p className="text-sm text-surface-300">{user.cargo ?? '—'}</p>
                     {(() => {
                       const names = user.departmentNames?.length
                         ? user.departmentNames.join(', ')
                         : user.departmentName ?? null
-                      return names ? <p className="text-xs text-surface-500">{names}</p> : null
+                      return names ? <p className="text-sm text-surface-300">{names}</p> : <p className="text-sm text-surface-500">—</p>
                     })()}
                   </td>
                   <td className="px-5 py-4">
@@ -367,7 +331,7 @@ export function AgentManagement() {
                       >
                         <span className="flex items-center gap-2">
                           <Pencil className="w-3.5 h-3.5" />
-                          Editar cargo e setor
+                          Editar setor
                         </span>
                       </DropdownItem>
                       {(['agent', 'supervisor', 'admin', 'business_admin'] as UserRole[]).map((role) => (

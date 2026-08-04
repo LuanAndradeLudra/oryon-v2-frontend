@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { connectSocket, disconnectSocket, getSocket } from '@/services/socket'
+import { attemptRefresh, clearSessionAndRedirect } from '@/services/api'
 import type {
   SocketAiPauseUpdated,
   SocketMessageNew,
@@ -80,12 +81,18 @@ export function useSocket(handlers: SocketHandlers = {}) {
       try { window.dispatchEvent(new CustomEvent('contact:ai-failed', { detail: p })) } catch { /* SSR */ }
     })
 
-    // Handle auth:expired from backend (token expired on active connection)
+    // Handle auth:expired from backend (token expired on active connection).
+    // Renew the HTTP session first — the socket's own `auth` callback
+    // (services/socket.ts) fetches a fresh ws-token on every `.connect()`,
+    // but that call itself depends on the (now-expired) session cookie, so
+    // reconnecting without refreshing first would just fail again.
     socket.on('auth:expired', () => {
-      console.warn('[socket] Token expired — disconnecting')
-      disconnectSocket()
-      // Trigger session refresh via storage event
-      window.dispatchEvent(new CustomEvent('socket:auth-expired'))
+      console.warn('[socket] Token expired — refreshing session and reconnecting')
+      socket.disconnect()
+      attemptRefresh().then((ok) => {
+        if (ok) socket.connect()
+        else clearSessionAndRedirect()
+      })
     })
 
     return () => {

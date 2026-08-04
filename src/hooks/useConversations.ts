@@ -59,11 +59,17 @@ export function useConversations(filters: ConversationFilters = {}) {
   // Prevents duplicate in-flight fetches for the same conversation ID.
   const pendingFetches = useRef<Set<string>>(new Set())
 
+  // Bumped on every call; a response only gets applied if it's still the
+  // most recent one in flight when it resolves.
+  const fetchTokenRef = useRef(0)
+
   const fetchConversations = useCallback(async () => {
+    const token = ++fetchTokenRef.current
     try {
       if (!initialLoadDone.current) setLoading(true)
       pageRef.current = 1
       const { data } = await withRetry(() => conversationsApi.list(filtersRef.current, 1, PAGE_SIZE))
+      if (fetchTokenRef.current !== token) return
       setConversations(data.data)
       loadedConvIds.current = new Set(data.data.map((c) => c.id))
       setHasMore(data.hasMore)
@@ -72,9 +78,10 @@ export function useConversations(filters: ConversationFilters = {}) {
       setError(null)
       initialLoadDone.current = true
     } catch {
+      if (fetchTokenRef.current !== token) return
       setError('Erro ao carregar conversas')
     } finally {
-      setLoading(false)
+      if (fetchTokenRef.current === token) setLoading(false)
     }
   }, []) // filtersRef is always current — no serialization needed
 

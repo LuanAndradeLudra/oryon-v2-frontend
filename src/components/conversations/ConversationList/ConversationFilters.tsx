@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  X, Search, UserCircle2, Bot, UserCheck, Users, ChevronDown, UserX,
+  X, Search, UserCircle2, Bot, BotOff, UserCheck, Users, ChevronDown, UserX,
   CalendarDays, Calendar as CalendarIcon, CalendarRange, CalendarSearch,
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
@@ -405,10 +405,11 @@ interface ConversationFiltersBarProps {
 // 'team' is special: it covers BOTH "Sem atribuição" and "atribuído a algum
 // usuário específico". The exact selection lives in `filters.assignedTo`
 // (either the literal 'unassigned' or a UUID).
-type HandlingFilterValue = 'all' | 'ai' | 'me' | 'team'
+type HandlingFilterValue = 'all' | 'ai' | 'paused' | 'me' | 'team'
 
 function resolveHandlingValue(f: ConversationFilters): HandlingFilterValue {
   if (f.aiHandling === 'active') return 'ai'
+  if (f.aiHandling === 'paused') return 'paused'
   if (f.assignedTo === 'me') return 'me'
   if (f.assignedTo === 'unassigned') return 'team'
   if (f.assignedTo && f.assignedTo !== 'all' && UUID_REGEX.test(f.assignedTo)) return 'team'
@@ -418,13 +419,14 @@ function resolveHandlingValue(f: ConversationFilters): HandlingFilterValue {
 // Static handling chips. "Equipe" is rendered separately because it carries
 // dropdown state (selected colleague / 'Sem atribuição').
 const STATIC_HANDLING_CHIPS: Array<{
-  value: 'all' | 'ai' | 'me'
+  value: 'all' | 'ai' | 'paused' | 'me'
   label: string
   icon: typeof Bot
 }> = [
-  { value: 'all', label: 'Todas',   icon: Users    },
-  { value: 'ai',  label: 'IA',      icon: Bot      },
-  { value: 'me',  label: 'Minhas',  icon: UserCheck },
+  { value: 'all',    label: 'Todas',      icon: Users     },
+  { value: 'ai',     label: 'IA',         icon: Bot       },
+  { value: 'paused', label: 'IA pausada', icon: BotOff    },
+  { value: 'me',     label: 'Minhas',     icon: UserCheck },
 ]
 
 // Period filter chips — sit between Status and Atendimento. Preset shortcuts
@@ -514,12 +516,13 @@ export function ConversationFiltersBar({
   const set = (patch: Partial<ConversationFilters>) =>
     onFiltersChange({ ...filters, ...patch })
 
-  const setHandling = (v: 'all' | 'ai' | 'me') => {
+  const setHandling = (v: 'all' | 'ai' | 'paused' | 'me') => {
     // Reset both axes first, then apply the picked one. Keeps the radio
     // exclusive even if the previous filter touched a different field.
-    if (v === 'all')     set({ assignedTo: 'all', aiHandling: 'all' })
-    else if (v === 'ai') set({ assignedTo: 'all', aiHandling: 'active' })
-    else if (v === 'me') set({ assignedTo: 'me',  aiHandling: 'all' })
+    if (v === 'all')         set({ assignedTo: 'all', aiHandling: 'all' })
+    else if (v === 'ai')     set({ assignedTo: 'all', aiHandling: 'active' })
+    else if (v === 'paused') set({ assignedTo: 'all', aiHandling: 'paused' })
+    else if (v === 'me')     set({ assignedTo: 'me',  aiHandling: 'all' })
   }
 
   /**
@@ -829,6 +832,7 @@ export function ConversationFiltersBar({
           {handlingValue !== 'all' && (
             <span className="flex items-center gap-1 text-[11px] bg-brand-600/15 text-brand-300 px-2 py-0.5 rounded-full border border-brand-500/20">
               {handlingValue === 'ai' && 'IA'}
+              {handlingValue === 'paused' && 'IA pausada'}
               {handlingValue === 'me' && 'Minhas'}
               {handlingValue === 'team' && (() => {
                 if (filters.assignedTo === 'unassigned') return 'Sem atribuição'
