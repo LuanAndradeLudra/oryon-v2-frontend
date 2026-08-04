@@ -90,16 +90,22 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
   const catColor = CATEGORY_COLORS[metric.category] ?? '#6366f1'
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col gap-2.5">
+    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col gap-2.5 relative">
+      {/* Tooltip explicativo (R50) no canto inferior direito do card, fora
+          do fluxo do header — pedido explícito pra não competir com o
+          label/ícone no topo. */}
+      <div className="absolute z-10 bottom-2 right-2">
+        <Tooltip content={KPI_DESCRIPTIONS[metric.id]} side="top" wide>
+          <Info className="w-3 h-3 text-surface-600 hover:text-surface-400 transition-colors cursor-help" />
+        </Tooltip>
+      </div>
+
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: catColor + '1a', color: catColor }}>
           {KPI_ICONS[metric.id]}
         </div>
         <span className="text-xs text-surface-400 font-medium leading-tight">{metric.label}</span>
-        <Tooltip content={KPI_DESCRIPTIONS[metric.id]} side="top" wide>
-          <Info className="w-3 h-3 text-surface-600 hover:text-surface-400 transition-colors cursor-help" />
-        </Tooltip>
       </div>
 
       <div className="text-2xl font-bold text-surface-50 tabular-nums leading-none">
