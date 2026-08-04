@@ -16,11 +16,6 @@ import type { Tag } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
-// Simulated usage count
-const TAG_USAGE: Record<string, number> = {
-  tag1: 8, tag2: 5, tag3: 3, tag4: 7, tag5: 2, tag6: 4,
-}
-
 interface TagCardProps {
   tag: Tag
   usageCount: number
@@ -268,7 +263,7 @@ export function TagsSettings() {
           <TagCard
             key={tag.id}
             tag={tag}
-            usageCount={TAG_USAGE[tag.id] ?? 0}
+            usageCount={tag.usageCount ?? 0}
             onEdit={handleEdit}
             onDelete={setDeleteTarget}
             canManage={canManageTags}

@@ -140,39 +140,42 @@ export function DashboardPage() {
       // Start with empty structure, fill with real data
       const snap = buildEmptySnapshot()
 
-      // Override ALL KPIs with real values (zero trend since no historical data)
+      // Override KPIs with real values where the backend actually computes
+      // them (zero trend since no historical data). KPIs the backend never
+      // calculates stay `null` — rendered as "—", not a fabricated "0"/
+      // "0.0%" that would look like a real measurement (R12).
       const s = stats
-      const realKpis: Record<string, number> = {
+      const realKpis: Record<string, number | null> = {
         'total_conversations':      s.totalConversations ?? ((s.conversationsOpen ?? 0) + (s.conversationsResolvedToday ?? 0) + (s.queueCount ?? 0)),
         'active_conversations':     s.conversationsOpen ?? 0,
         'queued':                   s.queueCount ?? 0,
         'resolved':                 s.conversationsResolvedToday ?? 0,
-        'abandoned':                0,
+        'abandoned':                null,
         'resolution_rate':          s.totalConversations ? Math.round(((s.conversationsResolvedToday ?? 0) / Math.max(s.totalConversations, 1)) * 100) : 0,
-        'abandon_rate':             0,
+        'abandon_rate':             null,
         'first_response_time':      (s.avgResponseMinutes ?? 0) * 60,
-        'avg_resolution_time':      0,
-        'sla_compliance':           0,
-        'csat':                     0,
-        'nps':                      0,
-        'recontact_rate':           0,
+        'avg_resolution_time':      null,
+        'sla_compliance':           null,
+        'csat':                     null,
+        'nps':                      null,
+        'recontact_rate':           null,
         'msgs_received':            s.messagesReceivedToday ?? 0,
         'msgs_sent':                s.messagesSentToday ?? 0,
         'new_contacts':             s.newContactsThisWeek ?? 0,
-        'bot_deflection':           0,
-        'bot_resolved':             0,
+        'bot_deflection':           null,
+        'bot_resolved':             null,
         'agents_online':            s.agentsOnline ?? 0,
-        'team_utilization':         0,
-        'campaign_sent':            0,
-        'campaign_delivery_rate':   0,
-        'campaign_read_rate':       0,
-        'campaign_reply_rate':      0,
-        'campaign_ctr':             0,
-        'campaign_optout_rate':     0,
+        'team_utilization':         null,
+        'campaign_sent':            null,
+        'campaign_delivery_rate':   null,
+        'campaign_read_rate':       null,
+        'campaign_reply_rate':      null,
+        'campaign_ctr':             null,
+        'campaign_optout_rate':     null,
       }
       snap.kpis = snap.kpis.map((kpi: KpiMetric) => {
         const val = realKpis[kpi.id]
-        return val !== undefined ? { ...kpi, value: val, trend: 0 } : { ...kpi, value: 0, trend: 0 }
+        return val !== undefined ? { ...kpi, value: val, trend: 0 } : { ...kpi, value: null, trend: 0 }
       })
 
       // Override status donut with real data

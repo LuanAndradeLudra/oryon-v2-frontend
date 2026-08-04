@@ -103,7 +103,7 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
 
       <div className="text-2xl font-bold text-surface-50 tabular-nums leading-none">
         {formatKpiValue(metric.value, metric.unit)}
-        {metric.unit === 'csat_score' && (
+        {metric.unit === 'csat_score' && metric.value !== null && (
           <span className="text-sm font-normal text-surface-400 ml-1">/ 5</span>
         )}
       </div>
