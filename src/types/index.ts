@@ -1073,6 +1073,22 @@ export interface HomeStats {
    *  criadas no mesmo período. Substitui o cálculo antigo do frontend, que
    *  misturava "resolvidas hoje" com "total histórico". */
   resolutionRate?: number
+  // R47/A-65: conversas com status "abandoned" dentro do período, e a
+  // mesma taxa sobre o total de conversas criadas no período.
+  abandonedCount?: number
+  abandonRate?: number
+  // R47/A-68: agregado de Campaign.stats (jsonb) somado de todas as
+  // campanhas do tenant no período — ver dashboard.service.ts (getHomeStats).
+  campaignSent?: number
+  campaignDeliveryRate?: number
+  campaignReadRate?: number
+  campaignReplyRate?: number
+  campaignCtr?: number
+  campaignOptoutRate?: number
+  // R47/A-69: conversas resolvidas sem nenhuma mensagem humana, e % de
+  // conversas do período que nunca tiveram intervenção humana.
+  botResolved?: number
+  botDeflectionRate?: number
 }
 
 // ─── Templates & Campaigns ────────────────────────────────────────────────────

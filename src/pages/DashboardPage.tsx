@@ -156,15 +156,20 @@ export function DashboardPage() {
         'active_conversations':     s.conversationsOpen ?? 0,
         'queued':                   s.queueCount ?? 0,
         'resolved':                 s.conversationsResolvedToday ?? 0,
-        'abandoned':                null,
+        // R47/A-65: abandonedCount/abandonRate agora calculados no backend
+        // (updatedAt dentro do período, mesmo espírito de conversationsResolvedToday).
+        'abandoned':                s.abandonedCount ?? null,
         // R45: antes calculado aqui como conversationsResolvedToday / totalConversations
         // (histórico) — duas janelas de tempo incompatíveis, tendia a 0
         // conforme a base crescia. Backend (A-66) já calcula com as duas
         // pontas na mesma janela.
         'resolution_rate':          s.resolutionRate ?? 0,
-        'abandon_rate':             null,
+        'abandon_rate':             s.abandonRate ?? null,
         'first_response_time':      (s.avgResponseMinutes ?? 0) * 60,
-        'avg_resolution_time':      null,
+        // R47/A-67: agregado tenant-wide vem de getSnapshot (dbSnapshot),
+        // não de getHomeStats (stats) — média direta sobre as conversas
+        // resolvidas no período, não a média das médias por agente.
+        'avg_resolution_time':      dbSnapshot?.avgResolutionTimeTenant ?? null,
         // R48: csat/nps/sla_compliance removidos do KPI_CATALOG (ver
         // types/dashboard.ts) — sem entrada aqui, essas keys nem existem
         // mais em snap.kpis. recontact_rate agora é calculado de verdade
@@ -173,16 +178,20 @@ export function DashboardPage() {
         'msgs_received':            s.messagesReceivedToday ?? 0,
         'msgs_sent':                s.messagesSentToday ?? 0,
         'new_contacts':             s.newContactsThisWeek ?? 0,
-        'bot_deflection':           null,
-        'bot_resolved':             null,
+        // R47/A-69: mensagens outbound sem sentByUserId identificam o bot
+        // (mesmo critério de messagesSent "humano" na tabela de equipe).
+        'bot_deflection':           s.botDeflectionRate ?? null,
+        'bot_resolved':             s.botResolved ?? null,
         'agents_online':            s.agentsOnline ?? 0,
-        'team_utilization':         null,
-        'campaign_sent':            null,
-        'campaign_delivery_rate':   null,
-        'campaign_read_rate':       null,
-        'campaign_reply_rate':      null,
-        'campaign_ctr':             null,
-        'campaign_optout_rate':     null,
+        // R47/A-67: mesma origem de avg_resolution_time acima (dbSnapshot).
+        'team_utilization':         dbSnapshot?.teamUtilization ?? null,
+        // R47/A-68: Campaign.stats (jsonb) somado por tenant no período.
+        'campaign_sent':            s.campaignSent ?? null,
+        'campaign_delivery_rate':   s.campaignDeliveryRate ?? null,
+        'campaign_read_rate':       s.campaignReadRate ?? null,
+        'campaign_reply_rate':      s.campaignReplyRate ?? null,
+        'campaign_ctr':             s.campaignCtr ?? null,
+        'campaign_optout_rate':     s.campaignOptoutRate ?? null,
       }
       snap.kpis = snap.kpis.map((kpi: KpiMetric) => {
         const val = realKpis[kpi.id]
