@@ -13,12 +13,17 @@ import { KpiGrid }          from '@/components/dashboard/KpiGrid'
 import { VolumeChart }      from '@/components/dashboard/VolumeChart'
 import { StatusDonut }      from '@/components/dashboard/StatusDonut'
 import { TagsChart }        from '@/components/dashboard/TagsChart'
-import { CsatChart }        from '@/components/dashboard/CsatChart'
 import { PeakHoursHeatmap } from '@/components/dashboard/PeakHoursHeatmap'
 import { AgentTable }       from '@/components/dashboard/AgentTable'
 import { ActivityFeed }     from '@/components/dashboard/ActivityFeed'
 import { AiInsightsSection } from '@/components/dashboard/AiInsightsSection'
 import { isFeatureVisible } from '@/config/featureFlags'
+// import { CsatChart } from '@/components/dashboard/CsatChart'
+// Removido (R48) — sem pesquisa de satisfação implementada, csatChart vem
+// sempre vazio do backend ([]); mostrar o card "Satisfação & NPS" vazio
+// pareceria falta de dado real, quando é feature que ainda não existe.
+// Reativar quando a pesquisa de CSAT/NPS for implementada (ver follow-ups
+// do plano SCRUM-341).
 // import { MarketingFunnelSection } from '@/components/dashboard/MarketingFunnelSection'
 // Removido temporariamente — endpoint /api/analytics/marketing-funnel ainda nao
 // existe no backend; trazer de volta quando o endpoint for implementado.
@@ -362,7 +367,7 @@ export function DashboardPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <TagsChart data={snapshot.tagVolumes} />
-                  <CsatChart data={snapshot.csatChart} />
+                  {/* <CsatChart data={snapshot.csatChart} /> — ver comentário do import (R48): sem pesquisa de satisfação implementada ainda */}
                 </div>
 
                 <PeakHoursHeatmap data={snapshot.heatmap} />
