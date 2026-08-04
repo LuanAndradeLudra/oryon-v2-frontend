@@ -208,6 +208,47 @@ export const KPI_CATALOG: KpiDefinition[] = [
   { id: 'ads_customer_rate',      label: 'Taxa de Fechamento',        category: 'Marketing',   unit: 'percent',    trendIsGood: 'up'     },
 ]
 
+// R50: texto explicativo (definição + fórmula) exibido no tooltip "i" de
+// cada card do dashboard — mesmo padrão de COLUMN_TOOLTIPS já usado na
+// tabela de Performance da Equipe (AgentTable.tsx).
+export const KPI_DESCRIPTIONS: Record<KpiId, string> = {
+  total_conversations:    'Total de conversas do tenant, de todos os tempos.',
+  active_conversations:   'Conversas com status "aberta" no momento.',
+  queued:                 'Conversas com status "pendente" (aguardando atendimento) no momento.',
+  resolved:                'Conversas marcadas como resolvidas dentro do período selecionado.',
+  abandoned:               'Conversas que ficaram com status "abandonada" dentro do período selecionado.',
+  resolution_rate:        'Resolvidas no período ÷ conversas criadas no mesmo período.',
+  abandon_rate:            'Abandonadas no período ÷ conversas criadas no mesmo período.',
+  recontact_rate:          'Conversas reabertas pelo cliente no período ÷ conversas resolvidas no mesmo período — indica retrabalho.',
+  first_response_time:    'Tempo médio entre a mensagem do cliente e a primeira resposta (humana ou da IA) no período.',
+  avg_resolution_time:    'Tempo médio entre a criação e a resolução das conversas resolvidas no período.',
+  msgs_received:          'Mensagens recebidas do cliente (inbound) dentro do período.',
+  msgs_sent:               'Mensagens enviadas (outbound, humanas ou da IA) dentro do período.',
+  new_contacts:            'Contatos novos criados nos últimos 7 dias corridos (não segue o seletor de período).',
+  bot_deflection:          '% de conversas do período que nunca precisaram de intervenção humana — só IA.',
+  bot_resolved:            'Conversas resolvidas no período sem nenhuma mensagem enviada por um humano.',
+  agents_online:           'Agentes com sessão ativa agora. Requer rastreamento de presença — indisponível até a feature existir.',
+  team_utilization:        'Conversas abertas atribuídas à equipe ÷ capacidade total estimada (20 conversas por agente).',
+  campaign_sent:           'Mensagens de disparo enviadas no período, somadas de todas as campanhas.',
+  campaign_delivery_rate:  'Entregues ÷ enviadas, somado de todas as campanhas do período.',
+  campaign_read_rate:      'Lidas ÷ entregues, somado de todas as campanhas do período.',
+  campaign_reply_rate:     'Respondidas ÷ entregues, somado de todas as campanhas do período.',
+  campaign_ctr:             'Cliques em botão/link ÷ entregues, somado de todas as campanhas do período.',
+  campaign_fail_rate:      'Falhas de envio ÷ enviadas, somado de todas as campanhas do período.',
+  campaign_optout_rate:    'Opt-outs ÷ entregues, somado de todas as campanhas do período.',
+  campaigns_active:        'Campanhas de disparo com status ativo agora.',
+  campaigns_total:         'Total de campanhas de disparo criadas no período.',
+  campaign_reach:          'Contatos únicos alcançados por disparos no período.',
+  ads_leads_meta:           'Leads atribuídos a campanhas do Meta Ads no período.',
+  ads_leads_google:        'Leads atribuídos a campanhas do Google Ads no período.',
+  ads_total_spend:         'Investimento total em mídia paga (Meta + Google Ads) no período.',
+  ads_avg_cpl:              'Custo por lead médio (investimento ÷ leads) no período.',
+  ads_avg_roas:             'Retorno sobre investimento em mídia paga (receita ÷ investimento) no período.',
+  ads_conversion_rate:     'Leads de anúncios que viraram oportunidade ÷ total de leads de anúncios no período.',
+  ads_qualified_rate:      'Leads de anúncios qualificados ÷ total de leads de anúncios no período.',
+  ads_customer_rate:       'Leads de anúncios que viraram cliente ÷ total de leads de anúncios no período.',
+}
+
 export const DEFAULT_KPI_SLOTS: KpiId[] = [
   'total_conversations',
   'active_conversations',

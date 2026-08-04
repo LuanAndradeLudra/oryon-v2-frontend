@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  TrendingUp, TrendingDown, Settings2, X, RotateCcw,
+  TrendingUp, TrendingDown, Settings2, X, RotateCcw, Info,
   MessageSquare, MessageCircle, Clock, CheckCircle2, XCircle,
   Target, Zap, Timer, Star, RefreshCw,
   ArrowDownLeft, ArrowUpRight, UserPlus, Bot, Users, Activity,
@@ -10,8 +10,9 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
+import { Tooltip } from '@/components/ui/Tooltip'
 import type { KpiId, KpiMetric } from '@/types/dashboard'
-import { KPI_CATALOG, DEFAULT_KPI_SLOTS } from '@/types/dashboard'
+import { KPI_CATALOG, DEFAULT_KPI_SLOTS, KPI_DESCRIPTIONS } from '@/types/dashboard'
 
 const KPI_ICONS: Record<KpiId, React.ReactNode> = {
   total_conversations:  <MessageSquare className="w-4 h-4" />,
@@ -96,6 +97,9 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
           {KPI_ICONS[metric.id]}
         </div>
         <span className="text-xs text-surface-400 font-medium leading-tight">{metric.label}</span>
+        <Tooltip content={KPI_DESCRIPTIONS[metric.id]} side="top" wide>
+          <Info className="w-3 h-3 text-surface-600 hover:text-surface-400 transition-colors cursor-help" />
+        </Tooltip>
       </div>
 
       <div className="text-2xl font-bold text-surface-50 tabular-nums leading-none">
