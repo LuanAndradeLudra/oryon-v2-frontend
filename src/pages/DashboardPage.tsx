@@ -194,7 +194,10 @@ export function DashboardPage() {
         // (mesmo critério de messagesSent "humano" na tabela de equipe).
         'bot_deflection':           s.botDeflectionRate ?? null,
         'bot_resolved':             s.botResolved ?? null,
-        'agents_online':            s.agentsOnline ?? 0,
+        // agentsOnline: backend manda null quando não há rastreamento de
+        // presença (sem heartbeat via WebSocket ainda) — não usar `?? 0`
+        // aqui, senão fabrica "0 online" como se fosse medido de verdade.
+        'agents_online':            s.agentsOnline ?? null,
         // R47/A-67: mesma origem de avg_resolution_time acima (dbSnapshot).
         'team_utilization':         dbSnapshot?.teamUtilization ?? null,
         // R47/A-68: Campaign.stats (jsonb) somado por tenant no período.
@@ -237,7 +240,7 @@ export function DashboardPage() {
 
       // Override realtime strip
       snap.realtime = {
-        agentsOnline:        s.agentsOnline ?? 0,
+        agentsOnline:        s.agentsOnline ?? null,
         activeConversations: s.conversationsOpen ?? 0,
         queueSize:           s.queueCount ?? 0,
         avgWaitSeconds:      (s.avgResponseMinutes ?? 0) * 60,
