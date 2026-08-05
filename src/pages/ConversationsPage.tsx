@@ -23,7 +23,7 @@ import { isAdminTier } from '@/lib/roleHelpers'
 import { resolveRange } from '@/lib/dateRange'
 import type {
   Conversation, ConversationFilters,
-  SocketAiPauseUpdated, SocketMessageNew, SocketUnreadUpdate,
+  SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, SocketUnreadUpdate,
   Tag, User,
 } from '@/types'
 
@@ -57,7 +57,7 @@ export function ConversationsPage() {
 
   const {
     conversations, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
-    handleNewMessage, handleAiPauseUpdated, markAsRead,
+    handleNewMessage, handleAiPauseUpdated, handleStatusUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
   } = useConversations(filters)
@@ -117,6 +117,16 @@ export function ConversationsPage() {
     // Phase 27 — AI handoff pause/resume from another tab or operator. Keeps
     // the in-memory list in sync so opening that conversation later shows the
     // correct banner state without a fetch.
+    // SCRUM-562 — status changed server-side (manual endpoint or the AI guard's
+    // move to `pending`). The list half is handled inside the hook; here we only
+    // keep the open conversation's header in lockstep.
+    onConversationStatusUpdated: useCallback((payload: SocketConversationStatusUpdated) => {
+      handleStatusUpdated(payload)
+      if (activeConversation?.id === payload.conversationId) {
+        syncActive(payload.conversationId, { status: payload.status })
+      }
+    }, [handleStatusUpdated, activeConversation?.id]),
+
     onConversationAiPauseUpdated: useCallback((payload: SocketAiPauseUpdated) => {
       handleAiPauseUpdated(payload)
       if (activeConversation?.id === payload.conversationId) {

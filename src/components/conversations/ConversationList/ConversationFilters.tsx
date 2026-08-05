@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  X, Search, UserCircle2, Bot, UserCheck, Users, ChevronDown, UserX,
+  X, Search, UserCircle2, Bot, BotOff, UserCheck, Users, ChevronDown, UserX,
   CalendarDays, Calendar as CalendarIcon, CalendarRange, CalendarSearch,
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
@@ -10,7 +10,7 @@ import { ptBR } from 'date-fns/locale'
 import { format } from 'date-fns'
 import { Avatar } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
-import { resolveRange, type DateRangePreset } from '@/lib/dateRange'
+import { resolveActivePreset, resolveRange, type DateRangePreset } from '@/lib/dateRange'
 import type { Contact, ConversationFilters, Tag, User } from '@/types'
 import 'react-day-picker/style.css'
 
@@ -405,10 +405,11 @@ interface ConversationFiltersBarProps {
 // 'team' is special: it covers BOTH "Sem atribuição" and "atribuído a algum
 // usuário específico". The exact selection lives in `filters.assignedTo`
 // (either the literal 'unassigned' or a UUID).
-type HandlingFilterValue = 'all' | 'ai' | 'me' | 'team'
+type HandlingFilterValue = 'all' | 'ai' | 'paused' | 'me' | 'team'
 
 function resolveHandlingValue(f: ConversationFilters): HandlingFilterValue {
   if (f.aiHandling === 'active') return 'ai'
+  if (f.aiHandling === 'paused') return 'paused'
   if (f.assignedTo === 'me') return 'me'
   if (f.assignedTo === 'unassigned') return 'team'
   if (f.assignedTo && f.assignedTo !== 'all' && UUID_REGEX.test(f.assignedTo)) return 'team'
@@ -418,20 +419,22 @@ function resolveHandlingValue(f: ConversationFilters): HandlingFilterValue {
 // Static handling chips. "Equipe" is rendered separately because it carries
 // dropdown state (selected colleague / 'Sem atribuição').
 const STATIC_HANDLING_CHIPS: Array<{
-  value: 'all' | 'ai' | 'me'
+  value: 'all' | 'ai' | 'paused' | 'me'
   label: string
   icon: typeof Bot
 }> = [
-  { value: 'all', label: 'Todas',   icon: Users    },
-  { value: 'ai',  label: 'IA',      icon: Bot      },
-  { value: 'me',  label: 'Minhas',  icon: UserCheck },
+  { value: 'all',    label: 'Todas',      icon: Users     },
+  { value: 'ai',     label: 'IA',         icon: Bot       },
+  { value: 'paused', label: 'IA pausada', icon: BotOff    },
+  { value: 'me',     label: 'Minhas',     icon: UserCheck },
 ]
 
 // Period filter chips — sit between Status and Atendimento. Preset shortcuts
 // resolve to BRT-aligned ranges via `resolveRange()`; "Personalizado" opens
 // a calendar popover so the operator can pick an arbitrary range. The default
-// (set in ConversationsPage) is 'today', and the operator can never end up
-// with no range — clicking the currently-active chip re-applies it.
+// (set in ConversationsPage) is 'today'. Clicking the ACTIVE chip clears the
+// period filter — no chip lit means no period narrowing, which is also the
+// state the `?id=` restore path leaves behind.
 const PERIOD_CHIPS: Array<{
   value: DateRangePreset
   label: string
@@ -455,15 +458,9 @@ export function ConversationFiltersBar({
   // ── Period filter state ──────────────────────────────────────────────────
   // The active preset is derived from the current filters.startDate so the
   // chips stay in sync even if a parent component swaps the filters object
-  // (e.g. initial load with default = 'today'). We compare ISO strings of
-  // the start boundary to detect which preset is currently applied.
-  const activePeriod = useMemo<DateRangePreset>(() => {
-    if (!filters.startDate) return 'today'
-    if (filters.startDate === resolveRange('today').startDate) return 'today'
-    if (filters.startDate === resolveRange('yesterday').startDate) return 'yesterday'
-    if (filters.startDate === resolveRange('last7').startDate) return 'last7'
-    return 'custom'
-  }, [filters.startDate])
+  // (e.g. initial load with default = 'today'). `null` = no period narrowing
+  // applied, in which case NO chip lights up — see resolveActivePreset.
+  const activePeriod = useMemo(() => resolveActivePreset(filters.startDate), [filters.startDate])
 
   const [customRange, setCustomRange] = useState<DateRange | undefined>(() => {
     if (activePeriod === 'custom' && filters.startDate && filters.endDate) {
@@ -483,6 +480,17 @@ export function ConversationFiltersBar({
   // above it in the z-stack.
 
   const applyPeriod = (preset: DateRangePreset) => {
+    // Clicking the chip that is ALREADY active turns the period filter off.
+    // This used to re-apply the same range (a no-op), which left "todos os
+    // períodos" reachable only as a side effect of the `?id=` restore path —
+    // an operator who wanted to widen the view had to build a custom range by
+    // hand. Same gesture for all four chips, including 'custom'.
+    if (activePeriod === preset) {
+      setCustomRange(undefined)
+      setCalendarOpen(false)
+      onFiltersChange({ ...filters, startDate: undefined, endDate: undefined })
+      return
+    }
     if (preset === 'custom') {
       // Open the calendar; don't change the active filter until the operator
       // picks both endpoints. If they previously had a custom range, keep it
@@ -514,12 +522,13 @@ export function ConversationFiltersBar({
   const set = (patch: Partial<ConversationFilters>) =>
     onFiltersChange({ ...filters, ...patch })
 
-  const setHandling = (v: 'all' | 'ai' | 'me') => {
+  const setHandling = (v: 'all' | 'ai' | 'paused' | 'me') => {
     // Reset both axes first, then apply the picked one. Keeps the radio
     // exclusive even if the previous filter touched a different field.
-    if (v === 'all')     set({ assignedTo: 'all', aiHandling: 'all' })
-    else if (v === 'ai') set({ assignedTo: 'all', aiHandling: 'active' })
-    else if (v === 'me') set({ assignedTo: 'me',  aiHandling: 'all' })
+    if (v === 'all')         set({ assignedTo: 'all', aiHandling: 'all' })
+    else if (v === 'ai')     set({ assignedTo: 'all', aiHandling: 'active' })
+    else if (v === 'paused') set({ assignedTo: 'all', aiHandling: 'paused' })
+    else if (v === 'me')     set({ assignedTo: 'me',  aiHandling: 'all' })
   }
 
   /**
@@ -627,6 +636,8 @@ export function ConversationFiltersBar({
               <button
                 key={value}
                 onClick={() => applyPeriod(value)}
+                aria-pressed={isActive}
+                title={isActive ? `${label} — clique para remover o filtro de período` : label}
                 className={cn(
                   'flex-shrink-0 inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium transition-all',
                   isActive
@@ -829,6 +840,7 @@ export function ConversationFiltersBar({
           {handlingValue !== 'all' && (
             <span className="flex items-center gap-1 text-[11px] bg-brand-600/15 text-brand-300 px-2 py-0.5 rounded-full border border-brand-500/20">
               {handlingValue === 'ai' && 'IA'}
+              {handlingValue === 'paused' && 'IA pausada'}
               {handlingValue === 'me' && 'Minhas'}
               {handlingValue === 'team' && (() => {
                 if (filters.assignedTo === 'unassigned') return 'Sem atribuição'

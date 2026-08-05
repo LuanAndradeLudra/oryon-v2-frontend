@@ -113,19 +113,23 @@ export function useNotifications() {
     [filterTypes, showArchived],
   )
 
+  const loadTokenRef = useRef(0)
+
   const load = useCallback(async () => {
     if (!isAuthenticated) { setLoading(false); return }
+    const token = ++loadTokenRef.current
     try {
       const { data } = await axios.get<{ data: AppNotification[]; unreadCount: number; nextCursor: string | null }>(
         `${API}/notifications?${buildQuery(null)}`,
       )
+      if (loadTokenRef.current !== token) return
       setNotifications(data.data)
       setUnreadCount(data.unreadCount)
       setNextCursor(data.nextCursor)
     } catch {
       // silent
     } finally {
-      setLoading(false)
+      if (loadTokenRef.current === token) setLoading(false)
     }
   }, [isAuthenticated, buildQuery])
 

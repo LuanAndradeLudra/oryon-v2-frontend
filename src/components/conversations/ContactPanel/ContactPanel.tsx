@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Clock, MessageSquare, UserCheck, Search, Check, UserX,
-  Tag as TagIcon, ExternalLink,
+  Tag as TagIcon, ExternalLink, ArrowRightLeft,
   Bot, UserCog, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -286,7 +286,19 @@ export function ContactPanel({
 
         {/* Assign agent */}
         <div className="px-4 py-3 border-t border-surface-800">
-          <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold mb-2">Agente responsável</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold">Agente responsável</p>
+            {assignedUser && (
+              <button
+                onClick={() => setXferModal(true)}
+                title="Transferir conversa"
+                className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
+              >
+                <ArrowRightLeft className="w-3 h-3" />
+                Transferir
+              </button>
+            )}
+          </div>
           <button
             onClick={() => setAssignOpen(true)}
             className={cn(
@@ -375,22 +387,17 @@ export function ContactPanel({
           Selecione o usuário que receberá esta conversa:
         </p>
         <div className="max-h-72 overflow-y-auto -mx-5 px-5">
-          {allUsers.map((user) => {
-            const isCurrent = user.id === assignedUser?.id
+          {allUsers.filter((u) => u.id !== assignedUser?.id).map((user) => {
             return (
               <button
                 key={user.id}
                 onClick={() => { onTransfer(user); setXferModal(false) }}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all mb-1',
-                  isCurrent ? 'bg-brand-600/10' : 'hover:bg-surface-800'
-                )}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all mb-1 hover:bg-surface-800"
               >
                 <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
                 <div className="flex-1 text-left min-w-0">
-                  <p className={cn('text-sm font-medium', isCurrent ? 'text-brand-300' : 'text-surface-200')}>
+                  <p className="text-sm font-medium text-surface-200">
                     {user.firstName} {user.lastName}
-                    {isCurrent && <span className="text-[10px] ml-2 text-brand-400/70">atual</span>}
                   </p>
                   <p className="text-[11px] text-surface-500 truncate">{user.email}</p>
                 </div>

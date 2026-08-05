@@ -1233,6 +1233,25 @@ export interface SocketAiPauseUpdated {
   hasRecentAnomaly?: boolean
 }
 
+/**
+ * SCRUM-562 — conversation status changed server-side.
+ *
+ * Emitted by `applyStatusTransition`, so it covers BOTH the manual endpoint and
+ * the AI guard's move to `pending`. Before this, no socket carried conversation
+ * status at all: an operator resolving a conversation was invisible to their
+ * colleagues and to their own other tabs until a refetch.
+ *
+ * Its own event rather than a field on `conversation:updated`, because that one
+ * drops message-less payloads by design (see the guard in useConversations).
+ */
+export interface SocketConversationStatusUpdated {
+  conversationId: string
+  status: ConversationStatus
+  previousStatus: ConversationStatus
+  /** User id, or `'ai-guard'` when the verification gateway moved it. */
+  changedBy: string
+}
+
 export interface SocketMessageStatus {
   messageId: string
   status: MessageStatus
