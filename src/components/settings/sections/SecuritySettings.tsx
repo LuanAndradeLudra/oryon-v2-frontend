@@ -41,6 +41,11 @@ export function SecuritySettings() {
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [logsLoading, setLogsLoading] = useState(true)
   const [sessionsLoading, setSessionsLoading] = useState(true)
+  // Distingue "não há outras sessões" de "feature ainda não implementada"
+  // (backend devolve 501 pra /sessions) — sem isso a lista aparecia vazia
+  // como se o usuário genuinamente não tivesse outras sessões (R20/A-11
+  // mesma classe de dado fabricado, aplicada a um estado vazio em vez de 0).
+  const [sessionsUnavailable, setSessionsUnavailable] = useState(false)
   const [revokeTarget, setRevokeTarget] = useState<ActiveSession | null>(null)
   const [logsPage, setLogsPage] = useState(1)
   const [logsTotal, setLogsTotal] = useState(0)
@@ -49,7 +54,11 @@ export function SecuritySettings() {
     axios.get<ActiveSession[]>(`${API}/sessions`).then((r) => {
       setSessions(Array.isArray(r.data) ? r.data : [])
       setSessionsLoading(false)
-    }).catch(() => { setSessions([]); setSessionsLoading(false) })
+    }).catch((err) => {
+      setSessions([])
+      setSessionsUnavailable(err?.response?.status === 501)
+      setSessionsLoading(false)
+    })
   }, [])
 
   useEffect(() => {
@@ -63,10 +72,15 @@ export function SecuritySettings() {
 
   const handleRevoke = async () => {
     if (!revokeTarget) return
-    await axios.delete(`${API}/sessions/${revokeTarget.id}`)
-    setSessions((s) => s.filter((x) => x.id !== revokeTarget.id))
-    toast('Sessão encerrada.', 'success')
-    setRevokeTarget(null)
+    try {
+      await axios.delete(`${API}/sessions/${revokeTarget.id}`)
+      setSessions((s) => s.filter((x) => x.id !== revokeTarget.id))
+      toast('Sessão encerrada.', 'success')
+    } catch {
+      toast('Não foi possível encerrar a sessão. Tente novamente.', 'error')
+    } finally {
+      setRevokeTarget(null)
+    }
   }
 
   return (
@@ -80,12 +94,18 @@ export function SecuritySettings() {
             <Shield className="w-4 h-4 text-brand-400" />
             <p className="text-sm font-semibold text-surface-100">Sessões ativas</p>
           </div>
-          <span className="text-xs text-surface-400">{sessions.length} sessão{sessions.length !== 1 ? 'ões' : ''}</span>
+          {!sessionsLoading && !sessionsUnavailable && (
+            <span className="text-xs text-surface-400">{sessions.length} sessão{sessions.length !== 1 ? 'ões' : ''}</span>
+          )}
         </div>
 
         {sessionsLoading ? (
           <div className="flex items-center justify-center h-24">
             <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : sessionsUnavailable ? (
+          <div className="flex items-center justify-center h-24 px-5 text-center">
+            <p className="text-xs text-surface-500">Rastreamento de sessões ainda não disponível.</p>
           </div>
         ) : (
           <div className="divide-y divide-surface-800">

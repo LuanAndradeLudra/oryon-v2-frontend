@@ -1052,7 +1052,8 @@ export interface HomeStats {
   messagesSentToday: number
   messagesReceivedToday?: number
   newContactsThisWeek: number
-  agentsOnline: number
+  /** null = sem rastreamento de presença ainda (backend não fabrica 0). */
+  agentsOnline: number | null
   agentsActive: number
   agentsPending: number
   avgResponseMinutes: number

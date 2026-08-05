@@ -68,10 +68,20 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const LS_KEY = 'oryon:dashboard:kpi-slots'
 
+const VALID_KPI_IDS = new Set<KpiId>(KPI_CATALOG.map((d) => d.id))
+
 function loadSlots(): KpiId[] {
   try {
     const raw = localStorage.getItem(LS_KEY)
-    if (raw) return JSON.parse(raw) as KpiId[]
+    if (raw) {
+      // Descarta ids que não existem mais no catálogo (ex: csat/nps/
+      // sla_compliance removidos em R48) — sem isso, o contador "N de 20
+      // selecionados" do customizer ficava inflado por ids mortos que o
+      // usuário nunca mais conseguia desmarcar, podendo até bloquear a
+      // adição de KPIs novos ao bater no MAX=20 artificialmente.
+      const parsed = (JSON.parse(raw) as KpiId[]).filter((id) => VALID_KPI_IDS.has(id))
+      if (parsed.length > 0) return parsed
+    }
   } catch { /* ignore */ }
   return DEFAULT_KPI_SLOTS
 }

@@ -133,7 +133,8 @@ export interface ActivityEvent {
 }
 
 export interface RealtimeStatus {
-  agentsOnline: number
+  /** null = sem rastreamento de presença ainda (backend não fabrica 0). */
+  agentsOnline: number | null
   agentsTotal: number
   activeConversations: number
   queued: number
@@ -149,12 +150,12 @@ export interface DashboardSnapshot {
   heatmap: HeatmapCell[]
   agentMetrics: AgentMetrics[]
   activityFeed: ActivityEvent[]
-  realtime?: { agentsOnline: number; activeConversations: number; queueSize: number; avgWaitSeconds: number }
+  realtime?: { agentsOnline: number | null; activeConversations: number; queueSize: number; avgWaitSeconds: number }
   csatTimeline?: CsatDataPoint[]
 }
 
 export const EMPTY_REALTIME_STATUS: RealtimeStatus = {
-  agentsOnline: 0,
+  agentsOnline: null,
   agentsTotal: 0,
   activeConversations: 0,
   queued: 0,
@@ -212,7 +213,7 @@ export const KPI_CATALOG: KpiDefinition[] = [
 // cada card do dashboard — mesmo padrão de COLUMN_TOOLTIPS já usado na
 // tabela de Performance da Equipe (AgentTable.tsx).
 export const KPI_DESCRIPTIONS: Record<KpiId, string> = {
-  total_conversations:    'Total de conversas do tenant, de todos os tempos.',
+  total_conversations:    'Total de conversas com atividade (criadas ou atualizadas) dentro do período selecionado.',
   active_conversations:   'Conversas com status "aberta" no momento.',
   queued:                 'Conversas com status "pendente" (aguardando atendimento) no momento.',
   resolved:                'Conversas marcadas como resolvidas dentro do período selecionado.',

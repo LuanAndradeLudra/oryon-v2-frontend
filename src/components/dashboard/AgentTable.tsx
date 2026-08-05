@@ -177,14 +177,18 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                   }
                 </td>
 
-                {/* Conversations */}
+                {/* Conversations — conversationsToday/resolvedToday são
+                    sempre números medidos (nunca null), então 0 é um valor
+                    real ("atendente sem conversas hoje"), não "sem dado" —
+                    não usar `|| '—'` aqui (mesma classe de bug corrigida
+                    para isOnline/csat/departmentName acima). */}
                 <td className="px-4 py-3.5 text-sm text-surface-200 font-semibold tabular-nums">
-                  {agent.conversationsToday || '—'}
+                  {agent.conversationsToday}
                 </td>
 
                 {/* Resolved */}
                 <td className="px-4 py-3.5 text-sm text-surface-200 tabular-nums">
-                  {agent.resolvedToday || '—'}
+                  {agent.resolvedToday}
                 </td>
 
                 {/* First response time */}
