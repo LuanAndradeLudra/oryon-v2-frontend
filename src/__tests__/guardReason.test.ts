@@ -12,7 +12,15 @@
 // phantomClaimLabel.
 
 import { describe, it, expect } from 'vitest'
-import { guardReasonLabel, guardReasonTimelineLabel, phantomClaimLabel } from '@/lib/guardReason'
+import {
+  guardCheckGuidance,
+  guardCorrectedTimelineLabel,
+  guardOutcomeDetail,
+  guardReasonLabel,
+  guardReasonTimelineLabel,
+  guardTypeLabel,
+  phantomClaimLabel,
+} from '@/lib/guardReason'
 
 describe('guardReasonLabel — bolha da conversa', () => {
   it('entidade: o caso que apareceu em homologação', () => {
@@ -46,12 +54,22 @@ describe('guardReasonLabel — bolha da conversa', () => {
       .toBe('Verificação necessária: a IA afirmou uma confirmação sem executar a operação no sistema.')
   })
 
-  it('outcome desconhecido cai num texto neutro em vez de quebrar', () => {
+  it('outcome NOVO do gateway cai em texto neutro, nunca no de ação', () => {
     // O contrato do agent-server diz que valores novos de outcome são aditivos
-    // e não exigem deploy casado. Um valor que ainda não tem texto próprio
-    // precisa render uma frase válida.
-    const label = guardReasonLabel({ kind: 'handoff', outcome: 'vg_futuro_blocked', claimType: null })
+    // e não exigem deploy casado. Mas cair na cópia de ação reproduziria o
+    // defeito de 04/08 com um tipo futuro no lugar do entity: o operador leria
+    // "afirmou uma ação" e iria procurar um agendamento que ninguém alegou.
+    const label = guardReasonLabel({ kind: 'handoff', outcome: 'vg_politica_blocked', claimType: null })
     expect(label).toMatch(/^Verificação necessária: a IA .+\.$/)
+    expect(label).not.toContain('uma ação')
+    expect(label).not.toContain('operação no sistema')
+  })
+
+  it('outcome legado NÃO-vg continua na cópia de ação', () => {
+    // O discriminador é o prefixo `vg_`, que o gatewayOutcome garante. Os
+    // outcomes do anti-claim sempre foram sobre ação alegada.
+    expect(guardReasonLabel({ kind: 'handoff', outcome: 'no_required_skill', claimType: 'cancel' }))
+      .toContain('afirmou um cancelamento')
   })
 
   it('autocorreção usa a forma curta', () => {
@@ -74,6 +92,62 @@ describe('guardReasonTimelineLabel — linha do tempo', () => {
     // nos details. Elas eram todas do anti-claim, então o texto de ação é o
     // correto para elas.
     expect(guardReasonTimelineLabel(null, 'schedule')).toContain('afirmou um agendamento')
+  })
+})
+
+// ── O modal de detalhe ───────────────────────────────────────────────────────
+// O selo na bolha foi corrigido primeiro, mas o modal que ele abre mantinha as
+// próprias cópias e continuava dizendo "afirmou ter concluído a ação". A
+// contradição aparecia exatamente onde o operador vai buscar o detalhe.
+describe('guardOutcomeDetail', () => {
+  it('entity não fala mais de ação concluída', () => {
+    const detail = guardOutcomeDetail('vg_entity_blocked', null)
+    expect(detail).toBe('A IA citou um nome que não foi confirmado nesta conversa.')
+    expect(detail).not.toContain('ação')
+  })
+
+  it('preserva as explicações de mecânica do guard legado', () => {
+    // Esses descrevem COMO o anti-claim agiu, não que tipo de fato faltou —
+    // eixo diferente, e têm precedência.
+    expect(guardOutcomeDetail('no_required_skill', 'schedule'))
+      .toBe('O agente não tem a ferramenta necessária configurada para executar essa ação.')
+    expect(guardOutcomeDetail('retry_failed_fallback', 'confirm'))
+      .toBe('A IA foi instruída a refazer chamando a ferramenta, mas não concluiu a operação.')
+    expect(guardOutcomeDetail('regenerated_ok', null))
+      .toBe('A IA se corrigiu e executou a operação corretamente antes de responder.')
+  })
+})
+
+describe('guardCheckGuidance', () => {
+  it('manda o operador conferir a coisa certa', () => {
+    expect(guardCheckGuidance('vg_money_blocked', null)).toContain('catálogo')
+    expect(guardCheckGuidance('vg_temporal_blocked', null)).toContain('agenda')
+    expect(guardCheckGuidance('vg_entity_blocked', null)).toContain('pessoa citada')
+  })
+
+  it('e para ação continua mandando conferir o sistema', () => {
+    expect(guardCheckGuidance('vg_action_blocked', 'schedule'))
+      .toContain('Confirme se um agendamento realmente precisa ser feito no sistema')
+  })
+})
+
+describe('guardTypeLabel', () => {
+  it('não chama de "ação" o que não é ação', () => {
+    expect(guardTypeLabel('vg_money_blocked', null)).toBe('Preço')
+    expect(guardTypeLabel('vg_temporal_blocked', null)).toBe('Horário')
+    expect(guardTypeLabel('vg_entity_blocked', null)).toBe('Nome citado')
+    expect(guardTypeLabel('vg_action_blocked', 'cancel')).toBe('um cancelamento')
+  })
+})
+
+describe('guardCorrectedTimelineLabel', () => {
+  it('a autocorreção também carrega o motivo real', () => {
+    expect(guardCorrectedTimelineLabel('vg_money_blocked', null))
+      .toBe('A IA citou um valor que não confere com o catálogo — corrigido automaticamente antes de enviar')
+  })
+
+  it('linha antiga sem outcome continua legível', () => {
+    expect(guardCorrectedTimelineLabel(null, 'confirm')).toContain('afirmou uma confirmação')
   })
 })
 

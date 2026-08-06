@@ -29,7 +29,7 @@ import { fetchAgentActions, type AgentAction } from '@/services/agentActivityApi
 import { fetchUserActivity, type UserActivity } from '@/services/userActivityApi'
 import { getSocket } from '@/services/socket'
 import { Modal } from '@/components/ui/Modal'
-import { guardReasonTimelineLabel, phantomClaimLabel } from '@/lib/guardReason'
+import { guardCorrectedTimelineLabel, guardReasonTimelineLabel } from '@/lib/guardReason'
 
 // Three rows fit comfortably in the contact panel without dominating it; six
 // rows is the most we render before pushing the user toward the full-history
@@ -607,11 +607,14 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
         Icon: AlertTriangle,
         rowBg: 'bg-amber-950/40', iconClass: 'bg-amber-900/50 text-amber-200',
       }
+    // Mesmo motivo do caso acima: com o gateway, a autocorreção também acontece
+    // por preço, horário e nome — não só por ação alegada.
     case 'agent_phantom_confirmation_corrected':
       return {
-        label: `A IA tentou confirmar ${phantomClaimLabel(
+        label: guardCorrectedTimelineLabel(
+          typeof metadata.outcome === 'string' ? metadata.outcome : null,
           typeof metadata.claimType === 'string' ? metadata.claimType : null,
-        )} sem executar — corrigido automaticamente`,
+        ),
         Icon: AlertCircle,
         rowBg: 'bg-surface-900/40', iconClass: 'bg-surface-800 text-surface-300',
       }
