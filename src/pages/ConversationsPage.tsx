@@ -77,6 +77,21 @@ export function ConversationsPage() {
         if (payload.aiPausedUntil !== undefined) patch.aiPausedUntil = payload.aiPausedUntil
         if (payload.assignedUser !== undefined) patch.assignedUser = payload.assignedUser ?? undefined
         if (Object.keys(patch).length > 0) syncActive(payload.conversationId, patch)
+        // Also mirror lastMessageAt, otherwise the 24h-window calc in
+        // ChatWindow compares against a stale timestamp while the chat
+        // stays open (bug: window shows closed right after a fresh
+        // message). Compared against `prev` inside the updater — not the
+        // closured `activeConversation`, which can itself be stale here —
+        // and only applied if strictly newer, so an out-of-order socket
+        // delivery (reconnect replay, racing emits) can't regress it.
+        if (payload.message) {
+          const sentAt = payload.message.sentAt
+          setActiveConversation((prev) =>
+            prev?.id === payload.conversationId && new Date(sentAt).getTime() > new Date(prev.lastMessageAt).getTime()
+              ? { ...prev, lastMessageAt: sentAt }
+              : prev
+          )
+        }
       }
     }, [handleNewMessage, activeConversation?.id]),
 
@@ -111,6 +126,16 @@ export function ConversationsPage() {
         if (payload.aiPausedUntil !== undefined) patch.aiPausedUntil = payload.aiPausedUntil
         if (payload.assignedUser !== undefined) patch.assignedUser = payload.assignedUser ?? undefined
         if (Object.keys(patch).length > 0) syncActive(payload.conversationId, patch)
+        // Also mirror lastMessageAt — see onMessageNew above for why and
+        // for the out-of-order-delivery guard.
+        if (payload.message) {
+          const sentAt = payload.message.sentAt
+          setActiveConversation((prev) =>
+            prev?.id === payload.conversationId && new Date(sentAt).getTime() > new Date(prev.lastMessageAt).getTime()
+              ? { ...prev, lastMessageAt: sentAt }
+              : prev
+          )
+        }
       }
     }, [handleNewMessage, activeConversation?.id]),
 
