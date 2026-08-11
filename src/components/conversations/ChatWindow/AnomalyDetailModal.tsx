@@ -3,18 +3,15 @@ import { AlertTriangle, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash } 
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import type { Message } from '@/types'
+// O motivo do bloqueio vem TODO daqui. Antes este arquivo tinha a sua própria
+// cópia do claimLabel e o seu próprio mapa de outcome, nenhum deles com os
+// casos `vg_*` — então o selo na bolha dizia "citou um nome" e este modal, um
+// clique depois, dizia "afirmou ter concluído a ação". Era a mesma contradição
+// que o SCRUM-515 existia para remover, sobrevivendo justamente onde o operador
+// vai buscar o detalhe.
+import { guardCheckGuidance, guardOutcomeDetail, guardTypeLabel } from '@/lib/guardReason'
 
 type Anomaly = NonNullable<Message['anomaly']>
-
-/** Map the guard's claim type to a human phrase. */
-function claimLabel(raw: string | null | undefined): string {
-  switch (raw) {
-    case 'schedule': return 'um agendamento'
-    case 'cancel':   return 'um cancelamento'
-    case 'confirm':  return 'uma confirmação'
-    default:         return 'uma ação'
-  }
-}
 
 /** Map the required-skill slug to a friendly operation name. */
 function skillLabel(slug: string | null | undefined): string | null {
@@ -24,22 +21,6 @@ function skillLabel(slug: string | null | undefined): string | null {
     case 'cancela_consulta':  return 'Cancelar consulta'
     case 'confirma_consulta': return 'Confirmar consulta'
     default:                  return slug
-  }
-}
-
-/** Translate the guard outcome into an operator-facing reason. */
-function outcomeReason(outcome: string | null | undefined): string {
-  switch (outcome) {
-    case 'no_required_skill':
-      return 'O agente não tem a ferramenta necessária configurada para executar essa ação.'
-    case 'retry_failed_fallback':
-      return 'A IA foi instruída a refazer chamando a ferramenta, mas não concluiu a operação.'
-    case 'retry_threw_fallback':
-      return 'Ocorreu um erro técnico ao tentar refazer a operação.'
-    case 'regenerated_ok':
-      return 'A IA se corrigiu e executou a operação corretamente antes de responder.'
-    default:
-      return 'A IA afirmou ter concluído a ação sem evidência de execução no sistema.'
   }
 }
 
@@ -104,7 +85,7 @@ export function AnomalyDetailModal({
               <p className={cn('text-sm font-medium', isHandoff ? 'text-amber-200' : 'text-surface-200')}>
                 {isHandoff ? 'Transferido para atendente' : 'Corrigido automaticamente'}
               </p>
-              <p className="text-xs text-surface-400 mt-0.5">{outcomeReason(anomaly.outcome)}</p>
+              <p className="text-xs text-surface-400 mt-0.5">{guardOutcomeDetail(anomaly.outcome, anomaly.claimType)}</p>
             </div>
           </div>
 
@@ -133,8 +114,7 @@ export function AnomalyDetailModal({
             <div className="rounded-lg bg-surface-800/40 px-3 py-2.5">
               <p className="text-xs font-medium text-surface-200 mb-1">O que verificar</p>
               <p className="text-xs text-surface-400">
-                Confirme se {claimLabel(anomaly.claimType)} realmente precisa ser feito no sistema. Como a IA não
-                concluiu a operação, ela pode não ter sido registrada.
+                {guardCheckGuidance(anomaly.outcome, anomaly.claimType)}
               </p>
             </div>
           )}
@@ -152,8 +132,11 @@ export function AnomalyDetailModal({
             </Detail>
           )}
 
-          <Detail icon={Tag} label="Tipo de ação">
-            {claimLabel(anomaly.claimType)}
+          {/* "Tipo de ação" era o rótulo de quando só existia o anti-claim.
+              Com o gateway o bloqueio pode ser de preço, horário ou nome — que
+              não são ações. */}
+          <Detail icon={Tag} label="Tipo">
+            {guardTypeLabel(anomaly.outcome, anomaly.claimType)}
           </Detail>
 
           {when && (

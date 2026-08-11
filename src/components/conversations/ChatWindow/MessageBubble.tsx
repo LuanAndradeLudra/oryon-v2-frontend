@@ -13,6 +13,7 @@ import { getAuthenticatedMediaUrl, useAuthenticatedMediaSrc } from '@/lib/mediaU
 import { renderExtendedContent, STRUCTURED_TYPES, ReferralBanner } from './messageRenderers/registry'
 import { ReplyQuoteBar } from './messageRenderers/ReplyQuoteBar'
 import { AnomalyDetailModal } from './AnomalyDetailModal'
+import { guardReasonLabel } from '@/lib/guardReason'
 
 // Robust media download: fetch blob (works cross-origin as long as CORS is
 // permissive), fall back to opening in a new tab if the browser refuses.
@@ -570,16 +571,6 @@ function TextContent({ message }: { message: Message }) {
   ) : null
 }
 
-/** Map the anti-claim guard's claim type to a human phrase for the bubble flag. */
-function phantomClaimLabel(raw: string | null | undefined): string {
-  switch (raw) {
-    case 'schedule': return 'um agendamento'
-    case 'cancel':   return 'um cancelamento'
-    case 'confirm':  return 'uma confirmação'
-    default:         return 'uma ação'
-  }
-}
-
 export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
@@ -854,9 +845,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                   message.anomaly.kind === 'handoff' ? 'text-amber-200' : 'text-surface-300',
                 )}
               >
-                {message.anomaly.kind === 'handoff'
-                  ? `Verificação necessária: a IA afirmou ${phantomClaimLabel(message.anomaly.claimType)} sem executar a operação no sistema.`
-                  : `A IA se autocorrigiu (${phantomClaimLabel(message.anomaly.claimType)}) antes de enviar.`}
+                {guardReasonLabel(message.anomaly)}
               </span>
             </button>
             <AnomalyDetailModal
