@@ -1,6 +1,5 @@
 // ─── Billing API ──────────────────────────────────────────────────────────────
-// Consome o ledger real no backend (SCRUM-156/172). O tenant é inferido pela
-// sessão (JWT/cookie) — nunca enviado pelo cliente.
+// Ledger + payment gateway (mock hoje). Tenant via sessão JWT/cookie.
 
 import { api } from './api'
 
@@ -27,7 +26,6 @@ export interface BillingSnapshot {
 
 export type CreditTransactionType = 'debit' | 'grant' | 'reset' | 'refund' | 'adjustment'
 
-// Valores numéricos vêm como string (TypeORM numeric). A UI faz o parse.
 export interface CreditTransaction {
   id: string
   type: CreditTransactionType
@@ -43,8 +41,6 @@ export interface CreditTransaction {
   createdAt: string
 }
 
-// ─── Asaas (Fase 3 / SCRUM-154) ────────────────────────────────────────────────
-
 export type BillingMethod = 'PIX' | 'CREDIT_CARD'
 
 export interface PlanOption {
@@ -57,13 +53,14 @@ export interface PlanOption {
   features: Record<string, unknown>
 }
 
-/** Pacote avulso de crédito — fonte de verdade no backend (SCRUM-154). */
 export interface CreditPack {
   credits: number
   valueCents: number
 }
 
-export interface AsaasStatus {
+/** Status da assinatura no gateway de pagamento (provider-agnostic). */
+export interface PaymentStatus {
+  provider: string
   subscribed: boolean
   tier: BackendPlanTier | null
   status: string | null
@@ -72,6 +69,7 @@ export interface AsaasStatus {
   pendingTier: BackendPlanTier | null
   autoRechargeEnabled: boolean
 }
+
 
 export interface PayerInput {
   name?: string
@@ -91,6 +89,7 @@ export interface CardInput {
 }
 
 export interface CheckoutResult {
+  provider?: string
   subscriptionId?: string
   payment: {
     id: string
@@ -117,11 +116,10 @@ export const billingApi = {
     const res = await api.get<PlanOption[]>('/settings/billing/plans')
     return res.data
   },
-  async getAsaasStatus(): Promise<AsaasStatus> {
-    const res = await api.get<AsaasStatus>('/settings/billing/asaas-status')
+  async getPaymentStatus(): Promise<PaymentStatus> {
+    const res = await api.get<PaymentStatus>('/settings/billing/payment-status')
     return res.data
   },
-  /** Catálogo de pacotes de crédito (preços definidos no backend, não no front). */
   async getCreditPacks(): Promise<CreditPack[]> {
     const res = await api.get<CreditPack[]>('/settings/billing/credit-packs')
     return res.data

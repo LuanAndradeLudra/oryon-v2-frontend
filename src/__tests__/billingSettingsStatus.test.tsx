@@ -1,5 +1,5 @@
-// ─── BillingSettings — status Asaas + packs do backend (5.4 e 5.5) ──────────
-// 5.4: se getAsaasStatus falha, mostra estado de erro e desabilita os CTAs de
+// ─── BillingSettings — status pagamento + packs do backend (5.4 e 5.5) ──────────
+// 5.4: se getPaymentStatus falha, mostra estado de erro e desabilita os CTAs de
 //      pagamento (não assume "novo cliente" → evita cobrança duplicada).
 // 5.5: os pacotes de crédito vêm do backend (getCreditPacks), não hardcoded.
 
@@ -20,7 +20,7 @@ vi.mock('@/hooks/useBilling', () => ({
 }))
 vi.mock('@/services/billingApi', () => ({
   billingApi: {
-    getPlans: vi.fn(), getAsaasStatus: vi.fn(), getCreditPacks: vi.fn(),
+    getPlans: vi.fn(), getPaymentStatus: vi.fn(), getCreditPacks: vi.fn(),
     getBilling: vi.fn(), getTransactions: vi.fn(),
   },
 }))
@@ -43,7 +43,7 @@ beforeEach(() => {
 describe('BillingSettings — status indisponível (5.4)', () => {
   it('mostra banner de erro e desabilita a compra de pacotes', async () => {
     mockApi.getCreditPacks.mockResolvedValue([{ credits: 250, valueCents: 12500 }])
-    mockApi.getAsaasStatus.mockRejectedValue(new Error('down'))
+    mockApi.getPaymentStatus.mockRejectedValue(new Error('down'))
 
     render(<BillingSettings />)
 
@@ -56,7 +56,7 @@ describe('BillingSettings — status indisponível (5.4)', () => {
 describe('BillingSettings — packs do backend (5.5)', () => {
   it('renderiza os pacotes vindos do backend (não a lista hardcoded)', async () => {
     mockApi.getCreditPacks.mockResolvedValue([{ credits: 300, valueCents: 15000 }])
-    mockApi.getAsaasStatus.mockResolvedValue(OK_STATUS)
+    mockApi.getPaymentStatus.mockResolvedValue(OK_STATUS)
 
     render(<BillingSettings />)
 

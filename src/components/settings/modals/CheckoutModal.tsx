@@ -1,8 +1,6 @@
 // ─── CheckoutModal ─────────────────────────────────────────────────────────────
-// Checkout da Fase 3 (SCRUM-154 / Asaas): contratar um plano, trocar de plano
-// (upgrade/downgrade) ou comprar um pacote de créditos. Pix (QR + copia-e-cola)
-// e cartão recorrente. O webhook do Asaas confirma o pagamento e credita/renova
-// no backend — aqui só iniciamos a cobrança e mostramos o QR/estado.
+// Checkout: contratar plano, trocar plano ou comprar créditos.
+// Com PAYMENT_GATEWAY_PROVIDER=mock o backend confirma na hora (status CONFIRMED).
 
 import { useState } from 'react'
 import { Copy, Check, Loader2, AlertTriangle, QrCode, CreditCard, PartyPopper } from 'lucide-react'
@@ -13,10 +11,8 @@ import type {
   BackendPlanTier, BillingMethod, CardInput, CheckoutResult, PlanOption,
 } from '@/services/billingApi'
 
-// 5.6 (PCI): não enviamos PAN/CVV do browser pelo nosso backend enquanto não
-// houver tokenização server-side (Asaas) no subscribe/buy-credits. O cartão fica
-// bloqueado por padrão — só Pix. Reabilitar via VITE_BILLING_CARD_ENABLED='true'
-// depois que o backend tokenizar (ou com tokenização client-side direta no Asaas).
+// PCI: cartão bloqueado por padrão (só Pix). Reabilitar com VITE_BILLING_CARD_ENABLED=true
+// quando houver tokenização no gateway real.
 const CARD_ENABLED = import.meta.env.VITE_BILLING_CARD_ENABLED === 'true'
 
 export type CheckoutIntent =
@@ -170,7 +166,7 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
               {result?.payment.invoiceUrl && (
                 <a href={result.payment.invoiceUrl} target="_blank" rel="noreferrer"
                    className="text-sm text-brand-400 hover:underline">
-                  Abrir fatura no Asaas →
+                  Abrir fatura →
                 </a>
               )}
             </div>
@@ -222,7 +218,7 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
                 })}
               </div>
 
-              {/* CPF/CNPJ (Asaas exige p/ cobranças) */}
+              {/* CPF/CNPJ */}
               <Field label="CPF/CNPJ">
                 <input value={cpfCnpj} onChange={(e) => setCpfCnpj(e.target.value)}
                   placeholder="Somente números" className={inputCls} />

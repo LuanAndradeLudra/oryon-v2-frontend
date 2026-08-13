@@ -1,6 +1,5 @@
 // ─── BillingSettings ─────────────────────────────────────────────────────────
-// Settings section: plano, uso de créditos e extrato — dados reais do ledger
-// no backend (SCRUM-172). Faturas (Asaas) entram na Fase 3.
+// Settings section: plano, uso de créditos e extrato — ledger + gateway mock.
 
 import { useEffect, useState } from 'react'
 import {
@@ -15,7 +14,7 @@ import {
 import { useBilling } from '@/hooks/useBilling'
 import { billingApi } from '@/services/billingApi'
 import type {
-  CreditTransaction, PlanOption, AsaasStatus, BackendPlanTier, CreditPack,
+  CreditTransaction, PlanOption, PaymentStatus, BackendPlanTier, CreditPack,
 } from '@/services/billingApi'
 import { CheckoutModal, type CheckoutIntent } from '@/components/settings/modals/CheckoutModal'
 import { ConfirmModal } from '@/components/ui/Modal'
@@ -212,10 +211,8 @@ const MODULE_LABELS: Partial<Record<string, string>> = {
 export function BillingSettings() {
   const { billing, transactions, loading, error, refetch } = useBilling({ transactions: true })
   const [plans, setPlans] = useState<PlanOption[]>([])
-  const [status, setStatus] = useState<AsaasStatus | null>(null)
-  // 5.4: falha ao carregar o status do Asaas NÃO pode ser tratada como "novo
-  // cliente" (senão a UI reoferece contratar → cobrança duplicada). Rastreamos
-  // o erro para desabilitar os CTAs de pagamento e mostrar estado de erro.
+  const [status, setStatus] = useState<PaymentStatus | null>(null)
+  // Falha ao carregar payment-status NÃO assume "novo cliente" (evita cobrança duplicada).
   const [statusError, setStatusError] = useState(false)
   const [packs, setPacks] = useState<CreditPack[]>([])
   const [intent, setIntent] = useState<CheckoutIntent | null>(null)
@@ -227,8 +224,7 @@ export function BillingSettings() {
     // Planos e pacotes são independentes do status — carregam à parte.
     billingApi.getPlans().then((p) => { if (alive) setPlans(p) }).catch(() => {})
     billingApi.getCreditPacks().then((cp) => { if (alive) setPacks(cp) }).catch(() => {})
-    // Status do Asaas: em erro, marca statusError (não assume "sem assinatura").
-    billingApi.getAsaasStatus()
+    billingApi.getPaymentStatus()
       .then((s) => { if (alive) { setStatus(s); setStatusError(false) } })
       .catch(() => { if (alive) { setStatus(null); setStatusError(true) } })
     return () => { alive = false }
@@ -240,7 +236,7 @@ export function BillingSettings() {
 
   function onCheckoutDone() {
     void refetch()
-    billingApi.getAsaasStatus()
+    billingApi.getPaymentStatus()
       .then((s) => { setStatus(s); setStatusError(false) })
       .catch(() => setStatusError(true))
   }
@@ -294,7 +290,7 @@ export function BillingSettings() {
   return (
     <div className="max-w-2xl space-y-6">
 
-      {/* 5.4 — status do Asaas indisponível: bloqueia CTAs de pagamento */}
+      {/* Status do gateway indisponível: bloqueia CTAs de pagamento */}
       {statusError && (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
           <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
@@ -342,7 +338,7 @@ export function BillingSettings() {
         <div className="rounded-2xl border border-brand-500/30 bg-brand-950/20 p-4 flex items-center justify-between gap-4">
           <div className="text-sm">
             <p className="font-medium text-surface-100">Ative sua assinatura</p>
-            <p className="text-surface-400 text-xs mt-0.5">Contrate o plano {billing.plan.displayName} via Pix ou cartão.</p>
+            <p className="text-surface-400 text-xs mt-0.5">Contrate o plano {billing.plan.displayName} (gateway mock confirma na hora).</p>
           </div>
           <button
             onClick={() => setIntent({
