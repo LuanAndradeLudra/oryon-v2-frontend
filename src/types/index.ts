@@ -817,6 +817,7 @@ export interface Message {
     evidence?: { slots: string[]; prices: string[]; names: string[] } | null
     /** Quanto a IA tentou se corrigir antes da transferência. */
     repair?: { rung: number | null; llmCalls: number | null } | null
+  } | null
   createdAt: string
 }
 
