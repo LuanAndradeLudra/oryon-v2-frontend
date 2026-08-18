@@ -8,6 +8,7 @@ import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 
 // Sections
 import { CompanyProfile }   from '@/components/settings/sections/CompanyProfile'
@@ -94,11 +95,16 @@ export function SettingsPage() {
   // caused a 1-frame flash where role defaulted to 'admin' before the real
   // 'super_admin' arrived and re-filtered the menu.
   const { user } = useAuth()
+  const { isRouteVisible } = useFeatureVisibility()
   const banner = useDesktopRecommendedBanner(`settings/${section}`)
   const isMobile = useIsMobile()
   const navigate = useNavigate()
 
   if (!VALID_SECTIONS.includes(section)) {
+    return <Navigate to="/settings/account" replace />
+  }
+
+  if (!isRouteVisible(`/settings/${section}`)) {
     return <Navigate to="/settings/account" replace />
   }
 

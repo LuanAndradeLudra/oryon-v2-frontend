@@ -19,7 +19,7 @@ import {
   IdCard,
 } from 'lucide-react'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
-import { isRouteVisible } from '@/config/featureFlags'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 
@@ -86,6 +86,7 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
     || currentRole === 'business_admin'
     || currentRole === 'super_admin'
   const isMobile = useIsMobile()
+  const { isRouteVisible } = useFeatureVisibility()
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
       ...group,
