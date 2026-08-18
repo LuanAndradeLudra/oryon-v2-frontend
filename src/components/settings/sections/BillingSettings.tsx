@@ -1,20 +1,37 @@
 // ─── BillingSettings ─────────────────────────────────────────────────────────
-// Settings section: plano, uso de créditos e extrato — dados reais do ledger
-// no backend (SCRUM-172). Faturas (Asaas) entram na Fase 3.
+// Settings section: plano, uso de créditos e extrato — ledger + gateway mock.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Zap, TrendingUp, Users, Smartphone, Bot, RefreshCw,
   ChevronRight, CheckCircle2, AlertTriangle, ArrowUpRight,
-  Receipt, Loader2,
+  Receipt, Loader2, Plus,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import type { PlanTier } from '@/types'
 import {
-  PLANS, PLAN_ORDER, formatCredits, formatPlanPrice, annualSavings, mapBackendTier,
+  PLANS, formatCredits, mapBackendTier,
 } from '@/config/plans'
 import { useBilling } from '@/hooks/useBilling'
-import type { CreditTransaction } from '@/services/billingApi'
+import { billingApi } from '@/services/billingApi'
+import type {
+  CreditTransaction, PlanOption, PaymentStatus, BackendPlanTier, CreditPack,
+} from '@/services/billingApi'
+import { CheckoutModal, type CheckoutIntent } from '@/components/settings/modals/CheckoutModal'
+import { ConfirmModal } from '@/components/ui/Modal'
+
+// Tiers contratáveis do backend, em ordem. enterprise é "sob consulta" (não
+// self-serve). O próximo tier de upgrade sai daqui, não do PLAN_ORDER do front.
+const BACKEND_ORDER: BackendPlanTier[] = ['start', 'professional', 'scale', 'enterprise']
+
+function nextBackendTier(current: BackendPlanTier): BackendPlanTier | null {
+  const i = BACKEND_ORDER.indexOf(current)
+  const next = BACKEND_ORDER[i + 1]
+  return next && next !== 'enterprise' ? next : null
+}
+
+// Pacotes de crédito vêm do backend (GET /settings/billing/credit-packs) —
+// preço/quantidade são fonte de verdade server-side (SCRUM-154). O front só
+// exibe; o backend valida o valor no buy-credits.
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -106,17 +123,24 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
   )
 }
 
-function UpgradeCard({ currentTier }: { currentTier: PlanTier }) {
-  const currentIdx  = PLAN_ORDER.indexOf(currentTier)
-  const nextTier    = PLAN_ORDER[currentIdx + 1] as PlanTier | undefined
-  const [annual, setAnnual] = useState(false)
+function UpgradeCard({
+  currentTier, nextPlan, isSubscribed, onUpgrade, disabled,
+}: {
+  currentTier: BackendPlanTier
+  nextPlan: PlanOption | null
+  isSubscribed: boolean
+  onUpgrade: (intent: CheckoutIntent) => void
+  disabled?: boolean
+}) {
+  if (!nextPlan) return null
 
-  if (!nextTier || nextTier === 'enterprise') return null
-  const next    = PLANS[nextTier]
-  const savings = annualSavings(nextTier)
+  const currentFront = mapBackendTier(currentTier)
+  const nextFront = mapBackendTier(nextPlan.tier)
+  const priceMonthly = Math.round(nextPlan.priceMonthlyCents / 100)
 
-  const newModules = Object.entries(next.modules)
-    .filter(([key, val]) => val && !PLANS[currentTier].modules[key as keyof typeof next.modules])
+  // Módulos que o próximo tier desbloqueia (grade do front, via mapeamento).
+  const newModules = Object.entries(PLANS[nextFront].modules)
+    .filter(([key, val]) => val && !PLANS[currentFront].modules[key as keyof typeof PLANS[typeof nextFront]['modules']])
     .map(([key]) => MODULE_LABELS[key as keyof typeof MODULE_LABELS] ?? key)
     .filter(Boolean)
     .slice(0, 4)
@@ -129,25 +153,15 @@ function UpgradeCard({ currentTier }: { currentTier: PlanTier }) {
             <ArrowUpRight className="w-4 h-4 text-brand-400" />
             <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">Upgrade disponível</span>
           </div>
-          <h3 className="text-lg font-bold text-surface-50">Plano {next.name}</h3>
+          <h3 className="text-lg font-bold text-surface-50">Plano {nextPlan.displayName}</h3>
           <p className="text-2xl font-bold text-brand-400 mt-1">
-            {formatPlanPrice(next, annual)}
+            R$&nbsp;{priceMonthly.toLocaleString('pt-BR')}<span className="text-sm text-surface-400 font-normal">/mês</span>
           </p>
-          {savings && (
+          {nextPlan.monthlyCredits != null && (
             <p className="text-xs text-surface-400 mt-0.5">
-              Ou R$&nbsp;{next.annualMonthlyPrice!.toLocaleString('pt-BR')}/mês no anual — economia de R$&nbsp;{savings.toLocaleString('pt-BR')}/ano
+              ≈ {nextPlan.monthlyCredits.toLocaleString('pt-BR')} atendimentos/mês
             </p>
           )}
-        </div>
-        <div className="flex items-center gap-2 text-xs">
-          <span className={`cursor-pointer ${!annual ? 'text-surface-200 font-semibold' : 'text-surface-500'}`} onClick={() => setAnnual(false)}>Mensal</span>
-          <button
-            onClick={() => setAnnual(v => !v)}
-            className={`relative w-10 h-5 rounded-full transition-colors ${annual ? 'bg-brand-600' : 'bg-surface-700'}`}
-          >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${annual ? 'left-5' : 'left-0.5'}`} />
-          </button>
-          <span className={`cursor-pointer ${annual ? 'text-surface-200 font-semibold' : 'text-surface-500'}`} onClick={() => setAnnual(true)}>Anual</span>
         </div>
       </div>
 
@@ -162,8 +176,16 @@ function UpgradeCard({ currentTier }: { currentTier: PlanTier }) {
         </ul>
       )}
 
-      <button className="mt-5 w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors text-surface-950 font-semibold text-sm flex items-center justify-center gap-2">
-        Fazer upgrade para {next.name}
+      <button
+        disabled={disabled}
+        onClick={() => onUpgrade({
+          kind: isSubscribed ? 'change' : 'subscribe',
+          tier: nextPlan.tier,
+          plan: nextPlan,
+        })}
+        className="mt-5 w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors text-surface-950 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-600"
+      >
+        {isSubscribed ? 'Fazer upgrade' : 'Contratar'} {nextPlan.displayName}
         <ChevronRight className="w-4 h-4" />
       </button>
     </div>
@@ -187,7 +209,48 @@ const MODULE_LABELS: Partial<Record<string, string>> = {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function BillingSettings() {
-  const { billing, transactions, loading, error } = useBilling({ transactions: true })
+  const { billing, transactions, loading, error, refetch } = useBilling({ transactions: true })
+  const [plans, setPlans] = useState<PlanOption[]>([])
+  const [status, setStatus] = useState<PaymentStatus | null>(null)
+  // Falha ao carregar payment-status NÃO assume "novo cliente" (evita cobrança duplicada).
+  const [statusError, setStatusError] = useState(false)
+  const [packs, setPacks] = useState<CreditPack[]>([])
+  const [intent, setIntent] = useState<CheckoutIntent | null>(null)
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [canceling, setCanceling] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    // Planos e pacotes são independentes do status — carregam à parte.
+    billingApi.getPlans().then((p) => { if (alive) setPlans(p) }).catch(() => {})
+    billingApi.getCreditPacks().then((cp) => { if (alive) setPacks(cp) }).catch(() => {})
+    billingApi.getPaymentStatus()
+      .then((s) => { if (alive) { setStatus(s); setStatusError(false) } })
+      .catch(() => { if (alive) { setStatus(null); setStatusError(true) } })
+    return () => { alive = false }
+  }, [])
+
+  function openCredits(pack: CreditPack) {
+    setIntent({ kind: 'credits', packCredits: pack.credits, valueCents: pack.valueCents })
+  }
+
+  function onCheckoutDone() {
+    void refetch()
+    billingApi.getPaymentStatus()
+      .then((s) => { setStatus(s); setStatusError(false) })
+      .catch(() => setStatusError(true))
+  }
+
+  async function confirmCancel() {
+    setCanceling(true)
+    try {
+      await billingApi.cancel()
+      onCheckoutDone()
+      setCancelOpen(false)
+    } finally {
+      setCanceling(false)
+    }
+  }
 
   if (loading && !billing) {
     return (
@@ -213,9 +276,86 @@ export function BillingSettings() {
   const plan = PLANS[frontTier]
   const priceMonthly = Math.round(billing.plan.priceMonthlyCents / 100)
   const atendimentos = billing.plan.monthlyCredits
+  const backendTier = billing.plan.tier as BackendPlanTier
+  const isCanceled = billing.status === 'canceled' || status?.status === 'canceled'
+  const isSubscribed = (status?.subscribed ?? false) && !isCanceled
+  const nextTier = nextBackendTier(backendTier)
+  const nextPlan = nextTier ? plans.find((p) => p.tier === nextTier) ?? null : null
+  const isPastDue = billing.status === 'past_due' || status?.status === 'past_due'
+  const accessUntil = billing.planResetsAt
+    ? new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : null
+  const canCancel = isSubscribed && !isCanceled
 
   return (
     <div className="max-w-2xl space-y-6">
+
+      {/* Status do gateway indisponível: bloqueia CTAs de pagamento */}
+      {statusError && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-surface-200">
+            <p className="font-medium">Status de cobrança indisponível</p>
+            <p className="text-surface-400 text-xs mt-0.5">
+              Não foi possível confirmar sua assinatura agora. Contratar, trocar de
+              plano e comprar créditos estão temporariamente desabilitados para
+              evitar cobrança duplicada. Tente novamente em instantes.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Inadimplência */}
+      {isPastDue && (
+        <div className="rounded-2xl border border-status-pending/40 bg-status-pending/5 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-status-pending flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-surface-200">
+            <p className="font-medium">Pagamento em atraso</p>
+            <p className="text-surface-400 text-xs mt-0.5">
+              Regularize a cobrança para manter o plano ativo. O acesso é restabelecido na confirmação do pagamento.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Assinatura cancelada — acesso até o fim do ciclo */}
+      {isCanceled && (
+        <div className="rounded-2xl border border-surface-700 bg-surface-800/40 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-surface-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-surface-200">
+            <p className="font-medium">Assinatura cancelada</p>
+            <p className="text-surface-400 text-xs mt-0.5">
+              {accessUntil
+                ? <>Você mantém o acesso até {accessUntil}. Não haverá nova cobrança.</>
+                : <>O acesso foi encerrado. Contrate um plano para reativar.</>}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Contratação (quando ainda não há assinatura paga) — nunca em statusError */}
+      {status && !statusError && !isSubscribed && !isCanceled && (
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-950/20 p-4 flex items-center justify-between gap-4">
+          <div className="text-sm">
+            <p className="font-medium text-surface-100">Ative sua assinatura</p>
+            <p className="text-surface-400 text-xs mt-0.5">Contrate o plano {billing.plan.displayName} (gateway mock confirma na hora).</p>
+          </div>
+          <button
+            onClick={() => setIntent({
+              kind: 'subscribe', tier: backendTier,
+              plan: plans.find((p) => p.tier === backendTier) ?? {
+                tier: backendTier, displayName: billing.plan.displayName,
+                priceMonthlyCents: billing.plan.priceMonthlyCents, currency: billing.plan.currency,
+                monthlyCredits: billing.plan.monthlyCredits, tokensPerCredit: billing.plan.tokensPerCredit,
+                features: billing.plan.features,
+              },
+            })}
+            className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 font-semibold text-sm whitespace-nowrap"
+          >
+            Contratar
+          </button>
+        </div>
+      )}
 
       {/* Current plan */}
       <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5 space-y-5">
@@ -260,10 +400,58 @@ export function BillingSettings() {
           <LimitRow icon={<RefreshCw className="w-4 h-4" />}   label="Automações ativas"        limit={plan.limits.automations} />
           <LimitRow icon={<Zap className="w-4 h-4" />}         label="Interações Copilot / mês" limit={plan.limits.copilotInteractions} />
         </div>
+
+        {canCancel && (
+          <div className="border-t border-surface-800/50 pt-3 text-right">
+            <button
+              onClick={() => setCancelOpen(true)}
+              className="text-xs text-surface-500 hover:text-red-400 transition-colors"
+            >
+              Cancelar assinatura
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Upgrade CTA */}
-      <UpgradeCard currentTier={frontTier} />
+      <UpgradeCard
+        currentTier={backendTier}
+        nextPlan={nextPlan}
+        isSubscribed={isSubscribed}
+        onUpgrade={setIntent}
+        disabled={statusError}
+      />
+
+      {/* Pacotes de crédito */}
+      <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Plus className="w-4 h-4 text-surface-400" />
+          <h3 className="text-sm font-semibold text-surface-300">Comprar créditos avulsos</h3>
+        </div>
+        <p className="text-xs text-surface-500 mb-4">
+          Pacotes não renovam — somam ao saldo atual. Ideal para picos de atendimento.
+        </p>
+        {packs.length === 0 ? (
+          <p className="text-sm text-surface-500 py-2">Pacotes indisponíveis no momento.</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            {packs.map((pack) => (
+              <button
+                key={pack.credits}
+                onClick={() => openCredits(pack)}
+                disabled={statusError}
+                className="rounded-xl border border-surface-700 hover:border-brand-500 hover:bg-surface-800 transition-colors p-3 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-surface-700 disabled:hover:bg-transparent"
+              >
+                <p className="text-sm font-bold text-surface-100">{pack.credits.toLocaleString('pt-BR')}</p>
+                <p className="text-[11px] text-surface-500">créditos</p>
+                <p className="text-xs text-brand-400 font-semibold mt-1">
+                  R$ {(pack.valueCents / 100).toLocaleString('pt-BR')}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Extrato de créditos */}
       <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5">
@@ -277,6 +465,30 @@ export function BillingSettings() {
           <p className="text-sm text-surface-500 py-2">Nenhuma movimentação de crédito ainda.</p>
         )}
       </div>
+
+      {/* Checkout (Pix / cartão) */}
+      {intent && (
+        <CheckoutModal
+          open
+          intent={intent}
+          onClose={() => setIntent(null)}
+          onDone={onCheckoutDone}
+        />
+      )}
+
+      {/* Cancelamento (fim do ciclo) */}
+      <ConfirmModal
+        open={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={confirmCancel}
+        title="Cancelar assinatura"
+        description={accessUntil
+          ? `Sua assinatura será cancelada, mas você mantém o acesso até ${accessUntil}. Não haverá nova cobrança e os créditos não são reembolsados.`
+          : 'Sua assinatura será cancelada e o acesso encerrado. Não haverá nova cobrança.'}
+        confirmLabel="Cancelar assinatura"
+        danger
+        loading={canceling}
+      />
     </div>
   )
 }

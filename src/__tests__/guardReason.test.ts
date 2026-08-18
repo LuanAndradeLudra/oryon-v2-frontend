@@ -163,3 +163,28 @@ describe('phantomClaimLabel', () => {
     expect(phantomClaimLabel('qualquer_outro')).toBe('uma ação')
   })
 })
+
+// ─── findingReasonLabel (sinal v2 — SCRUM-511) ──────────────────────────────
+// A legenda de cada trecho marcado na mensagem retida. Mesmo contrato aditivo
+// do resto do arquivo: motivo novo cai em default honesto, nunca em texto de
+// outro tipo.
+import { findingReasonLabel } from '../lib/guardReason'
+
+describe('findingReasonLabel', () => {
+  it('rotula os motivos conhecidos por (type, reason)', () => {
+    expect(findingReasonLabel('money', 'price_pair_mismatch')).toBe('valor não confere com o convênio citado')
+    expect(findingReasonLabel('temporal', 'no_temporal_source')).toBe('horário oferecido sem consultar a agenda')
+    expect(findingReasonLabel('temporal', 'slot_not_attested')).toBe('horário fora da agenda consultada')
+    expect(findingReasonLabel('entity', 'entity_not_in_ledger')).toBe('nome sem cadastro correspondente')
+  })
+
+  it('motivo NOVO cai no default do TYPE — nunca no texto de outro motivo', () => {
+    expect(findingReasonLabel('money', 'motivo_que_nao_existe')).toBe('valor sem confirmação')
+    expect(findingReasonLabel('temporal', 'motivo_que_nao_existe')).toBe('horário sem confirmação')
+  })
+
+  it('type desconhecido cai no default neutro', () => {
+    expect(findingReasonLabel('politica', 'x')).toBe('sem confirmação nas fontes')
+    expect(findingReasonLabel(null, null)).toBe('sem confirmação nas fontes')
+  })
+})

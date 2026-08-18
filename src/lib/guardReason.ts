@@ -188,3 +188,44 @@ export function guardCorrectedTimelineLabel(
 ): string {
   return `A IA ${copyFor(outcome, claimType).long} — corrigido automaticamente antes de enviar`
 }
+
+/**
+ * Rótulo curto de UM finding do sinal v2 — a legenda de cada trecho marcado na
+ * mensagem retida do AnomalyDetailModal.
+ *
+ * Discriminado por (type, reason), com default por TYPE e default final
+ * neutro: motivo novo do gateway ganha um rótulo honesto sem deploy casado,
+ * mesmo contrato aditivo do resto deste arquivo.
+ */
+export function findingReasonLabel(type: string | null | undefined, reason: string | null | undefined): string {
+  switch (reason) {
+    case 'value_not_in_ledger':
+    case 'no_price_source':
+      return 'valor sem fonte nas informações da clínica'
+    case 'price_pair_mismatch':
+      return 'valor não confere com o convênio citado'
+    case 'rag_price_pair_mismatch':
+      return 'valor diverge da base de conhecimento'
+    case 'no_temporal_source':
+      return 'horário oferecido sem consultar a agenda'
+    case 'slot_not_attested':
+      return 'horário fora da agenda consultada'
+    case 'date_not_attested':
+      return 'data fora da agenda consultada'
+    case 'time_not_attested':
+      return 'horário fora da agenda consultada'
+    case 'entity_not_in_ledger':
+      return 'nome sem cadastro correspondente'
+    case 'action_skill_not_run':
+      return 'ação afirmada sem ser executada'
+    case 'action_skill_failed':
+      return 'ação afirmada, mas a operação falhou'
+  }
+  switch (type) {
+    case 'money':    return 'valor sem confirmação'
+    case 'temporal': return 'horário sem confirmação'
+    case 'entity':   return 'nome sem confirmação'
+    case 'action':   return 'ação sem confirmação'
+  }
+  return 'sem confirmação nas fontes'
+}

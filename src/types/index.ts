@@ -800,6 +800,23 @@ export interface Message {
     skillFailures?: Array<{ name: string; kind: string; statusCode: number | null; message: string | null }>
     /** Correlation id to cross-reference the agent-server logs. */
     correlationId?: string | null
+    // ── Sinal v2 (SCRUM-511) — contexto completo do operador ──────────────
+    // Ausentes em marcador anterior ao v2; o modal degrada para o que era.
+    /** A resposta COMO A IA ESCREVEU, retida antes do envio. */
+    blockedText?: string | null
+    /** Os fatos barrados, com posição DENTRO de blockedText para marcação. */
+    findings?: Array<{
+      type: string
+      reason: string
+      raw: string
+      span: [number, number] | null
+      suggested: string | null
+    }>
+    /** O que o sistema SABIA no turno — vagas reais, preços por convênio,
+     *  nomes com lastro. É o que permite responder o cliente na hora. */
+    evidence?: { slots: string[]; prices: string[]; names: string[] } | null
+    /** Quanto a IA tentou se corrigir antes da transferência. */
+    repair?: { rung: number | null; llmCalls: number | null } | null
   } | null
   createdAt: string
 }
