@@ -16,8 +16,10 @@ export const FEATURE_FLAGS = {
   settings: true,
   settingsAdAccounts: false,
   settingsVertical: false,
-  // Billing (SCRUM-172/154) fica OCULTO por padrão. Beta testers veem a
-  // rota via BETA_GATED_FLAGS.
+  // Billing (SCRUM-172/154) fica OCULTO por padrão até o backend estar em
+  // produção. Gate por env: só aparece onde VITE_SETTINGS_BILLING='true'
+  // (staging). Sem a env (prod atual), permanece false — evita expor cobrança
+  // antes do backend pronto.
   settingsBilling: false,
   // Phase 18+ — surfaces the customer-facing "Skills" tab on AgentDetail.
   // Skills assigned by Oryon staff are always executed; this flag only
@@ -73,7 +75,7 @@ export const BETA_TESTER_EMAILS: readonly string[] = [
 ];
 
 /** Flags desligadas globalmente que beta testers podem ver. */
-const BETA_GATED_FLAGS = new Set<FeatureFlag>(["settingsBilling"]);
+const BETA_GATED_FLAGS = new Set<FeatureFlag>();
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
