@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AlertTriangle, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff, Database, CalendarClock, CircleDollarSign, UserRound } from 'lucide-react'
+import { AlertTriangle, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import type { Message } from '@/types'
@@ -60,31 +60,6 @@ function Detail({ icon: Icon, label, children }: { icon: typeof Quote; label: st
 }
 
 /**
- * Lista de evidência como CHIPS, não como texto corrido.
- *
- * Uma linha "19/08 16:30 · 19/08 16:45 · 26/08 15:30 · …" obriga o operador a
- * ler caractere a caractere para achar um horário. Em chips o olho varre —
- * e é essa a função do bloco: responder o cliente na hora.
- */
-function EvidenceGroup({ icon: Icon, label, items }: { icon: typeof Quote; label: string; items: string[] }) {
-  if (items.length === 0) return null
-  return (
-    <div>
-      <p className="text-[11px] text-surface-500 mb-1.5 flex items-center gap-1.5">
-        <Icon className="w-3 h-3" /> {label}
-      </p>
-      <div className="flex flex-wrap gap-1">
-        {items.map((it, i) => (
-          <span key={i} className="text-[11px] font-mono text-surface-300 bg-surface-900/70 border border-surface-700/60 rounded px-1.5 py-0.5">
-            {it}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/**
  * A mensagem retida com os trechos sem lastro MARCADOS pelos spans do sinal
  * v2. Os spans já chegam validados contra o texto (backend revalida no write e
  * no read), mas a renderização ainda se defende: ordena, funde sobreposição e
@@ -127,15 +102,17 @@ function renderHighlighted(text: string, findings: AnomalyFinding[]): ReactNode 
 /**
  * Detail modal opened from the phantom-confirmation flag on a chat bubble.
  * Explains what the gateway caught on that specific AI turn — the message it
- * withheld, which facts had no grounding, and what the system actually knew —
- * so the operator can answer the customer immediately instead of
- * reconstructing the conversation.
+ * withheld and which facts had no grounding, so ele julga o bloqueio sem
+ * reconstruir a conversa.
  *
- * LAYOUT: duas colunas quando o sinal v2 está presente (o conteúdo triplicou
- * de tamanho com ele), uma coluna quando não está. `fillHeight` + scroll POR
- * PAINEL em vez de scroll do modal inteiro: a mensagem retida pode ser longa,
- * e rolar o modal todo escondia a evidência — que é justamente o que o
- * operador precisa ter à vista enquanto lê o texto barrado.
+ * LAYOUT: duas colunas quando o sinal v2 está presente, uma coluna quando não
+ * está. `fillHeight` + scroll POR PAINEL em vez de scroll do modal inteiro: a
+ * mensagem retida pode ser longa, e rolar o modal todo tirava de vista os
+ * trechos sinalizados e a orientação.
+ *
+ * O bloco "o que o sistema sabia" (evidência do lastro) foi removido a pedido
+ * — poluía mais do que ajudava. Os campos continuam chegando no sinal e
+ * persistidos em activity_logs; reexibi-los é só voltar a lê-los.
  */
 export function AnomalyDetailModal({
   open,
@@ -151,7 +128,6 @@ export function AnomalyDetailModal({
   const expectedOp = skillLabel(anomaly?.requiredSkill)
   const failures = anomaly?.skillFailures ?? []
   const findings = anomaly?.findings ?? []
-  const evidence = anomaly?.evidence ?? null
   // Marcador anterior ao sinal v2 não tem a mensagem retida — sem ela não há
   // o que colocar na coluna da esquerda, e o modal volta ao formato estreito.
   const hasV2 = Boolean(anomaly?.blockedText)
@@ -162,7 +138,7 @@ export function AnomalyDetailModal({
       onClose={onClose}
       title="Detalhes da verificação"
       fillHeight={hasV2}
-      className={hasV2 ? 'max-w-4xl h-[85vh]' : 'max-w-lg'}
+      className={hasV2 ? 'max-w-3xl h-[85vh]' : 'max-w-lg'}
     >
       {anomaly && (
         <div className={cn('flex flex-col gap-4', hasV2 && 'h-full min-h-0')}>
@@ -193,7 +169,7 @@ export function AnomalyDetailModal({
 
           <div className={cn(
             hasV2
-              ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-4 flex-1 min-h-0'
+              ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-4 flex-1 min-h-0'
               : 'flex flex-col gap-4',
           )}>
             {/* ── Coluna esquerda: a mensagem retida ──────────────────── */}
@@ -231,17 +207,6 @@ export function AnomalyDetailModal({
                   <p className="text-xs text-surface-400">
                     {guardCheckGuidance(anomaly.outcome, anomaly.claimType)}
                   </p>
-                </div>
-              )}
-
-              {evidence && (
-                <div className="flex-shrink-0">
-                  <BlockTitle icon={Database} tone="ok">O que o sistema sabia neste momento</BlockTitle>
-                  <div className="rounded-lg bg-surface-800/40 border border-surface-700/60 px-3 py-2.5 space-y-2.5">
-                    <EvidenceGroup icon={CalendarClock} label="Horários reais" items={evidence.slots} />
-                    <EvidenceGroup icon={CircleDollarSign} label="Preços por convênio" items={evidence.prices} />
-                    <EvidenceGroup icon={UserRound} label="Nomes com cadastro" items={evidence.names} />
-                  </div>
                 </div>
               )}
 
