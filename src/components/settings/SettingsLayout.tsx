@@ -6,7 +6,6 @@ import {
   Smartphone,
   Zap,
   Tag,
-  CreditCard,
   ShieldCheck,
   Layers,
   Megaphone,
@@ -71,7 +70,6 @@ const NAV_GROUPS = [
   {
     label: 'Plataforma',
     items: [
-      { section: 'billing',  label: 'Plano & Faturamento', icon: <CreditCard className="w-4 h-4" />, adminOnly: true },
       { section: 'security', label: 'Segurança',           icon: <ShieldCheck className="w-4 h-4" />, adminOnly: true },
       { section: 'audit',    label: 'Auditoria',           icon: <ScrollText className="w-4 h-4" />, adminOnly: true },
     ],

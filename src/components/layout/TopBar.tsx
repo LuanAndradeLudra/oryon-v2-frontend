@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send,
   Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2,
-  Smartphone, CreditCard, UserPlus, Zap, X, Tag, Clock,
+  Smartphone, UserPlus, Zap, X, Tag, Clock,
   Filter, Download, PlusCircle, ArrowRight, ChevronRight,
   LayoutGrid, List, KanbanSquare, FileText, Inbox,
   Globe, Users2, BellRing, Plug, BookOpen,
@@ -143,7 +143,6 @@ const SEARCH_INDEX = ([
 
   { type: 'settings', label: 'Equipe', description: 'Membros, funções, setores e permissões', href: '/settings/team', Icon: Users, keywords: ['membros', 'usuários', 'permissões', 'funções', 'setores', 'departamentos', 'grupos', 'times'] },
   { type: 'settings', label: 'WhatsApp — Números', description: 'Números de WhatsApp conectados', href: '/settings/whatsapp', Icon: Smartphone, keywords: ['numero', 'numeros', 'waba', 'meta', 'business', 'telefone', 'chip', 'conectar'] },
-  { type: 'settings', label: 'Plano e cobrança', description: 'Assinatura, limites e faturas', href: '/settings/billing', Icon: CreditCard, keywords: ['plano', 'fatura', 'assinatura', 'pagamento', 'upgrade', 'limite', 'mensalidade'] },
   { type: 'settings', label: 'Etiquetas', description: 'Gerenciar tags de conversas', href: '/settings/tags', Icon: Tag, keywords: ['tags', 'etiquetas', 'labels', 'marcadores'] },
   { type: 'settings', label: 'Horários de atendimento', description: 'Definir horários e expediente', href: '/settings/hours', Icon: Clock, keywords: ['horario', 'expediente', 'disponibilidade', 'fora do horario', 'funcionamento'] },
   { type: 'settings', label: 'Notificações', description: 'Preferências de alertas', href: '/settings/notifications', Icon: BellRing, keywords: ['alertas', 'avisos', 'push', 'email'] },

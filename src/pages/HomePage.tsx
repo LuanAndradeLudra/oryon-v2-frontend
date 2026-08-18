@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import {
   MessageSquare, Users, BarChart3, Settings,
-  Clock, CheckCircle2, Inbox, CreditCard, Smartphone,
+  Clock, CheckCircle2, Inbox, Smartphone,
   ChevronRight, X, Sparkles, UserPlus, Tag, MessageCircle,
   Zap, Hand, Workflow, Send, TrendingUp,
 } from 'lucide-react'
@@ -331,7 +331,6 @@ function getQuickActions(role: string): QuickAction[] {
   if (role === 'admin') return [
     { label: 'Conversas',         description: 'Ver todas as conversas',          icon: MessageSquare, iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/conversations' },
     { label: 'Convidar usuário',  description: 'Adicionar à equipe',              icon: UserPlus,      iconColor: 'text-blue-400',    iconBg: 'bg-blue-500/10',    href: '/settings/agents' },
-    { label: 'Plano & Cobrança',  description: 'Gerenciar assinatura',            icon: CreditCard,    iconColor: 'text-amber-400',   iconBg: 'bg-amber-500/10',   href: '/settings/billing' },
     { label: 'Configurar CRM',    description: 'Estágios e campos personalizados', icon: Settings,      iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10', href: '/contacts' },
     { label: 'Automações',         description: 'Fluxos automáticos',               icon: Workflow,      iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/automations' },
     { label: 'Relatórios',        description: 'Dashboard de métricas',            icon: BarChart3,     iconColor: 'text-surface-400', iconBg: 'bg-surface-700',    href: '/dashboard' },

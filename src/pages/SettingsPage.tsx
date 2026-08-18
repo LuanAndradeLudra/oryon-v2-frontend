@@ -100,7 +100,7 @@ export function SettingsPage() {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
 
-  if (!VALID_SECTIONS.includes(section)) {
+  if (!VALID_SECTIONS.includes(section) || section === 'billing') {
     return <Navigate to="/settings/account" replace />
   }
 
