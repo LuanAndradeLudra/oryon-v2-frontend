@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AlertTriangle, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff, Database } from 'lucide-react'
+import { AlertTriangle, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff, Database, CalendarClock, CircleDollarSign, UserRound } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import type { Message } from '@/types'
@@ -13,6 +13,76 @@ import { guardCheckGuidance, guardOutcomeDetail, guardTypeLabel, findingReasonLa
 
 type Anomaly = NonNullable<Message['anomaly']>
 type AnomalyFinding = NonNullable<Anomaly['findings']>[number]
+
+/** Map the required-skill slug to a friendly operation name. */
+function skillLabel(slug: string | null | undefined): string | null {
+  if (!slug) return null
+  switch (slug) {
+    case 'marcar_consulta':   return 'Agendar consulta'
+    case 'cancela_consulta':  return 'Cancelar consulta'
+    case 'confirma_consulta': return 'Confirmar consulta'
+    default:                  return slug
+  }
+}
+
+function formatWhen(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+}
+
+/** Cabeçalho de bloco — uma linha, ícone + rótulo em caixa alta. */
+function BlockTitle({ icon: Icon, children, tone = 'default' }: {
+  icon: typeof Quote; children: ReactNode; tone?: 'default' | 'warn' | 'ok'
+}) {
+  return (
+    <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium flex items-center gap-1.5 mb-2">
+      <Icon className={cn('w-3.5 h-3.5',
+        tone === 'warn' ? 'text-amber-400' : tone === 'ok' ? 'text-emerald-400' : 'text-surface-500')} />
+      {children}
+    </p>
+  )
+}
+
+function Detail({ icon: Icon, label, children }: { icon: typeof Quote; label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <Icon className="w-4 h-4 text-surface-500 flex-shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium">{label}</p>
+        <div className="text-sm text-surface-200 break-words">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Lista de evidência como CHIPS, não como texto corrido.
+ *
+ * Uma linha "19/08 16:30 · 19/08 16:45 · 26/08 15:30 · …" obriga o operador a
+ * ler caractere a caractere para achar um horário. Em chips o olho varre —
+ * e é essa a função do bloco: responder o cliente na hora.
+ */
+function EvidenceGroup({ icon: Icon, label, items }: { icon: typeof Quote; label: string; items: string[] }) {
+  if (items.length === 0) return null
+  return (
+    <div>
+      <p className="text-[11px] text-surface-500 mb-1.5 flex items-center gap-1.5">
+        <Icon className="w-3 h-3" /> {label}
+      </p>
+      <div className="flex flex-wrap gap-1">
+        {items.map((it, i) => (
+          <span key={i} className="text-[11px] font-mono text-surface-300 bg-surface-900/70 border border-surface-700/60 rounded px-1.5 py-0.5">
+            {it}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 /**
  * A mensagem retida com os trechos sem lastro MARCADOS pelos spans do sinal
@@ -54,43 +124,18 @@ function renderHighlighted(text: string, findings: AnomalyFinding[]): ReactNode 
   return out
 }
 
-/** Map the required-skill slug to a friendly operation name. */
-function skillLabel(slug: string | null | undefined): string | null {
-  if (!slug) return null
-  switch (slug) {
-    case 'marcar_consulta':   return 'Agendar consulta'
-    case 'cancela_consulta':  return 'Cancelar consulta'
-    case 'confirma_consulta': return 'Confirmar consulta'
-    default:                  return slug
-  }
-}
-
-function formatWhen(iso: string | null | undefined): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  })
-}
-
-function Detail({ icon: Icon, label, children }: { icon: typeof Quote; label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <Icon className="w-4 h-4 text-surface-500 flex-shrink-0 mt-0.5" />
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium">{label}</p>
-        <div className="text-sm text-surface-200 break-words">{children}</div>
-      </div>
-    </div>
-  )
-}
-
 /**
  * Detail modal opened from the phantom-confirmation flag on a chat bubble.
- * Explains what the anti-claim guard caught on that specific AI turn — what was
- * claimed, which operation should have run, and any skill failures — so the
- * operator can decide whether to act (handoff) or just note it (corrected).
+ * Explains what the gateway caught on that specific AI turn — the message it
+ * withheld, which facts had no grounding, and what the system actually knew —
+ * so the operator can answer the customer immediately instead of
+ * reconstructing the conversation.
+ *
+ * LAYOUT: duas colunas quando o sinal v2 está presente (o conteúdo triplicou
+ * de tamanho com ele), uma coluna quando não está. `fillHeight` + scroll POR
+ * PAINEL em vez de scroll do modal inteiro: a mensagem retida pode ser longa,
+ * e rolar o modal todo escondia a evidência — que é justamente o que o
+ * operador precisa ter à vista enquanto lê o texto barrado.
  */
 export function AnomalyDetailModal({
   open,
@@ -105,15 +150,26 @@ export function AnomalyDetailModal({
   const when = formatWhen(anomaly?.occurredAt)
   const expectedOp = skillLabel(anomaly?.requiredSkill)
   const failures = anomaly?.skillFailures ?? []
+  const findings = anomaly?.findings ?? []
+  const evidence = anomaly?.evidence ?? null
+  // Marcador anterior ao sinal v2 não tem a mensagem retida — sem ela não há
+  // o que colocar na coluna da esquerda, e o modal volta ao formato estreito.
+  const hasV2 = Boolean(anomaly?.blockedText)
 
   return (
-    <Modal open={open} onClose={onClose} title="Detalhes da verificação">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Detalhes da verificação"
+      fillHeight={hasV2}
+      className={hasV2 ? 'max-w-4xl h-[85vh]' : 'max-w-lg'}
+    >
       {anomaly && (
-        <div className="space-y-4">
-          {/* Status banner */}
+        <div className={cn('flex flex-col gap-4', hasV2 && 'h-full min-h-0')}>
+          {/* Banner — largura total, sempre no topo */}
           <div
             className={cn(
-              'flex items-start gap-2.5 rounded-lg px-3 py-2.5 border',
+              'flex items-start gap-2.5 rounded-lg px-3 py-2.5 border flex-shrink-0',
               isHandoff ? 'bg-amber-500/10 border-amber-500/30' : 'bg-surface-800/60 border-surface-700',
             )}
           >
@@ -122,7 +178,7 @@ export function AnomalyDetailModal({
             ) : (
               <ShieldCheck className="w-4 h-4 text-surface-300 flex-shrink-0 mt-0.5" />
             )}
-            <div>
+            <div className="min-w-0 flex-1">
               <p className={cn('text-sm font-medium', isHandoff ? 'text-amber-200' : 'text-surface-200')}>
                 {isHandoff ? 'Transferido para atendente' : 'Corrigido automaticamente'}
               </p>
@@ -135,136 +191,112 @@ export function AnomalyDetailModal({
             </div>
           </div>
 
-          {/* Sinal v2 — a mensagem COMO A IA ESCREVEU, retida antes do envio.
-              Antes disto o operador via um fragmento em itálico; a mensagem
-              inteira não existia em lugar nenhum. */}
-          {anomaly.blockedText && (
-            <div className="space-y-2">
-              <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium flex items-center gap-1.5">
-                <MessageSquareOff className="w-3.5 h-3.5 text-amber-400" /> Mensagem retida (não enviada ao cliente)
-              </p>
-              <div className="rounded-lg bg-surface-800/60 border border-surface-700 px-3 py-2.5 text-sm text-surface-200 whitespace-pre-wrap break-words leading-relaxed">
-                {renderHighlighted(anomaly.blockedText, anomaly.findings ?? [])}
-              </div>
-              {(anomaly.findings?.length ?? 0) > 0 && (
-                <ul className="space-y-1">
-                  {anomaly.findings!.slice(0, 6).map((f, i) => (
-                    <li key={i} className="text-xs text-surface-400 flex flex-wrap items-baseline gap-x-1.5">
-                      <span className="font-medium text-amber-300/90">“{f.raw}”</span>
-                      <span>— {findingReasonLabel(f.type, f.reason)}</span>
-                      {f.suggested && (
-                        <span className="text-surface-300">
-                          · correto: <span className="font-medium">{f.suggested}</span>
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                  {(anomaly.findings!.length > 6) && (
-                    <li className="text-[11px] text-surface-500">+{anomaly.findings!.length - 6} outros trechos</li>
-                  )}
-                </ul>
-              )}
-            </div>
-          )}
-
-          {/* Sinal v2 — o que o sistema SABIA no turno. É o que permite
-              responder o cliente imediatamente com os dados corretos, em vez
-              de reconstruir a conversa. */}
-          {anomaly.evidence && (
-            <div className="space-y-2">
-              <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium flex items-center gap-1.5">
-                <Database className="w-3.5 h-3.5 text-emerald-400" /> O que o sistema sabia neste momento
-              </p>
-              <div className="rounded-lg bg-surface-800/40 border border-surface-700/60 px-3 py-2.5 space-y-1.5">
-                {anomaly.evidence.slots.length > 0 && (
-                  <p className="text-xs text-surface-300">
-                    <span className="text-surface-500">Horários reais:</span>{' '}
-                    <span className="font-mono text-[11px]">{anomaly.evidence.slots.join(' · ')}</span>
+          <div className={cn(
+            hasV2
+              ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-4 flex-1 min-h-0'
+              : 'flex flex-col gap-4',
+          )}>
+            {/* ── Coluna esquerda: a mensagem retida ──────────────────── */}
+            {hasV2 && (
+              <div className="flex flex-col min-h-0 gap-2">
+                <BlockTitle icon={MessageSquareOff} tone="warn">
+                  Mensagem retida (não enviada ao cliente)
+                </BlockTitle>
+                <div className="flex-1 min-h-0 overflow-y-auto rounded-lg bg-surface-800/60 border border-surface-700 px-3 py-2.5">
+                  <p className="text-sm text-surface-200 whitespace-pre-wrap break-words leading-relaxed">
+                    {renderHighlighted(anomaly.blockedText!, findings)}
                   </p>
-                )}
-                {anomaly.evidence.prices.length > 0 && (
-                  <p className="text-xs text-surface-300">
-                    <span className="text-surface-500">Preços por convênio:</span>{' '}
-                    <span className="font-mono text-[11px]">{anomaly.evidence.prices.join(' · ')}</span>
-                  </p>
-                )}
-                {anomaly.evidence.names.length > 0 && (
-                  <p className="text-xs text-surface-300">
-                    <span className="text-surface-500">Nomes com cadastro:</span>{' '}
-                    <span className="font-mono text-[11px]">{anomaly.evidence.names.join(' · ')}</span>
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Skill failures — the technical "why" when a tool was called and failed */}
-          {failures.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium flex items-center gap-1.5">
-                <XCircle className="w-3.5 h-3.5 text-red-400" /> Falha no retorno da skill
-              </p>
-              {failures.map((f, i) => (
-                <div key={i} className="rounded-lg bg-red-500/10 border border-red-500/25 px-3 py-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-red-200 truncate">{f.name}</span>
-                    {f.statusCode != null && (
-                      <span className="text-[10px] font-mono text-red-300/80 flex-shrink-0">HTTP {f.statusCode}</span>
-                    )}
-                  </div>
-                  {f.message && <p className="text-xs text-surface-300 mt-1 break-words">{f.message}</p>}
                 </div>
-              ))}
+                {findings.length > 0 && (
+                  <ul className="space-y-1 flex-shrink-0 max-h-32 overflow-y-auto pr-1">
+                    {findings.map((f, i) => (
+                      <li key={i} className="text-xs text-surface-400 leading-snug">
+                        <span className="font-medium text-amber-300/90">“{f.raw}”</span>
+                        {' — '}{findingReasonLabel(f.type, f.reason)}
+                        {f.suggested && (
+                          <> · correto: <span className="font-medium text-surface-300">{f.suggested}</span></>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {/* ── Coluna direita: o que fazer + o que o sistema sabia ─── */}
+            <div className={cn('flex flex-col gap-4', hasV2 && 'min-h-0 overflow-y-auto pr-1')}>
+              {isHandoff && (
+                <div className="rounded-lg bg-surface-800/40 px-3 py-2.5 flex-shrink-0">
+                  <p className="text-xs font-medium text-surface-200 mb-1">O que verificar</p>
+                  <p className="text-xs text-surface-400">
+                    {guardCheckGuidance(anomaly.outcome, anomaly.claimType)}
+                  </p>
+                </div>
+              )}
+
+              {evidence && (
+                <div className="flex-shrink-0">
+                  <BlockTitle icon={Database} tone="ok">O que o sistema sabia neste momento</BlockTitle>
+                  <div className="rounded-lg bg-surface-800/40 border border-surface-700/60 px-3 py-2.5 space-y-2.5">
+                    <EvidenceGroup icon={CalendarClock} label="Horários reais" items={evidence.slots} />
+                    <EvidenceGroup icon={CircleDollarSign} label="Preços por convênio" items={evidence.prices} />
+                    <EvidenceGroup icon={UserRound} label="Nomes com cadastro" items={evidence.names} />
+                  </div>
+                </div>
+              )}
+
+              {failures.length > 0 && (
+                <div className="flex-shrink-0">
+                  <BlockTitle icon={XCircle} tone="warn">Falha no retorno da skill</BlockTitle>
+                  <div className="space-y-2">
+                    {failures.map((f, i) => (
+                      <div key={i} className="rounded-lg bg-red-500/10 border border-red-500/25 px-3 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-red-200 truncate">{f.name}</span>
+                          {f.statusCode != null && (
+                            <span className="text-[10px] font-mono text-red-300/80 flex-shrink-0">HTTP {f.statusCode}</span>
+                          )}
+                        </div>
+                        {f.message && <p className="text-xs text-surface-300 mt-1 break-words">{f.message}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3 flex-shrink-0">
+                {expectedOp && (
+                  <Detail icon={Wrench} label="Operação esperada">
+                    {expectedOp}{anomaly.requiredSkill ? <span className="text-surface-500"> ({anomaly.requiredSkill})</span> : null}
+                  </Detail>
+                )}
+
+                {/* Fragmento legado (v1) — redundante quando a mensagem retida
+                    inteira está disponível na coluna ao lado. */}
+                {anomaly.matchedText && !hasV2 && (
+                  <Detail icon={Quote} label="Trecho detectado">
+                    <span className="italic">“{anomaly.matchedText}”</span>
+                  </Detail>
+                )}
+
+                <Detail icon={Tag} label="Tipo">
+                  {guardTypeLabel(anomaly.outcome, anomaly.claimType)}
+                </Detail>
+
+                {when && <Detail icon={Clock} label="Quando">{when}</Detail>}
+
+                {anomaly.correlationId && (
+                  <Detail icon={Hash} label="Referência (logs)">
+                    <span className="font-mono text-xs break-all">{anomaly.correlationId}</span>
+                  </Detail>
+                )}
+
+                {anomaly.outcome && (
+                  <p className="text-[10px] text-surface-600">código técnico: {anomaly.outcome}</p>
+                )}
+              </div>
             </div>
-          )}
-
-          {/* Actionable guidance (handoff only) */}
-          {isHandoff && (
-            <div className="rounded-lg bg-surface-800/40 px-3 py-2.5">
-              <p className="text-xs font-medium text-surface-200 mb-1">O que verificar</p>
-              <p className="text-xs text-surface-400">
-                {guardCheckGuidance(anomaly.outcome, anomaly.claimType)}
-              </p>
-            </div>
-          )}
-
-          {/* Structured details */}
-          {expectedOp && (
-            <Detail icon={Wrench} label="Operação esperada">
-              {expectedOp}{anomaly.requiredSkill ? <span className="text-surface-500"> ({anomaly.requiredSkill})</span> : null}
-            </Detail>
-          )}
-
-          {/* Fragmento legado (v1) — redundante quando a mensagem retida
-              inteira está disponível acima. */}
-          {anomaly.matchedText && !anomaly.blockedText && (
-            <Detail icon={Quote} label="Trecho detectado">
-              <span className="italic">“{anomaly.matchedText}”</span>
-            </Detail>
-          )}
-
-          {/* "Tipo de ação" era o rótulo de quando só existia o anti-claim.
-              Com o gateway o bloqueio pode ser de preço, horário ou nome — que
-              não são ações. */}
-          <Detail icon={Tag} label="Tipo">
-            {guardTypeLabel(anomaly.outcome, anomaly.claimType)}
-          </Detail>
-
-          {when && (
-            <Detail icon={Clock} label="Quando">
-              {when}
-            </Detail>
-          )}
-
-          {anomaly.correlationId && (
-            <Detail icon={Hash} label="Referência (logs)">
-              <span className="font-mono text-xs break-all">{anomaly.correlationId}</span>
-            </Detail>
-          )}
-
-          {anomaly.outcome && (
-            <p className="text-[10px] text-surface-600">código técnico: {anomaly.outcome}</p>
-          )}
+          </div>
         </div>
       )}
     </Modal>
