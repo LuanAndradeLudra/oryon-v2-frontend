@@ -19,6 +19,7 @@ import {
   IdCard,
 } from 'lucide-react'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
+import { isAdminTier, isOwnerTier } from '@/lib/roleHelpers'
 import { isRouteVisible } from '@/config/featureFlags'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
@@ -71,7 +72,10 @@ const NAV_GROUPS = [
   {
     label: 'Plataforma',
     items: [
-      { section: 'billing',  label: 'Plano & Faturamento', icon: <CreditCard className="w-4 h-4" />, adminOnly: true },
+      // ownerOnly, nao adminOnly: o backend fechou /settings/billing em
+      // @Roles(BUSINESS_ADMIN) no SCRUM-694. Deixar como adminOnly manteria a
+      // aba visivel para `admin`, que tomaria 403 em cada chamada.
+      { section: 'billing',  label: 'Plano & Faturamento', icon: <CreditCard className="w-4 h-4" />, ownerOnly: true },
       { section: 'security', label: 'Segurança',           icon: <ShieldCheck className="w-4 h-4" />, adminOnly: true },
       { section: 'audit',    label: 'Auditoria',           icon: <ScrollText className="w-4 h-4" />, adminOnly: true },
     ],
@@ -82,17 +86,18 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
   // super_admin (Oryon staff) and business_admin (tenant owner) both should
   // see every admin-gated section. Missing super_admin here was the reason
   // WhatsApp + Plataforma vanished after `/auth/me` resolved.
-  const isAdmin = currentRole === 'admin'
-    || currentRole === 'business_admin'
-    || currentRole === 'super_admin'
+  const isAdmin = isAdminTier(currentRole)
+  const isOwner = isOwnerTier(currentRole)
   const isMobile = useIsMobile()
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
         const adminOnly = 'adminOnly' in item && item.adminOnly
+        const ownerOnly = 'ownerOnly' in item && item.ownerOnly
         const supervisorOnly = 'supervisorOnly' in item && item.supervisorOnly
         if (adminOnly && !isAdmin) return false
+        if (ownerOnly && !isOwner) return false
         if (supervisorOnly && currentRole === 'agent') return false
         return isRouteVisible(`/settings/${item.section}`)
       }),
@@ -117,6 +122,8 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
                   section={item.section}
                   label={item.label}
                   icon={item.icon}
+                  adminOnly={'adminOnly' in item && item.adminOnly}
+                  ownerOnly={'ownerOnly' in item && item.ownerOnly}
                   currentRole={currentRole}
                 />
               ))}
