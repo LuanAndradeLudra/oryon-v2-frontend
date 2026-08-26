@@ -35,6 +35,7 @@ import { formatActivity, pickActivityType } from '@/components/dashboard/activit
 import type { HomeStats } from '@/types'
 import type { User } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { isAdminTier } from '@/lib/roleHelpers'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
@@ -113,6 +114,13 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState(new Date())
 
+  // Espelha o @Roles(ADMIN, BUSINESS_ADMIN) que GET /activity-feed passou a
+  // exigir. `currentUser` vem de um /auth/me assincrono e chega depois da
+  // primeira busca; `authUser` do contexto e populado do cache na montagem,
+  // entao e ele quem decide — senao a primeira carga faria a chamada que o
+  // backend vai recusar.
+  const canSeeActivityFeed = isAdminTier(authUser?.role)
+
   useEffect(() => {
     axios.get<User>(`${API}/auth/me`).then((r) => setCurrentUser(r.data)).catch(() => {})
   }, [])
@@ -131,10 +139,16 @@ export function DashboardPage() {
       // even a single hour can produce dozens of conversation_assigned /
       // resolved rows.
       const sinceIso = new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+      // GET /activity-feed passou a exigir tier admin no backend: o feed
+      // tenant-wide devolve activity_logs sem escopo, o que inclui as linhas
+      // de billing. Para quem nao e do tier, nem chamamos — o .catch abaixo
+      // engoliria o 403 e a secao renderizaria vazia sem explicacao.
       const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.all([
         axios.get(`${API}/home/snapshot`).catch(() => ({ data: null })),
         axios.get<HomeStats>(`${API}/home/stats`),
-        axios.get<{ data: ActivityFeedApiRow[] }>(`${API}/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
+        canSeeActivityFeed
+          ? axios.get<{ data: ActivityFeedApiRow[] }>(`${API}/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } }))
+          : Promise.resolve({ data: { data: [] as ActivityFeedApiRow[] } }),
       ])
 
       // Start with empty structure, fill with real data
@@ -345,10 +359,10 @@ export function DashboardPage() {
                 <PeakHoursHeatmap data={snapshot.heatmap} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <div className="lg:col-span-2">
+                  <div className={canSeeActivityFeed ? 'lg:col-span-2' : 'lg:col-span-3'}>
                     <AgentTable agents={snapshot.agentMetrics} />
                   </div>
-                  <ActivityFeed events={snapshot.activityFeed} />
+                  {canSeeActivityFeed && <ActivityFeed events={snapshot.activityFeed} />}
                 </div>
 
                 {/* <MarketingFunnelSection dateRange={dateRange} /> — endpoint backend nao existe ainda */}

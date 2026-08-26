@@ -8,6 +8,7 @@ import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { isOwnerTier } from '@/lib/roleHelpers'
 
 // Sections
 import { CompanyProfile }   from '@/components/settings/sections/CompanyProfile'
@@ -33,6 +34,11 @@ const VALID_SECTIONS = [
   'quick-replies', 'tags', 'billing', 'security', 'ad-accounts', 'vertical',
   'audit', 'crm-products',
 ]
+
+// Secoes restritas ao dono do negocio (business_admin) e a staff Oryon.
+// Espelha o @Roles(BUSINESS_ADMIN) do backend em PaymentController e
+// BillingController — SCRUM-694. Papel `admin` NAO entra.
+const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
 // bloquear (usuario pode acessar mas com aviso).
@@ -99,6 +105,17 @@ export function SettingsPage() {
   const navigate = useNavigate()
 
   if (!VALID_SECTIONS.includes(section)) {
+    return <Navigate to="/settings/account" replace />
+  }
+
+  // Backstop do SCRUM-694. Esconder o item na sidebar nao impede ninguem de
+  // digitar /settings/billing — e o command palette (TopBar) e o atalho da
+  // HomePage tambem levam direto para a URL. Sem esta guarda a tela renderiza
+  // e so entao quebra em 403 vindo da API, que e a pior forma de descobrir.
+  //
+  // Redireciona em vez de mostrar erro para reaproveitar o comportamento que
+  // secao invalida ja tem logo acima.
+  if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {
     return <Navigate to="/settings/account" replace />
   }
 
