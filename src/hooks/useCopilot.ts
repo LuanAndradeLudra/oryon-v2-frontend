@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import type { BatchApprovalItem, CopilotAttachment, CopilotMessage, ToolCallRecord } from '@/contexts/CopilotContext'
 import { runCopilotTurnBackend, sendApprovalDecision } from '@/services/copilotServiceBackend'
 import { useAuth } from '@/contexts/AuthContext'
+import { CopilotBlockedError, describeCopilotBlock, type CopilotBlockNotice } from '@/lib/copilotBlock'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { loadKB, DEFAULT_KB } from '@/hooks/useKnowledgeBase'
 import { loadHub, loadHubAsync } from '@/services/companyContextService'
@@ -36,6 +37,8 @@ interface UseCopilotReturn {
   /** Current agent label (e.g., "Analisando métricas...") — null when idle. */
   activeAgentLabel: string | null
   error: string | null
+  /** Bloqueio de cobranca — separado de `error` porque precisa de um caminho de saida. */
+  blocked: CopilotBlockNotice | null
   sendMessage: (text: string, attachments?: CopilotAttachment[], opts?: { slidePreset?: string }) => Promise<void>
   rerunFromMessage: (userMsg: CopilotMessage, historyBefore: CopilotMessage[]) => Promise<void>
   abort: () => void
@@ -146,6 +149,9 @@ export function useCopilot(
   const [activeToolName, setActiveToolName] = useState<string | null>(null)
   const [activeAgentLabel, setActiveAgentLabel] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Bloqueio de cobranca e separado de `error` de proposito: erro se le e se
+  // descarta, bloqueio precisa de um caminho de saida (SCRUM-804).
+  const [blocked, setBlocked] = useState<CopilotBlockNotice | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const toolTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const currentAssistantIdRef = useRef<string | null>(null)
@@ -391,6 +397,7 @@ export function useCopilot(
       if (!user || status !== 'idle') return
 
       setError(null)
+      setBlocked(null)
       abortRef.current = new AbortController()
 
       const userMsg: CopilotMessage = {
@@ -515,6 +522,18 @@ export function useCopilot(
 
         // Rate-limit error thrown before streaming: remove the empty assistant
         // placeholder and surface the error cleanly without a broken bubble.
+        // Bloqueio de cobranca: nao e falha do turno, e uma condicao da conta.
+        // Some com a bolha vazia e mostra o caminho de saida em vez da tarja
+        // vermelha de erro.
+        if (err instanceof CopilotBlockedError) {
+          setMessages((prev) => prev.filter((m) => m.id !== assistantId))
+          setBlocked(describeCopilotBlock(err, user?.role))
+          setStatus('idle')
+          setActiveToolName(null)
+          setActiveAgentLabel(null)
+          return
+        }
+
         const isRateLimit =
           (err as { status?: number })?.status === 429 ||
           errMsg.toLowerCase().includes('muitas mensagens')
@@ -677,5 +696,5 @@ export function useCopilot(
     }
   }, [])
 
-  return { status, activeToolName, activeAgentLabel, error, sendMessage, rerunFromMessage, abort, resolveBatch }
+  return { status, activeToolName, activeAgentLabel, error, blocked, sendMessage, rerunFromMessage, abort, resolveBatch }
 }

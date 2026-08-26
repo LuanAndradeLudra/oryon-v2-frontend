@@ -5,6 +5,7 @@ import {
   useCallback,
 } from 'react'
 import { Square, Send } from 'lucide-react'
+import { CopilotBlockNotice } from './CopilotBlockNotice'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useCopilot } from '@/hooks/useCopilot'
@@ -42,7 +43,7 @@ export function SessionChat({
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<CopilotAttachment[]>([])
   const [attachError, setAttachError] = useState<string | null>(null)
-  const { status, error, sendMessage, rerunFromMessage, abort, resolveBatch } = useCopilot(messages, setMessages, tools as Array<{ name: string; description?: string; input_schema: Record<string, unknown> }>, sessionId)
+  const { status, error, blocked, sendMessage, rerunFromMessage, abort, resolveBatch } = useCopilot(messages, setMessages, tools as Array<{ name: string; description?: string; input_schema: Record<string, unknown> }>, sessionId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isNearBottomRef = useRef(true)
   const titleGeneratedRef = useRef(false)
@@ -248,6 +249,15 @@ export function SessionChat({
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* Bloqueio de cobranca — antes do erro: e condicao da conta, nao falha do turno */}
+      <AnimatePresence>
+        {blocked && (
+          <div className="relative z-10 px-4 mb-3">
+            <CopilotBlockNotice notice={blocked} />
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Error */}
       <AnimatePresence>
