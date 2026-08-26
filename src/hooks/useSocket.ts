@@ -49,6 +49,17 @@ export function useSocket(handlers: SocketHandlers = {}) {
     socket.on('conversation:ai-pause-updated', (p) => handlersRef.current.onConversationAiPauseUpdated?.(p))
     socket.on('conversation:status-updated', (p) => handlersRef.current.onConversationStatusUpdated?.(p))
     socket.on('unread:update', (p) => handlersRef.current.onUnreadUpdate?.(p))
+    // SCRUM-805 — sinal SECO de que o saldo mudou (sem o numero: a sala e do
+    // tenant inteiro e ler billing exige business_admin desde a SCRUM-694).
+    // Vai por CustomEvent, mesmo padrao do notification:new: o useBilling e um
+    // store de modulo que monta longe daqui, e acoplar os dois diretamente
+    // seria pior que o evento de janela. Sem handler local porque ninguem
+    // consome direto — quem reage e o proprio store.
+    socket.on('billing:balance-updated', () => {
+      try {
+        window.dispatchEvent(new CustomEvent('billing:balance-updated'))
+      } catch { /* window unavailable (SSR, etc.) */ }
+    })
     socket.on('notification:new', (p) => {
       // Fan-out the notification two ways:
       //  1) to the optional local handler passed by the consumer
