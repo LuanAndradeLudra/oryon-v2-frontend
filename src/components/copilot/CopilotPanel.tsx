@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { CopilotBlockNotice } from './CopilotBlockNotice'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { X, Sparkles, Send, Square, Loader2, Paperclip, FileText, Palette } from 'lucide-react'
@@ -192,7 +193,7 @@ function PresetPicker({
 
 function ChatWindow() {
   const { close, messages, setMessages, preloadedMessage, clearPreload } = useCopilotContext()
-  const { status, activeToolName, activeAgentLabel, error, sendMessage, abort, resolveBatch } = useCopilot(messages, setMessages)
+  const { status, activeToolName, activeAgentLabel, error, blocked, sendMessage, abort, resolveBatch } = useCopilot(messages, setMessages)
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<CopilotAttachment[]>([])
   const [attachError, setAttachError] = useState<string | null>(null)
@@ -344,6 +345,11 @@ function ChatWindow() {
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Bloqueio de cobranca — antes do erro: e condicao da conta, nao falha do turno */}
+      <AnimatePresence>
+        {blocked && <CopilotBlockNotice notice={blocked} compact />}
       </AnimatePresence>
 
       {/* Error */}
