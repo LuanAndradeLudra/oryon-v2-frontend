@@ -68,10 +68,10 @@ export const Users = make((N, G) =>
 // IA genérica: usa a mesma faísca que era o ícone do Copilot (Sparkles). A
 // identidade do Copilot passou a ser o CopilotMark (órbita), definido abaixo.
 export const Bot = make((N, G) =>
-  `<path d="M11 3 C11.7 8 13 9.3 18 10.5 C13 11.7 11.7 13 11 18 C10.3 13 9 11.7 4 10.5 C9 9.3 10.3 8 11 3 Z" fill="${G}" stroke="none" opacity="0.45"/><path d="M18.5 14 l.55 1.9 l1.95 .6 l-1.95 .6 l-.55 1.9 l-.55 -1.9 l-1.95 -.6 l1.95 -.6 z" fill="${N}" stroke="none"/>`)
+  `<path d="M11 3 C11.7 8 13 9.3 18 10.5 C13 11.7 11.7 13 11 18 C10.3 13 9 11.7 4 10.5 C9 9.3 10.3 8 11 3 Z" fill="${G}" stroke="none" opacity="0.75"/><path d="M18.5 14 l.55 1.9 l1.95 .6 l-1.95 .6 l-.55 1.9 l-.55 -1.9 l-1.95 -.6 l1.95 -.6 z" fill="${N}" stroke="none"/>`)
 
 export const Sparkles = make((N, G) =>
-  `<path d="M11 3 C11.7 8 13 9.3 18 10.5 C13 11.7 11.7 13 11 18 C10.3 13 9 11.7 4 10.5 C9 9.3 10.3 8 11 3 Z" fill="${G}" stroke="none" opacity="0.45"/><path d="M18.5 14 l.55 1.9 l1.95 .6 l-1.95 .6 l-.55 1.9 l-.55 -1.9 l-1.95 -.6 l1.95 -.6 z" fill="${N}" stroke="none"/>`)
+  `<path d="M11 3 C11.7 8 13 9.3 18 10.5 C13 11.7 11.7 13 11 18 C10.3 13 9 11.7 4 10.5 C9 9.3 10.3 8 11 3 Z" fill="${G}" stroke="none" opacity="0.75"/><path d="M18.5 14 l.55 1.9 l1.95 .6 l-1.95 .6 l-.55 1.9 l-.55 -1.9 l-1.95 -.6 l1.95 -.6 z" fill="${N}" stroke="none"/>`)
 
 // Copilot — orbe pulsante: núcleo sólido + 2 anéis concêntricos (sinal de IA
 // ativa). Funciona monocromático (nav) e como glifo branco sobre o gradiente.

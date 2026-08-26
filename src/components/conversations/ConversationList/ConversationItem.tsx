@@ -60,13 +60,22 @@ function SenderIndicator({ kind }: { kind?: Conversation['lastMessageSenderKind'
   )
 }
 
+/** Human label for a conversation status — used by the "moved out of filter" pill. */
+function statusLabel(status: Conversation['status']): string {
+  return status === 'open' ? 'Aberta' : status === 'pending' ? 'Pendente' : status === 'resolved' ? 'Resolvida' : ''
+}
+
 interface ConversationItemProps {
   conversation: Conversation
   isActive: boolean
+  /** True when this is the open conversation kept visible even though it no
+   *  longer matches the active status filter (sticky until the operator opens
+   *  another). Rendered dimmed + with a status pill so the mismatch is clear. */
+  offFilter?: boolean
   onSelect: (conv: Conversation) => void
 }
 
-export const ConversationItem = memo(function ConversationItem({ conversation, isActive, onSelect }: ConversationItemProps) {
+export const ConversationItem = memo(function ConversationItem({ conversation, isActive, offFilter = false, onSelect }: ConversationItemProps) {
   const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly } =
     conversation
 
@@ -74,17 +83,6 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
   const aiActive = isAiActive(conversation)
   const assignment = getAssignment(conversation)
   const awaiting = getAwaitingReply(conversation)
-
-  // Status do atendimento (aberta/pendente/resolvida) como barra de acento —
-  // sinal periférico, sem texto novo. Mais útil na aba "Todas", onde status
-  // diferentes se misturam; nas abas filtradas é redundante mas inofensivo.
-  const statusColor = conversation.status === 'open'
-    ? 'var(--color-status-open)'
-    : conversation.status === 'pending'
-      ? 'var(--color-cstatus-pending)'
-      : conversation.status === 'resolved'
-        ? 'var(--color-cstatus-resolved)'
-        : undefined
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
@@ -113,20 +111,13 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
       onContextMenu={onContextMenu}
       data-conv-id={conversation.id}
       className={cn(
-        'conv-item relative w-full flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-left transition-all duration-100 rounded-xl mb-2',
+        'conv-item relative w-full flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-left transition-all duration-100 rounded-xl',
         isActive
           ? 'conv-item-active bg-surface-800 border-[2.0px] border-surface-700'
           : 'border border-surface-700/60 hover:border-surface-600',
+        offFilter && 'opacity-70',
       )}
     >
-      {/* Acento de status — fino e curto, centralizado na altura do card */}
-      {statusColor && (
-        <span
-          aria-hidden
-          className="absolute left-1 top-1/2 -translate-y-1/2 w-[2px] h-10 rounded-full"
-          style={{ backgroundColor: statusColor }}
-        />
-      )}
       {/* Avatar with WhatsApp badge */}
       <div className="relative mt-0.5 flex-shrink-0">
         <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
@@ -146,9 +137,19 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           )}>
             {contact.displayName}
           </span>
-          <span className="text-[11px] text-surface-500 flex-shrink-0">
-            {formatMessageTime(lastMessageAt)}
-          </span>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {offFilter && (
+              <span
+                className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/25"
+                title={`Movida para "${statusLabel(conversation.status)}" — não corresponde mais ao filtro atual`}
+              >
+                {statusLabel(conversation.status)}
+              </span>
+            )}
+            <span className="text-[11px] text-surface-500">
+              {formatMessageTime(lastMessageAt)}
+            </span>
+          </div>
         </div>
 
         {/* Row 2: WhatsApp number */}

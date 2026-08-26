@@ -16,6 +16,22 @@ interface MessageListProps {
   onReply?: (message: Message) => void
 }
 
+/** Identity key for grouping consecutive messages by the SAME sender, so the
+ *  sender avatar is drawn once at the top of each run (and again whenever the
+ *  author changes — e.g. AI → human operator, both outbound). */
+function senderKey(m: Message): string {
+  if (m.direction === 'inbound') return 'in'
+  if (m.senderKind === 'campaign') return 'out:campaign'
+  if (m.senderKind === 'rule') return 'out:rule'
+  // Human operator — keyed by user id when known, else a shared operator key.
+  // Must mirror SenderAvatar's branching so grouping and the drawn avatar
+  // never disagree (operators often have senderKind='operator' but no id).
+  if (m.senderKind === 'operator' || m.sentByUser || m.sentByUserId) {
+    return m.sentByUserId ? `op:${m.sentByUserId}` : 'out:operator'
+  }
+  return 'out:ai'
+}
+
 function DateSeparator({ date }: { date: string }) {
   const d = new Date(date)
   let label: string
@@ -144,6 +160,11 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
         const showDate =
           !prev || !isSameDay(new Date(msg.sentAt), new Date(prev.sentAt))
         const isNew = newMsgIds.has(msg.id)
+        // Show the sender avatar only at the start of a same-author run — i.e.
+        // the first of a set of broken/sequential messages from the same
+        // sender. A date separator in the middle of a run does NOT repeat the
+        // avatar (grouping is purely by author identity, not by day).
+        const showAvatar = !prev || senderKey(prev) !== senderKey(msg)
 
         return (
           <div
@@ -154,7 +175,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
             <MessageBubble
               message={msg}
               prevMessage={prev}
-              showAvatar={!prev || prev.direction !== msg.direction}
+              showAvatar={showAvatar}
               quotedMessage={msg.contextWamid ? byWamid.get(msg.contextWamid) ?? null : null}
               onReply={onReply}
             />

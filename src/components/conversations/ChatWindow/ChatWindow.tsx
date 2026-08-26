@@ -183,7 +183,13 @@ export function ChatWindow({
           here. The chip in the header carries the actions; the strip is just
           the "where am I?" sticky signal. */}
       <HandoffStripe aiPausedUntil={conversation.aiPausedUntil} />
-      <MessageList messages={messages} loading={loading} hasMore={hasMore} onLoadMore={fetchMore} onReply={setReplyTo} />
+      <MessageList
+        messages={messages}
+        loading={loading}
+        hasMore={hasMore}
+        onLoadMore={fetchMore}
+        onReply={setReplyTo}
+      />
       <MessageInput
         onSend={handleSendWithErrorReporting}
         sending={sending}

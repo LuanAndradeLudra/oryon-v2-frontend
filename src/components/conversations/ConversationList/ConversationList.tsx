@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect, type MutableRefObject } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, MessageSquareOff, AlertTriangle } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { ConversationSearch } from './ConversationSearch'
@@ -24,6 +25,9 @@ interface ConversationListProps {
    *  "Verificar" badge). 0 hides the contextual indicator. */
   needsReviewCount?: number
   activeId: string | null
+  /** Id of the open conversation that is being kept in the list even though it
+   *  no longer matches the active status filter (sticky). Rendered dimmed. */
+  offFilterId?: string | null
   filters: ConversationFilters
   allTags: Tag[]
   allContacts: Contact[]
@@ -49,7 +53,7 @@ interface ConversationListProps {
 export function ConversationList({
   conversations, loading, loadingMore = false, hasMore = false,
   statusCounts, needsReviewCount = 0,
-  activeId, filters, allTags, allUsers,
+  activeId, offFilterId = null, filters, allTags, allUsers,
   onSelectConversation, onFiltersChange, onLoadMore,
   scrollPositionRef, roundedBottomRight = false,
 }: ConversationListProps) {
@@ -228,15 +232,31 @@ export function ConversationList({
         ) : (
           <>
             <div className="max-w-[440px] mx-auto pt-2">
+            <AnimatePresence initial={false}>
             {conversations.map((conv) => (
-              <div key={conv.id} className={newConvIds.has(conv.id) ? 'animate-conv-in' : undefined}>
-                <ConversationItem
-                  conversation={conv}
-                  isActive={conv.id === activeId}
-                  onSelect={handleSelect}
-                />
-              </div>
+              <motion.div
+                key={conv.id}
+                layout
+                initial={false}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{
+                  opacity: { duration: 0.18, ease: 'easeOut' },
+                  height: { duration: 0.24, ease: 'easeInOut' },
+                  layout: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                }}
+                className="overflow-hidden"
+              >
+                <div className={cn('pb-1.5', newConvIds.has(conv.id) && 'animate-conv-in')}>
+                  <ConversationItem
+                    conversation={conv}
+                    isActive={conv.id === activeId}
+                    offFilter={conv.id === offFilterId}
+                    onSelect={handleSelect}
+                  />
+                </div>
+              </motion.div>
             ))}
+            </AnimatePresence>
             </div>
             {hasMore && (
               <div className="flex items-center justify-center py-4" aria-hidden="true">

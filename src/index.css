@@ -626,10 +626,11 @@ code, pre, kbd, samp {
   --color-accent-soft:  rgba(20, 184, 166, 0.10);
   --color-accent-on:    #FFFFFF;
 
-  /* Bubbles (light) — outbound: teal-mint claro, texto escuro para legibilidade. */
-  --color-bubble-out:      #BEE5DD;
-  --color-bubble-out-fg:   #000000;
-  --color-bubble-out-time: rgba(18, 59, 53, 0.62);
+  /* Bubbles (light) — outbound: teal sólido da marca, texto branco. Contraste
+     forte com o canvas cinza (#E4E7ED) e separação total do inbound branco. */
+  --color-bubble-out:      #0F766E;
+  --color-bubble-out-fg:   #FFFFFF;
+  --color-bubble-out-time: rgba(255, 255, 255, 0.70);
   --color-bubble-in:       #FFFFFF;
   --color-bubble-in-fg:    #111827;
 
@@ -770,10 +771,11 @@ code, pre, kbd, samp {
 .bubble-in-elevate {
   box-shadow: var(--bubble-shadow-soft);
 }
-/* Outbound bubble (light only, teste): gradiente radial no lugar da cor
-   sólida. Escuro segue com --color-bubble-out (bg-bubble-out) normal. */
+/* Outbound bubble (light): cor sólida teal da marca (texto branco). Removido o
+   gradiente menta pálido — ficava lavado e sem contraste sobre o canvas cinza.
+   Escuro segue com --color-bubble-out (bg-bubble-out) normal. */
 [data-theme="light"] .bubble-out-surface {
-  background: radial-gradient(circle at top left, #D2FFF5 0%, #A2E7D8 100%);
+  background: var(--color-bubble-out);
 }
 [data-theme="light"] .conv-item { background-color: #FFFFFF; }
 /* Hover: only the border reacts — no fill change (intense teal). */

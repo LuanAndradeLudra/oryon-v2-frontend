@@ -2,7 +2,7 @@ import { useState, useRef, useMemo, useEffect, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
   SlidersHorizontal, CalendarDays, Calendar as CalendarIcon, CalendarRange, CalendarSearch,
-  Users, Bot, UserCheck, UserX, Mail, Hourglass, Tag as TagIcon,
+  Users, Bot, UserCheck, UserX, Mail, Hourglass, Tag as TagIcon, AlertTriangle,
   ChevronRight, ChevronLeft, Check, X, Search,
 } from 'lucide-react'
 import { DayPicker, type DateRange, useDayPicker, type MonthCaptionProps } from 'react-day-picker'
@@ -59,10 +59,11 @@ const HANDLING_ITEMS: Array<{ value: 'all' | 'ai' | 'me'; label: string; icon: t
   { value: 'me',  label: 'Minhas', icon: UserCheck },
 ]
 
-const QUICK_TOGGLES: Array<{ key: 'unreadOnly' | 'awaitingReply' | 'untagged'; label: string; icon: typeof Mail }> = [
-  { key: 'unreadOnly',    label: 'Apenas não lidas',    icon: Mail },
-  { key: 'awaitingReply', label: 'Aguardando resposta', icon: Hourglass },
-  { key: 'untagged',      label: 'Sem etiqueta',        icon: TagIcon },
+const QUICK_TOGGLES: Array<{ key: 'unreadOnly' | 'awaitingReply' | 'untagged' | 'needsReview'; label: string; icon: typeof Mail }> = [
+  { key: 'unreadOnly',    label: 'Apenas não lidas',        icon: Mail },
+  { key: 'awaitingReply', label: 'Aguardando resposta',     icon: Hourglass },
+  { key: 'untagged',      label: 'Sem etiqueta',            icon: TagIcon },
+  { key: 'needsReview',   label: 'Precisam de verificação', icon: AlertTriangle },
 ]
 
 function GroupLabel({ children }: { children: React.ReactNode }) {
@@ -124,7 +125,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
   const anyActive =
     activePeriod !== 'today' ||
     handlingValue !== 'all' ||
-    !!filters.unreadOnly || !!filters.awaitingReply || !!filters.untagged
+    !!filters.unreadOnly || !!filters.awaitingReply || !!filters.untagged || !!filters.needsReview
 
   const [customRange, setCustomRange] = useState<DateRange | undefined>(() => {
     if (activePeriod === 'custom' && filters.startDate && filters.endDate) {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { MessageSquarePlus } from 'lucide-react'
@@ -62,6 +62,41 @@ export function ConversationsPage() {
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
   } = useConversations(filters)
+
+  // Sticky active conversation — keep the OPEN conversation in the list even
+  // after its status stops matching the active tab (e.g. moved to "Pendente"
+  // while viewing "Abertas"), until the operator opens another one. Prevents
+  // the list and the open chat from silently disagreeing (orphaned selection).
+  // The server list is already status-filtered, so the only rows that fall out
+  // of the active tab are ones changed locally — we drop those and re-add just
+  // the active one, flagged off-filter (dimmed + status pill).
+  const { visibleConversations, offFilterId } = useMemo(() => {
+    const statusFilter = filters.status
+    const matches = (c: Conversation) =>
+      !statusFilter || statusFilter === 'all' || c.status === statusFilter
+    const list = conversations.filter(matches)
+    let offFilterId: string | null = null
+    const active = activeConversation
+    // Sticky: if the OPEN conversation isn't in the filtered list because its
+    // status no longer matches the active tab, keep it visible (flagged
+    // off-filter). Use the freshest copy from the list if still loaded, else
+    // the activeConversation state itself — so it persists even if the list
+    // was refetched without it.
+    if (active && !list.some((c) => c.id === active.id)) {
+      const row = conversations.find((c) => c.id === active.id) ?? active
+      if (!matches(row)) {
+        offFilterId = active.id
+        const origIdx = conversations.findIndex((c) => c.id === active.id)
+        if (origIdx >= 0) {
+          const insertAt = conversations.slice(0, origIdx).filter(matches).length
+          list.splice(insertAt, 0, row)
+        } else {
+          list.unshift(row)
+        }
+      }
+    }
+    return { visibleConversations: list, offFilterId }
+  }, [conversations, filters.status, activeConversation])
 
   // ── Socket.IO real-time ────────────────────────────────────────────────────
   useSocket({
@@ -258,8 +293,10 @@ export function ConversationsPage() {
   // J/K navegam na lista, E resolve e pula p/ a próxima, R atribui a mim.
   // Só em desktop e nunca enquanto o foco está num campo de texto — a regra
   // é: digitar mensagem SEMPRE vence atalho.
-  const shortcutsRef = useRef({ conversations, activeConversation })
-  shortcutsRef.current = { conversations, activeConversation }
+  // J/K navigate the VISIBLE list (incl. the sticky off-filter active one) so
+  // keyboard nav matches exactly what's on screen.
+  const shortcutsRef = useRef({ conversations: visibleConversations, activeConversation })
+  shortcutsRef.current = { conversations: visibleConversations, activeConversation }
 
   useEffect(() => {
     if (isMobile) return
@@ -443,7 +480,7 @@ export function ConversationsPage() {
           other (a real bug we hit when adding the verification badge). */}
       {showList && (() => {
         const listProps = {
-          conversations,
+          conversations: visibleConversations,
           loading,
           loadingMore,
           hasMore,
@@ -451,6 +488,7 @@ export function ConversationsPage() {
           statusCounts,
           needsReviewCount,
           activeId: activeConversation?.id ?? null,
+          offFilterId,
           filters,
           allTags,
           allContacts,

@@ -7,11 +7,23 @@ import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { Banner } from '@/components/ui/Banner'
+import { Modal } from '@/components/ui/Modal'
+import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
 import { cannedResponsesApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
+
+// Rótulos + acento dos chips de metadados no modal de revisão de template.
+const TEMPLATE_CATEGORY_META: Record<WhatsAppTemplate['category'], { label: string; dot: string }> = {
+  MARKETING:      { label: 'Marketing',    dot: 'bg-brand-400' },
+  UTILITY:        { label: 'Utilidade',    dot: 'bg-[#3B82F6]' },
+  AUTHENTICATION: { label: 'Autenticação', dot: 'bg-warning' },
+}
+const TEMPLATE_HEADER_LABEL: Record<NonNullable<WhatsAppTemplate['headerType']>, string> = {
+  TEXT: 'Texto', IMAGE: 'Imagem', VIDEO: 'Vídeo', DOCUMENT: 'Documento',
+}
 
 /** Um anexo "em espera" no input: fica no preview até o operador clicar em
  *  Enviar (UX estilo Claude/ChatGPT). `id` serve de key de render/remoção;
@@ -377,6 +389,10 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
   const [loadingTemplates, setLoadingTemplates] = useState(false)
+  // Selecting a template opens a review modal (below) instead of sending
+  // immediately, so the operator can inspect the full structure first.
+  const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null)
+  const [sendingTemplate, setSendingTemplate] = useState(false)
 
   const toggleTemplatePicker = () => {
     if (!templatePickerOpen && templates.length === 0 && !loadingTemplates) {
@@ -389,14 +405,26 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
     setTemplatePickerOpen((v) => !v)
   }
 
-  const handleSelectTemplate = async (tpl: WhatsAppTemplate) => {
+  // Step 1 — pick a template: open the review modal (no send yet).
+  const handleSelectTemplate = (tpl: WhatsAppTemplate) => {
     setTemplatePickerOpen(false)
+    setPreviewTemplate(tpl)
+  }
+
+  // Step 2 — confirm in the modal: actually send it (unchanged send path).
+  const handleConfirmSendTemplate = async () => {
+    if (!previewTemplate || sendingTemplate) return
+    setSendingTemplate(true)
     try {
-      await onSend({ body: tpl.body, replyToWamid: replyTo?.wamid ?? undefined })
+      await onSend({ body: previewTemplate.body, replyToWamid: replyTo?.wamid ?? undefined })
       onCancelReply?.()
       setTemplateSent(true)
+      setPreviewTemplate(null)
     } catch {
-      // Page-level toast already surfaced the error.
+      // Page-level toast already surfaced the error; keep the modal open so the
+      // operator can retry.
+    } finally {
+      setSendingTemplate(false)
     }
   }
 
@@ -553,6 +581,96 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
             </div>
           )}
         </div>
+
+        {/* Template review modal — opened by handleSelectTemplate. Renders the
+            full structure (header / body / footer / buttons) so the operator can
+            validate before sending. Confirm → handleConfirmSendTemplate. */}
+        <Modal
+          open={!!previewTemplate}
+          onClose={() => { if (!sendingTemplate) setPreviewTemplate(null) }}
+          title="Revisar template"
+          className="max-w-2xl"
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPreviewTemplate(null)}
+                disabled={sendingTemplate}
+                className="px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:bg-surface-800 disabled:opacity-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSendTemplate}
+                disabled={sendingTemplate}
+                style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
+                className="color-chip inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold border hover:brightness-110 disabled:opacity-60 transition"
+              >
+                {sendingTemplate ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {sendingTemplate ? 'Enviando…' : 'Enviar template'}
+              </button>
+            </div>
+          }
+        >
+          {previewTemplate && (() => {
+            const cat = TEMPLATE_CATEGORY_META[previewTemplate.category]
+            const vars = previewTemplate.bodyVariables ?? []
+            const btnCount = previewTemplate.buttons?.length ?? 0
+            const chip = 'inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700'
+            return (
+              <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
+                {/* Metadata + variables */}
+                <div className="order-2 md:order-1 min-w-0 space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-display text-lg font-semibold text-surface-50 leading-tight break-words">{previewTemplate.name}</h3>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={chip}>
+                        <span className={cn('w-1.5 h-1.5 rounded-full', cat?.dot ?? 'bg-surface-500')} />
+                        {cat?.label ?? previewTemplate.category}
+                      </span>
+                      <span className={cn(chip, 'uppercase tracking-wide')}>{previewTemplate.language}</span>
+                      {previewTemplate.headerType && (
+                        <span className={chip}>Cabeçalho: {TEMPLATE_HEADER_LABEL[previewTemplate.headerType]}</span>
+                      )}
+                      {btnCount > 0 && (
+                        <span className={chip}>{btnCount} {btnCount === 1 ? 'botão' : 'botões'}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {vars.length > 0 ? (
+                    <div className="rounded-xl border border-warning/25 bg-warning/[0.08] p-3">
+                      <div className="flex items-center gap-1.5 text-warning text-[11px] font-semibold mb-2">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        {vars.length} {vars.length === 1 ? 'variável não preenchida' : 'variáveis não preenchidas'}
+                      </div>
+                      <ul className="space-y-1">
+                        {vars.map((name, i) => (
+                          <li key={i} className="flex items-center gap-2 text-[11px] min-w-0">
+                            <code className="text-warning bg-warning/15 px-1.5 py-0.5 rounded font-mono shrink-0">{`{{${i + 1}}}`}</code>
+                            <span className="text-surface-300 truncate">{name?.trim() || 'sem descrição'}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-[10px] text-surface-500 mt-2 leading-snug">Serão enviadas como aparecem no preview — revise antes de confirmar.</p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-surface-500 leading-snug">Template sem variáveis — pronto para envio.</p>
+                  )}
+                </div>
+
+                {/* WhatsApp preview */}
+                <div className="order-1 md:order-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Pré-visualização</p>
+                  <div className="rounded-2xl bg-surface-950 border border-surface-800 p-4 flex items-center justify-center">
+                    <TemplatePreview template={previewTemplate} />
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </Modal>
       </div>
     )
   }
