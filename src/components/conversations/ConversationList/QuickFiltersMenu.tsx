@@ -1,57 +1,16 @@
 import { useState, useRef, useMemo, useEffect, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  SlidersHorizontal, CalendarDays, Calendar as CalendarIcon, CalendarRange, CalendarSearch,
+  SlidersHorizontal,
   Users, Bot, UserCheck, UserX, Mail, Hourglass, Tag as TagIcon, AlertTriangle,
-  ChevronRight, ChevronLeft, Check, X, Search,
+  ChevronRight, Check, X, Search,
 } from 'lucide-react'
-import { DayPicker, type DateRange, useDayPicker, type MonthCaptionProps } from 'react-day-picker'
-import { ptBR } from 'date-fns/locale'
-import { format } from 'date-fns'
 import { Avatar } from '@/components/ui/Avatar'
 import { cn } from '@/lib/utils'
-import { resolveRange, type DateRangePreset } from '@/lib/dateRange'
-import { resolveHandlingValue, resolveActivePeriod } from '@/lib/conversationFilterState'
+import { resolveHandlingValue } from '@/lib/conversationFilterState'
 import type { ConversationFilters, User } from '@/types'
-import 'react-day-picker/style.css'
 
 const MENU_W = 250
-
-// Month caption with inline prev/next chevrons (compact single-row header).
-function MonthCaptionWithInlineNav({ calendarMonth }: MonthCaptionProps) {
-  const { previousMonth, nextMonth, goToMonth } = useDayPicker()
-  return (
-    <div className="flex items-center gap-1.5 px-1 pb-2">
-      <span className="text-sm font-semibold text-surface-100 capitalize">
-        {format(calendarMonth.date, 'MMMM yyyy', { locale: ptBR })}
-      </span>
-      <button
-        type="button"
-        onClick={() => previousMonth && goToMonth(previousMonth)}
-        disabled={!previousMonth}
-        className="p-0.5 rounded hover:bg-surface-700 disabled:opacity-30 transition-colors"
-        aria-label="Mês anterior"
-      >
-        <ChevronLeft className="w-3.5 h-3.5 text-surface-300" />
-      </button>
-      <button
-        type="button"
-        onClick={() => nextMonth && goToMonth(nextMonth)}
-        disabled={!nextMonth}
-        className="p-0.5 rounded hover:bg-surface-700 disabled:opacity-30 transition-colors"
-        aria-label="Próximo mês"
-      >
-        <ChevronRight className="w-3.5 h-3.5 text-surface-300" />
-      </button>
-    </div>
-  )
-}
-
-const PERIOD_ITEMS: Array<{ value: Exclude<DateRangePreset, 'custom'>; label: string; icon: typeof CalendarDays }> = [
-  { value: 'today',     label: 'Hoje',           icon: CalendarDays },
-  { value: 'yesterday', label: 'Ontem',          icon: CalendarIcon },
-  { value: 'last7',     label: 'Últimos 7 dias', icon: CalendarRange },
-]
 
 const HANDLING_ITEMS: Array<{ value: 'all' | 'ai' | 'me'; label: string; icon: typeof Bot }> = [
   { value: 'all', label: 'Todas',  icon: Users },
@@ -109,7 +68,7 @@ interface QuickFiltersMenuProps {
 
 export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: QuickFiltersMenuProps) {
   const [open, setOpen] = useState(false)
-  const [flyout, setFlyout] = useState<null | 'custom' | 'team'>(null)
+  const [flyout, setFlyout] = useState<null | 'team'>(null)
   const [teamSearch, setTeamSearch] = useState('')
 
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -121,18 +80,9 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
   const [flyoutPos, setFlyoutPos] = useState<{ top: number; left: number } | null>(null)
 
   const handlingValue = resolveHandlingValue(filters)
-  const activePeriod = resolveActivePeriod(filters)
   const anyActive =
-    activePeriod !== 'today' ||
     handlingValue !== 'all' ||
     !!filters.unreadOnly || !!filters.awaitingReply || !!filters.untagged || !!filters.needsReview
-
-  const [customRange, setCustomRange] = useState<DateRange | undefined>(() => {
-    if (activePeriod === 'custom' && filters.startDate && filters.endDate) {
-      return { from: new Date(filters.startDate), to: new Date(new Date(filters.endDate).getTime() - 1) }
-    }
-    return undefined
-  })
 
   const set = (patch: Partial<ConversationFilters>) => onFiltersChange({ ...filters, ...patch })
 
@@ -189,13 +139,6 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
   }, [open, flyout])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const applyPeriod = (preset: Exclude<DateRangePreset, 'custom'>) => {
-    const range = resolveRange(preset)
-    setCustomRange(undefined)
-    set({ startDate: range.startDate, endDate: range.endDate })
-    setFlyout(null)
-  }
-
   const setHandling = (v: 'all' | 'ai' | 'me') => {
     if (v === 'all')     set({ assignedTo: 'all', aiHandling: 'all' })
     else if (v === 'ai') set({ assignedTo: 'all', aiHandling: 'active' })
@@ -209,14 +152,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
     setFlyout(null); setTeamSearch('')
   }
 
-  const handleApplyCustom = () => {
-    if (!customRange?.from || !customRange?.to) return
-    const resolved = resolveRange('custom', customRange.from, customRange.to)
-    set({ startDate: resolved.startDate, endDate: resolved.endDate })
-    setFlyout(null)
-  }
-
-  const openFlyout = (kind: 'custom' | 'team', e: React.MouseEvent<HTMLButtonElement>) => {
+  const openFlyout = (kind: 'team', e: React.MouseEvent<HTMLButtonElement>) => {
     flyoutItemRef.current = e.currentTarget
     setFlyout((prev) => (prev === kind ? null : kind))
   }
@@ -267,27 +203,6 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
           style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, width: MENU_W }}
           className="z-[9999] overlay-surface border rounded-xl py-1.5"
         >
-          <GroupLabel>Período</GroupLabel>
-          {PERIOD_ITEMS.map(({ value, label, icon }) => (
-            <MenuRow key={value} icon={icon} active={activePeriod === value} onClick={() => applyPeriod(value)}>
-              {label}
-            </MenuRow>
-          ))}
-          <MenuRow
-            icon={CalendarSearch}
-            active={activePeriod === 'custom'}
-            chevron
-            onClick={(e) => openFlyout('custom', e)}
-          >
-            Personalizado
-            {activePeriod === 'custom' && filters.startDate && filters.endDate && (
-              <span className="ml-1 text-[10px] opacity-70">
-                {format(new Date(filters.startDate), 'dd/MM', { locale: ptBR })}–
-                {format(new Date(new Date(filters.endDate).getTime() - 1), 'dd/MM', { locale: ptBR })}
-              </span>
-            )}
-          </MenuRow>
-
           <GroupLabel>Atendimento</GroupLabel>
           {HANDLING_ITEMS.map(({ value, label, icon }) => (
             <MenuRow key={value} icon={icon} active={handlingValue === value} onClick={() => setHandling(value)}>
@@ -317,75 +232,6 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
               </button>
             )
           })}
-        </div>,
-        document.body,
-      )}
-
-      {/* ── Flyout: Período personalizado (calendar) ─────────────────────────── */}
-      {open && flyout === 'custom' && flyoutPos && createPortal(
-        <div
-          ref={flyoutRef}
-          style={{
-            position: 'fixed', top: flyoutPos.top, left: flyoutPos.left,
-            ['--rdp-cell-size' as string]: '26px',
-            ['--rdp-day-width' as string]: '26px',
-            ['--rdp-day-height' as string]: '26px',
-          } as React.CSSProperties}
-          className="z-[9999] w-[280px] overlay-surface border rounded-xl overflow-hidden p-2"
-        >
-          <DayPicker
-            mode="range"
-            selected={customRange}
-            onSelect={setCustomRange}
-            locale={ptBR}
-            numberOfMonths={1}
-            showOutsideDays
-            hideNavigation
-            components={{ MonthCaption: MonthCaptionWithInlineNav }}
-            className="text-surface-200"
-            classNames={{
-              month_grid: 'w-full table-fixed',
-              weekday: 'text-[10px] text-surface-500 font-normal pb-0.5',
-              day: 'text-center',
-              day_button: 'text-[13px] font-medium w-full h-7 mx-auto',
-              today: 'text-surface-50 font-bold underline underline-offset-2',
-              selected: 'bg-surface-600 text-surface-50 rounded-md',
-              range_start: 'bg-surface-600 text-surface-50 rounded-l-md',
-              range_end: 'bg-surface-600 text-surface-50 rounded-r-md',
-              range_middle: 'bg-surface-700/50 text-surface-100',
-            }}
-          />
-          <div className="flex justify-between items-center gap-1.5 mt-2 pt-2 border-t border-surface-700">
-            <span className="text-[11px] text-surface-400 px-0.5 whitespace-nowrap">
-              {customRange?.from && customRange?.to
-                ? `${format(customRange.from, 'dd/MM', { locale: ptBR })} – ${format(customRange.to, 'dd/MM', { locale: ptBR })}`
-                : customRange?.from
-                  ? `${format(customRange.from, 'dd/MM', { locale: ptBR })} – ?`
-                  : 'Selecione 2 datas'}
-            </span>
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={() => { setCustomRange(undefined); setFlyout(null) }}
-                className="text-xs text-surface-300 hover:text-surface-100 px-2 py-0.5 rounded-md hover:bg-surface-700 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleApplyCustom}
-                disabled={!customRange?.from || !customRange?.to}
-                className={cn(
-                  'text-xs px-2.5 py-0.5 rounded-md font-semibold transition-all',
-                  customRange?.from && customRange?.to
-                    ? 'bg-surface-700 text-surface-50 hover:bg-surface-600'
-                    : 'bg-surface-700 text-surface-500 cursor-not-allowed',
-                )}
-              >
-                Aplicar
-              </button>
-            </div>
-          </div>
         </div>,
         document.body,
       )}

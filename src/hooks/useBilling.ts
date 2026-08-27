@@ -22,36 +22,6 @@ function emit() {
   for (const fn of subscribers) fn()
 }
 
-// O ledger real (SCRUM-170/172) ainda não foi integrado neste ambiente — o
-// backend não expõe /settings/billing aqui. Em produção isso deve continuar
-// mostrando o banner de erro (nunca inventar número de plano/crédito pro
-// cliente); em DEV, cai pra este snapshot de exemplo só pra permitir validar
-// o estilo da tela antes do backend existir de fato.
-const DEV_MOCK_BILLING: BillingSnapshot = {
-  plan: {
-    tier: 'professional',
-    displayName: 'Professional',
-    priceMonthlyCents: 49900,
-    currency: 'BRL',
-    monthlyCredits: 3000,
-    tokensPerCredit: 7000,
-    features: {},
-  },
-  creditsTotal: 3000,
-  creditsUsed: 1850,
-  remaining: 1150,
-  planResetsAt: new Date(Date.now() + 12 * 86400000).toISOString(),
-  status: 'active',
-}
-
-const DEV_MOCK_TRANSACTIONS: CreditTransaction[] = [
-  { id: 'mock-1', type: 'debit', credits: '-1', balanceAfter: '1150', source: 'copilot', feature: 'Resposta gerada', conversationId: null, contentTokens: 6820, costUsd: '0.04', model: 'claude-sonnet-5', requestId: null, createdAt: new Date(Date.now() - 1 * 3600000).toISOString() },
-  { id: 'mock-2', type: 'debit', credits: '-1', balanceAfter: '1151', source: 'automation', feature: 'Follow-up automático', conversationId: null, contentTokens: 5140, costUsd: '0.03', model: 'claude-sonnet-5', requestId: null, createdAt: new Date(Date.now() - 5 * 3600000).toISOString() },
-  { id: 'mock-3', type: 'grant', credits: '3000', balanceAfter: '3000', source: 'plan_reset', feature: null, conversationId: null, contentTokens: null, costUsd: null, model: null, requestId: null, createdAt: new Date(Date.now() - 18 * 86400000).toISOString() },
-  { id: 'mock-4', type: 'refund', credits: '2', balanceAfter: '2998', source: 'copilot', feature: 'Falha no envio — estornado', conversationId: null, contentTokens: null, costUsd: null, model: null, requestId: null, createdAt: new Date(Date.now() - 17 * 86400000).toISOString() },
-  { id: 'mock-5', type: 'adjustment', credits: '-5', balanceAfter: '2993', source: 'support', feature: 'Ajuste manual (suporte)', conversationId: null, contentTokens: null, costUsd: null, model: null, requestId: null, createdAt: new Date(Date.now() - 10 * 86400000).toISOString() },
-]
-
 async function load(withTransactions: boolean) {
   state = { ...state, loading: true, error: null }
   emit()
@@ -62,14 +32,13 @@ async function load(withTransactions: boolean) {
     ])
     state = { billing, transactions, loading: false, error: null }
   } catch (err) {
-    if (import.meta.env.DEV) {
-      state = { billing: DEV_MOCK_BILLING, transactions: withTransactions ? DEV_MOCK_TRANSACTIONS : [], loading: false, error: null }
-    } else {
-      state = {
-        ...state,
-        loading: false,
-        error: err instanceof Error ? err.message : 'Falha ao carregar billing',
-      }
+    // Fail-closed (SCRUM-172): se a API de billing falha, NÃO liberamos crédito
+    // — o gate bloqueia até haver um snapshot válido. (Removido o fallback de
+    // DEV_MOCK que o redesign usava, pois abria o gate e quebrava o fail-closed.)
+    state = {
+      ...state,
+      loading: false,
+      error: err instanceof Error ? err.message : 'Falha ao carregar billing',
     }
   }
   emit()
