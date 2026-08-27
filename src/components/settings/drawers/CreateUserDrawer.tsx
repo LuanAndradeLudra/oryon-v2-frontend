@@ -6,19 +6,11 @@ import { appLogger } from '@/services/appLogger'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { cn } from '@/lib/utils'
-import type { User, UserRole, UserModule, UserPermissions, Department } from '@/types'
+import type { User, UserRole, Department } from '@/types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
-
-const ALL_MODULES: UserModule[] = ['dashboard', 'conversations', 'crm', 'chat-interno']
-
-const MODULE_LABELS: Record<UserModule, string> = {
-  dashboard:       'Dashboard',
-  conversations:   'Conversas',
-  crm:             'CRM',
-  'chat-interno':  'Chat Interno',
-}
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:    'Equipe Oryon',
@@ -36,39 +28,15 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   agent:      'Atende conversas atribuídas',
 }
 
-const EMPTY_PERMISSIONS: UserPermissions = {
-  tags:          { criar: false, atualizar: false, excluir: false },
-  conversations: { arquivar: false, bloquearContato: false },
-  templates:     { criar: false, atualizar: false, excluir: false },
-  campanhas:     { criar: false, iniciar: false, excluir: false },
-}
-
-const FULL_PERMISSIONS: UserPermissions = {
-  tags:          { criar: true, atualizar: true, excluir: true },
-  conversations: { arquivar: true, bloquearContato: true },
-  templates:     { criar: true, atualizar: true, excluir: true },
-  campanhas:     { criar: true, iniciar: true, excluir: true },
-}
-
-const PERM_RESOURCES: { key: keyof UserPermissions; label: string; actions: { key: string; label: string }[] }[] = [
-  { key: 'tags',          label: 'Tags',      actions: [{ key: 'criar', label: 'Criar' }, { key: 'atualizar', label: 'Atualizar' }, { key: 'excluir', label: 'Excluir' }] },
-  { key: 'conversations', label: 'Conversas', actions: [{ key: 'arquivar', label: 'Arquivar' }, { key: 'bloquearContato', label: 'Bloquear Contato' }] },
-  { key: 'templates',     label: 'Templates', actions: [{ key: 'criar', label: 'Criar' }, { key: 'atualizar', label: 'Atualizar' }, { key: 'excluir', label: 'Excluir' }] },
-  { key: 'campanhas',     label: 'Disparos em Massa', actions: [{ key: 'criar', label: 'Criar' }, { key: 'iniciar', label: 'Iniciar' }, { key: 'excluir', label: 'Excluir' }] },
-]
-
 interface Step1Data {
   firstName: string
   lastName: string
   email: string
-  cargo: string
-  departmentIds: string[]
+  departmentId: string
 }
 
 interface Step2Data {
   role: UserRole
-  modules: UserModule[]
-  permissions: UserPermissions
 }
 
 interface CreateUserDrawerProps {
@@ -80,7 +48,7 @@ interface CreateUserDrawerProps {
 // ── Stepper ───────────────────────────────────────────────────────────────────
 
 function Stepper({ current }: { current: number }) {
-  const steps = ['Dados', 'Permissões', 'Revisão']
+  const steps = ['Dados', 'Papel', 'Revisão']
   return (
     <div className="flex items-center gap-2">
       {steps.map((label, i) => {
@@ -114,15 +82,11 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   const [step, setStep] = useState(1)
   const [departments, setDepartments] = useState<Department[]>([])
 
-  const [s1, setS1] = useState<Step1Data>({ firstName: '', lastName: '', email: '', cargo: '', departmentIds: [] })
+  const [s1, setS1] = useState<Step1Data>({ firstName: '', lastName: '', email: '', departmentId: '' })
   const [errors, setErrors] = useState<Partial<Record<keyof Step1Data, string>>>({})
   const [emailChecking, setEmailChecking] = useState(false)
 
-  const [s2, setS2] = useState<Step2Data>({
-    role: 'agent',
-    modules: ['dashboard', 'conversations'],
-    permissions: EMPTY_PERMISSIONS,
-  })
+  const [s2, setS2] = useState<Step2Data>({ role: 'agent' })
 
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -145,21 +109,14 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   useEffect(() => {
     if (open) {
       setStep(1)
-      setS1({ firstName: '', lastName: '', email: '', cargo: '', departmentIds: [] })
+      setS1({ firstName: '', lastName: '', email: '', departmentId: '' })
       setErrors({})
       setEmailChecking(false)
-      setS2({ role: 'agent', modules: ['dashboard', 'conversations'], permissions: EMPTY_PERMISSIONS })
+      setS2({ role: 'agent' })
       setSubmitting(false)
       setSubmitError(null)
     }
   }, [open])
-
-  // Auto-select all when Admin role chosen
-  useEffect(() => {
-    if (s2.role === 'admin') {
-      setS2((p) => ({ ...p, modules: [...ALL_MODULES], permissions: FULL_PERMISSIONS }))
-    }
-  }, [s2.role])
 
   const checkEmailDuplicate = async (email: string) => {
     const normalizedEmail = email.trim().toLowerCase()
@@ -189,7 +146,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     const e: typeof errors = {}
     if (!s1.firstName.trim() || s1.firstName.trim().length < 2) e.firstName = 'Mínimo 2 caracteres'
     if (!s1.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email)) e.email = 'E-mail inválido'
-    if (!s1.cargo.trim() || s1.cargo.trim().length < 2) e.cargo = 'Mínimo 2 caracteres'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -197,7 +153,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   const step1Invalid =
     s1.firstName.trim().length < 2 ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s1.email.trim()) ||
-    s1.cargo.trim().length < 2 ||
     !!errors.email ||
     emailChecking
 
@@ -207,30 +162,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     setStep((s) => s + 1)
   }
 
-  const toggleModule = (mod: UserModule) => {
-    if (s2.role === 'admin') return
-    setS2((p) => ({
-      ...p,
-      modules: p.modules.includes(mod) ? p.modules.filter((m) => m !== mod) : [...p.modules, mod],
-    }))
-  }
-
-  const togglePerm = (resource: keyof UserPermissions, action: string) => {
-    if (s2.role === 'admin') return
-    setS2((p) => ({
-      ...p,
-      permissions: {
-        ...p.permissions,
-        [resource]: {
-          ...(p.permissions[resource] as Record<string, boolean>),
-          [action]: !(p.permissions[resource] as Record<string, boolean>)[action],
-        },
-      },
-    }))
-  }
-
   const handleSubmit = async () => {
-    const selectedDepts = departments.filter((d) => s1.departmentIds.includes(d.id))
     setSubmitting(true)
     setSubmitError(null)
     try {
@@ -240,19 +172,19 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
         lastName:     s1.lastName.trim(),
         email:        s1.email.trim(),
         role:         s2.role,
-        departmentId: s1.departmentIds[0] ?? undefined,
+        departmentId: s1.departmentId || undefined,
       })
       appLogger.logWizardEvent({
         wizard_type: 'user_create',
         step_number: 3, step_name: 'Revisão & Criação',
         action: 'completed',
-        data: { email: s1.email, role: s2.role, modules: s2.modules },
+        data: { email: s1.email, role: s2.role },
       })
       appLogger.logUserManagement({
         target_user_id: r.data.id,
         target_user_name: `${r.data.firstName} ${r.data.lastName}`.trim(),
         action: 'user_created',
-        details: { email: r.data.email, role: r.data.role, modules: s2.modules },
+        details: { email: r.data.email, role: r.data.role },
       })
       onCreated(r.data)
     } catch (err: unknown) {
@@ -277,8 +209,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   }
 
   // Review helpers
-  const selectedDeptNames = departments.filter((d) => s1.departmentIds.includes(d.id)).map((d) => d.name)
-  const deptName = selectedDeptNames.length ? selectedDeptNames.join(', ') : '—'
+  const deptName = departments.find((d) => d.id === s1.departmentId)?.name ?? '—'
 
   return (
     <AnimatePresence>
@@ -390,53 +321,16 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                       </div>
                     </FormField>
 
-                    <FormField label="Cargo" required error={errors.cargo}>
-                      <Input
-                        value={s1.cargo}
-                        onChange={(e) => setS1((p) => ({ ...p, cargo: e.target.value }))}
-                        onBlur={() => {
-                          if (!s1.cargo.trim() || s1.cargo.trim().length < 2) {
-                            setErrors((e) => ({ ...e, cargo: 'Mínimo 2 caracteres' }))
-                          } else {
-                            setErrors((e) => { const n = { ...e }; delete n.cargo; return n })
-                          }
-                        }}
-                        placeholder="Agente de Suporte"
-                        error={errors.cargo}
+                    <FormField label="Setor">
+                      <RadioOptionList
+                        name="departmentId"
+                        options={departments.map((d) => ({ id: d.id, label: d.name }))}
+                        value={s1.departmentId}
+                        onChange={(id) => setS1((p) => ({ ...p, departmentId: id }))}
+                        noneLabel="Nenhum setor"
+                        emptyMessage="Nenhum setor cadastrado."
+                        className="max-h-36"
                       />
-                    </FormField>
-
-                    <FormField label="Setores">
-                      <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
-                        {departments.map((d) => {
-                          const checked = s1.departmentIds.includes(d.id)
-                          return (
-                            <label
-                              key={d.id}
-                              className={cn(
-                                'flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors select-none',
-                                checked ? 'border-brand-500/60 bg-brand-900/20' : 'border-surface-700 hover:border-surface-600',
-                              )}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => setS1((p) => ({
-                                  ...p,
-                                  departmentIds: checked
-                                    ? p.departmentIds.filter((x) => x !== d.id)
-                                    : [...p.departmentIds, d.id],
-                                }))}
-                                className="accent-brand-500"
-                              />
-                              <span className="text-sm text-surface-200">{d.name}</span>
-                            </label>
-                          )
-                        })}
-                        {departments.length === 0 && (
-                          <p className="text-xs text-surface-500 px-1">Nenhum setor cadastrado.</p>
-                        )}
-                      </div>
                     </FormField>
                   </motion.div>
                 )}
@@ -478,76 +372,6 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                         ))}
                       </div>
                     </div>
-
-                    {/* Modules */}
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500 mb-3">Módulos acessíveis</p>
-                      {s2.role === 'admin' && (
-                        <p className="text-xs text-brand-400 mb-2">Administradores têm acesso a todos os módulos.</p>
-                      )}
-                      <div className="grid grid-cols-2 gap-2">
-                        {ALL_MODULES.map((mod) => {
-                          const checked = s2.modules.includes(mod)
-                          return (
-                            <label
-                              key={mod}
-                              className={cn(
-                                'flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-colors select-none',
-                                s2.role === 'admin' ? 'cursor-not-allowed opacity-60' : '',
-                                checked && s2.role !== 'admin' ? 'border-brand-500/60 bg-brand-900/10' : 'border-surface-800',
-                              )}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => toggleModule(mod)}
-                                disabled={s2.role === 'admin'}
-                                className="accent-brand-500"
-                              />
-                              <span className="text-sm text-surface-200">{MODULE_LABELS[mod]}</span>
-                            </label>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Resource permissions */}
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500 mb-3">Permissões por recurso</p>
-                      {s2.role === 'admin' && (
-                        <p className="text-xs text-brand-400 mb-2">Administradores têm todas as permissões.</p>
-                      )}
-                      <div className="flex flex-col gap-2">
-                        {PERM_RESOURCES.map(({ key: resource, label, actions }) => (
-                          <div key={resource} className="bg-surface-900 border border-surface-800 rounded-xl p-3">
-                            <p className="text-xs font-semibold text-surface-400 mb-2">{label}</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {actions.map(({ key: action, label: actionLabel }) => {
-                                const checked = (s2.permissions[resource] as Record<string, boolean>)[action]
-                                return (
-                                  <button
-                                    key={action}
-                                    type="button"
-                                    onClick={() => togglePerm(resource, action)}
-                                    disabled={s2.role === 'admin'}
-                                    className={cn(
-                                      'flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-colors select-none',
-                                      s2.role === 'admin' ? 'cursor-not-allowed' : 'cursor-pointer',
-                                      checked
-                                        ? 'border-brand-600/60 bg-brand-900/20 text-brand-300'
-                                        : 'border-surface-700 text-surface-400 hover:border-surface-600',
-                                    )}
-                                  >
-                                    {checked && <Check className="w-2.5 h-2.5" />}
-                                    {actionLabel}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </motion.div>
                 )}
 
@@ -576,59 +400,18 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                           <p className="text-sm text-surface-100 mt-0.5 break-all">{s1.email}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide text-surface-500">Cargo</p>
-                          <p className="text-sm text-surface-100 mt-0.5">{s1.cargo}</p>
-                        </div>
-                        <div>
                           <p className="text-[10px] uppercase tracking-wide text-surface-500">Setor</p>
                           <p className="text-sm text-surface-100 mt-0.5">{deptName}</p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Permissions summary */}
+                    {/* Role summary */}
                     <div className="bg-surface-900 border border-surface-800 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-surface-500 mb-3">Acesso & Permissões</p>
-                      <div className="flex flex-col gap-3">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wide text-surface-500">Papel</p>
-                          <p className="text-sm text-surface-100 mt-0.5">{ROLE_LABELS[s2.role]}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wide text-surface-500 mb-1.5">Módulos</p>
-                          <div className="flex flex-wrap gap-1">
-                            {s2.modules.length === 0
-                              ? <span className="text-xs text-surface-500">Nenhum módulo selecionado</span>
-                              : s2.modules.map((m) => (
-                                <span key={m} className="text-[10px] font-medium text-brand-300 bg-brand-900/30 border border-brand-800/50 px-2 py-0.5 rounded-full">
-                                  {MODULE_LABELS[m]}
-                                </span>
-                              ))}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wide text-surface-500 mb-1.5">Permissões</p>
-                          <div className="flex flex-wrap gap-1">
-                            {(() => {
-                              const activePerms = PERM_RESOURCES.flatMap(({ key: resource, label, actions }) =>
-                                actions
-                                  .filter(({ key: action }) => (s2.permissions[resource] as Record<string, boolean>)[action])
-                                  .map(({ key: action, label: actionLabel }) => ({ resource, action, label, actionLabel }))
-                              )
-                              if (activePerms.length === 0) {
-                                return <span className="text-xs text-surface-500">Nenhuma permissão adicional</span>
-                              }
-                              return activePerms.map(({ resource, action, label, actionLabel }) => (
-                                <span
-                                  key={`${resource}-${action}`}
-                                  className="text-[10px] font-medium text-surface-300 bg-surface-800 border border-surface-700 px-2 py-0.5 rounded-full"
-                                >
-                                  {label}: {actionLabel}
-                                </span>
-                              ))
-                            })()}
-                          </div>
-                        </div>
+                      <p className="text-xs font-semibold text-surface-500 mb-3">Acesso</p>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-surface-500">Papel</p>
+                        <p className="text-sm text-surface-100 mt-0.5">{ROLE_LABELS[s2.role]}</p>
                       </div>
                     </div>
                   </motion.div>

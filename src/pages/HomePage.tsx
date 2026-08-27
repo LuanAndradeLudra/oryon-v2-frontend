@@ -404,7 +404,7 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
         </div>
       ) : logs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 gap-2">
-          <p className="text-sm text-surface-500">Nenhuma atividade registrada ainda.</p>
+          <p className="text-sm text-surface-500">Em breve — o feed de atividade ainda está em desenvolvimento.</p>
         </div>
       ) : (
         <div className="flex flex-col">

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Wifi, WifiOff, Clock, Bot, X, Smartphone } from 'lucide-react'
-import axios from 'axios'
+import { Plus, Trash2, Wifi, WifiOff, Clock, Bot, X, Star, RefreshCw, Smartphone } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SectionHeader } from '../SectionHeader'
@@ -15,9 +14,9 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import { listAgents, type AgentConfig } from '@/services/agentsApi'
+import { api, whatsappNumbersApi, type WhatsappLineDependencies } from '@/services/api'
+import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { WhatsAppNumberDetailed } from '@/types'
-
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; chip: string }> = {
   connected:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    chip: 'var(--color-status-active)' },
@@ -46,18 +45,22 @@ const DEFAULT_QUALITY = { label: 'N/D', cls: 'bg-surface-600' }
 
 export function WhatsAppNumbers() {
   const { toast, toasts, dismiss } = useToast()
+  const { refresh: refreshWorkspace } = useWorkspaceNumber()
   const [numbers, setNumbers] = useState<WhatsAppNumberDetailed[]>([])
   const [agents, setAgents] = useState<AgentConfig[]>([])
   const [loading, setLoading] = useState(true)
   const [disconnectTarget, setDisconnectTarget] = useState<WhatsAppNumberDetailed | null>(null)
+  const [dependencies, setDependencies] = useState<WhatsappLineDependencies | null>(null)
   const [savingAgent, setSavingAgent] = useState<string | null>(null)
   const [fetchError, setFetchError] = useState(false)
+  const [promoting, setPromoting] = useState<string | null>(null)
+  const [resubscribing, setResubscribing] = useState<string | null>(null)
 
   const fetchNumbers = () => {
     setLoading(true)
     setFetchError(false)
     Promise.all([
-      axios.get<WhatsAppNumberDetailed[]>(`${API}/whatsapp/numbers`).then((r) => Array.isArray(r.data) ? r.data : []),
+      api.get<WhatsAppNumberDetailed[]>('/whatsapp/numbers').then((r) => Array.isArray(r.data) ? r.data : []),
       listAgents().catch(() => []),
     ]).then(([nums, ags]) => {
       setNumbers(nums)
@@ -65,19 +68,15 @@ export function WhatsAppNumbers() {
       setLoading(false)
     }).catch(() => {
       setFetchError(true)
+      setNumbers([])
+      setAgents([])
       setLoading(false)
     })
   }
 
   const startConnect = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-      const res = await fetch(`${apiUrl}/meta/oauth/start`, {
-        credentials: 'include',
-      })
-      const data = await res.json() as Record<string, unknown>
-
-      // Backend returns { redirectUrl: "https://facebook.com/dialog/oauth?..." }
+      const { data } = await api.get<Record<string, unknown>>('/meta/oauth/start')
       const oauthUrl = (data.redirectUrl ?? data.url ?? '') as string
       if (oauthUrl) {
         window.open(oauthUrl, '_blank', 'width=600,height=700')
@@ -92,7 +91,7 @@ export function WhatsAppNumbers() {
   const assignAgent = async (numberId: string, agentId: string | null) => {
     setSavingAgent(numberId)
     try {
-      const { data } = await axios.patch(`${API}/meta/numbers/${numberId}`, { agentId })
+      const { data } = await api.patch<{ agentId: string | null }>(`/meta/numbers/${numberId}`, { agentId })
       setNumbers((prev) => prev.map((n) => n.id === numberId ? { ...n, agentId: data.agentId } : n))
       toast(agentId ? 'Agente de IA atribuído ao número.' : 'Agente removido do número.', 'success')
     } catch {
@@ -101,15 +100,40 @@ export function WhatsAppNumbers() {
     setSavingAgent(null)
   }
 
+  const handlePromote = async (numberId: string) => {
+    if (promoting) return
+    setPromoting(numberId)
+    try {
+      await whatsappNumbersApi.setPrimary(numberId)
+      setNumbers((prev) => prev.map((n) => ({ ...n, isPrimary: n.id === numberId })))
+      await refreshWorkspace()
+      toast('Linha definida como principal.', 'success')
+    } catch {
+      toast('Falha ao definir linha principal.', 'error')
+    } finally {
+      setPromoting(null)
+    }
+  }
+
+  const handleResubscribe = async (num: WhatsAppNumberDetailed) => {
+    if (resubscribing) return
+    setResubscribing(num.id)
+    try {
+      await whatsappNumbersApi.resubscribeWaba(num.wabaId)
+      toast('Inscrição da Meta reativada.', 'success')
+    } catch {
+      toast('Falha ao reinscrever nos webhooks da Meta.', 'error')
+    } finally {
+      setResubscribing(null)
+    }
+  }
+
   useEffect(() => {
-    // Check if we're returning from OAuth callback (popup redirected here)
     const params = new URLSearchParams(window.location.search)
     if (params.get('connected') === 'true') {
       const phones = params.get('phones') ?? '0'
       toast(`WhatsApp conectado com sucesso! ${phones} número(s) encontrado(s).`, 'success')
-      // Clean URL params
       window.history.replaceState({}, '', window.location.pathname)
-      // If we're inside a popup, close it and notify parent
       if (window.opener) {
         window.opener.location.reload()
         window.close()
@@ -124,17 +148,41 @@ export function WhatsAppNumbers() {
     fetchNumbers()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const openDisconnectConfirm = async (num: WhatsAppNumberDetailed) => {
+    setDisconnectTarget(num)
+    setDependencies(null)
+    try {
+      const { data } = await whatsappNumbersApi.dependencies(num.id)
+      setDependencies(data)
+    } catch {
+      // Best-effort — confirm dialog falls back to the generic description.
+    }
+  }
+
   const handleDisconnect = async () => {
     if (!disconnectTarget) return
     try {
-      await axios.delete(`${API}/whatsapp/numbers/${disconnectTarget.id}`)
+      await api.delete(`/whatsapp/numbers/${disconnectTarget.id}`)
       setNumbers((n) => n.filter((x) => x.id !== disconnectTarget.id))
       toast('Número desconectado e removido com sucesso.', 'success')
     } catch {
       toast('Erro ao desconectar. Tente novamente.', 'error')
     }
     setDisconnectTarget(null)
+    setDependencies(null)
   }
+
+  const disconnectDescription = (() => {
+    const base = `Tem certeza que deseja desconectar o número ${disconnectTarget?.displayPhoneNumber}?`
+    if (!dependencies) return `${base} O atendimento via este número será interrompido imediatamente.`
+    const affected: string[] = []
+    if (dependencies.templates > 0) affected.push(`${dependencies.templates} template(s)`)
+    if (dependencies.campaigns > 0) affected.push(`${dependencies.campaigns} campanha(s)`)
+    if (dependencies.automations > 0) affected.push(`${dependencies.automations} automação(ões)`)
+    if (dependencies.departments.length > 0) affected.push(`${dependencies.departments.length} setor(es)`)
+    if (affected.length === 0) return `${base} O atendimento via este número será interrompido imediatamente.`
+    return `${base} Isso afeta ${affected.join(', ')} vinculados a esta linha. O atendimento será interrompido imediatamente.`
+  })()
 
   if (loading) {
     return (
@@ -188,7 +236,8 @@ export function WhatsAppNumbers() {
       <div className="divide-y divide-surface-800/60">
         {numbers.map((num) => {
           const status = STATUS_CONFIG[num.status] ?? DEFAULT_STATUS
-          const quality = QUALITY_CONFIG[num.qualityRating]
+          const quality = QUALITY_CONFIG[num.qualityRating] ?? DEFAULT_QUALITY
+          const connected = num.status === 'connected' || num.status === 'CONNECTED'
 
           return (
             <div key={num.id} className="py-5">
@@ -198,12 +247,18 @@ export function WhatsAppNumbers() {
                     <WhatsAppIcon size={20} />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-semibold text-surface-50">{num.displayPhoneNumber}</p>
                       <span className={cn('color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
                         {status.icon}
                         {status.label}
                       </span>
+                      {num.isPrimary && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border border-brand-500/40 text-brand-300 bg-brand-500/10">
+                          <Star className="w-3 h-3 fill-current" />
+                          Principal
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-surface-400 mb-3">{num.wabaName}</p>
 
@@ -278,13 +333,35 @@ export function WhatsAppNumbers() {
                   </div>
                 </div>
 
-                {(num.status === 'connected' || num.status === 'CONNECTED') && (
-                  <button
-                    onClick={() => setDisconnectTarget(num)}
-                    className="p-2 rounded-xl text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                {connected && (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {!num.isPrimary && (
+                      <Tooltip content="Definir como linha principal">
+                        <button
+                          onClick={() => { void handlePromote(num.id) }}
+                          disabled={promoting === num.id}
+                          className="p-2 rounded-xl text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
+                        >
+                          <Star className="w-4 h-4" />
+                        </button>
+                      </Tooltip>
+                    )}
+                    <Tooltip content="Reinscrever nos webhooks da Meta">
+                      <button
+                        onClick={() => { void handleResubscribe(num) }}
+                        disabled={resubscribing === num.id}
+                        className="p-2 rounded-xl text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors disabled:opacity-50"
+                      >
+                        <RefreshCw className={cn('w-4 h-4', resubscribing === num.id && 'animate-spin')} />
+                      </button>
+                    </Tooltip>
+                    <button
+                      onClick={() => { void openDisconnectConfirm(num) }}
+                      className="p-2 rounded-xl text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -294,10 +371,10 @@ export function WhatsAppNumbers() {
 
       <ConfirmModal
         open={!!disconnectTarget}
-        onClose={() => setDisconnectTarget(null)}
+        onClose={() => { setDisconnectTarget(null); setDependencies(null) }}
         onConfirm={handleDisconnect}
         title="Desconectar número"
-        description={`Tem certeza que deseja desconectar o número ${disconnectTarget?.displayPhoneNumber}? O atendimento via este número será interrompido imediatamente.`}
+        description={disconnectDescription}
         confirmLabel="Desconectar"
         danger
       />

@@ -29,6 +29,7 @@ import { fetchAgentActions, type AgentAction } from '@/services/agentActivityApi
 import { fetchUserActivity, type UserActivity } from '@/services/userActivityApi'
 import { getSocket } from '@/services/socket'
 import { Modal } from '@/components/ui/Modal'
+import { guardCorrectedTimelineLabel, guardReasonTimelineLabel } from '@/lib/guardReason'
 
 const COLLAPSED_LIMIT = 4
 const EXPANDED_LIMIT = 8
@@ -611,15 +612,28 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
     // Phase 33c — anti-claim guard outcomes. Handoff = the AI claimed an action
     // it never executed and the turn was transferred to a human (needs review).
     // Corrected = the AI tried to claim falsely but self-corrected (audit only).
+    //
+    // A action name ainda é `agent_phantom_confirmation_handoff` por
+    // compatibilidade com as linhas já gravadas, mas o motivo REAL vem do
+    // `outcome`: desde o Verification Gateway o handoff também acontece por
+    // preço, horário e nome, não só por ação alegada.
     case 'agent_phantom_confirmation_handoff':
       return {
-        label: `Verificação necessária: a IA afirmou ${phantomClaimLabel(metadata.claimType)} sem executar a operação — transferido para atendente`,
+        label: guardReasonTimelineLabel(
+          typeof metadata.outcome === 'string' ? metadata.outcome : null,
+          typeof metadata.claimType === 'string' ? metadata.claimType : null,
+        ),
         Icon: AlertTriangle,
         chip: 'var(--color-warning)',
       }
+    // Mesmo motivo do caso acima: com o gateway, a autocorreção também acontece
+    // por preço, horário e nome — não só por ação alegada.
     case 'agent_phantom_confirmation_corrected':
       return {
-        label: `A IA tentou confirmar ${phantomClaimLabel(metadata.claimType)} sem executar — corrigido automaticamente`,
+        label: guardCorrectedTimelineLabel(
+          typeof metadata.outcome === 'string' ? metadata.outcome : null,
+          typeof metadata.claimType === 'string' ? metadata.claimType : null,
+        ),
         Icon: AlertCircle,
         chip: 'var(--color-status-muted)',
       }
@@ -661,12 +675,3 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
   }
 }
 
-/** Map the anti-claim guard's claim type to a human phrase for timeline rows. */
-function phantomClaimLabel(raw: unknown): string {
-  switch (typeof raw === 'string' ? raw : '') {
-    case 'schedule': return 'um agendamento'
-    case 'cancel':   return 'um cancelamento'
-    case 'confirm':  return 'uma confirmação'
-    default:         return 'uma ação'
-  }
-}

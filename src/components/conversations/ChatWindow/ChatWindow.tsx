@@ -192,6 +192,7 @@ export function ChatWindow({
       />
       <MessageInput
         onSend={handleSendWithErrorReporting}
+        contactId={conversation.contact.id}
         sending={sending}
         windowOpen={windowOpen}
         blockedReason={sendBlockedReason}

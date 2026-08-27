@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
-  Tag as TagIcon, ExternalLink,
+  Tag as TagIcon, ExternalLink, ArrowRightLeft,
   KanbanSquare, MapPin, Phone, Plus, Filter,
+  Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { TagPickerContent } from '@/components/ui/TagPicker'
 import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { cn, formatRelativeTime } from '@/lib/utils'
+import { isAiActive } from '@/lib/conversationSignals'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
 import { ConversationActivitySection } from './ConversationActivitySection'
 import { ContactPanelDeals } from './ContactPanelDeals'
@@ -194,6 +196,7 @@ export function ContactPanel({
   const [assignOpen,  setAssignOpen]  = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [stageOpen,   setStageOpen]   = useState(false)
+  const [xferModal,   setXferModal]   = useState(false)
   const [localStage, setLocalStage] = useState<string | undefined | null>(contact.stage)
   useEffect(() => { setLocalStage(contact.stage) }, [contact.id, contact.stage])
 
@@ -216,6 +219,18 @@ export function ContactPanel({
     {
       label: 'Último contato',
       value: formatAbsDate(contact.lastContactedAt ?? lastMessageAt),
+    },
+    {
+      label: 'IA',
+      value: (
+        <span className="flex items-center gap-1 justify-end">
+          {isAiActive(conversation) ? (
+            <><Bot className="w-3 h-3 text-brand-400 flex-shrink-0" /> Ativa</>
+          ) : (
+            <><UserCog className="w-3 h-3 text-amber-400 flex-shrink-0" /> Pausada</>
+          )}
+        </span>
+      ),
     },
     ...(location ? [{ label: 'Localização', value: (
       <span className="flex items-center gap-1 justify-end">
@@ -325,12 +340,24 @@ export function ContactPanel({
         <Section
           title="Agente responsável"
           action={
-            <button
-              onClick={() => setAssignOpen(true)}
-              className="text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
-            >
-              {assignedUser ? 'Trocar' : 'Atribuir'}
-            </button>
+            <div className="flex items-center gap-2">
+              {assignedUser && (
+                <button
+                  onClick={() => setXferModal(true)}
+                  title="Transferir conversa"
+                  className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
+                >
+                  <ArrowRightLeft className="w-3 h-3" />
+                  Transferir
+                </button>
+              )}
+              <button
+                onClick={() => setAssignOpen(true)}
+                className="text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
+              >
+                {assignedUser ? 'Trocar' : 'Atribuir'}
+              </button>
+            </div>
           }
         >
           {assignedUser ? (
@@ -381,7 +408,39 @@ export function ContactPanel({
         <NotasSection />
       </div>
 
-      {/* Transfer / Archive modals */}
+      {/* Transfer modal */}
+      <Modal open={xferModal} onClose={() => setXferModal(false)} title="Transferir conversa">
+        <p className="text-xs text-surface-500 mb-3">
+          Selecione o usuário que receberá esta conversa:
+        </p>
+        <div className="max-h-72 overflow-y-auto -mx-5 px-5">
+          {allUsers.filter((u) => u.id !== assignedUser?.id).map((user) => {
+            return (
+              <button
+                key={user.id}
+                onClick={() => { onTransfer(user); setXferModal(false) }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all mb-1 hover:bg-surface-800"
+              >
+                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
+                <div className="flex-1 text-left min-w-0">
+                  <p className="text-sm font-medium text-surface-200">
+                    {user.firstName} {user.lastName}
+                  </p>
+                  <p className="text-[11px] text-surface-500 truncate">{user.email}</p>
+                </div>
+                <span className={cn(
+                  'text-[10px] px-2 py-0.5 rounded-full font-medium',
+                  isAdminTier(user.role) ? 'bg-brand-600/20 text-brand-300' : 'bg-surface-700 text-surface-400'
+                )}>
+                  {roleLabel(user.role)}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </Modal>
+
+      {/* Archive confirm modal */}
       <ConfirmModal
         open={archiveOpen}
         onClose={() => setArchiveOpen(false)}

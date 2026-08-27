@@ -9,7 +9,7 @@ import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { Banner } from '@/components/ui/Banner'
 import { Modal } from '@/components/ui/Modal'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
-import { cannedResponsesApi, templatesApi } from '@/services/api'
+import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 
@@ -55,6 +55,9 @@ interface MessageInputProps {
    * copy it elsewhere.
    */
   onSend: (dto: SendMessageDto) => Promise<unknown> | void
+  /** Used only by the "Escolher template" flow (24h window closed) to call
+   *  contactsApi.sendTemplate — a real WhatsApp template, not a text message. */
+  contactId: string
   sending: boolean
   windowOpen: boolean
   disabled?: boolean
@@ -142,7 +145,7 @@ function QuickReplyPicker({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MessageInput({ onSend, sending, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
+export function MessageInput({ onSend, contactId, sending, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
   const [allResponses, setAllResponses] = useState<CannedResponse[]>([])
@@ -411,12 +414,15 @@ export function MessageInput({ onSend, sending, windowOpen, disabled, blockedRea
     setPreviewTemplate(tpl)
   }
 
-  // Step 2 — confirm in the modal: actually send it (unchanged send path).
+  // Step 2 — confirm in the modal: send via the REAL WhatsApp template API
+  // (contactsApi.sendTemplate), not a plain-text message. Sending `tpl.body`
+  // as text (the old behavior) failed outside the 24h window — exactly when
+  // this picker is shown. `previewTemplate` is the template chosen in step 1.
   const handleConfirmSendTemplate = async () => {
     if (!previewTemplate || sendingTemplate) return
     setSendingTemplate(true)
     try {
-      await onSend({ body: previewTemplate.body, replyToWamid: replyTo?.wamid ?? undefined })
+      await contactsApi.sendTemplate(contactId, previewTemplate.name, previewTemplate.language)
       onCancelReply?.()
       setTemplateSent(true)
       setPreviewTemplate(null)

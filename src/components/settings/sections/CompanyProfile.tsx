@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Camera, Lock, Building2 } from 'lucide-react'
+import { Lock, Building2 } from 'lucide-react'
 import axios from 'axios'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { ToastContainer } from '@/components/ui/Toast'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
+import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
@@ -147,19 +148,17 @@ export function CompanyProfile() {
       >
         {/* Logo + plan */}
         <div className="flex items-center gap-5 mb-6">
-          <div className="relative group cursor-pointer">
-            <div className="w-16 h-16 rounded-2xl bg-brand-600 flex items-center justify-center text-xl font-bold text-surface-950 select-none">
-              {tenant.name.slice(0, 2).toUpperCase()}
-            </div>
-            <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <Camera className="w-5 h-5 text-white" />
-            </div>
+          <div className="w-16 h-16 rounded-2xl bg-brand-600 flex items-center justify-center text-xl font-bold text-surface-950 select-none">
+            {tenant.name.slice(0, 2).toUpperCase()}
           </div>
           <div>
             <p className="text-base font-semibold text-surface-50">{tenant.name}</p>
             <span className={`mt-1 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${planBadge[tenant.plan]}`}>
               {tenant.plan}
             </span>
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-surface-500">
+              Upload de logo <ComingSoonBadge />
+            </p>
           </div>
         </div>
 
@@ -202,22 +201,16 @@ export function CompanyProfile() {
             />
           </FormField>
 
-          <FormField label="Fuso horário">
-            <Select
-              value={form.timezone}
-              onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))}
-            >
+          <FormField label="Fuso horário" comingSoon hint="Ainda não é possível personalizar por conta.">
+            <Select value={form.timezone} disabled>
               {TIMEZONES.map((tz) => (
                 <option key={tz.value} value={tz.value}>{tz.label}</option>
               ))}
             </Select>
           </FormField>
 
-          <FormField label="Idioma">
-            <Select
-              value={form.language}
-              onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
-            >
+          <FormField label="Idioma" comingSoon hint="Ainda não é possível personalizar por conta.">
+            <Select value={form.language} disabled>
               {LANGUAGES.map((l) => (
                 <option key={l.value} value={l.value}>{l.label}</option>
               ))}

@@ -13,6 +13,7 @@ import { getAuthenticatedMediaUrl, useAuthenticatedMediaSrc } from '@/lib/mediaU
 import { renderExtendedContent, STRUCTURED_TYPES, ReferralBanner } from './messageRenderers/registry'
 import { ReplyQuoteBar } from './messageRenderers/ReplyQuoteBar'
 import { AnomalyDetailModal } from './AnomalyDetailModal'
+import { guardReasonLabel } from '@/lib/guardReason'
 
 // Robust media download: fetch blob (works cross-origin as long as CORS is
 // permissive), fall back to opening in a new tab if the browser refuses.
@@ -617,16 +618,6 @@ function TextContent({ message }: { message: Message }) {
   ) : null
 }
 
-/** Map the anti-claim guard's claim type to a human phrase for the bubble flag. */
-function phantomClaimLabel(raw: string | null | undefined): string {
-  switch (raw) {
-    case 'schedule': return 'um agendamento'
-    case 'cancel':   return 'um cancelamento'
-    case 'confirm':  return 'uma confirmação'
-    default:         return 'uma ação'
-  }
-}
-
 export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
@@ -850,9 +841,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                 role="tooltip"
                 className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-max max-w-[220px] px-2.5 py-1.5 rounded-lg bg-surface-800 text-surface-100 text-[11px] leading-snug text-center shadow-lg ring-1 ring-surface-700 opacity-0 translate-y-1 transition-all duration-150 group-hover/anom:opacity-100 group-hover/anom:translate-y-0"
               >
-                {message.anomaly.kind === 'handoff'
-                  ? `Verificação necessária: a IA afirmou ${phantomClaimLabel(message.anomaly.claimType)} sem executar a operação no sistema.`
-                  : `A IA se autocorrigiu (${phantomClaimLabel(message.anomaly.claimType)}) antes de enviar.`}
+                {guardReasonLabel(message.anomaly)}
               </span>
             </div>
             <AnomalyDetailModal
