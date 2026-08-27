@@ -16,11 +16,16 @@ export const FEATURE_FLAGS = {
   settings: true,
   settingsAdAccounts: false,
   settingsVertical: false,
-  // Billing (SCRUM-172/154) fica OCULTO por padrão até o backend estar em
-  // produção. Gate por env: só aparece onde VITE_SETTINGS_BILLING='true'
-  // (staging). Sem a env (prod atual), permanece false — evita expor cobrança
-  // antes do backend pronto.
-  settingsBilling: import.meta.env.VITE_SETTINGS_BILLING === 'true',
+  // Billing (SCRUM-172/154) fica OCULTO até o módulo de cobrança estar pronto.
+  //
+  // Era `import.meta.env.VITE_SETTINGS_BILLING === 'true'`, mas a tela apareceu
+  // em produção mesmo assim: o submenu de configurações (SettingsLayout) nunca
+  // consultava este flag — só a navegação principal usava isRouteVisible. Com o
+  // submenu corrigido, o flag passou a valer; fixado em false aqui para não
+  // depender de env de ambiente nenhum.
+  //
+  // Para validar billing em staging: trocar para `true`. Uma linha.
+  settingsBilling: false,
   // Phase 18+ — surfaces the customer-facing "Skills" tab on AgentDetail.
   // Skills assigned by Oryon staff are always executed; this flag only
   // governs whether the customer sees them in the UI.

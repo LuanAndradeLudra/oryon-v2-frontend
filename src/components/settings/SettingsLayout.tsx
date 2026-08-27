@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import {
   User,
   Building2,
@@ -71,7 +72,12 @@ const NAV_GROUPS = [
   {
     label: 'Plataforma',
     items: [
-      { section: 'billing',  label: 'Plano & Faturamento', icon: <CreditCard className="w-4 h-4" />, adminOnly: true },
+      // `flag` respeita o feature flag settingsBilling, que ja existia e ja era
+      // false em producao — mas ninguem aqui o consultava, entao a tela
+      // aparecia para todo admin mesmo com o flag desligado. O isRouteVisible
+      // so era usado pela navegacao principal (NavSidebar), nunca por este
+      // submenu.
+      { section: 'billing',  label: 'Plano & Faturamento', icon: <CreditCard className="w-4 h-4" />, adminOnly: true, flag: 'settingsBilling' as const },
       { section: 'security', label: 'Segurança',           icon: <ShieldCheck className="w-4 h-4" />, adminOnly: true },
       { section: 'audit',    label: 'Auditoria',           icon: <ScrollText className="w-4 h-4" />, adminOnly: true },
     ],
@@ -79,6 +85,7 @@ const NAV_GROUPS = [
 ]
 
 export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayoutProps) {
+  const { isFeatureVisible } = useFeatureVisibility()
   // super_admin (Oryon staff) and business_admin (tenant owner) both should
   // see every admin-gated section. Missing super_admin here was the reason
   // WhatsApp + Plataforma vanished after `/auth/me` resolved.
@@ -92,6 +99,9 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
       items: group.items.filter((item) => {
         const adminOnly = 'adminOnly' in item && item.adminOnly
         const supervisorOnly = 'supervisorOnly' in item && item.supervisorOnly
+        // Feature flag antes do papel: secao desligada nao aparece para
+        // ninguem, nem para super_admin.
+        if ('flag' in item && item.flag && !isFeatureVisible(item.flag)) return false
         if (adminOnly && !isAdmin) return false
         if (supervisorOnly && currentRole === 'agent') return false
         return isRouteVisible(`/settings/${item.section}`)
