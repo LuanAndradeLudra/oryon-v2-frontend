@@ -43,6 +43,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
+import { TermsAcceptanceModal } from '@/components/terms/TermsAcceptanceModal'
 import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
@@ -154,6 +155,11 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
       <OnboardingGate>
         <AppShell>
           {children}
+          {/* SCRUM-777 — pede o aceite de termos pendentes. Dispensavel de
+              proposito: o cartao diz que contrato vigente NAO e suspenso por
+              falta de re-aceite, e um modal que trava o painel seria uma
+              suspensao decidida pelo codigo em vez da operacao. */}
+          <TermsAcceptanceModal />
         </AppShell>
       </OnboardingGate>
     </RequireAuth>
