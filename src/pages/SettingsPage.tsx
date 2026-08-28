@@ -1,7 +1,8 @@
 import { useParams, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { SettingsLayout, firstVisibleSection } from '@/components/settings/SettingsLayout'
+import { SettingsLayout, firstVisibleSection, MULTI_PIPELINE_SECTIONS } from '@/components/settings/SettingsLayout'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
@@ -100,6 +101,7 @@ export function SettingsPage() {
   // caused a 1-frame flash where role defaulted to 'admin' before the real
   // 'super_admin' arrived and re-filtered the menu.
   const { user } = useAuth()
+  const multiPipeline = useMultiPipeline()
   const banner = useDesktopRecommendedBanner(`settings/${section}`)
   const isMobile = useIsMobile()
   const navigate = useNavigate()
@@ -109,8 +111,12 @@ export function SettingsPage() {
   // visível do papel; a sidebar é o mapa permanente e a busca resolve o
   // "achar em segundos". Uma home aqui seria uma segunda navegação (o
   // problema que estamos eliminando).
-  if (!section || !VALID_SECTIONS.includes(section)) {
-    return <Navigate to={`/settings/${firstVisibleSection(user?.role ?? 'admin')}`} replace />
+  // Seções de funil (SCRUM-498): sem o flag, mesmo por URL direta caem na
+  // primeira seção visível — o backend não tem os endpoints e a tela
+  // ficaria em erro. As demais seções mantêm o padrão "acessível por URL".
+  const gatedOut = !!section && MULTI_PIPELINE_SECTIONS.has(section) && !multiPipeline
+  if (!section || !VALID_SECTIONS.includes(section) || gatedOut) {
+    return <Navigate to={`/settings/${firstVisibleSection(user?.role ?? 'admin', { multiPipeline })}`} replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]
@@ -119,7 +125,7 @@ export function SettingsPage() {
   const blockLabel = HARD_BLOCK_LABELS[section]
 
   return (
-    <SettingsLayout currentRole={user?.role ?? 'admin'}>
+    <SettingsLayout currentRole={user?.role ?? 'admin'} multiPipeline={multiPipeline}>
       {showBanner && (
         <DesktopRecommendedBanner
           visible

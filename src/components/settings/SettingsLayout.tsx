@@ -9,6 +9,15 @@ import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 interface SettingsLayoutProps {
   children: ReactNode
   currentRole?: string
+  /** Gate de múltiplos funis por tenant (SCRUM-498) — `useMultiPipeline()`.
+   *  Default `false`: seções de funil ficam escondidas a menos que o caller
+   *  afirme o contrário. */
+  multiPipeline?: boolean
+}
+
+/** Opções de visibilidade além do papel — flags por tenant vindas do backend. */
+export interface SettingsNavOptions {
+  multiPipeline?: boolean
 }
 
 // Sinônimos por seção — a busca encontra "etiquetas" mesmo com a seção
@@ -44,6 +53,8 @@ interface NavItem {
   label: string
   adminOnly?: boolean
   supervisorOnly?: boolean
+  /** Só aparece com `FF_MULTI_PIPELINE` ligado para o tenant (SCRUM-498). */
+  multiPipelineOnly?: boolean
 }
 
 interface NavCluster {
@@ -114,8 +125,8 @@ export const SETTINGS_NAV: NavDomain[] = [
         items: [
           { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
           { section: 'crm-practitioners', label: 'Profissionais',         adminOnly: true },
-          { section: 'pipeline-stages',   label: 'Estágios do funil',     adminOnly: true },
-          { section: 'pipeline-routing',  label: 'Roteamento por canal',  adminOnly: true },
+          { section: 'pipeline-stages',   label: 'Estágios do funil',     adminOnly: true, multiPipelineOnly: true },
+          { section: 'pipeline-routing',  label: 'Roteamento por canal',  adminOnly: true, multiPipelineOnly: true },
         ],
       },
       {
@@ -136,14 +147,24 @@ export const SETTINGS_NAV: NavDomain[] = [
   },
 ]
 
+/** Seções que só existem com o gate de múltiplos funis — o `SettingsPage`
+ *  usa para redirecionar acesso por URL direta quando o flag está desligado
+ *  (o backend responderia 404/403 e a tela ficaria em erro). */
+export const MULTI_PIPELINE_SECTIONS: ReadonlySet<string> = new Set(
+  SETTINGS_NAV.flatMap((d) => d.clusters.flatMap((c) => c.items))
+    .filter((i) => i.multiPipelineOnly)
+    .map((i) => i.section),
+)
+
 /** Aplica papel + feature flags à navegação. Exportado p/ testes/reuso. */
-export function visibleSettingsNav(currentRole: string): NavDomain[] {
+export function visibleSettingsNav(currentRole: string, opts: SettingsNavOptions = {}): NavDomain[] {
   const isAdmin = currentRole === 'admin'
     || currentRole === 'business_admin'
     || currentRole === 'super_admin'
   const allowed = (item: NavItem) => {
     if (item.adminOnly && !isAdmin) return false
     if (item.supervisorOnly && currentRole === 'agent') return false
+    if (item.multiPipelineOnly && !opts.multiPipeline) return false
     return isRouteVisible(`/settings/${item.section}`)
   }
   return SETTINGS_NAV
@@ -157,11 +178,11 @@ export function visibleSettingsNav(currentRole: string): NavDomain[] {
 }
 
 /** Primeira seção visível para o papel — destino do redirect de /settings. */
-export function firstVisibleSection(currentRole: string): string {
-  return visibleSettingsNav(currentRole)[0]?.clusters[0]?.items[0]?.section ?? 'account'
+export function firstVisibleSection(currentRole: string, opts: SettingsNavOptions = {}): string {
+  return visibleSettingsNav(currentRole, opts)[0]?.clusters[0]?.items[0]?.section ?? 'account'
 }
 
-export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayoutProps) {
+export function SettingsLayout({ children, currentRole = 'admin', multiPipeline = false }: SettingsLayoutProps) {
   const isMobile = useIsMobile()
   const [search, setSearch] = useState('')
   const query = normalize(search.trim())
@@ -170,7 +191,7 @@ export function SettingsLayout({ children, currentRole = 'admin' }: SettingsLayo
     if (normalize(item.label).includes(query)) return true
     return (SEARCH_KEYWORDS[item.section] ?? []).some((kw) => normalize(kw).includes(query))
   }
-  const nav = visibleSettingsNav(currentRole)
+  const nav = visibleSettingsNav(currentRole, { multiPipeline })
     .map((d) => ({
       ...d,
       clusters: d.clusters
