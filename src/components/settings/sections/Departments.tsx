@@ -9,6 +9,7 @@ import { cn, formatWaSelectLabel } from '@/lib/utils'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { departmentsApi, whatsappNumbersApi } from '@/services/api'
+import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
 import type { Department, DepartmentPermission, WhatsAppNumber } from '@/types'
 
 // ── Permission definitions ───────────────────────────────────────────────────
@@ -177,6 +178,7 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-brand-400" />
               <span className="text-sm font-medium text-surface-200">Permissões</span>
+              <ComingSoonBadge />
               <span className="text-xs text-surface-500">{form.permissions.length}/{ALL_PERMISSIONS.length} selecionadas</span>
             </div>
             <ChevronDown className={cn('w-4 h-4 text-surface-400 transition-transform', permOpen && 'rotate-180')} />
@@ -185,6 +187,7 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
             <div className="px-4 pb-4 border-t border-surface-700 pt-3">
               <p className="text-[11px] text-surface-500 mb-3">
                 Marque <span className="text-surface-400">Atendimento</span> (conversas) para vincular um número WhatsApp.
+                {' '}O sistema ainda não aplica estas permissões — as seleções ficam salvas para quando o controle de acesso por setor for lançado.
               </p>
               <PermissionMatrix value={form.permissions} onChange={handlePermissionsChange} />
             </div>

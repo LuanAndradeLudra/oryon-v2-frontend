@@ -8,6 +8,7 @@ import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 
 // Sections
 import { CompanyProfile }   from '@/components/settings/sections/CompanyProfile'
@@ -99,8 +100,17 @@ export function SettingsPage() {
   const banner = useDesktopRecommendedBanner(`settings/${section}`)
   const isMobile = useIsMobile()
   const navigate = useNavigate()
+  const { isFeatureVisible } = useFeatureVisibility()
 
   if (!VALID_SECTIONS.includes(section)) {
+    return <Navigate to="/settings/account" replace />
+  }
+
+  // Esconder o item do menu nao impede ninguem de digitar /settings/billing —
+  // e quem ja tinha a tela salva continuaria entrando. Como a tela nao deveria
+  // estar habilitada, a URL fecha junto. Mesmo padrao de guarda explicita que
+  // o comentario do featureFlags.ts cita para campaigns.
+  if (section === 'billing' && !isFeatureVisible('settingsBilling')) {
     return <Navigate to="/settings/account" replace />
   }
 

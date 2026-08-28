@@ -868,6 +868,23 @@ export interface Message {
     skillFailures?: Array<{ name: string; kind: string; statusCode: number | null; message: string | null }>
     /** Correlation id to cross-reference the agent-server logs. */
     correlationId?: string | null
+    // ── Sinal v2 (SCRUM-511) — contexto completo do operador ──────────────
+    // Ausentes em marcador anterior ao v2; o modal degrada para o que era.
+    /** A resposta COMO A IA ESCREVEU, retida antes do envio. */
+    blockedText?: string | null
+    /** Os fatos barrados, com posição DENTRO de blockedText para marcação. */
+    findings?: Array<{
+      type: string
+      reason: string
+      raw: string
+      span: [number, number] | null
+      suggested: string | null
+    }>
+    /** O que o sistema SABIA no turno — vagas reais, preços por convênio,
+     *  nomes com lastro. É o que permite responder o cliente na hora. */
+    evidence?: { slots: string[]; prices: string[]; names: string[] } | null
+    /** Quanto a IA tentou se corrigir antes da transferência. */
+    repair?: { rung: number | null; llmCalls: number | null } | null
   } | null
   createdAt: string
 }
@@ -1324,6 +1341,25 @@ export interface SocketAiPauseUpdated {
    *  the AI + assigns) and sets this so the "Verificar" list badge appears in
    *  realtime. Undefined for ordinary manual pause/resume. */
   hasRecentAnomaly?: boolean
+}
+
+/**
+ * SCRUM-562 — conversation status changed server-side.
+ *
+ * Emitted by `applyStatusTransition`, so it covers BOTH the manual endpoint and
+ * the AI guard's move to `pending`. Before this, no socket carried conversation
+ * status at all: an operator resolving a conversation was invisible to their
+ * colleagues and to their own other tabs until a refetch.
+ *
+ * Its own event rather than a field on `conversation:updated`, because that one
+ * drops message-less payloads by design (see the guard in useConversations).
+ */
+export interface SocketConversationStatusUpdated {
+  conversationId: string
+  status: ConversationStatus
+  previousStatus: ConversationStatus
+  /** User id, or `'ai-guard'` when the verification gateway moved it. */
+  changedBy: string
 }
 
 export interface SocketMessageStatus {

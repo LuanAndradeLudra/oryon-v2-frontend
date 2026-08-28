@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, GripVertical, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, Star } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { CustomFieldModal } from '@/components/settings/modals/CustomFieldModal'
 import { useToast } from '@/hooks/useToast'
@@ -90,7 +90,6 @@ export function CustomFieldsManager() {
           <ul className="divide-y divide-surface-800">
             {fieldDefs.map((field) => (
               <li key={field.key} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-800/30 transition-colors group">
-                <GripVertical className="w-4 h-4 text-surface-700 flex-shrink-0 cursor-grab" />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

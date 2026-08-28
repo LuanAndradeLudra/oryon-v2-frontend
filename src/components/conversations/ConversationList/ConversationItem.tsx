@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
+import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Conversation } from '@/types'
 
@@ -191,13 +192,14 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               <span className="text-[10px] text-surface-500">+{tags.length - 2}</span>
             )}
 
-            {/* Phase 33c — phantom-confirmation handoff flag. The AI claimed an
-                action it never executed and the turn was transferred to a human;
-                the operator must verify whether anything was actually recorded. */}
+            {/* Phase 33c — selo de verificação. Desde o Verification Gateway o
+                handoff também acontece por preço, horário e nome, não só por
+                ação alegada — e a lista não carrega o `outcome`, então o texto
+                é genérico de propósito (ver GUARD_LIST_BADGE_TITLE). */}
             {hasRecentAnomaly && (
               <span
                 className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-500/15 text-amber-400 border border-amber-500/25"
-                title="Verificação necessária: a IA confirmou uma ação que pode não ter sido registrada no sistema."
+                title={GUARD_LIST_BADGE_TITLE}
               >
                 <AlertTriangle className="w-2.5 h-2.5" />
                 Verificar

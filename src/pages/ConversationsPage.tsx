@@ -23,7 +23,7 @@ import { isAdminTier } from '@/lib/roleHelpers'
 import { resolveRange } from '@/lib/dateRange'
 import type {
   Conversation, ConversationFilters,
-  SocketAiPauseUpdated, SocketMessageNew, SocketUnreadUpdate,
+  SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, SocketUnreadUpdate,
   Tag, User,
 } from '@/types'
 
@@ -57,7 +57,7 @@ export function ConversationsPage() {
 
   const {
     conversations, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
-    handleNewMessage, handleAiPauseUpdated, markAsRead,
+    handleNewMessage, handleAiPauseUpdated, handleStatusUpdated, markAsRead,
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
   } = useConversations(filters)
@@ -77,6 +77,21 @@ export function ConversationsPage() {
         if (payload.aiPausedUntil !== undefined) patch.aiPausedUntil = payload.aiPausedUntil
         if (payload.assignedUser !== undefined) patch.assignedUser = payload.assignedUser ?? undefined
         if (Object.keys(patch).length > 0) syncActive(payload.conversationId, patch)
+        // Also mirror lastMessageAt, otherwise the 24h-window calc in
+        // ChatWindow compares against a stale timestamp while the chat
+        // stays open (bug: window shows closed right after a fresh
+        // message). Compared against `prev` inside the updater — not the
+        // closured `activeConversation`, which can itself be stale here —
+        // and only applied if strictly newer, so an out-of-order socket
+        // delivery (reconnect replay, racing emits) can't regress it.
+        if (payload.message) {
+          const sentAt = payload.message.sentAt
+          setActiveConversation((prev) =>
+            prev?.id === payload.conversationId && new Date(sentAt).getTime() > new Date(prev.lastMessageAt).getTime()
+              ? { ...prev, lastMessageAt: sentAt }
+              : prev
+          )
+        }
       }
     }, [handleNewMessage, activeConversation?.id]),
 
@@ -111,12 +126,32 @@ export function ConversationsPage() {
         if (payload.aiPausedUntil !== undefined) patch.aiPausedUntil = payload.aiPausedUntil
         if (payload.assignedUser !== undefined) patch.assignedUser = payload.assignedUser ?? undefined
         if (Object.keys(patch).length > 0) syncActive(payload.conversationId, patch)
+        // Also mirror lastMessageAt — see onMessageNew above for why and
+        // for the out-of-order-delivery guard.
+        if (payload.message) {
+          const sentAt = payload.message.sentAt
+          setActiveConversation((prev) =>
+            prev?.id === payload.conversationId && new Date(sentAt).getTime() > new Date(prev.lastMessageAt).getTime()
+              ? { ...prev, lastMessageAt: sentAt }
+              : prev
+          )
+        }
       }
     }, [handleNewMessage, activeConversation?.id]),
 
     // Phase 27 — AI handoff pause/resume from another tab or operator. Keeps
     // the in-memory list in sync so opening that conversation later shows the
     // correct banner state without a fetch.
+    // SCRUM-562 — status changed server-side (manual endpoint or the AI guard's
+    // move to `pending`). The list half is handled inside the hook; here we only
+    // keep the open conversation's header in lockstep.
+    onConversationStatusUpdated: useCallback((payload: SocketConversationStatusUpdated) => {
+      handleStatusUpdated(payload)
+      if (activeConversation?.id === payload.conversationId) {
+        syncActive(payload.conversationId, { status: payload.status })
+      }
+    }, [handleStatusUpdated, activeConversation?.id]),
+
     onConversationAiPauseUpdated: useCallback((payload: SocketAiPauseUpdated) => {
       handleAiPauseUpdated(payload)
       if (activeConversation?.id === payload.conversationId) {
