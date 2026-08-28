@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { dealsApi, pipelineRoutingApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { cn, hexToRgba } from '@/lib/utils'
 import type { Deal } from '@/types'
 
@@ -32,11 +33,18 @@ interface DealChip {
  */
 export function ConversationDealIndicator({ contactId, whatsappNumberId }: { contactId: string; whatsappNumberId?: string }) {
   const { pipelines } = useCRMConfig()
+  // Gate de múltiplos funis (SCRUM-498): sem o flag não há chip possível
+  // (`pipelines` vem vazio), então nem os deals nem o roteamento são
+  // buscados — evita 1 GET /deals + 1 GET /settings/pipeline-routing (404
+  // sem o módulo) por conversa aberta.
+  const multiPipeline = useMultiPipeline()
   const [openDeals, setOpenDeals] = useState<Deal[]>([])
   const [routedPipelineId, setRoutedPipelineId] = useState<string | undefined>(undefined)
   const navigate = useNavigate()
 
   const load = useCallback(() => {
+    // Gate fechado: sem fetch. Os chips já saem vazios no `useMemo` abaixo.
+    if (!multiPipeline) return
     Promise.all([
       dealsApi.list(contactId),
       whatsappNumberId ? pipelineRoutingApi.list() : Promise.resolve(null),
@@ -51,21 +59,23 @@ export function ConversationDealIndicator({ contactId, whatsappNumberId }: { con
         )
       })
       .catch(() => { setOpenDeals([]); setRoutedPipelineId(undefined) })
-  }, [contactId, whatsappNumberId])
+  }, [contactId, whatsappNumberId, multiPipeline])
 
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
+    if (!multiPipeline) return
     const socket = connectSocket()
     const onDealChanged = (p: { contactId?: string }) => {
       if (p?.contactId === contactId) load()
     }
     socket.on('deal:changed', onDealChanged)
     return () => { socket.off('deal:changed', onDealChanged) }
-  }, [contactId, load])
+  }, [contactId, load, multiPipeline])
 
   const chips = useMemo(() => {
     const next: DealChip[] = []
+    if (!multiPipeline) return next
     for (const deal of openDeals) {
       const pipe = pipelines.find((p) => p.id === deal.pipelineId)
       const stage = pipe?.stages.find((s) => s.id === deal.stageId)
@@ -86,7 +96,7 @@ export function ConversationDealIndicator({ contactId, whatsappNumberId }: { con
       return a.pipeline.localeCompare(b.pipeline)
     })
     return next
-  }, [openDeals, pipelines, routedPipelineId])
+  }, [openDeals, pipelines, routedPipelineId, multiPipeline])
 
   if (chips.length === 0) return null
 

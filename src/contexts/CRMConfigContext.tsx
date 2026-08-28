@@ -2,6 +2,10 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo, t
 import { stagesApi, customFieldsApi, productsApi, practitionersApi, pipelinesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import type { TenantStage, ContactCustomFieldDef, Product, Practitioner, Pipeline } from '@/types'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+
+/** Referência estável para "nenhum funil" — evita re-render dos consumidores por `[]` novo. */
+const EMPTY_PIPELINES: Pipeline[] = []
 
 interface CRMConfig {
   stages: TenantStage[]
@@ -101,13 +105,28 @@ export function CRMConfigProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoadingPractitioners(false))
   }, [])
 
-  const refetchPipelines = useCallback(() => {
-    setLoadingPipelines(true)
+  // Gate de múltiplos funis (SCRUM-498): sem o flag do tenant, `/settings/
+  // pipelines` não existe (backend sem o módulo) ou responde 403 (flag
+  // desligado) — não chama e entrega lista vazia. Consumidores já tratam
+  // `pipelines: []` como "nenhum funil".
+  const multiPipeline = useMultiPipeline()
+  // `loadPipelines` não mexe em `loadingPipelines` de forma síncrona (o
+  // estado já nasce `true`) — é o que o efeito de montagem/hidratação chama.
+  // `refetchPipelines` (handlers pós-mutação) liga o loading antes de buscar.
+  const loadPipelines = useCallback(() => {
+    // Gate fechado: no-op. O que sai pelo contexto é derivado abaixo
+    // (`pipelines: []`, `loadingPipelines: false`), sem setState.
+    if (!multiPipeline) return
     pipelinesApi.list()
       .then((r) => setPipelines(Array.isArray(r.data) ? r.data : []))
       .catch(() => setPipelines([]))
       .finally(() => setLoadingPipelines(false))
-  }, [])
+  }, [multiPipeline])
+  const refetchPipelines = useCallback(() => {
+    if (!multiPipeline) return
+    setLoadingPipelines(true)
+    loadPipelines()
+  }, [multiPipeline, loadPipelines])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -115,15 +134,25 @@ export function CRMConfigProvider({ children }: { children: ReactNode }) {
       setLoadingFields(false)
       setLoadingProducts(false)
       setLoadingPractitioners(false)
-      setLoadingPipelines(false)
       return
     }
     refetchStages()
     refetchFieldDefs()
     refetchProducts()
     refetchPractitioners()
-    refetchPipelines()
-  }, [isAuthenticated, refetchStages, refetchFieldDefs, refetchProducts, refetchPractitioners, refetchPipelines])
+  }, [isAuthenticated, refetchStages, refetchFieldDefs, refetchProducts, refetchPractitioners])
+
+  // Efeito próprio: `refetchPipelines` muda de identidade quando o flag é
+  // hidratado pelo `/auth/me` (pós-login) — só os funis precisam refazer o
+  // fetch nesse momento, não stages/campos/produtos/profissionais.
+  useEffect(() => {
+    if (isAuthenticated) loadPipelines()
+  }, [isAuthenticated, loadPipelines])
+
+  // Sem sessão ou sem o gate, o contexto entrega "nenhum funil, nada
+  // carregando" — derivado, para não precisar de setState em efeito.
+  const pipelinesGated = multiPipeline ? pipelines : EMPTY_PIPELINES
+  const loadingPipelinesGated = isAuthenticated && multiPipeline && loadingPipelines
 
   // Valor memoizado — sem isso, todo render do provider criaria um objeto novo
   // e re-renderizaria os ~26 consumidores de useCRMConfig() desnecessariamente.
@@ -133,12 +162,12 @@ export function CRMConfigProvider({ children }: { children: ReactNode }) {
       fieldDefs,
       products,
       practitioners,
-      pipelines,
+      pipelines: pipelinesGated,
       loadingStages,
       loadingFields,
       loadingProducts,
       loadingPractitioners,
-      loadingPipelines,
+      loadingPipelines: loadingPipelinesGated,
       refetchStages,
       refetchFieldDefs,
       refetchProducts,
@@ -147,8 +176,8 @@ export function CRMConfigProvider({ children }: { children: ReactNode }) {
       setStagesOptimistic: setStages,
     }),
     [
-      stages, fieldDefs, products, practitioners, pipelines,
-      loadingStages, loadingFields, loadingProducts, loadingPractitioners, loadingPipelines,
+      stages, fieldDefs, products, practitioners, pipelinesGated,
+      loadingStages, loadingFields, loadingProducts, loadingPractitioners, loadingPipelinesGated,
       refetchStages, refetchFieldDefs, refetchProducts, refetchPractitioners, refetchPipelines,
     ],
   )
