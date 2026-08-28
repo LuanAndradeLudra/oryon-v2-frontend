@@ -9,6 +9,7 @@ import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { formatBRL } from '@/utils/money'
 import type { Deal, DealStatus } from '@/types'
 
@@ -37,6 +38,9 @@ export function DealsTab({ contactId }: { contactId: string }) {
   // Funis vêm do cache compartilhado (CRMConfigContext, SCRUM-293) — sem
   // fetch próprio, só pro nome do cabeçalho de cada grupo.
   const { pipelines } = useCRMConfig()
+  // Sem o gate de funis (SCRUM-498) não há board para linkar nem nome de
+  // funil — o cabeçalho de grupo ("Sem pipeline · Ver no board") some.
+  const multiPipeline = useMultiPipeline()
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -120,6 +124,7 @@ export function DealsTab({ contactId }: { contactId: string }) {
             const pipeline = pipelines.find((p) => p.id === pipelineId)
             return (
               <div key={pipelineId} className="flex flex-col gap-2">
+                {multiPipeline && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-surface-500 font-medium truncate">
                     {pipeline?.name ?? 'Sem pipeline'}
@@ -133,6 +138,7 @@ export function DealsTab({ contactId }: { contactId: string }) {
                     <KanbanSquare className="w-3.5 h-3.5" /> Ver no board
                   </button>
                 </div>
+                )}
                 <ul className="flex flex-col gap-2">
                   {groupDeals.map((d) => {
                     const meta = STATUS_META[d.status]

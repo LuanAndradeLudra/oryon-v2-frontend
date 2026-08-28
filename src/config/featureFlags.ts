@@ -123,3 +123,18 @@ export const isRouteVisible = (href: string, userEmail?: string | null): boolean
   )
   return match ? isFeatureVisible(match[1], userEmail) : true
 }
+
+// ── Feature flags por TENANT (backend) ───────────────────────────────────────
+// Diferente das `FEATURE_FLAGS` acima (constantes de build), estas vêm do
+// backend por tenant: `GET /auth/me` devolve `featureFlags: string[]` com as
+// chaves ligadas em `tenant_feature_flags` (SCRUM-498). Ausência do campo
+// (backend sem o módulo) ou da chave = DESLIGADO — o padrão é sempre
+// esconder, nunca expor uma superfície que o backend vai responder 403/404.
+
+/** Múltiplos funis de negócio (SCRUM-285 / épico SCRUM-809). */
+export const TENANT_FLAG_MULTI_PIPELINE = 'FF_MULTI_PIPELINE'
+
+/** `true` só quando o backend listou `FF_MULTI_PIPELINE` para o tenant. */
+export function multiPipelineEnabled(featureFlags?: readonly string[] | null): boolean {
+  return featureFlags?.includes(TENANT_FLAG_MULTI_PIPELINE) ?? false
+}

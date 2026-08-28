@@ -6,6 +6,7 @@ import { connectSocket } from '@/services/socket'
 import { DealModal } from '@/components/contacts/DealModal'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { formatBRL } from '@/utils/money'
 import type { Deal } from '@/types'
 
@@ -46,6 +47,9 @@ export function ContactPanelDeals({
   // fetch próprio, só pro nome do cabeçalho de cada grupo (contato pode ter
   // negócios em pipelines diferentes).
   const { pipelines } = useCRMConfig()
+  // Sem o gate de funis (SCRUM-498) o cabeçalho de grupo ("Sem pipeline ·
+  // Ver no board") some — não há board para abrir.
+  const multiPipeline = useMultiPipeline()
   const [deals, setDeals] = useState<Deal[] | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
@@ -129,6 +133,7 @@ export function ContactPanelDeals({
               return (
                 <div key={pipelineId} className="flex flex-col gap-1.5">
                   {/* Cabeçalho do grupo: nome do pipeline + link pro board */}
+                  {multiPipeline && (
                   <div className="flex items-center justify-between px-0.5">
                     <span className="text-[10px] text-surface-500 font-medium truncate">
                       {pipeline?.name ?? 'Sem pipeline'}
@@ -142,6 +147,7 @@ export function ContactPanelDeals({
                       <KanbanSquare className="w-3 h-3" /> Ver no board
                     </button>
                   </div>
+                  )}
                   {groupDeals.map((d) => (
                     <button
                       key={d.id}

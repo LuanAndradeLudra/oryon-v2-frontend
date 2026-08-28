@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { StagesManager } from '@/components/settings/sections/crm/StagesManager'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 import { PipelineStagesManager } from '@/components/settings/sections/crm/PipelineStagesManager'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import type { Pipeline } from '@/types'
 
 const TABS = [
@@ -47,6 +48,13 @@ export function CRMConfigDrawer({
     if (open) setActiveTab(initialTab ?? 'stages')
   }
 
+  // Gate de múltiplos funis (SCRUM-498): sem o flag, a aba "Estágios do
+  // funil" não existe — e se alguém pedir por `initialTab`, cai em
+  // "Estágios do contato" (derivado, sem efeito).
+  const multiPipeline = useMultiPipeline()
+  const visibleTabs = multiPipeline ? TABS : TABS.filter((t) => t.id !== 'pipelineStages')
+  const currentTab: Tab = !multiPipeline && activeTab === 'pipelineStages' ? 'stages' : activeTab
+
   return (
     <AnimatePresence>
       {open && (
@@ -86,9 +94,9 @@ export function CRMConfigDrawer({
             {/* Tabs */}
             <div className="flex gap-1 px-5 pt-4 pb-0 flex-shrink-0">
               <div className="flex items-center bg-surface-800 border border-surface-700 rounded-xl p-1 w-fit">
-                {TABS.map((tab) => {
+                {visibleTabs.map((tab) => {
                   const Icon = tab.icon
-                  const active = activeTab === tab.id
+                  const active = currentTab === tab.id
                   return (
                     <button
                       key={tab.id}
@@ -109,15 +117,15 @@ export function CRMConfigDrawer({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-5">
-              {activeTab === 'stages' && <StagesManager />}
-              {activeTab === 'pipelineStages' && (
+              {currentTab === 'stages' && <StagesManager />}
+              {currentTab === 'pipelineStages' && (
                 <PipelineStagesManager
                   pipelines={pipelines}
                   onChanged={onPipelinesChanged}
                   initialPipelineId={initialPipelineId}
                 />
               )}
-              {activeTab === 'fields' && <CustomFieldsManager />}
+              {currentTab === 'fields' && <CustomFieldsManager />}
             </div>
           </motion.div>
         </>

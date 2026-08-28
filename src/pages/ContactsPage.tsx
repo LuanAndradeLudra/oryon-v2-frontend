@@ -31,6 +31,7 @@ import { connectSocket } from '@/services/socket'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
 import { tagsApi, pipelinesApi, pipelineRoutingApi, whatsappNumbersApi } from '@/services/api'
@@ -110,14 +111,24 @@ export function ContactsPage() {
   // um funil troca o conteúdo principal para o board de negócios daquele
   // pipeline, mantendo os botões da página (Configurar, Importar, Novo
   // contato) funcionando normalmente — são destinos peer, não filtros.
+  // Gate de múltiplos funis (SCRUM-498). Com o flag do tenant desligado (ou
+  // backend sem o módulo), a página é SÓ a tabela de contatos: nenhum fetch
+  // de pipeline/roteamento, nenhum segmentado/board/"Novo funil", nenhuma
+  // faceta comercial (o backend ignora `?commercial=` sem o módulo).
+  const multiPipeline = useMultiPipeline()
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   // Estado inicial lê `?pipeline=` uma vez (link "Ver no board" da ficha do
   // contato / painel da conversa, ou refresh/link copiado) — sem apagar o
   // param, ao contrário do que a página fazia antes. Validado contra a lista
   // real assim que ela chega (efeito abaixo), já que o fetch é assíncrono.
-  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(
+  const [selectedPipelineIdRaw, setSelectedPipelineId] = useState<string | null>(
     () => searchParams.get('pipeline'),
   )
+  // Derivado, não efeito: com o gate fechado o funil selecionado é sempre
+  // `null` — assim board, `useKanbanDeals`, sync de URL e JSX enxergam
+  // "destino Contatos" já no 1º render, sem disparar um fetch de board que
+  // o backend responderia 404/403.
+  const selectedPipelineId = multiPipeline ? selectedPipelineIdRaw : null
   const [createPipelineModalOpen, setCreatePipelineModalOpen] = useState(false)
   const [editPipelineModalOpen, setEditPipelineModalOpen] = useState(false)
   const [deletePipelineConfirmOpen, setDeletePipelineConfirmOpen] = useState(false)
@@ -176,7 +187,9 @@ export function ContactsPage() {
     bulkAddTag, bulkRemoveTag, removeContact, refetch,
   } = useContacts(
     { sortBy: 'lastContactedAt', sortDir: 'desc' },
-    { commercial: commercial === 'all' ? undefined : commercial },
+    // Faceta comercial depende de `dealsSummary`, que só existe com o módulo
+    // de funis — sem o gate, nunca manda `?commercial=` (SCRUM-498).
+    { commercial: multiPipeline && commercial !== 'all' ? commercial : undefined },
   )
 
   // Tags are fetched once when the page mounts so the BulkActionBar can
@@ -199,6 +212,9 @@ export function ContactsPage() {
   const { refetchPipelines } = useCRMConfig()
 
   const fetchPipelines = useCallback((selectId?: string) => {
+    // Gate fechado: chamado também pelos callbacks dos drawers (onDone/
+    // onCreated) — vira no-op em vez de um GET que o backend não tem.
+    if (!multiPipeline) return Promise.resolve()
     return pipelinesApi
       .list()
       .then((res) => {
@@ -207,9 +223,13 @@ export function ContactsPage() {
         if (selectId) setSelectedPipelineId(selectId)
       })
       .catch(() => toast('Não foi possível carregar os pipelines.', 'error'))
-  }, [toast])
+  }, [toast, multiPipeline])
 
   useEffect(() => {
+    // Busca na montagem E quando o flag hidrata (login → `/auth/me` chega
+    // depois da 1ª renderização da página). Sem o flag: nada de pipelines
+    // nem roteamento (SCRUM-498).
+    if (!multiPipeline) return
     fetchPipelines()
     Promise.all([pipelineRoutingApi.list(), whatsappNumbersApi.list()])
       .then(([routingRes, numbersRes]) => {
@@ -217,10 +237,10 @@ export function ContactsPage() {
         setWhatsappNumbers(numbersRes.data ?? [])
       })
       .catch(() => { /* strip de roteamento é best-effort — não bloqueia a página */ })
-    // Busca só na montagem; `fetchPipelines` é estável na prática mas não
-    // deve ser dep (identidade nova a cada render causaria loop de fetch).
+    // `fetchPipelines` fora das deps de propósito: só muda com `multiPipeline`
+    // (já listado) e com `toast`, cuja identidade nova causaria refetch em loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [multiPipeline])
 
   // Badge de contagem do segmentado ("Vendas 3", "Suporte 1") só vinha do
   // fetch inicial — mover/ganhar/perder um negócio deixava o número
@@ -230,12 +250,13 @@ export function ContactsPage() {
   // pipeline (useKanbanDeals), pra manter os badges de TODOS os funis
   // corretos em tempo real — inclusive mudanças feitas por outra aba/pessoa.
   useEffect(() => {
+    if (!multiPipeline) return
     const socket = connectSocket()
     const onDealChanged = () => { void fetchPipelines() }
     socket.on('deal:changed', onDealChanged)
     return () => { socket.off('deal:changed', onDealChanged) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [multiPipeline])
 
   const selectedPipeline = useMemo(
     () => pipelines.find((p) => p.id === selectedPipelineId) ?? null,
@@ -526,6 +547,7 @@ export function ContactsPage() {
             por card, então o filtro passa a olhar só o status DESTE negócio nesta
             board. "Sem negócio" nunca combina ali (todo card já é um negócio) — por
             isso some do segmentado, e um aviso deixa explícito o escopo do filtro. */}
+        {multiPipeline && (
         <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto border-b border-surface-800/60">
           {COMMERCIAL_OPTIONS.filter((opt) => !(selectedPipelineId && opt.key === 'no_deal')).map((opt) => (
             <button
@@ -548,10 +570,14 @@ export function ContactsPage() {
             </span>
           )}
         </div>
+        )}
 
         {/* Card grande — segmented control (Contatos + Funis) no topo; só o
-            conteúdo interno troca entre Tabela de contatos e Kanban do funil. */}
+            conteúdo interno troca entre Tabela de contatos e Kanban do funil.
+            Sem o gate de funis (SCRUM-498) o cabeçalho inteiro some — sobra
+            a tabela, que é o único destino possível. */}
         <div className="flex-1 overflow-hidden min-w-0 flex flex-col mx-4 mb-4 mt-1 bg-surface-900 border border-surface-800 rounded-xl">
+          {multiPipeline && (
           <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-surface-800 flex-wrap flex-shrink-0">
             {/* Segmented control — Contatos (base) + cada Funil, destinos peer (spec UX 2026-07-09) */}
             <div className="flex items-center gap-1 bg-surface-950 border border-surface-800 rounded-lg p-1 overflow-x-auto">
@@ -625,6 +651,7 @@ export function ContactsPage() {
               </button>
             </div>
           </div>
+          )}
 
           {/* Funil selecionado: callout de escopo + resumo + strip de roteamento (spec UX §6) */}
           {selectedPipeline && (

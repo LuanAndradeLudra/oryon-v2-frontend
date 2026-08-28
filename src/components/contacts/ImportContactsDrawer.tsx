@@ -8,6 +8,7 @@ import {
 import { appLogger } from '@/services/appLogger'
 import { dealsApi } from '@/services/api'
 import { Banner } from '@/components/ui/Banner'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { cn, getDefaultPipeline, getPipelineStages, getActivePipelines } from '@/lib/utils'
 import type { Contact, ContactSource, Pipeline } from '@/types'
 
@@ -305,6 +306,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
   const [importedCount, setImportedCount] = useState(0)
   const [errors, setErrors]         = useState<string[]>([])
   const [dragging, setDragging]     = useState(false)
+  const multiPipeline = useMultiPipeline()
   const [pipelineId, setPipelineId] = useState('')
   const [pipelineStageId, setPipelineStageId] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -468,8 +470,9 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
         // Todo contato importado nasce com um negócio no funil escolhido —
         // mesma regra do "Novo Lead" manual (spec 2026-07-09). Best-effort:
         // o contato já foi criado, então uma falha aqui não desfaz a linha,
-        // só entra na lista de falhas parciais mostrada no fim.
-        if (pipelineId) {
+        // só entra na lista de falhas parciais mostrada no fim. Sem o gate
+        // de funis (SCRUM-498) não há negócio automático.
+        if (multiPipeline && pipelineId) {
           try {
             await dealsApi.create({
               contactId: created.id,
@@ -872,7 +875,10 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       com um negócio neste funil (mesma regra do "Novo Lead"
                       manual). "Estágio do funil" é a coluna do board em que o
                       negócio nasce; eixo distinto do "Estágio do contato"
-                      mapeado por coluna acima (ciclo de vida). */}
+                      mapeado por coluna acima (ciclo de vida).
+                      Só com o gate de múltiplos funis (SCRUM-498). */}
+                  {multiPipeline && (
+                  <>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1">
                       <label className="text-xs font-semibold text-surface-400 mb-1.5 block">
@@ -917,6 +923,8 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   <p className="text-[11px] text-surface-600 -mt-1">
                     Cada contato importado nasce com um negócio aberto neste funil e estágio.
                   </p>
+                  </>
+                  )}
 
                   {/* Preview table */}
                   <div className="border border-surface-700/60 rounded-xl overflow-hidden">

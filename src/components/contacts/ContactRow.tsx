@@ -9,6 +9,7 @@ import { StageBadge } from './StageBadge'
 import { LeadScorePill } from './LeadScorePill'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn, relativeDate } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
@@ -40,7 +41,12 @@ export function DealsSummaryChips({
   onOpenDeals?: (contact: Contact) => void
   className?: string
 }) {
+  // Gate de múltiplos funis (SCRUM-498): sem o módulo o backend não manda
+  // `dealsSummary` — mostraria "sem negócio" para todo mundo, inclusive
+  // quem tem. Some (desktop e mobile passam por aqui).
+  const multiPipeline = useMultiPipeline()
   const byPipeline = contact.dealsSummary?.byPipeline ?? []
+  if (!multiPipeline) return null
   return (
     <div className={cn('flex gap-1 flex-wrap', className)}>
       {byPipeline.length === 0 ? (
@@ -95,6 +101,7 @@ export function ContactRow({
 }: ContactRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const { stages } = useCRMConfig()
+  const multiPipeline = useMultiPipeline()
   const otherStages = stages.filter((s) => s.key !== contact.stage)
 
   const intent = contact.intent ?? 'unknown'
@@ -252,10 +259,13 @@ export function ContactRow({
         </div>
       </td>
 
-      {/* Negócios — chips por funil (spec UX 2026-07-09) */}
-      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-        <DealsSummaryChips contact={contact} onOpenDeals={onOpenDeals} className="max-w-[220px]" />
-      </td>
+      {/* Negócios — chips por funil (spec UX 2026-07-09). Coluna inteira
+          some sem o gate (SCRUM-498) — o cabeçalho em ContactsTable acompanha. */}
+      {multiPipeline && (
+        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+          <DealsSummaryChips contact={contact} onOpenDeals={onOpenDeals} className="max-w-[220px]" />
+        </td>
+      )}
 
       {/* Fonte */}
       <td className="px-4 py-3">
