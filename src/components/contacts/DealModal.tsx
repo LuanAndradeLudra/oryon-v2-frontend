@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Select'
 import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { dealsApi } from '@/services/api'
 import { getDefaultPipeline, getPipelineStages, getApiErrorMessage, getActivePipelines } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
@@ -55,6 +56,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   const [note, setNote] = useState('')
   const [items, setItems] = useState<ItemRow[]>([])
   const [moveStageKey, setMoveStageKey] = useState('')
+  const multiPipeline = useMultiPipeline()
   const [pipelineId, setPipelineId] = useState('')
   const [pipelineStageId, setPipelineStageId] = useState('')
   const [saving, setSaving] = useState(false)
@@ -154,7 +156,10 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       setError('O título é obrigatório.')
       return
     }
-    if (!editDeal && !pipelineId) {
+    // Gate de múltiplos funis (SCRUM-498): sem o flag não há campo "Funil"
+    // nem `pipelineId`/`stageId` no POST — o backend legado rejeita campos
+    // fora da whitelist (400).
+    if (!editDeal && multiPipeline && !pipelineId) {
       setError('Selecione um funil.')
       return
     }
@@ -190,8 +195,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           status,
           note: note.trim() || undefined,
           lineItems,
-          pipelineId,
-          stageId: pipelineStageId || undefined,
+          ...(multiPipeline && { pipelineId, stageId: pipelineStageId || undefined }),
         })
         // create não move o estágio do contato — se ganho com estágio, aplica via setStatus.
         if (stageKey) {
@@ -244,7 +248,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
 
         {/* Mover para funil (SCRUM-293) — só p/ deal ABERTO já existente; ação
             própria, imediata, independente do "Salvar" abaixo. */}
-        {editDeal && editDeal.status === 'open' && (
+        {multiPipeline && editDeal && editDeal.status === 'open' && (
           <FormField
             label="Mover para funil"
             error={moveError}
@@ -288,6 +292,8 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             </FormField>
           ) : (
             <>
+              {/* Funil + estágio do funil só com o gate (SCRUM-498). */}
+              {multiPipeline && (
               <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
                 <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
                   {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
@@ -296,6 +302,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                   ))}
                 </Select>
               </FormField>
+              )}
               <FormField label="Status">
                 <Select value={status} onChange={(e) => setStatus(e.target.value as DealStatus)}>
                   {STATUSES.map((s) => (
@@ -307,6 +314,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
               </FormField>
               {/* Estágio do FUNIL — eixo distinto do "Estágio do contato"
                   abaixo (ciclo de vida). Reativo ao funil escolhido acima. */}
+              {multiPipeline && (
               <FormField label="Estágio do funil" hint="Coluna do board em que o negócio nasce.">
                 <Select value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
                   {getPipelineStages(pipelines, pipelineId).length === 0 && (
@@ -317,6 +325,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                   ))}
                 </Select>
               </FormField>
+              )}
             </>
           )}
           {status === 'won' && (
