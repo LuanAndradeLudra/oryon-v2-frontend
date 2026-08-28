@@ -44,7 +44,11 @@ function postBackendAuditEvent(data: ActivityLog): void {
     description: data.description,
     details: typeof data.details === 'object' && data.details !== null ? data.details : undefined,
     source: data.source ?? undefined,
-    correlationId: data.correlation_id ?? undefined,
+    // correlationId NÃO vai no corpo — o backend removeu esse campo do DTO
+    // (agora sempre deriva de req.correlationId, gerado pelo middleware, pra
+    // não confiar em valor vindo do cliente). Mandar aqui faz o
+    // ValidationPipe (forbidNonWhitelisted: true) rejeitar a requisição com
+    // 400, quebrando o dual-write silenciosamente. Achado em code review.
     actorName: data.actor_name ?? undefined,
   }
   fetch(`${BACKEND_API}/audit/event`, {

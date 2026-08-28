@@ -1368,12 +1368,6 @@ export const campaignsApi = {
   delete(id: string) {
     return api.delete(`/campaigns/${id}`)
   },
-  getAnalytics(id: string) {
-    return api.get<import('@/types').CampaignAnalytics>(`/campaigns/${id}/analytics`)
-  },
-  getConversations(id: string) {
-    return api.get<import('@/types').CampaignConversationSummary[]>(`/campaigns/${id}/conversations`)
-  },
 }
 
 export const activityApi = {

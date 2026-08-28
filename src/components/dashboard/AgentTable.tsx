@@ -60,6 +60,13 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
   const sorted = [...agents].sort((a, b) => {
     const va = a[sort.key]
     const vb = b[sort.key]
+    // Dado desconhecido (null) sempre vai para o fim, nas duas direções —
+    // não pode competir como se fosse um valor real (null - true === -1
+    // em JS, o que colocaria "sem dado" empatado com/abaixo de "offline"/
+    // pior nota, o mesmo erro que este componente corrige na coluna Status).
+    if (va === null && vb === null) return 0
+    if (va === null) return 1
+    if (vb === null) return -1
     const cmp = typeof va === 'string' ? va.localeCompare(vb as string) : (va as number) - (vb as number)
     return sort.dir === 'asc' ? cmp : -cmp
   })
@@ -105,10 +112,25 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
           <p className="text-xs text-surface-400 mt-0.5">Métricas individuais do período</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-online" />
-          <span className="text-xs text-surface-400">
-            {agents.filter((a) => a.isOnline).length} de {agents.length} online
-          </span>
+          {agents.some((a) => a.isOnline !== null) ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-online" />
+              <span className="text-xs text-surface-400">
+                {/* Denominador é só quem tem presença conhecida — misturar
+                    agentes com isOnline null no total faria a razão parecer
+                    completa quando na verdade parte dos agentes é "sem
+                    dado" (mesmo princípio do R20 para a coluna Status). */}
+                {agents.filter((a) => a.isOnline).length} de{' '}
+                {agents.filter((a) => a.isOnline !== null).length} online
+              </span>
+            </>
+          ) : (
+            // Nenhum agente tem dado de presença (feature ainda não existe no
+            // backend) — "0 de N online" pareceria fato real, não ausência (R20).
+            <Tooltip content="Rastreamento de presença ainda não disponível." side="top">
+              <span className="text-xs text-surface-600">Presença indisponível</span>
+            </Tooltip>
+          )}
         </div>
       </div>
 
@@ -134,31 +156,39 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <Avatar name={agent.name} size="sm" online={agent.isOnline} />
+                      <Avatar name={agent.name} size="sm" online={agent.isOnline ?? undefined} />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-surface-100">{agent.name}</p>
-                      <p className="text-xs text-surface-500">{agent.departmentName}</p>
+                      <p className="text-xs text-surface-500">{agent.departmentName ?? 'Sem setor'}</p>
                     </div>
                   </div>
                 </td>
 
-                {/* Status */}
+                {/* Status — null (sem rastreamento de presença) é distinto de
+                    false (offline de verdade); nunca cair no "Offline" por
+                    engano (R20). */}
                 <td className="px-4 py-3.5">
-                  {agent.isOnline
-                    ? <span className="text-xs text-online font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-online" />Online</span>
-                    : <span className="text-xs text-surface-500 font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-surface-600" />Offline</span>
+                  {agent.isOnline === null
+                    ? <span className="text-xs text-surface-600">—</span>
+                    : agent.isOnline
+                      ? <span className="text-xs text-online font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-online" />Online</span>
+                      : <span className="text-xs text-surface-500 font-medium flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-surface-600" />Offline</span>
                   }
                 </td>
 
-                {/* Conversations */}
+                {/* Conversations — conversationsToday/resolvedToday são
+                    sempre números medidos (nunca null), então 0 é um valor
+                    real ("atendente sem conversas hoje"), não "sem dado" —
+                    não usar `|| '—'` aqui (mesma classe de bug corrigida
+                    para isOnline/csat/departmentName acima). */}
                 <td className="px-4 py-3.5 text-sm text-surface-200 font-semibold tabular-nums">
-                  {agent.conversationsToday || '—'}
+                  {agent.conversationsToday}
                 </td>
 
                 {/* Resolved */}
                 <td className="px-4 py-3.5 text-sm text-surface-200 tabular-nums">
-                  {agent.resolvedToday || '—'}
+                  {agent.resolvedToday}
                 </td>
 
                 {/* First response time */}
@@ -173,7 +203,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
 
                 {/* CSAT */}
                 <td className="px-4 py-3.5">
-                  {agent.csat > 0 ? (
+                  {agent.csat !== null && agent.csat > 0 ? (
                     <div className="flex items-center gap-1">
                       <span className="text-sm font-semibold text-surface-100 tabular-nums">{agent.csat.toFixed(1)}</span>
                       <span className="text-xs text-away">★</span>

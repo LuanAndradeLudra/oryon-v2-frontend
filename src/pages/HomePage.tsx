@@ -453,7 +453,9 @@ function TeamCard({ stats }: { stats: HomeStats }) {
       </div>
       <div className="flex flex-col gap-3 mt-1 flex-1">
         {[
-          { label: 'Online agora',    value: stats.agentsOnline ?? 0,  cls: 'text-status-active' },
+          // agentsOnline: null = sem rastreamento de presença ainda — não
+          // fabricar "0 online" como se fosse medido de verdade.
+          { label: 'Online agora',    value: stats.agentsOnline ?? '—',  cls: 'text-status-active' },
           { label: 'Total contatos',  value: stats.totalContacts ?? 0, cls: 'text-surface-200' },
           { label: 'Sem atendente',   value: stats.unassignedCount ?? 0, cls: (stats.unassignedCount ?? 0) > 0 ? 'text-status-pending' : 'text-surface-500' },
         ].map((row) => (
@@ -713,7 +715,7 @@ export function HomePage() {
   useEffect(() => {
     const fallbackStats: HomeStats = {
       conversationsOpen: 0, conversationsResolvedToday: 0, messagesSentToday: 0,
-      newContactsThisWeek: 0, agentsOnline: 0, agentsActive: 0, agentsPending: 0,
+      newContactsThisWeek: 0, agentsOnline: null, agentsActive: 0, agentsPending: 0,
       avgResponseMinutes: 0, queueCount: 0, planUsed: 0, planLimit: 0,
       myConversationsOpen: 0, myConversationsResolvedToday: 0, myAvgResponseMinutes: 0, myMessagesSentToday: 0,
     }

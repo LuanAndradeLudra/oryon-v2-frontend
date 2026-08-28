@@ -13,12 +13,17 @@ import { KpiGrid }          from '@/components/dashboard/KpiGrid'
 import { VolumeChart }      from '@/components/dashboard/VolumeChart'
 import { StatusDonut }      from '@/components/dashboard/StatusDonut'
 import { TagsChart }        from '@/components/dashboard/TagsChart'
-import { CsatChart }        from '@/components/dashboard/CsatChart'
 import { PeakHoursHeatmap } from '@/components/dashboard/PeakHoursHeatmap'
 import { AgentTable }       from '@/components/dashboard/AgentTable'
 import { ActivityFeed }     from '@/components/dashboard/ActivityFeed'
 import { AiInsightsSection } from '@/components/dashboard/AiInsightsSection'
 import { isFeatureVisible } from '@/config/featureFlags'
+// import { CsatChart } from '@/components/dashboard/CsatChart'
+// Removido (R48) — sem pesquisa de satisfação implementada, csatChart vem
+// sempre vazio do backend ([]); mostrar o card "Satisfação & NPS" vazio
+// pareceria falta de dado real, quando é feature que ainda não existe.
+// Reativar quando a pesquisa de CSAT/NPS for implementada (ver follow-ups
+// do plano SCRUM-341).
 // import { MarketingFunnelSection } from '@/components/dashboard/MarketingFunnelSection'
 // Removido temporariamente — endpoint /api/analytics/marketing-funnel ainda nao
 // existe no backend; trazer de volta quando o endpoint for implementado.
@@ -131,48 +136,81 @@ export function DashboardPage() {
       // even a single hour can produce dozens of conversation_assigned /
       // resolved rows.
       const sinceIso = new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+      // R46: dateRange (seletor "Hoje/7 dias/30 dias/Este mês") propagado
+      // pra /home/snapshot e /home/stats — os dois endpoints que o backend
+      // (A-71) já sabe filtrar por período. /activity-feed fica de fora de
+      // propósito: é um "vislumbre" das últimas 4h, não uma visão do período
+      // selecionado (ver comentário acima) — atividade mais antiga pertence
+      // à tela de auditoria dedicada.
       const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.all([
-        axios.get(`${API}/home/snapshot`).catch(() => ({ data: null })),
-        axios.get<HomeStats>(`${API}/home/stats`),
+        axios.get(`${API}/home/snapshot?range=${dateRange}`).catch(() => ({ data: null })),
+        axios.get<HomeStats>(`${API}/home/stats?range=${dateRange}`),
         axios.get<{ data: ActivityFeedApiRow[] }>(`${API}/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
       ])
 
       // Start with empty structure, fill with real data
       const snap = buildEmptySnapshot()
 
-      // Override ALL KPIs with real values (zero trend since no historical data)
+      // Override KPIs with real values where the backend actually computes
+      // them (zero trend since no historical data). KPIs the backend never
+      // calculates stay `null` — rendered as "—", not a fabricated "0"/
+      // "0.0%" that would look like a real measurement (R12).
       const s = stats
-      const realKpis: Record<string, number> = {
+      const realKpis: Record<string, number | null> = {
         'total_conversations':      s.totalConversations ?? ((s.conversationsOpen ?? 0) + (s.conversationsResolvedToday ?? 0) + (s.queueCount ?? 0)),
-        'active_conversations':     s.conversationsOpen ?? 0,
-        'queued':                   s.queueCount ?? 0,
+        // QA ao vivo: usar s.conversationsOpen/s.queueCount aqui (estado
+        // atual, sem filtro) fazia esses dois cards nunca reagirem ao
+        // seletor de período — são os mesmos campos que a Home usa pra
+        // mostrar a fila "ao vivo" e por isso não podem ser escopados por
+        // período. O backend expõe uma versão dedicada pro Dashboard,
+        // conversationsOpenInRange/queueCountInRange (mesmo critério
+        // updatedAt >= rangeStart do resto dos KPIs "do período" aqui).
+        'active_conversations':     s.conversationsOpenInRange ?? 0,
+        'queued':                   s.queueCountInRange ?? 0,
         'resolved':                 s.conversationsResolvedToday ?? 0,
-        'abandoned':                0,
-        'resolution_rate':          s.totalConversations ? Math.round(((s.conversationsResolvedToday ?? 0) / Math.max(s.totalConversations, 1)) * 100) : 0,
-        'abandon_rate':             0,
+        // R47/A-65: abandonedCount/abandonRate agora calculados no backend
+        // (updatedAt dentro do período, mesmo espírito de conversationsResolvedToday).
+        'abandoned':                s.abandonedCount ?? null,
+        // R45: antes calculado aqui como conversationsResolvedToday / totalConversations
+        // (histórico) — duas janelas de tempo incompatíveis, tendia a 0
+        // conforme a base crescia. Backend (A-66) já calcula com as duas
+        // pontas na mesma janela.
+        'resolution_rate':          s.resolutionRate ?? 0,
+        'abandon_rate':             s.abandonRate ?? null,
         'first_response_time':      (s.avgResponseMinutes ?? 0) * 60,
-        'avg_resolution_time':      0,
-        'sla_compliance':           0,
-        'csat':                     0,
-        'nps':                      0,
-        'recontact_rate':           0,
+        // R47/A-67: agregado tenant-wide vem de getSnapshot (dbSnapshot),
+        // não de getHomeStats (stats) — média direta sobre as conversas
+        // resolvidas no período, não a média das médias por agente.
+        'avg_resolution_time':      dbSnapshot?.avgResolutionTimeTenant ?? null,
+        // R48: csat/nps/sla_compliance removidos do KPI_CATALOG (ver
+        // types/dashboard.ts) — sem entrada aqui, essas keys nem existem
+        // mais em snap.kpis. recontact_rate agora é calculado de verdade
+        // (A-70) em vez de ficar null.
+        'recontact_rate':           s.recontactRate ?? 0,
         'msgs_received':            s.messagesReceivedToday ?? 0,
         'msgs_sent':                s.messagesSentToday ?? 0,
         'new_contacts':             s.newContactsThisWeek ?? 0,
-        'bot_deflection':           0,
-        'bot_resolved':             0,
-        'agents_online':            s.agentsOnline ?? 0,
-        'team_utilization':         0,
-        'campaign_sent':            0,
-        'campaign_delivery_rate':   0,
-        'campaign_read_rate':       0,
-        'campaign_reply_rate':      0,
-        'campaign_ctr':             0,
-        'campaign_optout_rate':     0,
+        // R47/A-69: mensagens outbound sem sentByUserId identificam o bot
+        // (mesmo critério de messagesSent "humano" na tabela de equipe).
+        'bot_deflection':           s.botDeflectionRate ?? null,
+        'bot_resolved':             s.botResolved ?? null,
+        // agentsOnline: backend manda null quando não há rastreamento de
+        // presença (sem heartbeat via WebSocket ainda) — não usar `?? 0`
+        // aqui, senão fabrica "0 online" como se fosse medido de verdade.
+        'agents_online':            s.agentsOnline ?? null,
+        // R47/A-67: mesma origem de avg_resolution_time acima (dbSnapshot).
+        'team_utilization':         dbSnapshot?.teamUtilization ?? null,
+        // R47/A-68: Campaign.stats (jsonb) somado por tenant no período.
+        'campaign_sent':            s.campaignSent ?? null,
+        'campaign_delivery_rate':   s.campaignDeliveryRate ?? null,
+        'campaign_read_rate':       s.campaignReadRate ?? null,
+        'campaign_reply_rate':      s.campaignReplyRate ?? null,
+        'campaign_ctr':             s.campaignCtr ?? null,
+        'campaign_optout_rate':     s.campaignOptoutRate ?? null,
       }
       snap.kpis = snap.kpis.map((kpi: KpiMetric) => {
         const val = realKpis[kpi.id]
-        return val !== undefined ? { ...kpi, value: val, trend: 0 } : { ...kpi, value: 0, trend: 0 }
+        return val !== undefined ? { ...kpi, value: val, trend: 0 } : { ...kpi, value: null, trend: 0 }
       })
 
       // Override status donut with real data
@@ -202,7 +240,7 @@ export function DashboardPage() {
 
       // Override realtime strip
       snap.realtime = {
-        agentsOnline:        s.agentsOnline ?? 0,
+        agentsOnline:        s.agentsOnline ?? null,
         activeConversations: s.conversationsOpen ?? 0,
         queueSize:           s.queueCount ?? 0,
         avgWaitSeconds:      (s.avgResponseMinutes ?? 0) * 60,
@@ -263,7 +301,7 @@ export function DashboardPage() {
 
         {/* Strip realtime — em mobile vira scroll horizontal para caber */}
         <div className={isMobile ? 'overflow-x-auto' : ''}>
-          <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
+          <RealtimeStrip status={snapshot?.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.agentMetrics.length, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
         </div>
 
         {/* Mobile-only toolbar de filtros (date range + refresh) */}
@@ -339,7 +377,7 @@ export function DashboardPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <TagsChart data={snapshot.tagVolumes} />
-                  <CsatChart data={snapshot.csatChart} />
+                  {/* <CsatChart data={snapshot.csatChart} /> — ver comentário do import (R48): sem pesquisa de satisfação implementada ainda */}
                 </div>
 
                 <PeakHoursHeatmap data={snapshot.heatmap} />

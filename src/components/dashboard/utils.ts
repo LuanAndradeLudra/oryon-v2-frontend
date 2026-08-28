@@ -1,6 +1,7 @@
 import type { KpiUnit } from '@/types/dashboard'
 
-export function formatKpiValue(value: number, unit: KpiUnit): string {
+export function formatKpiValue(value: number | null, unit: KpiUnit): string {
+  if (value === null) return '—'
   switch (unit) {
     case 'count':
       return value.toLocaleString('pt-BR')
@@ -18,10 +19,6 @@ export function formatKpiValue(value: number, unit: KpiUnit): string {
       const m = Math.round((value % 3600) / 60)
       return m > 0 ? `${h}h ${m}m` : `${h}h`
     }
-    case 'csat_score':
-      return value === 0 ? '—' : `${value.toFixed(1)}`
-    case 'nps_score':
-      return value > 0 ? `+${Math.round(value)}` : `${Math.round(value)}`
     case 'currency':
       return 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     default:

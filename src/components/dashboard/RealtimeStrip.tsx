@@ -20,7 +20,7 @@ export function RealtimeStrip({ status }: { status: RealtimeStatus }) {
       <div className="flex items-center gap-1.5 text-surface-400">
         <Users className="w-3.5 h-3.5 text-surface-600" />
         <span>Usuários:</span>
-        <span className="font-semibold text-online tabular-nums">{status.agentsOnline}/{status.agentsTotal}</span>
+        <span className="font-semibold text-online tabular-nums">{status.agentsOnline ?? '—'}/{status.agentsTotal}</span>
       </div>
 
       <div className="w-px h-4 bg-surface-800" />

@@ -2,11 +2,17 @@
 
 export type DateRange = 'today' | '7d' | '30d' | 'month'
 
+// R48: csat/nps/sla_compliance removidos do catálogo — nenhuma das três tem
+// fonte de dado real hoje (sem tabela de pesquisa de satisfação, sem config
+// de SLA por tenant), então em vez de mostrar "0"/"0.0%" fabricado, elas
+// somem completamente do dashboard (inclusive do customizer "Personalizar")
+// até a feature correspondente existir. Ver plano do épico SCRUM-341 pra
+// contexto de follow-up.
 export type KpiId =
   | 'total_conversations' | 'active_conversations' | 'queued'
   | 'resolved' | 'abandoned' | 'resolution_rate' | 'abandon_rate'
-  | 'first_response_time' | 'avg_resolution_time' | 'sla_compliance'
-  | 'csat' | 'nps' | 'recontact_rate'
+  | 'first_response_time' | 'avg_resolution_time'
+  | 'recontact_rate'
   | 'msgs_received' | 'msgs_sent' | 'new_contacts'
   | 'bot_deflection' | 'bot_resolved'
   | 'agents_online' | 'team_utilization'
@@ -20,18 +26,22 @@ export type KpiId =
   | 'ads_avg_cpl' | 'ads_avg_roas' | 'ads_conversion_rate'
   | 'ads_qualified_rate' | 'ads_customer_rate'
 
-export type KpiUnit = 'count' | 'percent' | 'seconds' | 'csat_score' | 'nps_score' | 'currency'
+// R48: csat_score/nps_score removidos junto com os KPIs csat/nps (nenhum
+// outro campo do catálogo usa essas unidades).
+export type KpiUnit = 'count' | 'percent' | 'seconds' | 'currency'
 
 export interface KpiDefinition {
   id: KpiId
   label: string
-  category: 'Atendimento' | 'Velocidade' | 'Qualidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing'
+  category: 'Atendimento' | 'Velocidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing'
   unit: KpiUnit
   trendIsGood: 'up' | 'down' | 'neutral' // whether an increasing trend is good
 }
 
 export interface KpiMetric extends KpiDefinition {
-  value: number
+  /** null quando o backend ainda não calcula esse KPI — nunca renderizar
+   *  como "0" ou "0.0%", que pareceria um valor real medido. */
+  value: number | null
   trend: number    // % change vs previous period
   sparkline: number[] // 7 data points (oldest → newest)
 }
@@ -72,13 +82,17 @@ export interface AgentMetrics {
   userId: string
   name: string
   role: string
-  departmentName: string
-  isOnline: boolean
+  /** null quando o agente não tem setor configurado. */
+  departmentName: string | null
+  /** null enquanto não houver rastreamento de presença — nunca renderizar
+   *  como "Offline" nesse caso, é "sem dado", não "sabemos que está offline". */
+  isOnline: boolean | null
   conversationsToday: number
   resolvedToday: number
   avgResponseTime: number   // seconds
   avgResolutionTime: number // seconds
-  csat: number              // 0-5
+  /** null enquanto não houver pesquisa de satisfação. */
+  csat: number | null       // 0-5
   slaCompliance: number     // 0-100
   utilization: number       // 0-100
 }
@@ -119,7 +133,8 @@ export interface ActivityEvent {
 }
 
 export interface RealtimeStatus {
-  agentsOnline: number
+  /** null = sem rastreamento de presença ainda (backend não fabrica 0). */
+  agentsOnline: number | null
   agentsTotal: number
   activeConversations: number
   queued: number
@@ -135,12 +150,12 @@ export interface DashboardSnapshot {
   heatmap: HeatmapCell[]
   agentMetrics: AgentMetrics[]
   activityFeed: ActivityEvent[]
-  realtime?: { agentsOnline: number; activeConversations: number; queueSize: number; avgWaitSeconds: number }
+  realtime?: { agentsOnline: number | null; activeConversations: number; queueSize: number; avgWaitSeconds: number }
   csatTimeline?: CsatDataPoint[]
 }
 
 export const EMPTY_REALTIME_STATUS: RealtimeStatus = {
-  agentsOnline: 0,
+  agentsOnline: null,
   agentsTotal: 0,
   activeConversations: 0,
   queued: 0,
@@ -157,12 +172,12 @@ export const KPI_CATALOG: KpiDefinition[] = [
   { id: 'abandoned',            label: 'Abandonadas',              category: 'Atendimento', unit: 'count',      trendIsGood: 'down'   },
   { id: 'resolution_rate',      label: 'Taxa de Resolução',        category: 'Atendimento', unit: 'percent',    trendIsGood: 'up'     },
   { id: 'abandon_rate',         label: 'Taxa de Abandono',         category: 'Atendimento', unit: 'percent',    trendIsGood: 'down'   },
+  // R48: recontact_rate move de "Qualidade" pra "Atendimento" — agora
+  // calculado de verdade (A-70), a categoria "Qualidade" deixa de existir
+  // no catálogo (csat/nps/sla_compliance removidos, ver comentário no KpiId).
+  { id: 'recontact_rate',       label: 'Taxa de Recontato',        category: 'Atendimento', unit: 'percent',    trendIsGood: 'down'   },
   { id: 'first_response_time',  label: 'TMR (1ª Resposta)',        category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down'   },
   { id: 'avg_resolution_time',  label: 'Tempo Médio Resolução',    category: 'Velocidade',  unit: 'seconds',    trendIsGood: 'down'   },
-  { id: 'sla_compliance',       label: 'SLA Compliance',           category: 'Velocidade',  unit: 'percent',    trendIsGood: 'up'     },
-  { id: 'csat',                 label: 'Satisfação (CSAT)',        category: 'Qualidade',   unit: 'csat_score', trendIsGood: 'up'     },
-  { id: 'nps',                  label: 'NPS',                      category: 'Qualidade',   unit: 'nps_score',  trendIsGood: 'up'     },
-  { id: 'recontact_rate',       label: 'Taxa de Recontato',        category: 'Qualidade',   unit: 'percent',    trendIsGood: 'down'   },
   { id: 'msgs_received',        label: 'Msgs Recebidas',           category: 'Volume',      unit: 'count',      trendIsGood: 'neutral'},
   { id: 'msgs_sent',            label: 'Msgs Enviadas',            category: 'Volume',      unit: 'count',      trendIsGood: 'neutral'},
   { id: 'new_contacts',         label: 'Novos Contatos',           category: 'Volume',      unit: 'count',      trendIsGood: 'up'     },
@@ -194,6 +209,47 @@ export const KPI_CATALOG: KpiDefinition[] = [
   { id: 'ads_customer_rate',      label: 'Taxa de Fechamento',        category: 'Marketing',   unit: 'percent',    trendIsGood: 'up'     },
 ]
 
+// R50: texto explicativo (definição + fórmula) exibido no tooltip "i" de
+// cada card do dashboard — mesmo padrão de COLUMN_TOOLTIPS já usado na
+// tabela de Performance da Equipe (AgentTable.tsx).
+export const KPI_DESCRIPTIONS: Record<KpiId, string> = {
+  total_conversations:    'Total de conversas com atividade (criadas ou atualizadas) dentro do período selecionado.',
+  active_conversations:   'Conversas com status "aberta" no momento.',
+  queued:                 'Conversas com status "pendente" (aguardando atendimento) no momento.',
+  resolved:                'Conversas marcadas como resolvidas dentro do período selecionado.',
+  abandoned:               'Conversas que ficaram com status "abandonada" dentro do período selecionado.',
+  resolution_rate:        'Resolvidas no período ÷ conversas criadas no mesmo período.',
+  abandon_rate:            'Abandonadas no período ÷ conversas criadas no mesmo período.',
+  recontact_rate:          'Conversas reabertas pelo cliente no período ÷ conversas resolvidas no mesmo período — indica retrabalho.',
+  first_response_time:    'Tempo médio entre a mensagem do cliente e a primeira resposta (humana ou da IA) no período.',
+  avg_resolution_time:    'Tempo médio entre a criação e a resolução das conversas resolvidas no período.',
+  msgs_received:          'Mensagens recebidas do cliente (inbound) dentro do período.',
+  msgs_sent:               'Mensagens enviadas (outbound, humanas ou da IA) dentro do período.',
+  new_contacts:            'Contatos novos criados nos últimos 7 dias corridos (não segue o seletor de período).',
+  bot_deflection:          '% de conversas do período que nunca precisaram de intervenção humana — só IA.',
+  bot_resolved:            'Conversas resolvidas no período sem nenhuma mensagem enviada por um humano.',
+  agents_online:           'Agentes com sessão ativa agora. Requer rastreamento de presença — indisponível até a feature existir.',
+  team_utilization:        'Conversas abertas atribuídas à equipe ÷ capacidade total estimada (20 conversas por agente).',
+  campaign_sent:           'Mensagens de disparo enviadas no período, somadas de todas as campanhas.',
+  campaign_delivery_rate:  'Entregues ÷ enviadas, somado de todas as campanhas do período.',
+  campaign_read_rate:      'Lidas ÷ entregues, somado de todas as campanhas do período.',
+  campaign_reply_rate:     'Respondidas ÷ entregues, somado de todas as campanhas do período.',
+  campaign_ctr:             'Cliques em botão/link ÷ entregues, somado de todas as campanhas do período.',
+  campaign_fail_rate:      'Falhas de envio ÷ enviadas, somado de todas as campanhas do período.',
+  campaign_optout_rate:    'Opt-outs ÷ entregues, somado de todas as campanhas do período.',
+  campaigns_active:        'Campanhas de disparo com status ativo agora.',
+  campaigns_total:         'Total de campanhas de disparo criadas no período.',
+  campaign_reach:          'Contatos únicos alcançados por disparos no período.',
+  ads_leads_meta:           'Leads atribuídos a campanhas do Meta Ads no período.',
+  ads_leads_google:        'Leads atribuídos a campanhas do Google Ads no período.',
+  ads_total_spend:         'Investimento total em mídia paga (Meta + Google Ads) no período.',
+  ads_avg_cpl:              'Custo por lead médio (investimento ÷ leads) no período.',
+  ads_avg_roas:             'Retorno sobre investimento em mídia paga (receita ÷ investimento) no período.',
+  ads_conversion_rate:     'Leads de anúncios que viraram oportunidade ÷ total de leads de anúncios no período.',
+  ads_qualified_rate:      'Leads de anúncios qualificados ÷ total de leads de anúncios no período.',
+  ads_customer_rate:       'Leads de anúncios que viraram cliente ÷ total de leads de anúncios no período.',
+}
+
 export const DEFAULT_KPI_SLOTS: KpiId[] = [
   'total_conversations',
   'active_conversations',
@@ -201,8 +257,6 @@ export const DEFAULT_KPI_SLOTS: KpiId[] = [
   'resolved',
   'resolution_rate',
   'first_response_time',
-  'csat',
-  'sla_compliance',
   'new_contacts',
   'bot_deflection',
   // Campaign defaults (Meta WhatsApp metrics)
@@ -213,11 +267,13 @@ export const DEFAULT_KPI_SLOTS: KpiId[] = [
   'campaign_optout_rate',
 ]
 
-/** Creates an empty dashboard snapshot with zero-valued KPIs from the catalog */
+/** Creates an empty dashboard snapshot with no-data KPIs from the catalog
+ *  (used before the first fetch resolves and when the fetch fails — value
+ *  null renders "—" instead of a fabricated "0"/"0.0%"). */
 export function buildEmptySnapshot(): DashboardSnapshot {
   const kpis: KpiMetric[] = KPI_CATALOG.map((def) => ({
     ...def,
-    value: 0,
+    value: null,
     trend: 0,
     sparkline: [0, 0, 0, 0, 0, 0, 0],
   }))
