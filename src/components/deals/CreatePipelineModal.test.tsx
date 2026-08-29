@@ -15,6 +15,9 @@ vi.mock('@/services/api', () => ({
 // F13-904: "Sugerir etapas com IA" — o Hub e a chamada ao agent-server entram
 // mockados; o que interessa aqui é o resultado virar rascunho editável.
 const mockGenerate = vi.fn()
+/** Resposta que `parseStreamResult` devolve — variável à parte, em vez de
+ *  pendurar uma propriedade no mock (que não existe no tipo `Mock`). */
+let suggestionResult: { stages: Array<{ label: string; color?: string; isTerminal?: boolean }>; customFields: unknown[] } = { stages: [], customFields: [] }
 vi.mock('@/services/companyContextService', () => ({
   loadHubAsync: async () => ({
     companyName: 'Clínica Serra', industry: 'Saúde', businessType: [],
@@ -24,7 +27,7 @@ vi.mock('@/services/companyContextService', () => ({
 vi.mock('@/services/anthropicService', () => ({
   businessContextFromHub: (hub: unknown) => hub,
   generateCRMConfig: (...args: unknown[]) => mockGenerate(...args),
-  parseStreamResult: async () => mockGenerate.result,
+  parseStreamResult: async () => suggestionResult,
 }))
 
 import { CreatePipelineModal, type CreatePipelineData } from './CreatePipelineModal'
@@ -197,7 +200,7 @@ describe('CreatePipelineModal — edição', () => {
 // ── F13-904 — sugestão de etapas por IA no "Novo funil" ─────────────────────
 describe('CreatePipelineModal — sugerir etapas com IA (F13-904)', () => {
   it('substitui as etapas normais pelo que a IA sugeriu, mantendo os terminais do tipo', async () => {
-    mockGenerate.result = {
+    suggestionResult = {
       stages: [
         { label: 'Triagem', color: '#111111' },
         { label: 'Orçamento' },

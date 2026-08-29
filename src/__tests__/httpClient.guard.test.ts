@@ -16,28 +16,24 @@
 // `axios` global (há um comentário no `api.ts` explicando). Este teste ataca a
 // causa: não deixar o padrão voltar.
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, relative } from 'node:path'
 
-const ROOTS = ['src/components', 'src/pages', 'src/hooks']
+const ROOT_PREFIXES = ['/src/components/', '/src/pages/', '/src/hooks/']
 
 /** `axios.isAxiosError` é utilitário de tipo, não cliente HTTP — segue liberado. */
 const ALLOWED_AXIOS_MEMBERS = new Set(['isAxiosError'])
 
-function walk(dir: string): string[] {
-  const out: string[] = []
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry)
-    if (statSync(full).isDirectory()) out.push(...walk(full))
-    else if (/\.tsx?$/.test(full) && !/\.test\.tsx?$/.test(full)) out.push(full)
-  }
-  return out
-}
+// `import.meta.glob` do Vite em vez de `node:fs`: o teste roda no mesmo
+// ambiente do app, sem depender de @types/node no tsconfig da aplicação.
+const MODULES = import.meta.glob('/src/**/*.{ts,tsx}', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
 
-const FILES = ROOTS.flatMap((r) => walk(r)).map((f) => ({
-  path: relative(process.cwd(), f).replace(/\\/g, '/'),
-  source: readFileSync(f, 'utf8'),
-}))
+const FILES = Object.entries(MODULES)
+  .filter(([path]) => ROOT_PREFIXES.some((p) => path.startsWith(p)))
+  .filter(([path]) => !/\.test\.tsx?$/.test(path))
+  .map(([path, source]) => ({ path, source }))
 
 describe('camada HTTP — um cliente só', () => {
   it('há arquivos para inspecionar (o guard não passa por vacuidade)', () => {
