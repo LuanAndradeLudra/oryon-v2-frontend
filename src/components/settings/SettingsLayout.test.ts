@@ -28,7 +28,9 @@ describe('visibleSettingsNav · gate de múltiplos funis', () => {
   it('mostra as seções de funil para admin com multiPipeline=true', () => {
     const sections = sectionsOf('admin', { multiPipeline: true })
     expect(sections).toContain('pipeline-stages')
-    expect(sections).toContain('pipeline-routing')
+    // F11-888: o roteamento saiu do menu (rota direta mantida), mas 'Estágios do funil' segue.
+    expect(sections).not.toContain('pipeline-routing')
+    expect(sections).toContain('pipeline-stages')
   })
 
   it('o flag não sobrepõe o papel: agente não vê seções adminOnly mesmo com o flag', () => {
