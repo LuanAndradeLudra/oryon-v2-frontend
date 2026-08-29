@@ -14,7 +14,9 @@ import { HandoffChip } from './AiHandoffBanner'
 import { ConversationDealIndicator } from './ConversationDealIndicator'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
-import type { Conversation, Tag as TagType, User } from '@/types'
+import { useResolveWithOutcome } from '@/hooks/useResolveWithOutcome'
+import { ResolveOutcomePopover } from './ResolveOutcomePopover'
+import type { Conversation, DealOutcomeInput, Tag as TagType, User } from '@/types'
 
 const STATUS_OPTIONS = [
   { value: 'open' as const, label: 'Abertas' },
@@ -33,7 +35,8 @@ interface ChatHeaderProps {
   conversation: Conversation
   allTags: TagType[]
   allUsers: User[]
-  onStatusChange: (status: 'open' | 'pending' | 'resolved') => void
+  /** F10 (SCRUM-882): ao resolver com desfecho, `dealOutcome` vai junto (fecha o registro-alvo antes de resolver). */
+  onStatusChange: (status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | Promise<void>
   onToggleInfo: () => void
   infoOpen: boolean
   onAddTag: (tag: TagType) => void
@@ -66,6 +69,13 @@ export function ChatHeader({
   // nasce ligado a ela (`originConversationId`). O chip do cabeçalho
   // (`ConversationDealIndicator`) atualiza pelo socket `deal:changed`.
   const addToPipeline = useAddToPipeline()
+  // F10 (SCRUM-880): "Resolvida" com registro-alvo aberto → popover de desfecho
+  // (prancheta 5); sem alvo, resolve como sempre.
+  const resolve = useResolveWithOutcome({
+    conversationId: conversation.id,
+    contactId: contact.id,
+    onResolve: (dealOutcome) => onStatusChange('resolved', dealOutcome),
+  })
 
   const [archiveOpen,  setArchiveOpen]  = useState(false)
   const [statusOpen,   setStatusOpen]   = useState(false)
@@ -109,6 +119,8 @@ export function ChatHeader({
         type="button"
         onClick={() => { setMoreOpen(false); setStatusOpen((v) => !v) }}
         title="Alterar status"
+        disabled={resolve.loading}
+        aria-busy={resolve.loading || undefined}
         style={{ ['--chip']: status === 'resolved'
               ? 'var(--color-cstatus-resolved)'
               : status === 'pending'
@@ -147,7 +159,10 @@ export function ChatHeader({
                 key={v}
                 type="button"
                 onClick={() => {
-                  if (!active) onStatusChange(v)
+                  if (!active) {
+                    if (v === 'resolved') void resolve.requestResolve()
+                    else void onStatusChange(v)
+                  }
                   setStatusOpen(false)
                 }}
                 className={cn(
@@ -163,6 +178,16 @@ export function ChatHeader({
           })}
         </div>
       )}
+      <ResolveOutcomePopover
+        open={!!resolve.target}
+        mobile={isMobile}
+        target={resolve.target}
+        contactName={contact.displayName || contact.waId}
+        currentAmountCents={resolve.currentAmountCents}
+        busy={resolve.busy}
+        onConfirm={resolve.confirm}
+        onCancel={resolve.close}
+      />
     </div>
   )
 
@@ -196,7 +221,7 @@ export function ChatHeader({
             <WhatsAppIcon size={10} />
             <span className="truncate">{contact.waId}</span>
           </div>
-          <div className="mt-0.5"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} /></div>
+          <div className="mt-0.5"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} conversationId={conversation.id} /></div>
           {tags.length > 0 && (
             <div className="flex items-center flex-wrap gap-1 mt-0.5">
               {visibleTags.map((t) => (
@@ -299,7 +324,7 @@ export function ChatHeader({
               </>
             )}
           </div>
-          <div className="mt-1"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} /></div>
+          <div className="mt-1"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} conversationId={conversation.id} /></div>
         </div>
       </div>
 

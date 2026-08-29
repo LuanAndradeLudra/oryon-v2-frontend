@@ -48,6 +48,8 @@ import type {
   WhatsAppNumber,
   WhatsAppTemplate,
   TemplateHeaderTypeInput,
+  AiDealTargetView,
+  DealOutcomeInput,
 } from '@/types'
 
 import { apiBaseUrl, isNativePlatform } from '@/config/env'
@@ -906,8 +908,11 @@ export const conversationsApi = {
     return api.get<Conversation>(`/conversations/${id}`)
   },
 
-  updateStatus(id: string, status: 'resolved' | 'open' | 'pending') {
-    return api.patch<Conversation>(`/conversations/${id}/status`, { status })
+  /** F10 (SCRUM-882): `dealOutcome` só com `resolved` — fecha o registro-alvo da
+   *  conversa (precedência §4.7) pela porta única ANTES de resolver; motivo
+   *  inválido → 400 sem resolver. Omitir = "sem decisão" (registro segue aberto). */
+  updateStatus(id: string, status: 'resolved' | 'open' | 'pending', dealOutcome?: DealOutcomeInput) {
+    return api.patch<Conversation>(`/conversations/${id}/status`, dealOutcome ? { status, dealOutcome } : { status })
   },
 
   assign(id: string, userId: string | null) {
@@ -1356,6 +1361,12 @@ export const dealsApi = {
   },
   get(id: string) {
     return api.get<Deal>(`/deals/${id}`)
+  },
+  /** F10 (SCRUM-882): alvo da conversa pela MESMA precedência que o backend usa ao
+   *  resolver com desfecho (§4.7: conversa de origem → campanha única → `no_target`).
+   *  `no_target` é resposta normal. Traz tipo, terminais e catálogo de motivos. */
+  conversationTarget(conversationId: string) {
+    return api.get<AiDealTargetView>('/deals/ai/stages', { params: { conversationId } })
   },
   create(dto: Partial<Deal>) {
     return api.post<Deal>('/deals', dto)

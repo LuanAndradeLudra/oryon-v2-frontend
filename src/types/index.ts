@@ -280,6 +280,31 @@ export interface CloseReason {
   outcome: 'won' | 'lost' | 'any'
 }
 
+/** F10 (SCRUM-882): desfecho ao resolver a conversa (`PATCH /conversations/:id/status`). */
+export interface DealOutcomeInput {
+  outcome: 'won' | 'lost'
+  /** Motivo do catálogo por tipo de funil (I5). */
+  reason: string
+  note?: string
+}
+
+/** F10 (SCRUM-882): envelope de `GET /deals/ai/stages?conversationId=` (F6) — o
+ *  registro-alvo da conversa pela precedência §4.7. `no_target` é resposta
+ *  normal (a conversa não tem registro aberto). */
+export interface AiDealTargetView {
+  target: 'origin_conversation' | 'campaign' | 'no_target'
+  dealId?: string
+  pipelineId?: string
+  pipelineName?: string | null
+  pipelineKind?: PipelineKind
+  terminalLabels?: TerminalLabels
+  currentStageKey?: string | null
+  currentStageLabel?: string | null
+  /** Só etapas não-terminais. */
+  stages: Array<{ id: string; key: string; label: string; order: number }>
+  closeReasons?: { won: Array<{ key: string; label: string }>; lost: Array<{ key: string; label: string }> }
+}
+
 /** Pipeline de negócio (múltiplos por tenant). O `isDefault` é o pipeline padrão. */
 export interface Pipeline {
   id: string

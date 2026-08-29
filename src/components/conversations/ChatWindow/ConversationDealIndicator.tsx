@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { KanbanSquare } from 'lucide-react'
+import { KanbanSquare, CheckCircle2, XCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { dealsApi, pipelineRoutingApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
+import { pickIndicatorDeals } from '@/lib/dealIndicator'
 import { cn, hexToRgba } from '@/lib/utils'
 import type { Deal } from '@/types'
 
@@ -16,6 +18,8 @@ interface DealChip {
   color: string
   /** Funil roteado pra linha WhatsApp desta conversa (pipeline-routing) — destacado no chip. */
   isRouted: boolean
+  /** F10 (SCRUM-883): registro desta conversa já fechado — chip no terminal com ícone de fechado. */
+  closed?: 'won' | 'lost'
 }
 
 /**
@@ -31,7 +35,7 @@ interface DealChip {
  * uma subscrição extra pra isso; só combina o cache com os deals abertos e o
  * roteamento (que aí sim são específicos deste contato/linha).
  */
-export function ConversationDealIndicator({ contactId, whatsappNumberId }: { contactId: string; whatsappNumberId?: string }) {
+export function ConversationDealIndicator({ contactId, whatsappNumberId, conversationId }: { contactId: string; whatsappNumberId?: string; conversationId?: string }) {
   const { pipelines } = useCRMConfig()
   // Gate de múltiplos funis (SCRUM-498): sem o flag não há chip possível
   // (`pipelines` vem vazio), então nem os deals nem o roteamento são
@@ -51,7 +55,7 @@ export function ConversationDealIndicator({ contactId, whatsappNumberId }: { con
     ])
       .then(([dealsRes, routingRes]) => {
         const deals = Array.isArray(dealsRes.data) ? dealsRes.data : []
-        setOpenDeals(deals.filter((d) => d.status === 'open'))
+        setOpenDeals(pickIndicatorDeals(deals, conversationId))
         setRoutedPipelineId(
           routingRes
             ? (routingRes.data ?? []).find((r) => r.whatsappNumberId === whatsappNumberId)?.pipelineId
@@ -59,7 +63,7 @@ export function ConversationDealIndicator({ contactId, whatsappNumberId }: { con
         )
       })
       .catch(() => { setOpenDeals([]); setRoutedPipelineId(undefined) })
-  }, [contactId, whatsappNumberId, multiPipeline])
+  }, [contactId, whatsappNumberId, multiPipeline, conversationId])
 
   useEffect(() => { load() }, [load])
 
@@ -70,7 +74,16 @@ export function ConversationDealIndicator({ contactId, whatsappNumberId }: { con
       if (p?.contactId === contactId) load()
     }
     socket.on('deal:changed', onDealChanged)
-    return () => { socket.off('deal:changed', onDealChanged) }
+    // F10 (SCRUM-883): quem resolveu com desfecho avisa na hora — o socket chega depois.
+    const onLocalInvalidate = (e: Event) => {
+      const detail = (e as CustomEvent<{ contactId?: string }>).detail
+      if (!detail?.contactId || detail.contactId === contactId) load()
+    }
+    window.addEventListener(DEALS_INVALIDATE_EVENT, onLocalInvalidate)
+    return () => {
+      socket.off('deal:changed', onDealChanged)
+      window.removeEventListener(DEALS_INVALIDATE_EVENT, onLocalInvalidate)
+    }
   }, [contactId, load, multiPipeline])
 
   const chips = useMemo(() => {
@@ -87,6 +100,7 @@ export function ConversationDealIndicator({ contactId, whatsappNumberId }: { con
         stage: stage.label,
         color: stage.color,
         isRouted: pipe.id === routedPipelineId,
+        closed: deal.status === 'won' || deal.status === 'lost' ? deal.status : undefined,
       })
     }
     // Funil roteado primeiro, resto por nome — ordem estável, não depende
@@ -107,17 +121,23 @@ export function ConversationDealIndicator({ contactId, whatsappNumberId }: { con
           key={chip.dealId}
           type="button"
           onClick={() => navigate(`/contacts?pipeline=${chip.pipelineId}`)}
-          title={`${chip.pipeline} · ${chip.stage}${chip.isRouted ? ' — funil desta linha' : ''} — abrir no board`}
+          title={`${chip.pipeline} · ${chip.stage}${chip.closed ? ' — fechado nesta conversa' : chip.isRouted ? ' — funil desta linha' : ''} — abrir no board`}
+          data-testid={chip.closed ? 'deal-chip-closed' : 'deal-chip-open'}
           className={cn(
             'inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium max-w-full',
+            chip.closed && 'opacity-80',
           )}
           style={{
             backgroundColor: hexToRgba(chip.color, 0.15),
             color: chip.color,
-            boxShadow: chip.isRouted ? `inset 0 0 0 1px ${chip.color}` : undefined,
+            boxShadow: chip.isRouted && !chip.closed ? `inset 0 0 0 1px ${chip.color}` : undefined,
           }}
         >
-          <KanbanSquare className="w-2.5 h-2.5 flex-shrink-0" />
+          {chip.closed === 'won'
+            ? <CheckCircle2 className="w-2.5 h-2.5 flex-shrink-0" aria-label="Fechado como ganho" />
+            : chip.closed === 'lost'
+              ? <XCircle className="w-2.5 h-2.5 flex-shrink-0" aria-label="Fechado como perdido" />
+              : <KanbanSquare className="w-2.5 h-2.5 flex-shrink-0" />}
           <span className="truncate">{chip.pipeline} · {chip.stage}</span>
         </button>
       ))}
