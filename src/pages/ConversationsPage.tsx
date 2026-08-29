@@ -24,8 +24,7 @@ import { resolveRange } from '@/lib/dateRange'
 import type {
   Conversation, ConversationFilters,
   SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, SocketUnreadUpdate,
-  Tag, User,
-} from '@/types'
+  Tag, User, DealOutcomeInput } from '@/types'
 
 const CURRENT_USER = { firstName: 'Admin', lastName: 'Oryon', avatarUrl: undefined }
 
@@ -294,12 +293,12 @@ export function ConversationsPage() {
     )
   }, [])
 
-  const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved') => {
-    await updateStatus(id, status)
+  const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => {
+    await updateStatus(id, status, dealOutcome)
     syncActive(id, { status })
     invalidateActivity(id)
     const msg =
-      status === 'resolved' ? 'Conversa resolvida ✓'
+      status === 'resolved' ? (dealOutcome ? 'Conversa resolvida · desfecho registrado ✓' : 'Conversa resolvida ✓')
         : status === 'pending' ? 'Conversa marcada como pendente'
           : 'Conversa marcada como aberta'
     toast(msg, 'success')
