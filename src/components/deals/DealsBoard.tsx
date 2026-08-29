@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Loader2, ArrowRight, MoreVertical, ArrowRightLeft } from 'lucide-react'
+import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { cn, hexToRgba, getActivePipelines } from '@/lib/utils'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
@@ -16,6 +17,11 @@ interface DealsBoardProps {
    *  (SCRUM-293). Omitido/vazio = menu não aparece. */
   pipelines?: Pipeline[]
   onMovePipeline?: (deal: Deal, toPipelineId: string) => void
+  /** F7 (SCRUM-867): funil sem nenhum card → empty state com "Adicionar contato ao funil".
+   *  Omitido = só as colunas vazias (comportamento anterior). */
+  onAddContact?: () => void
+  /** Substantivo do card por tipo de funil ("negócio" × "registro", decisão (a)). Default "negócio". */
+  itemNoun?: string
 }
 
 function brl(cents: number): string {
@@ -28,6 +34,8 @@ function brl(cents: number): string {
  * o status no backend (ganho/perdido nos terminais).
  */
 export function DealsBoard({
+  onAddContact,
+  itemNoun = 'negócio',
   stages, dealsByStage, onMoveStage, loading, onOpenContact, pipelines = [], onMovePipeline,
 }: DealsBoardProps) {
   // `useIsMobile` (matchMedia + resize listener) em vez de `window.innerWidth`
@@ -76,8 +84,25 @@ export function DealsBoard({
     )
   }
 
+  // Empty state do funil recém-criado (F7): as colunas continuam visíveis
+  // (o usuário vê as etapas que acabou de montar) e o CTA abre o cadastro de
+  // contato já com este funil selecionado. Só aparece sem NENHUM card e com
+  // os dados carregados — durante o loading o skeleton das colunas basta.
+  const totalCards = stages.reduce((n, st) => n + (dealsByStage[st.id]?.length ?? 0), 0)
+  const showEmpty = !loading && totalCards === 0 && !!onAddContact
+
   return (
-    <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none">
+    <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none flex flex-col">
+      {showEmpty && (
+        <div className="px-4 pt-4 flex-shrink-0" data-testid="deals-board-empty">
+          <EmptyState
+            icon={UserPlus}
+            title={`Nenhum ${itemNoun} neste funil ainda`}
+            hint={`As etapas já estão prontas. Adicione um contato para abrir o primeiro ${itemNoun} — ele entra na primeira etapa.`}
+            action={{ label: 'Adicionar contato ao funil', onClick: onAddContact }}
+          />
+        </div>
+      )}
       <div
         className="flex gap-3 p-4 h-full min-h-0"
         style={{ minWidth: isDesktop ? stages.length * 280 : undefined }}
