@@ -50,6 +50,7 @@ import type {
   TemplateHeaderTypeInput,
   AiDealTargetView,
   DealOutcomeInput,
+  DealStageHistoryEntry,
 } from '@/types'
 
 import { apiBaseUrl, isNativePlatform } from '@/config/env'
@@ -1367,6 +1368,10 @@ export const dealsApi = {
    *  `no_target` é resposta normal. Traz tipo, terminais e catálogo de motivos. */
   conversationTarget(conversationId: string) {
     return api.get<AiDealTargetView>('/deals/ai/stages', { params: { conversationId } })
+  },
+  /** F11 (SCRUM-886): passagens do registro com rótulos das etapas ("ver histórico" na ficha). */
+  history(id: string) {
+    return api.get<DealStageHistoryEntry[]>(`/deals/${id}/history`)
   },
   create(dto: Partial<Deal>) {
     return api.post<Deal>('/deals', dto)
