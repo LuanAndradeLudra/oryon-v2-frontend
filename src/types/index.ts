@@ -223,6 +223,11 @@ export interface DealLineItem {
   order?: number
 }
 
+/** Origem do registro no funil (Modelo B §4.2, F1-823). */
+export type DealOriginKind = 'manual' | 'import' | 'campaign' | 'journey' | 'event' | 'ai'
+/** Quem executou o último movimento (histórico, F2). */
+export type DealMovedByKind = 'user' | 'ai' | 'journey' | 'campaign' | 'system' | 'automation'
+
 export interface Deal {
   id: string
   contactId: string
@@ -232,6 +237,19 @@ export interface Deal {
   stageId: string               // estágio atual (fonte da verdade do status)
   originConversationId?: string | null
   createdByKind?: 'user' | 'automation' | 'ai'
+  /** F1: de onde o registro veio (campanha, evento, IA, manual, importação, jornada). */
+  originKind?: DealOriginKind
+  originId?: string | null
+  /** F8-870 (board): nome da campanha de origem quando `originKind = 'campaign'`. */
+  originLabel?: string | null
+  /** F1: motivo do desfecho (catálogo por tipo de funil, I5). */
+  closeReason?: string | null
+  closeNote?: string | null
+  /** F8-870 (board): quando entrou na etapa atual (último movimento; fallback updatedAt/createdAt). */
+  stageEnteredAt?: string | null
+  /** F8-870 (board): quem fez o último movimento — `ai` = Judge/tool, `user` = humano, demais = automático. */
+  lastMovedByKind?: DealMovedByKind | null
+  lastMovedByActorName?: string | null
   amountCents: number           // total em centavos
   currency?: string
   note?: string | null
@@ -240,8 +258,8 @@ export interface Deal {
   lineItems?: DealLineItem[]
   createdAt?: string
   updatedAt?: string
-  /** Resumo leve do contato — presente no board por pipeline (GET /deals?pipelineId=). */
-  contact?: { id: string; displayName: string; profilePicUrl: string | null }
+  /** Resumo leve do contato — presente no board por pipeline (GET /deals?pipelineId=). `phone` desde a F8. */
+  contact?: { id: string; displayName: string; profilePicUrl: string | null; phone?: string | null }
 }
 
 /** Tipo do funil (Modelo B §4.2, F1): `sales` = negócios com valor, termina em
