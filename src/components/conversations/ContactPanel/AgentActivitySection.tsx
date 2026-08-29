@@ -14,7 +14,7 @@
 //   * Collapsed by default to 5 items; "Ver todas" expands to the full N≤50.
 
 import { useEffect, useState } from 'react'
-import { Bot, CheckCircle, AlertCircle, Loader2, UserPlus, Tag as TagIcon, MoveRight, MessageSquare } from 'lucide-react'
+import { Bot, CheckCircle, AlertCircle, Loader2, UserPlus, Tag as TagIcon, MoveRight, MessageSquare, KanbanSquare } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { fetchAgentActions, type AgentAction } from '@/services/agentActivityApi'
@@ -148,6 +148,12 @@ function iconFor(a: AgentAction) {
       return TagIcon
     case 'update_contact':
       return MoveRight
+    case 'update_deal_stage':
+      // list_deal_stages (a pure read, like list_stages/list_tags/list_users)
+      // is intentionally absent here — the backend filters those rows out
+      // before they ever reach this UI (empty humanSummary), matching every
+      // other read-only tool's absence from this switch.
+      return KanbanSquare
     default:
       return Bot
   }
@@ -162,6 +168,7 @@ function displayName(tool: string): string {
     add_tag_to_conversation: 'Etiquetou a conversa',
     remove_tag_from_conversation: 'Removeu etiqueta da conversa',
     update_contact: 'Atualizou contato',
+    update_deal_stage: 'Moveu o negócio no funil',
   }
   return map[tool] ?? tool
 }

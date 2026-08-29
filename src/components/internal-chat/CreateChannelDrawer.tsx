@@ -13,13 +13,12 @@ import {
   X, Hash, Building2, Users, Check, ChevronRight, ArrowLeft,
   Loader2, Search,
 } from 'lucide-react'
-import axios from 'axios'
 import { cn, avatarColor } from '@/lib/utils'
 import { Emoji } from '@/lib/emojiText'
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import type { Department, User, InternalChannelType } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 // ─── Emoji quick-pick ─────────────────────────────────────────────────────────
 
@@ -99,7 +98,7 @@ function SectorCard({
       {/* Color swatch */}
       <div
         className="w-9 h-9 rounded-lg flex-shrink-0"
-        style={{ background: dept.color + '30', border: `2px solid ${dept.color}40` }}
+        style={{ background: `color-mix(in srgb, ${dept.color} 19%, transparent)`, border: `2px solid color-mix(in srgb, ${dept.color} 25%, transparent)` }}
       >
         <div className="w-full h-full flex items-center justify-center">
           <Building2 className="w-4 h-4" style={{ color: dept.color }} />
@@ -239,7 +238,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
   useEffect(() => {
     if (step !== 1 || channelType !== 'department_room' || departments.length > 0) return
     setLoadingDepts(true)
-    axios.get<{ data: Department[] } | Department[]>(`${API}/departments`)
+    api.get<{ data: Department[] } | Department[]>('/departments')
       .then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data))
       .catch(() => {})
       .finally(() => setLoadingDepts(false))
@@ -249,7 +248,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
   useEffect(() => {
     if (step !== 2 || allUsers.length > 0) return
     setLoadingUsers(true)
-    axios.get<User[]>(`${API}/users`)
+    api.get<User[]>('/users')
       .then((r) => {
         setAllUsers(r.data)
         // Pre-select users belonging to the selected sector
@@ -362,7 +361,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-        className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-surface-900 border-l border-surface-800 z-50 flex flex-col shadow-2xl"
+        className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-surface-900 border-l overlay-frame z-50 flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -521,8 +520,8 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                     <div
                       className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={channelType === 'department_room' && selectedDept
-                        ? { background: selectedDept.color + '25', border: `1.5px solid ${selectedDept.color}40` }
-                        : { background: 'rgb(var(--surface-800))' }
+                        ? { background: `color-mix(in srgb, ${selectedDept.color} 15%, transparent)`, border: `1.5px solid color-mix(in srgb, ${selectedDept.color} 25%, transparent)` }
+                        : { background: 'var(--color-surface-800)' }
                       }
                     >
                       <Emoji native={emoji} size="1.75rem" />
@@ -599,7 +598,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                   {channelType === 'department_room' && selectedDept && (
                     <div
                       className="flex items-center gap-2 px-3 py-2 rounded-xl mb-1 text-[11px]"
-                      style={{ background: selectedDept.color + '18', border: `1px solid ${selectedDept.color}30` }}
+                      style={{ background: `color-mix(in srgb, ${selectedDept.color} 9%, transparent)`, border: `1px solid color-mix(in srgb, ${selectedDept.color} 19%, transparent)` }}
                     >
                       <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: selectedDept.color }} />
                       <span style={{ color: selectedDept.color }}>
@@ -729,8 +728,8 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all',
                   saving
-                    ? 'bg-blue-600/60 text-white/70 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white',
+                    ? 'bg-brand-600/60 text-white/70 cursor-not-allowed'
+                    : 'bg-brand-600 hover:bg-brand-500 text-surface-950',
                 )}
               >
                 {saving ? (

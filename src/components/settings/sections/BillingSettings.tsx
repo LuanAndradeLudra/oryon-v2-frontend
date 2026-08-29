@@ -5,9 +5,11 @@ import { useEffect, useState } from 'react'
 import {
   Zap, TrendingUp, Users, Smartphone, Bot, RefreshCw,
   ChevronRight, CheckCircle2, AlertTriangle, ArrowUpRight,
-  Receipt, Loader2, Plus,
+  Receipt, Loader2,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { SettingsSection } from '../SettingsSection'
+import { Banner } from '@/components/ui/Banner'
 import {
   PLANS, formatCredits, mapBackendTier,
 } from '@/config/plans'
@@ -263,10 +265,9 @@ export function BillingSettings() {
 
   if (error && !billing) {
     return (
-      <div className="max-w-2xl rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-sm text-red-300 flex items-center gap-2">
-        <AlertTriangle className="w-4 h-4" />
+      <Banner variant="danger" className="max-w-2xl">
         Não foi possível carregar a cobrança. Tente novamente em instantes.
-      </div>
+      </Banner>
     )
   }
 
@@ -288,86 +289,93 @@ export function BillingSettings() {
   const canCancel = isSubscribed && !isCanceled
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div>
 
-      {/* Status do gateway indisponível: bloqueia CTAs de pagamento */}
-      {statusError && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
-          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-surface-200">
-            <p className="font-medium">Status de cobrança indisponível</p>
-            <p className="text-surface-400 text-xs mt-0.5">
-              Não foi possível confirmar sua assinatura agora. Contratar, trocar de
-              plano e comprar créditos estão temporariamente desabilitados para
-              evitar cobrança duplicada. Tente novamente em instantes.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Alertas de cobrança (nível de página) */}
+      {(statusError || isPastDue || isCanceled || (!!status && !isSubscribed && !isCanceled)) && (
+        <div className="space-y-3 pt-2">
+          {/* Status do gateway indisponível: bloqueia CTAs de pagamento */}
+          {statusError && (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-surface-200">
+                <p className="font-medium">Status de cobrança indisponível</p>
+                <p className="text-surface-400 text-xs mt-0.5">
+                  Não foi possível confirmar sua assinatura agora. Contratar, trocar de
+                  plano e comprar créditos estão temporariamente desabilitados para
+                  evitar cobrança duplicada. Tente novamente em instantes.
+                </p>
+              </div>
+            </div>
+          )}
 
-      {/* Inadimplência */}
-      {isPastDue && (
-        <div className="rounded-2xl border border-status-pending/40 bg-status-pending/5 p-4 flex items-start gap-3">
-          <AlertTriangle className="w-4 h-4 text-status-pending flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-surface-200">
-            <p className="font-medium">Pagamento em atraso</p>
-            <p className="text-surface-400 text-xs mt-0.5">
-              Regularize a cobrança para manter o plano ativo. O acesso é restabelecido na confirmação do pagamento.
-            </p>
-          </div>
-        </div>
-      )}
+          {/* Inadimplência */}
+          {isPastDue && (
+            <div className="rounded-2xl border border-status-pending/40 bg-status-pending/5 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-status-pending flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-surface-200">
+                <p className="font-medium">Pagamento em atraso</p>
+                <p className="text-surface-400 text-xs mt-0.5">
+                  Regularize a cobrança para manter o plano ativo. O acesso é restabelecido na confirmação do pagamento.
+                </p>
+              </div>
+            </div>
+          )}
 
-      {/* Assinatura cancelada — acesso até o fim do ciclo */}
-      {isCanceled && (
-        <div className="rounded-2xl border border-surface-700 bg-surface-800/40 p-4 flex items-start gap-3">
-          <AlertTriangle className="w-4 h-4 text-surface-400 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-surface-200">
-            <p className="font-medium">Assinatura cancelada</p>
-            <p className="text-surface-400 text-xs mt-0.5">
-              {accessUntil
-                ? <>Você mantém o acesso até {accessUntil}. Não haverá nova cobrança.</>
-                : <>O acesso foi encerrado. Contrate um plano para reativar.</>}
-            </p>
-          </div>
-        </div>
-      )}
+          {/* Assinatura cancelada — acesso até o fim do ciclo */}
+          {isCanceled && (
+            <div className="rounded-2xl border border-surface-700 bg-surface-800/40 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-surface-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-surface-200">
+                <p className="font-medium">Assinatura cancelada</p>
+                <p className="text-surface-400 text-xs mt-0.5">
+                  {accessUntil
+                    ? <>Você mantém o acesso até {accessUntil}. Não haverá nova cobrança.</>
+                    : <>O acesso foi encerrado. Contrate um plano para reativar.</>}
+                </p>
+              </div>
+            </div>
+          )}
 
-      {/* Contratação (quando ainda não há assinatura paga) — nunca em statusError */}
-      {status && !statusError && !isSubscribed && !isCanceled && (
-        <div className="rounded-2xl border border-brand-500/30 bg-brand-950/20 p-4 flex items-center justify-between gap-4">
-          <div className="text-sm">
-            <p className="font-medium text-surface-100">Ative sua assinatura</p>
-            <p className="text-surface-400 text-xs mt-0.5">Contrate o plano {billing.plan.displayName} (gateway mock confirma na hora).</p>
-          </div>
-          <button
-            onClick={() => setIntent({
-              kind: 'subscribe', tier: backendTier,
-              plan: plans.find((p) => p.tier === backendTier) ?? {
-                tier: backendTier, displayName: billing.plan.displayName,
-                priceMonthlyCents: billing.plan.priceMonthlyCents, currency: billing.plan.currency,
-                monthlyCredits: billing.plan.monthlyCredits, tokensPerCredit: billing.plan.tokensPerCredit,
-                features: billing.plan.features,
-              },
-            })}
-            className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 font-semibold text-sm whitespace-nowrap"
-          >
-            Contratar
-          </button>
+          {/* Contratação (quando ainda não há assinatura paga) — nunca em statusError */}
+          {status && !statusError && !isSubscribed && !isCanceled && (
+            <div className="rounded-2xl border border-brand-500/30 bg-brand-950/20 p-4 flex items-center justify-between gap-4">
+              <div className="text-sm">
+                <p className="font-medium text-surface-100">Ative sua assinatura</p>
+                <p className="text-surface-400 text-xs mt-0.5">Contrate o plano {billing.plan.displayName} (gateway mock confirma na hora).</p>
+              </div>
+              <button
+                onClick={() => setIntent({
+                  kind: 'subscribe', tier: backendTier,
+                  plan: plans.find((p) => p.tier === backendTier) ?? {
+                    tier: backendTier, displayName: billing.plan.displayName,
+                    priceMonthlyCents: billing.plan.priceMonthlyCents, currency: billing.plan.currency,
+                    monthlyCredits: billing.plan.monthlyCredits, tokensPerCredit: billing.plan.tokensPerCredit,
+                    features: billing.plan.features,
+                  },
+                })}
+                className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 font-semibold text-sm whitespace-nowrap"
+              >
+                Contratar
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {/* Current plan */}
-      <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5 space-y-5">
+      <SettingsSection
+        title="Plano atual"
+        description="Sua assinatura, ciclo de cobrança e consumo de créditos de IA."
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-brand-600 flex items-center justify-center">
                 <Zap className="w-3.5 h-3.5 text-surface-950" fill="currentColor" />
               </div>
-              <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">Plano atual</span>
+              <h2 className="text-xl font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
             </div>
-            <h2 className="text-2xl font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
             <p className="text-sm text-surface-400 mt-0.5">
               {billing.planResetsAt
                 ? <>Próxima renovação: {new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</>
@@ -384,25 +392,29 @@ export function BillingSettings() {
         </div>
 
         {/* Credit usage */}
-        <CreditBar used={billing.creditsUsed} total={billing.creditsTotal} />
-
-        <p className="text-xs text-surface-500">
-          1 crédito ≈ 1 atendimento (~7.000 tokens de conteúdo). Os créditos não acumulam entre períodos.
-        </p>
-
-        {/* Limits grid */}
-        <div className="border-t border-surface-800/50 pt-4">
-          <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-3">Limites do plano</p>
-          <LimitRow icon={<TrendingUp className="w-4 h-4" />}  label="Créditos de IA / mês"    limit={billing.creditsTotal} />
-          <LimitRow icon={<Users className="w-4 h-4" />}       label="Usuários"                 limit={plan.limits.users} />
-          <LimitRow icon={<Smartphone className="w-4 h-4" />}  label="Números WhatsApp"         limit={plan.limits.waNumbers} />
-          <LimitRow icon={<Bot className="w-4 h-4" />}         label="Agentes de IA"            limit={plan.limits.agents} />
-          <LimitRow icon={<RefreshCw className="w-4 h-4" />}   label="Automações ativas"        limit={plan.limits.automations} />
-          <LimitRow icon={<Zap className="w-4 h-4" />}         label="Interações Copilot / mês" limit={plan.limits.copilotInteractions} />
+        <div className="mt-5">
+          <CreditBar used={billing.creditsUsed} total={billing.creditsTotal} />
         </div>
 
+        <p className="text-xs text-surface-500 mt-3">
+          1 crédito ≈ 1 atendimento (~7.000 tokens de conteúdo). Os créditos não acumulam entre períodos.
+        </p>
+      </SettingsSection>
+
+      {/* Limits */}
+      <SettingsSection
+        title="Limites do plano"
+        description="Recursos incluídos na sua assinatura atual."
+      >
+        <LimitRow icon={<TrendingUp className="w-4 h-4" />}  label="Créditos de IA / mês"    limit={billing.creditsTotal} />
+        <LimitRow icon={<Users className="w-4 h-4" />}       label="Usuários"                 limit={plan.limits.users} />
+        <LimitRow icon={<Smartphone className="w-4 h-4" />}  label="Números WhatsApp"         limit={plan.limits.waNumbers} />
+        <LimitRow icon={<Bot className="w-4 h-4" />}         label="Agentes de IA"            limit={plan.limits.agents} />
+        <LimitRow icon={<RefreshCw className="w-4 h-4" />}   label="Automações ativas"        limit={plan.limits.automations} />
+        <LimitRow icon={<Zap className="w-4 h-4" />}         label="Interações Copilot / mês" limit={plan.limits.copilotInteractions} />
+
         {canCancel && (
-          <div className="border-t border-surface-800/50 pt-3 text-right">
+          <div className="border-t border-surface-800/50 pt-3 mt-2 text-right">
             <button
               onClick={() => setCancelOpen(true)}
               className="text-xs text-surface-500 hover:text-red-400 transition-colors"
@@ -411,26 +423,29 @@ export function BillingSettings() {
             </button>
           </div>
         )}
-      </div>
+      </SettingsSection>
 
       {/* Upgrade CTA */}
-      <UpgradeCard
-        currentTier={backendTier}
-        nextPlan={nextPlan}
-        isSubscribed={isSubscribed}
-        onUpgrade={setIntent}
-        disabled={statusError}
-      />
+      {nextPlan && (
+        <SettingsSection
+          title="Upgrade"
+          description="Desbloqueie mais módulos e créditos no próximo plano."
+        >
+          <UpgradeCard
+            currentTier={backendTier}
+            nextPlan={nextPlan}
+            isSubscribed={isSubscribed}
+            onUpgrade={setIntent}
+            disabled={statusError}
+          />
+        </SettingsSection>
+      )}
 
       {/* Pacotes de crédito */}
-      <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Plus className="w-4 h-4 text-surface-400" />
-          <h3 className="text-sm font-semibold text-surface-300">Comprar créditos avulsos</h3>
-        </div>
-        <p className="text-xs text-surface-500 mb-4">
-          Pacotes não renovam — somam ao saldo atual. Ideal para picos de atendimento.
-        </p>
+      <SettingsSection
+        title="Comprar créditos avulsos"
+        description="Pacotes não renovam — somam ao saldo atual. Ideal para picos de atendimento."
+      >
         {packs.length === 0 ? (
           <p className="text-sm text-surface-500 py-2">Pacotes indisponíveis no momento.</p>
         ) : (
@@ -451,20 +466,25 @@ export function BillingSettings() {
             ))}
           </div>
         )}
-      </div>
+      </SettingsSection>
 
       {/* Extrato de créditos */}
-      <div className="rounded-2xl border border-surface-800 bg-surface-900 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Receipt className="w-4 h-4 text-surface-400" />
-          <h3 className="text-sm font-semibold text-surface-300">Extrato de créditos</h3>
+      <SettingsSection
+        title="Extrato de créditos"
+        description="Consumo e recargas de crédito, mais recentes primeiro."
+      >
+        <div className="flex items-center gap-2 mb-2 text-surface-400">
+          <Receipt className="w-3.5 h-3.5" />
         </div>
         {transactions.length > 0 ? (
           transactions.map((tx) => <TransactionRow key={tx.id} tx={tx} />)
         ) : (
           <p className="text-sm text-surface-500 py-2">Nenhuma movimentação de crédito ainda.</p>
         )}
-      </div>
+      </SettingsSection>
+
+      {/* Faturas (Asaas) entram na Fase 3 — não há dado real ainda, então não
+          renderizamos uma seção de invoices com placeholder/mock. */}
 
       {/* Checkout (Pix / cartão) */}
       {intent && (

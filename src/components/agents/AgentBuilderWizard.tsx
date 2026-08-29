@@ -32,6 +32,7 @@ import { HandoffRulesPanel } from '@/components/agents/HandoffRuleBuilder'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
+import { Banner } from '@/components/ui/Banner'
 import { AGENT_ICONS, AgentIcon } from '@/components/agents/AgentIcons'
 import { STEP_TEACHINGS } from './agentBuilderTeachings'
 
@@ -240,7 +241,7 @@ function CapabilityPicker({
   const [custom, setCustom] = useState('')
   const activeCls = color === 'green'
     ? 'bg-status-active-bg border-status-active-border text-status-active ring-1 ring-status-active-border'
-    : 'bg-red-500/15 border-red-500/30 text-red-300 ring-1 ring-red-500/20'
+    : 'bg-danger/15 border-danger/30 text-danger ring-1 ring-danger/20'
   const idleCls = 'bg-surface-800 border-surface-700 text-surface-400 hover:border-surface-600 hover:text-surface-300'
 
   const toggle = (item: string) =>
@@ -506,12 +507,20 @@ function Step3({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-5 h-5 rounded-full bg-red-500/20 ring-1 ring-red-500/40 flex items-center justify-center flex-shrink-0">
-            <X className="w-3 h-3 text-red-400" />
+          <div
+            className="w-5 h-5 rounded-full color-chip flex items-center justify-center flex-shrink-0"
+            style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+          >
+            <X className="w-3 h-3" />
           </div>
           <span className="text-xs font-semibold text-surface-300 uppercase tracking-wide">Não deve fazer</span>
           {data.cannot_do.length > 0 && (
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-500/15 text-red-400">{data.cannot_do.length}</span>
+            <span
+              className="text-xs px-1.5 py-0.5 rounded-md color-chip"
+              style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+            >
+              {data.cannot_do.length}
+            </span>
           )}
         </div>
         <CapabilityPicker
@@ -631,12 +640,18 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             </p>
           </div>
           {dirty && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-status-pending-bg text-status-pending border border-status-pending-border">
+            <span
+              className="color-chip text-[10px] px-2 py-0.5 rounded-full border"
+              style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
+            >
               Não salvo
             </span>
           )}
           {!dirty && savedAt && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-status-active-bg text-status-active border border-status-active-border inline-flex items-center gap-1">
+            <span
+              className="color-chip text-[10px] px-2 py-0.5 rounded-full border inline-flex items-center gap-1"
+              style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
+            >
               <Check className="w-3 h-3" /> Salvo
             </span>
           )}
@@ -1681,7 +1696,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           )}
         </div>
         {data.objective && (
-          <p className="text-xs text-surface-500 mt-2 pt-2 border-t border-surface-800">{data.objective}</p>
+          <p className="text-xs text-surface-500 mt-2 p-2 border-t border-surface-800 rounded-lg">{data.objective}</p>
         )}
       </div>
 
@@ -1714,10 +1729,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             onExpand={() => setReviewOpen(true)}
           />
         ) : (
-          <div className="flex items-center gap-2 p-3 bg-status-pending-bg border border-status-pending-border rounded-xl">
-            <AlertCircle className="w-4 h-4 text-status-pending flex-shrink-0" />
-            <p className="text-xs text-status-pending">Volte ao passo anterior e gere o system prompt antes de publicar.</p>
-          </div>
+          <Banner variant="warning">Volte ao passo anterior e gere o system prompt antes de publicar.</Banner>
         )}
       </div>
 

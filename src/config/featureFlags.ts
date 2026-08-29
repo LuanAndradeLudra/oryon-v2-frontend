@@ -9,10 +9,10 @@ export const FEATURE_FLAGS = {
   contacts: true,
   nexus: false,
   campaigns: true,
-  marketing: false,
-  automations: false,
+  marketing: true,
+  automations: true,
   agents: true,
-  copilot: false,
+  copilot: true,
   settings: true,
   settingsAdAccounts: false,
   settingsVertical: false,
@@ -60,6 +60,11 @@ export const FEATURE_FLAGS = {
   // Quando false, o painel inteiro fica oculto — análises já feitas também
   // não aparecem para evitar UI inconsistente.
   conversionAnalysisPanel: false,
+  // Página dedicada de perfil do contato (/contacts/:id) — Customer 360.
+  // Quando false: a rota redireciona para o drawer (/contacts?contact=<id>)
+  // e o botão "Expandir" do drawer some. O drawer continua funcionando
+  // normalmente em ambos os estados (quick-view e página coexistem).
+  contactProfilePage: true,
   // Seção "Oryon" do sidebar (Skills, Agentes cross-tenant, Auditoria,
   // AI Observability, AI Executions). Quando false, a seção inteira some
   // do menu lateral, mas as rotas continuam acessíveis via URL direta
@@ -122,4 +127,19 @@ export const isRouteVisible = (href: string, userEmail?: string | null): boolean
     ([prefix]) => href === prefix || href.startsWith(prefix + '/'),
   )
   return match ? isFeatureVisible(match[1], userEmail) : true
+}
+
+// ── Feature flags por TENANT (backend) ───────────────────────────────────────
+// Diferente das `FEATURE_FLAGS` acima (constantes de build), estas vêm do
+// backend por tenant: `GET /auth/me` devolve `featureFlags: string[]` com as
+// chaves ligadas em `tenant_feature_flags` (SCRUM-498). Ausência do campo
+// (backend sem o módulo) ou da chave = DESLIGADO — o padrão é sempre
+// esconder, nunca expor uma superfície que o backend vai responder 403/404.
+
+/** Múltiplos funis de negócio (SCRUM-285 / épico SCRUM-809). */
+export const TENANT_FLAG_MULTI_PIPELINE = 'FF_MULTI_PIPELINE'
+
+/** `true` só quando o backend listou `FF_MULTI_PIPELINE` para o tenant. */
+export function multiPipelineEnabled(featureFlags?: readonly string[] | null): boolean {
+  return featureFlags?.includes(TENANT_FLAG_MULTI_PIPELINE) ?? false
 }

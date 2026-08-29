@@ -10,20 +10,10 @@ import { X, Phone, Star, Loader2, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { templatesApi, campaignsApi, automationsApi } from '@/services/api'
+import { formatPhone } from '@/lib/phone'
 
 export type AssignWabaResourceType = 'template' | 'campaign' | 'automation'
 
-function formatPhone(raw?: string | null): string {
-  if (!raw) return ''
-  const digits = raw.replace(/\D/g, '')
-  if (digits.length === 13 && digits.startsWith('55')) {
-    return `+55 ${digits.slice(2, 4)} ${digits.slice(4, 9)}-${digits.slice(9)}`
-  }
-  if (digits.length === 12 && digits.startsWith('55')) {
-    return `+55 ${digits.slice(2, 4)} ${digits.slice(4, 8)}-${digits.slice(8)}`
-  }
-  return raw
-}
 
 async function saveAssignment(
   resourceType: AssignWabaResourceType,

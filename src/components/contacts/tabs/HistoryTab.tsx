@@ -13,23 +13,26 @@ import {
 import { cn } from '@/lib/utils'
 
 // ── Pipeline (contact_history) visual map ─────────────────────────────────────
-const PIPELINE_VIS: Record<string, { Icon: RowVisual['Icon']; iconClass: string }> = {
-  contact_created: { Icon: UserPlus, iconClass: 'bg-sky-900/40 text-sky-300' },
-  stage_change:    { Icon: GitCommitHorizontal, iconClass: 'bg-brand-500/20 text-brand-300' },
-  ai_update:       { Icon: Bot, iconClass: 'bg-amber-900/40 text-amber-300' },
-  opt_in_changed:  { Icon: ShieldCheck, iconClass: 'bg-emerald-900/40 text-emerald-300' },
-  tags_updated:    { Icon: Tag, iconClass: 'bg-orange-900/40 text-orange-300' },
-  tag_added:       { Icon: Tag, iconClass: 'bg-emerald-900/40 text-emerald-300' },
-  tag_removed:     { Icon: Tag, iconClass: 'bg-zinc-800 text-zinc-300' },
-  manual_edit:     { Icon: User, iconClass: 'bg-surface-800 text-surface-300' },
-  deal_created:    { Icon: Briefcase, iconClass: 'bg-emerald-900/40 text-emerald-300' },
-  deal_won:        { Icon: Trophy, iconClass: 'bg-emerald-900/40 text-emerald-300' },
-  deal_lost:       { Icon: XCircle, iconClass: 'bg-red-900/40 text-red-300' },
-  deal_updated:    { Icon: Pencil, iconClass: 'bg-sky-900/40 text-sky-300' },
-  deal_reopened:   { Icon: RotateCcw, iconClass: 'bg-sky-900/40 text-sky-300' },
-  deal_deleted:    { Icon: Trash2, iconClass: 'bg-red-900/40 text-red-300' },
+// `chip` é consumido via .color-chip + --chip (fundo saturado, ícone branco) —
+// mesma linguagem de ConversationActivitySection.tsx, cuja RowVisual este
+// arquivo também consome (ver `visualForActionKey` abaixo).
+const PIPELINE_VIS: Record<string, { Icon: RowVisual['Icon']; chip: string }> = {
+  contact_created: { Icon: UserPlus, chip: 'var(--color-accent-cyan)' },
+  stage_change:    { Icon: GitCommitHorizontal, chip: 'var(--color-accent)' },
+  ai_update:       { Icon: Bot, chip: 'var(--color-accent-amber)' },
+  opt_in_changed:  { Icon: ShieldCheck, chip: 'var(--color-success)' },
+  tags_updated:    { Icon: Tag, chip: 'var(--color-accent-amber)' },
+  tag_added:       { Icon: Tag, chip: 'var(--color-accent-green)' },
+  tag_removed:     { Icon: Tag, chip: 'var(--color-status-muted)' },
+  manual_edit:     { Icon: User, chip: 'var(--color-status-muted)' },
+  deal_created:    { Icon: Briefcase, chip: 'var(--color-accent-green)' },
+  deal_won:        { Icon: Trophy, chip: 'var(--color-success)' },
+  deal_lost:       { Icon: XCircle, chip: 'var(--color-danger)' },
+  deal_updated:    { Icon: Pencil, chip: 'var(--color-accent-cyan)' },
+  deal_reopened:   { Icon: RotateCcw, chip: 'var(--color-accent-cyan)' },
+  deal_deleted:    { Icon: Trash2, chip: 'var(--color-danger)' },
 }
-const PIPELINE_FALLBACK = { Icon: User, iconClass: 'bg-surface-800 text-surface-300' }
+const PIPELINE_FALLBACK = { Icon: User, chip: 'var(--color-status-muted)' }
 
 type Section = 'pipeline' | 'conversas'
 
@@ -40,7 +43,7 @@ interface TimelineItem {
   label: string
   actor: string
   Icon: RowVisual['Icon']
-  iconClass: string
+  chip: string
 }
 
 function formatDate(ms: number) {
@@ -82,7 +85,7 @@ export function HistoryTab({ contactId }: HistoryTabProps) {
         label: e.summary,
         actor: e.actorName ?? 'Sistema',
         Icon: vis.Icon,
-        iconClass: vis.iconClass,
+        chip: vis.chip,
       })
     }
 
@@ -95,7 +98,7 @@ export function HistoryTab({ contactId }: HistoryTabProps) {
         label: vis.label,
         actor: a.actor ?? 'Sistema',
         Icon: vis.Icon,
-        iconClass: vis.iconClass,
+        chip: vis.chip,
       })
     }
 
@@ -107,7 +110,7 @@ export function HistoryTab({ contactId }: HistoryTabProps) {
         label: a.humanSummary || 'Ação do agente',
         actor: a.agentName ?? 'Agente IA',
         Icon: Bot,
-        iconClass: 'bg-violet-900/40 text-violet-300',
+        chip: 'var(--color-accent-violet)',
       })
     }
 
@@ -197,10 +200,10 @@ export function HistoryTab({ contactId }: HistoryTabProps) {
           <div className="absolute left-2 top-3 bottom-3 w-px bg-surface-800" />
           {filtered.map((item) => (
             <div key={item.id} className="relative flex gap-3 pb-5 last:pb-0">
-              <div className={cn(
-                'absolute -left-0.5 top-0.5 w-6 h-6 rounded-full border border-surface-700 flex items-center justify-center flex-shrink-0 z-10',
-                item.iconClass,
-              )}>
+              <div
+                className="absolute -left-0.5 top-0.5 w-6 h-6 rounded-full border color-chip flex items-center justify-center flex-shrink-0 z-10"
+                style={{ '--chip': item.chip } as React.CSSProperties}
+              >
                 <item.Icon className="w-3 h-3" />
               </div>
               <div className="ml-7 min-w-0 flex-1">

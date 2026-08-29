@@ -1,5 +1,6 @@
 import { Loader2, UserX, Check, Minus } from 'lucide-react'
 import { ContactRow } from './ContactRow'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { cn } from '@/lib/utils'
 import type { Contact, ContactStage } from '@/types'
 
@@ -35,6 +36,16 @@ export function ContactsTable({
   loadingMore,
   onLoadMore,
 }: ContactsTableProps) {
+  // Gate de múltiplos funis (SCRUM-498): a coluna "Negócios" (chips por
+  // funil) só existe com o flag — `ContactRow` omite a célula em paralelo.
+  const multiPipeline = useMultiPipeline()
+  const columns = [
+    'Contato', 'Estágio', 'Score', 'Intenção', 'Sentimento', 'Tags',
+    ...(multiPipeline ? ['Negócios'] : []),
+    'Fonte', 'Último contato', 'Opt-in', '',
+  ]
+  // +1 = coluna do checkbox de seleção.
+  const colSpan = columns.length + 1
   const hasSelection = (selectedIds?.size ?? 0) > 0
   const allSelected =
     contacts.length > 0 && contacts.every((c) => selectedIds?.has(c.id))
@@ -53,7 +64,7 @@ export function ContactsTable({
     if (!hasMore || loadingMore || !onLoadMore) return
     const el = e.currentTarget
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-    if (distanceFromBottom < 200) onLoadMore()
+    if (distanceFromBottom < 320) onLoadMore()
   }
 
   return (
@@ -78,7 +89,7 @@ export function ContactsTable({
                 </button>
               ) : null}
             </th>
-            {['Contato', 'Estágio', 'Score', 'Intenção', 'Sentimento', 'Tags', 'Negócios', 'Fonte', 'Último contato', 'Opt-in', ''].map((col) => (
+            {columns.map((col) => (
               <th key={col} className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-surface-500 whitespace-nowrap">
                 {col}
               </th>
@@ -88,7 +99,7 @@ export function ContactsTable({
         <tbody>
           {loading && contacts.length === 0 ? (
             <tr>
-              <td colSpan={12} className="py-20 text-center">
+              <td colSpan={colSpan} className="py-20 text-center">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="w-6 h-6 text-brand-400 animate-spin" />
                   <span className="text-sm text-surface-500">Carregando contatos...</span>
@@ -97,7 +108,7 @@ export function ContactsTable({
             </tr>
           ) : contacts.length === 0 ? (
             <tr>
-              <td colSpan={12} className="py-24 text-center">
+              <td colSpan={colSpan} className="py-24 text-center">
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-surface-800 flex items-center justify-center">
                     <UserX className="w-6 h-6 text-surface-500" />
@@ -126,9 +137,9 @@ export function ContactsTable({
               />
             ))
           )}
-          {loadingMore && (
+          {loadingMore && contacts.length > 0 && (
             <tr>
-              <td colSpan={12} className="py-4 text-center">
+              <td colSpan={colSpan} className="py-4 text-center">
                 <Loader2 className="w-4 h-4 text-surface-500 animate-spin inline-block" />
               </td>
             </tr>

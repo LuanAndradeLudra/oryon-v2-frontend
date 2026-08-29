@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react'
 import { Lock, Building2 } from 'lucide-react'
-import axios from 'axios'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { ToastContainer } from '@/components/ui/Toast'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
+import { TipCard } from '@/components/ui/TipCard'
 import type { Tenant } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const TIMEZONES = [
   { value: 'America/Sao_Paulo', label: 'América/São Paulo (GMT-3)' },
@@ -41,9 +45,12 @@ export function CompanyProfile() {
     language: '',
   })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
-    axios.get(`${API}/settings/company`).then((r) => {
+    setError(false)
+    api.get('/settings/company').then((r) => {
       const d = r.data as Record<string, unknown>
       const mapped = { ...d, name: d.businessName ?? d.name ?? '', email: d.businessEmail ?? d.email ?? '', timezone: d.timezone ?? 'America/Sao_Paulo', language: d.language ?? 'pt-BR' } as Tenant
       setTenant(mapped)
@@ -54,15 +61,15 @@ export function CompanyProfile() {
         language: String(mapped.language ?? ''),
       })
     }).catch(() => {
-      setTenant({ name: '', email: '', timezone: 'America/Sao_Paulo', language: 'pt-BR' } as Tenant)
+      setError(true)
     })
-  }, [])
+  }, [reloadKey])
 
   const save = async () => {
     setLoading(true)
     try {
       // Map frontend field names to NestJS DTO field names
-      await axios.patch(`${API}/settings/company`, {
+      await api.patch('/settings/company', {
         businessName: form.name,
         businessEmail: form.email,
       })
@@ -82,16 +89,35 @@ export function CompanyProfile() {
     enterprise: 'bg-status-pending-bg text-status-pending',
   }
 
+  if (error) {
+    return (
+      <div>
+        <SectionHeader
+          title="Perfil da Empresa"
+          description="Informações da sua organização na plataforma Oryon."
+        />
+        <ErrorState compact onRetry={() => { setTenant(null); setReloadKey((k) => k + 1) }} />
+      </div>
+    )
+  }
+
   if (!tenant) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <div>
+        <SectionHeader
+          title="Perfil da Empresa"
+          description="Informações da sua organização na plataforma Oryon."
+        />
+        <div className="flex flex-col gap-6">
+          <SkeletonCard lines={3} />
+          <SkeletonCard lines={3} />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <SectionHeader
         title="Perfil da Empresa"
         description="Informações da sua organização na plataforma Oryon."
@@ -99,36 +125,26 @@ export function CompanyProfile() {
 
       <AnimatePresence>
         {!checklist.company && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3 }}
-            className="flex items-start gap-4 bg-brand-950/50 border border-brand-500/20 rounded-2xl px-5 py-4 mb-6"
+          <TipCard
+            icon={<Building2 className="w-4 h-4 text-brand-400" />}
+            title="Preencha o perfil da sua empresa"
+            description="Nome, e-mail e fuso horário são usados em relatórios, templates e comunicações automáticas."
+            className="mb-6"
           >
-            <div className="w-8 h-8 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Building2 className="w-4 h-4 text-brand-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-surface-100">Preencha o perfil da sua empresa</p>
-              <p className="text-xs text-surface-400 mt-0.5 leading-relaxed">
-                Nome e e-mail são usados em relatórios, templates e comunicações automáticas.
-              </p>
-              <button
-                onClick={() => markDone('company')}
-                className="mt-2 text-xs text-surface-500 hover:text-surface-300 transition-colors"
-              >
-                Já entendi, ocultar
-              </button>
-            </div>
-          </motion.div>
+            <button
+              onClick={() => markDone('company')}
+              className="mt-2 text-xs text-surface-500 hover:text-surface-300 transition-colors"
+            >
+              Já entendi, ocultar
+            </button>
+          </TipCard>
         )}
       </AnimatePresence>
 
-      {/* Identity card */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-4">Identidade</h3>
-
+      <SettingsSection
+        title="Identidade"
+        description="O nome da empresa aparece em relatórios, templates e nas comunicações com clientes."
+      >
         {/* Logo + plan */}
         <div className="flex items-center gap-5 mb-6">
           <div className="w-16 h-16 rounded-2xl bg-brand-600 flex items-center justify-center text-xl font-bold text-surface-950 select-none">
@@ -168,13 +184,12 @@ export function CompanyProfile() {
             </div>
           </FormField>
         </div>
-      </div>
+      </SettingsSection>
 
-      {/* Config card */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-4">Configurações</h3>
-        <p className="text-xs text-surface-500 mb-4">E-mail de contato usado em agendamentos e mensagens automáticas. Fuso horário e idioma chegam em breve.</p>
-
+      <SettingsSection
+        title="Preferências regionais"
+        description="E-mail de contato, fuso horário e idioma usados em agendamentos e mensagens automáticas."
+      >
         <div className="grid grid-cols-1 gap-4">
           <FormField label="E-mail de contato" required>
             <Input
@@ -201,18 +216,11 @@ export function CompanyProfile() {
             </Select>
           </FormField>
         </div>
-      </div>
 
-      <div className="flex justify-end">
-        <button
-          onClick={save}
-          disabled={loading}
-          className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
-        >
-          {loading && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-          Salvar alterações
-        </button>
-      </div>
+        <div className="flex justify-end mt-4">
+          <Button onClick={save} loading={loading}>Salvar alterações</Button>
+        </div>
+      </SettingsSection>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )

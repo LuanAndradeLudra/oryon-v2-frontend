@@ -28,7 +28,7 @@ const EVENT_CONFIG: Record<ActivityEventType, {
   agent_offline:         { icon: <ZapOff className="w-3.5 h-3.5" />,           iconClass: 'text-surface-400',  bgClass: 'bg-surface-800'      },
   sla_breach:            { icon: <AlertTriangle className="w-3.5 h-3.5" />,    iconClass: 'text-danger',       bgClass: 'bg-danger/10'        },
   csat_received:         { icon: <Star className="w-3.5 h-3.5" />,             iconClass: 'text-away',         bgClass: 'bg-away/10'          },
-  bot_deflection:        { icon: <Bot className="w-3.5 h-3.5" />,              iconClass: 'text-violet-400',   bgClass: 'bg-violet-500/10'    },
+  bot_deflection:        { icon: <Bot className="w-3.5 h-3.5" />,              iconClass: 'text-accent-violet', bgClass: 'bg-accent-violet/10' },
   system_event:          { icon: <Activity className="w-3.5 h-3.5" />,         iconClass: 'text-surface-300',  bgClass: 'bg-surface-700/40'   },
 }
 

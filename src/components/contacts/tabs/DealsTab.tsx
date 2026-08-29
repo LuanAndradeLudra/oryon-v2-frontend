@@ -5,11 +5,13 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { DealModal } from '@/components/contacts/DealModal'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/ui/Toast'
-import { dealsApi, pipelinesApi } from '@/services/api'
+import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { formatBRL } from '@/utils/money'
-import type { Deal, DealStatus, Pipeline } from '@/types'
+import type { Deal, DealStatus } from '@/types'
 
 /** Agrupa os negócios do contato por pipeline (contato pode ter deals em pipelines diferentes). */
 function groupByPipeline(deals: Deal[]): Array<[string, Deal[]]> {
@@ -23,18 +25,23 @@ function groupByPipeline(deals: Deal[]): Array<[string, Deal[]]> {
   return [...map.entries()]
 }
 
-const STATUS_META: Record<DealStatus, { label: string; cls: string }> = {
-  open: { label: 'Aberto', cls: 'text-brand-300 border-brand-700 bg-brand-900/20' },
-  won: { label: 'Ganho', cls: 'text-emerald-300 border-emerald-700 bg-emerald-900/20' },
-  lost: { label: 'Perdido', cls: 'text-red-300 border-red-700 bg-red-900/20' },
+const STATUS_META: Record<DealStatus, { label: string; chip: string }> = {
+  open: { label: 'Aberto', chip: 'var(--color-warning)' },
+  won: { label: 'Ganho', chip: 'var(--color-success)' },
+  lost: { label: 'Perdido', chip: 'var(--color-danger)' },
 }
 
 export function DealsTab({ contactId }: { contactId: string }) {
   const { vocab } = useTenantVocab()
   const { toast, toasts, dismiss } = useToast()
   const navigate = useNavigate()
+  // Funis vêm do cache compartilhado (CRMConfigContext, SCRUM-293) — sem
+  // fetch próprio, só pro nome do cabeçalho de cada grupo.
+  const { pipelines } = useCRMConfig()
+  // Sem o gate de funis (SCRUM-498) não há board para linkar nem nome de
+  // funil — o cabeçalho de grupo ("Sem pipeline · Ver no board") some.
+  const multiPipeline = useMultiPipeline()
   const [deals, setDeals] = useState<Deal[]>([])
-  const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
@@ -53,11 +60,6 @@ export function DealsTab({ contactId }: { contactId: string }) {
   useEffect(() => {
     refetch()
   }, [refetch])
-
-  // Nome do pipeline p/ o cabeçalho de cada grupo. Carregado uma vez.
-  useEffect(() => {
-    pipelinesApi.list().then((r) => setPipelines(r.data ?? [])).catch(() => {})
-  }, [])
 
   // Realtime: recarrega quando um negócio deste contato muda em qualquer lugar (socket `deal:changed`)
   // — ex.: excluído/editado noutra aba ou por outro operador. Antes a lista ficava stale e abrir um
@@ -122,6 +124,7 @@ export function DealsTab({ contactId }: { contactId: string }) {
             const pipeline = pipelines.find((p) => p.id === pipelineId)
             return (
               <div key={pipelineId} className="flex flex-col gap-2">
+                {multiPipeline && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-surface-500 font-medium truncate">
                     {pipeline?.name ?? 'Sem pipeline'}
@@ -135,6 +138,7 @@ export function DealsTab({ contactId }: { contactId: string }) {
                     <KanbanSquare className="w-3.5 h-3.5" /> Ver no board
                   </button>
                 </div>
+                )}
                 <ul className="flex flex-col gap-2">
                   {groupDeals.map((d) => {
                     const meta = STATUS_META[d.status]
@@ -149,7 +153,8 @@ export function DealsTab({ contactId }: { contactId: string }) {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-surface-100 truncate">{d.title}</span>
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-full border whitespace-nowrap ${meta.cls}`}
+                        className="text-[10px] px-1.5 py-0.5 rounded-full border whitespace-nowrap color-chip"
+                        style={{ ['--chip']: meta.chip } as React.CSSProperties}
                       >
                         {meta.label}
                       </span>

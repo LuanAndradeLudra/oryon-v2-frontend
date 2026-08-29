@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { X, Search, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import axios from 'axios'
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import { PresenceDot } from './PresenceDot'
 import type { User } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 interface NewChatModalProps {
   currentUserId: string
@@ -21,7 +20,7 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
   const [opening, setOpening] = useState<string | null>(null)
 
   useEffect(() => {
-    axios.get<User[]>(`${API}/users`)
+    api.get<User[]>('/users')
       .then((r) => setUsers(r.data.filter((u) => u.id !== currentUserId)))
       .catch(() => setUsers([]))
       .finally(() => setLoading(false))
@@ -54,7 +53,7 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.16, ease: 'easeOut' }}
-        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface-900 rounded-2xl border border-surface-700 shadow-2xl overflow-hidden"
+        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface-900 rounded-2xl overlay-frame border overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">

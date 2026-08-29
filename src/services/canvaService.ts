@@ -1,9 +1,14 @@
-import html2canvas from 'html2canvas'
-import { jsPDF } from 'jspdf'
-import PptxGenJS from 'pptxgenjs'
+// Libs de export (html2canvas ~200KB, jspdf ~350KB, pptxgenjs ~500KB) carregam
+// sob demanda — apenas quando o usuário exporta um artifact. Mantê-las fora do
+// grafo estático evita que entrem no chunk eager do CopilotPanel.
+import type PptxGenJS from 'pptxgenjs'
 import type { ArtifactType } from '@/contexts/ArtifactContext'
 import { logger } from '@/services/debugLogger'
 import type { SlidesJSON, SlideElement, GradientBg, TextEl, RectEl, CircleEl, LineEl, IconEl } from '@/types/slidesJson'
+
+const loadHtml2Canvas = async () => (await import('html2canvas')).default
+const loadJsPDF       = async () => (await import('jspdf')).jsPDF
+const loadPptxGenJS   = async () => (await import('pptxgenjs')).default
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 
@@ -302,7 +307,8 @@ export async function captureArtifactAsPptx(content: string): Promise<Blob> {
     container.style.cssText += ';position:static;overflow:visible;height:auto;'
     await new Promise(r => setTimeout(r, 100))
 
-    const pptx = new PptxGenJS()
+    const [PptxGen, html2canvas] = await Promise.all([loadPptxGenJS(), loadHtml2Canvas()])
+    const pptx = new PptxGen()
     pptx.layout = 'LAYOUT_WIDE'
 
     const slideData: Array<{ canvas: HTMLCanvasElement; boxes: PptxTextBox[] }> = []
@@ -365,6 +371,7 @@ export async function captureArtifactAsPptx(content: string): Promise<Blob> {
 async function captureSlides(doc: Document): Promise<HTMLCanvasElement[]> {
   const slides = Array.from(doc.querySelectorAll('.slide, [data-slide], section'))
   if (slides.length === 0) return []
+  const html2canvas = await loadHtml2Canvas()
   const results: HTMLCanvasElement[] = []
   for (const slide of slides) {
     const c = await html2canvas(slide as HTMLElement, {
@@ -382,6 +389,7 @@ export async function captureArtifactAsPdf(content: string, type: ArtifactType):
     let canvases = await (type === 'slides' ? captureSlides(doc) : Promise.resolve([]))
 
     if (canvases.length === 0) {
+      const html2canvas = await loadHtml2Canvas()
       const body = doc.body
       const w = body.scrollWidth || 1280
       const h = body.scrollHeight || 720
@@ -398,6 +406,7 @@ export async function captureArtifactAsPdf(content: string, type: ArtifactType):
     const ph = first.height / 2
     const orient: 'l' | 'p' = pw >= ph ? 'l' : 'p'
 
+    const jsPDF = await loadJsPDF()
     const pdf = new jsPDF({ orientation: orient, unit: 'px', format: [pw, ph], compress: true })
     canvases.forEach((c: HTMLCanvasElement, i: number) => {
       if (i > 0) pdf.addPage([pw, ph], orient)
@@ -580,7 +589,8 @@ function addSlidesJsonElement(
 }
 
 export async function slidesJsonToPptx(json: SlidesJSON): Promise<Blob> {
-  const pptx = new PptxGenJS()
+  const PptxGen = await loadPptxGenJS()
+  const pptx = new PptxGen()
   pptx.layout = 'LAYOUT_WIDE'
 
   for (const slideData of json.slides) {

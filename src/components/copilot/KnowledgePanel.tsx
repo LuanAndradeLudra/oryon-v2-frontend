@@ -343,14 +343,14 @@ function DocumentCard({
     : `${doc.size} B`
   const kindLabel = isPdf ? 'PDF' : isDocx ? 'Word' : 'Texto'
   const iconColor = isPdf
-    ? 'bg-red-500/10 border border-red-500/20'
+    ? 'bg-accent-rose/10 border border-accent-rose/20'
     : isDocx
-    ? 'bg-blue-500/10 border border-blue-500/20'
+    ? 'bg-accent-blue/10 border border-accent-blue/20'
     : 'bg-brand-600/10 border border-brand-500/20'
   const iconEl = isPdf
-    ? <FileType2 className="w-4 h-4 text-red-400" />
+    ? <FileType2 className="w-4 h-4 text-accent-rose" />
     : isDocx
-    ? <FileText className="w-4 h-4 text-blue-400" />
+    ? <FileText className="w-4 h-4 text-accent-blue" />
     : <FileText className="w-4 h-4 text-brand-400" />
 
   return (

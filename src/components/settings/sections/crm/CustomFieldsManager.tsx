@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, Star, ListPlus } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { CustomFieldModal } from '@/components/settings/modals/CustomFieldModal'
 import { useToast } from '@/hooks/useToast'
@@ -68,24 +70,32 @@ export function CustomFieldsManager() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
           <h3 className="text-sm font-semibold text-surface-100">Campos personalizados</h3>
           <p className="text-xs text-surface-500 mt-0.5">
             Adicione campos extras aos contatos para capturar dados do seu negócio.
           </p>
         </div>
-        <button
+        <Button
+          size="sm"
           onClick={() => { setEditField(null); setModalOpen(true) }}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
+          leftIcon={<Plus className="w-3.5 h-3.5" />}
+          className="crm-manager-new-btn px-4 whitespace-nowrap flex-shrink-0 hover:brightness-95"
         >
-          <Plus className="w-3.5 h-3.5" /> Novo campo
-        </button>
+          Novo campo
+        </Button>
       </div>
 
       <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
         {fieldDefs.length === 0 ? (
-          <p className="text-sm text-surface-500 text-center py-10">Nenhum campo personalizado configurado.</p>
+          <EmptyState
+            icon={ListPlus}
+            title="Nenhum campo personalizado configurado"
+            hint="Adicione campos extras aos contatos para capturar dados do seu negócio."
+            className="border-0 rounded-none py-10"
+            action={{ label: 'Novo campo', onClick: () => { setEditField(null); setModalOpen(true) } }}
+          />
         ) : (
           <ul className="divide-y divide-surface-800">
             {fieldDefs.map((field) => (

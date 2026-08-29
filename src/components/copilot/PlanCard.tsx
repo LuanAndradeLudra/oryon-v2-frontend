@@ -53,7 +53,7 @@ function PlanCardImpl({ plan, toolCalls }: PlanCardProps) {
         </span>
         <span className="flex-shrink-0 text-xs text-surface-400">
           {doneCount}/{plan.steps.length}
-          {failedCount > 0 && <span className="ml-1 text-red-400">• {failedCount}</span>}
+          {failedCount > 0 && <span className="ml-1 text-danger">• {failedCount}</span>}
         </span>
         <ChevronDown
           className={`h-3.5 w-3.5 flex-shrink-0 text-surface-500 transition-transform duration-200 ${headerCollapsed ? '-rotate-90' : 'rotate-0'}`}
@@ -132,7 +132,7 @@ function PlanStepCard({ step, calls }: { step: PlanStep; calls: ToolCallRecord[]
         <StatusIcon status={step.status} />
 
         <div className="min-w-0 flex-1">
-          <div className={`truncate text-[13px] font-medium ${step.status === 'failed' ? 'text-red-300' : 'text-surface-100'}`}>
+          <div className={`truncate text-[13px] font-medium ${step.status === 'failed' ? 'text-danger' : 'text-surface-100'}`}>
             {step.title}
           </div>
           {toolNames && (
@@ -168,7 +168,7 @@ function PlanStepCard({ step, calls }: { step: PlanStep; calls: ToolCallRecord[]
                 <ToolCallChip key={tc.id} tc={tc} />
               ))}
               {step.error && (
-                <div className="text-xs text-red-400">{truncate(step.error, 200)}</div>
+                <div className="text-xs text-danger">{truncate(step.error, 200)}</div>
               )}
             </div>
           </motion.div>
@@ -182,14 +182,14 @@ function StatusIcon({ status }: { status: PlanStepStatus }) {
   const base = 'mt-0.5 h-4 w-4 flex-shrink-0'
   switch (status) {
     case 'running':
-      return <Loader2 className={`${base} animate-spin text-blue-400`} aria-label="Em execução" />
+      return <Loader2 className={`${base} animate-spin text-info`} aria-label="Em execução" />
     case 'done':
-      return <Check className={`${base} text-emerald-400`} aria-label="Concluído" />
+      return <Check className={`${base} text-success`} aria-label="Concluído" />
     case 'failed':
-      return <X className={`${base} text-red-400`} aria-label="Falhou" />
+      return <X className={`${base} text-danger`} aria-label="Falhou" />
     case 'pending':
     default:
-      return <Circle className={`${base} text-slate-500`} aria-label="Pendente" />
+      return <Circle className={`${base} text-surface-500`} aria-label="Pendente" />
   }
 }
 
@@ -215,9 +215,9 @@ function AgentChip({ agent }: { agent: string }) {
 
 function StatusBadge({ status }: { status: PlanStepStatus }) {
   const cls =
-    status === 'done' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-    : status === 'running' ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
-    : status === 'failed' ? 'bg-red-500/15 text-red-300 border-red-500/30'
+    status === 'done' ? 'bg-success/15 text-success border-success/30'
+    : status === 'running' ? 'bg-info/15 text-info border-info/30'
+    : status === 'failed' ? 'bg-danger/15 text-danger border-danger/30'
     : 'bg-surface-800/70 text-surface-400 border-surface-700/60'
   const label =
     status === 'done' ? 'CONCLUÍDO'

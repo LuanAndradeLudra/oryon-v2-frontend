@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
-import { Modal } from '@/components/ui/Modal'
+import { FormDialog } from '@/components/ui/FormDialog'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -107,14 +107,17 @@ export function CustomFieldModal({ open, onClose, onSave, editField, existingKey
   const showPlaceholder = type !== 'boolean' && !hasOptions
 
   return (
-    <Modal
+    <FormDialog
       open={open}
       onClose={onClose}
       title={editField ? 'Editar campo' : 'Novo campo personalizado'}
+      onSubmit={handleSave}
+      submitLabel={editField ? 'Salvar alterações' : 'Criar campo'}
+      loading={saving}
+      error={error || null}
       className="max-w-md"
     >
-      <div className="flex flex-col gap-4">
-        <FormField label="Nome do campo" required error={error}>
+        <FormField label="Nome do campo" required>
           <Input
             value={label}
             onChange={(e) => { handleLabelChange(e.target.value); setError('') }}
@@ -200,20 +203,6 @@ export function CustomFieldModal({ open, onClose, onSave, editField, existingKey
           </div>
           <Switch checked={required} onChange={setRequired} />
         </div>
-
-        <div className="flex gap-2 justify-end pt-1">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-all">
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
-          >
-            {saving ? 'Salvando...' : editField ? 'Salvar alterações' : 'Criar campo'}
-          </button>
-        </div>
-      </div>
-    </Modal>
+    </FormDialog>
   )
 }

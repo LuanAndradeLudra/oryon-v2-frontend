@@ -13,7 +13,7 @@ export interface AgentAction {
   toolName: string
   humanSummary: string
   success: boolean
-  targetEntityType: 'conversation' | 'contact' | 'tag' | null
+  targetEntityType: 'conversation' | 'contact' | 'tag' | 'deal' | null
   targetEntityId: string | null
   contactId: string | null
   durationMs: number | null

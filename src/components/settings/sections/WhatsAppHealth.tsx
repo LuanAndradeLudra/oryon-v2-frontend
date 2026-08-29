@@ -18,6 +18,11 @@ import { Phone, Star, AlertTriangle, Loader2, Check, Bot, ShieldCheck, ShieldOff
 import { whatsappNumbersApi, type WhatsappLinesHealth, type WhatsappLineHealth } from '@/services/api'
 import { cn } from '@/lib/utils'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
+import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 
 function formatPhone(raw?: string | null): string {
   if (!raw) return '—'
@@ -69,30 +74,43 @@ export function WhatsAppHealth() {
     }
   }
 
+  const header = (
+    <SectionHeader
+      title="Saúde das Linhas"
+      description="Estado de cada número WhatsApp: linha primária, recursos vinculados e pendências."
+    />
+  )
+
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="w-5 h-5 animate-spin text-brand-400" />
+      <div>
+        {header}
+        <div className="flex flex-col gap-4">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={4} />
+        </div>
       </div>
     )
   }
 
   if (error && !data) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-sm text-danger">{error}</p>
-        <button onClick={load} className="mt-3 text-xs text-brand-400 hover:text-brand-300">
-          Tentar novamente
-        </button>
+      <div>
+        {header}
+        <ErrorState compact hint={error} onRetry={load} />
       </div>
     )
   }
 
   if (!data || data.lines.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <Phone className="w-8 h-8 text-surface-600 mx-auto mb-3" />
-        <p className="text-sm text-surface-400">Nenhuma linha WhatsApp conectada ainda.</p>
+      <div>
+        {header}
+        <EmptyState
+          icon={Phone}
+          title="Nenhuma linha WhatsApp conectada ainda"
+          hint="Conecte um número em Números WhatsApp para acompanhar a saúde das linhas."
+        />
       </div>
     )
   }
@@ -102,40 +120,47 @@ export function WhatsAppHealth() {
   const orphansTotal = data.orphans.templates + data.orphans.campaigns + data.orphans.automations
 
   return (
-    <div className="flex flex-col gap-4">
+    <div>
+      {header}
+
       {/* Global summary — admin's "everything OK" / "something off" snapshot */}
-      <div className="grid grid-cols-3 gap-3">
-        <SummaryCard
-          label="Linhas ativas"
-          value={data.lines.filter((l) => l.isActive).length}
-          total={data.lines.length}
-          icon={Phone}
-        />
-        <SummaryCard
-          label="Recursos sem linha"
-          value={needsAttentionTotal}
-          tone={needsAttentionTotal > 0 ? 'warning' : 'ok'}
-          icon={AlertTriangle}
-        />
-        <SummaryCard
-          label="Recursos órfãos"
-          value={orphansTotal}
-          tone={orphansTotal > 0 ? 'warning' : 'ok'}
-          icon={Globe}
-          tooltip="Recursos apontando para uma linha desativada ou removida"
-        />
-      </div>
+      <SettingsSection
+        title="Visão geral"
+        description="Linhas ativas e recursos que precisam de atenção."
+      >
+        <div className="grid grid-cols-3 gap-6">
+          <SummaryStat
+            label="Linhas ativas"
+            value={data.lines.filter((l) => l.isActive).length}
+            total={data.lines.length}
+            icon={Phone}
+          />
+          <SummaryStat
+            label="Recursos sem linha"
+            value={needsAttentionTotal}
+            tone={needsAttentionTotal > 0 ? 'warning' : 'ok'}
+            icon={AlertTriangle}
+          />
+          <SummaryStat
+            label="Recursos órfãos"
+            value={orphansTotal}
+            tone={orphansTotal > 0 ? 'warning' : 'ok'}
+            icon={Globe}
+            tooltip="Recursos apontando para uma linha desativada ou removida"
+          />
+        </div>
+      </SettingsSection>
 
       {error && (
-        <div className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+        <div className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
           {error}
         </div>
       )}
 
-      {/* Per-line cards */}
-      <div className="flex flex-col gap-3">
+      {/* Per-line rows — lista densa em largura total, divisores hairline */}
+      <div className="divide-y divide-surface-800/60">
         {data.lines.map((line) => (
-          <LineHealthCard
+          <LineHealthRow
             key={line.id}
             line={line}
             onPromote={() => handlePromote(line.id)}
@@ -148,7 +173,7 @@ export function WhatsAppHealth() {
   )
 }
 
-function SummaryCard({
+function SummaryStat({
   label, value, total, tone = 'default', icon: Icon, tooltip,
 }: {
   label: string
@@ -158,15 +183,10 @@ function SummaryCard({
   icon: React.ComponentType<{ className?: string }>
   tooltip?: string
 }) {
-  const toneClass = tone === 'warning'
-    ? 'border-status-pending/30 bg-status-pending/5'
-    : tone === 'ok'
-    ? 'border-surface-700/40 bg-surface-800/40'
-    : 'border-surface-700/60 bg-surface-800/60'
   const valueClass = tone === 'warning' ? 'text-status-pending' : 'text-surface-100'
 
   return (
-    <div className={cn('rounded-xl border p-3', toneClass)} title={tooltip}>
+    <div title={tooltip}>
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-surface-400">
         <Icon className="w-3 h-3" />
         {label}
@@ -179,7 +199,7 @@ function SummaryCard({
   )
 }
 
-function LineHealthCard({
+function LineHealthRow({
   line,
   onPromote,
   promoting,
@@ -194,14 +214,7 @@ function LineHealthCard({
     line.templates.needsAssignment + line.campaigns.needsAssignment + line.automations.needsAssignment
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border p-4',
-        line.isPrimary
-          ? 'border-brand-500/30 bg-brand-500/5'
-          : 'border-surface-700/60 bg-surface-800/40',
-      )}
-    >
+    <div className="py-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
@@ -221,12 +234,12 @@ function LineHealthCard({
               </span>
             )}
             {line.hasSystemUserToken ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-status-active-bg text-status-active border border-status-active-border" title="Token de system user presente">
+              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border" style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties} title="Token de system user presente">
                 <ShieldCheck className="w-2.5 h-2.5" />
                 Token OK
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-danger/10 text-danger border border-danger/30" title="Sem token — mensagens falharão">
+              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border" style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties} title="Sem token — mensagens falharão">
                 <ShieldOff className="w-2.5 h-2.5" />
                 Sem token
               </span>
@@ -325,7 +338,7 @@ function LineHealthCard({
           )}
         </div>
         {needsAttention > 0 && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-status-pending/10 text-status-pending border border-status-pending/30">
+          <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
             <AlertTriangle className="w-3 h-3" />
             {needsAttention} sem linha
           </span>
@@ -353,7 +366,7 @@ function CountBlock({
       : 'text-surface-400'
 
   return (
-    <div className="rounded-lg bg-surface-900/40 border border-surface-800/60 p-3">
+    <div>
       <div className="flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-wide text-surface-500">{label}</span>
         <span className="text-sm font-semibold text-surface-100">{total}</span>

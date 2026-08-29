@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Upload, Settings2, AlertTriangle, Users, Pencil, Trash2 } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
@@ -26,34 +27,29 @@ import { Avatar } from '@/components/ui/Avatar'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useContacts } from '@/hooks/useContacts'
 import { useKanbanDeals } from '@/hooks/useKanbanDeals'
+import { connectSocket } from '@/services/socket'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
 import { tagsApi, pipelinesApi, pipelineRoutingApi, whatsappNumbersApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { formatBRL } from '@/utils/money'
-import { cn, getApiErrorMessage } from '@/lib/utils'
+import { cn, getApiErrorMessage, getActivePipelines, getDefaultPipeline } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag, Pipeline, Deal, PipelineChannelRouting, WhatsAppNumber } from '@/types'
 
 /**
- * Faceta "Situação comercial" (D-10) — derivada em tempo real do `dealsSummary`
- * já carregado em cada contato, sem dado novo. Filtra client-side os contatos
- * exibidos (lista/board); os totais das colunas continuam vindo do servidor.
+ * Faceta "Situação comercial" (D-10). Na LISTA de contatos (base, fora de um
+ * funil), o filtro é aplicado no BACKEND (SCRUM-293 — `useContacts`/`?commercial=`)
+ * porque a lista é paginada no servidor; filtrar client-side só a página
+ * carregada escondia matches fora dela e deixava o badge de contagem
+ * enganoso. Dentro do board de um funil não há paginação server-side (todos
+ * os deals do pipeline vêm de uma vez) — ali o filtro continua client-side,
+ * ver `matchesCommercialDeal` abaixo.
  */
 type CommercialSituation = 'all' | 'no_deal' | 'open_deal' | 'customer'
-
-function matchesCommercial(summary: Contact['dealsSummary'], s: CommercialSituation): boolean {
-  if (s === 'all') return true
-  const openCount = summary?.openCount ?? 0
-  const wonCount = summary?.wonCount ?? 0
-  const count = summary?.count ?? 0
-  if (s === 'no_deal') return count === 0
-  if (s === 'open_deal') return openCount > 0
-  if (s === 'customer') return wonCount > 0
-  return true
-}
 
 const COMMERCIAL_OPTIONS: { key: CommercialSituation; label: string }[] = [
   { key: 'all', label: 'Todos' },
@@ -87,6 +83,7 @@ export function ContactsPage() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [initialPanelTab, setInitialPanelTab] = useState<TabId | undefined>(undefined)
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   // Auto-open contact from URL param (e.g. /contacts?contact=c1)
   useEffect(() => {
@@ -97,18 +94,16 @@ export function ContactsPage() {
     }
   }, [searchParams, setSearchParams])
 
-  // Auto-seleciona um pipeline vindo por URL (ex: /contacts?pipeline=p1) —
-  // usado pelos links "Ver no board" da ficha do contato / painel da conversa.
-  useEffect(() => {
-    const pipelineParam = searchParams.get('pipeline')
-    if (pipelineParam) {
-      setSelectedPipelineId(pipelineParam)
-      setSearchParams({}, { replace: true })
-    }
-  }, [searchParams, setSearchParams])
   const [showNewContact, setShowNewContact] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showCRMConfig, setShowCRMConfig] = useState(false)
+  // SCRUM-293 — criar um funil redireciona direto pro editor de estágios
+  // (aba "Funis" do CRMConfigDrawer, já no funil recém-criado) em vez de só
+  // voltar pro board: o funil nasce SEM estágios agora (backend não semeia
+  // mais os 5 de venda), então sem isto o usuário ficaria com um funil
+  // invisível/inutilizável até lembrar de configurá-lo manualmente.
+  const [crmConfigInitialTab, setCrmConfigInitialTab] = useState<'stages' | 'pipelineStages' | 'fields'>('stages')
+  const [crmConfigInitialPipelineId, setCrmConfigInitialPipelineId] = useState<string | null>(null)
   const [commercial, setCommercial] = useState<CommercialSituation>('all')
 
   // ── Funis de negócio (múltiplos pipelines) ──────────────────────────────
@@ -116,8 +111,24 @@ export function ContactsPage() {
   // um funil troca o conteúdo principal para o board de negócios daquele
   // pipeline, mantendo os botões da página (Configurar, Importar, Novo
   // contato) funcionando normalmente — são destinos peer, não filtros.
+  // Gate de múltiplos funis (SCRUM-498). Com o flag do tenant desligado (ou
+  // backend sem o módulo), a página é SÓ a tabela de contatos: nenhum fetch
+  // de pipeline/roteamento, nenhum segmentado/board/"Novo funil", nenhuma
+  // faceta comercial (o backend ignora `?commercial=` sem o módulo).
+  const multiPipeline = useMultiPipeline()
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
-  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
+  // Estado inicial lê `?pipeline=` uma vez (link "Ver no board" da ficha do
+  // contato / painel da conversa, ou refresh/link copiado) — sem apagar o
+  // param, ao contrário do que a página fazia antes. Validado contra a lista
+  // real assim que ela chega (efeito abaixo), já que o fetch é assíncrono.
+  const [selectedPipelineIdRaw, setSelectedPipelineId] = useState<string | null>(
+    () => searchParams.get('pipeline'),
+  )
+  // Derivado, não efeito: com o gate fechado o funil selecionado é sempre
+  // `null` — assim board, `useKanbanDeals`, sync de URL e JSX enxergam
+  // "destino Contatos" já no 1º render, sem disparar um fetch de board que
+  // o backend responderia 404/403.
+  const selectedPipelineId = multiPipeline ? selectedPipelineIdRaw : null
   const [createPipelineModalOpen, setCreatePipelineModalOpen] = useState(false)
   const [editPipelineModalOpen, setEditPipelineModalOpen] = useState(false)
   const [deletePipelineConfirmOpen, setDeletePipelineConfirmOpen] = useState(false)
@@ -133,6 +144,30 @@ export function ContactsPage() {
   useEffect(() => {
     if (selectedPipelineId && commercial === 'no_deal') setCommercial('all')
   }, [selectedPipelineId, commercial])
+
+  // Sincroniza `?pipeline=` com o funil selecionado nos dois sentidos — sem
+  // isto, refresh/voltar/copiar link perdia o funil aberto (o estado inicial
+  // acima só lê a URL uma vez, no mount). `replace` evita empilhar histórico
+  // a cada clique no segmentado; só mexe na chave `pipeline`, preservando
+  // outros params (ex. `contact`, tratado em efeito à parte).
+  useEffect(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (selectedPipelineId) next.set('pipeline', selectedPipelineId)
+      else next.delete('pipeline')
+      return next
+    }, { replace: true })
+  }, [selectedPipelineId, setSearchParams])
+
+  // Se o id (vindo da URL ou de um link antigo) não existir mais ou tiver
+  // sido arquivado nesse meio tempo, cai pro pipeline padrão do tenant — o
+  // board nunca fica preso num funil inválido/escondido do segmentado.
+  useEffect(() => {
+    if (pipelines.length === 0 || selectedPipelineId === null) return
+    const match = pipelines.find((p) => p.id === selectedPipelineId)
+    if (match && !match.isArchived) return
+    setSelectedPipelineId(getDefaultPipeline(pipelines)?.id ?? null)
+  }, [pipelines, selectedPipelineId])
 
   const { user } = useAuth()
   const currentUser = user
@@ -150,12 +185,11 @@ export function ContactsPage() {
     contacts, loading, loadingMore, hasMore, loadMore, error, total, filters, setFilters,
     updateContact, createContact, bulkUpdateStage, bulkRemove,
     bulkAddTag, bulkRemoveTag, removeContact, refetch,
-  } = useContacts({ sortBy: 'lastContactedAt', sortDir: 'desc' })
-
-  // Faceta "Situação comercial" (D-10): filtra client-side pelo dealsSummary já carregado.
-  const displayContacts = useMemo(
-    () => (commercial === 'all' ? contacts : contacts.filter((c) => matchesCommercial(c.dealsSummary, commercial))),
-    [contacts, commercial],
+  } = useContacts(
+    { sortBy: 'lastContactedAt', sortDir: 'desc' },
+    // Faceta comercial depende de `dealsSummary`, que só existe com o módulo
+    // de funis — sem o gate, nunca manda `?commercial=` (SCRUM-498).
+    { commercial: multiPipeline && commercial !== 'all' ? commercial : undefined },
   )
 
   // Tags are fetched once when the page mounts so the BulkActionBar can
@@ -170,8 +204,17 @@ export function ContactsPage() {
   }, [])
   const { vocab } = useTenantVocab()
   const { toasts, toast, dismiss } = useToast()
+  // Cache compartilhado (SCRUM-293) — mantido em sincronia aqui só nas
+  // mutações reais de pipeline (criar/editar/excluir), não no refresh de
+  // badge por `deal:changed` abaixo (senão reintroduziria o GET redundante
+  // que esse cache existe pra eliminar em ConversationDealIndicator/
+  // ContactPanelDeals/DealsTab).
+  const { refetchPipelines } = useCRMConfig()
 
   const fetchPipelines = useCallback((selectId?: string) => {
+    // Gate fechado: chamado também pelos callbacks dos drawers (onDone/
+    // onCreated) — vira no-op em vez de um GET que o backend não tem.
+    if (!multiPipeline) return Promise.resolve()
     return pipelinesApi
       .list()
       .then((res) => {
@@ -180,9 +223,13 @@ export function ContactsPage() {
         if (selectId) setSelectedPipelineId(selectId)
       })
       .catch(() => toast('Não foi possível carregar os pipelines.', 'error'))
-  }, [toast])
+  }, [toast, multiPipeline])
 
   useEffect(() => {
+    // Busca na montagem E quando o flag hidrata (login → `/auth/me` chega
+    // depois da 1ª renderização da página). Sem o flag: nada de pipelines
+    // nem roteamento (SCRUM-498).
+    if (!multiPipeline) return
     fetchPipelines()
     Promise.all([pipelineRoutingApi.list(), whatsappNumbersApi.list()])
       .then(([routingRes, numbersRes]) => {
@@ -190,10 +237,26 @@ export function ContactsPage() {
         setWhatsappNumbers(numbersRes.data ?? [])
       })
       .catch(() => { /* strip de roteamento é best-effort — não bloqueia a página */ })
-    // Busca só na montagem; `fetchPipelines` é estável na prática mas não
-    // deve ser dep (identidade nova a cada render causaria loop de fetch).
+    // `fetchPipelines` fora das deps de propósito: só muda com `multiPipeline`
+    // (já listado) e com `toast`, cuja identidade nova causaria refetch em loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [multiPipeline])
+
+  // Badge de contagem do segmentado ("Vendas 3", "Suporte 1") só vinha do
+  // fetch inicial — mover/ganhar/perder um negócio deixava o número
+  // desatualizado até um F5. `deal:changed` já é emitido pelo backend pra
+  // qualquer mudança de negócio (inclusive as duas rooms quando o negócio
+  // troca de funil); reage aqui também, não só dentro do board de UM
+  // pipeline (useKanbanDeals), pra manter os badges de TODOS os funis
+  // corretos em tempo real — inclusive mudanças feitas por outra aba/pessoa.
+  useEffect(() => {
+    if (!multiPipeline) return
+    const socket = connectSocket()
+    const onDealChanged = () => { void fetchPipelines() }
+    socket.on('deal:changed', onDealChanged)
+    return () => { socket.off('deal:changed', onDealChanged) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [multiPipeline])
 
   const selectedPipeline = useMemo(
     () => pipelines.find((p) => p.id === selectedPipelineId) ?? null,
@@ -213,7 +276,10 @@ export function ContactsPage() {
     }),
     [filters.search, filters.intent, filters.sentiment, filters.source, filters.tagId, filters.optIn],
   )
-  const { dealsByStage, loading: dealsLoading, moveStage: moveDealStage } = useKanbanDeals(selectedPipelineId, boardFilters)
+  const {
+    dealsByStage, loading: dealsLoading, error: dealsError,
+    moveStage: moveDealStage, movePipeline: moveDealPipeline, refetch: refetchDeals,
+  } = useKanbanDeals(selectedPipelineId, boardFilters)
   const sortedPipelineStages = useMemo(
     () => (selectedPipeline?.stages ?? []).slice().sort((a, b) => a.order - b.order),
     [selectedPipeline],
@@ -250,6 +316,18 @@ export function ContactsPage() {
     moveDealStage(deal, toStageId).catch(() => toast('Não foi possível mover o negócio.', 'error'))
   }
 
+  const handleMovePipelineDeal = (deal: Deal, toPipelineId: string) => {
+    moveDealPipeline(deal, toPipelineId)
+      .then(() => {
+        toast('Negócio movido de funil.', 'success')
+        // Feedback imediato do badge de contagem — não espera o round-trip
+        // do socket `deal:changed` (que também dispara isso, redundante mas
+        // inofensivo: cobre outras abas/pessoas vendo a mesma mudança).
+        void fetchPipelines()
+      })
+      .catch((e: unknown) => toast(getApiErrorMessage(e, 'Não foi possível mover o negócio para o funil.'), 'error'))
+  }
+
   const handleOpenDealContact = (contactId: string) => {
     setSelectedContactId(contactId)
     setInitialPanelTab('deals')
@@ -258,16 +336,22 @@ export function ContactsPage() {
   const handleCreatePipeline = async (data: { name: string; color: string }) => {
     let created
     try {
-      // Backend provisiona os estágios padrão (Novo/Em negociação/Proposta
-      // enviada/Ganho/Perdido) numa única transação com a criação do
-      // pipeline — atômico, sem risco de faltar um estágio terminal.
+      // Funil nasce SEM estágios (SCRUM-293) — não herda os 5 estágios de
+      // VENDAS do preset antigo sem o usuário escolher nada. Por isso o
+      // redirect logo abaixo: sem estágio nenhum o funil não aceita deals
+      // (backend rejeita "Pipeline sem estágios configurados."), então o
+      // próximo passo natural é sempre configurar as colunas do board.
       const res = await pipelinesApi.create({ name: data.name, color: data.color })
       created = res.data
     } catch (e: unknown) {
       throw new Error(getApiErrorMessage(e, 'Erro ao criar pipeline.'))
     }
     await fetchPipelines(created.id)
-    toast('Funil criado com sucesso.', 'success')
+    refetchPipelines()
+    toast('Funil criado — configure os estágios abaixo.', 'success')
+    setCrmConfigInitialTab('pipelineStages')
+    setCrmConfigInitialPipelineId(created.id)
+    setShowCRMConfig(true)
   }
 
   const handleEditPipeline = async (data: { name: string; color: string }) => {
@@ -278,6 +362,7 @@ export function ContactsPage() {
       throw new Error(getApiErrorMessage(e, 'Erro ao editar pipeline.'))
     }
     await fetchPipelines(selectedPipelineId)
+    refetchPipelines()
     toast('Funil atualizado.', 'success')
   }
 
@@ -290,6 +375,7 @@ export function ContactsPage() {
       setDeletePipelineConfirmOpen(false)
       setSelectedPipelineId(null)
       await fetchPipelines()
+      refetchPipelines()
     } catch (e: unknown) {
       toast(getApiErrorMessage(e, 'Erro ao excluir pipeline.'), 'error')
     } finally {
@@ -321,13 +407,22 @@ export function ContactsPage() {
 
   useRegisterTopBarActions(
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Count badge — total de contatos. Fixo (spec: cabeçalho global não muda por funil). */}
+      {/* Count badge — total de contatos, já refletindo a faceta "Situação
+          comercial" ativa (SCRUM-293: `total` vem do backend já filtrado).
+          Fixo só quanto a funil (spec: cabeçalho global não muda por funil). */}
       <span className="text-xs text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full border border-surface-700 font-medium">
         {total.toLocaleString('pt-BR')}
       </span>
 
       <button
-        onClick={() => setShowCRMConfig(true)}
+        onClick={() => {
+          // Acesso manual — sempre abre no default ("Estágios do contato"),
+          // nunca com um funil forçado do último "criar funil" (esse reset
+          // só vale pra próxima criação).
+          setCrmConfigInitialTab('stages')
+          setCrmConfigInitialPipelineId(null)
+          setShowCRMConfig(true)
+        }}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors"
       >
         <Settings2 className="w-3.5 h-3.5" />
@@ -434,30 +529,25 @@ export function ContactsPage() {
 
   return (
     <>
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-black">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-surface-950">
         {isMobile && <MobilePageHeader title="Contatos" />}
 
         {/* Fixos para qualquer destino (Contatos ou funil) — só o card abaixo troca. */}
         <ContactsStatsBar
           contacts={contacts}
           total={total}
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
         />
 
-        {/* Quando o card de Insights está ativo, a busca + filtros ficam numa
-            faixa própria abaixo. Com o card desligado, a ContactsStatsBar já
-            hospeda os filtros no slot liberado — então esta faixa some e o
-            card sobe. */}
-        {isFeatureVisible('crmAiInsights') && (
-          <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
-        )}
+        {/* Busca + filtros: 2 mais usados inline (Fonte, Etiquetas) e o resto
+            dentro do botão "Filtros". */}
+        <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
 
         {/* Faceta "Situação comercial" (D-10) — filtro opt-in derivado do dealsSummary.
             Dentro de um funil, o significado muda: não há dealsSummary cross-pipeline
             por card, então o filtro passa a olhar só o status DESTE negócio nesta
             board. "Sem negócio" nunca combina ali (todo card já é um negócio) — por
             isso some do segmentado, e um aviso deixa explícito o escopo do filtro. */}
+        {multiPipeline && (
         <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto border-b border-surface-800/60">
           {COMMERCIAL_OPTIONS.filter((opt) => !(selectedPipelineId && opt.key === 'no_deal')).map((opt) => (
             <button
@@ -467,7 +557,7 @@ export function ContactsPage() {
               className={cn(
                 'text-xs px-3 py-1 rounded-full whitespace-nowrap transition-colors border',
                 commercial === opt.key
-                  ? 'bg-brand-500/15 text-brand-300 border-brand-500/40'
+                  ? 'commercial-filter-chip-active bg-brand-500/15 text-brand-300 border-brand-500/40'
                   : 'bg-surface-900 text-surface-400 border-surface-800 hover:text-surface-200',
               )}
             >
@@ -480,10 +570,14 @@ export function ContactsPage() {
             </span>
           )}
         </div>
+        )}
 
         {/* Card grande — segmented control (Contatos + Funis) no topo; só o
-            conteúdo interno troca entre Tabela de contatos e Kanban do funil. */}
+            conteúdo interno troca entre Tabela de contatos e Kanban do funil.
+            Sem o gate de funis (SCRUM-498) o cabeçalho inteiro some — sobra
+            a tabela, que é o único destino possível. */}
         <div className="flex-1 overflow-hidden min-w-0 flex flex-col mx-4 mb-4 mt-1 bg-surface-900 border border-surface-800 rounded-xl">
+          {multiPipeline && (
           <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-surface-800 flex-wrap flex-shrink-0">
             {/* Segmented control — Contatos (base) + cada Funil, destinos peer (spec UX 2026-07-09) */}
             <div className="flex items-center gap-1 bg-surface-950 border border-surface-800 rounded-lg p-1 overflow-x-auto">
@@ -500,7 +594,7 @@ export function ContactsPage() {
                 {vocab.contacts}
                 <span className="text-[9px] font-bold text-surface-500 bg-surface-950 px-1 py-0.5 rounded">BASE</span>
               </button>
-              {pipelines.map((p) => (
+              {getActivePipelines(pipelines).map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setSelectedPipelineId(p.id)}
@@ -557,6 +651,7 @@ export function ContactsPage() {
               </button>
             </div>
           </div>
+          )}
 
           {/* Funil selecionado: callout de escopo + resumo + strip de roteamento (spec UX §6) */}
           {selectedPipeline && (
@@ -588,13 +683,28 @@ export function ContactsPage() {
 
           <div className="flex-1 overflow-hidden min-w-0 flex flex-col">
           {selectedPipelineId ? (
-            <DealsBoard
-              stages={sortedPipelineStages}
-              dealsByStage={displayDealsByStage}
-              onMoveStage={handleMoveDeal}
-              onOpenContact={handleOpenDealContact}
-              loading={dealsLoading}
-            />
+            dealsError ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
+                <AlertTriangle className="w-8 h-8 text-red-400" />
+                <p className="text-sm">Não foi possível carregar os negócios deste funil.</p>
+                <button
+                  onClick={refetchDeals}
+                  className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : (
+              <DealsBoard
+                stages={sortedPipelineStages}
+                dealsByStage={displayDealsByStage}
+                onMoveStage={handleMoveDeal}
+                onOpenContact={handleOpenDealContact}
+                loading={dealsLoading}
+                pipelines={pipelines}
+                onMovePipeline={handleMovePipelineDeal}
+              />
+            )
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
               <AlertTriangle className="w-8 h-8 text-red-400" />
@@ -609,16 +719,17 @@ export function ContactsPage() {
           ) : isMobile ? (
             // Mobile: lista vertical pura — tabela larga fica inutilizável em viewport estreita.
             <ContactsMobileList
-              contacts={displayContacts}
+              contacts={contacts}
               loading={loading}
               onOpenPanel={handleOpenPanel}
+              onOpenDeals={handleOpenDealContact ? (c) => handleOpenDealContact(c.id) : undefined}
               hasMore={hasMore}
               loadingMore={loadingMore}
               onLoadMore={loadMore}
             />
           ) : (
             <ContactsTable
-              contacts={displayContacts}
+              contacts={contacts}
               loading={loading}
               onOpenPanel={handleOpenPanel}
               onMoveStage={handleMoveStage}
@@ -770,6 +881,8 @@ export function ContactsPage() {
         onClose={() => setShowCRMConfig(false)}
         pipelines={pipelines}
         onPipelinesChanged={fetchPipelines}
+        initialTab={crmConfigInitialTab}
+        initialPipelineId={crmConfigInitialPipelineId}
       />
 
       {/* Funis de negócio (múltiplos pipelines) */}
@@ -835,7 +948,7 @@ export function ContactsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full sm:w-[700px] z-40 bg-black border-l border-surface-800 flex flex-col shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
             >
               <ContactDetailPanel
                 contactId={selectedContactId}
@@ -843,6 +956,16 @@ export function ContactsPage() {
                 onClose={() => setSelectedContactId(null)}
                 onContactUpdate={handleContactUpdate}
                 onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}
+                onExpand={
+                  isFeatureVisible('contactProfilePage', user?.email)
+                    // O drawer fica aberto durante a navegação: a troca de rota
+                    // faz o crossfade da tela inteira (AnimatedRoutes dá chave
+                    // própria a /contacts/:id) — fechar antes causaria um
+                    // slide-out concorrente com o fade. O contato vai no state
+                    // para a página nascer sem skeleton.
+                    ? (contact) => navigate(`/contacts/${contact.id}`, { state: { contact } })
+                    : undefined
+                }
               />
             </motion.div>
           </>

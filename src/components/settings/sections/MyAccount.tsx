@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react'
 import { Eye, EyeOff, Camera, Bell, UserCircle } from 'lucide-react'
-import axios from 'axios'
 import { AnimatePresence, motion } from 'framer-motion'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
+import { TipCard } from '@/components/ui/TipCard'
 import type { User } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Equipe Oryon',
@@ -33,22 +37,24 @@ export function MyAccount() {
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false })
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPw, setSavingPw] = useState(false)
+  const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   // Phase 19: notification preferences moved to their own Settings page.
 
   useEffect(() => {
-    axios.get<User>(`${API}/settings/account`).then((r) => {
+    setError(false)
+    api.get<User>('/settings/account').then((r) => {
       setUser(r.data)
       setForm({ firstName: r.data.firstName ?? '', lastName: r.data.lastName ?? '' })
     }).catch(() => {
-      // Fallback: show empty form instead of infinite loading
-      setUser({ firstName: '', lastName: '', email: '' } as User)
+      setError(true)
     })
-  }, [])
+  }, [reloadKey])
 
   const saveProfile = async () => {
     setSavingProfile(true)
     try {
-      await axios.patch(`${API}/settings/account`, form)
+      await api.patch('/settings/account', form)
       toast('Perfil atualizado com sucesso.', 'success')
       markDone('profile')
     } catch {
@@ -69,7 +75,7 @@ export function MyAccount() {
     }
     setSavingPw(true)
     try {
-      await axios.patch(`${API}/settings/password`, { currentPassword: pwForm.current, newPassword: pwForm.next })
+      await api.patch('/settings/password', { currentPassword: pwForm.current, newPassword: pwForm.next })
       setPwForm({ current: '', next: '', confirm: '' })
       toast('Senha alterada com sucesso.', 'success')
     } catch {
@@ -79,50 +85,55 @@ export function MyAccount() {
     }
   }
 
+  if (error) {
+    return (
+      <div>
+        <SectionHeader title="Minha Conta" description="Gerencie suas informações pessoais e preferências." />
+        <ErrorState compact onRetry={() => { setUser(null); setReloadKey((k) => k + 1) }} />
+      </div>
+    )
+  }
+
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <div>
+        <SectionHeader title="Minha Conta" description="Gerencie suas informações pessoais e preferências." />
+        <div className="flex flex-col gap-6">
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={3} />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <SectionHeader title="Minha Conta" description="Gerencie suas informações pessoais e preferências." />
 
       <AnimatePresence>
         {!checklist.profile && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3 }}
-            className="flex items-start gap-4 bg-brand-950/50 border border-brand-500/20 rounded-2xl px-5 py-4 mb-6"
+          <TipCard
+            icon={<UserCircle className="w-4 h-4 text-brand-400" />}
+            title="Complete seu perfil"
+            description="Seu nome e cargo aparecem nas conversas, relatórios e para os clientes no atendimento."
+            className="mb-6"
           >
-            <div className="w-8 h-8 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <UserCircle className="w-4 h-4 text-brand-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-surface-100">Complete seu perfil</p>
-              <p className="text-xs text-surface-400 mt-0.5 leading-relaxed">
-                Seu nome e cargo aparecem nas conversas, relatórios e para os clientes no atendimento.
-              </p>
-              <button
-                onClick={() => markDone('profile')}
-                className="mt-2 text-xs text-surface-500 hover:text-surface-300 transition-colors"
-              >
-                Já entendi, ocultar
-              </button>
-            </div>
-          </motion.div>
+            <button
+              onClick={() => markDone('profile')}
+              className="mt-2 text-xs text-surface-500 hover:text-surface-300 transition-colors"
+            >
+              Já entendi, ocultar
+            </button>
+          </TipCard>
         )}
       </AnimatePresence>
 
-      {/* Personal info */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-4">Informações pessoais</h3>
-
+      {/* Gramática nova: seções em duas colunas separadas por hairline —
+          zero cards. O título à esquerda funciona como índice ao rolar. */}
+      <SettingsSection
+        title="Informações pessoais"
+        description="Seu nome aparece nas conversas, relatórios e para os clientes."
+      >
         <div className="flex items-center gap-5 mb-6">
           <div className="relative group cursor-pointer">
             <Avatar name={`${user.firstName} ${user.lastName}`} size="lg" />
@@ -161,21 +172,14 @@ export function MyAccount() {
         </FormField>
 
         <div className="flex justify-end mt-4">
-          <button
-            onClick={saveProfile}
-            disabled={savingProfile}
-            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
-          >
-            {savingProfile && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-            Salvar
-          </button>
+          <Button onClick={saveProfile} loading={savingProfile}>Salvar</Button>
         </div>
-      </div>
+      </SettingsSection>
 
-      {/* Password */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-4">Alterar senha</h3>
-
+      <SettingsSection
+        title="Alterar senha"
+        description="Use no mínimo 8 caracteres. Você continuará conectado nesta sessão."
+      >
         <div className="flex flex-col gap-4">
           {(['current', 'next', 'confirm'] as const).map((field) => {
             const labels = { current: 'Senha atual', next: 'Nova senha', confirm: 'Confirmar nova senha' }
@@ -204,32 +208,30 @@ export function MyAccount() {
         </div>
 
         <div className="flex justify-end mt-4">
-          <button
+          <Button
             onClick={savePassword}
-            disabled={savingPw || !pwForm.current || !pwForm.next || !pwForm.confirm}
-            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
+            loading={savingPw}
+            disabled={!pwForm.current || !pwForm.next || !pwForm.confirm}
           >
-            {savingPw && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
             Alterar senha
-          </button>
+          </Button>
         </div>
-      </div>
+      </SettingsSection>
 
       {/* Phase 19: notification preferences moved to their own Settings page
-          (backed by a real backend). This card now just points there. */}
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6">
-        <h3 className="text-sm font-semibold text-surface-300 mb-2">Notificações</h3>
-        <p className="text-xs text-surface-400 mb-3">
-          Escolha quais eventos geram notificação para você e ajuste o som em uma página dedicada.
-        </p>
+          (backed by a real backend). This section now just points there. */}
+      <SettingsSection
+        title="Notificações"
+        description="Eventos que geram alerta para você e som de notificação."
+      >
         <a
           href="/settings/notifications"
-          className="inline-flex items-center gap-2 text-xs text-brand-300 hover:text-brand-200 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-brand-300 hover:text-brand-200 transition-colors"
         >
-          <Bell className="w-3.5 h-3.5" />
+          <Bell className="w-4 h-4" />
           Abrir preferências de notificação →
         </a>
-      </div>
+      </SettingsSection>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )

@@ -6,11 +6,24 @@ import {
 import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
+import { Banner } from '@/components/ui/Banner'
+import { Modal } from '@/components/ui/Modal'
+import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
 import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
+
+// Rótulos + acento dos chips de metadados no modal de revisão de template.
+const TEMPLATE_CATEGORY_META: Record<WhatsAppTemplate['category'], { label: string; dot: string }> = {
+  MARKETING:      { label: 'Marketing',    dot: 'bg-brand-400' },
+  UTILITY:        { label: 'Utilidade',    dot: 'bg-[#3B82F6]' },
+  AUTHENTICATION: { label: 'Autenticação', dot: 'bg-warning' },
+}
+const TEMPLATE_HEADER_LABEL: Record<NonNullable<WhatsAppTemplate['headerType']>, string> = {
+  TEXT: 'Texto', IMAGE: 'Imagem', VIDEO: 'Vídeo', DOCUMENT: 'Documento',
+}
 
 /** Um anexo "em espera" no input: fica no preview até o operador clicar em
  *  Enviar (UX estilo Claude/ChatGPT). `id` serve de key de render/remoção;
@@ -30,6 +43,9 @@ function fileIcon(file: File) {
   if (file.type.startsWith('image/')) return Image
   return FileText
 }
+
+/** Limite de texto do WhatsApp Cloud API (mensagem de texto). */
+const WA_TEXT_LIMIT = 4096
 
 interface MessageInputProps {
   /**
@@ -96,9 +112,9 @@ function QuickReplyPicker({
   return (
     <div
       ref={listRef}
-      className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden max-h-56 overflow-y-auto"
+      className="absolute bottom-full left-0 right-0 mb-2 z-50 overlay-surface border rounded-xl overflow-hidden max-h-56 overflow-y-auto"
     >
-      <div className="px-3 py-2 border-b border-surface-700/60 flex items-center gap-1.5 sticky top-0 bg-surface-800 z-10">
+      <div className="px-3 py-2 border-b border-surface-700/60 flex items-center gap-1.5 sticky top-0 overlay-bg z-10">
         <Zap className="w-3 h-3 text-brand-400" />
         <span className="text-[10px] font-semibold text-surface-400 uppercase tracking-wide">
           Respostas rápidas {query ? `— /${query}` : ''}
@@ -376,6 +392,10 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
   const [loadingTemplates, setLoadingTemplates] = useState(false)
+  // Selecting a template opens a review modal (below) instead of sending
+  // immediately, so the operator can inspect the full structure first.
+  const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null)
+  const [sendingTemplate, setSendingTemplate] = useState(false)
 
   const toggleTemplatePicker = () => {
     if (!templatePickerOpen && templates.length === 0 && !loadingTemplates) {
@@ -388,17 +408,29 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
     setTemplatePickerOpen((v) => !v)
   }
 
-  const handleSelectTemplate = async (tpl: WhatsAppTemplate) => {
+  // Step 1 — pick a template: open the review modal (no send yet).
+  const handleSelectTemplate = (tpl: WhatsAppTemplate) => {
     setTemplatePickerOpen(false)
+    setPreviewTemplate(tpl)
+  }
+
+  // Step 2 — confirm in the modal: send via the REAL WhatsApp template API
+  // (contactsApi.sendTemplate), not a plain-text message. Sending `tpl.body`
+  // as text (the old behavior) failed outside the 24h window — exactly when
+  // this picker is shown. `previewTemplate` is the template chosen in step 1.
+  const handleConfirmSendTemplate = async () => {
+    if (!previewTemplate || sendingTemplate) return
+    setSendingTemplate(true)
     try {
-      // R10: must go through the real WhatsApp template flow — sending
-      // `tpl.body` as a plain text message (the old behavior) fails outside
-      // the 24h window, which is exactly when this picker is shown.
-      await contactsApi.sendTemplate(contactId, tpl.name, tpl.language)
+      await contactsApi.sendTemplate(contactId, previewTemplate.name, previewTemplate.language)
       onCancelReply?.()
       setTemplateSent(true)
+      setPreviewTemplate(null)
     } catch {
-      // Page-level toast already surfaced the error.
+      // Page-level toast already surfaced the error; keep the modal open so the
+      // operator can retry.
+    } finally {
+      setSendingTemplate(false)
     }
   }
 
@@ -480,42 +512,43 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
   // Shown before the operator types so the silent failure path is gone.
   if (blockedReason) {
     return (
-      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
-        <div className="bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-3 flex items-center gap-3">
-          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-amber-200 font-semibold">Não é possível enviar mensagens agora</p>
-            <p className="text-[11px] text-amber-300/90 mt-0.5">{blockedReason.message}</p>
-          </div>
-          {blockedReason.ctaHref && blockedReason.ctaLabel && (
+      <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
+        <Banner
+          variant="warning"
+          className="shadow-lg"
+          action={blockedReason.ctaHref && blockedReason.ctaLabel && (
             <a
               href={blockedReason.ctaHref}
-              className="flex-shrink-0 text-xs font-semibold text-amber-200 hover:text-white bg-amber-700/30 hover:bg-amber-700/50 border border-amber-600/40 px-3 py-1.5 rounded-lg transition-colors"
+              className="text-xs font-semibold border border-white/25 bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-lg transition-colors"
             >
               {blockedReason.ctaLabel}
             </a>
           )}
-        </div>
+        >
+          <p className="text-xs font-semibold">Não é possível enviar mensagens agora</p>
+          <p className="text-[11px] opacity-90 mt-0.5">{blockedReason.message}</p>
+        </Banner>
       </div>
     )
   }
 
   if (!windowOpen) {
     return (
-      <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
-        <div className="card-24h bg-brand-800/20 border border-brand-600/30 rounded-xl px-4 py-3">
+      <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
+        <div className="card-24h bg-brand-800/20 border border-brand-600/30 rounded-xl px-4 py-3 shadow-lg">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-brand-400 flex-shrink-0" />
+            <AlertTriangle className="card-24h-accent w-4 h-4 text-brand-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-brand-300 font-semibold">Janela de 24h encerrada</p>
-              <p className="text-[11px] text-brand-400/90 mt-0.5">
+              <p className="card-24h-accent text-xs text-brand-300 font-semibold">Janela de 24h encerrada</p>
+              <p className="card-24h-accent text-[11px] text-brand-400/90 mt-0.5">
                 {templateSent ? 'Template enviado — aguardando resposta do contato.' : 'Selecione um template aprovado para reabrir a conversa'}
               </p>
             </div>
             {!templateSent && (
               <button
                 onClick={toggleTemplatePicker}
-                className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold text-brand-400 hover:text-brand-300 bg-brand-600/15 hover:bg-brand-600/25 border border-brand-500/30 px-3 py-1.5 rounded-lg transition-colors"
+                style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
+                className="color-chip flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border hover:brightness-110 transition"
               >
                 Escolher template
                 <ChevronDown className={cn('w-3 h-3', templatePickerOpen && 'rotate-180')} />
@@ -554,6 +587,96 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             </div>
           )}
         </div>
+
+        {/* Template review modal — opened by handleSelectTemplate. Renders the
+            full structure (header / body / footer / buttons) so the operator can
+            validate before sending. Confirm → handleConfirmSendTemplate. */}
+        <Modal
+          open={!!previewTemplate}
+          onClose={() => { if (!sendingTemplate) setPreviewTemplate(null) }}
+          title="Revisar template"
+          className="max-w-2xl"
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPreviewTemplate(null)}
+                disabled={sendingTemplate}
+                className="px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:bg-surface-800 disabled:opacity-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSendTemplate}
+                disabled={sendingTemplate}
+                style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
+                className="color-chip inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold border hover:brightness-110 disabled:opacity-60 transition"
+              >
+                {sendingTemplate ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {sendingTemplate ? 'Enviando…' : 'Enviar template'}
+              </button>
+            </div>
+          }
+        >
+          {previewTemplate && (() => {
+            const cat = TEMPLATE_CATEGORY_META[previewTemplate.category]
+            const vars = previewTemplate.bodyVariables ?? []
+            const btnCount = previewTemplate.buttons?.length ?? 0
+            const chip = 'inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700'
+            return (
+              <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
+                {/* Metadata + variables */}
+                <div className="order-2 md:order-1 min-w-0 space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-display text-lg font-semibold text-surface-50 leading-tight break-words">{previewTemplate.name}</h3>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={chip}>
+                        <span className={cn('w-1.5 h-1.5 rounded-full', cat?.dot ?? 'bg-surface-500')} />
+                        {cat?.label ?? previewTemplate.category}
+                      </span>
+                      <span className={cn(chip, 'uppercase tracking-wide')}>{previewTemplate.language}</span>
+                      {previewTemplate.headerType && (
+                        <span className={chip}>Cabeçalho: {TEMPLATE_HEADER_LABEL[previewTemplate.headerType]}</span>
+                      )}
+                      {btnCount > 0 && (
+                        <span className={chip}>{btnCount} {btnCount === 1 ? 'botão' : 'botões'}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {vars.length > 0 ? (
+                    <div className="rounded-xl border border-warning/25 bg-warning/[0.08] p-3">
+                      <div className="flex items-center gap-1.5 text-warning text-[11px] font-semibold mb-2">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        {vars.length} {vars.length === 1 ? 'variável não preenchida' : 'variáveis não preenchidas'}
+                      </div>
+                      <ul className="space-y-1">
+                        {vars.map((name, i) => (
+                          <li key={i} className="flex items-center gap-2 text-[11px] min-w-0">
+                            <code className="text-warning bg-warning/15 px-1.5 py-0.5 rounded font-mono shrink-0">{`{{${i + 1}}}`}</code>
+                            <span className="text-surface-300 truncate">{name?.trim() || 'sem descrição'}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-[10px] text-surface-500 mt-2 leading-snug">Serão enviadas como aparecem no preview — revise antes de confirmar.</p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-surface-500 leading-snug">Template sem variáveis — pronto para envio.</p>
+                  )}
+                </div>
+
+                {/* WhatsApp preview */}
+                <div className="order-1 md:order-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Pré-visualização</p>
+                  <div className="rounded-2xl bg-surface-950 border border-surface-800 p-4 flex items-center justify-center">
+                    <TemplatePreview template={previewTemplate} />
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </Modal>
       </div>
     )
   }
@@ -561,7 +684,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
   const slashQuery = text.match(/^\/(\S*)$/)?.[1] ?? ''
 
   return (
-    <div className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-surface-800 bg-black flex-shrink-0">
+    <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
       <div className="relative">
         {pickerActive && (
           <QuickReplyPicker
@@ -598,8 +721,12 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            'relative bg-surface-800 rounded-2xl px-3 py-2.5 transition-all',
-            'border border-surface-700 focus-within:border-brand-500/50 focus-within:shadow-sm focus-within:shadow-brand-500/10',
+            // msg-composer traz bg/border via tokens que acompanham o tema
+            // (ver index.css) — por isso a cor base não vem de bg-surface-800/
+            // border-surface-700 aqui. `relative` é necessário pro overlay
+            // absolute do dropzone (abaixo) se posicionar contra este container.
+            'relative msg-composer rounded-2xl px-3 py-2.5 transition-all shadow-lg',
+            'border focus-within:border-brand-500/50 focus-within:shadow-brand-500/20',
             dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
           )}
         >
@@ -708,7 +835,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             {showAttachMenu && (
               <div
                 ref={attachMenuRef}
-                className="absolute bottom-full left-0 mb-2 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden z-50"
+                className="absolute bottom-full left-0 mb-2 overlay-surface border rounded-xl overflow-hidden z-50"
               >
                 <button
                   onClick={() => {
@@ -754,7 +881,9 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             onContextMenu={onInputContextMenu}
             onPaste={handlePaste}
             placeholder="Digite uma mensagem ou / para respostas rápidas..."
+            aria-label="Mensagem"
             rows={1}
+            maxLength={WA_TEXT_LIMIT}
             disabled={disabled || sending}
             className={cn(
               'flex-1 bg-transparent text-sm text-surface-100 placeholder:text-surface-500',
@@ -762,6 +891,20 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
               'min-h-[24px] max-h-[120px]'
             )}
           />
+
+          {/* Contador de caracteres — só aparece perto do limite do WhatsApp
+              (4096); antes disso é ruído. Âmbar ao se aproximar, vermelho no teto. */}
+          {text.length >= WA_TEXT_LIMIT - 300 && (
+            <span
+              aria-live="polite"
+              className={cn(
+                'self-end pb-1 text-[10px] tabular-nums flex-shrink-0',
+                text.length >= WA_TEXT_LIMIT ? 'text-danger font-semibold' : 'text-warning',
+              )}
+            >
+              {text.length}/{WA_TEXT_LIMIT}
+            </span>
+          )}
 
           {/* Emoji */}
           <EmojiPickerButton
@@ -775,7 +918,8 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             <button
               onClick={handleSend}
               disabled={sending || disabled}
-              className="w-8 h-8 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 shadow-sm flex items-center justify-center flex-shrink-0 transition-all"
+              aria-label="Enviar mensagem"
+              className="w-8 h-8 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 shadow-sm flex items-center justify-center flex-shrink-0 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -783,9 +927,22 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
           </div>
         </div>
       </div>
-      <p className="text-[10px] text-surface-600 mt-1.5 text-center">
-        Enter para enviar · Shift+Enter para nova linha · <span className="text-surface-500">/ para respostas rápidas</span>
-      </p>
+      {/* Quick reply shortcut chips */}
+      {allResponses.length > 0 && !pickerActive && (
+        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+          {allResponses.slice(0, 8).map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => handleSelectResponse(r)}
+              title={r.title}
+              className="flex-shrink-0 text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
+            >
+              /{r.shortcut}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

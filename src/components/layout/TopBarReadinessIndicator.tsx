@@ -54,15 +54,15 @@ export function TopBarReadinessIndicator() {
   if (issues.length === 1) {
     const issue = issues[0]
     return (
-      <div className="hidden md:inline-flex items-center gap-2 h-8 pl-2 pr-1 rounded-lg bg-amber-950/40 border border-amber-900/60 max-w-[360px]">
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-        <span className="text-[11px] font-medium text-amber-200 truncate" title={issue.description}>
+      <div className="hidden md:inline-flex items-center gap-2 h-8 pl-2 pr-1 rounded-lg border border-warning/30 bg-warning/10 max-w-[360px]">
+        <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 text-warning" />
+        <span className="text-[11px] font-medium truncate text-surface-200" title={issue.description}>
           {issue.label}
         </span>
         {issue.cta && (
           <Link
             to={issue.cta.href}
-            className="inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md text-[11px] font-semibold text-amber-200 hover:text-white hover:bg-amber-700/40 transition-colors flex-shrink-0"
+            className="inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md text-[11px] font-semibold transition-colors flex-shrink-0 border border-warning/40 text-warning hover:bg-warning hover:text-white"
           >
             {issue.cta.label}
             <ChevronRight className="w-3 h-3" />
@@ -81,21 +81,23 @@ export function TopBarReadinessIndicator() {
         title={`${issues.length} configurações pendentes`}
         aria-label={`${issues.length} configurações pendentes`}
         className={cn(
-          'flex items-center gap-1.5 h-8 px-2 rounded-lg border transition-colors',
-          open
-            ? 'bg-amber-900/40 border-amber-700/60 text-amber-100'
-            : 'bg-amber-950/40 border-amber-900/60 text-amber-300 hover:text-amber-100 hover:bg-amber-900/40',
+          'flex items-center gap-1.5 h-8 px-2 rounded-lg border transition-all color-chip',
+          open ? 'brightness-110' : 'hover:brightness-110',
         )}
+        style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
       >
         <AlertTriangle className="w-3.5 h-3.5" />
         <span className="text-[11px] font-semibold">{issues.length}</span>
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-[360px] bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setOpen(false)} />
+      )}
+      {open && (
+        <div className="absolute right-0 top-full mt-2 z-50 w-[360px] overlay-surface border rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-300" />
+              <AlertTriangle className="w-4 h-4 text-warning" />
               <h3 className="text-sm font-semibold text-surface-100">
                 {issues.length} configurações pendentes
               </h3>
@@ -122,18 +124,21 @@ export function TopBarReadinessIndicator() {
 
 function IssueCard({ issue, onAction }: { issue: WorkspaceCheck; onAction: () => void }) {
   return (
-    <div className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-3 flex items-start gap-3">
-      <span className="mt-0.5 w-6 h-6 rounded-md bg-amber-700/30 text-amber-200 flex items-center justify-center flex-shrink-0">
+    <div className="rounded-xl border border-surface-800 bg-surface-900/40 p-3 flex items-start gap-3">
+      <span
+        className="mt-0.5 w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 color-chip border"
+        style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
+      >
         <AlertTriangle className="w-3.5 h-3.5" />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-amber-100 leading-snug">{issue.label}</p>
-        <p className="text-[11px] text-amber-300/90 mt-0.5 leading-relaxed">{issue.description}</p>
+        <p className="text-xs font-semibold leading-snug text-surface-200">{issue.label}</p>
+        <p className="text-[11px] mt-0.5 leading-relaxed text-surface-500">{issue.description}</p>
         {issue.cta && (
           <Link
             to={issue.cta.href}
             onClick={onAction}
-            className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-200 hover:text-white bg-amber-700/30 hover:bg-amber-700/50 border border-amber-600/40 px-2.5 py-1 rounded-md transition-colors"
+            className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors border text-warning hover:text-white hover:bg-warning border-warning/40"
           >
             {issue.cta.label}
             <ChevronRight className="w-3 h-3" />

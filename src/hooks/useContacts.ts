@@ -13,6 +13,11 @@ export interface UseContactsOpts {
    *  contact list (e.g. ConversationsPage's tag/user filters) should opt
    *  out so they don't pay for a fetch they never read. Default: true. */
   withDealsSummary?: boolean
+  /** Faceta "Situação comercial" (SCRUM-293) — filtro reativo enviado ao
+   *  backend, fora do objeto `filters` de propósito: `ContactsFiltersBar`
+   *  substitui `filters` por inteiro a cada mudança (busca/origem/etc.), o
+   *  que apagaria este valor se ele morasse ali. Mudar este opt refaz o fetch. */
+  commercial?: 'no_deal' | 'open_deal' | 'customer'
 }
 
 /** Tamanho de página da lista de contatos — mesmo valor usado no backend
@@ -22,6 +27,7 @@ const PAGE_SIZE = 50
 export function useContacts(initialFilters: ContactFilters = {}, opts: UseContactsOpts = {}) {
   const enabled = opts.enabled !== false
   const withDealsSummary = opts.withDealsSummary !== false
+  const commercial = opts.commercial
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -65,21 +71,21 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
     const generation = ++generationRef.current
     pageRef.current = 1
     try {
-      const res = await withRetry(() => contactsApi.list(filters, 1, PAGE_SIZE))
+      const res = await withRetry(() => contactsApi.list({ ...filters, commercial }, 1, PAGE_SIZE))
       setContacts(res.data.data)
       setTotal(res.data.total)
       setHasMore(res.data.data.length < res.data.total)
       // Busca em lote o resumo de negócios (múltiplos pipelines) e funde
-      // `dealsSummary` por id — alimenta a faceta "Situação comercial" e a
-      // coluna "Negócios" da tabela (spec UX 2026-07-09). Best-effort: erro
-      // só significa que o chip não aparece, não quebra a lista.
+      // `dealsSummary` por id — alimenta a coluna "Negócios" da tabela (spec
+      // UX 2026-07-09). A faceta "Situação comercial" em si já veio filtrada
+      // do backend acima (SCRUM-293) — isto só enriquece o chip de valor.
       applyDealsSummary(res.data.data.map((c) => c.id), generation)
     } catch {
       setError('Não foi possível carregar os contatos. Tente novamente.')
     } finally {
       setLoading(false)
     }
-  }, [filters, enabled, applyDealsSummary])
+  }, [filters, enabled, applyDealsSummary, commercial])
 
   useEffect(() => { fetch() }, [fetch])
 
@@ -95,7 +101,7 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
     setLoadingMore(true)
     const generation = generationRef.current
     try {
-      const res = await withRetry(() => contactsApi.list(filters, next, PAGE_SIZE))
+      const res = await withRetry(() => contactsApi.list({ ...filters, commercial }, next, PAGE_SIZE))
       if (generation !== generationRef.current) return
       let appendedIds: string[] = []
       setContacts((prev) => {
@@ -114,7 +120,7 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
       setLoadingMore(false)
       loadingMoreLockRef.current = false
     }
-  }, [enabled, hasMore, filters, applyDealsSummary])
+  }, [enabled, hasMore, filters, applyDealsSummary, commercial])
 
   const updateContact = useCallback(async (id: string, patch: Partial<Contact>) => {
     const prev = contacts.find((c) => c.id === id)

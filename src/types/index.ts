@@ -197,6 +197,18 @@ export interface Product {
   updatedAt?: string
 }
 
+// ─── Registro de Profissionais ──────────────────────────────────────────────
+export interface Practitioner {
+  id: string
+  agentId?: string | null  // reservado: null = registro da empresa toda
+  name: string
+  category?: string | null // especialidade
+  active: boolean
+  order: number
+  createdAt?: string
+  updatedAt?: string
+}
+
 // ─── Negócios / Propostas (Deals) ────────────────────────────────────────────
 export type DealStatus = 'open' | 'won' | 'lost'
 
@@ -357,6 +369,11 @@ export interface ContactFilters {
   leadScoreBand?: 'high' | 'medium' | 'low'
   /** Recência do último contato (interpretada no backend a partir de lastContactedAt). */
   lastContact?: '24h' | '7d' | '30d' | 'none'
+  /** Faceta "Situação comercial" (SCRUM-293 — movida do client pro backend).
+   *  Omitido = sem filtro ("Todos"). Nunca fica guardado no estado `filters`
+   *  do useContacts (ContactsFiltersBar substitui esse objeto por inteiro a
+   *  cada mudança) — só existe no payload da requisição em si. */
+  commercial?: 'no_deal' | 'open_deal' | 'customer'
 }
 
 export interface Contact {
@@ -740,6 +757,39 @@ export interface AutomationProposal {
   automation: Omit<Automation, 'id' | 'tenantId' | 'executionCount' | 'lastExecutedAt' | 'createdAt' | 'updatedAt'>
 }
 
+// ── Histórico de execuções ──────────────────────────────────────────────────
+// Espelha a entidade AutomationRun do backend (Phase B.2), lida via
+// GET /automations/:id/runs. O painel de detalhe consome isto para responder
+// "está funcionando?" — status por run + telemetria por ação. O tipo do admin
+// (adminAuditApi.AutomationRunRow) é um paralelo com actionsExecuted opaco;
+// este é o canônico do lado do cliente, com as ações tipadas.
+export type AutomationRunStatus = 'running' | 'success' | 'partial' | 'failed'
+export type AutomationActionStatus = 'success' | 'failed' | 'skipped'
+
+export interface AutomationActionExecuted {
+  type: string
+  status: AutomationActionStatus
+  durationMs?: number
+  errorMessage?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface AutomationRun {
+  id: string
+  automationId: string
+  contactId: string | null
+  conversationId: string | null
+  triggerType: string
+  triggeredBy: string | null
+  status: AutomationRunStatus
+  errorMessage: string | null
+  durationMs: number | null
+  correlationId: string | null
+  startedAt: string
+  completedAt: string | null
+  actionsExecuted: AutomationActionExecuted[]
+}
+
 export interface Tag {
   id: string
   name: string
@@ -770,7 +820,7 @@ export interface Conversation {
   lastMessageAt: string
   lastMessagePreview: string
   /** Who sent the last message — drives the sender indicator on the preview. */
-  lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | null
+  lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
   unreadCount: number
   /** Minimal shape — only the fields the conversation list/header actually
    *  read (id, firstName, lastName for the assignee pill). The realtime
@@ -834,7 +884,7 @@ export interface Message {
   /** Sender of the replied-to message (WhatsApp `context.from`). */
   contextFrom?: string | null
   /** Origin of the message — drives the per-bubble sender indicator. */
-  senderKind?: 'client' | 'operator' | 'ai' | 'campaign' | null
+  senderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
   sentAt: string
   deliveredAt?: string
   readAt?: string

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import { X, Sparkles, Send, Square, Loader2, Paperclip, FileText, Palette } from 'lucide-react'
+import { X, Send, Square, Loader2, Paperclip, FileText, Palette } from 'lucide-react'
+import { CopilotMark } from '@/lib/icons'
 import { useLocation } from 'react-router-dom'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import type { CopilotAttachment } from '@/contexts/CopilotContext'
@@ -16,6 +17,7 @@ import {
   revokeAttachmentUrls,
 } from '@/lib/attachmentUtils'
 import { CopilotMessageBubble } from './CopilotMessage'
+import { Banner } from '@/components/ui/Banner'
 import { SLIDE_PRESETS } from '@/config/slidePresets'
 
 // ─── Animations ───────────────────────────────────────────────────────────────
@@ -68,7 +70,7 @@ function AttachmentChip({
           className="w-6 h-6 rounded object-cover flex-shrink-0"
         />
       ) : (
-        <FileText className="w-4 h-4 text-red-400 flex-shrink-0" />
+        <FileText className="w-4 h-4 text-accent-rose flex-shrink-0" />
       )}
       <span className="text-[10px] text-surface-300 truncate leading-none">{att.name}</span>
       <button
@@ -95,7 +97,7 @@ function WelcomeState() {
     >
       <motion.div variants={messageVariants}>
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-600 to-violet-600 flex items-center justify-center shadow-lg shadow-brand-900/40">
-          <Sparkles className="w-7 h-7 text-white" />
+          <CopilotMark className="w-7 h-7 text-white" />
         </div>
       </motion.div>
       <motion.div variants={messageVariants}>
@@ -282,9 +284,9 @@ function ChatWindow() {
           {/* Avatar with status dot */}
           <div className="relative flex-shrink-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-violet-600 flex items-center justify-center shadow-md shadow-brand-900/40">
-              <Sparkles className="w-4.5 h-4.5 text-white w-[18px] h-[18px]" />
+              <CopilotMark className="w-4.5 h-4.5 text-white w-[18px] h-[18px]" />
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-surface-950 bg-emerald-500" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-surface-950 bg-online" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-surface-50 leading-none">Oryon AI</p>
@@ -353,9 +355,9 @@ function ChatWindow() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="mx-3 mb-2 px-3 py-1.5 bg-danger/10 border border-danger/20 rounded-lg text-[11px] text-danger flex-shrink-0"
+            className="mx-3 mb-2 flex-shrink-0"
           >
-            {error}
+            <Banner variant="danger">{error}</Banner>
           </motion.div>
         )}
       </AnimatePresence>

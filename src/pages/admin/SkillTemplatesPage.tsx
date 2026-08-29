@@ -4,13 +4,17 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Sparkles, Loader2, AlertCircle, Edit3, Beaker, Power, PowerOff, Link2, Users } from 'lucide-react'
+import { Plus, Sparkles, Edit3, Beaker, Power, PowerOff, Link2, Users } from 'lucide-react'
 import { listSkillTemplates, updateSkillTemplate } from '@/services/skillTemplatesApi'
 import { listAdminOrganizations, type AdminOrganization } from '@/services/adminApi'
 import type { SkillTemplate } from '@/types/skills'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import { ToastContainer } from '@/components/ui/Toast'
+import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
@@ -106,31 +110,29 @@ export function SkillTemplatesPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-7xl mx-auto px-6 py-8">
-      <header className="flex items-start justify-between gap-6 mb-6">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-5 h-5 text-brand-400 flex-shrink-0" />
-            <h1 className="text-xl font-semibold text-surface-100">Templates de Skills</h1>
-          </div>
-          <p className="text-sm text-surface-400">
-            Catálogo de capacidades disponíveis para anexar aos agentes dos clientes.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 self-start">
-          <button
-            onClick={() => navigate('/admin/skills/assign')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-100 text-sm font-medium transition-colors"
-          >
-            <Link2 className="w-4 h-4" /> Atribuir a um agente
-          </button>
-          <button
-            onClick={() => navigate('/admin/skill-templates/new')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-surface-950 text-sm font-semibold transition-colors active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" /> Novo template
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title="Templates de Skills"
+        subtitle="Catálogo de capacidades disponíveis para anexar aos agentes dos clientes."
+        className="px-0 pt-0 pb-6 border-0"
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              leftIcon={<Link2 className="w-4 h-4" />}
+              onClick={() => navigate('/admin/skills/assign')}
+            >
+              Atribuir a um agente
+            </Button>
+            <Button
+              variant="primary"
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => navigate('/admin/skill-templates/new')}
+            >
+              Novo template
+            </Button>
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-5 text-sm">
@@ -169,19 +171,20 @@ export function SkillTemplatesPage() {
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center py-16 text-surface-400">
-          <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando templates…
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }, (_, i) => (
+            <SkeletonCard key={i} lines={3} />
+          ))}
         </div>
       )}
 
       {error && !loading && (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
-          <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-danger font-medium mb-1">Erro ao carregar</p>
-            <p className="text-surface-400">{error}</p>
-          </div>
-        </div>
+        <ErrorState
+          compact
+          title="Erro ao carregar"
+          hint={error}
+          onRetry={() => { void reload() }}
+        />
       )}
 
       {!loading && !error && filtered.length === 0 && (
@@ -410,15 +413,27 @@ function Badge({
   tone: 'success' | 'muted' | 'brand' | 'pending' | 'danger'
   children: React.ReactNode
 }) {
-  const cls: Record<typeof tone, string> = {
-    success: 'bg-status-active-bg text-status-active ring-status-active-border',
-    muted:   'bg-surface-800 text-surface-400 ring-surface-700',
-    brand:   'bg-brand-600/15 text-brand-400 ring-brand-600/30',
-    pending: 'bg-status-pending-bg text-status-pending ring-status-pending-border',
-    danger:  'bg-danger/10 text-danger ring-danger/30',
+  // `muted` stays on the neutral surface path (no --chip); the colored tones
+  // render as filled chips (darkened bg + white text) via .color-chip.
+  const chipColor: Partial<Record<typeof tone, string>> = {
+    success: 'var(--color-status-active)',
+    brand:   'var(--color-brand-500)',
+    pending: 'var(--color-status-pending)',
+    danger:  'var(--color-danger)',
+  }
+  const base = 'inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium'
+  if (tone === 'muted') {
+    return (
+      <span className={cn(base, 'ring-1 bg-surface-800 text-surface-400 ring-surface-700')}>
+        {children}
+      </span>
+    )
   }
   return (
-    <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1', cls[tone])}>
+    <span
+      className={cn(base, 'color-chip border')}
+      style={{ ['--chip']: chipColor[tone] } as React.CSSProperties}
+    >
       {children}
     </span>
   )

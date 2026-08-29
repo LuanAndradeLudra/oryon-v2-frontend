@@ -105,7 +105,7 @@ export function KnowledgeDocArtifact({
               onClick={onSave}
               disabled={saving}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-surface-950 transition disabled:opacity-50"
-              style={{ background: 'linear-gradient(40deg, #ffffff, #a8a8b4)' }}
+              style={{ background: 'linear-gradient(40deg, var(--color-surface-50), var(--color-surface-300))' }}
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               Salvar alterações

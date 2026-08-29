@@ -1,5 +1,5 @@
 import {
-  createContext, useContext, useState, useEffect, useCallback,
+  createContext, useContext, useState, useEffect, useCallback, useMemo,
   type ReactNode,
 } from 'react'
 import axios from 'axios'
@@ -376,13 +376,23 @@ export function InternalChatProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  // Valor memoizado — este provider envolve o app inteiro e o estado de chat
+  // muda com frequência (polling, mensagens); sem memo, cada mudança criaria
+  // um objeto novo e re-renderizaria todos os consumidores de useInternalChat().
+  const value = useMemo(() => ({
+    activeChannelId, channels, messages, presence,
+    totalUnread, loadingChannels, loadingMessages,
+    setActiveChannel, openDM, createChannel, sendMessage, toggleReaction, deleteMessage, markAsRead,
+    addMembers, removeMember, deleteChannel,
+  }), [
+    activeChannelId, channels, messages, presence,
+    totalUnread, loadingChannels, loadingMessages,
+    setActiveChannel, openDM, createChannel, sendMessage, toggleReaction, deleteMessage, markAsRead,
+    addMembers, removeMember, deleteChannel,
+  ])
+
   return (
-    <InternalChatContext.Provider value={{
-      activeChannelId, channels, messages, presence,
-      totalUnread, loadingChannels, loadingMessages,
-      setActiveChannel, openDM, createChannel, sendMessage, toggleReaction, deleteMessage, markAsRead,
-      addMembers, removeMember, deleteChannel,
-    }}>
+    <InternalChatContext.Provider value={value}>
       {children}
     </InternalChatContext.Provider>
   )

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import mammoth from 'mammoth'
+import { api } from '@/services/api'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,7 +30,6 @@ const MAX_DOCS = 10
 const MAX_PDF_SIZE = 1_500_000
 const MAX_TOTAL_SIZE = 3_000_000
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 export const DEFAULT_KB: KnowledgeBase = {
   instructions: '',
@@ -48,28 +47,21 @@ function getToken(): string {
   } catch { return '' }
 }
 
-function headers() {
-  return { 'Content-Type': 'application/json' }
-}
-
+// Onda 3: passou a usar o cliente compartilhado. Com `fetch` cru, estas duas
+// chamadas ficavam de fora do retry, da auditoria de escrita e — em dev no
+// app nativo — da base URL correta (`VITE_API_URL_NATIVE_DEV`).
 async function fetchKB(): Promise<KnowledgeBase> {
   try {
-    const res = await fetch(`${API}/context/knowledge-base`, { headers: headers(), credentials: 'include' })
-    if (!res.ok) return { ...DEFAULT_KB }
-    const data = await res.json()
+    const { data } = await api.get<Partial<KnowledgeBase>>('/context/knowledge-base')
     return { ...DEFAULT_KB, ...data }
   } catch {
+    // Base de conhecimento é opcional: falha vira o default, nunca erro na tela.
     return { ...DEFAULT_KB }
   }
 }
 
 async function persistKB(kb: KnowledgeBase): Promise<void> {
-  await fetch(`${API}/context/knowledge-base`, {
-    method: 'PATCH',
-    headers: headers(),
-    credentials: 'include',
-    body: JSON.stringify(kb),
-  }).catch(() => {})
+  await api.patch('/context/knowledge-base', kb).catch(() => {})
 }
 
 // ─── Exported load function (sync with cache) ─────────────────────────────────
@@ -124,6 +116,8 @@ export async function fileToKBDocument(
   if (isDocx || isWord) {
     try {
       const arrayBuffer = await file.arrayBuffer()
+      // mammoth (~700KB) só é necessário para upload de .docx — carrega sob demanda
+      const { default: mammoth } = await import('mammoth')
       const result = await mammoth.extractRawText({ arrayBuffer })
       const text = result.value.trim()
       if (!text) return { doc: null, error: `"${file.name}" está vazio ou não foi possível extrair o texto.` }

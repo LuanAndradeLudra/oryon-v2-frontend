@@ -2,11 +2,10 @@ import { memo, useCallback } from 'react'
 import {
   Camera, Mic, FileText, Video, MapPin, Sticker,
   ExternalLink, Phone, Copy,
-  Bot, UserCheck, UserX, Clock, Megaphone, Users, AlertTriangle,
+  Bot, UserCheck, UserX, Clock, Megaphone, Users, AlertTriangle, Workflow, Flame,
 } from 'lucide-react'
 import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
-import { Badge } from '@/components/ui/Badge'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
@@ -43,10 +42,11 @@ function MessagePreview({ text }: { text: string }) {
 
 /** Icon shown before the preview indicating who sent the last message.
  *  Client (inbound) shows no icon — the contact avatar already implies it. */
-const SENDER_META: Record<'operator' | 'ai' | 'campaign', { icon: typeof Bot; title: string; className: string }> = {
-  ai:       { icon: Bot,       title: 'Última mensagem enviada pela IA',                 className: 'text-brand-400' },
-  campaign: { icon: Megaphone, title: 'Template enviado via campanha',                   className: 'text-amber-400' },
-  operator: { icon: Users,     title: 'Enviada por um usuário da plataforma (Equipe)',   className: 'text-emerald-400' },
+const SENDER_META: Record<'operator' | 'ai' | 'campaign' | 'rule', { icon: typeof Bot; title: string; className: string }> = {
+  ai:       { icon: Bot,       title: 'Última mensagem enviada pela IA',                 className: 'text-surface-400' },
+  campaign: { icon: Megaphone, title: 'Template enviado via campanha',                   className: 'text-surface-400' },
+  operator: { icon: Users,     title: 'Enviada por um usuário da plataforma (Equipe)',   className: 'text-surface-400' },
+  rule:     { icon: Workflow,  title: 'Resposta automática (encaminhamento/FAQ)',        className: 'text-surface-400' },
 }
 
 function SenderIndicator({ kind }: { kind?: Conversation['lastMessageSenderKind'] }) {
@@ -61,28 +61,23 @@ function SenderIndicator({ kind }: { kind?: Conversation['lastMessageSenderKind'
   )
 }
 
+/** Human label for a conversation status — used by the "moved out of filter" pill. */
+function statusLabel(status: Conversation['status']): string {
+  return status === 'open' ? 'Aberta' : status === 'pending' ? 'Pendente' : status === 'resolved' ? 'Resolvida' : ''
+}
+
 interface ConversationItemProps {
   conversation: Conversation
   isActive: boolean
+  /** True when this is the open conversation kept visible even though it no
+   *  longer matches the active status filter (sticky until the operator opens
+   *  another). Rendered dimmed + with a status pill so the mismatch is clear. */
+  offFilter?: boolean
   onSelect: (conv: Conversation) => void
 }
 
-const statusVariantMap = {
-  pending: 'pending',
-  open: 'open',
-  resolved: 'resolved',
-  abandoned: 'abandoned',
-} as const
-
-const statusLabel = {
-  pending: 'Pendente',
-  open: 'Aberta',
-  resolved: 'Resolvida',
-  abandoned: 'Abandonada',
-}
-
-export const ConversationItem = memo(function ConversationItem({ conversation, isActive, onSelect }: ConversationItemProps) {
-  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, status, assignedUser, tags, hasRecentAnomaly } =
+export const ConversationItem = memo(function ConversationItem({ conversation, isActive, offFilter = false, onSelect }: ConversationItemProps) {
+  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly } =
     conversation
 
   const hasUnread = unreadCount > 0 && !isActive
@@ -115,12 +110,13 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
     <button
       onClick={() => onSelect(conversation)}
       onContextMenu={onContextMenu}
+      data-conv-id={conversation.id}
       className={cn(
-        'w-full flex items-start gap-3 px-3 py-3.5 text-left transition-all duration-100 border-b border-surface-800/60',
+        'conv-item relative w-full flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-left transition-all duration-100 rounded-xl',
         isActive
-          ? 'bg-brand-600/10 border-l-2 border-l-brand-500'
-          : 'hover:bg-surface-800/50 border-l-2 border-l-transparent',
-        hasUnread && !isActive && 'bg-brand-600/5'
+          ? 'conv-item-active bg-surface-800 border-[2.0px] border-surface-700'
+          : 'border border-surface-700/60 hover:border-surface-600',
+        offFilter && 'opacity-70',
       )}
     >
       {/* Avatar with WhatsApp badge */}
@@ -138,13 +134,23 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
         <div className="flex items-center justify-between gap-2 mb-0.5">
           <span className={cn(
             'text-sm truncate',
-            hasUnread ? 'font-semibold text-surface-50' : 'font-medium text-surface-200'
+            (hasUnread || isActive) ? 'font-semibold text-surface-50' : 'font-medium text-surface-200'
           )}>
             {contact.displayName}
           </span>
-          <span className="text-[11px] text-surface-500 flex-shrink-0">
-            {formatMessageTime(lastMessageAt)}
-          </span>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {offFilter && (
+              <span
+                className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/25"
+                title={`Movida para "${statusLabel(conversation.status)}" — não corresponde mais ao filtro atual`}
+              >
+                {statusLabel(conversation.status)}
+              </span>
+            )}
+            <span className="text-[11px] text-surface-500">
+              {formatMessageTime(lastMessageAt)}
+            </span>
+          </div>
         </div>
 
         {/* Row 2: WhatsApp number */}
@@ -175,15 +181,13 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             classify the conversation, ghost icons+text for live state. */}
         <div className="flex items-center gap-1.5 mt-1.5">
           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-            <Badge variant={statusVariantMap[status]}>{statusLabel[status]}</Badge>
-
             {tags?.slice(0, 2).map((tag) => (
               <span
                 key={tag.id}
-                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                style={{ backgroundColor: tag.color + '28', color: tag.color }}
+                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
+                <span className="w-1.5 h-1.5 rounded-full chip-dot" />
                 {tag.name}
               </span>
             ))}
@@ -198,7 +202,8 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 é genérico de propósito (ver GUARD_LIST_BADGE_TITLE). */}
             {hasRecentAnomaly && (
               <span
-                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-500/15 text-amber-400 border border-amber-500/25"
+                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium border"
+                style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
                 title={GUARD_LIST_BADGE_TITLE}
               >
                 <AlertTriangle className="w-2.5 h-2.5" />
@@ -212,7 +217,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 assignment chip below is shown independently of this one. */}
             {aiActive && (
               <span
-                className="inline-flex items-center gap-1 text-[10.5px] text-brand-400"
+                className="inline-flex items-center gap-1 text-[10.5px] text-surface-300"
                 title="IA respondendo nesta conversa"
               >
                 <Bot className="w-3.5 h-3.5" />
@@ -240,15 +245,24 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               </span>
             )}
 
-            {awaiting && (
-              <span
-                className="inline-flex items-center gap-1 text-[10.5px] text-amber-400 font-medium"
-                title={`Cliente aguardando resposta há ${chatRelTime(lastMessageAt)}`}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                {chatRelTime(lastMessageAt)}
-              </span>
-            )}
+            {awaiting && (() => {
+              // Urgência progressiva: o operador prioriza pela COR, sem ler
+              // timestamps — âmbar vira vermelho quando a espera passa de 15min.
+              const waitMin = (Date.now() - new Date(lastMessageAt).getTime()) / 60000
+              const critical = waitMin >= 15
+              return (
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 text-[10.5px] font-medium',
+                    critical ? 'text-danger' : 'text-status-pending',
+                  )}
+                  title={`Cliente aguardando resposta há ${chatRelTime(lastMessageAt)}`}
+                >
+                  {critical ? <Flame className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                  {chatRelTime(lastMessageAt)}
+                </span>
+              )
+            })()}
           </div>
         </div>
       </div>

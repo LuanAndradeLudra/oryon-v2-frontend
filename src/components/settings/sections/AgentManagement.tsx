@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
-import { UserPlus, MoreHorizontal, CheckCircle2, XCircle, Clock, Pencil } from 'lucide-react'
-import axios from 'axios'
+import { UserPlus, MoreHorizontal, CheckCircle2, XCircle, Clock, Pencil, Users } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { appLogger } from '@/services/appLogger'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { SectionHeader } from '../SectionHeader'
 import { Avatar } from '@/components/ui/Avatar'
-import { Modal, ConfirmModal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonTable } from '@/components/ui/Skeleton'
+import { FormDialog } from '@/components/ui/FormDialog'
+import { ConfirmModal } from '@/components/ui/Modal'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { CreateUserDrawer } from '../drawers/CreateUserDrawer'
@@ -14,8 +18,8 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:    'Oryon',
@@ -26,11 +30,11 @@ const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  super_admin:    'bg-brand-700/40 text-brand-200 border-brand-600',
-  business_admin: 'bg-status-active-bg text-status-active border-status-active-border',
-  admin:          'bg-brand-900/40 text-brand-300 border-brand-800',
-  supervisor:     'bg-status-pending-bg text-status-pending border-status-pending-border',
-  agent:          'bg-surface-800 text-surface-300 border-surface-700',
+  super_admin:    'var(--color-brand-500)',
+  business_admin: 'var(--color-status-active)',
+  admin:          'var(--color-brand-500)',
+  supervisor:     'var(--color-status-pending)',
+  agent:          'var(--color-status-muted)',
 }
 
 function StatusBadge({ user }: { user: User }) {
@@ -62,70 +66,60 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
   const [departmentId, setDepartmentId] = useState<string>(user.departmentId ?? '')
   const [departments, setDepartments] = useState<Department[]>([])
   const [saving, setSaving] = useState(false)
-  const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    axios.get<{ data: Department[] } | Department[]>(`${API}/departments`).then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
-  }, [API])
+    api.get<{ data: Department[] } | Department[]>('/departments').then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
+  }, [])
 
   const handleSave = async () => {
     setSaving(true)
+    setError(null)
     try {
       // NestJS UpdateUserDto only accepts: firstName, lastName, role, isActive, departmentId
       const payload = {
         departmentId: departmentId || null,
       }
-      await axios.patch(`${API}/users/${user.id}`, payload)
+      await api.patch(`/users/${user.id}`, payload)
       const selectedDept = departments.find((d) => d.id === departmentId)
       onSaved({ ...user, departmentId, departmentName: selectedDept?.name, departmentIds: undefined, departmentNames: undefined })
+      onClose()
     } catch (err: any) {
-      alert(err?.response?.data?.message?.[0] ?? 'Erro ao salvar.')
+      setError(err?.response?.data?.message?.[0] ?? 'Erro ao salvar.')
     } finally {
       setSaving(false)
-      onClose()
     }
   }
 
   return (
-    <Modal open onClose={onClose} title="Editar usuário">
-      <div className="px-5 pb-5 flex flex-col gap-4">
-        <div className="flex items-center gap-3 py-3 border-b border-surface-800">
-          <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
-          <div>
-            <p className="text-sm font-medium text-surface-100">{user.firstName} {user.lastName}</p>
-            <p className="text-xs text-surface-400">{user.email}</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">Setor</label>
-          <RadioOptionList
-            name="departmentId"
-            options={departments.map((d) => ({ id: d.id, label: d.name }))}
-            value={departmentId}
-            onChange={setDepartmentId}
-            noneLabel="Nenhum setor"
-            emptyMessage="Nenhum setor cadastrado."
-          />
-        </div>
-
-        <div className="flex justify-end gap-2 pt-1">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-surface-700 text-sm text-surface-300 hover:text-surface-100 hover:border-surface-600 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold disabled:opacity-60 transition-colors"
-          >
-            {saving ? 'Salvando…' : 'Salvar'}
-          </button>
+    <FormDialog
+      open
+      onClose={onClose}
+      title="Editar usuário"
+      onSubmit={handleSave}
+      loading={saving}
+      error={error}
+    >
+      <div className="flex items-center gap-3 py-3 border-b border-surface-800">
+        <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
+        <div>
+          <p className="text-sm font-medium text-surface-100">{user.firstName} {user.lastName}</p>
+          <p className="text-xs text-surface-400">{user.email}</p>
         </div>
       </div>
-    </Modal>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">Setor</label>
+        <RadioOptionList
+          name="departmentId"
+          options={departments.map((d) => ({ id: d.id, label: d.name }))}
+          value={departmentId}
+          onChange={setDepartmentId}
+          noneLabel="Nenhum setor"
+          emptyMessage="Nenhum setor cadastrado."
+        />
+      </div>
+    </FormDialog>
   )
 }
 
@@ -133,20 +127,23 @@ export function AgentManagement() {
   const { toast, toasts, dismiss } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null)
   const [editTarget, setEditTarget] = useState<User | null>(null)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
   useEffect(() => {
-    axios.get<User[]>(`${API}/users`).then((r) => {
+    setFetchError(false)
+    api.get<User[]>('/users').then((r) => {
       setUsers(Array.isArray(r.data) ? r.data : [])
       setLoading(false)
     }).catch(() => {
-      setUsers([])
+      setFetchError(true)
       setLoading(false)
     })
-  }, [])
+  }, [reloadKey])
 
   const { user: actor } = useAuth()
   // Backend's POST /users is gated to ADMIN, BUSINESS_ADMIN, SUPER_ADMIN
@@ -184,7 +181,7 @@ export function AgentManagement() {
   const handleRoleChange = async (userId: string, role: UserRole) => {
     const targetUser = users.find((u) => u.id === userId)
     const oldRole = targetUser?.role
-    await axios.patch(`${API}/users/${userId}`, { role })
+    await api.patch(`/users/${userId}`, { role })
     setUsers((u) => u.map((x) => (x.id === userId ? { ...x, role } : x)))
     toast('Papel atualizado.', 'success')
     appLogger.logUserManagement({
@@ -225,7 +222,7 @@ export function AgentManagement() {
   const handleToggleActive = async () => {
     if (!deactivateTarget) return
     const nextActive = !deactivateTarget.isActive
-    await axios.patch(`${API}/users/${deactivateTarget.id}`, { isActive: nextActive })
+    await api.patch(`/users/${deactivateTarget.id}`, { isActive: nextActive })
     setUsers((u) => u.map((x) => (x.id === deactivateTarget.id ? { ...x, isActive: nextActive, status: nextActive ? 'active' : 'inactive' } : x)))
     toast(`Usuário ${nextActive ? 'ativado' : 'desativado'} com sucesso.`, 'success')
     appLogger.logUserManagement({
@@ -251,32 +248,41 @@ export function AgentManagement() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <SectionHeader
         title="Usuários"
         description={`${users.length} membro${users.length !== 1 ? 's' : ''} na equipe`}
         action={
           canCreateUsers ? (
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
-            >
-              <UserPlus className="w-4 h-4" />
+            <Button onClick={() => setDrawerOpen(true)} leftIcon={<UserPlus className="w-4 h-4" />}>
               Criar usuário
-            </button>
+            </Button>
           ) : null
         }
       />
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      {/* Gramática nova: tabela densa é o conteúdo principal — largura total,
+          assentada direto no fundo, sem chrome de card. Header hairline +
+          divisores hairline fazem o trabalho que a borda do card fazia. */}
+      <div className="overflow-x-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <SkeletonTable rows={5} cols={4} className="py-3" />
+        ) : fetchError ? (
+          <ErrorState
+            compact
+            onRetry={() => { setLoading(true); setReloadKey((k) => k + 1) }}
+          />
+        ) : users.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="Nenhum usuário na equipe"
+            hint="Crie o primeiro usuário para começar a atender."
+            action={canCreateUsers ? { label: 'Criar usuário', onClick: () => setDrawerOpen(true) } : undefined}
+          />
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-800">
+              <tr className="border-b border-surface-800/60">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Usuário</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider hidden lg:table-cell">Setor</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Papel</th>
@@ -284,9 +290,9 @@ export function AgentManagement() {
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800">
+            <tbody className="divide-y divide-surface-800/60">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-surface-800/50 transition-colors">
+                <tr key={user.id} className="hover:bg-surface-900/60 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" online={user.isActive && user.status !== 'pending'} />
@@ -305,7 +311,7 @@ export function AgentManagement() {
                     })()}
                   </td>
                   <td className="px-5 py-4">
-                    <span className={cn('inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border', ROLE_COLORS[user.role])}>
+                    <span className={cn('color-chip inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border')} style={{ ['--chip']: ROLE_COLORS[user.role] } as React.CSSProperties}>
                       {ROLE_LABELS[user.role]}
                     </span>
                   </td>
@@ -346,7 +352,7 @@ export function AgentManagement() {
                       {user.status === 'pending' && (
                         <DropdownItem
                           onClick={() => {
-                            axios.post(`${API}/users/${user.id}/resend-invitation`).then(() => {
+                            api.post(`/users/${user.id}/resend-invitation`).then(() => {
                               toast('Convite reenviado com sucesso!', 'success')
                             }).catch(() => {
                               toast('Erro ao reenviar convite.', 'error')

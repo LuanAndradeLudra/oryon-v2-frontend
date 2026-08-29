@@ -32,6 +32,9 @@ async function load(withTransactions: boolean) {
     ])
     state = { billing, transactions, loading: false, error: null }
   } catch (err) {
+    // Fail-closed (SCRUM-172): se a API de billing falha, NÃO liberamos crédito
+    // — o gate bloqueia até haver um snapshot válido. (Removido o fallback de
+    // DEV_MOCK que o redesign usava, pois abria o gate e quebrava o fail-closed.)
     state = {
       ...state,
       loading: false,

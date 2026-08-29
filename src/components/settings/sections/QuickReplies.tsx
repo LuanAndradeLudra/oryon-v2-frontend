@@ -1,11 +1,15 @@
 import { useCallback, useState, useEffect } from 'react'
-import { Plus, Search, Pencil, Trash2, Copy } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Copy, Zap } from 'lucide-react'
 import axios from 'axios'
-import { cannedResponsesApi } from '@/services/api'
+import { api, cannedResponsesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { SectionHeader } from '../SectionHeader'
 import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonTable } from '@/components/ui/Skeleton'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { QuickReplyModal } from '../modals/QuickReplyModal'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -48,9 +52,9 @@ function QuickReplyRow({
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
   return (
-    <tr onContextMenu={onContextMenu} className="hover:bg-surface-800/50 transition-colors">
+    <tr onContextMenu={onContextMenu} className="hover:bg-surface-900/60 transition-colors">
       <td className="px-5 py-4">
-        <code className="inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-brand-300 bg-brand-900/20 px-2 py-1 rounded-lg" title={response.shortcut}>
+        <code className="shortcut-tag inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-brand-300 bg-brand-900/20 px-2 py-1 rounded-lg" title={response.shortcut}>
           {response.shortcut}
         </code>
       </td>
@@ -88,7 +92,6 @@ function QuickReplyRow({
   )
 }
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 function errorMessage(e: unknown, fallback: string): string {
   if (axios.isAxiosError(e)) {
@@ -110,13 +113,19 @@ export function QuickReplies() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<CannedResponse | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CannedResponse | null>(null)
+  const [fetchError, setFetchError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    setFetchError(false)
     cannedResponsesApi.fetchAll().then((list) => {
       setResponses(list)
       setLoading(false)
+    }).catch(() => {
+      setFetchError(true)
+      setLoading(false)
     })
-  }, [])
+  }, [reloadKey])
 
   const filtered = responses.filter(
     (r) =>
@@ -128,11 +137,11 @@ export function QuickReplies() {
   const handleSave = async (data: { shortcut: string; title: string; body: string }) => {
     try {
       if (editTarget) {
-        const r = await axios.patch<CannedResponse>(`${API}/canned-responses/${editTarget.id}`, data)
+        const r = await api.patch<CannedResponse>(`/canned-responses/${editTarget.id}`, data)
         setResponses((prev) => prev.map((x) => x.id === editTarget.id ? r.data : x))
         toast('Resposta atualizada.', 'success')
       } else {
-        const r = await axios.post<CannedResponse>(`${API}/canned-responses`, data)
+        const r = await api.post<CannedResponse>('/canned-responses', data)
         setResponses((prev) => [...prev, r.data])
         toast('Resposta criada!', 'success')
       }
@@ -146,7 +155,7 @@ export function QuickReplies() {
   const handleDelete = async () => {
     if (!deleteTarget) return
     try {
-      await axios.delete(`${API}/canned-responses/${deleteTarget.id}`)
+      await api.delete(`/canned-responses/${deleteTarget.id}`)
       setResponses((prev) => prev.filter((x) => x.id !== deleteTarget.id))
       toast('Resposta excluída.', 'success')
       setDeleteTarget(null)
@@ -156,19 +165,15 @@ export function QuickReplies() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <SectionHeader
         title="Respostas Rápidas"
         description="Crie atalhos de texto para agilizar o atendimento."
         action={
           canManage ? (
-            <button
-              onClick={() => { setEditTarget(null); setModalOpen(true) }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
-            >
-              <Plus className="w-4 h-4" />
+            <Button onClick={() => { setEditTarget(null); setModalOpen(true) }} leftIcon={<Plus className="w-4 h-4" />}>
               Nova resposta
-            </button>
+            </Button>
           ) : null
         }
       />
@@ -184,19 +189,37 @@ export function QuickReplies() {
         />
       </div>
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-x-auto">
+      {/* Gramática nova: tabela densa é o conteúdo principal — largura total,
+          sem chrome de card; header hairline + divisores hairline. */}
+      <div className="overflow-x-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <SkeletonTable rows={5} cols={4} className="py-3" />
+        ) : fetchError ? (
+          <ErrorState
+            compact
+            onRetry={() => { setLoading(true); setReloadKey((k) => k + 1) }}
+          />
         ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-sm text-surface-400">
-            {search ? 'Nenhuma resposta encontrada.' : canManage ? 'Nenhuma resposta rápida criada ainda.' : 'Nenhuma resposta rápida disponível.'}
-          </div>
+          search ? (
+            <div className="p-10 text-center text-sm text-surface-400">
+              Nenhuma resposta encontrada.
+            </div>
+          ) : canManage ? (
+            <EmptyState
+              icon={Zap}
+              title="Nenhuma resposta rápida criada ainda"
+              hint="Crie atalhos de texto para responder mais rápido no atendimento."
+              action={{ label: 'Nova resposta', onClick: () => { setEditTarget(null); setModalOpen(true) } }}
+            />
+          ) : (
+            <div className="p-10 text-center text-sm text-surface-400">
+              Nenhuma resposta rápida disponível.
+            </div>
+          )
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-800">
+              <tr className="border-b border-surface-800/60">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Atalho</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Título</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Preview</th>
@@ -204,7 +227,7 @@ export function QuickReplies() {
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800">
+            <tbody className="divide-y divide-surface-800/60">
               {filtered.map((cr) => (
                 <QuickReplyRow
                   key={cr.id}

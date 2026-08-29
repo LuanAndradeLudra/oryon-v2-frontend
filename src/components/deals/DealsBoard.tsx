@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { Loader2, ArrowRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Loader2, ArrowRight, MoreVertical, ArrowRightLeft } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
-import { cn, hexToRgba } from '@/lib/utils'
-import type { Deal, PipelineStage } from '@/types'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { cn, hexToRgba, getActivePipelines } from '@/lib/utils'
+import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 interface DealsBoardProps {
   stages: PipelineStage[]
@@ -11,6 +12,10 @@ interface DealsBoardProps {
   loading?: boolean
   /** Abre a ficha do contato do negócio — chip "ver contato →" no card. */
   onOpenContact?: (contactId: string) => void
+  /** Funis do tenant — alimenta o menu "Mover para funil" de cada card
+   *  (SCRUM-293). Omitido/vazio = menu não aparece. */
+  pipelines?: Pipeline[]
+  onMovePipeline?: (deal: Deal, toPipelineId: string) => void
 }
 
 function brl(cents: number): string {
@@ -22,9 +27,29 @@ function brl(cents: number): string {
  * Drag-drop nativo (mesmo padrão do ContactsKanban). A mudança de estágio deriva
  * o status no backend (ganho/perdido nos terminais).
  */
-export function DealsBoard({ stages, dealsByStage, onMoveStage, loading, onOpenContact }: DealsBoardProps) {
+export function DealsBoard({
+  stages, dealsByStage, onMoveStage, loading, onOpenContact, pipelines = [], onMovePipeline,
+}: DealsBoardProps) {
+  // `useIsMobile` (matchMedia + resize listener) em vez de `window.innerWidth`
+  // lido direto no render — o valor cru só era recalculado quando ALGUM
+  // OUTRO estado mudasse a re-renderizar o componente; redimensionar a janela
+  // sozinho não atualizava o layout (min-width da coluna) até isso acontecer.
+  const isDesktop = !useIsMobile()
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [overStageId, setOverStageId] = useState<string | null>(null)
+  const [pipelineMenuDealId, setPipelineMenuDealId] = useState<string | null>(null)
+  // Todos os `stages` recebidos são do MESMO pipeline (board de um funil só) —
+  // basta ler de qualquer um pra saber qual funil excluir das opções do menu.
+  const currentPipelineId = stages[0]?.pipelineId
+  const otherPipelines = getActivePipelines(pipelines).filter((p) => p.id !== currentPipelineId)
+
+  // Fecha o menu "Mover para funil" ao clicar fora dele.
+  useEffect(() => {
+    if (!pipelineMenuDealId) return
+    const onDocClick = () => setPipelineMenuDealId(null)
+    document.addEventListener('click', onDocClick)
+    return () => document.removeEventListener('click', onDocClick)
+  }, [pipelineMenuDealId])
 
   const draggingDeal: Deal | null = (() => {
     if (!draggingId) return null
@@ -55,7 +80,7 @@ export function DealsBoard({ stages, dealsByStage, onMoveStage, loading, onOpenC
     <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none">
       <div
         className="flex gap-3 p-4 h-full min-h-0"
-        style={{ minWidth: typeof window !== 'undefined' && window.innerWidth >= 768 ? stages.length * 280 : undefined }}
+        style={{ minWidth: isDesktop ? stages.length * 280 : undefined }}
       >
         {stages.map((stage) => {
           const cards = dealsByStage[stage.id] ?? []
@@ -76,10 +101,20 @@ export function DealsBoard({ stages, dealsByStage, onMoveStage, loading, onOpenC
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} />
                   <span className="text-xs font-semibold truncate" style={{ color: stage.color }}>{stage.label}</span>
                   {stage.isWon && (
-                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30">ganho</span>
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded border color-chip"
+                      style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
+                    >
+                      ganho
+                    </span>
                   )}
                   {stage.isLost && (
-                    <span className="text-[10px] text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30">perdido</span>
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded border color-chip"
+                      style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+                    >
+                      perdido
+                    </span>
                   )}
                 </div>
                 <span
@@ -125,11 +160,52 @@ export function DealsBoard({ stages, dealsByStage, onMoveStage, loading, onOpenC
                       }}
                       onDragEnd={() => { setDraggingId(null); setOverStageId(null) }}
                       className={cn(
-                        'rounded-xl border border-surface-800 bg-surface-900 p-3 cursor-grab active:cursor-grabbing transition-opacity duration-100 hover:border-surface-700',
+                        'relative group/card rounded-xl border border-surface-800 bg-surface-900 p-3 cursor-grab active:cursor-grabbing transition-opacity duration-100 hover:border-surface-700',
                         draggingId === deal.id && 'opacity-40',
                       )}
                     >
-                      <div className="text-sm font-medium text-surface-100 truncate">{deal.title}</div>
+                      {onMovePipeline && otherPipelines.length > 0 && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setPipelineMenuDealId(pipelineMenuDealId === deal.id ? null : deal.id)
+                            }}
+                            className={cn(
+                              'p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                              pipelineMenuDealId === deal.id ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
+                            )}
+                            aria-label="Mais ações"
+                          >
+                            <MoreVertical className="w-3.5 h-3.5" />
+                          </button>
+                          {pipelineMenuDealId === deal.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 top-full mt-1 w-48 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
+                            >
+                              <div className="px-3 py-2 border-b border-surface-700">
+                                <span className="text-[10px] font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
+                                  <ArrowRightLeft className="w-3 h-3" /> Mover para funil
+                                </span>
+                              </div>
+                              {otherPipelines.map((p) => (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  onClick={() => { onMovePipeline(deal, p.id); setPipelineMenuDealId(null) }}
+                                  className="w-full text-left px-3 py-2 text-xs text-surface-200 hover:bg-surface-700 transition-colors flex items-center gap-2"
+                                >
+                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                                  {p.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="text-sm font-medium text-surface-100 truncate pr-5">{deal.title}</div>
                       <div className="mt-1 flex items-center justify-between">
                         <span className="text-xs text-surface-400">{brl(deal.amountCents ?? 0)}</span>
                         {deal.createdByKind === 'ai' && (

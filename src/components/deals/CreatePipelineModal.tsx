@@ -16,9 +16,9 @@ interface CreatePipelineModalProps {
 }
 
 /** Cria ou edita um pipeline de negócio (renomear/cor — via `editPipeline`).
- *  Na criação, os estágios iniciais são provisionados automaticamente (mesmo
- *  conjunto default: Novo/Em negociação/Proposta enviada/Ganho/Perdido) —
- *  sem editor de estágios nesta v1. */
+ *  Na criação, o funil nasce SEM estágios (SCRUM-293) — não herda o preset
+ *  de vendas sem escolha; o chamador (ContactsPage) redireciona pro editor
+ *  de estágios (PipelineStagesManager) logo depois de criar. */
 export function CreatePipelineModal({ open, onClose, onSave, editPipeline }: CreatePipelineModalProps) {
   const [name, setName] = useState('')
   const [color, setColor] = useState(DEFAULT_ENTITY_COLOR)
@@ -68,7 +68,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline }: Cre
 
         {!editPipeline && (
           <p className="text-xs text-surface-500 -mt-1">
-            O funil nasce com os estágios padrão (Novo, Em negociação, Proposta enviada, Ganho, Perdido) — dá para ajustar depois.
+            O funil nasce sem estágios — depois de criar, você já vai direto pra configurar as colunas do board.
           </p>
         )}
 

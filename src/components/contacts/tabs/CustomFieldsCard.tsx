@@ -3,11 +3,14 @@ import { Pencil, Save, X as XIcon, Plus, Trash2, Settings2 } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { contactsApi } from '@/services/api'
+import { cn } from '@/lib/utils'
 import type { Contact, ContactCustomField, ContactCustomFieldDef } from '@/types'
 
 interface CustomFieldsCardProps {
   contact: Contact
   onSave: (patch: Partial<Contact>) => Promise<void>
+  /** Esconde o título "Campos Personalizados" quando uma seção já o rotula. */
+  hideTitle?: boolean
 }
 
 function FieldInput({
@@ -119,7 +122,7 @@ function FieldDisplay({ field }: { field: ContactCustomField }) {
   return <p className="text-sm text-surface-200">{field.value || '—'}</p>
 }
 
-export function CustomFieldsCard({ contact, onSave }: CustomFieldsCardProps) {
+export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomFieldsCardProps) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [defs, setDefs] = useState<ContactCustomFieldDef[]>([])
@@ -167,8 +170,8 @@ export function CustomFieldsCard({ contact, onSave }: CustomFieldsCardProps) {
 
   return (
     <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
-        <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2"><Settings2 className="w-4 h-4 text-surface-400" /> Campos Personalizados</h3>
+      <div className={cn('flex items-center px-4 py-3', hideTitle ? 'justify-end' : 'justify-between border-b border-surface-800')}>
+        {!hideTitle && <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2"><Settings2 className="w-4 h-4 text-surface-400" /> Campos Personalizados</h3>}
         {!editing ? (
           <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
             <Pencil className="w-3.5 h-3.5" />

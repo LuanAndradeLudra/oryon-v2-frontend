@@ -42,7 +42,7 @@ export function MobileFeatureGate({
 
   return createPortal(
     <motion.div
-      className="fixed inset-0 z-[60] bg-black flex flex-col"
+      className="fixed inset-0 z-[60] bg-surface-950 flex flex-col"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -61,8 +61,11 @@ export function MobileFeatureGate({
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-amber-950/40 border border-amber-700/40 flex items-center justify-center">
-          <Monitor className="w-8 h-8 text-amber-300" />
+        <div
+          className="w-16 h-16 rounded-2xl color-chip border flex items-center justify-center"
+          style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
+        >
+          <Monitor className="w-8 h-8" />
         </div>
         <h2 className="text-lg font-semibold text-surface-50">Use o desktop para esta tela</h2>
         <p className="text-sm text-surface-400 leading-relaxed max-w-xs">{description}</p>

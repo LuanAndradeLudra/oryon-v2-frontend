@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+﻿import { Link, useLocation } from 'react-router-dom'
 import { MessageSquare, Users, BarChart3, Menu } from 'lucide-react'
 import { useEffect, useState, useCallback, type ComponentType } from 'react'
 import { cn } from '@/lib/utils'
@@ -15,7 +15,7 @@ interface Tab {
 const TABS: Tab[] = [
   { href: '/conversations', label: 'Conversas', Icon: MessageSquare, matchPrefix: true },
   { href: '/contacts', label: 'Contatos', Icon: Users, matchPrefix: true },
-  { href: '/dashboard', label: 'Dashboard', Icon: BarChart3, matchPrefix: true },
+  { href: '/dashboard', label: 'Relatórios', Icon: BarChart3, matchPrefix: true },
   { href: '/more', label: 'Mais', Icon: Menu, matchPrefix: true },
 ]
 
@@ -57,8 +57,8 @@ export function BottomTabBar() {
   return (
     <nav
       role="tablist"
-      aria-label="Navegação principal"
-      className="flex-shrink-0 grid grid-cols-4 bg-black border-t border-surface-800/80 pb-[env(safe-area-inset-bottom)]"
+      aria-label="NavegaÃ§Ã£o principal"
+      className="flex-shrink-0 grid grid-cols-4 bg-surface-950 border-t border-surface-800/80 pb-[env(safe-area-inset-bottom)]"
     >
       {TABS.map((tab) => {
         const active = isActive(location.pathname, tab)

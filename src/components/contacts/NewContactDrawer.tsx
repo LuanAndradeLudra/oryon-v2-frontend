@@ -5,11 +5,15 @@ import {
   Tag as TagIcon, ToggleLeft, ToggleRight, ChevronDown,
   Loader2, Check,
 } from 'lucide-react'
-import { cn, getDefaultPipeline } from '@/lib/utils'
+import { cn, getDefaultPipeline, getPipelineStages, getActivePipelines } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { tagsApi, dealsApi } from '@/services/api'
 import type { Contact, ContactSource, Tag, Pipeline } from '@/types'
+import { Input } from '@/components/ui/Input'
+import { PhoneField } from '@/components/ui/PhoneField'
+import { FormFieldContext, useFieldAria } from '@/components/ui/formField.context'
 
 const SOURCE_OPTIONS: { value: ContactSource; label: string }[] = [
   { value: 'whatsapp',  label: 'WhatsApp' },
@@ -36,18 +40,46 @@ interface NewContactDrawerProps {
 
 // ─── Field wrapper ─────────────────────────────────────────────────────────────
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+/**
+ * Invólucro de campo com a linguagem visual deste drawer (rótulo em peso médio,
+ * selo Obrigatório/Opcional como chip à direita) — diferente do `FormField` do
+ * DS de propósito.
+ *
+ * A **semântica** vem do mesmo lugar que a do `FormField` (`useFieldAria`): o
+ * rótulo aponta para o campo, hint e erro são anunciados, obrigatório vira
+ * `aria-required`. Só a casca é local. Os campos filhos precisam ser primitivos
+ * do DS (`Input`, `PhoneField`, `Select`) para lerem o contexto.
+ */
+function Field({ label, required, hint, error, children }: {
+  label: string
+  required?: boolean
+  hint?: string
+  error?: string
+  children: React.ReactNode
+}) {
+  const { fieldId, hintId, errorId, aria } = useFieldAria({ hint, error, required })
   return (
+    <FormFieldContext.Provider value={aria}>
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <label className="text-xs font-medium text-surface-300">{label}</label>
+        <label htmlFor={fieldId} className="text-xs font-medium text-surface-300">{label}</label>
         {required
-          ? <span className="text-[10px] font-semibold text-red-400 bg-red-400/10 border border-red-400/20 px-1.5 py-0.5 rounded-full leading-none">Obrigatório</span>
+          ? (
+            <span
+              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none color-chip border"
+              style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+            >
+              Obrigatório
+            </span>
+          )
           : <span className="text-[10px] font-medium text-surface-600 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full leading-none">Opcional</span>
         }
       </div>
       {children}
+      {hint && !error && <p id={hintId} className="text-[11px] text-surface-600">{hint}</p>}
+      {error && <p id={errorId} role="alert" className="text-[11px] text-red-400">{error}</p>}
     </div>
+    </FormFieldContext.Provider>
   )
 }
 
@@ -97,8 +129,8 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
             selected.map((tag) => (
               <span
                 key={tag.id}
-                className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                style={{ backgroundColor: tag.color + '33', color: tag.color }}
+                className="color-chip inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+                style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
                 {tag.name}
               </span>
@@ -115,7 +147,7 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute z-50 top-full mt-1 left-0 right-0 bg-surface-800 border border-surface-700 rounded-xl shadow-2xl overflow-hidden"
+            className="absolute z-50 top-full mt-1 left-0 right-0 overlay-surface border rounded-xl overflow-hidden"
           >
             <div className="p-2 border-b border-surface-700">
               <input
@@ -169,7 +201,9 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
   const [jobTitle, setJobTitle]       = useState('')
   const [source, setSource]           = useState<ContactSource | ''>('')
   const [stage, setStage]             = useState('')
+  const multiPipeline = useMultiPipeline()
   const [pipelineId, setPipelineId]   = useState('')
+  const [pipelineStageId, setPipelineStageId] = useState('')
   const [optIn, setOptIn]             = useState(false)
   const [tags, setTags]               = useState<Tag[]>([])
   const [customValues, setCustomValues] = useState<Record<string, string>>({})
@@ -182,7 +216,8 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
   useEffect(() => {
     if (open) {
       setDisplayName(''); setWaId(''); setEmail(''); setCompany('')
-      setJobTitle(''); setSource(''); setStage(''); setPipelineId(''); setOptIn(false)
+      setJobTitle(''); setSource(''); setStage(''); setPipelineId('')
+      setPipelineStageId(''); setOptIn(false)
       setTags([]); setCustomValues({}); setErrors({}); setSaved(false)
     }
   }, [open])
@@ -202,12 +237,25 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
     }
   }, [open, pipelines, defaultPipelineId, pipelineId])
 
+  // "Estágio do funil" — eixo distinto de `stage` acima (ciclo de vida do
+  // contato). Reativo à troca de funil: se o estágio selecionado não existe
+  // mais no funil atual, recai pro 1º estágio não-terminal dele.
+  useEffect(() => {
+    const opts = getPipelineStages(pipelines, pipelineId)
+    if (!opts.some((s) => s.id === pipelineStageId)) {
+      setPipelineStageId(opts[0]?.id ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pipelineId, pipelines])
+
   const validate = () => {
     const e: typeof errors = {}
     if (!displayName.trim()) e.displayName = 'Nome é obrigatório'
     if (!waId.trim()) e.waId = 'Número WhatsApp é obrigatório'
     else if (!/^\d{10,15}$/.test(waId.replace(/\D/g, ''))) e.waId = 'Formato inválido (somente números)'
-    if (!pipelineId) e.pipelineId = 'Funil é obrigatório'
+    // Gate de múltiplos funis (SCRUM-498): sem o flag o campo não existe,
+    // logo não pode bloquear o cadastro.
+    if (multiPipeline && !pipelineId) e.pipelineId = 'Funil é obrigatório'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -238,10 +286,18 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
       // Todo lead nasce com um negócio no funil escolhido (spec: seleção
       // obrigatória de funil). Best-effort: o contato já foi criado com
       // sucesso, então uma falha aqui não desfaz o contato — só avisa.
-      try {
-        await dealsApi.create({ contactId: created.id, title: created.displayName, pipelineId })
-      } catch {
-        toast('Contato criado, mas não foi possível criar o negócio no funil. Adicione manualmente pela ficha do contato.', 'error')
+      // Sem o gate de funis não há negócio automático (comportamento legado).
+      if (multiPipeline) {
+        try {
+          await dealsApi.create({
+            contactId: created.id,
+            title: created.displayName,
+            pipelineId,
+            stageId: pipelineStageId || undefined,
+          })
+        } catch {
+          toast('Contato criado, mas não foi possível criar o negócio no funil. Adicione manualmente pela ficha do contato.', 'error')
+        }
       }
 
       setSaved(true)
@@ -278,7 +334,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] z-40 bg-black border-l border-surface-800 flex flex-col shadow-2xl"
+            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
@@ -303,33 +359,36 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                   Identificação
                 </p>
                 <div className="space-y-3">
-                  <Field label="Nome" required>
+                  <Field label="Nome" required error={errors.displayName}>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-                      <input
+                      <Input
                         value={displayName}
                         onChange={(e) => { setDisplayName(e.target.value); setErrors((v) => ({ ...v, displayName: undefined })) }}
                         placeholder="Ex: João da Silva"
-                        className={cn(inputCls(!!errors.displayName), 'pl-9')}
+                        maxLength={120}
+                        className="pl-9"
                       />
                     </div>
-                    {errors.displayName && <p className="text-[11px] text-red-400">{errors.displayName}</p>}
                   </Field>
 
-                  <Field label="WhatsApp (número)" required>
+                  {/* O formato deixou de viver só no placeholder: a máscara
+                      formata enquanto se digita e o hint fica na tela. O estado
+                      (`waId`) continua recebendo só dígitos. */}
+                  <Field
+                    label="WhatsApp (número)"
+                    required
+                    error={errors.waId}
+                    hint="Código do país + DDD + número — ex.: 55 11 99988-7766."
+                  >
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-                      <input
+                      <PhoneField
                         value={waId}
-                        onChange={(e) => { setWaId(e.target.value); setErrors((v) => ({ ...v, waId: undefined })) }}
-                        placeholder="5511999887766"
-                        className={cn(inputCls(!!errors.waId), 'pl-9 font-mono')}
+                        onChange={(digits) => { setWaId(digits); setErrors((v) => ({ ...v, waId: undefined })) }}
+                        className="pl-9 font-mono"
                       />
                     </div>
-                    {errors.waId
-                      ? <p className="text-[11px] text-red-400">{errors.waId}</p>
-                      : <p className="text-[11px] text-surface-600">Código do país + DDD + número, ex: 5511999887766</p>
-                    }
                   </Field>
 
                   <Field label="E-mail">
@@ -385,6 +444,10 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                   CRM
                 </p>
                 <div className="space-y-3">
+                  {/* Funil + estágio do funil só existem com o gate de
+                      múltiplos funis (SCRUM-498). Sem ele, o cadastro é o
+                      legado: nome/telefone + estágio do contato. */}
+                  {multiPipeline && (
                   <Field label="Funil" required>
                     <div className="relative">
                       <select
@@ -392,8 +455,8 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                         onChange={(e) => { setPipelineId(e.target.value); setErrors((v) => ({ ...v, pipelineId: undefined })) }}
                         className={cn(inputCls(!!errors.pipelineId), 'appearance-none pr-8')}
                       >
-                        {pipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
-                        {pipelines.map((p) => (
+                        {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
+                        {getActivePipelines(pipelines).map((p) => (
                           <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                         ))}
                       </select>
@@ -404,9 +467,34 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                       : <p className="text-[11px] text-surface-600">O contato nasce com um negócio aberto neste funil.</p>
                     }
                   </Field>
+                  )}
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Estágio">
+                  <div className={cn('grid gap-3', multiPipeline ? 'grid-cols-2' : 'grid-cols-1')}>
+                    {/* Estágio do FUNIL — coluna do board em que o negócio
+                        nasce. Eixo distinto de "Estágio do contato" abaixo
+                        (ciclo de vida) — modelo híbrido, os dois não se
+                        confundem. Reativo ao funil escolhido acima. */}
+                    {multiPipeline && (
+                    <Field label="Estágio do funil">
+                      <div className="relative">
+                        <select
+                          value={pipelineStageId}
+                          onChange={(e) => setPipelineStageId(e.target.value)}
+                          className={cn(inputCls(), 'appearance-none pr-8')}
+                        >
+                          {getPipelineStages(pipelines, pipelineId).length === 0 && (
+                            <option value="">Nenhum estágio disponível</option>
+                          )}
+                          {getPipelineStages(pipelines, pipelineId).map((s) => (
+                            <option key={s.id} value={s.id}>{s.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+                      </div>
+                    </Field>
+                    )}
+
+                    <Field label="Estágio do contato">
                       <div className="relative">
                         <select
                           value={stage}

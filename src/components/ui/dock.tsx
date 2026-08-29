@@ -185,8 +185,8 @@ function DockLabel({ children, className, ...rest }: DockLabelProps) {
           transition={{ duration: 0.15 }}
           className={cn(
             'pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2',
-            'whitespace-pre rounded-lg border border-surface-700 bg-surface-800',
-            'px-2.5 py-1 text-xs font-medium text-surface-100 shadow-lg',
+            'whitespace-pre rounded-lg overlay-surface border',
+            'px-2.5 py-1 text-xs font-medium text-surface-100',
             className
           )}
           role="tooltip"

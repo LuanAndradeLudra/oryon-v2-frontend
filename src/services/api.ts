@@ -8,6 +8,7 @@ import type {
   AdSetMetrics,
   AdAttributionTouchpoint,
   Automation,
+  AutomationRun,
   AutomationStatus,
   Campaign,
   CampaignSegment,
@@ -28,6 +29,7 @@ import type {
   MetaAdsReferral,
   PaginatedResponse,
   Product,
+  Practitioner,
   Deal,
   DealStatus,
   Pipeline,
@@ -1225,6 +1227,45 @@ export const agentCatalogApi = {
   },
 }
 
+/** Resposta paginada de /practitioners — mesmo shape de PaginatedProducts. */
+interface PaginatedPractitioners {
+  data: Practitioner[]
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
+}
+
+export const practitionersApi = {
+  // Mesmo motivo de productsApi.list: o registro é a fonte única pro portão
+  // de médico (UI + IA), então junta todas as páginas por trás.
+  async list() {
+    const limit = 100
+    const all: Practitioner[] = []
+    let res = await api.get<PaginatedPractitioners | Practitioner[]>(`/practitioners?page=1&limit=${limit}`)
+    for (let page = 1; ; page++) {
+      const body = res.data
+      if (Array.isArray(body)) return { ...res, data: body } // compat: backend sem paginação
+      all.push(...body.data)
+      if (!body.hasMore || page >= 100) break
+      res = await api.get<PaginatedPractitioners | Practitioner[]>(`/practitioners?page=${page + 1}&limit=${limit}`)
+    }
+    return { ...res, data: all }
+  },
+  get(id: string) {
+    return api.get<Practitioner>(`/practitioners/${id}`)
+  },
+  create(dto: Partial<Practitioner>) {
+    return api.post<Practitioner>('/practitioners', dto)
+  },
+  update(id: string, patch: Partial<Practitioner>) {
+    return api.patch<Practitioner>(`/practitioners/${id}`, patch)
+  },
+  remove(id: string) {
+    return api.delete(`/practitioners/${id}`)
+  },
+}
+
 /** Pipelines de negócio (múltiplos pipelines, Fase 2). Lista já vem com os estágios embutidos. */
 export const pipelinesApi = {
   list() {
@@ -1233,11 +1274,14 @@ export const pipelinesApi = {
   create(dto: { name: string; description?: string; color?: string }) {
     return api.post<Pipeline>('/settings/pipelines', dto)
   },
-  update(id: string, dto: { name?: string; description?: string; color?: string }) {
+  update(id: string, dto: { name?: string; description?: string; color?: string; isArchived?: boolean }) {
     return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
   },
   remove(id: string) {
     return api.delete(`/settings/pipelines/${id}`)
+  },
+  setDefault(id: string) {
+    return api.patch<Pipeline>(`/settings/pipelines/${id}/default`)
   },
   createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
     return api.post<PipelineStage>(`/settings/pipelines/${pipelineId}/stages`, dto)
@@ -1283,6 +1327,11 @@ export const dealsApi = {
   /** Move o negócio para um estágio do seu pipeline (deriva status no backend). */
   moveStage(id: string, stageId: string) {
     return api.patch<Deal>(`/deals/${id}/stage`, { stageId })
+  },
+  /** Move o negócio ABERTO pra outro funil — nasce lá no 1º estágio não-terminal.
+   *  409 se o contato já tem um negócio aberto no funil de destino. */
+  movePipeline(id: string, pipelineId: string) {
+    return api.patch<Deal>(`/deals/${id}/pipeline`, { pipelineId })
   },
   get(id: string) {
     return api.get<Deal>(`/deals/${id}`)
@@ -1479,6 +1528,16 @@ export const automationsApi = {
   },
   delete(id: string) {
     return api.delete(`/automations/${id}`)
+  },
+  // Histórico de execuções de UMA automação — GET /automations/:id/runs
+  // (ADMIN/BUSINESS_ADMIN, os mesmos papéis que veem a lista). Paginação por
+  // cursor via `before`; `failedOnly` filtra só incidentes. O backend já grava
+  // tudo isto (Phase B.2) — aqui apenas passamos a consumir.
+  runs(id: string, query: { before?: string; failedOnly?: boolean; limit?: number } = {}) {
+    return api.get<{ data: AutomationRun[]; nextCursor: string | null }>(
+      `/automations/${id}/runs`,
+      { params: query },
+    )
   },
 }
 
