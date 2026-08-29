@@ -1,194 +1,256 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Briefcase, Plus, KanbanSquare } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { dealsApi } from '@/services/api'
-import { connectSocket } from '@/services/socket'
-import { DealModal } from '@/components/contacts/DealModal'
-import { useTenantVocab } from '@/contexts/TenantVocabContext'
-import { useCRMConfig } from '@/contexts/CRMConfigContext'
-import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History } from 'lucide-react'
+import { useContactPipelines } from '@/hooks/useContactPipelines'
+import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
+import { formatRelativeTime } from '@/lib/utils'
+import { pipelineKindOption, pipelineKindOf, terminalLabelsOf } from '@/lib/pipelineKinds'
+import { originInfo, timeInStage } from '@/lib/dealCard'
+import { movedByLabel, moveTargets } from '@/lib/contactPipelines'
 import { formatBRL } from '@/utils/money'
-import type { Deal } from '@/types'
-
-/** Agrupa os negócios do contato por pipeline, preservando a ordem de chegada. */
-function groupByPipeline(deals: Deal[]): Array<[string, Deal[]]> {
-  const map = new Map<string, Deal[]>()
-  for (const d of deals) {
-    const key = d.pipelineId || '—'
-    const arr = map.get(key) ?? []
-    arr.push(d)
-    map.set(key, arr)
-  }
-  return [...map.entries()]
-}
-
-const STATUS_META: Record<Deal['status'], { label: string; chip: string }> = {
-  open: { label: 'Aberto', chip: 'var(--color-warning)' },
-  won: { label: 'Ganho', chip: 'var(--color-success)' },
-  lost: { label: 'Perdido', chip: 'var(--color-danger)' },
-}
+import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 /**
- * Seção "Negócios" no painel do contato dentro de Conversas — gestão inline
- * (ver/criar/editar/ganhar/perder sem sair do atendimento), reusando o DealModal
- * da Fase 1.5. Ao salvar, dispara `oryon:activity-invalidate` para a
- * "HISTÓRICO DA CONVERSA" recarregar e mostrar o evento de negócio recém-criado.
+ * "Funis" no painel do contato, dentro de Conversas.
+ *
+ * **O que esta tela era.** A seção mais vista da plataforma — quem atende passa
+ * o dia no inbox — e a menos atualizada: anterior ao Modelo B, chamava tudo de
+ * "Negócio", mostrava `Ganho/Perdido` mesmo num funil de **processo** (onde o
+ * vocabulário é Concluído/Cancelado), exibia **R$ 0,00** em registro que não tem
+ * valor, somava processo junto com venda nos totais, e **não mostrava a etapa**
+ * — a tabela, a ficha e o board mostravam; justamente aqui, onde a decisão
+ * acontece, não. O chip do cabeçalho da conversa dizia "Funil · Etapa" e o
+ * painel logo abaixo dizia "Negócio · R$ 0,00 · Ganho": duas leituras do mesmo
+ * registro, discordando.
+ *
+ * **O que é agora.** A mesma fonte da ficha (`useContactPipelines`) numa
+ * densidade compacta, que é o que cabe num painel estreito: uma linha por
+ * registro aberto com funil, tipo, etapa atual e contexto, com "Mover ▾" — a
+ * ação que antes exigia abrir um modal de edição de negócio ou ir até o board.
+ * Passagens fechadas em linha, com histórico sob demanda.
+ *
+ * **Dinheiro só onde existe.** Os totais "Em aberto/Ganho" aparecem apenas se
+ * há registro de **venda**; num tenant que só usa funil de processo, a faixa
+ * some em vez de mostrar zeros.
+ *
+ * **Criar registro saiu daqui.** O cabeçalho desta mesma conversa já tem
+ * "Adicionar ao funil" (F9), com o fluxo de conflito (`409 open_exists`) e a
+ * distinção venda/processo. O "Novo" que existia aqui abria o `DealModal`
+ * direto e transformava o conflito num erro cru — duas portas para a mesma
+ * ação, uma delas errada.
  */
 export function ContactPanelDeals({
   contactId,
+  contactName,
   conversationId,
 }: {
   contactId: string
+  /** Usado nas mensagens de confirmação ("Fulano foi para X"). */
+  contactName: string
   conversationId: string
 }) {
-  const { vocab } = useTenantVocab()
   const navigate = useNavigate()
-  // Funis vêm do cache compartilhado (CRMConfigContext, SCRUM-293) — sem
-  // fetch próprio, só pro nome do cabeçalho de cada grupo (contato pode ter
-  // negócios em pipelines diferentes).
-  const { pipelines } = useCRMConfig()
-  // Sem o gate de funis (SCRUM-498) o cabeçalho de grupo ("Sem pipeline ·
-  // Ver no board") some — não há board para abrir.
-  const multiPipeline = useMultiPipeline()
-  const [deals, setDeals] = useState<Deal[] | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editDeal, setEditDeal] = useState<Deal | null>(null)
+  const {
+    enabled, deals, open, closed, error, busyId,
+    closeTarget, setCloseTarget, history,
+    pipelineOf, moveTo, closeWithReason, toggleHistory,
+  } = useContactPipelines(contactId, contactName)
+  const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
 
-  const load = useCallback(() => {
-    dealsApi
-      .list(contactId)
-      .then((r) => setDeals(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setDeals([]))
-  }, [contactId])
+  if (!enabled) return null
 
-  useEffect(() => {
-    load()
-  }, [load])
-
-  // Realtime: recarrega quando um negócio deste contato muda em qualquer lugar (socket `deal:changed`).
-  useEffect(() => {
-    const socket = connectSocket()
-    const onDealChanged = (p: { contactId?: string }) => {
-      if (p?.contactId === contactId) load()
-    }
-    socket.on('deal:changed', onDealChanged)
-    return () => {
-      socket.off('deal:changed', onDealChanged)
-    }
-  }, [contactId, load])
-
-  const list = deals ?? []
-  const count = list.length
-  const openCents = list.filter((d) => d.status === 'open').reduce((s, d) => s + d.amountCents, 0)
-  const wonCents = list.filter((d) => d.status === 'won').reduce((s, d) => s + d.amountCents, 0)
-
-  const handleSaved = () => {
-    setModalOpen(false)
-    setEditDeal(null)
-    load()
-    // Recarrega a "HISTÓRICO DA CONVERSA" para o evento de negócio aparecer na hora.
+  /** O histórico da conversa mostra eventos de registro — recarrega junto. */
+  const refreshActivity = () => {
     window.dispatchEvent(
       new CustomEvent('oryon:activity-invalidate', { detail: { conversationId } }),
     )
   }
 
+  const handleMove = async (deal: Deal, stage: PipelineStage, pipeline: Pipeline) => {
+    setMoveOpenFor(null)
+    await moveTo(deal, stage, pipeline)
+    refreshActivity()
+  }
+
+  const handleClose = async (input: CloseDealReasonInput) => {
+    await closeWithReason(input)
+    refreshActivity()
+  }
+
+  // Faceta comercial: só registros de VENDA entram na conta. Processo não tem
+  // valor, e somá-lo aqui produziria um total que não significa nada.
+  const salesDeals = [...open, ...closed].filter((d) => {
+    const p = pipelineOf(d)
+    return p ? pipelineKindOf(p) === 'sales' : false
+  })
+  const openCents = salesDeals.filter((d) => d.status === 'open').reduce((s, d) => s + (d.amountCents ?? 0), 0)
+  const wonCents = salesDeals.filter((d) => d.status === 'won').reduce((s, d) => s + (d.amountCents ?? 0), 0)
+
   return (
-    <div className="px-4 py-3 border-b border-surface-800">
+    <div className="px-4 py-3 border-b border-surface-800" data-testid="panel-pipelines">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
-          <Briefcase className="w-3 h-3" /> {vocab.deals}
+          <KanbanSquare className="w-3 h-3" /> Funis
+          <span className="text-surface-600 normal-case tracking-normal" data-testid="panel-pipelines-count">
+            · {deals === null ? '…' : `${open.length} ${open.length === 1 ? 'aberto' : 'abertos'}`}
+          </span>
         </p>
-        <button
-          onClick={() => {
-            setEditDeal(null)
-            setModalOpen(true)
-          }}
-          className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
-        >
-          <Plus className="w-3 h-3" /> Novo
-        </button>
       </div>
 
-      {deals === null ? (
-        <p className="text-xs text-surface-600">Carregando…</p>
-      ) : count === 0 ? (
+      {error && <p className="text-xs text-danger" role="alert">{error}</p>}
+
+      {deals !== null && open.length === 0 && closed.length === 0 && !error && (
         <p className="text-xs text-surface-600">
-          Nenhum {vocab.deal.toLowerCase()} ainda — clique em "Novo" para criar.
+          Nenhum registro ainda — use "Adicionar ao funil" no cabeçalho da conversa.
         </p>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
-              <p className="text-[9px] text-surface-500 uppercase tracking-wide">Em aberto</p>
-              <p className="text-sm font-semibold text-surface-100 tabular-nums">{formatBRL(openCents)}</p>
-            </div>
-            <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
-              <p className="text-[9px] text-surface-500 uppercase tracking-wide">Ganho</p>
-              <p className="text-sm font-semibold text-success tabular-nums">{formatBRL(wonCents)}</p>
-            </div>
+      )}
+
+      {salesDeals.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 mb-2" data-testid="panel-pipelines-money">
+          <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
+            <p className="text-[9px] text-surface-500 uppercase tracking-wide">Em aberto</p>
+            <p className="text-sm font-semibold text-surface-100 tabular-nums">{formatBRL(openCents)}</p>
           </div>
-          <div className="flex flex-col gap-3">
-            {groupByPipeline(list).map(([pipelineId, groupDeals]) => {
-              const pipeline = pipelines.find((p) => p.id === pipelineId)
+          <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
+            <p className="text-[9px] text-surface-500 uppercase tracking-wide">Ganho</p>
+            <p className="text-sm font-semibold text-success tabular-nums">{formatBRL(wonCents)}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2.5">
+        {open.map((deal) => {
+          const pipeline = pipelineOf(deal)
+          if (!pipeline) return null
+          const kind = pipelineKindOption(pipelineKindOf(pipeline))
+          const KindIcon = kind.icon
+          const stage = pipeline.stages.find((s) => s.id === deal.stageId)
+          const targets = moveTargets(pipeline, deal.stageId)
+          const labels = terminalLabelsOf(pipeline)
+          const meta = [timeInStage(deal), movedByLabel(deal) ? `por ${movedByLabel(deal)}` : null, `origem ${originInfo(deal).label}`]
+            .filter(Boolean).join(' · ')
+          return (
+            <article key={deal.id} className="flex flex-col gap-1" data-testid={`panel-pipeline-${pipeline.id}`}>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />
+                <span className="text-xs text-surface-200 truncate">{pipeline.name}</span>
+                <KindIcon className="w-3 h-3 text-surface-500 flex-shrink-0" aria-label={kind.label} />
+                {stage && (
+                  <span
+                    className="ml-auto text-[10px] text-surface-300 whitespace-nowrap"
+                    data-testid={`panel-pipeline-stage-${pipeline.id}`}
+                  >
+                    {stage.label}
+                  </span>
+                )}
+              </div>
+              {meta && <p className="text-[10px] text-surface-600 truncate pl-3.5">{meta}</p>}
+              <div className="flex items-center gap-1 pl-3.5">
+                <Dropdown
+                  open={moveOpenFor === deal.id}
+                  onClose={() => setMoveOpenFor(null)}
+                  align="left"
+                  className="w-52"
+                  anchor={
+                    <button
+                      type="button"
+                      onClick={() => setMoveOpenFor((v) => (v === deal.id ? null : deal.id))}
+                      disabled={busyId === deal.id}
+                      className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 disabled:opacity-50 transition-colors"
+                      data-testid={`panel-pipeline-move-${pipeline.id}`}
+                      aria-haspopup="menu"
+                      aria-expanded={moveOpenFor === deal.id}
+                    >
+                      Mover <ChevronDown className="w-2.5 h-2.5" />
+                    </button>
+                  }
+                >
+                  <div className="px-1 py-1 flex flex-col gap-0.5">
+                    {targets.normal.map((st) => (
+                      <DropdownItem key={st.id} onClick={() => void handleMove(deal, st, pipeline)}>
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />
+                        {st.label}
+                      </DropdownItem>
+                    ))}
+                    {targets.normal.length > 0 && targets.terminal.length > 0 && <DropdownSeparator />}
+                    {targets.terminal.map((st) => (
+                      <DropdownItem key={st.id} onClick={() => void handleMove(deal, st, pipeline)} danger={st.isLost}>
+                        {st.isWon ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                        {st.isWon ? labels.won : labels.lost} (com motivo)
+                      </DropdownItem>
+                    ))}
+                  </div>
+                </Dropdown>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/contacts?pipeline=${pipeline.id}`)}
+                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+                  data-testid={`panel-pipeline-board-${pipeline.id}`}
+                >
+                  <KanbanSquare className="w-3 h-3" /> Board
+                </button>
+              </div>
+            </article>
+          )
+        })}
+
+        {closed.length > 0 && (
+          <div className="flex flex-col gap-1 pt-1 border-t border-surface-800/60" data-testid="panel-pipelines-closed">
+            {closed.map((deal) => {
+              const pipeline = pipelineOf(deal)
+              const stage = pipeline?.stages.find((s) => s.id === deal.stageId)
+              const won = deal.status === 'won'
+              const reasonLabel = pipeline?.closeReasons?.find((r) => r.key === deal.closeReason)?.label ?? deal.closeReason ?? null
+              const h = history[deal.id]
               return (
-                <div key={pipelineId} className="flex flex-col gap-1.5">
-                  {/* Cabeçalho do grupo: nome do pipeline + link pro board */}
-                  {multiPipeline && (
-                  <div className="flex items-center justify-between px-0.5">
-                    <span className="text-[10px] text-surface-500 font-medium truncate">
-                      {pipeline?.name ?? 'Sem pipeline'}
+                <div key={deal.id} className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1 text-[10px] text-surface-500 min-w-0">
+                    {won
+                      ? <CheckCircle2 className="w-3 h-3 text-status-active flex-shrink-0" />
+                      : <XCircle className="w-3 h-3 text-surface-600 flex-shrink-0" />}
+                    <span className="truncate">
+                      <span className="text-surface-400">{pipeline?.name ?? 'Funil'}</span> · {stage?.label ?? (won ? 'Ganho' : 'Perdido')}
+                      {deal.closedAt && <> · {formatRelativeTime(deal.closedAt)}</>}
+                      {reasonLabel && <> · {reasonLabel}</>}
                     </span>
                     <button
                       type="button"
-                      onClick={() => navigate(`/contacts?pipeline=${pipelineId}`)}
-                      title="Abrir no board de negócios"
-                      className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 transition-colors flex-shrink-0"
+                      onClick={() => void toggleHistory(deal.id)}
+                      className="ml-auto inline-flex items-center gap-1 text-[10px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
+                      data-testid={`panel-pipeline-history-${deal.id}`}
                     >
-                      <KanbanSquare className="w-3 h-3" /> Ver no board
+                      <History className="w-2.5 h-2.5" /> {h && h !== 'loading' ? 'ocultar' : 'histórico'}
                     </button>
                   </div>
+                  {h === 'loading' && <p className="text-[10px] text-surface-600 pl-4">Carregando…</p>}
+                  {Array.isArray(h) && (
+                    <ol className="pl-4 flex flex-col gap-0.5" data-testid={`panel-pipeline-history-list-${deal.id}`}>
+                      {h.length === 0 && <li className="text-[10px] text-surface-600">Sem passagens registradas.</li>}
+                      {h.map((e) => (
+                        <li key={e.id} className="text-[10px] text-surface-600">
+                          {e.fromStageLabel ? `${e.fromStageLabel} → ` : 'entrou em '}
+                          <span className="text-surface-400">{e.toStageLabel ?? '?'}</span>
+                          {' · '}{movedByLabel({ lastMovedByKind: e.movedByKind, lastMovedByActorName: e.movedByActorName }) ?? 'sistema'}
+                          {' · '}{formatRelativeTime(e.createdAt)}
+                        </li>
+                      ))}
+                    </ol>
                   )}
-                  {groupDeals.map((d) => (
-                    <button
-                      key={d.id}
-                      onClick={() => {
-                        setEditDeal(d)
-                        setModalOpen(true)
-                      }}
-                      className="w-full flex items-center gap-2.5 bg-surface-800/40 hover:bg-surface-800 border border-surface-700/40 rounded-lg px-2.5 py-2 text-left transition-colors"
-                    >
-                      <Briefcase className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-surface-200 truncate">{d.title}</p>
-                        <span
-                          className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full border color-chip"
-                          style={{ ['--chip']: STATUS_META[d.status].chip } as React.CSSProperties}
-                        >
-                          {STATUS_META[d.status].label}
-                        </span>
-                      </div>
-                      <span className="text-xs text-surface-200 tabular-nums flex-shrink-0">
-                        {formatBRL(d.amountCents)}
-                      </span>
-                    </button>
-                  ))}
                 </div>
               )
             })}
           </div>
-        </>
-      )}
+        )}
+      </div>
 
-      <DealModal
-        open={modalOpen}
-        contactId={contactId}
-        editDeal={editDeal}
-        pipelines={pipelines}
-        onClose={() => {
-          setModalOpen(false)
-          setEditDeal(null)
-        }}
-        onSaved={handleSaved}
+      <CloseDealReasonModal
+        open={!!closeTarget}
+        onClose={() => setCloseTarget(null)}
+        deal={closeTarget?.deal ?? null}
+        stage={closeTarget?.stage ?? null}
+        pipeline={closeTarget?.pipeline ?? null}
+        onConfirm={handleClose}
       />
     </div>
   )

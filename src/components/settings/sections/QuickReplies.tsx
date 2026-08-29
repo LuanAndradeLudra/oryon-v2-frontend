@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from 'react'
 import { Plus, Search, Pencil, Trash2, Copy, Zap } from 'lucide-react'
 import axios from 'axios'
-import { cannedResponsesApi } from '@/services/api'
+import { api, cannedResponsesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { SectionHeader } from '../SectionHeader'

@@ -1,19 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History } from 'lucide-react'
-import { dealsApi } from '@/services/api'
-import { connectSocket } from '@/services/socket'
-import { useCRMConfig } from '@/contexts/CRMConfigContext'
-import { useMultiPipeline } from '@/hooks/useMultiPipeline'
-import { useToast } from '@/hooks/useToast'
-import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
+import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
-import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
-import { cn, getApiErrorMessage, formatRelativeTime } from '@/lib/utils'
+import { CloseDealReasonModal } from '@/components/deals/CloseDealReasonModal'
+import { cn, formatRelativeTime } from '@/lib/utils'
 import { pipelineKindOption, pipelineKindOf, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { originInfo, timeInStage } from '@/lib/dealCard'
-import { stepperFor, splitDeals, movedByLabel, moveTargets, type StepperStep } from '@/lib/contactPipelines'
-import type { Deal, DealStageHistoryEntry, Pipeline, PipelineStage } from '@/types'
+import { stepperFor, movedByLabel, moveTargets, type StepperStep } from '@/lib/contactPipelines'
+import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 interface Props {
   contactId: string
@@ -62,80 +57,22 @@ function Stepper({ steps, color }: { steps: StepperStep[]; color: string }) {
  * no evento local `oryon:deals-invalidate` e no socket `deal:changed`.
  */
 export function ContactPipelinesSection({ contactId, contactName, className }: Props) {
-  const multiPipeline = useMultiPipeline()
-  const { pipelines } = useCRMConfig()
   const navigate = useNavigate()
-  const { toast } = useToast()
-  const [deals, setDeals] = useState<Deal[] | null>(null)
-  const [error, setError] = useState('')
+  // Carga, tempo real, mover, fechar e histórico vêm do hook compartilhado —
+  // o painel do contato nas conversas usa o mesmo. Aqui fica só a densidade
+  // "card com stepper", que é a da ficha.
+  const {
+    enabled, deals, open, closed, error, busyId,
+    closeTarget, setCloseTarget, history,
+    pipelineOf, moveTo, closeWithReason, toggleHistory,
+  } = useContactPipelines(contactId, contactName)
   const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
-  const [closeTarget, setCloseTarget] = useState<{ deal: Deal; stage: PipelineStage; pipeline: Pipeline } | null>(null)
-  const [history, setHistory] = useState<Record<string, DealStageHistoryEntry[] | 'loading' | undefined>>({})
-  const [busyId, setBusyId] = useState<string | null>(null)
 
-  const load = useCallback(() => {
-    if (!multiPipeline) return
-    dealsApi.list(contactId)
-      .then((r) => { setDeals(Array.isArray(r.data) ? r.data : []); setError('') })
-      .catch((e: unknown) => { setDeals([]); setError(getApiErrorMessage(e, 'Não foi possível carregar os funis.')) })
-  }, [contactId, multiPipeline])
+  if (!enabled) return null
 
-  useEffect(() => { load() }, [load])
-
-  useEffect(() => {
-    if (!multiPipeline) return
-    const onLocal = (e: Event) => {
-      const detail = (e as CustomEvent<{ contactId?: string }>).detail
-      if (!detail?.contactId || detail.contactId === contactId) load()
-    }
-    window.addEventListener(DEALS_INVALIDATE_EVENT, onLocal)
-    const socket = connectSocket()
-    const onDealChanged = (p: { contactId?: string }) => { if (p?.contactId === contactId) load() }
-    socket.on('deal:changed', onDealChanged)
-    return () => {
-      window.removeEventListener(DEALS_INVALIDATE_EVENT, onLocal)
-      socket.off('deal:changed', onDealChanged)
-    }
-  }, [contactId, load, multiPipeline])
-
-  if (!multiPipeline) return null
-
-  const { open, closed } = splitDeals(deals ?? [])
-  const pipelineOf = (d: Deal) => pipelines.find((p) => p.id === d.pipelineId)
-
-  const moveTo = async (deal: Deal, stage: PipelineStage, pipeline: Pipeline) => {
+  const handleMove = (deal: Deal, stage: PipelineStage, pipeline: Pipeline) => {
     setMoveOpenFor(null)
-    if (stage.isWon || stage.isLost) { setCloseTarget({ deal, stage, pipeline }); return }
-    setBusyId(deal.id)
-    try {
-      await dealsApi.moveStage(deal.id, stage.id)
-      toast(`${contactName} foi para ${stage.label} em ${pipeline.name}.`, 'success')
-      load()
-    } catch (e: unknown) {
-      toast(getApiErrorMessage(e, 'Não foi possível mover.'), 'error')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const closeWithReason = async (input: CloseDealReasonInput) => {
-    if (!closeTarget) return
-    await dealsApi.setStatus(closeTarget.deal.id, { status: input.outcome, closeReason: input.reason, closeNote: input.note })
-    toast(`${contactName} marcado como ${closeTarget.stage.label} em ${closeTarget.pipeline.name}.`, 'success')
-    setCloseTarget(null)
-    load()
-  }
-
-  const toggleHistory = async (dealId: string) => {
-    if (history[dealId] && history[dealId] !== 'loading') { setHistory((h) => ({ ...h, [dealId]: undefined })); return }
-    setHistory((h) => ({ ...h, [dealId]: 'loading' }))
-    try {
-      const { data } = await dealsApi.history(dealId)
-      setHistory((h) => ({ ...h, [dealId]: Array.isArray(data) ? data : [] }))
-    } catch {
-      setHistory((h) => ({ ...h, [dealId]: [] }))
-      toast('Não foi possível carregar o histórico.', 'error')
-    }
+    void moveTo(deal, stage, pipeline)
   }
 
   return (
@@ -206,14 +143,14 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
                 >
                   <div className="px-1 py-1 flex flex-col gap-0.5">
                     {targets.normal.map((s) => (
-                      <DropdownItem key={s.id} onClick={() => void moveTo(deal, s, pipeline)}>
+                      <DropdownItem key={s.id} onClick={() => handleMove(deal, s, pipeline)}>
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
                         {s.label}
                       </DropdownItem>
                     ))}
                     {targets.normal.length > 0 && targets.terminal.length > 0 && <DropdownSeparator />}
                     {targets.terminal.map((s) => (
-                      <DropdownItem key={s.id} onClick={() => void moveTo(deal, s, pipeline)} danger={s.isLost}>
+                      <DropdownItem key={s.id} onClick={() => handleMove(deal, s, pipeline)} danger={s.isLost}>
                         {s.isWon ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                         {s.isWon ? labels.won : labels.lost} (com motivo)
                       </DropdownItem>

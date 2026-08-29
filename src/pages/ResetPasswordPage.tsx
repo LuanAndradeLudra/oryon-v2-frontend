@@ -26,7 +26,7 @@ export function ResetPasswordPage() {
     setError('')
     setLoading(true)
     try {
-      await api.post('/auth/reset-password', { token, password }, SKIP_AUTH_REFRESH)
+      await api.post('/auth/reset-password', { token, password }, { withCredentials: true, ...SKIP_AUTH_REFRESH })
       setSuccess(true)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message

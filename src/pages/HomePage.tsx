@@ -477,7 +477,7 @@ function WhatsAppNumbersCard() {
   const [waNumbers, setWaNumbers] = useState<WhatsAppNumberDetailed[]>([])
 
   useEffect(() => {
-    axios
+    api
       .get<WhatsAppNumberDetailed[]>('/whatsapp/numbers')
       .then((w) => setWaNumbers(Array.isArray(w.data) ? w.data : []))
       .catch(() => setWaNumbers([]))
