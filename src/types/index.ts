@@ -305,6 +305,18 @@ export interface AiDealTargetView {
   closeReasons?: { won: Array<{ key: string; label: string }>; lost: Array<{ key: string; label: string }> }
 }
 
+/** F11 (SCRUM-886): uma passagem do histórico do registro (`GET /deals/:id/history`), já com rótulos. */
+export interface DealStageHistoryEntry {
+  id: string
+  fromStageId: string | null
+  fromStageLabel: string | null
+  toStageId: string
+  toStageLabel: string | null
+  movedByKind: DealMovedByKind
+  movedByActorName: string | null
+  createdAt: string
+}
+
 /** Pipeline de negócio (múltiplos por tenant). O `isDefault` é o pipeline padrão. */
 export interface Pipeline {
   id: string

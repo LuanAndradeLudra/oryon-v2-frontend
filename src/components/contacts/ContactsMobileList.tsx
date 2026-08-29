@@ -26,7 +26,6 @@ function ContactCard({
   stageColor,
   stageLabel,
   onClick,
-  onOpenDeals,
 }: {
   contact: Contact
   stageColor?: string
@@ -130,15 +129,15 @@ function ContactCard({
           </div>
         )}
 
-        {/* Linha 7: negócios por funil — paridade com ContactRow (desktop) */}
-        <DealsSummaryChips contact={contact} onOpenDeals={onOpenDeals} />
+        {/* Linha 7: chips "Funil · Etapa" por registro aberto (F11-884) — paridade com ContactRow (desktop) */}
+        <DealsSummaryChips contact={contact} />
       </div>
       <ChevronRight className="w-4 h-4 text-surface-600 flex-shrink-0 self-center" />
     </div>
   )
 }
 
-export function ContactsMobileList({ contacts, loading, onOpenPanel, onOpenDeals, hasMore, loadingMore, onLoadMore }: ContactsMobileListProps) {
+export function ContactsMobileList({ contacts, loading, onOpenPanel, hasMore, loadingMore, onLoadMore }: ContactsMobileListProps) {
   const { stages } = useCRMConfig()
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -171,7 +170,6 @@ export function ContactsMobileList({ contacts, loading, onOpenPanel, onOpenDeals
               stageColor={stage?.color}
               stageLabel={stage?.label}
               onClick={() => onOpenPanel(contact)}
-              onOpenDeals={onOpenDeals}
             />
           )
         }}

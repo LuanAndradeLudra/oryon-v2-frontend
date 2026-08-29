@@ -19,6 +19,7 @@ import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 
 import { ContactProfileHeader } from '@/components/contacts/profile/ContactProfileHeader'
 import { ContactProfileLayout } from '@/components/contacts/profile/ContactProfileLayout'
+import { ContactPipelinesSection } from '@/components/contacts/profile/ContactPipelinesSection'
 import { ContactTimeline } from '@/components/contacts/profile/ContactTimeline'
 import { TimelineComposer } from '@/components/contacts/profile/TimelineComposer'
 import { NextActionPanel } from '@/components/contacts/profile/NextActionPanel'
@@ -385,6 +386,10 @@ export function ContactProfilePage() {
               // Em <xl, os painéis de contexto (leitura) entram DEPOIS do
               // acordeão — os cards editáveis são o trabalho primário.
               <div className="flex flex-col gap-4 min-h-full">
+                {/* F11 (SCRUM-885, prancheta 7): "Funis · N abertos" no topo, logo
+                    abaixo do cabeçalho — a visão consolidada por funil. Só existe
+                    com o flag (o componente some sozinho sem ele). */}
+                <ContactPipelinesSection contactId={contactId} contactName={contact.displayName} className="shrink-0" />
                 {/* Painel acordeão. A classe `profile-accordion` eleva os
                     cards internos para surface-800 (overlay sobre o painel
                     surface-900) via index.css — escopado à página, sem tocar
