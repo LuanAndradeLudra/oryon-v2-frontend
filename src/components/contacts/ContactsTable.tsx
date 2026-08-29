@@ -39,12 +39,12 @@ export function ContactsTable({
   loadingMore,
   onLoadMore,
 }: ContactsTableProps) {
-  // Gate de múltiplos funis (SCRUM-498): a coluna "Negócios" (chips por
-  // funil) só existe com o flag — `ContactRow` omite a célula em paralelo.
+  // Gate de múltiplos funis (SCRUM-498): a coluna "Funis" (chips "Funil ·
+  // Etapa", F11-884) só existe com o flag — `ContactRow` omite a célula em paralelo.
   const multiPipeline = useMultiPipeline()
   const columns = [
     'Contato', 'Estágio', 'Score', 'Intenção', 'Sentimento', 'Tags',
-    ...(multiPipeline ? ['Negócios'] : []),
+    ...(multiPipeline ? ['Funis'] : []),
     'Fonte', 'Último contato', 'Opt-in', '',
   ]
   // +1 = coluna do checkbox de seleção.
