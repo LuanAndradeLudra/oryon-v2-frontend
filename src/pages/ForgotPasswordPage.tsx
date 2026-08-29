@@ -2,10 +2,9 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import axios from 'axios'
 import { Banner } from '@/components/ui/Banner'
+import { api, SKIP_AUTH_REFRESH } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -19,7 +18,7 @@ export function ForgotPasswordPage() {
     setError('')
     setLoading(true)
     try {
-      await axios.post(`${API}/auth/forgot-password`, { email: email.trim() })
+      await api.post('/auth/forgot-password', { email: email.trim() }, SKIP_AUTH_REFRESH)
       setSent(true)
     } catch {
       setError('Erro ao enviar o e-mail. Tente novamente.')

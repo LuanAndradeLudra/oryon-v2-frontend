@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import axios from 'axios'
 import {
   MessageSquare, Users, BarChart3, Settings,
   Clock, CheckCircle2, Inbox, CreditCard, Smartphone,
@@ -18,8 +17,8 @@ import { isFeatureVisible } from '@/config/featureFlags'
 import { cn, getInitials } from '@/lib/utils'
 import { WorkspaceReadinessBanner } from '@/components/common/WorkspaceReadinessBanner'
 import type { AuditLog, Conversation, HomeStats, User, WhatsAppNumberDetailed } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -479,7 +478,7 @@ function WhatsAppNumbersCard() {
 
   useEffect(() => {
     axios
-      .get<WhatsAppNumberDetailed[]>(`${API}/whatsapp/numbers`)
+      .get<WhatsAppNumberDetailed[]>('/whatsapp/numbers')
       .then((w) => setWaNumbers(Array.isArray(w.data) ? w.data : []))
       .catch(() => setWaNumbers([]))
   }, [])
@@ -591,7 +590,7 @@ function SupervisorBlock() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    axios.get(`${API}/conversations`, { params: { assignedTo: 'unassigned', status: 'open' } })
+    api.get('/conversations', { params: { assignedTo: 'unassigned', status: 'open' } })
       .then((r) => { const list = Array.isArray(r.data?.data) ? r.data.data : Array.isArray(r.data) ? r.data : []; setQueue(list.slice(0, 5)); setLoading(false) })
       .catch(() => { setQueue([]); setLoading(false) })
   }, [])
@@ -647,7 +646,7 @@ function AgentBlock() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    axios.get(`${API}/conversations`, { params: { assignedTo: 'me', status: 'open' } })
+    api.get('/conversations', { params: { assignedTo: 'me', status: 'open' } })
       .then((r) => { const list = Array.isArray(r.data?.data) ? r.data.data : Array.isArray(r.data) ? r.data : []; setConvs(list.slice(0, 5)); setLoading(false) })
       .catch(() => { setConvs([]); setLoading(false) })
   }, [])
@@ -717,10 +716,10 @@ export function HomePage() {
       avgResponseMinutes: 0, queueCount: 0, planUsed: 0, planLimit: 0,
       myConversationsOpen: 0, myConversationsResolvedToday: 0, myAvgResponseMinutes: 0, myMessagesSentToday: 0,
     }
-    axios.get<HomeStats>(`${API}/home/stats`)
+    api.get<HomeStats>('/home/stats')
       .then((r) => setStats(r.data))
       .catch(() => setStats(fallbackStats))
-    axios.get<{ data: AuditLog[] }>(`${API}/audit-logs`, { params: { limit: 8 } })
+    api.get<{ data: AuditLog[] }>('/audit-logs', { params: { limit: 8 } })
       .then((r) => { setLogs(Array.isArray(r.data?.data) ? r.data.data : []); setLogsLoading(false) })
       .catch(() => { setLogs([]); setLogsLoading(false) })
   }, [])

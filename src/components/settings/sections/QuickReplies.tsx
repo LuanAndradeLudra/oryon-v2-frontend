@@ -92,7 +92,6 @@ function QuickReplyRow({
   )
 }
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 function errorMessage(e: unknown, fallback: string): string {
   if (axios.isAxiosError(e)) {
@@ -138,11 +137,11 @@ export function QuickReplies() {
   const handleSave = async (data: { shortcut: string; title: string; body: string }) => {
     try {
       if (editTarget) {
-        const r = await axios.patch<CannedResponse>(`${API}/canned-responses/${editTarget.id}`, data)
+        const r = await api.patch<CannedResponse>(`/canned-responses/${editTarget.id}`, data)
         setResponses((prev) => prev.map((x) => x.id === editTarget.id ? r.data : x))
         toast('Resposta atualizada.', 'success')
       } else {
-        const r = await axios.post<CannedResponse>(`${API}/canned-responses`, data)
+        const r = await api.post<CannedResponse>('/canned-responses', data)
         setResponses((prev) => [...prev, r.data])
         toast('Resposta criada!', 'success')
       }
@@ -156,7 +155,7 @@ export function QuickReplies() {
   const handleDelete = async () => {
     if (!deleteTarget) return
     try {
-      await axios.delete(`${API}/canned-responses/${deleteTarget.id}`)
+      await api.delete(`/canned-responses/${deleteTarget.id}`)
       setResponses((prev) => prev.filter((x) => x.id !== deleteTarget.id))
       toast('Resposta excluída.', 'success')
       setDeleteTarget(null)

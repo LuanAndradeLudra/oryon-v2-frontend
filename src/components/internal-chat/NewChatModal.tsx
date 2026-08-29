@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { X, Search, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import axios from 'axios'
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import { PresenceDot } from './PresenceDot'
 import type { User } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 interface NewChatModalProps {
   currentUserId: string
@@ -21,7 +20,7 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
   const [opening, setOpening] = useState<string | null>(null)
 
   useEffect(() => {
-    axios.get<User[]>(`${API}/users`)
+    api.get<User[]>('/users')
       .then((r) => setUsers(r.data.filter((u) => u.id !== currentUserId)))
       .catch(() => setUsers([]))
       .finally(() => setLoading(false))

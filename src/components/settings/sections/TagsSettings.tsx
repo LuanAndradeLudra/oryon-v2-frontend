@@ -1,6 +1,5 @@
 import { useCallback, useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2, Check, X, Copy, Tag as TagIcon } from 'lucide-react'
-import axios from 'axios'
 import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -16,8 +15,8 @@ import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import type { Tag } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 // Simulated usage count
 const TAG_USAGE: Record<string, number> = {
@@ -119,7 +118,7 @@ export function TagsSettings() {
 
   useEffect(() => {
     setFetchError(false)
-    axios.get<{ data: Tag[] } | Tag[]>(`${API}/tags`).then((r) => {
+    api.get<{ data: Tag[] } | Tag[]>('/tags').then((r) => {
       setTags(Array.isArray(r.data) ? r.data : r.data.data)
       setLoading(false)
     }).catch(() => {
@@ -132,7 +131,7 @@ export function TagsSettings() {
     if (!newName.trim()) return
     setSaving(true)
     try {
-      const r = await axios.post<Tag>(`${API}/tags`, { name: newName.trim(), color: newColor })
+      const r = await api.post<Tag>('/tags', { name: newName.trim(), color: newColor })
       setTags((t) => [...t, r.data])
       setNewName('')
       setNewColor(DEFAULT_ENTITY_COLOR)
@@ -156,7 +155,7 @@ export function TagsSettings() {
     if (!editTarget || !editName.trim()) return
     setSaving(true)
     try {
-      const r = await axios.patch<Tag>(`${API}/tags/${editTarget.id}`, { name: editName.trim(), color: editColor })
+      const r = await api.patch<Tag>(`/tags/${editTarget.id}`, { name: editName.trim(), color: editColor })
       setTags((t) => t.map((x) => x.id === editTarget.id ? r.data : x))
       setEditTarget(null)
       toast('Tag atualizada.', 'success')
@@ -171,7 +170,7 @@ export function TagsSettings() {
   const handleDelete = async () => {
     if (!deleteTarget) return
     try {
-      await axios.delete(`${API}/tags/${deleteTarget.id}`)
+      await api.delete(`/tags/${deleteTarget.id}`)
       setTags((t) => t.filter((x) => x.id !== deleteTarget.id))
       toast('Tag excluída.', 'success')
     } catch (err: any) {
