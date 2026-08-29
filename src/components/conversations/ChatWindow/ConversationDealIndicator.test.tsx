@@ -8,7 +8,7 @@ const { api, socket } = vi.hoisted(() => ({
   api: { list: vi.fn() },
   socket: { on: vi.fn(), off: vi.fn() },
 }))
-vi.mock('@/services/api', () => ({ dealsApi: api, pipelineRoutingApi: { list: vi.fn().mockResolvedValue({ data: [] }) } }))
+vi.mock('@/services/api', () => ({ dealsApi: api }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => true }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
@@ -56,5 +56,18 @@ describe('ConversationDealIndicator (F10-883)', () => {
     await waitFor(() => expect(screen.getByTestId('deal-chip-closed')).toHaveTextContent('Vendas · Ganho'))
     expect(screen.getByLabelText('Fechado como ganho')).toBeInTheDocument()
     expect(api.list).toHaveBeenCalledTimes(2)
+  })
+
+  it('F11-887: destaque é o registro que nasceu nesta conversa (sem consultar roteamento)', async () => {
+    api.list.mockResolvedValueOnce({ data: [
+      { ...base, id: 'other', pipelineId: 'p' },
+      { ...base, id: 'mine', originConversationId: 'conv-1' },
+    ] })
+    render(<ConversationDealIndicator contactId="c1" whatsappNumberId="wa-1" conversationId="conv-1" />)
+    await waitFor(() => expect(screen.getAllByTestId('deal-chip-open')).toHaveLength(2))
+    const chips = screen.getAllByTestId('deal-chip-open')
+    expect(chips[0]).toHaveAttribute('data-origin', 'true')
+    expect(chips[0].getAttribute('title')).toContain('registro desta conversa')
+    expect(chips[1]).not.toHaveAttribute('data-origin')
   })
 })
