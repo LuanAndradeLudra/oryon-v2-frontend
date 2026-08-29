@@ -18,7 +18,9 @@ export function ForgotPasswordPage() {
     setError('')
     setLoading(true)
     try {
-      await api.post('/auth/forgot-password', { email: email.trim() }, SKIP_AUTH_REFRESH)
+      // `withCredentials` é redundante (a instância já traz), mas é o que dá ao
+      // literal uma propriedade de AxiosRequestConfig — mesmo padrão do AuthContext.
+      await api.post('/auth/forgot-password', { email: email.trim() }, { withCredentials: true, ...SKIP_AUTH_REFRESH })
       setSent(true)
     } catch {
       setError('Erro ao enviar o e-mail. Tente novamente.')
