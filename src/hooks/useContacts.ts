@@ -135,7 +135,7 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
     }
   }, [contacts])
 
-  const createContact = useCallback(async (dto: Partial<Contact> & { displayName: string; waId: string }) => {
+  const createContact = useCallback(async (dto: Partial<Contact> & { displayName: string; waId: string; pipelineId?: string; pipelineStageId?: string }) => {
     const res = await contactsApi.create(dto)
     setContacts((prev) => [res.data, ...prev])
     setTotal((t) => t + 1)
