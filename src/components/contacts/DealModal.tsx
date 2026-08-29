@@ -136,7 +136,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     }
   }, [open, editDeal, pipelines, pipelineId, initialPipelineId])
 
-  // "Estágio do funil" — eixo distinto do "Estágio do contato" (ciclo de
+  // "Etapa do funil" — eixo distinto da "Situação do contato" (ciclo de
   // vida, seletor "Mover contato para" abaixo). Reativo à troca de funil: se
   // o estágio selecionado não existe mais no funil atual (trocou de funil,
   // ou é a primeira carga), recai pro 1º estágio não-terminal dele. Só se
@@ -354,7 +354,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                   ))}
                 </Select>
               </FormField>
-              {/* Estágio do FUNIL — eixo distinto do "Estágio do contato"
+              {/* Etapa do FUNIL — eixo distinto da "Situação do contato"
                   abaixo (ciclo de vida). Reativo ao funil escolhido acima. */}
               {multiPipeline && (
               <FormField label="Estágio do funil" hint="Coluna do board em que o negócio nasce.">
@@ -371,7 +371,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             </>
           )}
           {status === 'won' && (
-            <FormField label="Estágio do contato (opcional)" hint="Ao ganhar, move o contato a este estágio de ciclo de vida.">
+            <FormField label="Situação do contato (opcional)" hint="Ao ganhar, move o contato para esta situação do ciclo de vida.">
               <Select value={moveStageKey} onChange={(e) => setMoveStageKey(e.target.value)}>
                 <option value="">— não mover —</option>
                 {stages.map((s) => (

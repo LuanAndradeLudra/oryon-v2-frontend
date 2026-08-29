@@ -53,6 +53,37 @@ export function fallbackStages(kind: PipelineKind): DraftStage[] {
   ]
 }
 
+/**
+ * Etapas sugeridas pela IA (F13-904) viram rascunho editável: só as **normais**
+ * vêm da sugestão; os dois terminais continuam sendo os do tipo, porque a
+ * invariante I2 é do funil, não da opinião do modelo. Sugestões terminais
+ * (rótulos de ganho/perdido) são descartadas para não duplicar o terminal.
+ *
+ * Limite de 8 normais: acima disso o board vira scroll horizontal infinito e
+ * ninguém usa — a sugestão é ponto de partida, não verdade.
+ */
+export function stagesFromAiSuggestion(
+  suggested: ReadonlyArray<{ label: string; color?: string; isTerminal?: boolean }>,
+  kind: PipelineKind,
+): DraftStage[] {
+  const labels = pipelineKindOption(kind).terminalLabels
+  const normals = suggested
+    .filter((s) => !s.isTerminal && typeof s.label === 'string' && s.label.trim().length > 0)
+    .slice(0, 8)
+    .map((s, i) => ({
+      id: nextDraftId(),
+      label: s.label.trim().slice(0, 60),
+      color: s.color || NEW_STAGE_COLORS[i % NEW_STAGE_COLORS.length],
+      role: 'normal' as const,
+    }))
+  if (normals.length === 0) return fallbackStages(kind)
+  return [
+    ...normals,
+    { id: nextDraftId(), label: labels.won, color: '#10b981', role: 'won' },
+    { id: nextDraftId(), label: labels.lost, color: '#ef4444', role: 'lost' },
+  ]
+}
+
 /** Modelo a pré-selecionar para um tipo: o `isDefault` do tipo, senão o primeiro. */
 export function defaultTemplateFor(templates: ReadonlyArray<PipelineTemplate>, kind: PipelineKind): PipelineTemplate | null {
   const ofKind = templates.filter((t) => t.kind === kind)

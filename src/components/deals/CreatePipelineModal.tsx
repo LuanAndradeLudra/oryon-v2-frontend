@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, X, GripVertical, Lock, Check, Trophy, Loader2 } from 'lucide-react'
+import { Plus, X, GripVertical, Lock, Check, Trophy, Loader2, Sparkles } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
@@ -12,6 +12,8 @@ import { getApiErrorMessage, cn } from '@/lib/utils'
 import { PIPELINE_KIND_OPTIONS, pipelineKindOption, pipelineKindOf, DEFAULT_PIPELINE_KIND } from '@/lib/pipelineKinds'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { pipelinesApi } from '@/services/api'
+import { loadHubAsync } from '@/services/companyContextService'
+import { generateCRMConfig, parseStreamResult, businessContextFromHub } from '@/services/anthropicService'
 import type { CreatePipelineStageInput, Pipeline, PipelineKind, PipelineTemplate } from '@/types'
 import {
   type DraftStage,
@@ -25,6 +27,7 @@ import {
   renameStage,
   recolorStage,
   reorderNormalStages,
+  stagesFromAiSuggestion,
   NEW_STAGE_COLORS,
   createBlocker,
   CREATE_BLOCKER_HINT,
@@ -51,6 +54,10 @@ interface CreatePipelineModalProps {
   onSave: (data: CreatePipelineData) => Promise<void>
   /** Presente = edita este pipeline (renomear/cor) em vez de criar um novo. O tipo é imutável. */
   editPipeline?: Pipeline | null
+  /** Tenant do usuário — chave de cache do Hub, usada só pelo "Sugerir etapas
+   *  com IA" (F13-904). Vem por prop, e não de `useAuth`, para o modal seguir
+   *  renderizável sem provider (é um componente de formulário, não de sessão). */
+  tenantId?: string
 }
 
 /**
@@ -66,7 +73,7 @@ interface CreatePipelineModalProps {
  * Edição (`editPipeline`): só nome/cor — o tipo é imutável após a criação
  * (mudar o tipo de um funil com registros trocaria o vocabulário do histórico).
  */
-export function CreatePipelineModal({ open, onClose, onSave, editPipeline }: CreatePipelineModalProps) {
+export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenantId }: CreatePipelineModalProps) {
   const [name, setName] = useState('')
   const [color, setColor] = useState(DEFAULT_ENTITY_COLOR)
   const [kind, setKind] = useState<PipelineKind>(DEFAULT_PIPELINE_KIND)
@@ -76,6 +83,11 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline }: Cre
   const [stages, setStages] = useState<DraftStage[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // F13-904: a geração de etapas por IA saiu do onboarding e veio para cá —
+  // é aqui que ela faz sentido (o usuário está criando UM funil, com nome e
+  // tipo já escolhidos), e o resultado é rascunho editável, não configuração
+  // aplicada às escondidas.
+  const [suggesting, setSuggesting] = useState(false)
 
   const isEdit = !!editPipeline
 
@@ -133,6 +145,27 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline }: Cre
     setKind(nextKind)
     const def = defaultTemplateFor(templates ?? [], nextKind)
     applyTemplate(def?.key ?? '', nextKind)
+  }
+
+  /** Sugere etapas a partir do contexto da empresa (Hub). Substitui as normais
+   *  do rascunho; os terminais do tipo continuam onde estavam. Falha é aviso,
+   *  não bloqueio — o modelo escolhido segue valendo. */
+  const handleSuggest = async () => {
+    setSuggesting(true)
+    setError('')
+    try {
+      const hub = await loadHubAsync(tenantId)
+      const result = await parseStreamResult(
+        generateCRMConfig(businessContextFromHub(hub, name)),
+      )
+      const draft = stagesFromAiSuggestion(result.stages ?? [], kind)
+      setStages(draft)
+      setTemplateKey('')
+    } catch {
+      setError('Não foi possível sugerir etapas agora. Escolha um modelo ou monte a lista à mão.')
+    } finally {
+      setSuggesting(false)
+    }
   }
 
   const normals = normalStages(stages)
@@ -254,6 +287,17 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline }: Cre
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-xs font-semibold text-surface-400">Etapas</span>
+              <button
+                type="button"
+                onClick={handleSuggest}
+                disabled={suggesting || loadingTemplates}
+                data-testid="suggest-stages-ai"
+                className="inline-flex items-center gap-1.5 text-xs text-brand-400 hover:text-brand-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {suggesting
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sugerindo…</>
+                  : <><Sparkles className="w-3.5 h-3.5" /> Sugerir etapas com IA</>}
+              </button>
               {templatesOfKind.length > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-surface-500">Modelo:</span>

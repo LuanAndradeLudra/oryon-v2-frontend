@@ -930,11 +930,13 @@ export function ContactsPage() {
 
       {/* Funis de negócio (múltiplos pipelines) */}
       <CreatePipelineModal
+        tenantId={user?.tenantId}
         open={createPipelineModalOpen}
         onClose={() => setCreatePipelineModalOpen(false)}
         onSave={handleCreatePipeline}
       />
       <CreatePipelineModal
+        tenantId={user?.tenantId}
         open={editPipelineModalOpen}
         onClose={() => setEditPipelineModalOpen(false)}
         onSave={handleEditPipeline}

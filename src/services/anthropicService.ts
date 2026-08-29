@@ -1,6 +1,9 @@
-// ─── Anthropic Service — CRM onboarding bridge ────────────────────────────────
-// All AI calls go through the Agent Server. This file is the thin client for
-// the onboarding wizard (used by useOnboarding).
+// ─── Anthropic Service — sugestão de etapas por IA ────────────────────────────
+// Toda chamada de IA passa pelo Agent Server. Este arquivo é o cliente fino.
+// Até a F13 quem usava era o wizard de onboarding (via `useOnboarding`), que
+// gerava a configuração inteira do CRM às escondidas. Agora quem usa é o
+// "Sugerir etapas com IA" do modal de Novo funil (F13-904): mesma rota do
+// agent-server, mas o resultado vira rascunho editável de UM funil.
 
 import axios from 'axios'
 
@@ -39,6 +42,46 @@ export interface BusinessContext {
   [key: string]: unknown
 }
 
+/** Campos do `BusinessContext` que o Hub da empresa não coleta. Ficam vazios —
+ *  o agent-server trata ausência, e inventar valor aqui enviesaria a sugestão. */
+const EMPTY_CONTEXT_FIELDS = {
+  experienceLevel: '',
+  crmExperience: '',
+  revenueRange: '',
+  productDescription: '',
+  acquisitionChannels: [] as string[],
+  salesCycleDuration: '',
+  averageTicket: '',
+  salesChallenges: [] as string[],
+  salesProcessDescription: '',
+  trackingPriorities: [] as string[],
+  crmGoals: [] as string[],
+  additionalContext: '',
+}
+
+/**
+ * Traduz o Hub da empresa (o que o wizard coleta hoje) para o contexto que o
+ * agent-server espera. Função pura de propósito: é o único ponto onde os dois
+ * formatos se encontram, e dá para testar sem rede.
+ */
+export function businessContextFromHub(
+  hub: {
+    companyName: string; industry: string; businessType: string[]
+    teamSize: string; description: string; productsServices: string
+  },
+  fallbackName = '',
+): BusinessContext {
+  return {
+    ...EMPTY_CONTEXT_FIELDS,
+    companyName: hub.companyName?.trim() || fallbackName.trim(),
+    industry: hub.industry ?? '',
+    businessType: hub.businessType ?? [],
+    teamSize: hub.teamSize ?? '',
+    companyDescription: hub.description ?? '',
+    productsServices: hub.productsServices ?? '',
+  }
+}
+
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert'
 
 export type CRMExperience = 'never' | 'tried' | 'active' | 'manager'
@@ -68,10 +111,7 @@ export interface CRMConfigResult {
  * streaming-style API used by `parseStreamResult` — though today the
  * agent-server returns the full JSON in a single response (not streamed).
  */
-export async function* generateCRMConfig(
-  context: BusinessContext,
-  _pdfDocs?: unknown[],
-): AsyncGenerator<string> {
+export async function* generateCRMConfig(context: BusinessContext): AsyncGenerator<string> {
   if (!AGENT_SERVER_URL) {
     throw new Error('VITE_AGENT_SERVER_URL is not set — cannot generate CRM setup')
   }

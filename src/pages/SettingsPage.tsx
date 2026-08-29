@@ -32,11 +32,12 @@ import { ProductsManager }     from '@/components/settings/sections/crm/Products
 import { PractitionersManager } from '@/components/settings/sections/crm/PractitionersManager'
 import { PipelineRoutingSettings } from '@/components/settings/sections/crm/PipelineRoutingSettings'
 import { PipelineStagesSettings } from '@/components/settings/sections/crm/PipelineStagesSettings'
+import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health', 'whatsapp-profile',
   'quick-replies', 'tags', 'billing', 'security', 'ad-accounts', 'vertical',
-  'audit', 'crm-products', 'crm-practitioners', 'pipeline-stages', 'pipeline-routing',
+  'audit', 'crm-products', 'crm-practitioners', 'stages', 'pipeline-stages', 'pipeline-routing',
 ]
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
@@ -90,6 +91,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   audit:            AuditTrail,
   'crm-products':   ProductsManager,
   'crm-practitioners': PractitionersManager,
+  stages:           ContactStagesSettings,
   'pipeline-stages': PipelineStagesSettings,
   'pipeline-routing': PipelineRoutingSettings,
 }

@@ -38,6 +38,7 @@ const SEARCH_KEYWORDS: Record<string, string[]> = {
   vertical:            ['vocabulário', 'nicho', 'segmento', 'crm', 'funil'],
   'crm-products':      ['produtos', 'catálogo', 'preço', 'itens'],
   'crm-practitioners':  ['profissionais', 'médicos', 'equipe técnica'],
+  stages:              ['situação do contato', 'estágios do contato', 'lead', 'cliente', 'ciclo de vida'],
   'pipeline-stages':   ['funil', 'estágios', 'pipeline', 'negócios', 'deals'],
   'pipeline-routing':  ['roteamento', 'funil', 'linha', 'canal'],
   billing:             ['plano', 'fatura', 'cobrança', 'pagamento', 'assinatura'],
@@ -127,6 +128,9 @@ export const SETTINGS_NAV: NavDomain[] = [
         items: [
           { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
           { section: 'crm-practitioners', label: 'Profissionais',         adminOnly: true },
+          // F13-903: a situação do contato ganha seção própria — o wizard apontava
+          // para uma tela que não existia. Vale para todo tenant (não é do funil).
+          { section: 'stages',            label: 'Situação do contato',   adminOnly: true },
           { section: 'pipeline-stages',   label: 'Estágios do funil',     adminOnly: true, multiPipelineOnly: true },
           // F11-888: roteamento congelado (Modelo B) — sai do menu; rota mantida oculta até a remoção física.
           { section: 'pipeline-routing',  label: 'Roteamento por canal',  adminOnly: true, multiPipelineOnly: true, hidden: true },

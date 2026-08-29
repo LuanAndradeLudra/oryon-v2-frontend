@@ -43,7 +43,7 @@ export function ContactsTable({
   // Etapa", F11-884) só existe com o flag — `ContactRow` omite a célula em paralelo.
   const multiPipeline = useMultiPipeline()
   const columns = [
-    'Contato', 'Estágio', 'Score', 'Intenção', 'Sentimento', 'Tags',
+    'Contato', 'Situação', 'Score', 'Intenção', 'Sentimento', 'Tags',
     ...(multiPipeline ? ['Funis'] : []),
     'Fonte', 'Último contato', 'Opt-in', '',
   ]
