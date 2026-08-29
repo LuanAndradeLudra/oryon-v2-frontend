@@ -1,7 +1,7 @@
-import { useId, isValidElement, cloneElement, type ReactNode, type ReactElement } from 'react'
+import { isValidElement, cloneElement, type ReactNode, type ReactElement } from 'react'
 import { cn } from '@/lib/utils'
 import { ComingSoonBadge } from './ComingSoonBadge'
-import { FormFieldContext, type FormFieldAria } from './formField.context'
+import { FormFieldContext, useFieldAria } from './formField.context'
 
 interface FormFieldProps {
   label: string
@@ -45,22 +45,11 @@ const HOST_FIELDS = new Set(['input', 'select', 'textarea'])
  * (componente próprio, fragmento, lista) segue pelo contexto.
  */
 export function FormField({ label, error, hint, required, requirement, filled, comingSoon, className, id, children }: FormFieldProps) {
-  const reactId = useId()
-  const fieldId = id ?? `${reactId}-field`
-  const hintId = `${reactId}-hint`
-  const errorId = `${reactId}-error`
-
-  // O erro substitui o hint na tela (o hint só aparece sem erro), então só um
-  // dos dois é descrito por vez — descrever os dois anunciaria texto invisível.
-  const describedBy = error ? errorId : hint ? hintId : undefined
   const isRequired = required || requirement === 'required'
-
-  const aria: FormFieldAria = {
-    id: fieldId,
-    describedBy,
-    invalid: !!error,
-    required: isRequired,
-  }
+  // Mesma plumbing usada pelos invólucros de campo próprios de outras telas
+  // (`useFieldAria`) — uma implementação da semântica, vários visuais.
+  const { fieldId, hintId, errorId, aria } = useFieldAria({ id, hint, error, required: isRequired })
+  const describedBy = aria.describedBy
 
   // Campo nativo como filho direto: recebe os atributos sem depender de
   // contexto. Restrito a input/select/textarea de propósito — pôr o `id` num

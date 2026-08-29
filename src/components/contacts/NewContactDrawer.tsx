@@ -11,6 +11,9 @@ import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { tagsApi } from '@/services/api'
 import type { Contact, ContactSource, Tag, Pipeline } from '@/types'
+import { Input } from '@/components/ui/Input'
+import { PhoneField } from '@/components/ui/PhoneField'
+import { FormFieldContext, useFieldAria } from '@/components/ui/formField.context'
 
 const SOURCE_OPTIONS: { value: ContactSource; label: string }[] = [
   { value: 'whatsapp',  label: 'WhatsApp' },
@@ -37,11 +40,29 @@ interface NewContactDrawerProps {
 
 // ─── Field wrapper ─────────────────────────────────────────────────────────────
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+/**
+ * Invólucro de campo com a linguagem visual deste drawer (rótulo em peso médio,
+ * selo Obrigatório/Opcional como chip à direita) — diferente do `FormField` do
+ * DS de propósito.
+ *
+ * A **semântica** vem do mesmo lugar que a do `FormField` (`useFieldAria`): o
+ * rótulo aponta para o campo, hint e erro são anunciados, obrigatório vira
+ * `aria-required`. Só a casca é local. Os campos filhos precisam ser primitivos
+ * do DS (`Input`, `PhoneField`, `Select`) para lerem o contexto.
+ */
+function Field({ label, required, hint, error, children }: {
+  label: string
+  required?: boolean
+  hint?: string
+  error?: string
+  children: React.ReactNode
+}) {
+  const { fieldId, hintId, errorId, aria } = useFieldAria({ hint, error, required })
   return (
+    <FormFieldContext.Provider value={aria}>
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <label className="text-xs font-medium text-surface-300">{label}</label>
+        <label htmlFor={fieldId} className="text-xs font-medium text-surface-300">{label}</label>
         {required
           ? (
             <span
@@ -55,7 +76,10 @@ function Field({ label, required, children }: { label: string; required?: boolea
         }
       </div>
       {children}
+      {hint && !error && <p id={hintId} className="text-[11px] text-surface-600">{hint}</p>}
+      {error && <p id={errorId} role="alert" className="text-[11px] text-red-400">{error}</p>}
     </div>
+    </FormFieldContext.Provider>
   )
 }
 
@@ -323,33 +347,36 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                   Identificação
                 </p>
                 <div className="space-y-3">
-                  <Field label="Nome" required>
+                  <Field label="Nome" required error={errors.displayName}>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-                      <input
+                      <Input
                         value={displayName}
                         onChange={(e) => { setDisplayName(e.target.value); setErrors((v) => ({ ...v, displayName: undefined })) }}
                         placeholder="Ex: João da Silva"
-                        className={cn(inputCls(!!errors.displayName), 'pl-9')}
+                        maxLength={120}
+                        className="pl-9"
                       />
                     </div>
-                    {errors.displayName && <p className="text-[11px] text-red-400">{errors.displayName}</p>}
                   </Field>
 
-                  <Field label="WhatsApp (número)" required>
+                  {/* O formato deixou de viver só no placeholder: a máscara
+                      formata enquanto se digita e o hint fica na tela. O estado
+                      (`waId`) continua recebendo só dígitos. */}
+                  <Field
+                    label="WhatsApp (número)"
+                    required
+                    error={errors.waId}
+                    hint="Código do país + DDD + número — ex.: 55 11 99988-7766."
+                  >
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-                      <input
+                      <PhoneField
                         value={waId}
-                        onChange={(e) => { setWaId(e.target.value); setErrors((v) => ({ ...v, waId: undefined })) }}
-                        placeholder="5511999887766"
-                        className={cn(inputCls(!!errors.waId), 'pl-9 font-mono')}
+                        onChange={(digits) => { setWaId(digits); setErrors((v) => ({ ...v, waId: undefined })) }}
+                        className="pl-9 font-mono"
                       />
                     </div>
-                    {errors.waId
-                      ? <p className="text-[11px] text-red-400">{errors.waId}</p>
-                      : <p className="text-[11px] text-surface-600">Código do país + DDD + número, ex: 5511999887766</p>
-                    }
                   </Field>
 
                   <Field label="E-mail">
