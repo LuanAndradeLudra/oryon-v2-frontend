@@ -164,7 +164,7 @@ function StageCard({
         <div className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 border border-surface-700">
           <TrendingUp className="w-3 h-3 text-brand-400" />
         </div>
-        <p className="text-[11px] text-surface-500">Estágio predominante</p>
+        <p className="text-[11px] text-surface-500">Situação predominante</p>
       </div>
 
       <div className="flex items-end justify-between gap-3">

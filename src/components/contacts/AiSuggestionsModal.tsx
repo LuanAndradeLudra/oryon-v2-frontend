@@ -139,7 +139,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                 {suggestions.qualification.stage != null && (
                   <EditableRow
                     id="q.stage"
-                    label="Estágio"
+                    label="Situação"
                     enabled={!!enabled['q.stage']}
                     onToggle={() => toggle('q.stage')}
                     editor={

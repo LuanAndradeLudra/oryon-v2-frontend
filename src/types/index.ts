@@ -429,25 +429,6 @@ export interface ContactDealsSummary {
   byPipeline: ContactDealsPipelineSummary[]
 }
 
-// ─── AI Onboarding ────────────────────────────────────────────────────────────
-
-export interface AIOnboardingConfig {
-  stages: Array<{
-    label: string
-    color: string
-    order: number
-    isTerminal: boolean
-  }>
-  customFields: Array<{
-    label: string
-    type: CustomFieldType
-    placeholder?: string
-    required: boolean
-    order: number
-    options?: string[]
-  }>
-}
-
 export type ContactHistoryEventType =
   | 'ai_update' | 'stage_change' | 'manual_edit' | 'tag_added'
   | 'tag_removed' | 'campaign_added' | 'conversation_opened'

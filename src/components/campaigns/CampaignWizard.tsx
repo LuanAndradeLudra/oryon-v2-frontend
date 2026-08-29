@@ -67,7 +67,7 @@ const SEGMENT_OPTIONS: {
 }[] = [
   { value: 'all',    label: 'Toda a base',       description: 'Todos os contatos cadastrados na sua conta',              icon: Users },
   { value: 'tag',    label: 'Por tags',           description: 'Filtra contatos com uma ou mais tags específicas',         icon: TagIcon },
-  { value: 'stage',  label: 'Estágio do CRM',    description: 'Contatos em determinadas fases do pipeline de vendas',     icon: BarChart2 },
+  { value: 'stage',  label: 'Situação do contato', description: 'Contatos em determinadas situações do ciclo de vida',     icon: BarChart2 },
   { value: 'manual', label: 'Seleção manual',    description: 'Busque e escolha cada contato individualmente',            icon: UserCheck },
   { value: 'filter', label: 'Filtro avançado',   description: 'Combine intenção, origem, opt-in e estágio livremente',   icon: SlidersHorizontal },
 ]

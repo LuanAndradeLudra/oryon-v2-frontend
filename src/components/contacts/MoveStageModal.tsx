@@ -56,16 +56,16 @@ export function MoveStageModal({
     >
       {loadingStages ? (
         <div className="flex items-center justify-center py-10 text-surface-500 text-xs">
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Carregando estágios…
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Carregando situações…
         </div>
       ) : stages.length === 0 ? (
         <p className="text-xs text-surface-500 text-center py-8">
-          Nenhum estágio configurado. Crie estágios em Configurações → CRM.
+          Nenhuma situação configurada. Cadastre em Configurações → CRM → Situação do contato.
         </p>
       ) : (
         <>
           <p className="text-xs text-surface-500 mb-3">
-            Clique no estágio para onde deseja mover o contato.
+            Clique na situação para onde deseja mover o contato.
           </p>
 
           {/* Horizontal kanban — each column has a colored header band and

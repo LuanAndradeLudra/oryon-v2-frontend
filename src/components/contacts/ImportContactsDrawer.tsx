@@ -37,7 +37,7 @@ const TARGET_FIELDS: FieldDef[] = [
   { key: 'company',     label: 'Empresa' },
   { key: 'jobTitle',    label: 'Cargo' },
   { key: 'source',      label: 'Origem' },
-  { key: 'stage',       label: 'Estágio do contato' },
+  { key: 'stage',       label: 'Situação do contato' },
   { key: '__skip__',    label: '— Ignorar coluna —' },
 ]
 
@@ -341,7 +341,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
   }, [open, pipelines, defaultPipelineId, pipelineId])
 
   // "Estágio do funil" — aplica-se a TODOS os negócios criados nesta
-  // importação (eixo distinto da coluna "Estágio do contato" mapeada por
+  // importação (eixo distinto da coluna "Situação do contato" mapeada por
   // linha, ver TARGET_FIELDS). Reativo à troca de funil: se o estágio
   // selecionado não existe mais no funil atual, recai pro 1º não-terminal.
   useEffect(() => {
@@ -861,7 +861,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   {/* Funil + estágio de destino — todo contato importado nasce
                       com um negócio neste funil (mesma regra do "Novo Lead"
                       manual). "Estágio do funil" é a coluna do board em que o
-                      negócio nasce; eixo distinto do "Estágio do contato"
+                      negócio nasce; eixo distinto da "Situação do contato"
                       mapeado por coluna acima (ciclo de vida).
                       Só com o gate de múltiplos funis (SCRUM-498). */}
                   {multiPipeline && (
@@ -898,7 +898,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
                         >
                           {getPipelineStages(pipelines, pipelineId).length === 0 && (
-                            <option value="">Nenhum estágio disponível</option>
+                            <option value="">Nenhuma situação disponível</option>
                           )}
                           {getPipelineStages(pipelines, pipelineId).map((s) => (
                             <option key={s.id} value={s.id}>{s.label}</option>

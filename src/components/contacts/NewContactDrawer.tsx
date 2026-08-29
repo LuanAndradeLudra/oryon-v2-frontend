@@ -433,7 +433,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
 
                   <div className={cn('grid gap-3', multiPipeline ? 'grid-cols-2' : 'grid-cols-1')}>
                     {/* Estágio do FUNIL — coluna do board em que o negócio
-                        nasce. Eixo distinto de "Estágio do contato" abaixo
+                        nasce. Eixo distinto da "Situação do contato" abaixo
                         (ciclo de vida) — modelo híbrido, os dois não se
                         confundem. Reativo ao funil escolhido acima. */}
                     {multiPipeline && pipelineId && (
@@ -445,7 +445,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                           className={cn(inputCls(), 'appearance-none pr-8')}
                         >
                           {getPipelineStages(pipelines, pipelineId).length === 0 && (
-                            <option value="">Nenhum estágio disponível</option>
+                            <option value="">Nenhuma situação disponível</option>
                           )}
                           {getPipelineStages(pipelines, pipelineId).map((s) => (
                             <option key={s.id} value={s.id}>{s.label}</option>
@@ -456,7 +456,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                     </Field>
                     )}
 
-                    <Field label="Estágio do contato">
+                    <Field label="Situação do contato">
                       <div className="relative">
                         <select
                           value={stage}
