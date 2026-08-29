@@ -10,6 +10,7 @@ import { pipelinesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { getApiErrorMessage, getDefaultPipeline, cn } from '@/lib/utils'
+import { pipelineKindOption, pipelineKindOf, terminalLabelsOf } from '@/lib/pipelineKinds'
 import type { Pipeline, PipelineStage } from '@/types'
 
 interface PipelineStagesManagerProps {
@@ -69,6 +70,11 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
   // desabilitar excluir o último de cada um, com tooltip explicando por quê.
   const wonCount = stages.filter((s) => s.isWon).length
   const lostCount = stages.filter((s) => s.isLost).length
+  // F7 (SCRUM-868): vocabulário por tipo — Ganho/Perdido em venda,
+  // Concluído/Cancelado em processo. Vem do backend (`terminalLabels`); o
+  // fallback por `kind` cobre um backend anterior ao épico.
+  const terminalLabels = terminalLabelsOf(selectedPipeline)
+  const kindOption = pipelineKindOption(pipelineKindOf(selectedPipeline))
 
   // Assim que dados frescos do pai chegarem (nova identidade do array de
   // estágios do pipeline selecionado) ou o funil trocar, descarta a
@@ -187,6 +193,15 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
           onChange={setPipelineId}
           pipelines={pipelines}
         />
+        {selectedPipeline && (
+          <span
+            className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full mb-0.5 bg-surface-800 border border-surface-700 text-surface-300"
+            title={kindOption.description}
+            data-testid="pipeline-kind-badge"
+          >
+            <kindOption.icon className="w-3 h-3" /> {kindOption.label}
+          </span>
+        )}
         {selectedPipeline?.isArchived && (
           <span
             className="text-[10px] font-semibold px-2 py-1 rounded-full mb-0.5 color-chip border"
@@ -243,9 +258,9 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
               const isLastWon = stage.isWon && wonCount <= 1
               const isLastLost = stage.isLost && lostCount <= 1
               const deleteBlockedReason = isLastWon
-                ? 'O funil precisa de pelo menos um estágio de Ganho.'
+                ? `O funil precisa de pelo menos um estágio de ${terminalLabels.won}.`
                 : isLastLost
-                  ? 'O funil precisa de pelo menos um estágio de Perdido.'
+                  ? `O funil precisa de pelo menos um estágio de ${terminalLabels.lost}.`
                   : null
 
               return (
@@ -281,7 +296,7 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
                         className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border"
                         style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
                       >
-                        <Trophy className="w-2.5 h-2.5" /> Ganho
+                        <Trophy className="w-2.5 h-2.5" /> {terminalLabels.won}
                       </span>
                     )}
                     {stage.isLost && (
@@ -289,7 +304,7 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
                         className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border"
                         style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
                       >
-                        <X className="w-2.5 h-2.5" /> Perdido
+                        <X className="w-2.5 h-2.5" /> {terminalLabels.lost}
                       </span>
                     )}
                   </div>
@@ -337,6 +352,7 @@ export function PipelineStagesManager({ pipelines, onChanged, initialPipelineId 
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
         editStage={editStage}
+        terminalLabels={terminalLabels}
       />
 
       <ConfirmModal
