@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus } from 'lucide-react'
+import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { cn, hexToRgba, getActivePipelines } from '@/lib/utils'
+import { pipelineKindOf, terminalLabelsOf, pipelineNoun } from '@/lib/pipelineKinds'
+import { originInfo, movedByChip, timeInStage } from '@/lib/dealCard'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 interface DealsBoardProps {
@@ -20,8 +22,10 @@ interface DealsBoardProps {
   /** F7 (SCRUM-867): funil sem nenhum card → empty state com "Adicionar contato ao funil".
    *  Omitido = só as colunas vazias (comportamento anterior). */
   onAddContact?: () => void
-  /** Substantivo do card por tipo de funil ("negócio" × "registro", decisão (a)). Default "negócio". */
+  /** Substantivo do card por tipo de funil ("negócio" × "registro", decisão (a)). Default: derivado de `pipeline`, senão "negócio". */
   itemNoun?: string
+  /** F8 (SCRUM-869): o funil deste board — `kind` decide o card (processo: contato como título, sem valor) e os rótulos dos terminais. */
+  pipeline?: Pipeline | null
 }
 
 function brl(cents: number): string {
@@ -35,7 +39,8 @@ function brl(cents: number): string {
  */
 export function DealsBoard({
   onAddContact,
-  itemNoun = 'negócio',
+  itemNoun,
+  pipeline,
   stages, dealsByStage, onMoveStage, loading, onOpenContact, pipelines = [], onMovePipeline,
 }: DealsBoardProps) {
   // `useIsMobile` (matchMedia + resize listener) em vez de `window.innerWidth`
@@ -90,6 +95,12 @@ export function DealsBoard({
   // os dados carregados — durante o loading o skeleton das colunas basta.
   const totalCards = stages.reduce((n, st) => n + (dealsByStage[st.id]?.length ?? 0), 0)
   const showEmpty = !loading && totalCards === 0 && !!onAddContact
+  // F8 (SCRUM-869): vocabulário por tipo. Funil de VENDA renderiza exatamente
+  // como antes (título, valor, chips ganho/perdido); funil de PROCESSO mostra
+  // o contato como título, esconde valor/total e usa Concluído/Cancelado.
+  const isProcess = pipelineKindOf(pipeline) === 'process'
+  const terminalLabels = terminalLabelsOf(pipeline)
+  const noun = itemNoun ?? (pipeline ? pipelineNoun(pipeline) : 'negócio')
 
   return (
     <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none flex flex-col">
@@ -97,8 +108,8 @@ export function DealsBoard({
         <div className="px-4 pt-4 flex-shrink-0" data-testid="deals-board-empty">
           <EmptyState
             icon={UserPlus}
-            title={`Nenhum ${itemNoun} neste funil ainda`}
-            hint={`As etapas já estão prontas. Adicione um contato para abrir o primeiro ${itemNoun} — ele entra na primeira etapa.`}
+            title={`Nenhum ${noun} neste funil ainda`}
+            hint={`As etapas já estão prontas. Adicione um contato para abrir o primeiro ${noun} — ele entra na primeira etapa.`}
             action={{ label: 'Adicionar contato ao funil', onClick: onAddContact }}
           />
         </div>
@@ -130,7 +141,7 @@ export function DealsBoard({
                       className="text-[10px] px-1.5 py-0.5 rounded border color-chip"
                       style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
                     >
-                      ganho
+                      {terminalLabels.won.toLowerCase()}
                     </span>
                   )}
                   {stage.isLost && (
@@ -138,7 +149,7 @@ export function DealsBoard({
                       className="text-[10px] px-1.5 py-0.5 rounded border color-chip"
                       style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
                     >
-                      perdido
+                      {terminalLabels.lost.toLowerCase()}
                     </span>
                   )}
                 </div>
@@ -150,8 +161,8 @@ export function DealsBoard({
                 </span>
               </div>
 
-              {/* Total da coluna */}
-              {totalCents > 0 && (
+              {/* Total da coluna — só em funil de venda (processo não tem valor) */}
+              {!isProcess && totalCents > 0 && (
                 <div className="px-1 mb-2 text-[11px] text-surface-500">{brl(totalCents)}</div>
               )}
 
@@ -171,7 +182,7 @@ export function DealsBoard({
                     isOver ? 'border-brand-500/50 bg-brand-500/5' : 'border-surface-800',
                   )}>
                     <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-600')}>
-                      {isOver ? 'Soltar aqui' : 'Nenhum negócio'}
+                      {isOver ? 'Soltar aqui' : `Nenhum ${noun}`}
                     </span>
                   </div>
                 ) : (
@@ -230,6 +241,10 @@ export function DealsBoard({
                           )}
                         </div>
                       )}
+                      {isProcess ? (
+                        <ProcessCardBody deal={deal} onOpenContact={onOpenContact} />
+                      ) : (
+                      <>
                       <div className="text-sm font-medium text-surface-100 truncate pr-5">{deal.title}</div>
                       <div className="mt-1 flex items-center justify-between">
                         <span className="text-xs text-surface-400">{brl(deal.amountCents ?? 0)}</span>
@@ -253,6 +268,8 @@ export function DealsBoard({
                           </span>
                         </button>
                       )}
+                      </>
+                      )}
                     </div>
                   ))
                 )}
@@ -262,5 +279,58 @@ export function DealsBoard({
         })}
       </div>
     </div>
+  )
+}
+
+/**
+ * Corpo do card em funil de PROCESSO (F8 · SCRUM-870, prancheta 2): o
+ * paciente/contato é o título; sem valor; abaixo, de onde veio (campanha ·
+ * evento · IA · manual · importação) e quem moveu por último (auto / IA);
+ * por fim, tempo na etapa e telefone. Tudo vem do próprio `Deal` do board
+ * (`GET /deals?pipelineId=`, F8-870) — nenhuma chamada extra por card.
+ */
+function ProcessCardBody({ deal, onOpenContact }: { deal: Deal; onOpenContact?: (contactId: string) => void }) {
+  const origin = originInfo(deal)
+  const OriginIcon = origin.icon
+  const by = movedByChip(deal)
+  const time = timeInStage(deal)
+  const name = deal.contact?.displayName ?? deal.title
+  const phone = deal.contact?.phone ?? null
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); if (deal.contact) onOpenContact?.(deal.contact.id) }}
+        className="flex items-center gap-2 pr-5 w-full text-left group/contact"
+        data-testid="process-card-title"
+      >
+        {deal.contact && <Avatar name={name} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />}
+        <span className="text-sm font-medium text-surface-100 truncate flex-1">{name}</span>
+        {deal.contact && (
+          <span className="flex items-center gap-0.5 text-[10px] text-surface-500 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
+            ver <ArrowRight className="w-3 h-3" />
+          </span>
+        )}
+      </button>
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1 text-[11px] text-surface-400 truncate" title={origin.label} data-testid="process-card-origin">
+          <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
+        </span>
+        {by === 'ia' && (
+          <span className="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
+        )}
+        {by === 'auto' && (
+          <span className="text-[10px] text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
+        )}
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-surface-500">
+        {time ? (
+          <span className="inline-flex items-center gap-1" data-testid="process-card-time"><Clock className="w-3 h-3" /> {time}</span>
+        ) : <span />}
+        {phone && (
+          <span className="inline-flex items-center gap-1 tabular-nums"><Phone className="w-3 h-3" /> {phone}</span>
+        )}
+      </div>
+    </>
   )
 }
