@@ -49,9 +49,15 @@ interface DealModalProps {
   onSaved: () => void
   /** F8 (SCRUM-873): nome do contato para pré-preencher o título em funil de processo. Omitido = busca `GET /contacts/:id`. */
   contactName?: string | null
+  /** F9 (SCRUM-874): funil pré-selecionado ("Adicionar ao funil" em funil de venda). */
+  initialPipelineId?: string | null
+  /** F9 (SCRUM-874): conversa de origem — o registro nasce ligado a ela. */
+  originConversationId?: string | null
+  /** F9 (SCRUM-877): `409 open_exists` na criação → o chamador abre o modal de conflito. Sem isto, vira mensagem no formulário. */
+  onConflict?: (info: { openDealId: string; pipelineId: string }) => void
 }
 
-export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSaved, contactName }: DealModalProps) {
+export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSaved, contactName, initialPipelineId, originConversationId, onConflict }: DealModalProps) {
   const { products, stages } = useCRMConfig()
   const { vocab } = useTenantVocab()
   const [title, setTitle] = useState('')
@@ -125,9 +131,10 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   // NewContactDrawer/ImportContactsDrawer).
   useEffect(() => {
     if (open && !editDeal && !pipelineId && pipelines.length > 0) {
-      setPipelineId(getDefaultPipeline(pipelines)?.id ?? '')
+      const preset = initialPipelineId && pipelines.some((p) => p.id === initialPipelineId) ? initialPipelineId : null
+      setPipelineId(preset ?? getDefaultPipeline(pipelines)?.id ?? '')
     }
-  }, [open, editDeal, pipelines, pipelineId])
+  }, [open, editDeal, pipelines, pipelineId, initialPipelineId])
 
   // "Estágio do funil" — eixo distinto do "Estágio do contato" (ciclo de
   // vida, seletor "Mover contato para" abaixo). Reativo à troca de funil: se
@@ -221,6 +228,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           note: note.trim() || undefined,
           lineItems,
           ...(multiPipeline && { pipelineId, stageId: pipelineStageId || undefined }),
+          ...(originConversationId ? { originConversationId } : {}),
         })
         // create não move o estágio do contato — se ganho com estágio, aplica via setStatus.
         if (stageKey) {
@@ -229,6 +237,13 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       }
       onSaved()
     } catch (e: unknown) {
+      // F9 (SCRUM-877): conflito I1 vira o modal de conflito de quem chamou.
+      const err = e as { response?: { status?: number; data?: { code?: string; openDealId?: string; pipelineId?: string } } }
+      const body = err?.response?.data
+      if (!editDeal && onConflict && err?.response?.status === 409 && body?.code === 'open_exists' && body.openDealId) {
+        onConflict({ openDealId: body.openDealId, pipelineId: body.pipelineId ?? pipelineId })
+        return
+      }
       setError(getApiErrorMessage(e, 'Erro ao salvar.'))
     } finally {
       setSaving(false)

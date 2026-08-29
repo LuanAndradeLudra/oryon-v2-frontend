@@ -12,6 +12,8 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { cn, hexToRgba } from '@/lib/utils'
 import { HandoffChip } from './AiHandoffBanner'
 import { ConversationDealIndicator } from './ConversationDealIndicator'
+import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import type { Conversation, Tag as TagType, User } from '@/types'
 
 const STATUS_OPTIONS = [
@@ -60,6 +62,10 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const isMobile = useIsMobile()
   const { contact, status, whatsappNumber, assignedUser, tags = [] } = conversation
+  // F9 (SCRUM-874): "Adicionar ao funil" a partir da conversa — o registro
+  // nasce ligado a ela (`originConversationId`). O chip do cabeçalho
+  // (`ConversationDealIndicator`) atualiza pelo socket `deal:changed`.
+  const addToPipeline = useAddToPipeline()
 
   const [archiveOpen,  setArchiveOpen]  = useState(false)
   const [statusOpen,   setStatusOpen]   = useState(false)
@@ -311,6 +317,16 @@ export function ChatHeader({
           onIntervene={onInterveneAi}
         />
         <span className="w-px h-5 bg-surface-800" />
+
+        {!isMobile && (
+          <AddToPipelineMenu
+            contactId={contact.id}
+            contactName={contact.displayName || contact.waId}
+            size="sm"
+            onPick={(pipeline) => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline, conversationId: conversation.id })}
+          />
+        )}
+        {addToPipeline.dialogs}
 
         {statusDropdown}
 
