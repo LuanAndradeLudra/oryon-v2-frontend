@@ -83,6 +83,16 @@ describe('CreatePipelineModal — criação (F7)', () => {
     expect(Array.from(select.options).map((o) => o.value)).toEqual(['vendas-padrao', 'vendas-em-branco'])
   })
 
+  it('o rótulo "Nome do funil" está associado ao campo (onda 1 da auditoria de interface)', async () => {
+    // Prova num call site REAL que a correção do FormField chega às ~75
+    // chamadas sem nenhuma delas mudar: antes, este `getByLabelText` falhava.
+    await renderOpen()
+
+    const input = screen.getByLabelText(/Nome do funil/)
+    expect(input.tagName).toBe('INPUT')
+    expect(input.getAttribute('aria-required')).toBe('true')
+  })
+
   it('trocar para Processo troca o vocabulário: modelo Suporte, terminais Concluído/Cancelado, só modelos de processo', async () => {
     await renderOpen()
     fireEvent.click(screen.getByTestId('pipeline-kind-process'))
