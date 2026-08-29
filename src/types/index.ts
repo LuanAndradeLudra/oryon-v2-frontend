@@ -377,6 +377,9 @@ export interface ContactDealsPipelineSummary {
   totalCents: number
   openCents: number
   wonCents: number
+  /** F4-848: etapa do registro ABERTO neste funil (chips "Funil · Etapa", "já está · etapa"). */
+  stageKey?: string | null
+  stageLabel?: string | null
 }
 
 export interface ContactDealsSummary {

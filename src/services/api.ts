@@ -1072,7 +1072,8 @@ export const contactsApi = {
     return api.delete(`/contacts/${id}`)
   },
 
-  create(dto: Partial<Contact> & { displayName: string; waId: string }) {
+  /** `pipelineId`/`pipelineStageId` (F2-836): o backend chama `enter` na mesma transação — o frontend não cria o negócio por conta própria. */
+  create(dto: Partial<Contact> & { displayName: string; waId: string; pipelineId?: string; pipelineStageId?: string }) {
     // Map frontend fields to backend DTO fields
     const { tags, customFields, ...rest } = dto as Record<string, unknown>
     const payload = {

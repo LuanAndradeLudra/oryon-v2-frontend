@@ -14,6 +14,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { relativeDate, cn } from '@/lib/utils'
 import { computeWhatsAppWindow, type WhatsAppWindowState } from '@/lib/whatsappWindow'
+import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import type { Contact } from '@/types'
 
 interface ContactProfileHeaderProps {
@@ -56,6 +58,7 @@ export function ContactProfileHeader({
   contact, lastActivityAt, lastMessagePreview, lastMessageSenderKind, assignedTo,
   onBack, onOpenChat, onSendTemplate, onAddNote, onAddTask, onDelete, compact = false,
 }: ContactProfileHeaderProps) {
+  const addToPipeline = useAddToPipeline()
   const { stages } = useCRMConfig()
   const { user } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -168,6 +171,14 @@ export function ContactProfileHeader({
           <Button size="sm" variant="primary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={onOpenChat}>
             Conversar
           </Button>
+          {/* F9 (SCRUM-875): mesma ação da conversa, aqui sem conversa de origem. */}
+          <AddToPipelineMenu
+            contactId={contact.id}
+            contactName={contact.displayName || contact.waId}
+            size="sm"
+            onPick={(pipeline) => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline })}
+          />
+          {addToPipeline.dialogs}
           {!compact && (
             <>
               <Button size="sm" variant="secondary" leftIcon={<StickyNote className="w-3.5 h-3.5" />} onClick={onAddNote}>
