@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { UserPlus, MoreHorizontal, CheckCircle2, XCircle, Clock, Pencil, Users } from 'lucide-react'
-import axios from 'axios'
 import { useAuth } from '@/contexts/AuthContext'
 import { appLogger } from '@/services/appLogger'
 import { isAdminTier } from '@/lib/roleHelpers'
@@ -19,8 +18,8 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:    'Oryon',
@@ -68,10 +67,9 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
   const [departments, setDepartments] = useState<Department[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
   useEffect(() => {
-    axios.get<{ data: Department[] } | Department[]>(`${API}/departments`).then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
+    api.get<{ data: Department[] } | Department[]>('/departments').then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
   }, [API])
 
   const handleSave = async () => {
@@ -82,7 +80,7 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
       const payload = {
         departmentId: departmentId || null,
       }
-      await axios.patch(`${API}/users/${user.id}`, payload)
+      await api.patch(`/users/${user.id}`, payload)
       const selectedDept = departments.find((d) => d.id === departmentId)
       onSaved({ ...user, departmentId, departmentName: selectedDept?.name, departmentIds: undefined, departmentNames: undefined })
       onClose()
@@ -138,7 +136,7 @@ export function AgentManagement() {
 
   useEffect(() => {
     setFetchError(false)
-    axios.get<User[]>(`${API}/users`).then((r) => {
+    api.get<User[]>('/users').then((r) => {
       setUsers(Array.isArray(r.data) ? r.data : [])
       setLoading(false)
     }).catch(() => {
@@ -183,7 +181,7 @@ export function AgentManagement() {
   const handleRoleChange = async (userId: string, role: UserRole) => {
     const targetUser = users.find((u) => u.id === userId)
     const oldRole = targetUser?.role
-    await axios.patch(`${API}/users/${userId}`, { role })
+    await api.patch(`/users/${userId}`, { role })
     setUsers((u) => u.map((x) => (x.id === userId ? { ...x, role } : x)))
     toast('Papel atualizado.', 'success')
     appLogger.logUserManagement({
@@ -224,7 +222,7 @@ export function AgentManagement() {
   const handleToggleActive = async () => {
     if (!deactivateTarget) return
     const nextActive = !deactivateTarget.isActive
-    await axios.patch(`${API}/users/${deactivateTarget.id}`, { isActive: nextActive })
+    await api.patch(`/users/${deactivateTarget.id}`, { isActive: nextActive })
     setUsers((u) => u.map((x) => (x.id === deactivateTarget.id ? { ...x, isActive: nextActive, status: nextActive ? 'active' : 'inactive' } : x)))
     toast(`Usuário ${nextActive ? 'ativado' : 'desativado'} com sucesso.`, 'success')
     appLogger.logUserManagement({
@@ -354,7 +352,7 @@ export function AgentManagement() {
                       {user.status === 'pending' && (
                         <DropdownItem
                           onClick={() => {
-                            axios.post(`${API}/users/${user.id}/resend-invitation`).then(() => {
+                            api.post(`/users/${user.id}/resend-invitation`).then(() => {
                               toast('Convite reenviado com sucesso!', 'success')
                             }).catch(() => {
                               toast('Erro ao reenviar convite.', 'error')

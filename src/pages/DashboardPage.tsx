@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { RefreshCw, BarChart3, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import axios from 'axios'
 import { AnimatePresence, motion } from 'framer-motion'
 
 
@@ -38,8 +37,8 @@ import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { TipCard } from '@/components/ui/TipCard'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 // Row shape returned by GET /activity-feed (mirrors the public shape from
 // backend/src/modules/activity/activity.service.ts). The `metadata` bag
@@ -114,7 +113,7 @@ export function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState(new Date())
 
   useEffect(() => {
-    axios.get<User>(`${API}/auth/me`).then((r) => setCurrentUser(r.data)).catch(() => {})
+    api.get<User>('/auth/me').then((r) => setCurrentUser(r.data)).catch(() => {})
   }, [])
 
   const fetchDashboard = async () => {
@@ -132,9 +131,9 @@ export function DashboardPage() {
       // resolved rows.
       const sinceIso = new Date(Date.now() - 4 * 3600 * 1000).toISOString()
       const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.all([
-        axios.get(`${API}/home/snapshot`).catch(() => ({ data: null })),
-        axios.get<HomeStats>(`${API}/home/stats`),
-        axios.get<{ data: ActivityFeedApiRow[] }>(`${API}/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
+        api.get('/home/snapshot').catch(() => ({ data: null })),
+        api.get<HomeStats>('/home/stats'),
+        api.get<{ data: ActivityFeedApiRow[] }>(`/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
       ])
 
       // Start with empty structure, fill with real data
