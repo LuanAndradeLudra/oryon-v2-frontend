@@ -5,6 +5,8 @@ import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { Banner } from '@/components/ui/Banner'
 import { useTheme } from '@/hooks/useTheme'
+import { PhoneField } from '@/components/ui/PhoneField'
+import { FormFieldContext, useFieldAria } from '@/components/ui/formField.context'
 
 interface FormState {
   companyName: string
@@ -200,12 +202,10 @@ export function RegisterPage() {
                 className={inputClass}
               />
             </Field>
-            <Field label="Telefone">
-              <input
-                type="tel"
+            <Field label="Telefone" hint="Com código do país e DDD.">
+              <PhoneField
                 value={form.phone}
-                onChange={set('phone')}
-                placeholder="+55 11 99999-9999"
+                onChange={(digits) => setForm((f) => ({ ...f, phone: digits }))}
                 className={inputClass}
               />
             </Field>
@@ -288,23 +288,35 @@ export function RegisterPage() {
   )
 }
 
+/**
+ * Invólucro de campo do cadastro — visual próprio (rótulo em peso médio, o
+ * asterisco na cor da marca em vez de perigo). A semântica vem do mesmo
+ * `useFieldAria` do `FormField` do DS: rótulo ligado ao campo, obrigatório
+ * anunciado. Só a casca é local.
+ */
 function Field({
   label,
   required,
+  hint,
   children,
 }: {
   label: string
   required?: boolean
+  hint?: string
   children: React.ReactNode
 }) {
+  const { fieldId, hintId, aria } = useFieldAria({ hint, required })
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">
-        {label}
-        {required && <span className="text-brand-500 ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
+    <FormFieldContext.Provider value={aria}>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={fieldId} className="text-xs font-medium text-surface-300 uppercase tracking-wide">
+          {label}
+          {required && <span className="text-brand-500 ml-0.5" aria-hidden="true">*</span>}
+        </label>
+        {children}
+        {hint && <p id={hintId} className="text-xs text-surface-500">{hint}</p>}
+      </div>
+    </FormFieldContext.Provider>
   )
 }
 

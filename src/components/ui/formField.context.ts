@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useId } from 'react'
 
 /**
  * Ligação rótulo ↔ campo, publicada pelo `FormField` e consumida pelos
@@ -70,5 +70,51 @@ export function mergeFieldAria(
     'aria-describedby': describedBy || undefined,
     'aria-invalid': invalid ? true : undefined,
     'aria-required': required ? true : undefined,
+  }
+}
+
+/**
+ * A **semântica** de um campo, separada da **aparência**.
+ *
+ * O `FormField` do DS não é o único invólucro de campo do app: telas com
+ * linguagem visual própria (o drawer de novo contato, o cadastro) têm o seu,
+ * com rótulo em outro peso e o selo "Obrigatório" em outro lugar. Forçar todas
+ * a usar o `FormField` resolveria a acessibilidade, mas às custas de uma
+ * mudança visual que é decisão de design, não de engenharia.
+ *
+ * Este hook quebra esse falso dilema: qualquer invólucro chama, recebe os ids
+ * já calculados e monta o próprio HTML. A ligação rótulo ↔ campo passa a ser
+ * uma só; o visual continua sendo de cada um.
+ *
+ * ```tsx
+ * const { fieldId, hintId, errorId, aria } = useFieldAria({ error, required })
+ * return (
+ *   <FormFieldContext.Provider value={aria}>
+ *     <label htmlFor={fieldId}>…</label>
+ *     <Input />                      // pega id e aria-* pelo contexto
+ *     {error && <p id={errorId} role="alert">{error}</p>}
+ *   </FormFieldContext.Provider>
+ * )
+ * ```
+ */
+export function useFieldAria(opts: {
+  /** Fixa o id do campo; sem isto, um id estável é gerado. */
+  id?: string
+  hint?: string
+  error?: string
+  required?: boolean
+}): { fieldId: string; hintId: string; errorId: string; aria: FormFieldAria } {
+  const reactId = useId()
+  const fieldId = opts.id ?? `${reactId}-field`
+  const hintId = `${reactId}-hint`
+  const errorId = `${reactId}-error`
+  // O erro substitui o hint na tela, então só um é descrito por vez —
+  // descrever os dois anunciaria texto invisível.
+  const describedBy = opts.error ? errorId : opts.hint ? hintId : undefined
+  return {
+    fieldId,
+    hintId,
+    errorId,
+    aria: { id: fieldId, describedBy, invalid: !!opts.error, required: opts.required },
   }
 }
