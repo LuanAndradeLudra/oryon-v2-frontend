@@ -1,19 +1,31 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
-  Zap, ArrowRight, Sparkles, Bot, BarChart2,
+  Zap, ArrowRight, ArrowLeft, Sparkles, Bot, BarChart2,
   Globe, Instagram, Linkedin, Phone, CheckCircle2, Brain,
   UploadCloud, FileText, FileImage, File, X, Loader2, AlertCircle,
+  Users, GitBranch,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { saveHub, loadHub, type CompanyHubData, type BrandFile, DEFAULT_HUB } from '@/services/companyContextService'
 import { extractBrandFile } from '@/services/agentsApi'
-import { CRMOnboarding } from '@/components/contacts/CRMOnboarding'
+import { onboardingApi } from '@/services/api'
+import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
+import { WhatsAppNumbers } from '@/components/settings/sections/WhatsAppNumbers'
+import { Departments } from '@/components/settings/sections/Departments'
+import {
+  SETUP_STEPS, loadSetupStep, saveSetupStep, clearSetupProgress,
+  stepNumber, nextStep, previousStep, type SetupStep,
+} from '@/lib/setupProgress'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type WizardStep = 'hub' | 'crm' | 'done'
+/** F13-899: três passos + a tela final. O passo de CRM (geração de estágios
+ *  por IA) saiu — a situação do contato agora é semeada no cadastro (§4.12). */
+type WizardStep = SetupStep | 'done'
 
 // ─── Brand file upload ────────────────────────────────────────────────────────
 
@@ -163,6 +175,187 @@ function PillToggle({ label, selected, onClick }: { label: string; selected: boo
 const INPUT = 'w-full px-3 py-2.5 rounded-xl bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors'
 const SELECT = `${INPUT} cursor-pointer`
 
+// ─── Chrome comum dos passos ──────────────────────────────────────────────────
+
+/** Painel esquerdo + área de conteúdo + rodapé, na mesma forma do passo do Hub.
+ *  Existe para que os passos novos (WhatsApp, Time) não reinventem o layout —
+ *  e para que o "Passo N de 3" apareça igual nos três. */
+function StepChrome({
+  step,
+  icon,
+  title,
+  subtitle,
+  benefits,
+  children,
+  onBack,
+  onContinue,
+  continueLabel = 'Continuar',
+  optionalLabel,
+  onSkip,
+}: {
+  step: SetupStep
+  icon: ReactNode
+  title: string
+  subtitle: string
+  benefits?: { icon: LucideIcon; label: string; desc: string }[]
+  children: ReactNode
+  onBack?: () => void
+  onContinue: () => void
+  continueLabel?: string
+  optionalLabel?: string
+  onSkip?: () => void
+}) {
+  return (
+    <div className="h-full flex overflow-hidden">
+      <div className="w-80 flex-shrink-0 border-r border-surface-800/60 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
+        <div className="flex items-center gap-3 mb-8">
+          <motion.img
+            src="/oryon-logo.svg"
+            alt="Oryon"
+            animate={{ scale: [1, 1.08, 1] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+            className="w-11 h-11 select-none flex-shrink-0"
+            draggable={false}
+          />
+          <span className="text-sm font-bold text-surface-50">Oryon</span>
+        </div>
+
+        <StepCounter step={step} />
+
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-8 h-8 rounded-lg bg-brand-600/20 border border-brand-500/30 flex items-center justify-center flex-shrink-0">
+            {icon}
+          </div>
+          <h2 className="text-sm font-bold text-surface-100">{title}</h2>
+        </div>
+
+        <p className="text-xs text-surface-400 leading-relaxed mb-6">{subtitle}</p>
+
+        {benefits && (
+          <div className="space-y-3">
+            {benefits.map(({ icon: Icon, label, desc }) => (
+              <div key={label} className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-md bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Icon className="w-2.5 h-2.5 text-brand-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-surface-200">{label}</p>
+                  <p className="text-[11px] text-surface-500">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 overflow-y-auto px-10 py-8">{children}</div>
+        <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-800/60">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              data-testid="setup-back"
+              className="inline-flex items-center gap-1.5 text-sm text-surface-500 hover:text-surface-300 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Voltar
+            </button>
+          ) : <span />}
+          <div className="flex items-center gap-5">
+            {onSkip && (
+              <button
+                type="button"
+                onClick={onSkip}
+                data-testid="setup-skip-step"
+                className="text-sm text-surface-600 hover:text-surface-400 transition-colors"
+              >
+                {optionalLabel ?? 'Deixar para depois'}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onContinue}
+              data-testid="setup-continue"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-all shadow-lg shadow-brand-900/40"
+            >
+              {continueLabel} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** "Passo N de 3" + trilha. Igual nos três passos — é o que faz o wizard
+ *  parecer um caminho com fim, e não um formulário infinito. */
+function StepCounter({ step }: { step: SetupStep }) {
+  return (
+    <div className="mb-6" data-testid="setup-step-counter">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-surface-500 mb-2">
+        Passo {stepNumber(step)} de {SETUP_STEPS.length}
+      </p>
+      <div className="flex items-center gap-1.5">
+        {SETUP_STEPS.map((s, i) => (
+          <span
+            key={s}
+            className={
+              'h-1 flex-1 rounded-full transition-colors ' +
+              (i <= SETUP_STEPS.indexOf(step) ? 'bg-brand-500' : 'bg-surface-800')
+            }
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Step: Conectar WhatsApp ──────────────────────────────────────────────────
+
+/** Reaproveita a seção de Configurações — a tela de conectar linha é a mesma,
+ *  e manter duas versões dela era garantia de divergirem. */
+function WhatsAppStep({ onContinue }: { onContinue: () => void }) {
+  return (
+    <StepChrome
+      step="whatsapp"
+      icon={<WhatsAppIcon className="w-4 h-4 text-brand-400" />}
+      title="Conectar WhatsApp"
+      subtitle="É por aqui que as mensagens entram e saem. Sem uma linha conectada, o resto da plataforma não tem o que fazer."
+      benefits={[
+        { icon: Zap,  label: 'Receber',  desc: 'Conversas entram direto na plataforma' },
+        { icon: Bot,  label: 'Responder', desc: 'Seus agentes de IA atendem na linha' },
+      ]}
+      onContinue={onContinue}
+      onSkip={onContinue}
+      optionalLabel="Conectar depois"
+    >
+      <WhatsAppNumbers />
+    </StepChrome>
+  )
+}
+
+// ─── Step: Time e setores ─────────────────────────────────────────────────────
+
+function TeamStep({ onBack, onContinue }: { onBack: () => void; onContinue: () => void }) {
+  return (
+    <StepChrome
+      step="team"
+      icon={<Users className="w-4 h-4 text-brand-400" />}
+      title="Time e setores"
+      subtitle="Setores organizam quem atende o quê. Opcional agora — dá para criar depois, em Configurações."
+      benefits={[
+        { icon: Users,     label: 'Atendimento', desc: 'Conversas chegam ao setor certo' },
+        { icon: GitBranch, label: 'Acesso',      desc: 'Cada setor enxerga os funis que usa' },
+      ]}
+      onBack={onBack}
+      onContinue={onContinue}
+      onSkip={onContinue}
+    >
+      <Departments />
+    </StepChrome>
+  )
+}
+
 // ─── Step: Hub ────────────────────────────────────────────────────────────────
 
 function HubStep({
@@ -170,11 +363,13 @@ function HubStep({
   onChange,
   onContinue,
   onSkip,
+  onBack,
 }: {
   form: CompanyHubData
   onChange: (p: Partial<CompanyHubData>) => void
   onContinue: () => void
   onSkip: () => void
+  onBack: () => void
 }) {
   const canContinue = form.companyName.trim().length > 0
 
@@ -209,6 +404,8 @@ function HubStep({
           <span className="text-sm font-bold text-surface-50">Oryon</span>
         </div>
 
+        <StepCounter step="hub" />
+
         {/* Step info */}
         <div className="flex items-center gap-2.5 mb-3">
           <div className="w-8 h-8 rounded-lg bg-brand-600/20 border border-brand-500/30 flex items-center justify-center flex-shrink-0">
@@ -226,7 +423,7 @@ function HubStep({
           {[
             { icon: Sparkles, label: 'Copilot', desc: 'Responde com contexto da sua empresa' },
             { icon: Bot,       label: 'Agentes',  desc: 'Prompts pré-preenchidos automaticamente' },
-            { icon: BarChart2, label: 'CRM',      desc: 'Pipeline gerado para o seu negócio' },
+            { icon: BarChart2, label: 'CRM',      desc: 'Sugestões de etapas ao criar um funil' },
           ].map(({ icon: Icon, label, desc }) => (
             <div key={label} className="flex items-start gap-2.5">
               <div className="w-5 h-5 rounded-md bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -400,19 +597,31 @@ function HubStep({
         <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-800/60">
           <button
             type="button"
-            onClick={onSkip}
-            className="text-sm text-surface-600 hover:text-surface-400 transition-colors"
+            onClick={onBack}
+            data-testid="setup-back"
+            className="inline-flex items-center gap-1.5 text-sm text-surface-500 hover:text-surface-300 transition-colors"
           >
-            Pular por enquanto
+            <ArrowLeft className="w-4 h-4" /> Voltar
           </button>
-          <button
-            type="button"
-            onClick={onContinue}
-            disabled={!canContinue}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-all shadow-lg shadow-brand-900/40"
-          >
-            Continuar <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-5">
+            <button
+              type="button"
+              onClick={onSkip}
+              data-testid="setup-skip-step"
+              className="text-sm text-surface-600 hover:text-surface-400 transition-colors"
+            >
+              Deixar para depois
+            </button>
+            <button
+              type="button"
+              onClick={onContinue}
+              disabled={!canContinue}
+              data-testid="setup-continue"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-all shadow-lg shadow-brand-900/40"
+            >
+              Concluir <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -423,6 +632,9 @@ function HubStep({
 
 function DoneStep({ onComplete }: { onComplete: () => void }) {
   const navigate = useNavigate()
+  // SCRUM-498: sem o flag de múltiplos funis, a frase sobre o funil não
+  // aparece — o tenant não tem a tela para onde ela apontaria.
+  const multiPipeline = useMultiPipeline()
 
   const goTo = (path: string) => {
     onComplete()
@@ -452,6 +664,15 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
           <p className="text-sm text-surface-400 leading-relaxed">
             Copilot, agentes e CRM já conhecem sua empresa. Você pode atualizar o contexto a qualquer momento em Configurações.
           </p>
+          {multiPipeline && (
+            <p
+              data-testid="setup-done-pipeline"
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-900 border border-surface-800 text-xs text-surface-300"
+            >
+              <GitBranch className="w-3.5 h-3.5 text-brand-400" />
+              Seu primeiro funil, <strong className="font-semibold text-surface-100">Vendas</strong>, já está pronto.
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-3 w-full">
@@ -478,26 +699,52 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
 
 export function SetupWizard({ onComplete }: { onComplete: () => void }) {
   const { user, completeOnboarding } = useAuth()
-  const [step, setStep] = useState<WizardStep>('hub')
+  // Retomável (F13-899): o passo vive no localStorage por tenant, então F5 ou
+  // fechar a aba no meio do "conectar WhatsApp" não joga ninguém de volta ao
+  // início. Só o passo — o conteúdo já está no servidor.
+  const [step, setStep] = useState<WizardStep>(() => loadSetupStep(user?.tenantId))
   const [hubForm, setHubForm] = useState<CompanyHubData>(() =>
     user?.tenantId ? loadHub(user.tenantId) : { ...DEFAULT_HUB }
   )
 
+  const goTo = useCallback((next: SetupStep) => {
+    setStep(next)
+    saveSetupStep(user?.tenantId, next)
+  }, [user?.tenantId])
+
   const patchHub = (partial: Partial<CompanyHubData>) =>
     setHubForm(prev => ({ ...prev, ...partial }))
 
+  const advance = (from: SetupStep) => {
+    const next = nextStep(from)
+    if (next) goTo(next)
+    else finish()
+  }
+
+  const back = (from: SetupStep) => {
+    const prev = previousStep(from)
+    if (prev) goTo(prev)
+  }
+
+  /** Fim do caminho: marca o onboarding como concluído e limpa o progresso
+   *  para o wizard não reabrir no próximo login. Não há nada a *aplicar*: o
+   *  funil default e as situações já nasceram com a organização (F13-896).
+   *
+   *  `POST /onboarding/complete` é a marca no servidor; `completeOnboarding()`
+   *  só atualiza a sessão local. A chamada é best-effort — se a rede falhar,
+   *  o usuário entra na plataforma mesmo assim e o gate reabre `/setup` no
+   *  próximo login, que é retomável. Prender alguém na tela final por causa
+   *  de um POST seria pior. */
+  const finish = () => {
+    void onboardingApi.complete().catch(() => { /* best effort */ })
+    completeOnboarding()
+    clearSetupProgress(user?.tenantId)
+    setStep('done')
+  }
+
   const handleHubContinue = () => {
     saveHub(user?.tenantId, hubForm)
-    setStep('crm')
-  }
-
-  const handleHubSkip = () => {
-    setStep('crm')
-  }
-
-  const handleCRMDone = () => {
-    completeOnboarding()
-    setStep('done')
+    finish()
   }
 
   return (
@@ -508,8 +755,35 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       className="fixed inset-0 z-50 bg-surface-950"
+      data-testid="setup-wizard"
     >
       <AnimatePresence mode="wait">
+        {step === 'whatsapp' && (
+          <motion.div
+            key="whatsapp"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.25 }}
+            className="h-full"
+          >
+            <WhatsAppStep onContinue={() => advance('whatsapp')} />
+          </motion.div>
+        )}
+
+        {step === 'team' && (
+          <motion.div
+            key="team"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.25 }}
+            className="h-full"
+          >
+            <TeamStep onBack={() => back('team')} onContinue={() => advance('team')} />
+          </motion.div>
+        )}
+
         {step === 'hub' && (
           <motion.div
             key="hub"
@@ -523,21 +797,9 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
               form={hubForm}
               onChange={patchHub}
               onContinue={handleHubContinue}
-              onSkip={handleHubSkip}
+              onSkip={finish}
+              onBack={() => back('hub')}
             />
-          </motion.div>
-        )}
-
-        {step === 'crm' && (
-          <motion.div
-            key="crm"
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -24 }}
-            transition={{ duration: 0.25 }}
-            className="h-full"
-          >
-            <CRMOnboarding onDone={handleCRMDone} />
           </motion.div>
         )}
 
