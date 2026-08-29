@@ -8,8 +8,9 @@ import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
-import { dealsApi } from '@/services/api'
+import { dealsApi, contactsApi } from '@/services/api'
 import { getDefaultPipeline, getPipelineStages, getApiErrorMessage, getActivePipelines } from '@/lib/utils'
+import { pipelineKindOf, pipelineNoun } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
 import type { Deal, DealStatus, Pipeline } from '@/types'
 
@@ -46,9 +47,11 @@ interface DealModalProps {
   pipelines: Pipeline[]
   onClose: () => void
   onSaved: () => void
+  /** F8 (SCRUM-873): nome do contato para pré-preencher o título em funil de processo. Omitido = busca `GET /contacts/:id`. */
+  contactName?: string | null
 }
 
-export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSaved }: DealModalProps) {
+export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSaved, contactName }: DealModalProps) {
   const { products, stages } = useCRMConfig()
   const { vocab } = useTenantVocab()
   const [title, setTitle] = useState('')
@@ -67,6 +70,26 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   const [movePipelineId, setMovePipelineId] = useState('')
   const [moving, setMoving] = useState(false)
   const [moveError, setMoveError] = useState('')
+  // F8 (SCRUM-873): funil de PROCESSO não tem itens/valor e o título é o
+  // contato (decisão (a): o card é o "registro" do contato). O tipo vem do
+  // funil escolhido (create) ou do funil do registro (edit).
+  const effectivePipeline = pipelines.find((p) => p.id === (editDeal?.pipelineId ?? pipelineId)) ?? null
+  const isProcess = pipelineKindOf(effectivePipeline) === 'process'
+  const [resolvedContactName, setResolvedContactName] = useState<string | null>(null)
+  useEffect(() => {
+    if (!open || editDeal || !isProcess) return
+    if (contactName) { setResolvedContactName(contactName); return }
+    let cancelled = false
+    contactsApi.get(contactId)
+      .then((res) => { if (!cancelled) setResolvedContactName(res.data?.displayName ?? null) })
+      .catch(() => { /* sem nome, o usuário digita o título */ })
+    return () => { cancelled = true }
+  }, [open, editDeal, isProcess, contactName, contactId])
+  useEffect(() => {
+    if (open && !editDeal && isProcess && resolvedContactName && !title.trim()) setTitle(resolvedContactName)
+    // `title` fora das deps de propósito: só pré-preenche quando está vazio.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editDeal, isProcess, resolvedContactName])
 
   useEffect(() => {
     if (open) {
@@ -169,7 +192,9 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     }
     setSaving(true)
     try {
-      const lineItems = items.map((it, index) => ({
+      // Funil de processo não tem itens (F8-873) — mesmo que o usuário tenha
+      // trocado de um funil de venda com itens rascunhados.
+      const lineItems = (isProcess ? [] : items).map((it, index) => ({
         id: it.id,
         productId: it.productId,
         variationLabel: it.variationLabel ?? undefined,
@@ -230,7 +255,9 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     <Modal
       open={open}
       onClose={onClose}
-      title={editDeal ? `Editar ${vocab.deal.toLowerCase()}` : `Novo ${vocab.deal.toLowerCase()}`}
+      title={editDeal
+        ? `Editar ${isProcess ? pipelineNoun(effectivePipeline) : vocab.deal.toLowerCase()}`
+        : `Novo ${isProcess ? pipelineNoun(effectivePipeline) : vocab.deal.toLowerCase()}`}
       className="max-w-2xl"
     >
       <div className="flex flex-col gap-4">
@@ -342,6 +369,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           )}
         </div>
 
+        {!isProcess && (
         <FormField
           label="Itens"
           error={error === 'Selecione um produto em cada item (ou remova a linha).' ? error : undefined}
@@ -419,15 +447,22 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             {items.length === 0 && <p className="text-xs text-surface-600">Nenhum item.</p>}
           </div>
         </FormField>
+        )}
 
         <FormField label="Observação (opcional)">
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Detalhes da proposta" />
         </FormField>
 
         <div className="flex items-center justify-between border-t border-surface-800 pt-3">
+          {isProcess ? (
+            <span className="text-xs text-surface-500" data-testid="deal-modal-process-note">
+              {`Registro de processo — sem valor nem produtos.`}
+            </span>
+          ) : (
           <span className="text-sm font-semibold text-surface-100">
             Total: <span className="tabular-nums">{formatBRL(total)}</span>
           </span>
+          )}
           <div className="flex gap-2">
             <button
               onClick={onClose}

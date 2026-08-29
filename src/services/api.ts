@@ -1362,7 +1362,8 @@ export const dealsApi = {
   update(id: string, patch: Partial<Deal>) {
     return api.patch<Deal>(`/deals/${id}`, patch)
   },
-  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string }) {
+  /** `closeReason`/`closeNote` (F2, I5): motivo do catálogo ao fechar; sem eles o backend usa o compat `outro`. */
+  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string; closeReason?: string; closeNote?: string }) {
     return api.patch<Deal>(`/deals/${id}/status`, body)
   },
   /** Agregados por contato (batch), p/ o card do Kanban. Só retorna contatos que têm negócios. */
