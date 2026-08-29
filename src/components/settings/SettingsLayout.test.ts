@@ -43,3 +43,26 @@ describe('visibleSettingsNav · gate de múltiplos funis', () => {
     expect(firstVisibleSection('admin')).toBe(firstVisibleSection('admin', { multiPipeline: true }))
   })
 })
+
+// F13-903 — a situação do contato ganhou seção própria em Configurações → CRM.
+// Não é do módulo de funis: vale com ou sem FF_MULTI_PIPELINE.
+describe('visibleSettingsNav · situação do contato (F13-903)', () => {
+  it('aparece para admin mesmo sem o flag de múltiplos funis', () => {
+    expect(sectionsOf('admin')).toContain('stages')
+    expect(sectionsOf('admin', { multiPipeline: false })).toContain('stages')
+    expect(sectionsOf('admin', { multiPipeline: true })).toContain('stages')
+  })
+
+  it('não entrou por engano na lista de seções gateadas pelo flag', () => {
+    expect(MULTI_PIPELINE_SECTIONS.has('stages')).toBe(false)
+  })
+
+  it('fica ao lado de "Estágios do funil" — os dois eixos, lado a lado, com o flag ligado', () => {
+    const crm = sectionsOf('admin', { multiPipeline: true })
+    expect(crm.indexOf('stages')).toBeLessThan(crm.indexOf('pipeline-stages'))
+  })
+
+  it('é só para admin (mesma regra do resto do cluster CRM)', () => {
+    expect(sectionsOf('agent')).not.toContain('stages')
+  })
+})

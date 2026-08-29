@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   stagesFromTemplate,
+  stagesFromAiSuggestion,
   fallbackStages,
   defaultTemplateFor,
   addNormalStage,
@@ -107,5 +108,51 @@ describe('createPipelineForm — F7 (SCRUM-865/866)', () => {
       { label: 'Cancelado', color: '#ef4444', isLost: true },
     ])
     expect(dto.stages.some((s) => 'key' in s)).toBe(false)
+  })
+
+  // ── F13-904: sugestão da IA vira rascunho, não configuração aplicada ───────
+  describe('stagesFromAiSuggestion', () => {
+    it('usa só as normais sugeridas e mantém os terminais DO TIPO (invariante I2 é do funil, não do modelo)', () => {
+      const draft = stagesFromAiSuggestion(
+        [
+          { label: 'Primeiro contato', color: '#111111' },
+          { label: 'Diagnóstico' },
+          { label: 'Fechado', isTerminal: true },
+        ],
+        'process',
+      )
+
+      expect(draft.map((s) => [s.label, s.role])).toEqual([
+        ['Primeiro contato', 'normal'],
+        ['Diagnóstico', 'normal'],
+        ['Concluído', 'won'],
+        ['Cancelado', 'lost'],
+      ])
+      // Cor sugerida é respeitada; sem cor, entra o rodízio.
+      expect(draft[0].color).toBe('#111111')
+      expect(draft[1].color).toBeTruthy()
+    })
+
+    it('rótulos vazios ou só espaço são descartados; sobra tudo vazio → cai no rascunho mínimo do tipo', () => {
+      const draft = stagesFromAiSuggestion([{ label: '   ' }, { label: '' }], 'sales')
+
+      expect(draft.map((s) => s.role)).toEqual(['normal', 'won', 'lost'])
+      expect(draft[1].label).toBe('Ganho')
+    })
+
+    it('corta em 8 normais — sugestão é ponto de partida, não board infinito', () => {
+      const many = Array.from({ length: 20 }, (_, i) => ({ label: `Etapa ${i + 1}` }))
+
+      const draft = stagesFromAiSuggestion(many, 'sales')
+
+      expect(draft.filter((s) => s.role === 'normal')).toHaveLength(8)
+      expect(draft).toHaveLength(10)
+    })
+
+    it('rótulo gigante é truncado (o backend deriva a key a partir dele)', () => {
+      const draft = stagesFromAiSuggestion([{ label: 'x'.repeat(200) }], 'sales')
+
+      expect(draft[0].label).toHaveLength(60)
+    })
   })
 })
