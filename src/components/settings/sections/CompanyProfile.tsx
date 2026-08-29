@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Lock, Building2 } from 'lucide-react'
-import axios from 'axios'
 import { AnimatePresence } from 'framer-motion'
 import { ToastContainer } from '@/components/ui/Toast'
 import { SectionHeader } from '../SectionHeader'
@@ -17,8 +16,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { TipCard } from '@/components/ui/TipCard'
 import type { Tenant } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const TIMEZONES = [
   { value: 'America/Sao_Paulo', label: 'América/São Paulo (GMT-3)' },
@@ -51,7 +50,7 @@ export function CompanyProfile() {
 
   useEffect(() => {
     setError(false)
-    axios.get(`${API}/settings/company`).then((r) => {
+    api.get('/settings/company').then((r) => {
       const d = r.data as Record<string, unknown>
       const mapped = { ...d, name: d.businessName ?? d.name ?? '', email: d.businessEmail ?? d.email ?? '', timezone: d.timezone ?? 'America/Sao_Paulo', language: d.language ?? 'pt-BR' } as Tenant
       setTenant(mapped)
@@ -70,7 +69,7 @@ export function CompanyProfile() {
     setLoading(true)
     try {
       // Map frontend field names to NestJS DTO field names
-      await axios.patch(`${API}/settings/company`, {
+      await api.patch('/settings/company', {
         businessName: form.name,
         businessEmail: form.email,
       })

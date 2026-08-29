@@ -2,10 +2,9 @@ import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Zap, Loader2, Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import axios from 'axios'
 import { Banner } from '@/components/ui/Banner'
+import { api, SKIP_AUTH_REFRESH } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -27,7 +26,7 @@ export function ResetPasswordPage() {
     setError('')
     setLoading(true)
     try {
-      await axios.post(`${API}/auth/reset-password`, { token, password })
+      await api.post('/auth/reset-password', { token, password }, SKIP_AUTH_REFRESH)
       setSuccess(true)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message

@@ -13,13 +13,12 @@ import {
   X, Hash, Building2, Users, Check, ChevronRight, ArrowLeft,
   Loader2, Search,
 } from 'lucide-react'
-import axios from 'axios'
 import { cn, avatarColor } from '@/lib/utils'
 import { Emoji } from '@/lib/emojiText'
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import type { Department, User, InternalChannelType } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 // ─── Emoji quick-pick ─────────────────────────────────────────────────────────
 
@@ -239,7 +238,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
   useEffect(() => {
     if (step !== 1 || channelType !== 'department_room' || departments.length > 0) return
     setLoadingDepts(true)
-    axios.get<{ data: Department[] } | Department[]>(`${API}/departments`)
+    api.get<{ data: Department[] } | Department[]>('/departments')
       .then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data))
       .catch(() => {})
       .finally(() => setLoadingDepts(false))
@@ -249,7 +248,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
   useEffect(() => {
     if (step !== 2 || allUsers.length > 0) return
     setLoadingUsers(true)
-    axios.get<User[]>(`${API}/users`)
+    api.get<User[]>('/users')
       .then((r) => {
         setAllUsers(r.data)
         // Pre-select users belonging to the selected sector
