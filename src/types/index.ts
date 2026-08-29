@@ -244,6 +244,24 @@ export interface Deal {
   contact?: { id: string; displayName: string; profilePicUrl: string | null }
 }
 
+/** Tipo do funil (Modelo B §4.2, F1): `sales` = negócios com valor, termina em
+ *  Ganho/Perdido; `process` = registros de atendimento/onboarding/pós-venda,
+ *  sem valor, termina em Concluído/Cancelado. Imutável após a criação. */
+export type PipelineKind = 'sales' | 'process'
+
+/** Rótulos dos dois terminais, derivados do `kind` pelo backend (nunca coluna). */
+export interface TerminalLabels {
+  won: string
+  lost: string
+}
+
+/** Motivo de desfecho do catálogo por `kind` (§4.6, I5). */
+export interface CloseReason {
+  key: string
+  label: string
+  outcome: 'won' | 'lost' | 'any'
+}
+
 /** Pipeline de negócio (múltiplos por tenant). O `isDefault` é o pipeline padrão. */
 export interface Pipeline {
   id: string
@@ -254,11 +272,47 @@ export interface Pipeline {
   order: number
   isDefault: boolean
   isArchived: boolean
+  /** F1 (SCRUM-822): tipo do funil. Backends anteriores ao épico não mandam — tratar ausência como `sales`. */
+  kind?: PipelineKind
+  /** F1 (SCRUM-828): Ganho/Perdido × Concluído/Cancelado — usar em chips, tooltips e modais em vez de texto fixo. */
+  terminalLabels?: TerminalLabels
+  /** F1 (SCRUM-824): ids dos setores com acesso (`pipeline_access`). */
+  access?: string[]
+  /** F1 (SCRUM-827): catálogo de motivos de fechamento do tipo. */
+  closeReasons?: CloseReason[]
   stages: PipelineStage[]
   /** Contagem de negócios abertos — badge do segmented control da aba Leads. */
   openDealsCount: number
   createdAt?: string
   updatedAt?: string
+}
+
+/** Etapa de um modelo de funil (`GET /settings/pipelines/templates`, F1-826). */
+export interface PipelineTemplateStage {
+  key: string
+  label: string
+  color: string
+  isWon?: boolean
+  isLost?: boolean
+}
+
+/** Modelo de etapas por tipo — o funil nunca nasce vazio (I2). */
+export interface PipelineTemplate {
+  key: string
+  kind: PipelineKind
+  name: string
+  description: string
+  isDefault?: boolean
+  stages: PipelineTemplateStage[]
+}
+
+/** Etapa enviada na criação atômica do funil (`POST /settings/pipelines`, F1-825). */
+export interface CreatePipelineStageInput {
+  label: string
+  key?: string
+  color?: string
+  isWon?: boolean
+  isLost?: boolean
 }
 
 /** Estágio de um pipeline. `isWon`/`isLost` marcam os terminais. */

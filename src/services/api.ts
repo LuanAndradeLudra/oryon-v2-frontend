@@ -34,6 +34,10 @@ import type {
   DealStatus,
   Pipeline,
   PipelineStage,
+  PipelineKind,
+  PipelineTemplate,
+  CloseReason,
+  CreatePipelineStageInput,
   PipelineChannelRouting,
   ContactDealsSummary,
   SendMessageDto,
@@ -1271,8 +1275,24 @@ export const pipelinesApi = {
   list() {
     return api.get<Pipeline[]>('/settings/pipelines')
   },
-  create(dto: { name: string; description?: string; color?: string }) {
+  /** Criação atômica (F1-825): `kind` + `stages[]` (ou `templateKey`). Sem `stages` o backend usa o template padrão do tipo. */
+  create(dto: {
+    name: string
+    description?: string
+    color?: string
+    kind?: PipelineKind
+    templateKey?: string
+    stages?: CreatePipelineStageInput[]
+  }) {
     return api.post<Pipeline>('/settings/pipelines', dto)
+  },
+  /** Modelos de etapas por tipo (F1-826). Sem `kind` devolve todos. */
+  templates(kind?: PipelineKind) {
+    return api.get<PipelineTemplate[]>('/settings/pipelines/templates', { params: kind ? { kind } : undefined })
+  },
+  /** Catálogo de motivos de desfecho por tipo (F1-827). */
+  closeReasons(kind?: PipelineKind) {
+    return api.get<CloseReason[] | Record<PipelineKind, CloseReason[]>>('/settings/pipelines/close-reasons', { params: kind ? { kind } : undefined })
   },
   update(id: string, dto: { name?: string; description?: string; color?: string; isArchived?: boolean }) {
     return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
