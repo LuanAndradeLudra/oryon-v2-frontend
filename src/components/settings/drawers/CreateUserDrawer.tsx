@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/Button'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:    'Equipe Oryon',
@@ -101,7 +101,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   // Load departments
   useEffect(() => {
     if (open) {
-      axios.get<{ data: Department[] } | Department[]>(`${API}/departments`).then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
+      api.get<{ data: Department[] } | Department[]>('/departments').then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
     }
   }, [open])
 
@@ -123,7 +123,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return
     setEmailChecking(true)
     try {
-      const r = await axios.get<User[] | { data?: User[] }>(`${API}/users?email=${encodeURIComponent(normalizedEmail)}`)
+      const r = await api.get<User[] | { data?: User[] }>(`/users?email=${encodeURIComponent(normalizedEmail)}`)
       const users = Array.isArray(r.data) ? r.data : (r.data?.data ?? [])
       const duplicated = users.some((u) => u.email?.trim().toLowerCase() === normalizedEmail)
       if (duplicated) {
@@ -167,7 +167,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     setSubmitError(null)
     try {
       // Send only fields the NestJS InviteUserDto accepts
-      const r = await axios.post<User>(`${API}/users`, {
+      const r = await api.post<User>('/users', {
         firstName:    s1.firstName.trim(),
         lastName:     s1.lastName.trim(),
         email:        s1.email.trim(),

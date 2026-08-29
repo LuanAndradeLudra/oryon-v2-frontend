@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import axios from 'axios'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotificationSound } from './useNotificationSound'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 /** Phase 16: flexible shape for contextual notification payloads (automation
  *  id, contact info, campaign stats, etc). Consumer components render the
@@ -119,8 +118,8 @@ export function useNotifications() {
     if (!isAuthenticated) { setLoading(false); return }
     const token = ++loadTokenRef.current
     try {
-      const { data } = await axios.get<{ data: AppNotification[]; unreadCount: number; nextCursor: string | null }>(
-        `${API}/notifications?${buildQuery(null)}`,
+      const { data } = await api.get<{ data: AppNotification[]; unreadCount: number; nextCursor: string | null }>(
+        `/notifications?${buildQuery(null)}`,
       )
       if (loadTokenRef.current !== token) return
       setNotifications(data.data)
@@ -138,8 +137,8 @@ export function useNotifications() {
     if (!nextCursor || loadingMore) return
     setLoadingMore(true)
     try {
-      const { data } = await axios.get<{ data: AppNotification[]; unreadCount: number; nextCursor: string | null }>(
-        `${API}/notifications?${buildQuery(nextCursor)}`,
+      const { data } = await api.get<{ data: AppNotification[]; unreadCount: number; nextCursor: string | null }>(
+        `/notifications?${buildQuery(nextCursor)}`,
       )
       setNotifications((prev) => {
         // Dedup by id in case socket pushed an item during the fetch.
@@ -168,7 +167,7 @@ export function useNotifications() {
     const wasUnread = prevIsRead === false
     if (wasUnread) setUnreadCount((c) => Math.max(0, c - 1))
     try {
-      await axios.post(`${API}/notifications/${id}/read`)
+      await api.post(`/notifications/${id}/read`)
     } catch {
       // Roll back the optimistic UI change
       if (wasUnread) {
@@ -185,7 +184,7 @@ export function useNotifications() {
     setNotifications((prev) => { snapshot = prev; return prev.map((n) => ({ ...n, isRead: true })) })
     setUnreadCount((c) => { prevCount = c; return 0 })
     try {
-      await axios.post(`${API}/notifications/read-all`)
+      await api.post('/notifications/read-all')
     } catch {
       setNotifications(snapshot)
       setUnreadCount(prevCount)
@@ -202,7 +201,7 @@ export function useNotifications() {
     }))
     if (wasRead) setUnreadCount((c) => c + 1)
     try {
-      await axios.post(`${API}/notifications/${id}/unread`)
+      await api.post(`/notifications/${id}/unread`)
     } catch {
       if (wasRead) {
         setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
@@ -227,7 +226,7 @@ export function useNotifications() {
     })
     if (decreaseUnread) setUnreadCount((c) => Math.max(0, c - 1))
     try {
-      await axios.post(`${API}/notifications/${id}/archive`)
+      await api.post(`/notifications/${id}/archive`)
     } catch {
       setNotifications(snapshot)
       if (decreaseUnread) setUnreadCount((c) => c + 1)
@@ -244,7 +243,7 @@ export function useNotifications() {
         : prev.map((n) => (n.id === id ? { ...n, archivedAt: null } : n))
     })
     try {
-      await axios.post(`${API}/notifications/${id}/unarchive`)
+      await api.post(`/notifications/${id}/unarchive`)
     } catch {
       setNotifications(snapshot)
     }

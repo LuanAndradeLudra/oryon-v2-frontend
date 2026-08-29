@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Eye, EyeOff, Camera, Bell, UserCircle } from 'lucide-react'
-import axios from 'axios'
 import { AnimatePresence, motion } from 'framer-motion'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
@@ -17,8 +16,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { TipCard } from '@/components/ui/TipCard'
 import type { User } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Equipe Oryon',
@@ -44,7 +43,7 @@ export function MyAccount() {
 
   useEffect(() => {
     setError(false)
-    axios.get<User>(`${API}/settings/account`).then((r) => {
+    api.get<User>('/settings/account').then((r) => {
       setUser(r.data)
       setForm({ firstName: r.data.firstName ?? '', lastName: r.data.lastName ?? '' })
     }).catch(() => {
@@ -55,7 +54,7 @@ export function MyAccount() {
   const saveProfile = async () => {
     setSavingProfile(true)
     try {
-      await axios.patch(`${API}/settings/account`, form)
+      await api.patch('/settings/account', form)
       toast('Perfil atualizado com sucesso.', 'success')
       markDone('profile')
     } catch {
@@ -76,7 +75,7 @@ export function MyAccount() {
     }
     setSavingPw(true)
     try {
-      await axios.patch(`${API}/settings/password`, { currentPassword: pwForm.current, newPassword: pwForm.next })
+      await api.patch('/settings/password', { currentPassword: pwForm.current, newPassword: pwForm.next })
       setPwForm({ current: '', next: '', confirm: '' })
       toast('Senha alterada com sucesso.', 'success')
     } catch {
