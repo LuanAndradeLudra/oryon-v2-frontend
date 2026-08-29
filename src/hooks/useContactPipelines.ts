@@ -21,21 +21,33 @@ export interface CloseTarget {
  *
  * Havia **três** implementações paralelas disto: `ContactPipelinesSection` (a
  * ficha, feita na F11 e correta no Modelo B), `ContactPanelDeals` (o painel das
- * conversas) e `DealsTab` (o quick-view) — estas duas anteriores ao Modelo B,
- * com `Ganho/Perdido` fixo mesmo em funil de processo e valor em dinheiro em
- * registro que não tem valor. Não foi acidente: sem um dono compartilhado, cada
- * história corrigiu só a superfície do seu escopo.
+ * conversas) e `DealsTab` (o quick-view da tabela) — estas duas anteriores ao
+ * Modelo B, com `Ganho/Perdido` fixo mesmo em funil de processo e valor em
+ * dinheiro em registro que não tem valor. Não foi acidente: sem um dono
+ * compartilhado, cada história corrigiu só a superfície do seu escopo. As três
+ * passaram por aqui — o painel na SCRUM-920, o quick-view na SCRUM-921.
  *
  * O que é comum é o **comportamento** — carregar, ouvir socket e evento local,
  * mover (terminal exige motivo), fechar, abrir histórico. O que é de cada tela
- * é a **densidade**: stepper na ficha, linha compacta no painel da conversa.
- * Este hook fica com o primeiro; a apresentação continua de cada uma.
+ * é a **densidade**: stepper na ficha, card no quick-view, linha compacta no
+ * painel da conversa. Este hook fica com o primeiro; a apresentação continua
+ * de cada uma.
  *
  * Sem o flag de múltiplos funis (SCRUM-498) não busca nada e devolve
- * `enabled:false` — quem chama some da tela.
+ * `enabled:false` — quem chama some da tela. Com `requireMultiPipeline:false`
+ * o hook carrega mesmo assim, para a superfície que **não pode sumir** com o
+ * flag desligado: o quick-view da tabela (`DealsTab`) é a aba de negócios do
+ * tenant legado de funil único, que existia antes do módulo. Aí `enabled` diz
+ * "o hook está vivo" e `multiPipeline` diz "há metadado de funil para mostrar"
+ * — sem funis no cache não há nome, etapa nem destino de movimento.
  */
-export function useContactPipelines(contactId: string, contactName: string) {
-  const enabled = useMultiPipeline()
+export function useContactPipelines(
+  contactId: string,
+  contactName: string,
+  { requireMultiPipeline = true }: { requireMultiPipeline?: boolean } = {},
+) {
+  const multiPipeline = useMultiPipeline()
+  const enabled = multiPipeline || !requireMultiPipeline
   const { pipelines } = useCRMConfig()
   const { toast } = useToast()
   const [deals, setDeals] = useState<Deal[] | null>(null)
@@ -121,7 +133,10 @@ export function useContactPipelines(contactId: string, contactName: string) {
   }, [history, toast])
 
   return {
+    /** O hook está carregando e ouvindo; a superfície que se esconde pelo flag some quando `false`. */
     enabled,
+    /** Flag de múltiplos funis: sem ele não há funil no cache, só o negócio cru. */
+    multiPipeline,
     pipelines,
     /** `null` enquanto carrega — as telas distinguem "carregando" de "nenhum". */
     deals,
