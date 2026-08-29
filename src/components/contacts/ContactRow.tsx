@@ -1,7 +1,7 @@
 import { useCallback, useState, type MouseEvent } from 'react'
 import {
   MoreHorizontal, MessageSquare, ExternalLink, Smile, Meh, Frown, HelpCircle, Check, X,
-  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2,
+  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
@@ -11,9 +11,10 @@ import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
-import { cn, relativeDate } from '@/lib/utils'
+import { cn, relativeDate, getActivePipelines } from '@/lib/utils'
+import { pipelineKindOption, pipelineKindOf } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
-import type { Contact, ContactStage } from '@/types'
+import type { Contact, ContactStage, Pipeline } from '@/types'
 
 const SENTIMENT_ICON = {
   positive: <Smile className="w-4 h-4 text-status-active" />,
@@ -80,6 +81,8 @@ interface ContactRowProps {
   onMoveStage?: (contact: Contact, stage: ContactStage) => void
   /** Abre o painel do contato direto na aba Negócios — clique num chip da coluna Negócios. */
   onOpenDeals?: (contact: Contact) => void
+  /** F9 (SCRUM-875): "Adicionar ao funil" no menu da linha — o fluxo (criação/conflito) é do chamador. */
+  onAddToPipeline?: (contact: Contact, pipeline: Pipeline) => void
   isSelected?: boolean
   onToggleSelect?: (id: string) => void
   hasSelection?: boolean
@@ -93,6 +96,7 @@ export function ContactRow({
   onOpenConversation,
   onMoveStage,
   onOpenDeals,
+  onAddToPipeline,
   isSelected = false,
   onToggleSelect,
   hasSelection = false,
@@ -100,7 +104,7 @@ export function ContactRow({
   onDeleteSelected,
 }: ContactRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const { stages } = useCRMConfig()
+  const { stages, pipelines } = useCRMConfig()
   const multiPipeline = useMultiPipeline()
   const otherStages = stages.filter((s) => s.key !== contact.stage)
 
@@ -146,6 +150,32 @@ export function ContactRow({
         })),
       })
     }
+    // F9 (SCRUM-875/876): funis com ícone do tipo; onde o contato já tem
+    // registro aberto (resumo por funil, F4-848) a entrada fica desabilitada
+    // com "já está · etapa" — I1, um aberto por funil.
+    const activePipelines = multiPipeline && onAddToPipeline ? getActivePipelines(pipelines) : []
+    if (activePipelines.length > 0) {
+      items.push({ separator: true })
+      items.push({
+        label: 'Adicionar ao funil',
+        icon: KanbanSquare,
+        children: activePipelines.map((p) => {
+          const open = contact.dealsSummary?.byPipeline.find((b) => b.pipelineId === p.id && b.openCount > 0)
+          const KindIcon = pipelineKindOption(pipelineKindOf(p)).icon
+          return {
+            label: open ? `${p.name} — já está${open.stageLabel ? ` · ${open.stageLabel}` : ''}` : p.name,
+            icon: () => (
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                <KindIcon className="w-3 h-3 opacity-70" />
+              </span>
+            ),
+            disabled: !!open,
+            onClick: () => onAddToPipeline!(contact, p),
+          }
+        }),
+      })
+    }
     if (onDeleteSelected && hasSelection && isSelected && selectionCount > 0) {
       items.push({ separator: true })
       items.push({
@@ -156,7 +186,7 @@ export function ContactRow({
       })
     }
     return items
-  }, [contact, onOpenPanel, onMoveStage, onToggleSelect, isSelected, otherStages, hasSelection, selectionCount, onDeleteSelected])
+  }, [contact, onOpenPanel, onMoveStage, onToggleSelect, isSelected, otherStages, hasSelection, selectionCount, onDeleteSelected, multiPipeline, onAddToPipeline, pipelines])
 
   const { onContextMenu } = useContextMenu(buildContextMenu)
 

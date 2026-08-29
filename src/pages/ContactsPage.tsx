@@ -24,6 +24,7 @@ import { CreatePipelineModal, type CreatePipelineData } from '@/components/deals
 import { pipelineNoun, pipelineKindOf, pipelineKindOption, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { boardStats, entrySources } from '@/lib/dealCard'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { Avatar } from '@/components/ui/Avatar'
@@ -346,6 +347,10 @@ export function ContactsPage() {
       })
       .catch((e: unknown) => toast(getApiErrorMessage(e, 'Não foi possível mover o negócio para o funil.'), 'error'))
   }
+
+  // F9 (SCRUM-875): "Adicionar ao funil" pelo menu da linha da tabela —
+  // fluxo compartilhado (criação / DealModal em venda / modal de conflito).
+  const addToPipeline = useAddToPipeline({ onCreated: () => { void refetch(); void fetchPipelines() } })
 
   const handleOpenDealContact = (contactId: string) => {
     setSelectedContactId(contactId)
@@ -760,6 +765,7 @@ export function ContactsPage() {
               onOpenPanel={handleOpenPanel}
               onMoveStage={handleMoveStage}
               onOpenDeals={handleOpenDealContact ? (c) => handleOpenDealContact(c.id) : undefined}
+              onAddToPipeline={(c, p) => addToPipeline.requestAdd({ contactId: c.id, contactName: c.displayName || c.waId, pipeline: p })}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelect}
               onSelectAll={selectAll}
@@ -908,6 +914,9 @@ export function ContactsPage() {
         pipelines={pipelines}
         onPipelinesChanged={fetchPipelines}
       />
+
+      {/* F9 (SCRUM-875): diálogos do "Adicionar ao funil" (conflito / motivo / negócio) */}
+      {addToPipeline.dialogs}
 
       {/* F8 (SCRUM-872): motivo ao fechar um registro de processo pelo board */}
       <CloseDealReasonModal
