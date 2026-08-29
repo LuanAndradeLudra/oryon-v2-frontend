@@ -70,7 +70,7 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
 
   useEffect(() => {
     api.get<{ data: Department[] } | Department[]>('/departments').then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
-  }, [API])
+  }, [])
 
   const handleSave = async () => {
     setSaving(true)
