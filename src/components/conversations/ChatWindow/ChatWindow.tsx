@@ -6,7 +6,7 @@ import { MessageInput } from './MessageInput'
 import { HandoffStripe } from './AiHandoffBanner'
 import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
-import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew } from '@/types'
+import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, SocketAnomalyReviewed } from '@/types'
 
 interface ChatWindowProps {
   conversation: Conversation | null
@@ -55,7 +55,7 @@ export function ChatWindow({
   onSendError, sendBlockedReason,
   onBack,
 }: ChatWindowProps) {
-  const { messages, loading, sending, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus } =
+  const { messages, loading, sending, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, markAnomaliesReviewed } =
     useMessages(conversation?.id ?? null)
 
   // Outbound quoted reply: which message the operator is replying to. Cleared
@@ -93,17 +93,23 @@ export function ChatWindow({
         onAiPauseSocketEvent?.(payload)
       }
     }
+    // SCRUM-806 — "marcar como verificada" vira o check nas bolhas pendentes.
+    const handleAnomalyReviewed = (payload: SocketAnomalyReviewed) => {
+      if (payload.conversationId === conversation.id) markAnomaliesReviewed(payload)
+    }
     socket.on('message:new', handleNew)
     socket.on('conversation:updated', handleNew)
     socket.on('message:status', handleStatus)
     socket.on('conversation:ai-pause-updated', handleAiPause)
+    socket.on('conversation:anomaly-reviewed', handleAnomalyReviewed)
     return () => {
       socket.off('message:new', handleNew)
       socket.off('conversation:updated', handleNew)
       socket.off('message:status', handleStatus)
       socket.off('conversation:ai-pause-updated', handleAiPause)
+      socket.off('conversation:anomaly-reviewed', handleAnomalyReviewed)
     }
-  }, [conversation?.id, addIncomingMessage, updateMessageStatus, onAiPauseSocketEvent])
+  }, [conversation?.id, addIncomingMessage, updateMessageStatus, markAnomaliesReviewed, onAiPauseSocketEvent])
 
   const handleStatusChange = (status: 'open' | 'pending' | 'resolved') => {
     if (!conversation) return

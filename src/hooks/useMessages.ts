@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { messagesApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
-import type { Message, SendMessageDto, SocketMessageStatus } from '@/types'
+import type { Message, SendMessageDto, SocketAnomalyReviewed, SocketMessageStatus } from '@/types'
 
 export function useMessages(conversationId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -59,6 +59,22 @@ export function useMessages(conversationId: string | null) {
     )
   }, [])
 
+  /** SCRUM-806 — "marcar como verificada": todo marcador de handoff pendente
+   *  cuja anomalia aconteceu ANTES do reconhecimento vira verificado. Anomalias
+   *  posteriores (conversa re-sinalizada) continuam pendentes. */
+  const markAnomaliesReviewed = useCallback((payload: SocketAnomalyReviewed) => {
+    const at = new Date(payload.reviewedAt).getTime()
+    setMessages((prev) =>
+      prev.map((m) => {
+        const a = m.anomaly
+        if (!a || a.kind !== 'handoff' || a.reviewedAt) return m
+        const occurred = a.occurredAt ? new Date(a.occurredAt).getTime() : 0
+        if (occurred > at) return m
+        return { ...m, anomaly: { ...a, reviewedAt: payload.reviewedAt, reviewedBy: payload.reviewedBy } }
+      }),
+    )
+  }, [])
+
   const sendMessage = useCallback(
     async (dto: SendMessageDto) => {
       if (!conversationId) return
@@ -87,6 +103,7 @@ export function useMessages(conversationId: string | null) {
     fetchMore: () => fetchMessages(false),
     addIncomingMessage,
     updateMessageStatus,
+    markAnomaliesReviewed,
     sendMessage,
   }
 }
