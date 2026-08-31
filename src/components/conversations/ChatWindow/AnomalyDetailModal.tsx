@@ -138,6 +138,9 @@ export function AnomalyDetailModal({
   onResolved?: () => void
 }) {
   const isHandoff = anomaly?.kind === 'handoff'
+  // SCRUM-806 — já reconhecida: o rodapé troca o botão pelo registro de quem/quando.
+  const isReviewed = isHandoff && !!anomaly?.reviewedAt
+  const reviewedWhen = formatWhen(anomaly?.reviewedAt)
   const when = formatWhen(anomaly?.occurredAt)
   const expectedOp = skillLabel(anomaly?.requiredSkill)
   const failures = anomaly?.skillFailures ?? []
@@ -173,7 +176,12 @@ export function AnomalyDetailModal({
       title="Detalhes da verificação"
       fillHeight={hasV2}
       className={hasV2 ? 'max-w-3xl h-[85vh]' : 'max-w-lg'}
-      footer={isHandoff && conversationId ? (
+      footer={isReviewed ? (
+        <p className="flex items-center gap-1.5 text-xs text-surface-400" data-testid="anomaly-reviewed">
+          <ShieldCheck className="w-4 h-4 text-success shrink-0" />
+          Verificada{anomaly?.reviewedBy ? ` por ${anomaly.reviewedBy}` : ''}{reviewedWhen ? ` em ${reviewedWhen}` : ''}
+        </p>
+      ) : isHandoff && conversationId ? (
         <div className="flex items-center justify-end gap-3">
           {resolveError && <p className="text-xs text-red-400 mr-auto">{resolveError}</p>}
           <button
@@ -195,17 +203,20 @@ export function AnomalyDetailModal({
           <div
             className={cn(
               'flex items-start gap-2.5 rounded-lg px-3 py-2.5 border flex-shrink-0',
-              isHandoff ? 'bg-amber-500/10 border-amber-500/30' : 'bg-surface-800/60 border-surface-700',
+              isReviewed ? 'bg-success/10 border-success/30'
+                : isHandoff ? 'bg-amber-500/10 border-amber-500/30' : 'bg-surface-800/60 border-surface-700',
             )}
           >
-            {isHandoff ? (
+            {isReviewed ? (
+              <ShieldCheck className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+            ) : isHandoff ? (
               <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
             ) : (
               <ShieldCheck className="w-4 h-4 text-surface-300 flex-shrink-0 mt-0.5" />
             )}
             <div className="min-w-0 flex-1">
-              <p className={cn('text-sm font-medium', isHandoff ? 'text-amber-200' : 'text-surface-200')}>
-                {isHandoff ? 'Transferido para atendente' : 'Corrigido automaticamente'}
+              <p className={cn('text-sm font-medium', isReviewed ? 'text-success' : isHandoff ? 'text-amber-200' : 'text-surface-200')}>
+                {isReviewed ? 'Verificada pelo atendente' : isHandoff ? 'Transferido para atendente' : 'Corrigido automaticamente'}
               </p>
               <p className="text-xs text-surface-400 mt-0.5">{guardOutcomeDetail(anomaly.outcome, anomaly.claimType)}</p>
               {isHandoff && (anomaly.repair?.llmCalls ?? 0) > 0 && (

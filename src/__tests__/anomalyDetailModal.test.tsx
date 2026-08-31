@@ -69,6 +69,14 @@ describe('rodapé "Marcar como verificada"', () => {
     expect(onResolved).toHaveBeenCalled()
   })
 
+  it('já verificada → sem botão, mostra quem/quando verificou', () => {
+    const reviewed = { ...handoff, reviewedAt: '2026-08-30T21:40:00Z', reviewedBy: 'Ana Souza' } as Anomaly
+    render(<AnomalyDetailModal open onClose={() => {}} anomaly={reviewed} conversationId="conv-1" />)
+    expect(screen.queryByRole('button', { name: BOTAO })).toBeNull()
+    expect(screen.getByTestId('anomaly-reviewed')).toHaveTextContent(/Verificada por Ana Souza em/)
+    expect(screen.getByText('Verificada pelo atendente')).toBeInTheDocument()
+  })
+
   it('falha da API mantém o modal aberto e mostra o erro', async () => {
     const onClose = vi.fn()
     vi.mocked(conversationsApi.resolveReview).mockRejectedValueOnce(new Error('500'))
