@@ -972,6 +972,16 @@ export const conversationsApi = {
   refreshAgentBehaviorCache(agentId: string) {
     return api.post(`/conversations/agent-behavior/${agentId}/refresh`)
   },
+  /**
+   * SCRUM-806 — "Marcar como verificada": reconhece a verificação pendente
+   * (phantom-confirmation) da conversa. O badge da linha e a contagem do
+   * cabeçalho limpam via socket (ai-pause-updated com hasRecentAnomaly:false).
+   * Semântica de timestamp, não dismiss permanente: uma NOVA anomalia depois
+   * disto volta a sinalizar a conversa.
+   */
+  resolveReview(id: string) {
+    return api.post<Conversation>(`/conversations/${id}/review/resolve`)
+  },
 }
 
 export const messagesApi = {
