@@ -848,6 +848,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               open={anomalyOpen}
               onClose={() => setAnomalyOpen(false)}
               anomaly={message.anomaly}
+              conversationId={message.conversationId}
             />
           </>
         )}
