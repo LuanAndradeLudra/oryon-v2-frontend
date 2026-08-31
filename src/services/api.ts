@@ -1143,8 +1143,14 @@ export const contactsApi = {
     }>(`/contacts/${id}/stats`)
   },
 
-  sendTemplate(id: string, templateName: string, language: string) {
-    return api.post<{ conversationId: string; messageId: string }>(`/contacts/${id}/send-template`, { templateName, language })
+  /** SCRUM-807 — `variables` são os valores POSICIONAIS de {{1}}, {{2}}… do corpo;
+   *  o backend valida a contagem contra o template aprovado e monta os
+   *  `components` da Meta. Omitir para template sem variáveis. */
+  sendTemplate(id: string, templateName: string, language: string, variables?: string[]) {
+    return api.post<{ conversationId: string; messageId: string }>(
+      `/contacts/${id}/send-template`,
+      variables && variables.length > 0 ? { templateName, language, variables } : { templateName, language },
+    )
   },
 
   async getCustomFieldDefs() {
