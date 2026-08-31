@@ -1,7 +1,7 @@
 import { useCallback, useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import {
   Send, Paperclip, AlertTriangle, Zap, Image, FileText, Video, ChevronDown,
-  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2,
+  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2, Info,
 } from 'lucide-react'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
@@ -406,6 +406,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
   const [templateError, setTemplateError] = useState<string | null>(null)
   const templateSlots = previewTemplate ? templateVariableSlots(previewTemplate) : []
   const templateReady = variablesComplete(templateSlots, templateVars)
+  const templateMissing = templateSlots.filter((s) => !(templateVars[s.key] ?? '').trim()).length
   const closeTemplateModal = () => {
     setPreviewTemplate(null)
     setTemplateVars({})
@@ -688,7 +689,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
                       {templateSlots.map((slot) => (
                         <label key={slot.key} className="block min-w-0">
                           <span className="flex items-center gap-2 text-[11px] mb-1">
-                            <code className="text-brand-300 bg-brand-500/15 px-1.5 py-0.5 rounded font-mono shrink-0">{slot.placeholder}</code>
+                            <code className="text-brand-600 bg-brand-500/10 border border-brand-500/20 px-1.5 py-0.5 rounded font-mono shrink-0">{slot.placeholder}</code>
                             <span className="text-surface-300 truncate">{slot.label}</span>
                           </span>
                           <input
@@ -704,9 +705,10 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
                         </label>
                       ))}
                       {!templateReady && (
-                        <p className="text-[10px] text-warning leading-snug flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3 shrink-0" />
-                          O envio fica bloqueado até todas as variáveis estarem preenchidas.
+                        <p className="text-[11px] text-surface-400 leading-snug flex items-center gap-1.5">
+                          <Info className="w-3.5 h-3.5 shrink-0" />
+                          {templateMissing === 1 ? 'Falta 1' : `Faltam ${templateMissing}`} de {templateSlots.length}{' '}
+                          {templateSlots.length === 1 ? 'variável' : 'variáveis'} para liberar o envio.
                         </p>
                       )}
                     </div>
