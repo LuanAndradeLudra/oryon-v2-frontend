@@ -12,6 +12,15 @@ interface MoneyInputProps {
   placeholder?: string
   autoFocus?: boolean
   className?: string
+  /**
+   * Identificação e estado do campo. Fora de um `FormField` (vários por linha,
+   * como no editor de itens do negócio) o rótulo é um `<label htmlFor>` próprio
+   * e o nome acessível precisa vir daqui — sem isto o leitor de tela anunciava
+   * quatro campos "R$" sem nome na mesma linha.
+   */
+  id?: string
+  'aria-label'?: string
+  disabled?: boolean
 }
 
 /**
@@ -22,7 +31,16 @@ interface MoneyInputProps {
  * Ao focar, o texto é todo selecionado, então editar um valor existente reescreve
  * limpo (evita o erro de digitar no meio e gerar um valor 10x errado).
  */
-export function MoneyInput({ value, onChange, placeholder, autoFocus, className }: MoneyInputProps) {
+export function MoneyInput({
+  value,
+  onChange,
+  placeholder,
+  autoFocus,
+  className,
+  id,
+  'aria-label': ariaLabel,
+  disabled,
+}: MoneyInputProps) {
   const handleChange = (raw: string) => {
     const digits = raw.replace(/\D/g, '')
     const cents = digits ? parseInt(digits, 10) : 0
@@ -35,6 +53,9 @@ export function MoneyInput({ value, onChange, placeholder, autoFocus, className 
         R$
       </span>
       <Input
+        id={id}
+        aria-label={ariaLabel}
+        disabled={disabled}
         value={formatCents(value)}
         onChange={(e) => handleChange(e.target.value)}
         onFocus={(e) => e.target.select()}

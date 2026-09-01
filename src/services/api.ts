@@ -1410,6 +1410,25 @@ export const dealsApi = {
       params: { contactIds: contactIds.join(',') },
     })
   },
+  /**
+   * A1 (SCRUM-153, decisão D0-3): promove um item PERSONALIZADO do negócio a
+   * produto do catálogo. É o ato explícito que o expõe à IA — enquanto o item é
+   * `custom` ele vive só no negócio, com preço negociado, e não entra no
+   * catálogo que o agent-server lê nem no portão de preço.
+   *
+   * `category` é obrigatória (o cadastro de produtos a exige); `name` permite
+   * corrigir o texto sem reescrever o snapshot histórico do negócio.
+   */
+  promoteLineItem(
+    dealId: string,
+    lineItemId: string,
+    body: { category: string; name?: string; variationLabel?: string; sku?: string; active?: boolean },
+  ) {
+    return api.post<{ deal: Deal; product: Product }>(
+      `/deals/${dealId}/line-items/${lineItemId}/promote`,
+      body,
+    )
+  },
   remove(id: string) {
     return api.delete(`/deals/${id}`)
   },

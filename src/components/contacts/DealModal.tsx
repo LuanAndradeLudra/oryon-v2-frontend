@@ -1,35 +1,23 @@
 import { useState, useEffect } from 'react'
-import { X, Plus } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { MoneyInput } from '@/components/ui/MoneyInput'
-import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { dealsApi, contactsApi } from '@/services/api'
 import { getDefaultPipeline, getPipelineStages, getApiErrorMessage, getActivePipelines } from '@/lib/utils'
 import { pipelineKindOf, pipelineNoun } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
+import { DealItemsEditor } from '@/components/deals/DealItemsEditor'
+import {
+  draftFromLineItem,
+  itemsTotalCents,
+  toLineItemPayload,
+  validateItems,
+  type DealItemDraft,
+} from '@/components/deals/dealItems'
 import type { Deal, Pipeline } from '@/types'
-
-let uidSeq = 0
-const makeUid = () => `dli-${uidSeq++}`
-
-type ItemRow = {
-  _uid: string
-  id?: string
-  productId: string
-  variationLabel: string | null
-  unitPriceCents: number
-  quantity: number
-  discountCents: number
-}
-
-function lineTotal(it: ItemRow): number {
-  return Math.max(0, it.unitPriceCents * it.quantity - it.discountCents)
-}
 
 interface DealModalProps {
   open: boolean
@@ -52,11 +40,12 @@ interface DealModalProps {
 }
 
 export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSaved, contactName, initialPipelineId, originConversationId, onConflict }: DealModalProps) {
-  const { products } = useCRMConfig()
   const { vocab } = useTenantVocab()
   const [title, setTitle] = useState('')
   const [note, setNote] = useState('')
-  const [items, setItems] = useState<ItemRow[]>([])
+  // A1 (SCRUM-153): a composição do negócio virou um componente próprio
+  // (`DealItemsEditor`), que a A3/SCRUM-925 também embute no "Novo negócio".
+  const [items, setItems] = useState<DealItemDraft[]>([])
   const multiPipeline = useMultiPipeline()
   const [pipelineId, setPipelineId] = useState('')
   const [pipelineStageId, setPipelineStageId] = useState('')
@@ -93,17 +82,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     if (open) {
       setTitle(editDeal?.title ?? '')
       setNote(editDeal?.note ?? '')
-      setItems(
-        editDeal?.lineItems?.map((li) => ({
-          _uid: li.id ?? makeUid(),
-          id: li.id,
-          productId: li.productId,
-          variationLabel: li.variationLabel ?? null,
-          unitPriceCents: li.unitPriceCents,
-          quantity: li.quantity ?? 1,
-          discountCents: li.discountCents ?? 0,
-        })) ?? [],
-      )
+      setItems(editDeal?.lineItems?.map(draftFromLineItem) ?? [])
       setError('')
       setMovePipelineId('')
       setMoveError('')
@@ -140,36 +119,10 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editDeal, pipelineId, pipelines])
 
-  const addItem = () =>
-    setItems([
-      ...items,
-      { _uid: makeUid(), productId: '', variationLabel: null, unitPriceCents: 0, quantity: 1, discountCents: 0 },
-    ])
-
-  const updateItem = (index: number, patch: Partial<ItemRow>) =>
-    setItems(items.map((it, i) => (i === index ? { ...it, ...patch } : it)))
-
-  const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index))
-
-  // Ao trocar o produto, pré-preenche com a 1ª variação (rótulo + preço congelado).
-  const onProductChange = (index: number, productId: string) => {
-    const product = products.find((p) => p.id === productId)
-    const firstVar = product?.priceVariations?.[0]
-    updateItem(index, {
-      productId,
-      variationLabel: firstVar?.label ?? null,
-      unitPriceCents: firstVar?.amountCents ?? 0,
-    })
-  }
-
-  const onVariationChange = (index: number, label: string) => {
-    const it = items[index]
-    const product = products.find((p) => p.id === it.productId)
-    const v = product?.priceVariations?.find((pv) => pv.label === label)
-    updateItem(index, { variationLabel: label || null, unitPriceCents: v?.amountCents ?? it.unitPriceCents })
-  }
-
-  const total = items.reduce((sum, it) => sum + lineTotal(it), 0)
+  const total = itemsTotalCents(items)
+  // O formulário tem um `error` só; este recorte diz quais mensagens pertencem
+  // à lista de itens, para o erro aparecer junto dela e não no topo do modal.
+  const itemsFieldError = validateItems(items) === error && error ? error : undefined
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -183,23 +136,18 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       setError('Selecione um funil.')
       return
     }
-    if (items.some((it) => !it.productId)) {
-      setError('Selecione um produto em cada item (ou remova a linha).')
+    // A1 (SCRUM-153): a validação da lista mora com o componente — item de
+    // catálogo precisa de produto, item personalizado de nome e preço > 0.
+    const itemsError = isProcess ? null : validateItems(items)
+    if (itemsError) {
+      setError(itemsError)
       return
     }
     setSaving(true)
     try {
       // Funil de processo não tem itens (F8-873) — mesmo que o usuário tenha
       // trocado de um funil de venda com itens rascunhados.
-      const lineItems = (isProcess ? [] : items).map((it, index) => ({
-        id: it.id,
-        productId: it.productId,
-        variationLabel: it.variationLabel ?? undefined,
-        unitPriceCents: it.unitPriceCents,
-        quantity: it.quantity,
-        discountCents: it.discountCents,
-        order: index,
-      }))
+      const lineItems = toLineItemPayload(isProcess ? [] : items)
       if (editDeal) {
         await dealsApi.update(editDeal.id, {
           title: title.trim(),
@@ -334,83 +282,19 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           </div>
         )}
 
+        {/* A1 (SCRUM-153): itens do negócio — dois botões (catálogo ×
+            personalizado) e desconto espelhado R$↔%. Só em funil de VENDA: em
+            processo não há valor nem composição (F8-873). O mesmo componente é
+            embutido no passo 2 do "Novo negócio" (A3 · SCRUM-925). */}
         {!isProcess && (
-        <FormField
-          label="Itens"
-          error={error === 'Selecione um produto em cada item (ou remova a linha).' ? error : undefined}
-        >
-          <div className="flex flex-col gap-2">
-            {items.map((it, i) => {
-              const product = products.find((p) => p.id === it.productId)
-              const hasVariations = (product?.priceVariations?.length ?? 0) > 0
-              return (
-                <div key={it._uid} className="border border-surface-800 rounded-lg p-2.5 flex flex-col gap-2">
-                  <div className="flex gap-2 items-start">
-                    <div className="flex-1">
-                      <Select value={it.productId} onChange={(e) => onProductChange(i, e.target.value)}>
-                        <option value="">— produto —</option>
-                        {products.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                            {!p.active ? ' (inativo)' : ''}
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
-                    {hasVariations && (
-                      <div className="w-40 flex-shrink-0">
-                        <Select value={it.variationLabel ?? ''} onChange={(e) => onVariationChange(i, e.target.value)}>
-                          {product!.priceVariations.map((pv) => (
-                            <option key={pv.id ?? pv.label} value={pv.label}>
-                              {pv.label}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeItem(i)}
-                      className="p-2 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all flex-shrink-0"
-                      aria-label="Remover item"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 items-end">
-                    <div>
-                      <label className="text-[11px] text-surface-500">Preço unit.</label>
-                      <MoneyInput value={it.unitPriceCents} onChange={(c) => updateItem(i, { unitPriceCents: c })} />
-                    </div>
-                    <div>
-                      <label className="text-[11px] text-surface-500">Qtd</label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={String(it.quantity)}
-                        onChange={(e) => updateItem(i, { quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] text-surface-500">Desconto</label>
-                      <MoneyInput value={it.discountCents} onChange={(c) => updateItem(i, { discountCents: c })} />
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-surface-400 text-right">
-                    Subtotal: <span className="tabular-nums">{formatBRL(lineTotal(it))}</span>
-                  </p>
-                </div>
-              )
-            })}
-            <button
-              type="button"
-              onClick={addItem}
-              className="flex items-center gap-1 self-start px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 transition-all"
-            >
-              <Plus className="w-3.5 h-3.5" /> Adicionar item
-            </button>
-            {items.length === 0 && <p className="text-xs text-surface-600">Nenhum item.</p>}
-          </div>
+        <FormField label="Itens">
+          <DealItemsEditor
+            value={items}
+            onChange={(next) => { setItems(next); setError('') }}
+            error={itemsFieldError}
+            disabled={saving}
+            showTotal={false}
+          />
         </FormField>
         )}
 
