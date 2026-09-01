@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Upload, Settings2, AlertTriangle, Users, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Upload, Settings2, AlertTriangle, Users } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
-import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
@@ -21,14 +20,12 @@ import { BulkActionBar } from '@/components/contacts/BulkActionBar'
 import { CampaignWizard } from '@/components/campaigns/CampaignWizard'
 import { DealsBoard } from '@/components/deals/DealsBoard'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
-import { CreatePipelineModal, type CreatePipelineData } from '@/components/deals/CreatePipelineModal'
 import { pipelineNoun, pipelineKindOf, pipelineKindOption, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { boardStats, entrySources } from '@/lib/dealCard'
 import { toastDealClosedWithUndo } from '@/lib/dealClose'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
-import { Modal, ConfirmModal } from '@/components/ui/Modal'
-import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useContacts } from '@/hooks/useContacts'
@@ -132,11 +129,6 @@ export function ContactsPage() {
   // "destino Contatos" já no 1º render, sem disparar um fetch de board que
   // o backend responderia 404/403.
   const selectedPipelineId = multiPipeline ? selectedPipelineIdRaw : null
-  const [createPipelineModalOpen, setCreatePipelineModalOpen] = useState(false)
-  const [editPipelineModalOpen, setEditPipelineModalOpen] = useState(false)
-  const [deletePipelineConfirmOpen, setDeletePipelineConfirmOpen] = useState(false)
-  const [deletingPipeline, setDeletingPipeline] = useState(false)
-  const [funilMenuOpen, setFunilMenuOpen] = useState(false)
   // F8 (SCRUM-872): mover um registro de PROCESSO para um terminal pede o
   // motivo do catálogo (I5) antes de fechar — o drop fica pendente aqui.
   const [closeDealTarget, setCloseDealTarget] = useState<{ deal: Deal; stage: PipelineStage } | null>(null)
@@ -208,12 +200,6 @@ export function ContactsPage() {
   }, [])
   const { vocab } = useTenantVocab()
   const { toasts, toast, dismiss } = useToast()
-  // Cache compartilhado (SCRUM-293) — mantido em sincronia aqui só nas
-  // mutações reais de pipeline (criar/editar/excluir), não no refresh de
-  // badge por `deal:changed` abaixo (senão reintroduziria o GET redundante
-  // que esse cache existe pra eliminar em ConversationDealIndicator/
-  // ContactPanelDeals/DealsTab).
-  const { refetchPipelines } = useCRMConfig()
 
   const fetchPipelines = useCallback((selectId?: string) => {
     // Gate fechado: chamado também pelos callbacks dos drawers (onDone/
@@ -375,53 +361,6 @@ export function ContactsPage() {
   const handleOpenDealContact = (contactId: string) => {
     setSelectedContactId(contactId)
     setInitialPanelTab('deals')
-  }
-
-  const handleCreatePipeline = async (data: CreatePipelineData) => {
-    let created
-    try {
-      // F7 (SCRUM-865/866): criação atômica com `kind` + `stages[]` (F1) — o
-      // funil nasce válido (≥1 normal, 1 Ganho, 1 Perdido) e utilizável.
-      const res = await pipelinesApi.create({ name: data.name, color: data.color, kind: data.kind, stages: data.stages })
-      created = res.data
-    } catch (e: unknown) {
-      throw new Error(getApiErrorMessage(e, 'Erro ao criar funil.'))
-    }
-    // Abre o board do funil novo direto (SCRUM-867); o empty state do board
-    // oferece "Adicionar contato ao funil". Zero chamadas extras de estágio:
-    // a lista já vem com `stages` embutidas.
-    await fetchPipelines(created.id)
-    refetchPipelines()
-    toast('Funil criado. Adicione o primeiro contato para começar.', 'success')
-  }
-
-  const handleEditPipeline = async (data: CreatePipelineData) => {
-    if (!selectedPipelineId) return
-    try {
-      await pipelinesApi.update(selectedPipelineId, { name: data.name, color: data.color })
-    } catch (e: unknown) {
-      throw new Error(getApiErrorMessage(e, 'Erro ao editar pipeline.'))
-    }
-    await fetchPipelines(selectedPipelineId)
-    refetchPipelines()
-    toast('Funil atualizado.', 'success')
-  }
-
-  const handleDeletePipeline = async () => {
-    if (!selectedPipelineId) return
-    setDeletingPipeline(true)
-    try {
-      await pipelinesApi.remove(selectedPipelineId)
-      toast('Funil excluído.', 'success')
-      setDeletePipelineConfirmOpen(false)
-      setSelectedPipelineId(null)
-      await fetchPipelines()
-      refetchPipelines()
-    } catch (e: unknown) {
-      toast(getApiErrorMessage(e, 'Erro ao excluir pipeline.'), 'error')
-    } finally {
-      setDeletingPipeline(false)
-    }
   }
 
   // ── Bulk selection state ───────────────────────────────────────────────
@@ -648,41 +587,15 @@ export function ContactsPage() {
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Editar funil — só aparece com um funil ativo (renomear/cor/excluir) */}
-              {selectedPipeline && (
-                <Dropdown
-                  open={funilMenuOpen}
-                  onClose={() => setFunilMenuOpen(false)}
-                  align="right"
-                  className="w-44"
-                  anchor={
-                    <button
-                      onClick={() => setFunilMenuOpen((v) => !v)}
-                      title="Editar funil"
-                      className="flex p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                  }
-                >
-                  <div className="px-1 py-1 flex flex-col gap-0.5">
-                    <DropdownItem onClick={() => { setEditPipelineModalOpen(true); setFunilMenuOpen(false) }}>
-                      <Pencil className="w-3.5 h-3.5" /> Renomear / cor
-                    </DropdownItem>
-                    {!selectedPipeline.isDefault && (
-                      <DropdownItem onClick={() => { setDeletePipelineConfirmOpen(true); setFunilMenuOpen(false) }}>
-                        <Trash2 className="w-3.5 h-3.5" /> Excluir funil
-                      </DropdownItem>
-                    )}
-                  </div>
-                </Dropdown>
-              )}
+              {/* B5 (SCRUM-931/P13): criar/renomear/excluir/arquivar funil saiu
+                  da tela de operação — mora em Configurações, com gate de
+                  papel. Aqui só se usa o funil, nunca se gerencia. */}
               <button
-                onClick={() => setCreatePipelineModalOpen(true)}
+                onClick={() => navigate('/settings/pipeline-stages')}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors whitespace-nowrap"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Novo funil
+                <Settings2 className="w-3.5 h-3.5" />
+                Gerenciar funis
               </button>
             </div>
           </div>
@@ -932,8 +845,6 @@ export function ContactsPage() {
       <CRMConfigDrawer
         open={showCRMConfig}
         onClose={() => setShowCRMConfig(false)}
-        pipelines={pipelines}
-        onPipelinesChanged={fetchPipelines}
       />
 
       {/* F9 (SCRUM-875): diálogos do "Adicionar ao funil" (conflito / motivo / negócio) */}
@@ -969,31 +880,6 @@ export function ContactsPage() {
         stage={closeDealTarget?.stage ?? null}
         pipeline={selectedPipeline}
         onConfirm={handleCloseDealWithReason}
-      />
-
-      {/* Funis de negócio (múltiplos pipelines) */}
-      <CreatePipelineModal
-        tenantId={user?.tenantId}
-        open={createPipelineModalOpen}
-        onClose={() => setCreatePipelineModalOpen(false)}
-        onSave={handleCreatePipeline}
-      />
-      <CreatePipelineModal
-        tenantId={user?.tenantId}
-        open={editPipelineModalOpen}
-        onClose={() => setEditPipelineModalOpen(false)}
-        onSave={handleEditPipeline}
-        editPipeline={selectedPipeline}
-      />
-      <ConfirmModal
-        open={deletePipelineConfirmOpen}
-        onClose={() => setDeletePipelineConfirmOpen(false)}
-        onConfirm={handleDeletePipeline}
-        title="Excluir funil"
-        description={`Tem certeza que deseja excluir "${selectedPipeline?.name}"? Só é possível excluir funis sem negócios.`}
-        confirmLabel="Excluir"
-        danger
-        loading={deletingPipeline}
       />
 
       {/* Campaign wizard seeded from a bulk selection. The seed is captured

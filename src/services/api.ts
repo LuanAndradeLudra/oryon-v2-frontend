@@ -37,6 +37,7 @@ import type {
   PipelineKind,
   PipelineTemplate,
   CloseReason,
+  PipelineCloseReason,
   CreatePipelineStageInput,
   PipelineChannelRouting,
   ContactDealsSummary,
@@ -1313,11 +1314,26 @@ export const pipelinesApi = {
   templates(kind?: PipelineKind) {
     return api.get<PipelineTemplate[]>('/settings/pipelines/templates', { params: kind ? { kind } : undefined })
   },
-  /** Catálogo de motivos de desfecho por tipo (F1-827). */
+  /** Catálogo de motivos de desfecho ATIVOS do tenant por tipo (F1-827, B5). */
   closeReasons(kind?: PipelineKind) {
     return api.get<CloseReason[] | Record<PipelineKind, CloseReason[]>>('/settings/pipelines/close-reasons', { params: kind ? { kind } : undefined })
   },
-  update(id: string, dto: { name?: string; description?: string; color?: string; isArchived?: boolean }) {
+  /** Um funil do tenant, com estágios/acesso/motivos embutidos (B5). */
+  getOne(id: string) {
+    return api.get<Pipeline>(`/settings/pipelines/${id}`)
+  },
+  update(id: string, dto: {
+    name?: string
+    description?: string
+    color?: string
+    isArchived?: boolean
+    /** B5 (D0-9/12): 'creator' | 'none' | 'user:<id>'. */
+    defaultOwnerRule?: string
+    /** B5 (D0-1): só editável em funil kind='sales'. */
+    allowMultipleOpen?: boolean
+    /** B5 (D0-8): interruptor do motivo livre no fechamento. */
+    allowFreeCloseReason?: boolean
+  }) {
     return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
   },
   remove(id: string) {
@@ -1326,13 +1342,13 @@ export const pipelinesApi = {
   setDefault(id: string) {
     return api.patch<Pipeline>(`/settings/pipelines/${id}/default`)
   },
-  createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+  createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean; probability?: number | null }) {
     return api.post<PipelineStage>(`/settings/pipelines/${pipelineId}/stages`, dto)
   },
   listStages(pipelineId: string) {
     return api.get<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages`)
   },
-  updateStage(pipelineId: string, id: string, dto: { label?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+  updateStage(pipelineId: string, id: string, dto: { label?: string; color?: string; isWon?: boolean; isLost?: boolean; probability?: number | null }) {
     return api.patch<PipelineStage>(`/settings/pipelines/${pipelineId}/stages/${id}`, dto)
   },
   removeStage(pipelineId: string, id: string) {
@@ -1340,6 +1356,28 @@ export const pipelinesApi = {
   },
   reorderStages(pipelineId: string, ids: string[]) {
     return api.patch<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages/reorder`, { ids })
+  },
+  // ── Acesso por setor (B0/SCRUM-940) ─────────────────────────────────────────
+  getAccess(id: string) {
+    return api.get<{ pipelineId: string; implicitAll: boolean; departmentIds: string[] }>(`/settings/pipelines/${id}/access`)
+  },
+  /** SUBSTITUI o conjunto de setores — manda tudo o que o admin vê marcado, nunca faz merge. */
+  updateAccess(id: string, departmentIds: string[]) {
+    return api.put<{ pipelineId: string; implicitAll: boolean; departmentIds: string[] }>(`/settings/pipelines/${id}/access`, { departmentIds })
+  },
+  // ── Motivos de fechamento editáveis por tenant (B5/D0-8) ────────────────────
+  /** Motivos ativos + inativos do tenant/kind, para a tela de configuração. */
+  manageCloseReasons(kind: PipelineKind) {
+    return api.get<PipelineCloseReason[]>('/settings/pipelines/close-reasons/manage', { params: { kind } })
+  },
+  createCloseReason(dto: { kind: PipelineKind; label: string; outcome: 'won' | 'lost' | 'any'; key?: string }) {
+    return api.post<PipelineCloseReason>('/settings/pipelines/close-reasons', dto)
+  },
+  updateCloseReason(id: string, dto: { label?: string; outcome?: 'won' | 'lost' | 'any'; active?: boolean }) {
+    return api.patch<PipelineCloseReason>(`/settings/pipelines/close-reasons/${id}`, dto)
+  },
+  reorderCloseReasons(kind: PipelineKind, ids: string[]) {
+    return api.patch<PipelineCloseReason[]>('/settings/pipelines/close-reasons/reorder', { kind, ids })
   },
 }
 
