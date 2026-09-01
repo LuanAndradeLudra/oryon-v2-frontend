@@ -11,17 +11,20 @@ import type { PipelineStage, TerminalLabels } from '@/types'
 interface PipelineStageModalProps {
   open: boolean
   onClose: () => void
-  onSave: (data: { label: string; color: string; isWon: boolean; isLost: boolean }) => Promise<void>
+  onSave: (data: { label: string; color: string; isWon: boolean; isLost: boolean; probability?: number | null }) => Promise<void>
   editStage?: PipelineStage | null
   /** F7 (SCRUM-868): rótulos dos terminais do funil (Ganho/Perdido × Concluído/Cancelado). */
   terminalLabels?: TerminalLabels
+  /** B5 (D0-7): oferece o campo de probabilidade default — só em funil de vendas
+   *  (em processo não há valor ponderado). Terminais nunca mostram o campo: são 100/0 fixos. */
+  showProbability?: boolean
 }
 
 type Kind = 'normal' | 'won' | 'lost'
 
 const DEFAULT_TERMINAL_LABELS: TerminalLabels = { won: 'Ganho', lost: 'Perdido' }
 
-export function PipelineStageModal({ open, onClose, onSave, editStage, terminalLabels = DEFAULT_TERMINAL_LABELS }: PipelineStageModalProps) {
+export function PipelineStageModal({ open, onClose, onSave, editStage, terminalLabels = DEFAULT_TERMINAL_LABELS, showProbability = false }: PipelineStageModalProps) {
   const KIND_OPTIONS: { key: Kind; label: string }[] = [
     { key: 'normal', label: 'Normal' },
     { key: 'won', label: terminalLabels.won },
@@ -30,6 +33,7 @@ export function PipelineStageModal({ open, onClose, onSave, editStage, terminalL
   const [label, setLabel] = useState('')
   const [color, setColor] = useState(DEFAULT_ENTITY_COLOR)
   const [kind, setKind] = useState<Kind>('normal')
+  const [probability, setProbability] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -38,12 +42,20 @@ export function PipelineStageModal({ open, onClose, onSave, editStage, terminalL
       setLabel(editStage?.label ?? '')
       setColor(editStage?.color ?? DEFAULT_ENTITY_COLOR)
       setKind(editStage?.isWon ? 'won' : editStage?.isLost ? 'lost' : 'normal')
+      setProbability(editStage?.probability != null ? String(editStage.probability) : '')
       setError('')
     }
   }, [open, editStage])
 
   const handleSave = async () => {
     if (!label.trim()) { setError('O nome do estágio é obrigatório.'); return }
+    if (probability.trim()) {
+      const n = Number(probability)
+      if (!Number.isInteger(n) || n < 0 || n > 100) {
+        setError('A probabilidade precisa ser um número inteiro entre 0 e 100.')
+        return
+      }
+    }
     setSaving(true)
     try {
       await onSave({
@@ -51,6 +63,9 @@ export function PipelineStageModal({ open, onClose, onSave, editStage, terminalL
         color,
         isWon: kind === 'won',
         isLost: kind === 'lost',
+        ...(showProbability && kind === 'normal'
+          ? { probability: probability.trim() ? Number(probability) : null }
+          : {}),
       })
       onClose()
     } catch (e: unknown) {
@@ -104,6 +119,22 @@ export function PipelineStageModal({ open, onClose, onSave, editStage, terminalL
             ))}
           </div>
         </div>
+
+        {showProbability && kind === 'normal' && (
+          <FormField label="Probabilidade default (%)" error={undefined}>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={probability}
+              onChange={(e) => { setProbability(e.target.value); setError('') }}
+              placeholder="Ex: 40"
+            />
+            <p className="text-[11px] text-surface-500 mt-1">
+              Herdada por todo negócio nesta etapa, salvo override individual. Deixe em branco para "não configurada".
+            </p>
+          </FormField>
+        )}
 
         <div className="flex gap-2 justify-end pt-1">
           <button

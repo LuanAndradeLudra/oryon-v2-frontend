@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, X, GripVertical, Lock, Check, Trophy, Loader2, Sparkles } from 'lucide-react'
+import { Plus, X, GripVertical, Lock, Check, Trophy, Loader2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
@@ -86,8 +86,11 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
   // F13-904: a geração de etapas por IA saiu do onboarding e veio para cá —
   // é aqui que ela faz sentido (o usuário está criando UM funil, com nome e
   // tipo já escolhidos), e o resultado é rascunho editável, não configuração
-  // aplicada às escondidas.
+  // aplicada às escondidas. F-FUNIL-17: "Sugerir com IA" é uma OPÇÃO do
+  // mesmo campo "Modelo", não um botão concorrente — um só caminho pra
+  // preencher as etapas, sem duas afordances competindo por atenção.
   const [suggesting, setSuggesting] = useState(false)
+  const [usedAi, setUsedAi] = useState(false)
 
   const isEdit = !!editPipeline
 
@@ -135,6 +138,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
     const tpl = (templates ?? []).find((t) => t.key === key && t.kind === nextKind) ?? null
     setTemplateKey(tpl?.key ?? '')
     setStages(tpl ? stagesFromTemplate(tpl) : fallbackStages(nextKind))
+    setUsedAi(false)
   }
 
   // Trocar o tipo troca o vocabulário inteiro: modelo padrão do novo tipo e
@@ -161,11 +165,21 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
       const draft = stagesFromAiSuggestion(result.stages ?? [], kind)
       setStages(draft)
       setTemplateKey('')
+      setUsedAi(true)
     } catch {
       setError('Não foi possível sugerir etapas agora. Escolha um modelo ou monte a lista à mão.')
+      setUsedAi(false)
     } finally {
       setSuggesting(false)
     }
+  }
+
+  /** Único handler do campo "Modelo" — a opção especial de IA (F-FUNIL-17)
+   *  dispara a sugestão; qualquer outro valor é um `templateKey` normal. */
+  const AI_OPTION = '__ai__'
+  const handleModelChange = (value: string) => {
+    if (value === AI_OPTION) { void handleSuggest(); return }
+    applyTemplate(value, kind)
   }
 
   const normals = normalStages(stages)
@@ -287,32 +301,24 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-xs font-semibold text-surface-400">Etapas</span>
-              <button
-                type="button"
-                onClick={handleSuggest}
-                disabled={suggesting || loadingTemplates}
-                data-testid="suggest-stages-ai"
-                className="inline-flex items-center gap-1.5 text-xs text-brand-400 hover:text-brand-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {suggesting
-                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sugerindo…</>
-                  : <><Sparkles className="w-3.5 h-3.5" /> Sugerir etapas com IA</>}
-              </button>
-              {templatesOfKind.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-surface-500">Modelo:</span>
-                  <Select
-                    aria-label="Modelo de etapas"
-                    value={templateKey}
-                    onChange={(e) => applyTemplate(e.target.value, kind)}
-                    className="py-1 text-xs w-48"
-                  >
-                    {templatesOfKind.map((t) => (
-                      <option key={t.key} value={t.key}>{t.name}</option>
-                    ))}
-                  </Select>
-                </div>
-              )}
+              {/* F-FUNIL-17: um só campo para preencher as etapas — "Sugerir com
+                  IA" é uma opção do MESMO select, não um botão concorrente. */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-surface-500">Modelo:</span>
+                <Select
+                  aria-label="Modelo de etapas"
+                  value={suggesting || usedAi ? AI_OPTION : templateKey}
+                  onChange={(e) => handleModelChange(e.target.value)}
+                  disabled={suggesting || loadingTemplates}
+                  className="py-1 text-xs w-56"
+                >
+                  {templatesOfKind.map((t) => (
+                    <option key={t.key} value={t.key}>{t.name}</option>
+                  ))}
+                  <option value={AI_OPTION}>✨ Sugerir com IA</option>
+                </Select>
+                {suggesting && <Loader2 className="w-3.5 h-3.5 animate-spin text-surface-400" />}
+              </div>
             </div>
 
             {loadingTemplates ? (

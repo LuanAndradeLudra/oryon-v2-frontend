@@ -1,15 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Columns, SlidersHorizontal, Workflow } from 'lucide-react'
+import { X, Columns, SlidersHorizontal, Workflow, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { StagesManager } from '@/components/settings/sections/crm/StagesManager'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
-import { PipelineStagesManager } from '@/components/settings/sections/crm/PipelineStagesManager'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
-import type { Pipeline } from '@/types'
 
 const TABS = [
   { id: 'stages', label: 'Situação do contato', icon: Columns },
-  { id: 'pipelineStages', label: 'Estágios do funil', icon: Workflow },
+  { id: 'pipelineStages', label: 'Funis', icon: Workflow },
   { id: 'fields', label: 'Campos', icon: SlidersHorizontal },
 ] as const
 
@@ -18,22 +17,12 @@ type Tab = (typeof TABS)[number]['id']
 interface CRMConfigDrawerProps {
   open: boolean
   onClose: () => void
-  /** Funis de negócio do tenant — a aba "Estágios do funil" edita os
-   *  estágios (colunas do Kanban) de um deles. */
-  pipelines: Pipeline[]
-  /** Chamado após qualquer mudança de estágio de funil — refaz o fetch dos
-   *  pipelines na página, refletindo direto no Kanban aberto. */
-  onPipelinesChanged: () => void
-  /** Aba a abrir (SCRUM-293 — redirect "criar funil → configurar estágios"
-   *  abre já na aba "Estágios do funil"). Omitido = comportamento normal
-   *  ("Situação do contato"). */
+  /** Aba a abrir. Omitido = comportamento normal ("Situação do contato"). */
   initialTab?: Tab
-  /** Repassado pra `PipelineStagesManager` — pré-seleciona o funil recém-criado. */
-  initialPipelineId?: string | null
 }
 
 export function CRMConfigDrawer({
-  open, onClose, pipelines, onPipelinesChanged, initialTab, initialPipelineId,
+  open, onClose, initialTab,
 }: CRMConfigDrawerProps) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'stages')
   // `CRMConfigDrawer` fica sempre montado (só o conteúdo interno é gated por
@@ -81,7 +70,7 @@ export function CRMConfigDrawer({
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
               <div>
                 <h2 className="text-base font-semibold text-surface-50">Configurar CRM</h2>
-                <p className="text-xs text-surface-500 mt-0.5">Estágios (contato e funil) e campos personalizados</p>
+                <p className="text-xs text-surface-500 mt-0.5">Situação do contato e campos personalizados</p>
               </div>
               <button
                 onClick={onClose}
@@ -119,11 +108,28 @@ export function CRMConfigDrawer({
             <div className="flex-1 overflow-y-auto px-5 py-5">
               {currentTab === 'stages' && <StagesManager />}
               {currentTab === 'pipelineStages' && (
-                <PipelineStagesManager
-                  pipelines={pipelines}
-                  onChanged={onPipelinesChanged}
-                  initialPipelineId={initialPipelineId}
-                />
+                // B5 (SCRUM-931): criar/renomear/excluir/arquivar funil e editar
+                // etapas saiu daqui — morava num cache local (`ContactsPage`)
+                // divergente do `CRMConfigContext` que Configurações usa, e uma
+                // etapa renomeada em um lugar sumia do chip do chat até o
+                // outro recarregar. Um link único encerra a divergência.
+                <div className="flex flex-col items-center text-center gap-3 py-12">
+                  <Workflow className="w-8 h-8 text-surface-600" />
+                  <div>
+                    <p className="text-sm font-medium text-surface-200">Funis mudaram de endereço</p>
+                    <p className="text-xs text-surface-500 mt-1 max-w-xs">
+                      Criar, renomear, arquivar e configurar etapas, motivos de fechamento e acesso por setor agora
+                      é só em Configurações.
+                    </p>
+                  </div>
+                  <Link
+                    to="/settings/pipeline-stages"
+                    onClick={onClose}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
+                  >
+                    Ir para Configurações → Funis <ArrowUpRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               )}
               {currentTab === 'fields' && <CustomFieldsManager />}
             </div>

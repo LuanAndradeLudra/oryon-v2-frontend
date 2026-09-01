@@ -293,6 +293,15 @@ export interface CloseReason {
   outcome: 'won' | 'lost' | 'any'
 }
 
+/** Motivo de desfecho editável do tenant (B5/SCRUM-931) — `GET .../close-reasons/manage`,
+ *  usado só pela tela de configuração. `active=false` tira o motivo dos modais sem apagar
+ *  o histórico de negócios já fechados com ele. */
+export interface PipelineCloseReason extends CloseReason {
+  id: string
+  order: number
+  active: boolean
+}
+
 /** F10 (SCRUM-882): desfecho ao resolver a conversa (`PATCH /conversations/:id/status`). */
 export interface DealOutcomeInput {
   outcome: 'won' | 'lost'
@@ -354,6 +363,12 @@ export interface Pipeline {
    *  mostra um campo livre ao lado da lista (o livre grava como `outro` + nota).
    *  A CONFIGURAÇÃO é da B5 (SCRUM-931); a A4 só consome: ausente = desligado. */
   allowFreeCloseReason?: boolean
+  /** B5 (D0-9/12): dono padrão dos negócios criados neste funil — `'creator'` (default),
+   *  `'none'` (nasce sem dono) ou `'user:<id>'` (usuário fixo). */
+  defaultOwnerRule?: string
+  /** B5 (D0-1): permite mais de um negócio aberto por contato neste funil. Só é
+   *  editável (e só é consumida, pela C1/SCRUM-932) em `kind='sales'`. */
+  allowMultipleOpen?: boolean
   stages: PipelineStage[]
   /** Contagem de negócios abertos — badge do segmented control da aba Leads. */
   openDealsCount: number
@@ -400,6 +415,9 @@ export interface PipelineStage {
   order: number
   isWon: boolean
   isLost: boolean
+  /** B1/B5 (D0-7): probabilidade default dos negócios nesta etapa, 0-100. `null`/ausente =
+   *  não configurada. Terminais são 100/0 fixos na leitura — a tela nem oferece o campo neles. */
+  probability?: number | null
   createdAt?: string
   updatedAt?: string
 }
