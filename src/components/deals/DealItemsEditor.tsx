@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import { X, Package, PenLine } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -11,6 +12,7 @@ import {
   discountPercentOf,
   emptyCatalogItem,
   emptyCustomItem,
+  grossCents,
   lineTotalCents,
   reapplyDiscount,
   type DealItemDraft,
@@ -25,6 +27,56 @@ interface DealItemsEditorProps {
   disabled?: boolean
   /** Rótulo do total ao pé da lista. `false` esconde (quando o pai já mostra o seu). */
   showTotal?: boolean
+}
+
+interface PercentInputProps {
+  /** Percentual DERIVADO do desconto em centavos (`discountPercentOf`). */
+  value: number
+  /** Recebe o percentual parseado, já clampado a 0..100. */
+  onCommit: (percent: number) => void
+  id?: string
+  disabled?: boolean
+}
+
+/**
+ * Campo de percentual com estado local de TEXTO durante a edição.
+ *
+ * Um `input[type=number]` controlado pelo valor derivado comia a digitação:
+ * '12.' é inválido para o DOM, que reporta `''` → `parseFloat('')` → 0 →
+ * desconto zerado → campo limpo, e o decimal ficava impossível de digitar.
+ * Aqui o input é `type="text"` (com `inputMode="decimal"`) e o texto digitado é
+ * dono do campo enquanto ele está em edição: o commit só acontece quando o
+ * parse é um número finito (aceita '.' ou ',' como separador), e o blur
+ * ressincroniza a exibição com o derivado — os dois lados do espelho R$↔%
+ * nunca divergem por mais de um foco.
+ */
+function PercentInput({ value, onCommit, id, disabled }: PercentInputProps) {
+  // `null` = fora de edição: o campo exibe o percentual derivado.
+  const [text, setText] = useState<string | null>(null)
+
+  return (
+    <Input
+      id={id}
+      type="text"
+      inputMode="decimal"
+      aria-label="Desconto em porcentagem"
+      placeholder="0"
+      value={text ?? (value ? String(value) : '')}
+      onFocus={() => setText(value ? String(value) : '')}
+      onBlur={() => setText(null)}
+      onChange={(e) => {
+        const raw = e.target.value
+        // Só dígitos e um separador decimal: tecla perdida não entra, e o que
+        // entra continua visível mesmo incompleto ('12.').
+        if (!/^\d*[.,]?\d*$/.test(raw)) return
+        setText(raw)
+        const parsed = parseFloat(raw.replace(',', '.'))
+        if (Number.isFinite(parsed)) onCommit(Math.min(Math.max(parsed, 0), 100))
+        else if (raw === '') onCommit(0) // campo limpo de propósito = sem desconto
+      }}
+      disabled={disabled}
+    />
+  )
 }
 
 /**
@@ -46,8 +98,8 @@ interface DealItemsEditorProps {
  * **Desconto espelhado R$ ↔ %** (padrão Moskit): os dois campos mostram o mesmo
  * desconto de duas maneiras, e mexer em um atualiza o outro. Só o valor em
  * centavos é gravado — o percentual é derivado (`discountPercentOf`), nunca
- * armazenado, para os dois não divergirem. Mudar preço ou quantidade preserva o
- * PERCENTUAL: quem deu 10% continua com 10% ao dobrar a quantidade.
+ * armazenado, para os dois não divergirem. Mudar preço ou quantidade preserva a
+ * PROPORÇÃO: quem deu 10% continua com 10% ao dobrar a quantidade.
  *
  * **Só em funil de venda.** O gate é do chamador (em funil de processo não há
  * valor nem composição — F8/SCRUM-873, e o backend rejeita itens em `process`);
@@ -56,19 +108,39 @@ interface DealItemsEditorProps {
 export function DealItemsEditor({ value, onChange, error, disabled, showTotal = true }: DealItemsEditorProps) {
   const { products } = useCRMConfig()
 
+  /**
+   * Âncora da reaplicação de desconto: o `MoneyInput` dispara `onChange` POR
+   * TECLA com valores intermediários (2 → 20 → 200…), e reaplicar a proporção
+   * contra o valor da última tecla corrompia o desconto — a primeira tecla
+   * derruba a base a centavos, o desconto reescalado arredonda a 0 e morre.
+   * O item capturado no FOCO é a base honesta: o `MoneyInput` seleciona tudo ao
+   * focar, então a digitação inteira é UMA edição sobre essa âncora. O blur
+   * solta a âncora para as edições que não passam por foco de preço/qtd
+   * (variação, produto) usarem o item corrente.
+   */
+  const anchorRef = useRef<{ uid: string; item: DealItemDraft } | null>(null)
+  const anchor = (it: DealItemDraft) => {
+    anchorRef.current = { uid: it._uid, item: it }
+  }
+  const releaseAnchor = () => {
+    anchorRef.current = null
+  }
+
   const patch = (index: number, next: Partial<DealItemDraft>) =>
     onChange(value.map((it, i) => (i === index ? { ...it, ...next } : it)))
 
   /**
-   * Edições que mexem na BASE do desconto (preço, quantidade) reaplicam o
-   * percentual — é o que mantém o espelho honesto quando o outro lado muda.
+   * Edições que mexem na BASE do desconto (preço, quantidade, variação,
+   * produto) reaplicam a proporção — é o que mantém o espelho honesto quando o
+   * outro lado muda. A referência é a âncora de foco quando existe (ver acima).
    */
   const patchWithDiscount = (index: number, next: Partial<DealItemDraft>) =>
     onChange(
       value.map((it, i) => {
         if (i !== index) return it
         const updated = { ...it, ...next }
-        return { ...updated, discountCents: reapplyDiscount(it, updated) }
+        const base = anchorRef.current?.uid === it._uid ? anchorRef.current.item : it
+        return { ...updated, discountCents: reapplyDiscount(base, updated) }
       }),
     )
 
@@ -87,7 +159,9 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
         return (
           <div
             key={it._uid}
-            data-testid={`deal-item-${it.kind}`}
+            // O índice entra no testid: dois itens do mesmo tipo na lista são
+            // linhas distintas também para os testes.
+            data-testid={`deal-item-${it.kind}-${i}`}
             className="border border-surface-800 rounded-lg p-2.5 flex flex-col gap-2"
           >
             <div className="flex gap-2 items-start">
@@ -98,12 +172,19 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                     onChange={(e) => patch(i, { productName: e.target.value })}
                     placeholder="Nome do item (ex.: Instalação no local)"
                     aria-label="Nome do item personalizado"
+                    // Limite do backend (`@MaxLength(255)`) — sem ele o excesso
+                    // só aparecia como 400 mudo no salvar.
+                    maxLength={255}
                     disabled={disabled}
                   />
                 ) : (
                   <Select
                     value={it.productId ?? ''}
-                    onChange={(e) => patch(i, applyProduct(it, products.find((p) => p.id === e.target.value)))}
+                    // Trocar o PRODUTO troca a base: rebaseia o desconto na
+                    // proporção (como a troca de variação), senão os R$ do
+                    // produto antigo ficam pendurados num preço que não existe
+                    // mais (R$ 1000 de desconto num produto de R$ 50 = 2000%).
+                    onChange={(e) => patchWithDiscount(i, applyProduct(it, products.find((p) => p.id === e.target.value)))}
                     aria-label="Produto do catálogo"
                     disabled={disabled}
                   >
@@ -152,6 +233,8 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                 <MoneyInput
                   value={it.unitPriceCents}
                   onChange={(cents) => patchWithDiscount(i, { unitPriceCents: cents })}
+                  onFocus={() => anchor(it)}
+                  onBlur={releaseAnchor}
                   aria-label="Preço unitário"
                   id={`item-preco-${it._uid}`}
                   disabled={disabled}
@@ -165,7 +248,13 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                   id={`item-qtd-${it._uid}`}
                   type="number"
                   min={1}
+                  // `aria-label` explícito: o `htmlFor` acima já nomeia, mas é o
+                  // único campo da linha que dependia SÓ dele — cinto e
+                  // suspensório contra qualquer invólucro que mexa nos ids.
+                  aria-label="Qtd"
                   value={String(it.quantity)}
+                  onFocus={() => anchor(it)}
+                  onBlur={releaseAnchor}
                   onChange={(e) =>
                     patchWithDiscount(i, { quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })
                   }
@@ -179,7 +268,9 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                 </label>
                 <MoneyInput
                   value={it.discountCents}
-                  onChange={(cents) => patch(i, { discountCents: cents })}
+                  // Clampado ao subtotal da linha: desconto maior que o bruto
+                  // não é troco, é erro de digitação (validateItems também barra).
+                  onChange={(cents) => patch(i, { discountCents: Math.min(cents, grossCents(it)) })}
                   aria-label="Desconto em reais"
                   id={`item-desc-rs-${it._uid}`}
                   disabled={disabled}
@@ -189,20 +280,10 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                 <label className="text-[11px] text-surface-500" htmlFor={`item-desc-pct-${it._uid}`}>
                   Desconto %
                 </label>
-                <Input
+                <PercentInput
                   id={`item-desc-pct-${it._uid}`}
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.01"
-                  aria-label="Desconto em porcentagem"
-                  value={percent ? String(percent) : ''}
-                  placeholder="0"
-                  onChange={(e) =>
-                    patch(i, {
-                      discountCents: discountCentsFromPercent(it, parseFloat(e.target.value) || 0),
-                    })
-                  }
+                  value={percent}
+                  onCommit={(pct) => patch(i, { discountCents: discountCentsFromPercent(it, pct) })}
                   disabled={disabled}
                 />
               </div>

@@ -85,6 +85,21 @@ describe('desconto espelhado R$ ↔ % (D0-6, padrão Moskit)', () => {
     const antes = draft({ discountCents: 0 })
     expect(reapplyDiscount(antes, { ...antes, unitPriceCents: 99000 })).toBe(0)
   })
+
+  it('a reaplicação escala pela RAZÃO exata, não pelo % em 2 casas — ida e volta sem deriva', () => {
+    // Base 30000 com desconto 500 (1,666…%): derivar via percentual quantizado
+    // fazia qty 3 → 4 → 3 devolver 501. Pela razão exata, volta a 500.
+    const q3 = draft({ unitPriceCents: 10000, quantity: 3, discountCents: 500 })
+    const desconto4 = reapplyDiscount(q3, { ...q3, quantity: 4 })
+    expect(desconto4).toBe(667)
+    const q4 = { ...q3, quantity: 4, discountCents: desconto4 }
+    expect(reapplyDiscount(q4, { ...q4, quantity: 3 })).toBe(500)
+  })
+
+  it('o desconto reaplicado clampa na base nova — nunca maior que o subtotal', () => {
+    const antes = draft({ unitPriceCents: 10000, quantity: 1, discountCents: 10000 }) // 100%
+    expect(reapplyDiscount(antes, { ...antes, unitPriceCents: 50 })).toBe(50)
+  })
 })
 
 describe('semente a partir de um negócio salvo', () => {
@@ -127,6 +142,12 @@ describe('validação (espelha o que o backend recusa)', () => {
     expect(validateItems([draft({ unitPriceCents: 0 })])).toBeNull()
   })
 
+  it('desconto maior que o subtotal da linha é erro — cinto e suspensório do clamp da UI', () => {
+    expect(validateItems([draft({ unitPriceCents: 10000, quantity: 1, discountCents: 10001 })])).toMatch(/desconto/i)
+    // No limite exato (100%) ainda é válido: a linha zera, não fica negativa.
+    expect(validateItems([draft({ unitPriceCents: 10000, quantity: 1, discountCents: 10000 })])).toBeNull()
+  })
+
   it('os dois tipos válidos juntos passam', () => {
     expect(validateItems([draft(), custom()])).toBeNull()
   })
@@ -164,5 +185,11 @@ describe('serialização para a API', () => {
   it('variação vazia não é enviada como string vazia', () => {
     expect(toLineItemPayload([draft({ variationLabel: null })])[0].variationLabel).toBeUndefined()
     expect(toLineItemPayload([draft({ variationLabel: 'Particular' })])[0].variationLabel).toBe('Particular')
+  })
+
+  it('catálogo sem produto LANÇA — nunca `productId: null` num 400 mudo', () => {
+    // `validateItems` barra antes; o throw protege a A3 (SCRUM-925) de
+    // esquecer a validação ao embutir o editor no "Novo negócio".
+    expect(() => toLineItemPayload([draft({ productId: null })])).toThrow(/catálogo sem produto/i)
   })
 })

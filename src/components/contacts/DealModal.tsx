@@ -19,6 +19,14 @@ import {
 } from '@/components/deals/dealItems'
 import type { Deal, Pipeline } from '@/types'
 
+/**
+ * Igualdade estrutural dos drafts, ignorando o `_uid` (chave de UI, não dado).
+ * É o detector de sujeira dos itens: o PATCH só carrega `lineItems` quando o
+ * operador realmente mexeu neles (ver `handleSave`).
+ */
+const normalizeItems = (items: DealItemDraft[]) =>
+  JSON.stringify(items.map((it) => ({ ...it, _uid: undefined })))
+
 interface DealModalProps {
   open: boolean
   contactId: string
@@ -46,6 +54,8 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   // A1 (SCRUM-153): a composição do negócio virou um componente próprio
   // (`DealItemsEditor`), que a A3/SCRUM-925 também embute no "Novo negócio".
   const [items, setItems] = useState<DealItemDraft[]>([])
+  // Snapshot dos itens na abertura do modal — base do `itemsDirty` do salvar.
+  const [initialItemsJson, setInitialItemsJson] = useState('[]')
   const multiPipeline = useMultiPipeline()
   const [pipelineId, setPipelineId] = useState('')
   const [pipelineStageId, setPipelineStageId] = useState('')
@@ -82,7 +92,9 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     if (open) {
       setTitle(editDeal?.title ?? '')
       setNote(editDeal?.note ?? '')
-      setItems(editDeal?.lineItems?.map(draftFromLineItem) ?? [])
+      const initialItems = editDeal?.lineItems?.map(draftFromLineItem) ?? []
+      setItems(initialItems)
+      setInitialItemsJson(normalizeItems(initialItems))
       setError('')
       setMovePipelineId('')
       setMoveError('')
@@ -123,6 +135,13 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   // O formulário tem um `error` só; este recorte diz quais mensagens pertencem
   // à lista de itens, para o erro aparecer junto dela e não no topo do modal.
   const itemsFieldError = validateItems(items) === error && error ? error : undefined
+  // O que sobra — 400/500 do backend, rede — aparece no bloco genérico junto
+  // ao rodapé; sem ele o `setError` do catch morria invisível (o modal só
+  // renderizava os três erros de campo por igualdade exata de string).
+  const genericError =
+    error && error !== 'O título é obrigatório.' && error !== 'Selecione um funil.' && !itemsFieldError
+      ? error
+      : ''
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -145,21 +164,29 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     }
     setSaving(true)
     try {
-      // Funil de processo não tem itens (F8-873) — mesmo que o usuário tenha
-      // trocado de um funil de venda com itens rascunhados.
-      const lineItems = toLineItemPayload(isProcess ? [] : items)
+      // `lineItems` no payload nunca é neutro: em funil de PROCESSO o backend
+      // responde 400 (F8-873 — registro não tem composição), e num PATCH sem
+      // `updateAmount` ele recalcula `amountCents = Σ itens`, zerando o valor
+      // digitado à mão (A2 · SCRUM-924, decisão D4). Então a chave é OMITIDA
+      // (não `[]`) em processo, e no update só viaja quando o operador mexeu
+      // de fato nos itens desde a abertura do modal.
+      const itemsDirty = normalizeItems(items) !== initialItemsJson
       if (editDeal) {
         await dealsApi.update(editDeal.id, {
           title: title.trim(),
           note: note.trim() || undefined,
-          lineItems,
+          // `updateAmount: true` explícito: o FE está reescrevendo a composição,
+          // então o valor do negócio volta a ser a soma dos itens (A2/SCRUM-924, D4).
+          ...(isProcess || !itemsDirty
+            ? {}
+            : { lineItems: toLineItemPayload(items), updateAmount: true }),
         })
       } else {
         await dealsApi.create({
           contactId,
           title: title.trim(),
           note: note.trim() || undefined,
-          lineItems,
+          ...(isProcess ? {} : { lineItems: toLineItemPayload(items) }),
           ...(multiPipeline && { pipelineId, stageId: pipelineStageId || undefined }),
           ...(originConversationId ? { originConversationId } : {}),
         })
@@ -286,8 +313,16 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             personalizado) e desconto espelhado R$↔%. Só em funil de VENDA: em
             processo não há valor nem composição (F8-873). O mesmo componente é
             embutido no passo 2 do "Novo negócio" (A3 · SCRUM-925). */}
+        {/* SEM `FormField` em volta do editor, de propósito: o contexto dele
+            injeta o MESMO id em todos os campos descendentes (`mergeFieldAria`:
+            o contexto vence a prop), o que quebrava os `htmlFor` das linhas,
+            duplicava ids e deixava o campo Qtd sem nome acessível. O rótulo
+            "Itens" é manual, com o visual do label do FormField. */}
         {!isProcess && (
-        <FormField label="Itens">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold text-surface-300 uppercase tracking-wider">
+            Itens
+          </span>
           <DealItemsEditor
             value={items}
             onChange={(next) => { setItems(next); setError('') }}
@@ -295,12 +330,20 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             disabled={saving}
             showTotal={false}
           />
-        </FormField>
+        </div>
         )}
 
         <FormField label="Observação (opcional)">
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Detalhes da proposta" />
         </FormField>
+
+        {/* Erro sem campo próprio (400/500 do backend, rede) — mesmo visual dos
+            erros de campo do FormField. */}
+        {genericError && (
+          <p role="alert" data-testid="deal-modal-error" className="text-xs text-danger">
+            {genericError}
+          </p>
+        )}
 
         <div className="flex items-center justify-between border-t border-surface-800 pt-3">
           {isProcess ? (

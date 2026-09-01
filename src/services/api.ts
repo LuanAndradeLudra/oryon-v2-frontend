@@ -1394,7 +1394,10 @@ export const dealsApi = {
   create(dto: Partial<Deal>) {
     return api.post<Deal>('/deals', dto)
   },
-  update(id: string, patch: Partial<Deal>) {
+  /** `updateAmount: true` manda o backend recalcular `amountCents = Σ itens` ao
+   *  reescrever `lineItems` (A2 · SCRUM-924, D4) — sem ele, um PATCH com itens
+   *  zeraria o valor digitado à mão. Só faz sentido acompanhado de `lineItems`. */
+  update(id: string, patch: Partial<Deal> & { updateAmount?: boolean }) {
     return api.patch<Deal>(`/deals/${id}`, patch)
   },
   /** `closeReason`/`closeNote` (F2, I5): motivo do catálogo ao fechar —

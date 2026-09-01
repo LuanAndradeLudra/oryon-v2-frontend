@@ -1,3 +1,4 @@
+import type { FocusEvent } from 'react'
 import { Input } from '@/components/ui/Input'
 import { formatCents } from '@/utils/money'
 
@@ -21,6 +22,14 @@ interface MoneyInputProps {
   id?: string
   'aria-label'?: string
   disabled?: boolean
+  /**
+   * Repassados ao input. O editor de itens do negócio usa o foco como ÂNCORA da
+   * reaplicação de desconto: como `onChange` dispara por tecla com valores
+   * intermediários (2 → 20 → 200…), o item capturado no foco é a única base
+   * honesta para preservar a proporção. A seleção total no foco continua.
+   */
+  onFocus?: (e: FocusEvent<HTMLInputElement>) => void
+  onBlur?: (e: FocusEvent<HTMLInputElement>) => void
 }
 
 /**
@@ -40,6 +49,8 @@ export function MoneyInput({
   id,
   'aria-label': ariaLabel,
   disabled,
+  onFocus,
+  onBlur,
 }: MoneyInputProps) {
   const handleChange = (raw: string) => {
     const digits = raw.replace(/\D/g, '')
@@ -58,7 +69,11 @@ export function MoneyInput({
         disabled={disabled}
         value={formatCents(value)}
         onChange={(e) => handleChange(e.target.value)}
-        onFocus={(e) => e.target.select()}
+        onFocus={(e) => {
+          e.target.select()
+          onFocus?.(e)
+        }}
+        onBlur={onBlur}
         placeholder={placeholder ?? '0,00'}
         autoFocus={autoFocus}
         inputMode="numeric"

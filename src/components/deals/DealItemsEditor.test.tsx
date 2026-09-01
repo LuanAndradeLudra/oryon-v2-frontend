@@ -17,9 +17,17 @@ const PRODUTO: Product = {
     { id: 'v2', label: 'Convênio', amountCents: 8000, order: 1 },
   ],
 }
+// Segundo produto (mais barato) — para o rebase do desconto na TROCA de produto.
+const PRODUTO_2: Product = {
+  id: 'prod-2',
+  name: 'Plano Básico',
+  active: true,
+  order: 1,
+  priceVariations: [{ id: 'v3', label: 'Único', amountCents: 5000, order: 0 }],
+}
 
 vi.mock('@/contexts/CRMConfigContext', () => ({
-  useCRMConfig: () => ({ products: [PRODUTO], pipelines: [], stages: [] }),
+  useCRMConfig: () => ({ products: [PRODUTO, PRODUTO_2], pipelines: [], stages: [] }),
 }))
 
 /** Casca controlada — o componente não guarda estado próprio, o pai guarda. */
@@ -55,7 +63,7 @@ describe('DealItemsEditor — dois botões (D0-6)', () => {
   it('"Adicionar do catálogo" cria linha com seletor de produto', () => {
     render(<Harness />)
     addCatalog()
-    expect(screen.getByTestId('deal-item-catalog')).toBeInTheDocument()
+    expect(screen.getByTestId('deal-item-catalog-0')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Produto do catálogo' })).toBeInTheDocument()
     expect(dump()[0]).toMatchObject({ kind: 'catalog', productId: null })
   })
@@ -63,7 +71,7 @@ describe('DealItemsEditor — dois botões (D0-6)', () => {
   it('"Adicionar personalizado" cria linha com NOME digitável e sem produto', () => {
     render(<Harness />)
     addCustom()
-    expect(screen.getByTestId('deal-item-custom')).toBeInTheDocument()
+    expect(screen.getByTestId('deal-item-custom-0')).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Nome do item personalizado' })).toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: 'Produto do catálogo' })).not.toBeInTheDocument()
     expect(dump()[0]).toMatchObject({ kind: 'custom', productId: null })
@@ -73,23 +81,37 @@ describe('DealItemsEditor — dois botões (D0-6)', () => {
     render(<Harness />)
     addCatalog()
     addCustom()
-    expect(screen.getByTestId('deal-item-catalog')).toBeInTheDocument()
-    expect(screen.getByTestId('deal-item-custom')).toBeInTheDocument()
+    expect(screen.getByTestId('deal-item-catalog-0')).toBeInTheDocument()
+    expect(screen.getByTestId('deal-item-custom-1')).toBeInTheDocument()
     expect(dump().map((i) => i.kind)).toEqual(['catalog', 'custom'])
   })
 
   it('a linha sob medida é marcada "Negociado" — preço fora do catálogo', () => {
     render(<Harness />)
     addCustom()
-    expect(within(screen.getByTestId('deal-item-custom')).getByText('Negociado')).toBeInTheDocument()
+    expect(within(screen.getByTestId('deal-item-custom-0')).getByText('Negociado')).toBeInTheDocument()
   })
 
   it('remover tira a linha certa', () => {
     render(<Harness />)
     addCatalog()
     addCustom()
-    fireEvent.click(within(screen.getByTestId('deal-item-catalog')).getByRole('button', { name: 'Remover item' }))
+    fireEvent.click(within(screen.getByTestId('deal-item-catalog-0')).getByRole('button', { name: 'Remover item' }))
     expect(dump().map((i) => i.kind)).toEqual(['custom'])
+  })
+
+  it('duas linhas do MESMO tipo têm testids e ids únicos', () => {
+    render(<Harness />)
+    addCatalog()
+    addCatalog()
+    expect(screen.getByTestId('deal-item-catalog-0')).toBeInTheDocument()
+    expect(screen.getByTestId('deal-item-catalog-1')).toBeInTheDocument()
+    // Cada linha tem os próprios ids (htmlFor funcionando), nenhum duplicado.
+    expect(screen.getAllByLabelText('Qtd')).toHaveLength(2)
+    const ids = Array.from(document.querySelectorAll('input, select'))
+      .map((el) => el.id)
+      .filter(Boolean)
+    expect(new Set(ids).size).toBe(ids.length)
   })
 })
 
@@ -103,6 +125,12 @@ describe('DealItemsEditor — item personalizado', () => {
     expect(dump()[0]).toMatchObject({ productName: 'Instalação no local', productId: null, kind: 'custom' })
   })
 
+  it('o nome respeita o limite do backend — maxlength 255 (@MaxLength no DTO)', () => {
+    render(<Harness />)
+    addCustom()
+    expect(screen.getByRole('textbox', { name: 'Nome do item personalizado' })).toHaveAttribute('maxlength', '255')
+  })
+
   it('preço e quantidade compõem o subtotal exibido', () => {
     render(<Harness />)
     addCustom()
@@ -110,7 +138,7 @@ describe('DealItemsEditor — item personalizado', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'Preço unitário' }), { target: { value: '320000' } })
     fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '2' } })
     expect(dump()[0]).toMatchObject({ unitPriceCents: 320000, quantity: 2 })
-    expect(within(screen.getByTestId('deal-item-custom')).getByText(/6\.400,00/)).toBeInTheDocument()
+    expect(within(screen.getByTestId('deal-item-custom-0')).getByText(/6\.400,00/)).toBeInTheDocument()
   })
 
   it('enquanto está incompleto, a validação do módulo acusa — antes do 400 do backend', () => {
@@ -160,7 +188,7 @@ describe('DealItemsEditor — desconto espelhado R$ ↔ % (padrão Moskit)', () 
     render(<Harness initial={[seed()]} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'Desconto em reais' }), { target: { value: '2000' } })
     expect(dump()[0].discountCents).toBe(2000)
-    expect(screen.getByLabelText('Desconto em porcentagem')).toHaveValue(10)
+    expect(screen.getByLabelText('Desconto em porcentagem')).toHaveValue('10')
   })
 
   it('digitar em % atualiza o campo de R$ sozinho', () => {
@@ -174,7 +202,7 @@ describe('DealItemsEditor — desconto espelhado R$ ↔ % (padrão Moskit)', () 
     render(<Harness initial={[seed({ discountCents: 2000 })]} />)
     fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '4' } })
     expect(dump()[0].discountCents).toBe(4000)
-    expect(screen.getByLabelText('Desconto em porcentagem')).toHaveValue(10)
+    expect(screen.getByLabelText('Desconto em porcentagem')).toHaveValue('10')
   })
 
   it('o espelho também vale no item personalizado', () => {
@@ -185,6 +213,74 @@ describe('DealItemsEditor — desconto espelhado R$ ↔ % (padrão Moskit)', () 
 
   it('sem preço não há percentual — o campo fica vazio em vez de NaN', () => {
     render(<Harness initial={[seed({ unitPriceCents: 0, discountCents: 0 })]} />)
-    expect(screen.getByLabelText('Desconto em porcentagem')).toHaveValue(null)
+    expect(screen.getByLabelText('Desconto em porcentagem')).toHaveValue('')
+  })
+
+  it('REDIGITAR o preço tecla a tecla não corrompe o desconto — a âncora é o item no FOCO', () => {
+    // R$ 100 com 10% de desconto. O MoneyInput acumula por tecla (2 → 20 →
+    // 200…): reaplicar a proporção contra a última tecla zerava o desconto na
+    // primeira (base de 2 centavos → 0) e o congelava em 0 para sempre.
+    render(<Harness initial={[seed({ quantity: 1, discountCents: 1000 })]} />)
+    const preco = screen.getByRole('textbox', { name: 'Preço unitário' })
+    fireEvent.focus(preco)
+    for (const teclas of ['2', '20', '200', '2000', '20000']) {
+      fireEvent.change(preco, { target: { value: teclas } })
+    }
+    // 10% de R$ 200,00 = R$ 20,00 — como se o preço tivesse sido editado de uma vez.
+    expect(dump()[0]).toMatchObject({ unitPriceCents: 20000, discountCents: 2000 })
+    expect(screen.getByLabelText('Desconto em porcentagem')).toHaveValue('10')
+  })
+
+  it('quantidade 4 → 3 devolve o desconto original — razão exata, sem deriva', () => {
+    // Base 30000 / desconto 500: o % em 2 casas fazia a volta dar 501.
+    render(<Harness initial={[seed({ unitPriceCents: 10000, quantity: 3, discountCents: 500 })]} />)
+    const qtd = screen.getByLabelText('Qtd')
+    fireEvent.focus(qtd)
+    fireEvent.change(qtd, { target: { value: '4' } })
+    expect(dump()[0].discountCents).toBe(667)
+    fireEvent.blur(qtd)
+    fireEvent.focus(qtd)
+    fireEvent.change(qtd, { target: { value: '3' } })
+    expect(dump()[0].discountCents).toBe(500)
+  })
+
+  it('o campo % aceita decimal durante a digitação — "12." não zera o desconto', () => {
+    render(<Harness initial={[seed({ quantity: 1 })]} />) // base R$ 100
+    const pct = screen.getByLabelText('Desconto em porcentagem')
+    fireEvent.focus(pct)
+    fireEvent.change(pct, { target: { value: '1' } })
+    expect(dump()[0].discountCents).toBe(100)
+    fireEvent.change(pct, { target: { value: '12.' } })
+    expect(pct).toHaveValue('12.') // o texto sobrevive à digitação incompleta
+    expect(dump()[0].discountCents).toBe(1200)
+    fireEvent.change(pct, { target: { value: '12.5' } })
+    expect(dump()[0].discountCents).toBe(1250)
+    fireEvent.blur(pct)
+    expect(pct).toHaveValue('12.5') // ressincronizado com o derivado
+  })
+
+  it('% acima de 100 clampa no teto', () => {
+    render(<Harness initial={[seed({ quantity: 1 })]} />)
+    fireEvent.change(screen.getByLabelText('Desconto em porcentagem'), { target: { value: '150' } })
+    expect(dump()[0].discountCents).toBe(10000)
+  })
+
+  it('desconto em R$ clampa no subtotal da linha', () => {
+    render(<Harness initial={[seed({ quantity: 1 })]} />) // base R$ 100
+    fireEvent.change(screen.getByRole('textbox', { name: 'Desconto em reais' }), { target: { value: '99999' } })
+    expect(dump()[0].discountCents).toBe(10000)
+  })
+
+  it('trocar o PRODUTO rebaseia o desconto — nada de valor pendurado do preço antigo', () => {
+    // R$ 20 de desconto (20%) no produto de R$ 100 → no de R$ 50, vira R$ 10.
+    render(<Harness initial={[seed({ quantity: 1, discountCents: 2000 })]} />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Produto do catálogo' }), { target: { value: 'prod-2' } })
+    expect(dump()[0]).toMatchObject({ productId: 'prod-2', unitPriceCents: 5000, discountCents: 1000 })
+  })
+
+  it('voltar para "— produto —" zera preço e desconto juntos', () => {
+    render(<Harness initial={[seed({ quantity: 1, discountCents: 2000 })]} />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Produto do catálogo' }), { target: { value: '' } })
+    expect(dump()[0]).toMatchObject({ productId: null, unitPriceCents: 0, discountCents: 0 })
   })
 })

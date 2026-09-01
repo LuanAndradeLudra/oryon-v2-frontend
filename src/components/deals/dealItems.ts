@@ -130,16 +130,24 @@ export function discountCentsFromPercent(
 }
 
 /**
- * Reaplica o desconto quando preço ou quantidade mudam, PRESERVANDO o percentual.
+ * Reaplica o desconto quando preço ou quantidade mudam, PRESERVANDO a proporção.
  *
  * É o que faz o espelho ser espelho: quem deu "10% de desconto" e depois dobrou a
  * quantidade continua com 10%, não com o valor congelado de antes (que viraria
- * 5% sem ninguém pedir). Chamado só nas edições de preço/quantidade.
+ * 5% sem ninguém pedir). A escala usa a RAZÃO exata entre as bases
+ * (`desconto × baseNova ÷ baseAnterior`), sem quantizar o percentual em 2 casas:
+ * derivar via `discountPercentOf` fazia qty 4 → qty 3 devolver 501 em vez de 500
+ * (deriva de arredondamento) e zerava descontos legítimos sobre bases pequenas.
+ * Sem base anterior (preço 0) não há proporção — o valor fica como está. Clampado
+ * a `[0, baseNova]`. Chamado nas edições que mexem na base (preço, quantidade,
+ * variação, produto).
  */
 export function reapplyDiscount(previous: DealItemDraft, next: DealItemDraft): number {
-  const percent = discountPercentOf(previous)
-  if (percent <= 0) return next.discountCents
-  return discountCentsFromPercent(next, percent)
+  const prevBase = grossCents(previous)
+  const nextBase = grossCents(next)
+  if (prevBase <= 0) return next.discountCents
+  const scaled = Math.round((previous.discountCents * nextBase) / prevBase)
+  return Math.min(Math.max(scaled, 0), nextBase)
 }
 
 /**
@@ -186,6 +194,11 @@ export function validateItems(items: DealItemDraft[]): string | null {
   if (items.some((it) => it.kind === 'custom' && it.unitPriceCents <= 0)) {
     return 'O preço de um item personalizado deve ser maior que zero.'
   }
+  // Cinto e suspensório do clamp da UI (o MoneyInput do Desconto R$ já limita
+  // ao subtotal): desconto acima do bruto viraria linha negativa no backend.
+  if (items.some((it) => it.discountCents > grossCents(it))) {
+    return 'O desconto de um item não pode ser maior que o subtotal dele.'
+  }
   return null
 }
 
@@ -193,18 +206,28 @@ export function validateItems(items: DealItemDraft[]): string | null {
  * Serializa para o corpo da API. O `productName` só é enviado no item
  * personalizado — no de catálogo o nome é snapshot do produto, e mandá-lo daria
  * a impressão (falsa) de que o cliente escolhe esse texto.
+ *
+ * Item de catálogo SEM produto lança: `validateItems` barra o caso antes de
+ * chegar aqui, mas se um chamador futuro (A3 · SCRUM-925 embute o editor no
+ * "Novo negócio") esquecer a validação, é melhor um erro descritivo no FE do
+ * que `productId: null` virar um 400 mudo no backend.
  */
 export function toLineItemPayload(items: DealItemDraft[]): DealLineItemPayload[] {
-  return items.map((it, index) => ({
-    ...(it.id ? { id: it.id } : {}),
-    kind: it.kind,
-    ...(it.kind === 'catalog'
-      ? { productId: it.productId as string }
-      : { productName: it.productName.trim() }),
-    ...(it.variationLabel ? { variationLabel: it.variationLabel } : {}),
-    unitPriceCents: it.unitPriceCents,
-    quantity: it.quantity,
-    discountCents: it.discountCents,
-    order: index,
-  }))
+  return items.map((it, index) => {
+    if (it.kind === 'catalog' && !it.productId) {
+      throw new Error('Item de catálogo sem produto — chame validateItems antes de serializar.')
+    }
+    return {
+      ...(it.id ? { id: it.id } : {}),
+      kind: it.kind,
+      ...(it.kind === 'catalog'
+        ? { productId: it.productId as string } // o throw acima garante que não é null
+        : { productName: it.productName.trim() }),
+      ...(it.variationLabel ? { variationLabel: it.variationLabel } : {}),
+      unitPriceCents: it.unitPriceCents,
+      quantity: it.quantity,
+      discountCents: it.discountCents,
+      order: index,
+    }
+  })
 }
