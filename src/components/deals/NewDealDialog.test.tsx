@@ -215,3 +215,53 @@ describe('NewDealDialog — conflito I1', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
+
+// ─── Revisão da A3: a etapa da COLUNA e o tenant sem múltiplos funis ────────
+describe('NewDealDialog — regressões da revisão', () => {
+  const VENDAS_3: Pipeline = {
+    ...VENDAS,
+    stages: [
+      st('v1', 'Novo', 1),
+      st('v2', 'Negociando', 2),
+      st('v3', 'Proposta', 3),
+      st('vw', 'Ganho', 4, { isWon: true }),
+    ],
+  }
+
+  it('o "+" de uma coluna cria NAQUELA etapa — não na primeira', async () => {
+    renderDialog({ pipelines: [VENDAS_3], initialPipelineId: 'v', initialStageId: 'v3' })
+    expect((screen.getByLabelText(/Etapa/) as HTMLSelectElement).value).toBe('v3')
+    avancar()
+    fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
+    await waitFor(() => expect(deals.create).toHaveBeenCalled())
+    expect(deals.create.mock.calls[0][0].stageId).toBe('v3')
+  })
+
+  it('etapa que não pertence ao funil escolhido cai na 1ª não-terminal', async () => {
+    renderDialog({ pipelines: [VENDAS_3], initialPipelineId: 'v', initialStageId: 'de-outro-funil' })
+    expect((screen.getByLabelText(/Etapa/) as HTMLSelectElement).value).toBe('v1')
+  })
+
+  // Tenant sem `FF_MULTI_PIPELINE`: o contexto entrega `pipelines: []`, e a aba
+  // de negócios do contato só tem ESTE caminho de criação. Exigir funil ali
+  // deixava o botão primário sem saída — o POST vai sem `pipelineId` e o
+  // backend resolve o funil default, como o `DealModal` fazia antes da A3.
+  it('sem nenhum funil conhecido, cria mesmo assim e não pede funil', async () => {
+    renderDialog({ pipelines: [] })
+    expect(screen.queryByLabelText(/Funil/)).not.toBeInTheDocument()
+    avancar()
+    expect(screen.queryByText('Selecione um funil.')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
+    await waitFor(() => expect(deals.create).toHaveBeenCalled())
+    const body = deals.create.mock.calls[0][0]
+    expect('pipelineId' in body).toBe(false)
+    expect('stageId' in body).toBe(false)
+  })
+
+  it('com funis, mas nenhum de venda, continua barrando (não há onde criar)', () => {
+    renderDialog({ pipelines: [PROCESSO] })
+    avancar()
+    expect(screen.getByText('Selecione um funil.')).toBeInTheDocument()
+    expect(deals.create).not.toHaveBeenCalled()
+  })
+})

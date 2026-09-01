@@ -115,6 +115,12 @@ export function NewDealDialog({
   )
   const contact = contactId ? { id: contactId, name: contactName ?? '' } : pickedContact
   const stages = getPipelineStages(pipelines, pipelineId)
+  // Tenant SEM o `FF_MULTI_PIPELINE`: o `CRMConfigContext` entrega `pipelines:
+  // []` de propósito (o gate não chama `/settings/pipelines`). Lá não há funil
+  // para escolher — e é justamente onde a aba de negócios do contato só tem
+  // este caminho de criação. Exigir funil deixaria o botão sem saída; o POST
+  // sem `pipelineId` cai no funil default do backend, como o `DealModal` fazia.
+  const semFunis = pipelines.length === 0
 
   const itemsTotal = itemsTotalCents(items)
   const hasItems = items.length > 0
@@ -155,8 +161,13 @@ export function NewDealDialog({
   }, [open, pickedContact])
 
   // Etapa: cai na 1ª não-terminal sempre que a atual não pertence ao funil.
+  // O `!pipelineId` não é defensivo — é o que preserva a etapa da COLUNA de
+  // onde o "+" do board foi clicado: na abertura este efeito roda no mesmo
+  // flush do reset acima, quando `stages` ainda é do funil anterior (vazio, na
+  // montagem). Sem a saída antecipada ele sobrescrevia o `initialStageId` e
+  // todo negócio nascia na primeira etapa.
   useEffect(() => {
-    if (!open) return
+    if (!open || !pipelineId) return
     if (!stages.some((s) => s.id === stageId)) setStageId(stages[0]?.id ?? '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, pipelineId, pipelines])
@@ -187,11 +198,11 @@ export function NewDealDialog({
     return () => { cancelled = true; clearTimeout(t) }
   }, [open, contactId, search])
 
-  const step1Complete = Boolean(contact?.id && pipelineId && title.trim())
+  const step1Complete = Boolean(contact?.id && (pipelineId || semFunis) && title.trim())
 
   const goToQuanto = () => {
     if (!contact?.id) { setError('Escolha o contato do negócio.'); return }
-    if (!pipelineId) { setError('Selecione um funil.'); return }
+    if (!pipelineId && !semFunis) { setError('Selecione um funil.'); return }
     if (!title.trim()) { setError('O título é obrigatório.'); return }
     setError('')
     setStep('quanto')
@@ -212,7 +223,7 @@ export function NewDealDialog({
       const res = await dealsApi.create({
         contactId: contact.id,
         title: title.trim(),
-        pipelineId,
+        ...(pipelineId ? { pipelineId } : {}),
         ...(stageId ? { stageId } : {}),
         ...(originConversationId ? { originConversationId } : {}),
         ...(amountTouched ? { amountCents } : {}),
@@ -294,6 +305,9 @@ export function NewDealDialog({
         </FormField>
       )}
 
+      {/* Sem funis conhecidos (tenant sem o flag) não há o que escolher: o
+          backend resolve o funil default. */}
+      {!semFunis && (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
           <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
@@ -312,6 +326,7 @@ export function NewDealDialog({
           </Select>
         </FormField>
       </div>
+      )}
 
       <FormField label="Título" required error={error === 'O título é obrigatório.' ? error : undefined}>
         <Input
