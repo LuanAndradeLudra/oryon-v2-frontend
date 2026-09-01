@@ -48,3 +48,45 @@ describe('DealsBoard — empty state do funil (F7)', () => {
     expect(screen.queryByTestId('deals-board-empty')).toBeNull()
   })
 })
+
+// ─── A3 (SCRUM-925) — "Novo negócio" a partir do board ─────────────────────
+describe('DealsBoard — gatilho "Novo negócio" (A3/925)', () => {
+  it('cada coluna NÃO-terminal ganha o "+", e ele leva a etapa clicada', () => {
+    const onNewDeal = vi.fn()
+    render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} onNewDeal={onNewDeal} />)
+    // 3 etapas abertas têm o botão; Concluído e Cancelado não — negócio não
+    // nasce fechado (a A4 exige motivo e o backend responde 400).
+    expect(screen.getAllByRole('button', { name: /^Novo negócio em / })).toHaveLength(3)
+    expect(screen.queryByRole('button', { name: 'Novo negócio em Concluído' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Novo negócio em Cancelado' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Novo negócio em Em atendimento' }))
+    expect(onNewDeal).toHaveBeenCalledWith('s2')
+  })
+
+  it('o empty state passa a criar o NEGÓCIO (não o contato) e parte da 1ª etapa aberta', () => {
+    const onNewDeal = vi.fn()
+    const onAddContact = vi.fn()
+    render(
+      <DealsBoard
+        stages={STAGES}
+        dealsByStage={{}}
+        onMoveStage={vi.fn()}
+        onAddContact={onAddContact}
+        onNewDeal={onNewDeal}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Adicionar contato ao funil' })).toBeNull()
+    fireEvent.click(screen.getByTestId('deals-board-empty').querySelector('button')!)
+    expect(onNewDeal).toHaveBeenCalledWith('s1')
+    expect(onAddContact).not.toHaveBeenCalled()
+  })
+
+  it('sem `onNewDeal` (funil de processo) nada muda: o CTA antigo continua', () => {
+    const onAddContact = vi.fn()
+    render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} onAddContact={onAddContact} itemNoun="registro" />)
+    expect(screen.queryByRole('button', { name: /^Novo registro em / })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar contato ao funil' }))
+    expect(onAddContact).toHaveBeenCalledTimes(1)
+  })
+})

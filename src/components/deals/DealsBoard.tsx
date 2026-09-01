@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone } from 'lucide-react'
+import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -22,6 +22,14 @@ interface DealsBoardProps {
   /** F7 (SCRUM-867): funil sem nenhum card → empty state com "Adicionar contato ao funil".
    *  Omitido = só as colunas vazias (comportamento anterior). */
   onAddContact?: () => void
+  /**
+   * A3 (SCRUM-925): abre o "Novo negócio" já na etapa clicada. Presente só em
+   * funil de VENDA — em processo o registro nasce pelo "Adicionar ao funil" de
+   * 1 clique, sem formulário. Quando existe, ele é a ação primária do board
+   * (P2) e substitui o CTA do vazio, que abria o cadastro completo de contato
+   * (F-FUNIL-24: o operador queria um negócio, não um contato novo).
+   */
+  onNewDeal?: (stageId: string) => void
   /** Substantivo do card por tipo de funil ("negócio" × "registro", decisão (a)). Default: derivado de `pipeline`, senão "negócio". */
   itemNoun?: string
   /** F8 (SCRUM-869): o funil deste board — `kind` decide o card (processo: contato como título, sem valor) e os rótulos dos terminais. */
@@ -39,6 +47,7 @@ function brl(cents: number): string {
  */
 export function DealsBoard({
   onAddContact,
+  onNewDeal,
   itemNoun,
   pipeline,
   stages, dealsByStage, onMoveStage, loading, onOpenContact, pipelines = [], onMovePipeline,
@@ -94,7 +103,11 @@ export function DealsBoard({
   // contato já com este funil selecionado. Só aparece sem NENHUM card e com
   // os dados carregados — durante o loading o skeleton das colunas basta.
   const totalCards = stages.reduce((n, st) => n + (dealsByStage[st.id]?.length ?? 0), 0)
-  const showEmpty = !loading && totalCards === 0 && !!onAddContact
+  const showEmpty = !loading && totalCards === 0 && (!!onAddContact || !!onNewDeal)
+  // Etapa de partida do "Novo negócio" — a 1ª NÃO-terminal. Criar direto num
+  // terminal é 400 no backend desde a A4 (fechar exige motivo), então nem o
+  // vazio nem o "+" da coluna oferecem isso.
+  const firstOpenStage = stages.find((s) => !s.isWon && !s.isLost) ?? null
   // F8 (SCRUM-869): vocabulário por tipo. Funil de VENDA renderiza exatamente
   // como antes (título, valor, chips ganho/perdido); funil de PROCESSO mostra
   // o contato como título, esconde valor/total e usa Concluído/Cancelado.
@@ -106,12 +119,24 @@ export function DealsBoard({
     <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none flex flex-col">
       {showEmpty && (
         <div className="px-4 pt-4 flex-shrink-0" data-testid="deals-board-empty">
-          <EmptyState
-            icon={UserPlus}
-            title={`Nenhum ${noun} neste funil ainda`}
-            hint={`As etapas já estão prontas. Adicione um contato para abrir o primeiro ${noun} — ele entra na primeira etapa.`}
-            action={{ label: 'Adicionar contato ao funil', onClick: onAddContact }}
-          />
+          {/* A3: em funil de venda o CTA cria o NEGÓCIO (o contato é escolhido
+              dentro do diálogo). Em processo segue abrindo o cadastro de
+              contato, que é o gesto certo lá. */}
+          {onNewDeal && firstOpenStage ? (
+            <EmptyState
+              icon={Handshake}
+              title={`Nenhum ${noun} neste funil ainda`}
+              hint={`As etapas já estão prontas. Crie o primeiro ${noun} — ele entra em ${firstOpenStage.label}.`}
+              action={{ label: `Novo ${noun}`, onClick: () => onNewDeal(firstOpenStage.id) }}
+            />
+          ) : (
+            <EmptyState
+              icon={UserPlus}
+              title={`Nenhum ${noun} neste funil ainda`}
+              hint={`As etapas já estão prontas. Adicione um contato para abrir o primeiro ${noun} — ele entra na primeira etapa.`}
+              action={onAddContact ? { label: 'Adicionar contato ao funil', onClick: onAddContact } : undefined}
+            />
+          )}
         </div>
       )}
       <div
@@ -153,12 +178,27 @@ export function DealsBoard({
                     </span>
                   )}
                 </div>
-                <span
-                  className="text-xs font-medium px-2 py-0.5 rounded-full transition-all flex-shrink-0"
-                  style={{ color: stage.color, backgroundColor: hexToRgba(stage.color, isOver ? 0.2 : 0.1) }}
-                >
-                  {cards.length}
-                </span>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <span
+                    className="text-xs font-medium px-2 py-0.5 rounded-full transition-all"
+                    style={{ color: stage.color, backgroundColor: hexToRgba(stage.color, isOver ? 0.2 : 0.1) }}
+                  >
+                    {cards.length}
+                  </span>
+                  {/* A3: criar já nesta etapa. Fora dos terminais — negócio não
+                      nasce fechado (a A4 exige motivo, e o backend responde 400). */}
+                  {onNewDeal && !stage.isWon && !stage.isLost && (
+                    <button
+                      type="button"
+                      onClick={() => onNewDeal(stage.id)}
+                      aria-label={`Novo ${noun} em ${stage.label}`}
+                      title={`Novo ${noun} em ${stage.label}`}
+                      className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-lg text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Total da coluna — só em funil de venda (processo não tem valor) */}

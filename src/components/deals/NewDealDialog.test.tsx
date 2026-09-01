@@ -209,7 +209,9 @@ describe('NewDealDialog — conflito I1', () => {
     renderDialog({ onConflict })
     avancar()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
-    await waitFor(() => expect(onConflict).toHaveBeenCalledWith({ openDealId: 'd-aberto', pipelineId: 'v' }))
+    await waitFor(() => expect(onConflict).toHaveBeenCalledWith({
+      openDealId: 'd-aberto', pipelineId: 'v', contactId: 'c1', contactName: 'Mariana',
+    }))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

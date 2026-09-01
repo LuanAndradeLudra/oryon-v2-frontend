@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { dealsApi, contactsApi } from '@/services/api'
@@ -56,6 +57,10 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   const [items, setItems] = useState<DealItemDraft[]>([])
   // Snapshot dos itens na abertura do modal — base do `itemsDirty` do salvar.
   const [initialItemsJson, setInitialItemsJson] = useState('[]')
+  // A3 (956): valor do negócio. `amountTouched` separa "não mexeu" de "digitou
+  // zero" — sem isso, abrir e salvar um negócio de valor livre o zeraria.
+  const [amountCents, setAmountCents] = useState(0)
+  const [amountTouched, setAmountTouched] = useState(false)
   const multiPipeline = useMultiPipeline()
   const [pipelineId, setPipelineId] = useState('')
   const [pipelineStageId, setPipelineStageId] = useState('')
@@ -95,6 +100,8 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       const initialItems = editDeal?.lineItems?.map(draftFromLineItem) ?? []
       setItems(initialItems)
       setInitialItemsJson(normalizeItems(initialItems))
+      setAmountCents(editDeal?.amountCents ?? 0)
+      setAmountTouched(false)
       setError('')
       setMovePipelineId('')
       setMoveError('')
@@ -131,7 +138,15 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editDeal, pipelineId, pipelines])
 
-  const total = itemsTotalCents(items)
+  const itemsTotal = itemsTotalCents(items)
+  // A3 (SCRUM-925, subtarefa 956): o valor do negócio passa a ser EDITÁVEL aqui.
+  // Antes o total era só consequência dos itens, e um negócio de valor livre
+  // (sem itens) não tinha onde ser corrigido depois de criado — o único campo
+  // de valor da plataforma vivia no popover de resolver com desfecho.
+  const total = isProcess ? 0 : amountCents
+  const itemsDirtyNow = normalizeItems(items) !== initialItemsJson
+  const needsAmountChoice =
+    !isProcess && itemsDirtyNow && amountTouched && amountCents !== itemsTotal
   // O formulário tem um `error` só; este recorte diz quais mensagens pertencem
   // à lista de itens, para o erro aparecer junto dela e não no topo do modal.
   const itemsFieldError = validateItems(items) === error && error ? error : undefined
@@ -143,7 +158,13 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       ? error
       : ''
 
-  const handleSave = async () => {
+  /**
+   * `updateAmount` só é decidido pelo operador quando a escolha tem
+   * consequência: itens alterados E valor digitado que diverge da soma (D0-2).
+   * Nos outros casos o comportamento anterior vale — itens reescritos
+   * recalculam o total.
+   */
+  const handleSave = async (updateAmountChoice?: boolean) => {
     if (!title.trim()) {
       setError('O título é obrigatório.')
       return
@@ -171,21 +192,32 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       // (não `[]`) em processo, e no update só viaja quando o operador mexeu
       // de fato nos itens desde a abertura do modal.
       const itemsDirty = normalizeItems(items) !== initialItemsJson
+      // Com a escolha explícita do operador ("Vincular"), o valor digitado é o
+      // que fica; com "Vincular e atualizar valor" quem manda é a soma, então
+      // `amountCents` nem viaja (senão o corpo diria duas coisas ao mesmo tempo).
+      const updateAmount = updateAmountChoice ?? true
+      const sendAmount = !isProcess && amountTouched && updateAmount === false
       if (editDeal) {
         await dealsApi.update(editDeal.id, {
           title: title.trim(),
           note: note.trim() || undefined,
-          // `updateAmount: true` explícito: o FE está reescrevendo a composição,
-          // então o valor do negócio volta a ser a soma dos itens (A2/SCRUM-924, D4).
+          // Sem itens no corpo, `amountCents` sozinho é a edição de valor livre
+          // (A2/924 fechou a D4): o backend grava o número e preserva os itens.
+          ...(!isProcess && amountTouched && !itemsDirty ? { amountCents } : {}),
           ...(isProcess || !itemsDirty
             ? {}
-            : { lineItems: toLineItemPayload(items), updateAmount: true }),
+            : {
+                lineItems: toLineItemPayload(items),
+                updateAmount,
+                ...(sendAmount ? { amountCents } : {}),
+              }),
         })
       } else {
         await dealsApi.create({
           contactId,
           title: title.trim(),
           note: note.trim() || undefined,
+          ...(!isProcess && amountTouched && !(itemsDirty && updateAmount) ? { amountCents } : {}),
           ...(isProcess ? {} : { lineItems: toLineItemPayload(items) }),
           ...(multiPipeline && { pipelineId, stageId: pipelineStageId || undefined }),
           ...(originConversationId ? { originConversationId } : {}),
@@ -318,6 +350,19 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             o contexto vence a prop), o que quebrava os `htmlFor` das linhas,
             duplicava ids e deixava o campo Qtd sem nome acessível. O rótulo
             "Itens" é manual, com o visual do label do FormField. */}
+        {/* A3 (956): campo Valor sempre presente em funil de venda — é o que
+            torna editável o negócio de valor livre, sem itens. */}
+        {!isProcess && (
+          <FormField label="Valor" hint="Pode divergir da soma dos itens.">
+            <MoneyInput
+              value={amountCents}
+              onChange={(cents) => { setAmountCents(cents); setAmountTouched(true); setError('') }}
+              aria-label="Valor do negócio"
+              disabled={saving}
+            />
+          </FormField>
+        )}
+
         {!isProcess && (
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold text-surface-300 uppercase tracking-wider">
@@ -362,13 +407,34 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             >
               Cancelar
             </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
-            >
-              {saving ? 'Salvando...' : editDeal ? 'Salvar' : 'Criar'}
-            </button>
+            {/* D0-2: os dois botões só aparecem quando a escolha muda alguma
+                coisa — itens reescritos E valor digitado divergente da soma. */}
+            {needsAmountChoice ? (
+              <>
+                <button
+                  onClick={() => handleSave(false)}
+                  disabled={saving}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-700 hover:bg-surface-600 text-surface-100 disabled:opacity-60 transition-all"
+                >
+                  {saving ? 'Salvando...' : 'Vincular'}
+                </button>
+                <button
+                  onClick={() => handleSave(true)}
+                  disabled={saving}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
+                >
+                  {saving ? 'Salvando...' : 'Vincular e atualizar valor'}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => handleSave()}
+                disabled={saving}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
+              >
+                {saving ? 'Salvando...' : editDeal ? 'Salvar' : 'Criar'}
+              </button>
+            )}
           </div>
         </div>
       </div>

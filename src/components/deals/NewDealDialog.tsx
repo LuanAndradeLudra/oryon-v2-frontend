@@ -57,7 +57,12 @@ export interface NewDealDialogProps {
   /** Conversa de origem: o negócio nasce ligado a ela (§4.7, passo 1). */
   originConversationId?: string | null
   onCreated: (deal: Deal) => void
-  onConflict?: (info: { openDealId: string; pipelineId: string }) => void
+  /**
+   * `409 open_exists` (I1). Leva também o contato porque no caminho do BOARD
+   * quem abriu o diálogo não sabia de quem seria o negócio — e o modal de
+   * conflito precisa do nome para dizer o que já existe.
+   */
+  onConflict?: (info: { openDealId: string; pipelineId: string; contactId: string; contactName: string }) => void
 }
 
 type Step = 'quem' | 'quanto'
@@ -228,7 +233,12 @@ export function NewDealDialog({
       const err = e as { response?: { status?: number; data?: { code?: string; openDealId?: string; pipelineId?: string } } }
       const body = err?.response?.data
       if (onConflict && err?.response?.status === 409 && body?.code === 'open_exists' && body.openDealId) {
-        onConflict({ openDealId: body.openDealId, pipelineId: body.pipelineId ?? pipelineId })
+        onConflict({
+          openDealId: body.openDealId,
+          pipelineId: body.pipelineId ?? pipelineId,
+          contactId: contact.id,
+          contactName: contact.name,
+        })
         return
       }
       setError(getApiErrorMessage(e, 'Não foi possível criar o negócio.'))
