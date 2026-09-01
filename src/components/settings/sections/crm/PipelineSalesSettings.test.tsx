@@ -70,4 +70,13 @@ describe('PipelineSalesSettings', () => {
 
     await waitFor(() => expect(pipelines.update).toHaveBeenCalledWith('p1', { allowMultipleOpen: true }))
   })
+
+  // Follow-up SCRUM-931 (achado 3, revisão do Lince): o toggle ainda não é
+  // consumido em lugar nenhum (C1/SCRUM-932) — o aviso evita passar a
+  // impressão de que ligá-lo já muda o comportamento de criação de negócio.
+  it('avisa que a multiplicidade ainda não afeta a criação de negócios (consumo é da C1)', async () => {
+    render(<PipelineSalesSettings pipeline={SALES} onChanged={vi.fn()} />)
+    await waitFor(() => expect(users.list).toHaveBeenCalled())
+    expect(screen.getByText(/ainda não afeta a criação de negócios/i)).toBeInTheDocument()
+  })
 })
