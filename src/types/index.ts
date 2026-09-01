@@ -264,6 +264,9 @@ export interface Deal {
   currency?: string
   note?: string | null
   ownerUserId?: string | null
+  /** B1 (SCRUM-927): previsão de fechamento (ISO). O "Novo negócio" (A3) grava;
+   *  a ficha (B2) e os relatórios (D1) leem. `null` = sem previsão. */
+  expectedCloseAt?: string | null
   closedAt?: string | null
   lineItems?: DealLineItem[]
   createdAt?: string
