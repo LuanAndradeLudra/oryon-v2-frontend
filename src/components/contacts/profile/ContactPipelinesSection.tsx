@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History } from 'lucide-react'
+import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { CloseDealReasonModal } from '@/components/deals/CloseDealReasonModal'
@@ -64,7 +64,7 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
   const {
     enabled, deals, open, closed, error, busyId,
     closeTarget, setCloseTarget, history,
-    pipelineOf, moveTo, closeWithReason, toggleHistory,
+    pipelineOf, moveTo, closeWithReason, reopen, toggleHistory,
   } = useContactPipelines(contactId, contactName)
   const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
 
@@ -187,10 +187,22 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
                       {deal.closedAt && <> · {formatRelativeTime(deal.closedAt)}</>}
                       {reasonLabel && <> · {reasonLabel}</>}
                     </span>
+                    {/* A4 (SCRUM-926): reabrir mora aqui — era o seletor de
+                        Status do DealModal, que saiu com o fechamento virando
+                        ação própria. Depois dos 5 s do "Desfazer", é esta a saída. */}
+                    <button
+                      type="button"
+                      onClick={() => void reopen(deal)}
+                      disabled={busyId === deal.id}
+                      className="ml-auto inline-flex items-center gap-1 text-[11px] text-surface-300 hover:text-surface-100 disabled:opacity-50 whitespace-nowrap"
+                      data-testid={`pipeline-reopen-${deal.id}`}
+                    >
+                      <RotateCcw className="w-3 h-3" /> Reabrir
+                    </button>
                     <button
                       type="button"
                       onClick={() => void toggleHistory(deal.id)}
-                      className="ml-auto inline-flex items-center gap-1 text-[11px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
+                      className="inline-flex items-center gap-1 text-[11px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
                       data-testid={`pipeline-history-${deal.id}`}
                     >
                       <History className="w-3 h-3" /> {h && h !== 'loading' ? 'ocultar' : 'ver histórico'}

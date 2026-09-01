@@ -12,7 +12,7 @@ import { dealsApi, contactsApi } from '@/services/api'
 import { getDefaultPipeline, getPipelineStages, getApiErrorMessage, getActivePipelines } from '@/lib/utils'
 import { pipelineKindOf, pipelineNoun } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
-import type { Deal, DealStatus, Pipeline } from '@/types'
+import type { Deal, Pipeline } from '@/types'
 
 let uidSeq = 0
 const makeUid = () => `dli-${uidSeq++}`
@@ -26,12 +26,6 @@ type ItemRow = {
   quantity: number
   discountCents: number
 }
-
-const STATUSES: { value: DealStatus; label: string }[] = [
-  { value: 'open', label: 'Aberto' },
-  { value: 'won', label: 'Ganho' },
-  { value: 'lost', label: 'Perdido' },
-]
 
 function lineTotal(it: ItemRow): number {
   return Math.max(0, it.unitPriceCents * it.quantity - it.discountCents)
@@ -58,13 +52,11 @@ interface DealModalProps {
 }
 
 export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSaved, contactName, initialPipelineId, originConversationId, onConflict }: DealModalProps) {
-  const { products, stages } = useCRMConfig()
+  const { products } = useCRMConfig()
   const { vocab } = useTenantVocab()
   const [title, setTitle] = useState('')
-  const [status, setStatus] = useState<DealStatus>('open')
   const [note, setNote] = useState('')
   const [items, setItems] = useState<ItemRow[]>([])
-  const [moveStageKey, setMoveStageKey] = useState('')
   const multiPipeline = useMultiPipeline()
   const [pipelineId, setPipelineId] = useState('')
   const [pipelineStageId, setPipelineStageId] = useState('')
@@ -100,7 +92,6 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   useEffect(() => {
     if (open) {
       setTitle(editDeal?.title ?? '')
-      setStatus(editDeal?.status ?? 'open')
       setNote(editDeal?.note ?? '')
       setItems(
         editDeal?.lineItems?.map((li) => ({
@@ -113,7 +104,6 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           discountCents: li.discountCents ?? 0,
         })) ?? [],
       )
-      setMoveStageKey('')
       setError('')
       setMovePipelineId('')
       setMoveError('')
@@ -210,30 +200,21 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
         discountCents: it.discountCents,
         order: index,
       }))
-      const stageKey = status === 'won' && moveStageKey ? moveStageKey : undefined
       if (editDeal) {
         await dealsApi.update(editDeal.id, {
           title: title.trim(),
           note: note.trim() || undefined,
           lineItems,
         })
-        if (status !== editDeal.status || stageKey) {
-          await dealsApi.setStatus(editDeal.id, { status, moveContactToStageKey: stageKey })
-        }
       } else {
-        const created = await dealsApi.create({
+        await dealsApi.create({
           contactId,
           title: title.trim(),
-          status,
           note: note.trim() || undefined,
           lineItems,
           ...(multiPipeline && { pipelineId, stageId: pipelineStageId || undefined }),
           ...(originConversationId ? { originConversationId } : {}),
         })
-        // create não move o estágio do contato — se ganho com estágio, aplica via setStatus.
-        if (stageKey) {
-          await dealsApi.setStatus(created.data.id, { status: 'won', moveContactToStageKey: stageKey })
-        }
       }
       onSaved()
     } catch (e: unknown) {
@@ -321,68 +302,37 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           </FormField>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          {editDeal ? (
-            <FormField label="Status">
-              <Select value={status} onChange={(e) => setStatus(e.target.value as DealStatus)}>
-                {STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
+        {/* A4 (SCRUM-926): o seletor de Status saiu daqui. Fechar um negócio
+            é ação própria — arrastar para a coluna terminal no board, ou
+            "Mover ▾ → Ganho/Perdido" na ficha/painel/aba — e passa pelo modal
+            de motivo. Como campo de formulário, "Status: Ganho" fechava sem
+            motivo nenhum, escondido atrás de um "Salvar" (e o backend agora
+            responde 400 nesse caminho). Reabrir, que também morava aqui, mudou
+            para a linha do registro fechado. */}
+        {!editDeal && multiPipeline && (
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
+              <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
+                {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
+                {getActivePipelines(pipelines).map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                 ))}
               </Select>
             </FormField>
-          ) : (
-            <>
-              {/* Funil + estágio do funil só com o gate (SCRUM-498). */}
-              {multiPipeline && (
-              <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
-                <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
-                  {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
-                  {getActivePipelines(pipelines).map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
-                  ))}
-                </Select>
-              </FormField>
-              )}
-              <FormField label="Status">
-                <Select value={status} onChange={(e) => setStatus(e.target.value as DealStatus)}>
-                  {STATUSES.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </Select>
-              </FormField>
-              {/* Etapa do FUNIL — eixo distinto da "Situação do contato"
-                  abaixo (ciclo de vida). Reativo ao funil escolhido acima. */}
-              {multiPipeline && (
-              <FormField label="Estágio do funil" hint="Coluna do board em que o negócio nasce.">
-                <Select value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
-                  {getPipelineStages(pipelines, pipelineId).length === 0 && (
-                    <option value="">Nenhum estágio disponível</option>
-                  )}
-                  {getPipelineStages(pipelines, pipelineId).map((s) => (
-                    <option key={s.id} value={s.id}>{s.label}</option>
-                  ))}
-                </Select>
-              </FormField>
-              )}
-            </>
-          )}
-          {status === 'won' && (
-            <FormField label="Situação do contato (opcional)" hint="Ao ganhar, move o contato para esta situação do ciclo de vida.">
-              <Select value={moveStageKey} onChange={(e) => setMoveStageKey(e.target.value)}>
-                <option value="">— não mover —</option>
-                {stages.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {s.label}
-                  </option>
+            {/* Etapa do FUNIL — eixo distinto da "Situação do contato" (ciclo
+                de vida). Reativo ao funil escolhido ao lado. */}
+            <FormField label="Estágio do funil" hint="Coluna do board em que o negócio nasce.">
+              <Select value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
+                {getPipelineStages(pipelines, pipelineId).length === 0 && (
+                  <option value="">Nenhum estágio disponível</option>
+                )}
+                {getPipelineStages(pipelines, pipelineId).map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
               </Select>
             </FormField>
-          )}
-        </div>
+          </div>
+        )}
 
         {!isProcess && (
         <FormField

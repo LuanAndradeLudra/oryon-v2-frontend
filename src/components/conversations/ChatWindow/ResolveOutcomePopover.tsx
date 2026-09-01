@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { FormField } from '@/components/ui/FormField'
-import { Select } from '@/components/ui/Select'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { CloseReasonFields, emptyCloseReasonValue, type CloseReasonValue } from '@/components/deals/CloseReasonFields'
+import { composeCloseReason } from '@/lib/closeReason'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import {
   decisionOptions, reasonsFor, amountApplies, confirmLabel, formatCentsBRL, buildResolvePayload,
@@ -32,15 +33,19 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, b
   const options = useMemo(() => decisionOptions(target), [target])
   const [decision, setDecisionState] = useState<ResolveDecision>('won')
   const reasons = useMemo(() => reasonsFor(target, decision), [target, decision])
-  const [pickedReason, setPickedReason] = useState('')
-  // Catálogo com um único motivo → já vem escolhido (menos um clique no caso comum).
-  const reason = pickedReason || (reasons.length === 1 ? reasons[0].key : '')
-  const [note, setNote] = useState('')
+  // Motivo, campo livre (D0-8) e observação vêm do MESMO componente que o modal
+  // do board/ficha/painel usa (A4 · SCRUM-926) — era aqui que a pré-seleção do
+  // motivo único existia e lá que ela faltava.
+  const [fields, setFields] = useState<CloseReasonValue>(() => emptyCloseReasonValue(reasons))
   const [amountRaw, setAmountRaw] = useState(() => (currentAmountCents ? (currentAmountCents / 100).toFixed(2).replace('.', ',') : ''))
   const [error, setError] = useState('')
   const firstRadioRef = useRef<HTMLInputElement>(null)
 
-  const setDecision = (d: ResolveDecision) => { setDecisionState(d); setPickedReason(''); setError('') }
+  const setDecision = (d: ResolveDecision) => {
+    setDecisionState(d)
+    setFields(emptyCloseReasonValue(reasonsFor(target, d)))
+    setError('')
+  }
 
   // Teclado: foco na primeira opção ao abrir; setas navegam os radios nativos; Esc fecha.
   useEffect(() => {
@@ -50,7 +55,13 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, b
 
   const submit = async (forcedDecision?: ResolveDecision) => {
     const d = forcedDecision ?? decision
-    const built = buildResolvePayload({ target, decision: d, reason, note, amountRaw, currentAmountCents })
+    const composed = d === 'none'
+      ? { value: { reason: '', note: undefined } }
+      : composeCloseReason({ picked: fields.picked, free: fields.free, note: fields.note, allowFree: target.allowFreeCloseReason })
+    if ('error' in composed) { setError(composed.error); return }
+    const built = buildResolvePayload({
+      target, decision: d, reason: composed.value.reason, note: composed.value.note ?? '', amountRaw, currentAmountCents,
+    })
     if ('error' in built) { setError(built.error); return }
     setError('')
     try {
@@ -107,17 +118,16 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, b
       </div>
 
       {decision !== 'none' && (
-        <FormField label="Motivo" required error={error && !error.startsWith('Valor') ? error : undefined}>
-          <Select
-            aria-label="Motivo do desfecho"
-            value={reason}
-            onChange={(e) => { setPickedReason(e.target.value); setError('') }}
-            data-testid="resolve-reason"
-          >
-            <option value="">— escolher —</option>
-            {reasons.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
-          </Select>
-        </FormField>
+        <CloseReasonFields
+          reasons={reasons}
+          value={fields}
+          onChange={(next) => { setFields(next); setError('') }}
+          allowFree={target.allowFreeCloseReason}
+          error={error && !error.startsWith('Valor') ? error : undefined}
+          disabled={busy}
+          notePlaceholder="Ex: adesão ao plano Família"
+          testIdPrefix="resolve-reason"
+        />
       )}
 
       {showAmount && (
@@ -130,12 +140,6 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, b
             aria-label="Valor do negócio"
             data-testid="resolve-amount"
           />
-        </FormField>
-      )}
-
-      {decision !== 'none' && (
-        <FormField label="Observação (opcional)">
-          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex: adesão ao plano Família" maxLength={2000} aria-label="Observação do desfecho" />
         </FormField>
       )}
 

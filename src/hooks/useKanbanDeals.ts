@@ -64,8 +64,10 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
     }
   }, [pipelineId, load])
 
-  /** Move um deal para outro estágio, otimista, com rollback em erro. */
-  const moveStage = useCallback(async (deal: Deal, toStageId: string) => {
+  /** Move um deal para outro estágio, otimista, com rollback em erro.
+   *  `close` (motivo do catálogo) é obrigatório quando o destino é terminal —
+   *  quem chama já passou pelo modal de motivo (A4 · SCRUM-926). */
+  const moveStage = useCallback(async (deal: Deal, toStageId: string, close?: { closeReason: string; closeNote?: string }) => {
     if (deal.stageId === toStageId) return
     const fromStageId = deal.stageId
 
@@ -77,7 +79,7 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
     })
 
     try {
-      const res = await dealsApi.moveStage(deal.id, toStageId)
+      const res = await dealsApi.moveStage(deal.id, toStageId, close)
       // Reconcilia com o servidor (status/closedAt podem ter mudado ao entrar
       // num estágio terminal).
       setDealsByStage((prev) => {

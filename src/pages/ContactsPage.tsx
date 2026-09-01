@@ -23,6 +23,7 @@ import { DealsBoard } from '@/components/deals/DealsBoard'
 import { CreatePipelineModal, type CreatePipelineData } from '@/components/deals/CreatePipelineModal'
 import { pipelineNoun, pipelineKindOf, pipelineKindOption, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { boardStats, entrySources } from '@/lib/dealCard'
+import { toastDealClosedWithUndo } from '@/lib/dealClose'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
@@ -314,10 +315,12 @@ export function ContactsPage() {
 
   const handleMoveDeal = (deal: Deal, toStageId: string) => {
     const stage = sortedPipelineStages.find((st) => st.id === toStageId)
-    // F8 (SCRUM-872): em funil de processo, terminal = fechamento com motivo
-    // do catálogo; abre o mini-modal e só fecha depois de confirmar. Venda
-    // continua como antes (compat `outro`) até a F10 pedir o motivo.
-    if (stage && selectedIsProcess && (stage.isWon || stage.isLost)) {
+    // A4 (SCRUM-926): terminal = fechamento com motivo do catálogo em QUALQUER
+    // funil. Até aqui o modal só se interpunha em processo — em venda o arrasto
+    // fechava em silêncio com o motivo implícito `outro` (divergência D3). O
+    // card fica na coluna de origem enquanto o modal está aberto, então
+    // cancelar não desfaz nada: nada chegou a acontecer.
+    if (stage && (stage.isWon || stage.isLost)) {
       setCloseDealTarget({ deal, stage })
       return
     }
@@ -326,12 +329,23 @@ export function ContactsPage() {
 
   const handleCloseDealWithReason = async (input: CloseDealReasonInput) => {
     if (!closeDealTarget) return
-    await dealsApi.setStatus(closeDealTarget.deal.id, {
-      status: input.outcome,
-      closeReason: input.reason,
-      closeNote: input.note,
+    const { deal, stage } = closeDealTarget
+    const fromStageId = deal.stageId
+    // Valor final confirmado no modal (venda sem itens) vai antes: fechado, o
+    // registro não aceita mais edição de valor.
+    if (input.amountCents !== undefined) {
+      await dealsApi.update(deal.id, { amountCents: input.amountCents })
+    }
+    // Fecha pelo MESMO caminho do arrasto (`PATCH /deals/:id/stage`), agora com
+    // motivo — e não por um `setStatus` paralelo: a coluna de destino é a que o
+    // usuário escolheu, e o board reconcilia o card com a resposta.
+    await moveDealStage(deal, stage.id, { closeReason: input.reason, closeNote: input.note })
+    toastDealClosedWithUndo({
+      message: input.outcome === 'won' ? `${selectedTerminalLabels.won}.` : `${selectedTerminalLabels.lost}.`,
+      dealId: deal.id,
+      fromStageId,
+      onUndone: () => { void refetchDeals(); void fetchPipelines() },
     })
-    toast(input.outcome === 'won' ? `${selectedTerminalLabels.won}.` : `${selectedTerminalLabels.lost}.`, 'success')
     void refetchDeals()
     void fetchPipelines()
   }
@@ -918,7 +932,8 @@ export function ContactsPage() {
       {/* F9 (SCRUM-875): diálogos do "Adicionar ao funil" (conflito / motivo / negócio) */}
       {addToPipeline.dialogs}
 
-      {/* F8 (SCRUM-872): motivo ao fechar um registro de processo pelo board */}
+      {/* Motivo ao fechar um registro pelo board — QUALQUER tipo de funil
+          desde a A4 (SCRUM-926); antes só processo passava por aqui. */}
       <CloseDealReasonModal
         open={!!closeDealTarget}
         onClose={() => setCloseDealTarget(null)}

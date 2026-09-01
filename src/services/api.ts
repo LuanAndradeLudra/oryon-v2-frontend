@@ -1367,9 +1367,11 @@ export const dealsApi = {
   board(pipelineId: string, filters?: Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'source' | 'tagId' | 'optIn'>) {
     return api.get<Deal[]>('/deals', { params: { pipelineId, ...filters } })
   },
-  /** Move o negócio para um estágio do seu pipeline (deriva status no backend). */
-  moveStage(id: string, stageId: string) {
-    return api.patch<Deal>(`/deals/${id}/stage`, { stageId })
+  /** Move o negócio para um estágio do seu pipeline (deriva status no backend).
+   *  Etapa TERMINAL é fechamento: `close` é obrigatório (A4 · SCRUM-926 — sem
+   *  motivo o backend responde 400 `close_reason_required`). */
+  moveStage(id: string, stageId: string, close?: { closeReason: string; closeNote?: string }) {
+    return api.patch<Deal>(`/deals/${id}/stage`, { stageId, ...close })
   },
   /** Move o negócio ABERTO pra outro funil — nasce lá no 1º estágio não-terminal.
    *  409 se o contato já tem um negócio aberto no funil de destino. */
@@ -1395,8 +1397,11 @@ export const dealsApi = {
   update(id: string, patch: Partial<Deal>) {
     return api.patch<Deal>(`/deals/${id}`, patch)
   },
-  /** `closeReason`/`closeNote` (F2, I5): motivo do catálogo ao fechar; sem eles o backend usa o compat `outro`. */
-  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string; closeReason?: string; closeNote?: string }) {
+  /** `closeReason`/`closeNote` (F2, I5): motivo do catálogo ao fechar —
+   *  OBRIGATÓRIO desde a A4 (SCRUM-926); sem ele, 400 `close_reason_required`.
+   *  `stageId` só vale ao REABRIR (`status: 'open'`): devolve o registro à
+   *  etapa de onde ele saiu, que é o "Desfazer" do toast. */
+  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string; closeReason?: string; closeNote?: string; stageId?: string }) {
     return api.patch<Deal>(`/deals/${id}/status`, body)
   },
   /** Agregados por contato (batch), p/ o card do Kanban. Só retorna contatos que têm negócios. */

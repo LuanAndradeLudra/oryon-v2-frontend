@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History } from 'lucide-react'
+import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
@@ -54,7 +54,7 @@ export function ContactPanelDeals({
   const {
     enabled, deals, open, closed, error, busyId,
     closeTarget, setCloseTarget, history,
-    pipelineOf, moveTo, closeWithReason, toggleHistory,
+    pipelineOf, moveTo, closeWithReason, reopen, toggleHistory,
   } = useContactPipelines(contactId, contactName)
   const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
 
@@ -75,6 +75,11 @@ export function ContactPanelDeals({
 
   const handleClose = async (input: CloseDealReasonInput) => {
     await closeWithReason(input)
+    refreshActivity()
+  }
+
+  const handleReopen = async (deal: Deal) => {
+    await reopen(deal)
     refreshActivity()
   }
 
@@ -214,10 +219,21 @@ export function ContactPanelDeals({
                       {deal.closedAt && <> · {formatRelativeTime(deal.closedAt)}</>}
                       {reasonLabel && <> · {reasonLabel}</>}
                     </span>
+                    {/* A4 (SCRUM-926): reabrir sem sair da conversa — antes só
+                        pelo seletor de Status do DealModal, que saiu. */}
+                    <button
+                      type="button"
+                      onClick={() => void handleReopen(deal)}
+                      disabled={busyId === deal.id}
+                      className="ml-auto inline-flex items-center gap-1 text-[10px] text-surface-300 hover:text-surface-100 disabled:opacity-50 whitespace-nowrap"
+                      data-testid={`panel-pipeline-reopen-${deal.id}`}
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" /> Reabrir
+                    </button>
                     <button
                       type="button"
                       onClick={() => void toggleHistory(deal.id)}
-                      className="ml-auto inline-flex items-center gap-1 text-[10px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
+                      className="inline-flex items-center gap-1 text-[10px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
                       data-testid={`panel-pipeline-history-${deal.id}`}
                     >
                       <History className="w-2.5 h-2.5" /> {h && h !== 'loading' ? 'ocultar' : 'histórico'}
