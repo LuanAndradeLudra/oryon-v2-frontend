@@ -212,10 +212,20 @@ export interface Practitioner {
 // ─── Negócios / Propostas (Deals) ────────────────────────────────────────────
 export type DealStatus = 'open' | 'won' | 'lost'
 
+/**
+ * Origem do item — A1 (SCRUM-153), decisão D0-3. `catalog` referencia um produto
+ * do catálogo (preço com lastro, o que a IA lê); `custom` é proposta sob medida:
+ * nome e preço digitados no negócio, preço NEGOCIADO, fora do catálogo. Ausente
+ * = `catalog` (todo o histórico anterior a esta história).
+ */
+export type DealLineItemKind = 'catalog' | 'custom'
+
 export interface DealLineItem {
   id?: string
-  productId: string
-  productName?: string          // snapshot (vem do backend)
+  kind?: DealLineItemKind
+  /** `null` em item personalizado — não há produto para apontar. */
+  productId?: string | null
+  productName?: string          // snapshot do catálogo, ou o nome digitado (custom)
   variationLabel?: string | null
   unitPriceCents: number        // centavos
   quantity?: number

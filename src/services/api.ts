@@ -1394,7 +1394,10 @@ export const dealsApi = {
   create(dto: Partial<Deal>) {
     return api.post<Deal>('/deals', dto)
   },
-  update(id: string, patch: Partial<Deal>) {
+  /** `updateAmount: true` manda o backend recalcular `amountCents = Σ itens` ao
+   *  reescrever `lineItems` (A2 · SCRUM-924, D4) — sem ele, um PATCH com itens
+   *  zeraria o valor digitado à mão. Só faz sentido acompanhado de `lineItems`. */
+  update(id: string, patch: Partial<Deal> & { updateAmount?: boolean }) {
     return api.patch<Deal>(`/deals/${id}`, patch)
   },
   /** `closeReason`/`closeNote` (F2, I5): motivo do catálogo ao fechar —
@@ -1409,6 +1412,25 @@ export const dealsApi = {
     return api.get<(ContactDealsSummary & { contactId: string })[]>('/deals/summary', {
       params: { contactIds: contactIds.join(',') },
     })
+  },
+  /**
+   * A1 (SCRUM-153, decisão D0-3): promove um item PERSONALIZADO do negócio a
+   * produto do catálogo. É o ato explícito que o expõe à IA — enquanto o item é
+   * `custom` ele vive só no negócio, com preço negociado, e não entra no
+   * catálogo que o agent-server lê nem no portão de preço.
+   *
+   * `category` é obrigatória (o cadastro de produtos a exige); `name` permite
+   * corrigir o texto sem reescrever o snapshot histórico do negócio.
+   */
+  promoteLineItem(
+    dealId: string,
+    lineItemId: string,
+    body: { category: string; name?: string; variationLabel?: string; sku?: string; active?: boolean },
+  ) {
+    return api.post<{ deal: Deal; product: Product }>(
+      `/deals/${dealId}/line-items/${lineItemId}/promote`,
+      body,
+    )
   },
   remove(id: string) {
     return api.delete(`/deals/${id}`)
