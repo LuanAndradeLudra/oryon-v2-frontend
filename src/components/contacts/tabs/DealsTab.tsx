@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, Loader2, KanbanSquare, ChevronDown, CheckCircle2, XCircle, History } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, KanbanSquare, ChevronDown, CheckCircle2, XCircle, History, RotateCcw } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { DealModal } from '@/components/contacts/DealModal'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
@@ -57,7 +57,7 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
   const {
     multiPipeline, pipelines, deals, open, closed, error, busyId,
     closeTarget, setCloseTarget, history,
-    pipelineOf, moveTo, closeWithReason, toggleHistory, reload,
+    pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName, { requireMultiPipeline: false })
   const { requestAdd, dialogs: addDialogs } = useAddToPipeline()
   const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
@@ -280,11 +280,26 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
                         {deal.closedAt && <> · {formatRelativeTime(deal.closedAt)}</>}
                         {reasonLabel && <> · {reasonLabel}</>}
                       </span>
+                      {/* A4 (SCRUM-926): reabrir mora na linha do fechado —
+                          o seletor de Status do DealModal, que era o único
+                          caminho, saiu. Sem funil no cache (tenant legado) não
+                          há para onde reabrir. */}
+                      {multiPipeline && (
+                        <button
+                          type="button"
+                          onClick={() => void reopen(deal)}
+                          disabled={busyId === deal.id}
+                          className="ml-auto inline-flex items-center gap-1 text-[11px] text-surface-300 hover:text-surface-100 disabled:opacity-50 whitespace-nowrap"
+                          data-testid={`deal-reopen-${deal.id}`}
+                        >
+                          <RotateCcw className="w-3 h-3" /> Reabrir
+                        </button>
+                      )}
                       {multiPipeline && (
                         <button
                           type="button"
                           onClick={() => void toggleHistory(deal.id)}
-                          className="ml-auto inline-flex items-center gap-1 text-[11px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
+                          className="inline-flex items-center gap-1 text-[11px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
                           data-testid={`deal-history-${deal.id}`}
                         >
                           <History className="w-3 h-3" /> {h && h !== 'loading' ? 'ocultar' : 'ver histórico'}

@@ -303,6 +303,8 @@ export interface AiDealTargetView {
   /** Só etapas não-terminais. */
   stages: Array<{ id: string; key: string; label: string; order: number }>
   closeReasons?: { won: Array<{ key: string; label: string }>; lost: Array<{ key: string; label: string }> }
+  /** Espelha `Pipeline.allowFreeCloseReason` para o funil do alvo (D0-8). */
+  allowFreeCloseReason?: boolean
 }
 
 /** F11 (SCRUM-886): uma passagem do histórico do registro (`GET /deals/:id/history`), já com rótulos. */
@@ -335,6 +337,10 @@ export interface Pipeline {
   access?: string[]
   /** F1 (SCRUM-827): catálogo de motivos de fechamento do tipo. */
   closeReasons?: CloseReason[]
+  /** D0-8 (SCRUM-923): interruptor do admin — com ele ligado, o modal de motivo
+   *  mostra um campo livre ao lado da lista (o livre grava como `outro` + nota).
+   *  A CONFIGURAÇÃO é da B5 (SCRUM-931); a A4 só consome: ausente = desligado. */
+  allowFreeCloseReason?: boolean
   stages: PipelineStage[]
   /** Contagem de negócios abertos — badge do segmented control da aba Leads. */
   openDealsCount: number
