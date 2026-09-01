@@ -2,7 +2,7 @@ import { useCallback, useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MoreHorizontal, MessageSquare, ExternalLink, Smile, Meh, Frown, HelpCircle, Check, X,
-  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare,
+  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare, Handshake,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
@@ -13,7 +13,7 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn, relativeDate, getActivePipelines } from '@/lib/utils'
-import { pipelineKindOption, pipelineKindOf } from '@/lib/pipelineKinds'
+import { pipelineKindOption, pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { openPipelineChips } from '@/lib/contactPipelines'
 import type { Contact, ContactStage, Pipeline } from '@/types'
 
@@ -165,6 +165,20 @@ export function ContactRow({
     // registro aberto (resumo por funil, F4-848) a entrada fica desabilitada
     // com "já está · etapa" — I1, um aberto por funil.
     const activePipelines = multiPipeline && onAddToPipeline ? getActivePipelines(pipelines) : []
+    // A3 (SCRUM-925): entrada PRIMÁRIA "Novo negócio" na linha — antes criar
+    // negócio daqui exigia abrir o submenu de funis e saber qual escolher. O
+    // submenu continua abaixo, para processo e para quem já sabe o funil.
+    const salesDefault = onAddToPipeline ? defaultSalesPipeline(pipelines) : null
+    if (salesDefault) {
+      const jaAberto = contact.dealsSummary?.byPipeline.find((b) => b.pipelineId === salesDefault.id && b.openCount > 0)
+      items.push({ separator: true })
+      items.push({
+        label: 'Novo negócio',
+        icon: Handshake,
+        disabled: !!jaAberto,
+        onClick: () => onAddToPipeline!(contact, salesDefault),
+      })
+    }
     if (activePipelines.length > 0) {
       items.push({ separator: true })
       items.push({

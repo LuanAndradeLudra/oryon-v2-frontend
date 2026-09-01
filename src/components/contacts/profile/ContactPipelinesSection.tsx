@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw } from 'lucide-react'
+import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw, Handshake } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { CloseDealReasonModal } from '@/components/deals/CloseDealReasonModal'
+import { Button } from '@/components/ui/Button'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
+import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { cn, formatRelativeTime } from '@/lib/utils'
-import { pipelineKindOption, pipelineKindOf, terminalLabelsOf } from '@/lib/pipelineKinds'
+import { pipelineKindOption, pipelineKindOf, terminalLabelsOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { originInfo, timeInStage } from '@/lib/dealCard'
 import { stepperFor, movedByLabel, moveTargets, type StepperStep } from '@/lib/contactPipelines'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
@@ -62,11 +65,18 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
   // o painel do contato nas conversas usa o mesmo. Aqui fica só a densidade
   // "card com stepper", que é a da ficha.
   const {
-    enabled, deals, open, closed, error, busyId,
+    enabled, deals, open, closed, error, busyId, pipelines,
     closeTarget, setCloseTarget, history,
-    pipelineOf, moveTo, closeWithReason, reopen, toggleHistory,
+    pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName)
   const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
+  const { vocab } = useTenantVocab()
+  // A3 (SCRUM-925): o estado vazio ganha AÇÃO, não só um texto mandando o
+  // operador procurar o botão no cabeçalho. Passa pelo mesmo fluxo do
+  // "Adicionar ao funil" — inclusive o conflito I1 —, então não recria a
+  // "segunda porta errada" que a SCRUM-920 tirou do painel.
+  const addToPipeline = useAddToPipeline({ onCreated: () => reload() })
+  const salesPipeline = defaultSalesPipeline(pipelines)
 
   if (!enabled) return null
 
@@ -94,7 +104,19 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
       <div className="flex flex-col divide-y divide-surface-800">
         {error && <p className="px-4 py-3 text-xs text-danger" role="alert">{error}</p>}
         {deals !== null && open.length === 0 && !error && (
-          <p className="px-4 py-3 text-xs text-surface-500">Nenhum registro aberto. Use "Adicionar ao funil" no cabeçalho.</p>
+          <div className="px-4 py-3 flex flex-wrap items-center gap-3">
+            <p className="text-xs text-surface-500">Nenhum registro aberto.</p>
+            {salesPipeline && (
+              <Button
+                size="sm"
+                variant="primary"
+                leftIcon={<Handshake className="w-3.5 h-3.5" />}
+                onClick={() => addToPipeline.requestAdd({ contactId, contactName, pipeline: salesPipeline })}
+              >
+                Novo {vocab.deal.toLowerCase()}
+              </Button>
+            )}
+          </div>
         )}
 
         {open.map((deal) => {
@@ -236,6 +258,7 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
         pipeline={closeTarget?.pipeline ?? null}
         onConfirm={closeWithReason}
       />
+      {addToPipeline.dialogs}
     </section>
   )
 }

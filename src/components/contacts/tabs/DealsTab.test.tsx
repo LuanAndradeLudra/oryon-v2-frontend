@@ -13,12 +13,17 @@ const { api, navigate, multi, socket } = vi.hoisted(() => ({
   multi: vi.fn(() => true),
   socket: { on: vi.fn(), off: vi.fn() },
 }))
-vi.mock('@/services/api', () => ({ dealsApi: api, contactsApi: { get: vi.fn() } }))
+vi.mock('@/services/api', () => ({ dealsApi: api, contactsApi: { get: vi.fn(), list: vi.fn() }, usersApi: { list: vi.fn(() => Promise.resolve({ data: [] })) } }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => multi() }))
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn(), toasts: [], dismiss: vi.fn() }) }))
 vi.mock('@/contexts/TenantVocabContext', () => ({ useTenantVocab: () => ({ vocab: { deal: 'Negócio', deals: 'Negócios' } }) }))
+// A3 (SCRUM-925): o "Novo negócio" abre o NewDealDialog, que lê o usuário atual
+// para pré-preencher o dono (D0-9). Sem este mock o diálogo derruba a árvore.
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'u1', tenantId: 't', email: 'eu@oryon.com', firstName: 'Ana', lastName: 'Souza', role: 'agent', isActive: true } }),
+}))
 
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 const st = (id: string, label: string, order: number, extra: Partial<PipelineStage> = {}): PipelineStage => ({ id, tenantId: 't', pipelineId: 'p', key: id, label, color: '#111', order, isWon: false, isLost: false, ...extra })
@@ -138,5 +143,22 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     // sem funil no cache todo negócio é comercial — o valor continua aparecendo
     expect(screen.getByTestId('deal-money-d1')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Novo negócio/i })).toBeInTheDocument()
+  })
+})
+
+// ─── A3 (SCRUM-925) — o estado vazio ganha ação ────────────────────────────
+// Antes: "Nenhum registro ainda — use 'Adicionar ao funil'". Texto mandando o
+// operador procurar outro botão é o padrão que o roteiro da A3 derrubou.
+describe('DealsTab — vazio com ação (A3/925)', () => {
+  it('sem nenhum negócio, oferece o botão "Novo negócio" e abre o diálogo de 2 passos', async () => {
+    api.list.mockResolvedValue({ data: [] })
+    renderTab()
+    const btns = await screen.findAllByRole('button', { name: /Novo negócio/ })
+    // Um no cabeçalho (menu "Adicionar ao funil" convive) e um no vazio.
+    expect(btns.length).toBeGreaterThanOrEqual(1)
+    fireEvent.click(btns[btns.length - 1])
+    // O diálogo do fluxo compartilhado abre — nada de POST direto.
+    await waitFor(() => expect(screen.getByText('Quem e onde')).toBeInTheDocument())
+    expect(api.create).not.toHaveBeenCalled()
   })
 })

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   ChevronDown, Info,
-  Check, Archive, ArrowLeft, MoreVertical,
+  Check, Archive, ArrowLeft, MoreVertical, Handshake,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
@@ -14,6 +15,9 @@ import { HandoffChip } from './AiHandoffBanner'
 import { ConversationDealIndicator } from './ConversationDealIndicator'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { useResolveWithOutcome } from '@/hooks/useResolveWithOutcome'
 import { ResolveOutcomePopover } from './ResolveOutcomePopover'
 import type { Conversation, DealOutcomeInput, Tag as TagType, User } from '@/types'
@@ -69,6 +73,15 @@ export function ChatHeader({
   // nasce ligado a ela (`originConversationId`). O chip do cabeçalho
   // (`ConversationDealIndicator`) atualiza pelo socket `deal:changed`.
   const addToPipeline = useAddToPipeline()
+  const { pipelines } = useCRMConfig()
+  const { vocab } = useTenantVocab()
+  /**
+   * A3 (SCRUM-925): no mobile o cabeçalho não comporta o "Adicionar ao funil ▾",
+   * então a ação vive no menu ⋯ e aponta direto para o funil de venda padrão —
+   * o diálogo de 2 passos deixa trocar o funil no passo 1. Sem funil de venda
+   * configurado, o item não aparece (nada a criar).
+   */
+  const salesPipeline = defaultSalesPipeline(pipelines)
   // F10 (SCRUM-880): "Resolvida" com registro-alvo aberto → popover de desfecho
   // (prancheta 5); sem alvo, resolve como sempre.
   const resolve = useResolveWithOutcome({
@@ -284,6 +297,22 @@ export function ChatHeader({
             >
               Detalhes do contato
             </DropdownItem>
+            {salesPipeline && (
+              <DropdownItem
+                icon={Handshake}
+                onClick={() => {
+                  setMoreOpen(false)
+                  addToPipeline.requestAdd({
+                    contactId: contact.id,
+                    contactName: contact.displayName || contact.waId,
+                    pipeline: salesPipeline,
+                    conversationId: conversation.id,
+                  })
+                }}
+              >
+                Novo {vocab.deal.toLowerCase()}
+              </DropdownItem>
+            )}
             <DropdownItem
               icon={Archive}
               danger
@@ -295,6 +324,9 @@ export function ChatHeader({
         </div>
 
         {sharedOverlays}
+        {/* A3: os diálogos do "Adicionar ao funil" (novo negócio, conflito I1,
+            motivo do fechamento) só eram montados no layout desktop. */}
+        {addToPipeline.dialogs}
       </div>
     )
   }
@@ -343,6 +375,25 @@ export function ChatHeader({
         />
         <span className="w-px h-5 bg-surface-800" />
 
+        {/* A3 (SCRUM-925): ação PRIMÁRIA da superfície. O "Adicionar ao funil ▾"
+            continua ao lado — para funil de processo e como atalho de quem já
+            sabe o funil —, mas criar negócio deixa de estar escondido dentro
+            de um menu (P2: uma ação primária visível por superfície). */}
+        {!isMobile && salesPipeline && (
+          <Button
+            size="sm"
+            variant="primary"
+            leftIcon={<Handshake className="w-3.5 h-3.5" />}
+            onClick={() => addToPipeline.requestAdd({
+              contactId: contact.id,
+              contactName: contact.displayName || contact.waId,
+              pipeline: salesPipeline,
+              conversationId: conversation.id,
+            })}
+          >
+            Novo {vocab.deal.toLowerCase()}
+          </Button>
+        )}
         {!isMobile && (
           <AddToPipelineMenu
             contactId={contact.id}

@@ -1391,7 +1391,11 @@ export const dealsApi = {
   history(id: string) {
     return api.get<DealStageHistoryEntry[]>(`/deals/${id}/history`)
   },
-  create(dto: Partial<Deal>) {
+  /** `updateAmount` acompanha `lineItems` também na CRIAÇÃO (A2 · SCRUM-924):
+   *  é a escolha dos dois botões do "Novo negócio" (A3 · SCRUM-925) — `false`
+   *  preserva o valor digitado, `true` usa a soma dos itens. Omitido com itens,
+   *  o backend recalcula (compat). Sem `lineItems` no corpo, não tem efeito. */
+  create(dto: Partial<Deal> & { updateAmount?: boolean }) {
     return api.post<Deal>('/deals', dto)
   },
   /** `updateAmount: true` manda o backend recalcular `amountCents = Σ itens` ao

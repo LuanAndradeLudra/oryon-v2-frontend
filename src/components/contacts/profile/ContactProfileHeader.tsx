@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   ArrowLeft, Copy, Check, MessageSquare, StickyNote, CalendarClock,
-  MoreHorizontal, Send, Trash2, UserCheck, MessageCircle,
+  MoreHorizontal, Send, Trash2, UserCheck, MessageCircle, Handshake,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -11,6 +11,8 @@ import { StageBadge } from '@/components/contacts/StageBadge'
 import { LeadScorePill } from '@/components/contacts/LeadScorePill'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { relativeDate, cn } from '@/lib/utils'
 import { computeWhatsAppWindow, type WhatsAppWindowState } from '@/lib/whatsappWindow'
@@ -59,7 +61,9 @@ export function ContactProfileHeader({
   onBack, onOpenChat, onSendTemplate, onAddNote, onAddTask, onDelete, compact = false,
 }: ContactProfileHeaderProps) {
   const addToPipeline = useAddToPipeline()
-  const { stages } = useCRMConfig()
+  const { stages, pipelines } = useCRMConfig()
+  const { vocab } = useTenantVocab()
+  const salesPipeline = defaultSalesPipeline(pipelines)
   const { user } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -171,6 +175,23 @@ export function ContactProfileHeader({
           <Button size="sm" variant="primary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={onOpenChat}>
             Conversar
           </Button>
+          {/* A3 (SCRUM-925): ação primária da ficha — criar negócio deixa de
+              depender de abrir o menu de funis (P2). O menu continua ao lado,
+              para funil de processo e como atalho. */}
+          {salesPipeline && (
+            <Button
+              size="sm"
+              variant="primary"
+              leftIcon={<Handshake className="w-3.5 h-3.5" />}
+              onClick={() => addToPipeline.requestAdd({
+                contactId: contact.id,
+                contactName: contact.displayName || contact.waId,
+                pipeline: salesPipeline,
+              })}
+            >
+              Novo {vocab.deal.toLowerCase()}
+            </Button>
+          )}
           {/* F9 (SCRUM-875): mesma ação da conversa, aqui sem conversa de origem. */}
           <AddToPipelineMenu
             contactId={contact.id}

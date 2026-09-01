@@ -65,3 +65,20 @@ export function pipelineNoun(pipeline: Pick<Pipeline, 'kind'> | null | undefined
   const opt = pipelineKindOption(pipelineKindOf(pipeline))
   return plural ? opt.nounPlural : opt.noun
 }
+
+/**
+ * Funil de VENDA padrão do tenant — o destino do botão primário "Novo negócio"
+ * (A3 · SCRUM-925), que aparece onde não cabe um menu de funis: cabeçalho do
+ * chat, ficha, menu da linha da tabela e estados vazios. O diálogo de 2 passos
+ * deixa trocar o funil depois, então errar para o padrão é barato; devolver
+ * `null` (tenant só com funis de processo) é o sinal de esconder o botão —
+ * criar negócio em funil de processo não existe.
+ */
+export function defaultSalesPipeline(pipelines: Pipeline[] | null | undefined): Pipeline | null {
+  const actives = (pipelines ?? []).filter((p) => !p.isArchived)
+  return (
+    actives.find((p) => pipelineKindOf(p) === 'sales' && p.isDefault) ??
+    actives.find((p) => pipelineKindOf(p) === 'sales') ??
+    null
+  )
+}

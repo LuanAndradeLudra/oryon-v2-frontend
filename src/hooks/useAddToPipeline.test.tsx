@@ -5,7 +5,9 @@
 //   * 2ª tentativa no mesmo funil → 409 open_exists → modal de conflito;
 //     cada saída produz o efeito esperado (navegar · mover p/ 1ª etapa ·
 //     fechar com motivo + abrir novo)
-//   * venda → abre o DealModal (mockado) com o funil pré-selecionado
+//   * venda → abre o "Novo negócio" de 2 passos (mockado) com o funil
+//     pré-selecionado. Era o DealModal até a A3 (SCRUM-925) — que é o
+//     formulário de EDIÇÃO e não tem campo de valor.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
@@ -19,9 +21,9 @@ vi.mock('@/services/api', () => ({ dealsApi: api }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }))
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast }) }))
 vi.mock('@/contexts/CRMConfigContext', () => ({ useCRMConfig: () => ({ pipelines: [] }) }))
-vi.mock('@/components/contacts/DealModal', () => ({
-  DealModal: (p: { initialPipelineId?: string | null; originConversationId?: string | null; contactName?: string | null }) => (
-    <div data-testid="deal-modal">{p.initialPipelineId} · {p.originConversationId ?? '-'} · {p.contactName}</div>
+vi.mock('@/components/deals/NewDealDialog', () => ({
+  NewDealDialog: (p: { initialPipelineId?: string | null; originConversationId?: string | null; contactName?: string | null }) => (
+    <div data-testid="new-deal-dialog">{p.initialPipelineId} · {p.originConversationId ?? '-'} · {p.contactName}</div>
   ),
 }))
 
@@ -125,10 +127,10 @@ describe('useAddToPipeline (F9)', () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Mariana entrou em Suporte · Novo chamado.', 'success', expect.anything()))
   })
 
-  it('funil de venda abre o DealModal com o funil pré-selecionado e a conversa de origem (sem POST direto)', async () => {
+  it('funil de venda abre o "Novo negócio" com o funil pré-selecionado e a conversa de origem (sem POST direto)', async () => {
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: VENDAS, conversationId: 'conv-1' }} />)
     fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('deal-modal')).toHaveTextContent('v · conv-1 · Mariana'))
+    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toHaveTextContent('v · conv-1 · Mariana'))
     expect(api.create).not.toHaveBeenCalled()
   })
 

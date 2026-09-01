@@ -174,3 +174,58 @@ describe('DealModal — editor de itens fora do FormField (#3 da revisão)', () 
     expect(new Set(ids).size).toBe(ids.length)
   })
 })
+
+// ─── A3 (SCRUM-925, subtarefa 956) — o valor virou campo editável aqui ──────
+// Antes o total era só consequência dos itens: um negócio de valor livre (sem
+// itens) não tinha onde ser corrigido depois de criado.
+const valorInput = () => screen.getByLabelText('Valor do negócio')
+
+describe('DealModal — campo Valor (A3/956)', () => {
+  it('funil de PROCESSO não tem campo de valor', () => {
+    renderModal({ editDeal: DEAL_PROCESSO })
+    expect(screen.queryByLabelText('Valor do negócio')).toBeNull()
+  })
+
+  it('abre com o valor do negócio e, sem tocar nele, o PATCH não o envia', async () => {
+    renderModal({ editDeal: DEAL_VENDA })
+    expect((valorInput() as HTMLInputElement).value).toContain('1.500,00')
+    fireEvent.change(tituloInput(), { target: { value: 'Plano Anual — revisado' } })
+    salvar()
+    await waitFor(() => expect(api.update).toHaveBeenCalled())
+    expect('amountCents' in api.update.mock.calls[0][1]).toBe(false)
+  })
+
+  it('editar SÓ o valor: PATCH com amountCents e sem lineItems (valor livre, D4)', async () => {
+    renderModal({ editDeal: DEAL_VENDA })
+    fireEvent.change(valorInput(), { target: { value: '200000' } })
+    salvar()
+    await waitFor(() => expect(api.update).toHaveBeenCalled())
+    const payload = api.update.mock.calls[0][1]
+    expect(payload.amountCents).toBe(200000)
+    expect('lineItems' in payload).toBe(false)
+  })
+
+  it('valor divergente + itens alterados: dois botões, e "Vincular" preserva o valor', async () => {
+    renderModal({ editDeal: DEAL_VENDA })
+    fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '3' } })
+    fireEvent.change(valorInput(), { target: { value: '200000' } })
+    expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Vincular' }))
+    await waitFor(() => expect(api.update).toHaveBeenCalled())
+    const payload = api.update.mock.calls[0][1]
+    expect(payload.updateAmount).toBe(false)
+    expect(payload.amountCents).toBe(200000)
+    expect(payload.lineItems).toHaveLength(1)
+  })
+
+  it('"Vincular e atualizar valor": updateAmount true e sem amountCents no corpo', async () => {
+    renderModal({ editDeal: DEAL_VENDA })
+    fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '3' } })
+    fireEvent.change(valorInput(), { target: { value: '200000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Vincular e atualizar valor' }))
+    await waitFor(() => expect(api.update).toHaveBeenCalled())
+    const payload = api.update.mock.calls[0][1]
+    expect(payload.updateAmount).toBe(true)
+    expect('amountCents' in payload).toBe(false)
+  })
+})

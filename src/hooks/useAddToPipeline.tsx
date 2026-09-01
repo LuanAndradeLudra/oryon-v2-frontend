@@ -7,7 +7,7 @@ import { getApiErrorMessage } from '@/lib/utils'
 import { pipelineKindOf } from '@/lib/pipelineKinds'
 import { PipelineConflictModal, type ConflictChoice } from '@/components/deals/PipelineConflictModal'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
-import { DealModal } from '@/components/contacts/DealModal'
+import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 /** O que "Adicionar ao funil" precisa saber, de qualquer superfície (conversa · ficha · tabela). */
@@ -173,8 +173,11 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
         pipeline={closeTarget?.target.pipeline ?? null}
         onConfirm={handleCloseAndNew}
       />
+      {/* A3 (SCRUM-925): em funil de VENDA o gesto abre o "Novo negócio" de 2
+          passos — mesma superfície de criação em todo o produto. Antes era o
+          `DealModal`, que é o formulário de EDIÇÃO e não tem campo de valor. */}
       {salesTarget && (
-        <DealModal
+        <NewDealDialog
           open
           contactId={salesTarget.contactId}
           contactName={salesTarget.contactName}
@@ -182,11 +185,13 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
           initialPipelineId={salesTarget.pipeline.id}
           originConversationId={salesTarget.conversationId ?? null}
           onClose={() => setSalesTarget(null)}
-          onSaved={() => {
+          onCreated={(deal) => {
             const t = salesTarget
             setSalesTarget(null)
-            toast(`${t.contactName} entrou em ${t.pipeline.name}.`, 'success', { label: 'Ver no board', onClick: () => navigate(boardHref(t.pipeline.id)) })
-            onCreated?.({ id: '', contactId: t.contactId, title: t.contactName, status: 'open', pipelineId: t.pipeline.id, stageId: '', amountCents: 0 })
+            // O negócio criado volta INTEIRO do POST — o chamador recebe o
+            // registro real (antes ia um esqueleto com `id: ''`, que impedia
+            // qualquer leitura otimista de valor/etapa).
+            announce(deal, t)
           }}
           onConflict={(info) => {
             const t = salesTarget
@@ -198,5 +203,16 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     </>
   )
 
-  return { requestAdd, dialogs, busy }
+  /**
+   * A3 (SCRUM-925): o board cria negócio SEM passar por `requestAdd` — o
+   * contato só é escolhido dentro do diálogo. Expor o conflito deixa esse
+   * caminho reusar o mesmo modal de três saídas, em vez de nascer uma segunda
+   * implementação (ou, pior, um erro cru).
+   */
+  const reportConflict = useCallback(
+    (target: AddToPipelineTarget, openDealId: string) => { void openConflict(target, openDealId) },
+    [openConflict],
+  )
+
+  return { requestAdd, dialogs, busy, reportConflict }
 }

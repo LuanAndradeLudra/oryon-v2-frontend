@@ -20,6 +20,7 @@ import { ImportContactsDrawer } from '@/components/contacts/ImportContactsDrawer
 import { BulkActionBar } from '@/components/contacts/BulkActionBar'
 import { CampaignWizard } from '@/components/campaigns/CampaignWizard'
 import { DealsBoard } from '@/components/deals/DealsBoard'
+import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import { CreatePipelineModal, type CreatePipelineData } from '@/components/deals/CreatePipelineModal'
 import { pipelineNoun, pipelineKindOf, pipelineKindOption, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { boardStats, entrySources } from '@/lib/dealCard'
@@ -365,6 +366,11 @@ export function ContactsPage() {
   // F9 (SCRUM-875): "Adicionar ao funil" pelo menu da linha da tabela —
   // fluxo compartilhado (criação / DealModal em venda / modal de conflito).
   const addToPipeline = useAddToPipeline({ onCreated: () => { void refetch(); void fetchPipelines() } })
+
+  // A3 (SCRUM-925): "Novo negócio" a partir do BOARD — a etapa vem da coluna
+  // clicada e o contato é escolhido dentro do diálogo (aqui, ao contrário das
+  // outras superfícies, ninguém sabe de quem é o negócio antes de perguntar).
+  const [newDealStageId, setNewDealStageId] = useState<string | null>(null)
 
   const handleOpenDealContact = (contactId: string) => {
     setSelectedContactId(contactId)
@@ -746,6 +752,7 @@ export function ContactsPage() {
                 pipelines={pipelines}
                 onMovePipeline={handleMovePipelineDeal}
                 onAddContact={() => setShowNewContact(true)}
+                onNewDeal={selectedIsProcess ? undefined : (stageId) => setNewDealStageId(stageId)}
                 itemNoun={pipelineNoun(selectedPipeline)}
                 pipeline={selectedPipeline}
               />
@@ -931,6 +938,27 @@ export function ContactsPage() {
 
       {/* F9 (SCRUM-875): diálogos do "Adicionar ao funil" (conflito / motivo / negócio) */}
       {addToPipeline.dialogs}
+
+      {/* A3 (SCRUM-925): "Novo negócio" do board. O 409 reusa o modal de
+          conflito do hook — o board não ganha uma segunda implementação. */}
+      {newDealStageId && selectedPipeline && (
+        <NewDealDialog
+          open
+          pipelines={pipelines}
+          initialPipelineId={selectedPipeline.id}
+          initialStageId={newDealStageId}
+          onClose={() => setNewDealStageId(null)}
+          onCreated={() => {
+            setNewDealStageId(null)
+            void refetchDeals()
+            void fetchPipelines()
+          }}
+          onConflict={({ openDealId, contactId, contactName }) => {
+            setNewDealStageId(null)
+            addToPipeline.reportConflict({ contactId, contactName, pipeline: selectedPipeline }, openDealId)
+          }}
+        />
+      )}
 
       {/* Motivo ao fechar um registro pelo board — QUALQUER tipo de funil
           desde a A4 (SCRUM-926); antes só processo passava por aqui. */}
