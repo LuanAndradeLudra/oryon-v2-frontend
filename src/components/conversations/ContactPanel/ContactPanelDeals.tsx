@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw } from 'lucide-react'
+import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw, Handshake } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { Button } from '@/components/ui/Button'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
+import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { formatRelativeTime } from '@/lib/utils'
-import { pipelineKindOption, pipelineKindOf, terminalLabelsOf } from '@/lib/pipelineKinds'
+import { pipelineKindOption, pipelineKindOf, terminalLabelsOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { originInfo, timeInStage } from '@/lib/dealCard'
 import { movedByLabel, moveTargets } from '@/lib/contactPipelines'
 import { formatBRL } from '@/utils/money'
@@ -52,11 +55,17 @@ export function ContactPanelDeals({
 }) {
   const navigate = useNavigate()
   const {
-    enabled, deals, open, closed, error, busyId,
+    enabled, deals, open, closed, error, busyId, pipelines,
     closeTarget, setCloseTarget, history,
-    pipelineOf, moveTo, closeWithReason, reopen, toggleHistory,
+    pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName)
   const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
+  const { vocab } = useTenantVocab()
+  // A3 (SCRUM-925): o vazio ganha ação. Não e a "segunda porta" que a
+  // SCRUM-920 tirou daqui — aquele "Novo" abria o DealModal cru e virava erro
+  // no conflito; este passa pelo MESMO fluxo do cabeçalho, com o 409 tratado.
+  const addToPipeline = useAddToPipeline({ onCreated: () => reload() })
+  const salesPipeline = defaultSalesPipeline(pipelines)
 
   if (!enabled) return null
 
@@ -106,9 +115,19 @@ export function ContactPanelDeals({
       {error && <p className="text-xs text-danger" role="alert">{error}</p>}
 
       {deals !== null && open.length === 0 && closed.length === 0 && !error && (
-        <p className="text-xs text-surface-600">
-          Nenhum registro ainda — use "Adicionar ao funil" no cabeçalho da conversa.
-        </p>
+        <div className="flex flex-col items-start gap-2">
+          <p className="text-xs text-surface-600">Nenhum registro ainda.</p>
+          {salesPipeline && (
+            <Button
+              size="sm"
+              variant="primary"
+              leftIcon={<Handshake className="w-3.5 h-3.5" />}
+              onClick={() => addToPipeline.requestAdd({ contactId, contactName, pipeline: salesPipeline, conversationId })}
+            >
+              Novo {vocab.deal.toLowerCase()}
+            </Button>
+          )}
+        </div>
       )}
 
       {salesDeals.length > 0 && (
@@ -268,6 +287,7 @@ export function ContactPanelDeals({
         pipeline={closeTarget?.pipeline ?? null}
         onConfirm={handleClose}
       />
+      {addToPipeline.dialogs}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Loader2, KanbanSquare, ChevronDown, CheckCircle2, XCircle, History, RotateCcw } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { DealModal } from '@/components/contacts/DealModal'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
@@ -13,7 +14,7 @@ import { useToast } from '@/hooks/useToast'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { dealsApi } from '@/services/api'
 import { formatRelativeTime } from '@/lib/utils'
-import { pipelineKindOption, pipelineKindOf, terminalLabelsOf, pipelineNoun } from '@/lib/pipelineKinds'
+import { pipelineKindOption, pipelineKindOf, terminalLabelsOf, pipelineNoun, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { originInfo, timeInStage } from '@/lib/dealCard'
 import { movedByLabel, moveTargets } from '@/lib/contactPipelines'
 import { formatBRL } from '@/utils/money'
@@ -68,6 +69,7 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
   // campo de valor. Agora abre o mesmo diálogo de 2 passos das outras
   // superfícies; o `DealModal` fica só para editar.
   const [newDealOpen, setNewDealOpen] = useState(false)
+  const salesPipeline = defaultSalesPipeline(pipelines)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
   const [deleteDeal, setDeleteDeal] = useState<Deal | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -140,9 +142,25 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
           <Loader2 className="w-5 h-5 animate-spin text-brand-400" />
         </div>
       ) : open.length === 0 && closed.length === 0 ? (
-        <p className="text-sm text-surface-500 text-center py-10">
-          {multiPipeline ? 'Nenhum registro ainda — use "Adicionar ao funil".' : `Nenhum ${dealWord} ainda.`}
-        </p>
+        <div className="flex flex-col items-center gap-3 py-10">
+          <p className="text-sm text-surface-500">Nenhum {dealWord} ainda.</p>
+          {/* A3 (SCRUM-925): o vazio ganha ação — com o flag, pelo mesmo fluxo
+              do "Adicionar ao funil" (conflito I1 incluso); sem o flag, pelo
+              diálogo direto, que é o único caminho de criação do tenant legado. */}
+          {(!multiPipeline || salesPipeline) && (
+            <Button
+              size="sm"
+              variant="primary"
+              leftIcon={<Plus className="w-3.5 h-3.5" />}
+              onClick={() => {
+                if (!multiPipeline || !salesPipeline) { setNewDealOpen(true); return }
+                void requestAdd({ contactId, contactName, pipeline: salesPipeline })
+              }}
+            >
+              Novo {dealWord}
+            </Button>
+          )}
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           {open.map((deal) => {
