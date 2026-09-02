@@ -1,6 +1,6 @@
 // F11 (SCRUM-884/885/886) — chips por registro aberto, stepper, ordenação e "movido por".
 import { describe, it, expect } from 'vitest'
-import { openPipelineChips, stepperFor, splitDeals, movedByLabel, moveTargets } from './contactPipelines'
+import { openPipelineChips, effectiveOpenStageLabel, stepperFor, splitDeals, movedByLabel, moveTargets } from './contactPipelines'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 const st = (id: string, label: string, order: number, extra: Partial<PipelineStage> = {}): PipelineStage => ({ id, tenantId: 't', pipelineId: 'p', key: id, label, color: `#${id}`, order, isWon: false, isLost: false, ...extra })
@@ -22,6 +22,28 @@ describe('contactPipelines (F11)', () => {
       { pipelineId: 'p', pipelineName: 'Suporte', color: '#14b8a6', stageLabel: 'Em atendimento', kind: 'process' },
       { pipelineId: 'zzz', pipelineName: 'Antigo', color: '#222', stageLabel: null, kind: 'sales' },
     ])
+  })
+
+  // C1/SCRUM-932 (achado do Lince): backend do épico ainda devolve o formato
+  // ANTIGO (`stageKey`/`stageLabel` singulares) — a C1 não mesclou ainda. Leitura
+  // híbrida: usa `openStages` quando vier (formato novo), cai pro singular
+  // quando não vier. TODO(SCRUM-932): remover o teste do formato antigo quando
+  // a C1 mesclar e o fallback for removido.
+  it('effectiveOpenStageLabel: formato novo (openStages) tem prioridade sobre o singular', () => {
+    expect(effectiveOpenStageLabel({ openStages: [{ dealId: 'd1', stageKey: 'proposta', stageLabel: 'Proposta enviada' }], stageLabel: 'ignorado (antigo)' })).toBe('Proposta enviada')
+  })
+
+  it('effectiveOpenStageLabel: sem openStages (backend atual do épico, pré-C1) cai pro singular', () => {
+    expect(effectiveOpenStageLabel({ stageLabel: 'Em atendimento' })).toBe('Em atendimento')
+    expect(effectiveOpenStageLabel({ openStages: [], stageLabel: 'Em atendimento' })).toBe('Em atendimento')
+    expect(effectiveOpenStageLabel({})).toBeNull()
+  })
+
+  it('openPipelineChips: lê openStages (formato novo, pós-C1) quando presente, ignorando o singular', () => {
+    const chips = openPipelineChips([
+      { pipelineId: 'p', pipelineName: 'Suporte', pipelineColor: '#000', count: 1, openCount: 1, wonCount: 0, totalCents: 0, openCents: 0, wonCents: 0, stageLabel: 'formato antigo', openStages: [{ dealId: 'd1', stageKey: 's2', stageLabel: 'Em atendimento' }] },
+    ], [SUPORTE, VENDAS])
+    expect(chips).toEqual([{ pipelineId: 'p', pipelineName: 'Suporte', color: '#14b8a6', stageLabel: 'Em atendimento', kind: 'process' }])
   })
 
   it('stepperFor: aberto → feitas/atual/a fazer só nas normais; fechado → todas feitas + terminal', () => {

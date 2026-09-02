@@ -12,6 +12,17 @@ export interface PipelineChip {
   kind: PipelineKind
 }
 
+/**
+ * Etapa efetiva de um registro aberto neste funil: prefere `openStages` (C1/SCRUM-932,
+ * formato novo — usa o primeiro registro aberto) e cai para o campo singular
+ * `stageLabel` quando `openStages` não vier (backend atual do épico, pré-C1).
+ * TODO(SCRUM-932): remover o fallback para `stageLabel` quando a C1 mesclar.
+ */
+export function effectiveOpenStageLabel(p: Pick<ContactDealsPipelineSummary, 'openStages' | 'stageLabel'>): string | null {
+  if (p.openStages && p.openStages.length > 0) return p.openStages[0].stageLabel
+  return p.stageLabel ?? null
+}
+
 /** Um chip por registro ABERTO (I1: no máx. 1 por funil). `kind` vem do cache de funis; sem ele, `sales`. */
 export function openPipelineChips(byPipeline: ReadonlyArray<ContactDealsPipelineSummary>, pipelines: ReadonlyArray<Pipeline>): PipelineChip[] {
   return byPipeline
@@ -22,7 +33,7 @@ export function openPipelineChips(byPipeline: ReadonlyArray<ContactDealsPipeline
         pipelineId: p.pipelineId,
         pipelineName: p.pipelineName,
         color: pipe?.color ?? p.pipelineColor,
-        stageLabel: p.stageLabel ?? null,
+        stageLabel: effectiveOpenStageLabel(p),
         kind: pipe ? pipelineKindOf(pipe) : 'sales',
       }
     })
