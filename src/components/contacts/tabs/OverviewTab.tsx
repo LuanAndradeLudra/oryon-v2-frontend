@@ -35,7 +35,7 @@ export function OverviewTab({ contact, onSave, onAddTag, onRemoveTag, onRefresh,
       <AttributionCard contact={contact} />
       <ContactInsightsCard contact={contact} />
       <EngagementCard contactId={contact.id} />
-      <DealsSummaryCard contactId={contact.id} />
+      <DealsSummaryCard contactId={contact.id} contactName={contact.displayName} />
       <TagsCard contact={contact} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
       <StageCard contact={contact} onStageChanged={onStageChanged} />
       <QualificationCard contact={contact} onSave={onSave} />

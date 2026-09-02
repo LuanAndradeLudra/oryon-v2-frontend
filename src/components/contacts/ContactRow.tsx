@@ -1,10 +1,11 @@
 import { useCallback, useState, type MouseEvent } from 'react'
 import {
   MoreHorizontal, MessageSquare, ExternalLink, Smile, Meh, Frown, HelpCircle, Check, X,
-  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare, Handshake, Loader2,
+  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare, Handshake,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { DealSummary } from '@/components/deals/DealSummary'
 import { StageBadge } from './StageBadge'
 import { LeadScorePill } from './LeadScorePill'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
@@ -33,28 +34,38 @@ const INTENT_CONFIG = {
   unknown: { label: '—',       chip: 'var(--color-status-muted)' },
 }
 
-/** Chips "● Funil · Etapa" por registro ABERTO (F11-884, prancheta 6) — um por
- *  funil (I1), com o ícone do tipo. Sem registro aberto: chip tracejado
- *  "nenhum aberto". Reusado igual entre `ContactRow` (desktop) e `ContactCard`
- *  (mobile, `ContactsMobileList`). Lê só o `dealsSummary` já carregado em lote
- *  (`GET /deals/summary`, 1 chamada por página) — nenhuma requisição extra
- *  para MOSTRAR o chip.
+/** Chips "● Funil · Etapa" por registro ABERTO (F11-884, prancheta 6; B3 ·
+ *  SCRUM-929) — densidade `chip` do `DealSummary`, um por funil (I1). Reusado
+ *  igual entre `ContactRow` (desktop) e `ContactCard` (mobile,
+ *  `ContactsMobileList`). Lê só o `dealsSummary` já carregado em lote (`GET
+ *  /deals/summary`, 1 chamada por página) — nenhuma requisição extra para
+ *  MOSTRAR o chip; por isso o `chip` do `DealSummary` recebe só funil+etapa,
+ *  não o `Deal` inteiro que `row`/`card` (ficha, painel, aba) têm à mão.
  *
  *  B2 (SCRUM-928): clique abre a FICHA do negócio, não mais o board. O
  *  resumo em lote não traz `dealId` (só `pipelineId` + rótulo de etapa) — ao
  *  clicar, busca o negócio aberto deste (contato, funil) via `GET
  *  /deals?contactId=` (mesma chamada que `ConversationDealIndicator` já faz)
- *  e abre a ficha assim que resolve. Único ponto do produto sem o id à mão. */
+ *  e abre a ficha assim que resolve. Único ponto do produto sem o id à mão.
+ *
+ *  SCRUM-929 (item 6): sem nenhum aberto, a célula fica VAZIA — o chip
+ *  tracejado "nenhum aberto" era ruído puro, sem ação nenhuma atrás dele.
+ *  Com `onAddToPipeline` (só o desktop passa — a tabela já tem o funil de
+ *  venda padrão à mão pro menu de contexto), aparece "+ Novo negócio" no
+ *  hover da linha; sem ele (mobile), a célula some — tocar no card já abre o
+ *  painel, que tem o mesmo CTA na aba Negócios. */
 export function DealsSummaryChips({
   contact,
   className,
+  onAddToPipeline,
 }: {
   contact: Contact
   className?: string
+  onAddToPipeline?: (contact: Contact, pipeline: Pipeline) => void
 }) {
   // Gate de múltiplos funis (SCRUM-498): sem o módulo o backend não manda
-  // `dealsSummary` — mostraria "nenhum aberto" para todo mundo, inclusive
-  // quem tem. Some (desktop e mobile passam por aqui).
+  // `dealsSummary` — mostraria a célula vazia pra todo mundo, inclusive quem
+  // tem. Some (desktop e mobile passam por aqui).
   const multiPipeline = useMultiPipeline()
   const { pipelines } = useCRMConfig()
   const { openDeal } = useDealPanel()
@@ -63,8 +74,7 @@ export function DealsSummaryChips({
   if (!multiPipeline) return null
   const chips = openPipelineChips(contact.dealsSummary?.byPipeline ?? [], pipelines)
 
-  const handleOpen = async (e: MouseEvent, pipelineId: string) => {
-    e.stopPropagation()
+  const handleOpen = async (pipelineId: string) => {
     if (resolvingPipelineId) return
     setResolvingPipelineId(pipelineId)
     try {
@@ -79,38 +89,37 @@ export function DealsSummaryChips({
     }
   }
 
-  return (
-    <div className={cn('flex gap-1 flex-wrap', className)}>
-      {chips.length === 0 ? (
-        <span
-          className="text-[10px] text-surface-600 border border-dashed border-surface-700 px-1.5 py-0.5 rounded-full whitespace-nowrap"
-          data-testid="pipeline-chip-none"
+  if (chips.length === 0) {
+    const salesDefault = onAddToPipeline ? defaultSalesPipeline(pipelines) : null
+    if (!salesDefault) return <div className={className} />
+    return (
+      <div className={className}>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onAddToPipeline!(contact, salesDefault) }}
+          title="Novo negócio"
+          data-testid="pipeline-chip-add"
+          className="flex items-center gap-1 text-[10px] font-medium text-surface-600 hover:text-brand-300 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all whitespace-nowrap"
         >
-          nenhum aberto
-        </span>
-      ) : (
-        chips.map((c) => {
-          const KindIcon = pipelineKindOption(c.kind).icon
-          const resolving = resolvingPipelineId === c.pipelineId
-          return (
-            <button
-              key={c.pipelineId}
-              type="button"
-              disabled={resolving}
-              onClick={(e) => void handleOpen(e, c.pipelineId)}
-              title={`${c.pipelineName}${c.stageLabel ? ` · ${c.stageLabel}` : ''} — abrir negócio`}
-              data-testid={`pipeline-chip-${c.pipelineId}`}
-              className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 disabled:opacity-60 transition-all"
-              style={{ color: c.color, borderColor: `${c.color}40`, backgroundColor: `${c.color}18` }}
-            >
-              {resolving ? <Loader2 className="w-2.5 h-2.5 animate-spin flex-shrink-0" /> : <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />}
-              <KindIcon className="w-2.5 h-2.5 opacity-70" aria-label={pipelineKindOption(c.kind).label} />
-              {c.pipelineName}
-              {c.stageLabel && <span className="opacity-80">· {c.stageLabel}</span>}
-            </button>
-          )
-        })
-      )}
+          <Handshake className="w-3 h-3" /> Novo negócio
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn('flex gap-1 flex-wrap', className)} onClick={(e) => e.stopPropagation()}>
+      {chips.map((c) => (
+        <DealSummary
+          key={c.pipelineId}
+          density="chip"
+          pipeline={{ id: c.pipelineId, name: c.pipelineName, color: c.color, kind: c.kind }}
+          stageLabel={c.stageLabel}
+          busy={resolvingPipelineId === c.pipelineId}
+          onOpen={() => handleOpen(c.pipelineId)}
+          testId={`pipeline-chip-${c.pipelineId}`}
+        />
+      ))}
     </div>
   )
 }
@@ -348,7 +357,7 @@ export function ContactRow({
           inteira some sem o gate (SCRUM-498) — o cabeçalho em ContactsTable acompanha. */}
       {multiPipeline && (
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-          <DealsSummaryChips contact={contact} className="max-w-[260px]" />
+          <DealsSummaryChips contact={contact} className="max-w-[260px]" onAddToPipeline={onAddToPipeline} />
         </td>
       )}
 

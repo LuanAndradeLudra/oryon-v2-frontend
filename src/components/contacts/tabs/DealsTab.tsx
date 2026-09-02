@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Loader2, KanbanSquare, ChevronDown, CheckCircle2, XCircle, History, RotateCcw } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { DealModal } from '@/components/contacts/DealModal'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
-import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { DealSummary, useDealSummaryMove } from '@/components/deals/DealSummary'
 import { CloseDealReasonModal } from '@/components/deals/CloseDealReasonModal'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
@@ -13,11 +13,7 @@ import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { dealsApi } from '@/services/api'
-import { formatRelativeTime } from '@/lib/utils'
-import { pipelineKindOption, pipelineKindOf, terminalLabelsOf, pipelineNoun, defaultSalesPipeline } from '@/lib/pipelineKinds'
-import { originInfo, timeInStage } from '@/lib/dealCard'
-import { movedByLabel, moveTargets } from '@/lib/contactPipelines'
-import { formatBRL } from '@/utils/money'
+import { pipelineNoun, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 /**
@@ -35,16 +31,17 @@ import type { Deal, Pipeline, PipelineStage } from '@/types'
  * repetia carga e socket próprios, sem ouvir o evento local. O chip prometia uma
  * coisa e a aba que ele abre entregava outra.
  *
- * **Densidade média**, entre o stepper da ficha e a linha do painel estreito:
- * um card por registro aberto com funil, tipo, **etapa**, o que mudou por
- * último, "Mover ▾" e "Ver no board"; fechados em linha com motivo e histórico
- * sob demanda.
+ * Densidade `card` do `DealSummary` compartilhado (B3 · SCRUM-929): um card
+ * por registro aberto com funil, tipo, **etapa**, stepper de progresso, o que
+ * mudou por último, "Mover etapa ▾" e "Abrir negócio"; fechados em linha com
+ * motivo e histórico sob demanda.
  *
  * **O que continua só aqui.** Editar (valor e itens de linha) e excluir — o
  * `DealModal` é o único lugar da plataforma onde se mexe no dinheiro do
- * negócio. Já o "Novo" saiu: virou o `AddToPipelineMenu` (F9), com a distinção
- * venda/processo e o conflito `409 open_exists`, em vez de abrir o `DealModal`
- * cru como antes.
+ * negócio; por isso só esta tela passa `onEdit`/`onDelete` ao `DealSummary`
+ * (a ficha, `ContactPipelinesSection`, não passa). Já o "Novo" saiu: virou o
+ * `AddToPipelineMenu` (F9), com a distinção venda/processo e o conflito
+ * `409 open_exists`, em vez de abrir o `DealModal` cru como antes.
  *
  * **Sem o flag de múltiplos funis a aba não some** — diferente da ficha e do
  * painel. No tenant legado de funil único ela é a lista de negócios, que existe
@@ -62,7 +59,7 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
     pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName, { requireMultiPipeline: false })
   const { requestAdd, dialogs: addDialogs, reportConflict } = useAddToPipeline()
-  const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
+  const moveState = useDealSummaryMove()
   const [modalOpen, setModalOpen] = useState(false)
   // A3 (SCRUM-925): sem o flag de múltiplos funis não há "Adicionar ao funil ▾",
   // e o "Novo" abria o `DealModal` — que é o formulário de EDIÇÃO e não tem
@@ -78,7 +75,7 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
   const deletePipeline = deleteDeal ? pipelineOf(deleteDeal) : undefined
 
   const handleMove = (deal: Deal, stage: PipelineStage, pipeline: Pipeline) => {
-    setMoveOpenFor(null)
+    moveState.close()
     void moveTo(deal, stage, pipeline)
   }
 
@@ -165,187 +162,45 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
         <div className="flex flex-col gap-3">
           {open.map((deal) => {
             const pipeline = pipelineOf(deal)
-            const kind = pipelineKindOption(pipelineKindOf(pipeline))
-            const KindIcon = kind.icon
-            const stage = pipeline?.stages.find((s) => s.id === deal.stageId)
-            const targets = pipeline ? moveTargets(pipeline, deal.stageId) : null
-            const labels = terminalLabelsOf(pipeline)
-            // Sem funil (tenant legado) todo negócio é comercial; com funil, só
-            // o de VENDA tem dinheiro — processo não tem valor, e o "R$ 0,00"
-            // que aparecia ali era leitura falsa, não formatação feia.
-            const showsMoney = !pipeline || pipelineKindOf(pipeline) === 'sales'
-            const items = deal.lineItems?.length ?? 0
-            // Em funil de processo o título É o contato (F8, decisão (a)):
-            // repeti-lo dentro da ficha do próprio contato não informa nada.
-            const title = deal.title?.trim()
-            const showsTitle = !!title && title !== contactName.trim()
-            const who = movedByLabel(deal)
-            const meta = multiPipeline
-              ? [timeInStage(deal), who ? `movido por ${who}` : null, `origem ${originInfo(deal).label}`]
-                .filter(Boolean).join(' · ')
-              : ''
             return (
-              <article
+              <DealSummary
                 key={deal.id}
-                className="bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 flex flex-col gap-2"
-                data-testid={`deal-open-${deal.id}`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  {pipeline && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />}
-                  <span className="text-sm font-medium text-surface-100 truncate">
-                    {pipeline?.name ?? title ?? vocab.deal}
-                  </span>
-                  {pipeline && <KindIcon className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" aria-label={kind.label} />}
-                  {stage && (
-                    <span className="ml-auto text-[11px] text-surface-300 whitespace-nowrap" data-testid={`deal-stage-${deal.id}`}>
-                      {stage.label}
-                    </span>
-                  )}
-                </div>
-
-                {pipeline && showsTitle && <p className="text-xs text-surface-300 truncate">{title}</p>}
-
-                {showsMoney && (
-                  <p className="text-[11px] text-surface-400 tabular-nums" data-testid={`deal-money-${deal.id}`}>
-                    {formatBRL(deal.amountCents)}
-                    {items ? ` · ${items} ${items === 1 ? 'item' : 'itens'}` : ''}
-                  </p>
-                )}
-
-                {meta && <p className="text-[11px] text-surface-500 truncate" data-testid={`deal-meta-${deal.id}`}>{meta}</p>}
-
-                <div className="flex items-center gap-1.5">
-                  {pipeline && targets && (
-                    <Dropdown
-                      open={moveOpenFor === deal.id}
-                      onClose={() => setMoveOpenFor(null)}
-                      align="left"
-                      className="w-56"
-                      anchor={
-                        <button
-                          type="button"
-                          onClick={() => setMoveOpenFor((v) => (v === deal.id ? null : deal.id))}
-                          disabled={busyId === deal.id}
-                          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 disabled:opacity-50 transition-colors"
-                          data-testid={`deal-move-${deal.id}`}
-                          aria-haspopup="menu"
-                          aria-expanded={moveOpenFor === deal.id}
-                        >
-                          Mover <ChevronDown className="w-3 h-3" />
-                        </button>
-                      }
-                    >
-                      <div className="px-1 py-1 flex flex-col gap-0.5">
-                        {targets.normal.map((s) => (
-                          <DropdownItem key={s.id} onClick={() => handleMove(deal, s, pipeline)}>
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                            {s.label}
-                          </DropdownItem>
-                        ))}
-                        {targets.normal.length > 0 && targets.terminal.length > 0 && <DropdownSeparator />}
-                        {targets.terminal.map((s) => (
-                          <DropdownItem key={s.id} onClick={() => handleMove(deal, s, pipeline)} danger={s.isLost}>
-                            {s.isWon ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                            {s.isWon ? labels.won : labels.lost} (com motivo)
-                          </DropdownItem>
-                        ))}
-                      </div>
-                    </Dropdown>
-                  )}
-                  {pipeline && (
-                    <button
-                      type="button"
-                      onClick={() => openDeal(deal.id)}
-                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
-                      data-testid={`deal-board-${deal.id}`}
-                    >
-                      <KanbanSquare className="w-3.5 h-3.5" /> Abrir negócio
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => { setEditDeal(deal); setModalOpen(true) }}
-                    title={`Editar ${pipelineNoun(pipeline)}`}
-                    className="ml-auto p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
-                    data-testid={`deal-edit-${deal.id}`}
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteDeal(deal)}
-                    title={`Excluir ${pipelineNoun(pipeline)}`}
-                    className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
-                    data-testid={`deal-delete-${deal.id}`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </article>
+                density="card"
+                deal={deal}
+                pipeline={pipeline}
+                contactName={contactName}
+                busy={busyId === deal.id}
+                showMeta={multiPipeline}
+                moveOpen={moveState.isOpen(deal.id)}
+                onToggleMove={() => moveState.toggle(deal.id)}
+                onMove={(stage) => pipeline && handleMove(deal, stage, pipeline)}
+                onOpen={() => openDeal(deal.id)}
+                onEdit={() => { setEditDeal(deal); setModalOpen(true) }}
+                onDelete={() => setDeleteDeal(deal)}
+                testIdPrefix="deal"
+                testIdKey={deal.id}
+              />
             )
           })}
 
           {closed.length > 0 && (
             <div className="flex flex-col gap-1.5 pt-1" data-testid="deals-closed">
-              {closed.map((deal) => {
-                const pipeline = pipelineOf(deal)
-                const stage = pipeline?.stages.find((s) => s.id === deal.stageId)
-                const won = deal.status === 'won'
-                const labels = terminalLabelsOf(pipeline)
-                const reasonLabel = pipeline?.closeReasons?.find((r) => r.key === deal.closeReason)?.label ?? deal.closeReason ?? null
-                const h = history[deal.id]
-                return (
-                  <div key={deal.id} className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5 text-[11px] text-surface-400 min-w-0">
-                      {won ? <CheckCircle2 className="w-3 h-3 text-status-active flex-shrink-0" /> : <XCircle className="w-3 h-3 text-surface-500 flex-shrink-0" />}
-                      <span className="truncate">
-                        <span className="text-surface-300">{pipeline?.name ?? deal.title ?? vocab.deal}</span>
-                        {' · '}{stage?.label ?? (won ? labels.won : labels.lost)}
-                        {deal.closedAt && <> · {formatRelativeTime(deal.closedAt)}</>}
-                        {reasonLabel && <> · {reasonLabel}</>}
-                      </span>
-                      {/* A4 (SCRUM-926): reabrir mora na linha do fechado —
-                          o seletor de Status do DealModal, que era o único
-                          caminho, saiu. Sem funil no cache (tenant legado) não
-                          há para onde reabrir. */}
-                      {multiPipeline && (
-                        <button
-                          type="button"
-                          onClick={() => void reopen(deal)}
-                          disabled={busyId === deal.id}
-                          className="ml-auto inline-flex items-center gap-1 text-[11px] text-surface-300 hover:text-surface-100 disabled:opacity-50 whitespace-nowrap"
-                          data-testid={`deal-reopen-${deal.id}`}
-                        >
-                          <RotateCcw className="w-3 h-3" /> Reabrir
-                        </button>
-                      )}
-                      {multiPipeline && (
-                        <button
-                          type="button"
-                          onClick={() => void toggleHistory(deal.id)}
-                          className="inline-flex items-center gap-1 text-[11px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
-                          data-testid={`deal-history-${deal.id}`}
-                        >
-                          <History className="w-3 h-3" /> {h && h !== 'loading' ? 'ocultar' : 'ver histórico'}
-                        </button>
-                      )}
-                    </div>
-                    {h === 'loading' && <p className="text-[11px] text-surface-600 pl-4">Carregando…</p>}
-                    {Array.isArray(h) && (
-                      <ol className="pl-4 flex flex-col gap-0.5" data-testid={`deal-history-list-${deal.id}`}>
-                        {h.length === 0 && <li className="text-[11px] text-surface-600">Sem passagens registradas.</li>}
-                        {h.map((e) => (
-                          <li key={e.id} className="text-[11px] text-surface-500">
-                            {e.fromStageLabel ? `${e.fromStageLabel} → ` : 'entrou em '}<span className="text-surface-300">{e.toStageLabel ?? '?'}</span>
-                            {' · '}{movedByLabel({ lastMovedByKind: e.movedByKind, lastMovedByActorName: e.movedByActorName }) ?? 'sistema'}
-                            {' · '}{formatRelativeTime(e.createdAt)}
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-                  </div>
-                )
-              })}
+              {closed.map((deal) => (
+                <DealSummary
+                  key={deal.id}
+                  density="card"
+                  closed
+                  deal={deal}
+                  pipeline={pipelineOf(deal)}
+                  busy={busyId === deal.id}
+                  onReopen={() => void reopen(deal)}
+                  history={history[deal.id]}
+                  onToggleHistory={() => void toggleHistory(deal.id)}
+                  showReopenHistory={multiPipeline}
+                  testIdPrefix="deal"
+                  testIdKey={deal.id}
+                />
+              ))}
             </div>
           )}
         </div>

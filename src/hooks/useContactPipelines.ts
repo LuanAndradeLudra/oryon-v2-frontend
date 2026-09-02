@@ -91,6 +91,13 @@ export function useContactPipelines(
     [pipelines],
   )
 
+  /** Avisa as OUTRAS superfícies deste contato (tabela, board, outro painel
+   *  aberto) que os funis mudaram — o socket `deal:changed` também chega,
+   *  mas depois do round-trip; este evento local é a atualização na hora. */
+  const notifyInvalidated = useCallback(() => {
+    window.dispatchEvent(new CustomEvent(DEALS_INVALIDATE_EVENT, { detail: { contactId } }))
+  }, [contactId])
+
   /** Etapa normal move direto; terminal abre o modal de motivo (I5 do §4.6). */
   const moveTo = useCallback(async (deal: Deal, stage: PipelineStage, pipeline: Pipeline) => {
     if (stage.isWon || stage.isLost) { setCloseTarget({ deal, stage, pipeline }); return }
@@ -98,13 +105,16 @@ export function useContactPipelines(
     try {
       await dealsApi.moveStage(deal.id, stage.id)
       toast(`${contactName} foi para ${stage.label} em ${pipeline.name}.`, 'success')
-      load()
+      // `notifyInvalidated` dispara o evento local, que o listener logo abaixo
+      // desta mesma instância também ouve — um `dispatchEvent` só, sem recarga
+      // duplicada, e as OUTRAS superfícies (tabela, board) recarregam junto.
+      notifyInvalidated()
     } catch (e: unknown) {
       toast(getApiErrorMessage(e, 'Não foi possível mover.'), 'error')
     } finally {
       setBusyId(null)
     }
-  }, [contactName, load, toast])
+  }, [contactName, load, notifyInvalidated, toast])
 
   const closeWithReason = useCallback(async (input: CloseDealReasonInput) => {
     if (!closeTarget) return
@@ -129,8 +139,8 @@ export function useContactPipelines(
       onUndone: load,
     })
     setCloseTarget(null)
-    load()
-  }, [closeTarget, contactName, load])
+    notifyInvalidated()
+  }, [closeTarget, contactName, load, notifyInvalidated])
 
   /**
    * Reabre um registro fechado na 1ª etapa não-terminal do funil (A4 ·
@@ -144,13 +154,13 @@ export function useContactPipelines(
     try {
       await dealsApi.setStatus(deal.id, { status: 'open' })
       toast(`${contactName} voltou para o funil.`, 'success')
-      load()
+      notifyInvalidated()
     } catch (e: unknown) {
       toast(getApiErrorMessage(e, 'Não foi possível reabrir.'), 'error')
     } finally {
       setBusyId(null)
     }
-  }, [contactName, load, toast])
+  }, [contactName, notifyInvalidated, toast])
 
   const toggleHistory = useCallback(async (dealId: string) => {
     if (history[dealId] && history[dealId] !== 'loading') {

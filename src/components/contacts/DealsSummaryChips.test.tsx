@@ -1,9 +1,13 @@
 // F11 (SCRUM-884, prancheta 6) — coluna "Funis": um chip "● Funil · Etapa" por
-// registro aberto, com ícone do tipo; sem aberto → chip tracejado "nenhum
-// aberto". Lê só o dealsSummary já carregado (sem fetch) para MOSTRAR.
+// registro aberto, com ícone do tipo (densidade `chip` do `DealSummary`
+// compartilhado, B3 · SCRUM-929). Lê só o dealsSummary já carregado (sem
+// fetch) para MOSTRAR.
 //
 // B2 (SCRUM-928): clique abre a FICHA do negócio, não mais o board. O resumo
 // em lote não traz `dealId` — resolve via `GET /deals?contactId=` ao clicar.
+//
+// SCRUM-929 (item 6): sem nenhum aberto, a célula fica vazia — o chip
+// tracejado "nenhum aberto" saiu por não ter ação nenhuma atrás dele.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
@@ -73,9 +77,22 @@ describe('DealsSummaryChips (F11-884)', () => {
     expect(openDeal).not.toHaveBeenCalled()
   })
 
-  it('funil só com registro fechado não vira chip; sem nenhum aberto → "nenhum aberto"', () => {
+  it('funil só com registro fechado não vira chip; sem nenhum aberto e sem onAddToPipeline → célula vazia', () => {
     render(<DealsSummaryChips contact={contact([row('v', 'Vendas', 0)])} />)
     expect(screen.queryByTestId('pipeline-chip-v')).toBeNull()
-    expect(screen.getByTestId('pipeline-chip-none')).toHaveTextContent('nenhum aberto')
+    expect(screen.queryByTestId('pipeline-chip-none')).toBeNull()
+    expect(screen.queryByTestId('pipeline-chip-add')).toBeNull()
+  })
+
+  it('sem nenhum aberto, com onAddToPipeline (desktop) → ação "Novo negócio" no hover', () => {
+    const onAddToPipeline = vi.fn()
+    render(<DealsSummaryChips contact={contact([])} onAddToPipeline={onAddToPipeline} />)
+    const btn = screen.getByTestId('pipeline-chip-add')
+    expect(btn).toHaveTextContent('Novo negócio')
+    fireEvent.click(btn)
+    expect(onAddToPipeline).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'c1' }),
+      expect.objectContaining({ id: 'v', kind: 'sales' }),
+    )
   })
 })

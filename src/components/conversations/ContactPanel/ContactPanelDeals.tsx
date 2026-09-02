@@ -1,16 +1,12 @@
-import { useState } from 'react'
-import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw, Handshake } from 'lucide-react'
+import { KanbanSquare, Handshake } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
-import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { DealSummary, useDealSummaryMove } from '@/components/deals/DealSummary'
 import { Button } from '@/components/ui/Button'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
-import { formatRelativeTime } from '@/lib/utils'
-import { pipelineKindOption, pipelineKindOf, terminalLabelsOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
-import { originInfo, timeInStage } from '@/lib/dealCard'
-import { movedByLabel, moveTargets } from '@/lib/contactPipelines'
+import { pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
@@ -27,11 +23,12 @@ import type { Deal, Pipeline, PipelineStage } from '@/types'
  * painel logo abaixo dizia "Negócio · R$ 0,00 · Ganho": duas leituras do mesmo
  * registro, discordando.
  *
- * **O que é agora.** A mesma fonte da ficha (`useContactPipelines`) numa
- * densidade compacta, que é o que cabe num painel estreito: uma linha por
- * registro aberto com funil, tipo, etapa atual e contexto, com "Mover ▾" — a
- * ação que antes exigia abrir um modal de edição de negócio ou ir até o board.
- * Passagens fechadas em linha, com histórico sob demanda.
+ * **O que é agora.** A mesma fonte da ficha (`useContactPipelines`), na
+ * densidade `row` do `DealSummary` compartilhado (B3 · SCRUM-929) — o que
+ * cabe num painel estreito: uma linha por registro aberto com funil, tipo,
+ * etapa atual e contexto, com "Mover etapa ▾" — a ação que antes exigia abrir
+ * um modal de edição de negócio ou ir até o board. Passagens fechadas em
+ * linha, com histórico sob demanda.
  *
  * **Dinheiro só onde existe.** Os totais "Em aberto/Ganho" aparecem apenas se
  * há registro de **venda**; num tenant que só usa funil de processo, a faixa
@@ -59,7 +56,7 @@ export function ContactPanelDeals({
     closeTarget, setCloseTarget, history,
     pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName)
-  const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
+  const moveState = useDealSummaryMove()
   const { vocab } = useTenantVocab()
   // A3 (SCRUM-925): o vazio ganha ação. Não e a "segunda porta" que a
   // SCRUM-920 tirou daqui — aquele "Novo" abria o DealModal cru e virava erro
@@ -77,7 +74,7 @@ export function ContactPanelDeals({
   }
 
   const handleMove = async (deal: Deal, stage: PipelineStage, pipeline: Pipeline) => {
-    setMoveOpenFor(null)
+    moveState.close()
     await moveTo(deal, stage, pipeline)
     refreshActivity()
   }
@@ -147,134 +144,41 @@ export function ContactPanelDeals({
         {open.map((deal) => {
           const pipeline = pipelineOf(deal)
           if (!pipeline) return null
-          const kind = pipelineKindOption(pipelineKindOf(pipeline))
-          const KindIcon = kind.icon
-          const stage = pipeline.stages.find((s) => s.id === deal.stageId)
-          const targets = moveTargets(pipeline, deal.stageId)
-          const labels = terminalLabelsOf(pipeline)
-          const meta = [timeInStage(deal), movedByLabel(deal) ? `por ${movedByLabel(deal)}` : null, `origem ${originInfo(deal).label}`]
-            .filter(Boolean).join(' · ')
           return (
-            <article key={deal.id} className="flex flex-col gap-1" data-testid={`panel-pipeline-${pipeline.id}`}>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />
-                <span className="text-xs text-surface-200 truncate">{pipeline.name}</span>
-                <KindIcon className="w-3 h-3 text-surface-500 flex-shrink-0" aria-label={kind.label} />
-                {stage && (
-                  <span
-                    className="ml-auto text-[10px] text-surface-300 whitespace-nowrap"
-                    data-testid={`panel-pipeline-stage-${pipeline.id}`}
-                  >
-                    {stage.label}
-                  </span>
-                )}
-              </div>
-              {meta && <p className="text-[10px] text-surface-600 truncate pl-3.5">{meta}</p>}
-              <div className="flex items-center gap-1 pl-3.5">
-                <Dropdown
-                  open={moveOpenFor === deal.id}
-                  onClose={() => setMoveOpenFor(null)}
-                  align="left"
-                  className="w-52"
-                  anchor={
-                    <button
-                      type="button"
-                      onClick={() => setMoveOpenFor((v) => (v === deal.id ? null : deal.id))}
-                      disabled={busyId === deal.id}
-                      className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 disabled:opacity-50 transition-colors"
-                      data-testid={`panel-pipeline-move-${pipeline.id}`}
-                      aria-haspopup="menu"
-                      aria-expanded={moveOpenFor === deal.id}
-                    >
-                      Mover <ChevronDown className="w-2.5 h-2.5" />
-                    </button>
-                  }
-                >
-                  <div className="px-1 py-1 flex flex-col gap-0.5">
-                    {targets.normal.map((st) => (
-                      <DropdownItem key={st.id} onClick={() => void handleMove(deal, st, pipeline)}>
-                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />
-                        {st.label}
-                      </DropdownItem>
-                    ))}
-                    {targets.normal.length > 0 && targets.terminal.length > 0 && <DropdownSeparator />}
-                    {targets.terminal.map((st) => (
-                      <DropdownItem key={st.id} onClick={() => void handleMove(deal, st, pipeline)} danger={st.isLost}>
-                        {st.isWon ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                        {st.isWon ? labels.won : labels.lost} (com motivo)
-                      </DropdownItem>
-                    ))}
-                  </div>
-                </Dropdown>
-                <button
-                  type="button"
-                  onClick={() => openDeal(deal.id)}
-                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
-                  data-testid={`panel-pipeline-board-${pipeline.id}`}
-                >
-                  <KanbanSquare className="w-3 h-3" /> Abrir
-                </button>
-              </div>
-            </article>
+            <DealSummary
+              key={deal.id}
+              density="row"
+              deal={deal}
+              pipeline={pipeline}
+              contactName={contactName}
+              busy={busyId === deal.id}
+              moveOpen={moveState.isOpen(deal.id)}
+              onToggleMove={() => moveState.toggle(deal.id)}
+              onMove={(stage) => void handleMove(deal, stage, pipeline)}
+              onOpen={() => openDeal(deal.id)}
+              testIdPrefix="panel-pipeline"
+              testIdKey={pipeline.id}
+            />
           )
         })}
 
         {closed.length > 0 && (
           <div className="flex flex-col gap-1 pt-1 border-t border-surface-800/60" data-testid="panel-pipelines-closed">
-            {closed.map((deal) => {
-              const pipeline = pipelineOf(deal)
-              const stage = pipeline?.stages.find((s) => s.id === deal.stageId)
-              const won = deal.status === 'won'
-              const reasonLabel = pipeline?.closeReasons?.find((r) => r.key === deal.closeReason)?.label ?? deal.closeReason ?? null
-              const h = history[deal.id]
-              return (
-                <div key={deal.id} className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-1 text-[10px] text-surface-500 min-w-0">
-                    {won
-                      ? <CheckCircle2 className="w-3 h-3 text-status-active flex-shrink-0" />
-                      : <XCircle className="w-3 h-3 text-surface-600 flex-shrink-0" />}
-                    <span className="truncate">
-                      <span className="text-surface-400">{pipeline?.name ?? 'Funil'}</span> · {stage?.label ?? (won ? 'Ganho' : 'Perdido')}
-                      {deal.closedAt && <> · {formatRelativeTime(deal.closedAt)}</>}
-                      {reasonLabel && <> · {reasonLabel}</>}
-                    </span>
-                    {/* A4 (SCRUM-926): reabrir sem sair da conversa — antes só
-                        pelo seletor de Status do DealModal, que saiu. */}
-                    <button
-                      type="button"
-                      onClick={() => void handleReopen(deal)}
-                      disabled={busyId === deal.id}
-                      className="ml-auto inline-flex items-center gap-1 text-[10px] text-surface-300 hover:text-surface-100 disabled:opacity-50 whitespace-nowrap"
-                      data-testid={`panel-pipeline-reopen-${deal.id}`}
-                    >
-                      <RotateCcw className="w-2.5 h-2.5" /> Reabrir
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void toggleHistory(deal.id)}
-                      className="inline-flex items-center gap-1 text-[10px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
-                      data-testid={`panel-pipeline-history-${deal.id}`}
-                    >
-                      <History className="w-2.5 h-2.5" /> {h && h !== 'loading' ? 'ocultar' : 'histórico'}
-                    </button>
-                  </div>
-                  {h === 'loading' && <p className="text-[10px] text-surface-600 pl-4">Carregando…</p>}
-                  {Array.isArray(h) && (
-                    <ol className="pl-4 flex flex-col gap-0.5" data-testid={`panel-pipeline-history-list-${deal.id}`}>
-                      {h.length === 0 && <li className="text-[10px] text-surface-600">Sem passagens registradas.</li>}
-                      {h.map((e) => (
-                        <li key={e.id} className="text-[10px] text-surface-600">
-                          {e.fromStageLabel ? `${e.fromStageLabel} → ` : 'entrou em '}
-                          <span className="text-surface-400">{e.toStageLabel ?? '?'}</span>
-                          {' · '}{movedByLabel({ lastMovedByKind: e.movedByKind, lastMovedByActorName: e.movedByActorName }) ?? 'sistema'}
-                          {' · '}{formatRelativeTime(e.createdAt)}
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </div>
-              )
-            })}
+            {closed.map((deal) => (
+              <DealSummary
+                key={deal.id}
+                density="row"
+                closed
+                deal={deal}
+                pipeline={pipelineOf(deal)}
+                busy={busyId === deal.id}
+                onReopen={() => void handleReopen(deal)}
+                history={history[deal.id]}
+                onToggleHistory={() => void toggleHistory(deal.id)}
+                testIdPrefix="panel-pipeline"
+                testIdKey={deal.id}
+              />
+            ))}
           </div>
         )}
       </div>
