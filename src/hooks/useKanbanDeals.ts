@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
+import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
 import type { ContactFilters, Deal } from '@/types'
 
 type BoardFilters = Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'source' | 'tagId' | 'optIn'>
@@ -54,12 +55,18 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
 
   // Realtime: qualquer mudança de negócio no tenant recarrega o board (mesmo
   // padrão de deal:changed usado no Kanban de contatos e na ficha do contato).
+  // SCRUM-929 (item 5): o socket sozinho deixava o board um passo atrás de
+  // quem acabou de mover um negócio noutra superfície (tabela/ficha/painel)
+  // até o round-trip voltar — agora também ouve o evento local, que chega na
+  // hora (o board não filtra por contactId: qualquer mudança recarrega).
   useEffect(() => {
     if (!pipelineId) return
-    const socket = connectSocket()
     const onChanged = () => void load()
+    window.addEventListener(DEALS_INVALIDATE_EVENT, onChanged)
+    const socket = connectSocket()
     socket.on('deal:changed', onChanged)
     return () => {
+      window.removeEventListener(DEALS_INVALIDATE_EVENT, onChanged)
       socket.off('deal:changed', onChanged)
     }
   }, [pipelineId, load])

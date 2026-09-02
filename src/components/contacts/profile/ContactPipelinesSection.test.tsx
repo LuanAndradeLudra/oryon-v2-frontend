@@ -59,9 +59,9 @@ describe('ContactPipelinesSection (F11)', () => {
     const suporte = screen.getByTestId('pipeline-open-p')
     expect(suporte).toHaveTextContent('Suporte')
     expect(suporte.querySelector('[aria-current="step"]')).toHaveTextContent('Em atendimento')
-    expect(suporte.querySelector('[data-testid="pipeline-meta"]')).toHaveTextContent('movido por IA · origem Manual')
+    expect(suporte.querySelector('[data-testid="pipeline-meta-p"]')).toHaveTextContent('movido por IA · origem Manual')
     const vendas = screen.getByTestId('pipeline-open-v')
-    expect(vendas.querySelector('[data-testid="pipeline-meta"]')).toHaveTextContent('movido por Renata C. · origem Campanha · Promo Agosto')
+    expect(vendas.querySelector('[data-testid="pipeline-meta-v"]')).toHaveTextContent('movido por Renata C. · origem Campanha · Promo Agosto')
     // fechados: linha compacta com o terminal e o motivo
     expect(screen.getByTestId('pipelines-closed')).toHaveTextContent('Vendas · Perdido')
     expect(screen.getByTestId('pipelines-closed')).toHaveTextContent('Outro')
