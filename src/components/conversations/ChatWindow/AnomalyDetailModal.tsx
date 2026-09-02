@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
-import { UserCheck, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff } from 'lucide-react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { UserCheck, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff, Loader2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
+import { conversationsApi } from '@/services/api'
 import type { Message } from '@/types'
 // O motivo do bloqueio vem TODO daqui. Antes este arquivo tinha a sua própria
 // cópia do claimLabel e o seu próprio mapa de outcome, nenhum deles com os
@@ -117,17 +118,33 @@ function renderHighlighted(text: string, findings: AnomalyFinding[]): ReactNode 
  * O bloco "o que o sistema sabia" (evidência do lastro) foi removido a pedido
  * — poluía mais do que ajudava. Os campos continuam chegando no sinal e
  * persistidos em activity_logs; reexibi-los é só voltar a lê-los.
+ *
+ * SCRUM-806 — rodapé "Marcar como verificada" (só para handoff e quando o
+ * chamador informa `conversationId`): reconhece a verificação pendente da
+ * CONVERSA depois de tratado o caso. A resolução é relativa à anomalia mais
+ * recente — uma nova anomalia volta a sinalizar. O badge da lista e a
+ * contagem do cabeçalho limpam via socket (ai-pause-updated com
+ * hasRecentAnomaly:false); nenhum refetch manual aqui. O marcador desta bolha
+ * permanece: ele é histórico da mensagem, não estado da conversa.
  */
 export function AnomalyDetailModal({
   open,
   onClose,
   anomaly,
+  conversationId,
+  onResolved,
 }: {
   open: boolean
   onClose: () => void
   anomaly: Anomaly | null
+  /** Habilita o rodapé "Marcar como verificada" (SCRUM-806). */
+  conversationId?: string | null
+  onResolved?: () => void
 }) {
   const isHandoff = anomaly?.kind === 'handoff'
+  // SCRUM-806 — já reconhecida: o rodapé troca o botão pelo registro de quem/quando.
+  const isReviewed = isHandoff && !!anomaly?.reviewedAt
+  const reviewedWhen = formatWhen(anomaly?.reviewedAt)
   const when = formatWhen(anomaly?.occurredAt)
   const expectedOp = skillLabel(anomaly?.requiredSkill)
   const failures = anomaly?.skillFailures ?? []
@@ -136,6 +153,26 @@ export function AnomalyDetailModal({
   // o que colocar na coluna da esquerda, e o modal volta ao formato estreito.
   const hasV2 = Boolean(anomaly?.blockedText)
 
+  const [resolving, setResolving] = useState(false)
+  const [resolveError, setResolveError] = useState<string | null>(null)
+  // Erro de uma abertura anterior não pertence à próxima.
+  useEffect(() => { if (open) setResolveError(null) }, [open])
+
+  const handleResolve = async () => {
+    if (!conversationId || resolving) return
+    setResolving(true)
+    setResolveError(null)
+    try {
+      await conversationsApi.resolveReview(conversationId)
+      onResolved?.()
+      onClose()
+    } catch {
+      setResolveError('Não foi possível marcar como verificada. Tente novamente.')
+    } finally {
+      setResolving(false)
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -143,6 +180,26 @@ export function AnomalyDetailModal({
       title="Detalhes da verificação"
       fillHeight={hasV2}
       className={hasV2 ? 'max-w-3xl h-[85vh]' : 'max-w-lg'}
+      footer={isReviewed ? (
+        <p className="flex items-center gap-1.5 text-xs text-surface-400" data-testid="anomaly-reviewed">
+          <ShieldCheck className="w-4 h-4 text-success shrink-0" />
+          Verificada{anomaly?.reviewedBy ? ` por ${anomaly.reviewedBy}` : ''}{reviewedWhen ? ` em ${reviewedWhen}` : ''}
+        </p>
+      ) : isHandoff && conversationId ? (
+        <div className="flex items-center justify-end gap-3">
+          {resolveError && <p className="text-xs text-red-400 mr-auto">{resolveError}</p>}
+          <button
+            type="button"
+            onClick={handleResolve}
+            disabled={resolving}
+            style={{ ['--chip']: 'var(--color-brand-600)' } as CSSProperties}
+            className="color-chip inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold border hover:brightness-110 disabled:opacity-60 transition"
+          >
+            {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+            {resolving ? 'Marcando…' : 'Marcar como verificada'}
+          </button>
+        </div>
+      ) : undefined}
     >
       {anomaly && (
         <div className={cn('flex flex-col gap-4', hasV2 && 'h-full min-h-0')}>
@@ -150,18 +207,27 @@ export function AnomalyDetailModal({
           <div
             className={cn(
               'anomaly-elevated-surface flex items-start gap-2.5 rounded-lg px-3 py-2.5 border flex-shrink-0',
-              isHandoff ? 'bg-surface-700/50 border-l-[3px]' : 'bg-surface-700/50',
+              (isHandoff || isReviewed) ? 'bg-surface-700/50 border-l-[3px]' : 'bg-surface-700/50',
             )}
-            style={isHandoff ? { borderLeftColor: 'var(--color-warning)' } : undefined}
+            style={
+              isReviewed ? { borderLeftColor: 'var(--color-success)' }
+                : isHandoff ? { borderLeftColor: 'var(--color-warning)' }
+                : undefined
+            }
           >
-            {isHandoff ? (
-              <UserCheck className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
+            {isReviewed ? (
+              <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--color-success)]" />
+            ) : isHandoff ? (
+              <UserCheck className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--color-warning)]" />
             ) : (
               <ShieldCheck className="w-4 h-4 text-surface-300 flex-shrink-0 mt-0.5" />
             )}
             <div className="min-w-0 flex-1">
-              <p className={cn('text-sm font-medium', isHandoff ? 'text-surface-100' : 'text-surface-200')}>
-                {isHandoff ? 'Transferido para atendente' : 'Corrigido automaticamente'}
+              <p className={cn(
+                'text-sm font-medium',
+                isReviewed ? 'text-[var(--color-success)]' : isHandoff ? 'text-surface-100' : 'text-surface-200',
+              )}>
+                {isReviewed ? 'Verificada pelo atendente' : isHandoff ? 'Transferido para atendente' : 'Corrigido automaticamente'}
               </p>
               <p className="text-xs text-surface-400 mt-0.5">{guardOutcomeDetail(anomaly.outcome, anomaly.claimType)}</p>
               {isHandoff && (anomaly.repair?.llmCalls ?? 0) > 0 && (

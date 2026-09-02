@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect, type MutableRefObject } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, MessageSquareOff, AlertTriangle } from 'lucide-react'
+import { Loader2, MessageSquareOff } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
@@ -22,7 +22,8 @@ interface ConversationListProps {
    *  what fits in the loaded array). */
   statusCounts?: ConversationStatusCounts
   /** Phase 33c — tenant-wide count of conversations needing review (the
-   *  "Verificar" badge). 0 hides the contextual indicator. */
+   *  "Verificar" counter). Forwarded to QuickFiltersMenu, which shows it next
+   *  to the "Precisam de verificação" toggle; 0 hides the counter. */
   needsReviewCount?: number
   activeId: string | null
   /** Id of the open conversation that is being kept in the list even though it
@@ -153,38 +154,10 @@ export function ConversationList({
           </div>
           {loading && <Loader2 className="w-4 h-4 text-surface-400 animate-spin flex-shrink-0" />}
 
-          {/* Phase 33c — verification badge. Contextual indicator: appears
-              ONLY when there are conversations needing review. Clicking
-              toggles the needsReview filter so the operator can triage
-              them. Active state mirrors the filter dropdown's blue glow but
-              in amber to match the in-bubble warning. */}
-          {needsReviewCount > 0 && (
-            <button
-              onClick={() =>
-                onFiltersChange({ ...filters, needsReview: filters.needsReview ? undefined : true })
-              }
-              aria-label="Conversas que precisam de verificação"
-              title={`${needsReviewCount} ${needsReviewCount === 1 ? 'conversa precisa' : 'conversas precisam'} de verificação`}
-              style={filters.needsReview
-                ? ({ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties)
-                : undefined}
-              className={cn(
-                'relative flex items-center justify-center w-9 h-9 rounded-lg transition-all border flex-shrink-0',
-                filters.needsReview
-                  ? 'color-chip'
-                  : 'bg-surface-800 text-warning border-surface-700 hover:bg-surface-700 hover:text-warning',
-              )}
-            >
-              <AlertTriangle className="w-4 h-4" />
-              <span
-                className="color-chip absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center ring-2 ring-black"
-                style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
-              >
-                {needsReviewCount > 99 ? '99+' : needsReviewCount}
-              </span>
-            </button>
-          )}
-
+          {/* O filtro "Precisam de verificação" vive só no menu de filtros
+              (com o contador ao lado do item) — o botão dedicado que ficava
+              aqui, entre a busca e as etiquetas, foi removido a pedido do PO
+              para desafogar o cabeçalho. */}
           <TagFilterMenu
             filters={filters}
             onFiltersChange={onFiltersChange}
@@ -195,6 +168,7 @@ export function ConversationList({
             filters={filters}
             onFiltersChange={onFiltersChange}
             allUsers={allUsers}
+            needsReviewCount={needsReviewCount}
           />
         </div>
       </div>
