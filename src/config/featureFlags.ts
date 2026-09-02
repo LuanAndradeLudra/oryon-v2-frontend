@@ -9,10 +9,12 @@ export const FEATURE_FLAGS = {
   contacts: true,
   nexus: false,
   campaigns: true,
-  marketing: true,
-  automations: true,
+  // Ocultos por enquanto, a pedido do PO (02/09) — some do menu, rota e
+  // backend seguem intactos.
+  marketing: false,
+  automations: false,
   agents: true,
-  copilot: true,
+  copilot: false,
   settings: true,
   settingsAdAccounts: false,
   settingsVertical: false,
