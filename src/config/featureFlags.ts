@@ -60,6 +60,12 @@ export const FEATURE_FLAGS = {
   // Quando false, o painel inteiro fica oculto — análises já feitas também
   // não aparecem para evitar UI inconsistente.
   conversionAnalysisPanel: false,
+  // Seção "Negócios" no painel do contato dentro de Conversas
+  // (ContactPanelDeals) — oculta enquanto a funcionalidade de múltiplos
+  // pipelines (SCRUM-285 / épico SCRUM-809) não estiver rodando em
+  // produção. Quando false, a seção inteira some do painel; nada de
+  // rota/backend muda. Reativar = trocar para true.
+  contactPanelDeals: false,
   // Página dedicada de perfil do contato (/contacts/:id) — Customer 360.
   // Quando false: a rota redireciona para o drawer (/contacts?contact=<id>)
   // e o botão "Expandir" do drawer some. O drawer continua funcionando

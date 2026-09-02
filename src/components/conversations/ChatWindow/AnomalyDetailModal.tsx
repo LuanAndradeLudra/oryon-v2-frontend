@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AlertTriangle, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff } from 'lucide-react'
+import { UserCheck, ShieldCheck, Quote, Clock, Tag, Wrench, XCircle, Hash, MessageSquareOff } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import type { Message } from '@/types'
@@ -41,7 +41,7 @@ function BlockTitle({ icon: Icon, children, tone = 'default' }: {
   return (
     <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium flex items-center gap-1.5 mb-2">
       <Icon className={cn('w-3.5 h-3.5',
-        tone === 'warn' ? 'text-amber-400' : tone === 'ok' ? 'text-emerald-400' : 'text-surface-500')} />
+        tone === 'warn' ? 'text-[var(--color-warning)]' : tone === 'ok' ? 'text-emerald-400' : 'text-surface-500')} />
       {children}
     </p>
   )
@@ -89,7 +89,11 @@ function renderHighlighted(text: string, findings: AnomalyFinding[]): ReactNode 
   merged.forEach(({ start, end }, i) => {
     if (start > pos) out.push(text.slice(pos, start))
     out.push(
-      <mark key={i} className="bg-amber-500/25 text-amber-100 rounded-sm px-0.5 border-b-2 border-amber-500/70">
+      <mark
+        key={i}
+        className="text-inherit rounded-[3px] px-1 py-0.5"
+        style={{ backgroundColor: 'color-mix(in srgb, var(--color-warning) 22%, transparent)' }}
+      >
         {text.slice(start, end)}
       </mark>,
     )
@@ -145,17 +149,18 @@ export function AnomalyDetailModal({
           {/* Banner — largura total, sempre no topo */}
           <div
             className={cn(
-              'flex items-start gap-2.5 rounded-lg px-3 py-2.5 border flex-shrink-0',
-              isHandoff ? 'bg-amber-500/10 border-amber-500/30' : 'bg-surface-800/60 border-surface-700',
+              'anomaly-elevated-surface flex items-start gap-2.5 rounded-lg px-3 py-2.5 border flex-shrink-0',
+              isHandoff ? 'bg-surface-700/50 border-l-[3px]' : 'bg-surface-700/50',
             )}
+            style={isHandoff ? { borderLeftColor: 'var(--color-warning)' } : undefined}
           >
             {isHandoff ? (
-              <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+              <UserCheck className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
             ) : (
               <ShieldCheck className="w-4 h-4 text-surface-300 flex-shrink-0 mt-0.5" />
             )}
             <div className="min-w-0 flex-1">
-              <p className={cn('text-sm font-medium', isHandoff ? 'text-amber-200' : 'text-surface-200')}>
+              <p className={cn('text-sm font-medium', isHandoff ? 'text-surface-100' : 'text-surface-200')}>
                 {isHandoff ? 'Transferido para atendente' : 'Corrigido automaticamente'}
               </p>
               <p className="text-xs text-surface-400 mt-0.5">{guardOutcomeDetail(anomaly.outcome, anomaly.claimType)}</p>
@@ -178,7 +183,7 @@ export function AnomalyDetailModal({
                 <BlockTitle icon={MessageSquareOff} tone="warn">
                   Mensagem retida (não enviada ao cliente)
                 </BlockTitle>
-                <div className="flex-1 min-h-0 overflow-y-auto rounded-lg bg-surface-800/60 border border-surface-700 px-3 py-2.5">
+                <div className="anomaly-elevated-surface flex-1 min-h-0 overflow-y-auto rounded-lg bg-surface-700/50 border px-3 py-2.5">
                   <p className="text-sm text-surface-200 whitespace-pre-wrap break-words leading-relaxed">
                     {renderHighlighted(anomaly.blockedText!, findings)}
                   </p>
@@ -187,7 +192,7 @@ export function AnomalyDetailModal({
                   <ul className="space-y-1 flex-shrink-0 max-h-32 overflow-y-auto pr-1">
                     {findings.map((f, i) => (
                       <li key={i} className="text-xs text-surface-400 leading-snug">
-                        <span className="font-medium text-amber-300/90">“{f.raw}”</span>
+                        <span className="font-medium" style={{ color: 'var(--color-warning)' }}>“{f.raw}”</span>
                         {' — '}{findingReasonLabel(f.type, f.reason)}
                         {f.suggested && (
                           <> · correto: <span className="font-medium text-surface-300">{f.suggested}</span></>
@@ -200,9 +205,22 @@ export function AnomalyDetailModal({
             )}
 
             {/* ── Coluna direita: o que fazer + o que o sistema sabia ─── */}
-            <div className={cn('flex flex-col gap-4', hasV2 && 'min-h-0 overflow-y-auto pr-1')}>
+            <div className={cn('flex flex-col gap-4', hasV2 && 'min-h-0 overflow-y-auto p-2 -mt-2')}>
+              {/* Espaçador invisível — mesma altura do BlockTitle "Mensagem
+                  retida" da coluna ao lado, pra alinhar a borda superior do
+                  "O que verificar" com a da caixa de mensagem retida, em vez
+                  de chutar uma margem fixa que quebra se a fonte mudar. */}
+              {hasV2 && isHandoff && (
+                // -mb-2: a coluna da esquerda usa gap-2 (8px) entre o título e a
+                // caixa; esta coluna usa gap-4 (16px) entre TODOS os itens — sem
+                // a margem negativa, o excedente de 8px do gap maior desalinha
+                // a borda superior mesmo com o espaçador do tamanho certo.
+                <div className="invisible flex-shrink-0 -mb-2" aria-hidden="true">
+                  <BlockTitle icon={MessageSquareOff} tone="warn">Mensagem retida</BlockTitle>
+                </div>
+              )}
               {isHandoff && (
-                <div className="rounded-lg bg-surface-800/40 px-3 py-2.5 flex-shrink-0">
+                <div className="anomaly-elevated-surface-compact rounded-lg bg-surface-700/50 border px-3 py-2.5 flex-shrink-0">
                   <p className="text-xs font-medium text-surface-200 mb-1">O que verificar</p>
                   <p className="text-xs text-surface-400">
                     {guardCheckGuidance(anomaly.outcome, anomaly.claimType)}
