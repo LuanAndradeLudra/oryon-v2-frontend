@@ -90,6 +90,12 @@ export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSett
           <p className="text-xs text-surface-500 mt-0.5">
             Desligado (padrão): cada contato tem no máximo 1 negócio aberto neste funil.
           </p>
+          {/* Follow-up SCRUM-931 (achado 3, revisão do Lince): o consumo desta
+              flag é da C1/SCRUM-932, ainda não implementada — sem o aviso, o
+              toggle passa a impressão de já mudar o comportamento de criação. */}
+          <p className="text-[11px] text-warning mt-1">
+            Ainda não afeta a criação de negócios — a checagem chega numa história futura (C1).
+          </p>
         </div>
         <Switch
           checked={!!pipeline.allowMultipleOpen}
