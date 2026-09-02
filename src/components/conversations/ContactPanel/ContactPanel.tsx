@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink, ArrowRightLeft,
-  KanbanSquare, MapPin, Phone, Plus, Filter,
+  Milestone, MapPin, Phone, Plus, Filter,
   Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -254,7 +254,7 @@ export function ContactPanel({
       {/* Action bar */}
       <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-950">
         <div className="min-w-0 flex items-center gap-1.5">
-          <Filter className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Estágio do funil" />
+          <Filter className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Situação do contato" />
           {localStage ? (
             <StageBadge stage={localStage} stages={stages} />
           ) : (
@@ -262,9 +262,12 @@ export function ContactPanel({
           )}
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          <button onClick={() => setStageOpen(true)} title="Mover para estágio"
+          {/* SCRUM-929 (F-FICHA-08): "Mudar situação" — ícone e verbo distintos
+              de "Mover etapa" (DealSummary, ícone KanbanSquare) — etapa é do
+              FUNIL do negócio, situação é o ciclo de vida do CONTATO. */}
+          <button onClick={() => setStageOpen(true)} title="Mudar situação"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
-            <KanbanSquare className="w-4 h-4" />
+            <Milestone className="w-4 h-4" />
           </button>
           <button onClick={() => navigate(`/contacts?contact=${contact.id}`)} title="Ver no CRM"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">

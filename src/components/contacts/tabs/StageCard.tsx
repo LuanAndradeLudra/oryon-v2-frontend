@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { KanbanSquare, ChevronLeft, ChevronRight, Flag, Loader2 } from 'lucide-react'
+import { Milestone, ChevronLeft, ChevronRight, Flag, Loader2 } from 'lucide-react'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { contactsApi } from '@/services/api'
 import { hexToRgba, cn } from '@/lib/utils'
@@ -61,7 +61,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
         {/* ── Header ───────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {!hideTitle && <KanbanSquare className="w-4 h-4 text-surface-500" />}
+            {!hideTitle && <Milestone className="w-4 h-4 text-surface-500" />}
             {!hideTitle && <h3 className="text-sm font-semibold text-surface-100">Estágio no funil</h3>}
             {stages.length > 0 && currentIndex >= 0 && (
               <span className="text-xs text-surface-400">
@@ -80,8 +80,11 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
                 : 'text-brand-400 hover:text-brand-300 hover:bg-brand-500/10',
             )}
           >
-            <KanbanSquare className="w-3.5 h-3.5" />
-            Mover
+            {/* SCRUM-929 (F-FICHA-08): "Mudar situação" — ícone e verbo
+                distintos de "Mover etapa" do negócio (DealSummary,
+                KanbanSquare); esta ação mexe no ciclo de vida do CONTATO. */}
+            <Milestone className="w-3.5 h-3.5" />
+            Mudar situação
           </button>
         </div>
 
