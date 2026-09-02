@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, Phone, ExternalLink, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
+import { Banner } from '@/components/ui/Banner'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -172,10 +173,9 @@ export function AddSharedContactModal({
     <Modal open={open} onClose={onClose} title="Adicionar contato ao CRM" footer={footer}>
       {status === 'exists' && existing ? (
         <div className="space-y-3">
-          <div className="flex items-start gap-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-200">Este contato já está no CRM.</p>
-          </div>
+          <Banner variant="warning">
+            <p className="text-sm">Este contato já está no CRM.</p>
+          </Banner>
           <div className="flex items-center gap-2.5 rounded-lg bg-surface-800/60 px-3 py-2.5">
             <div className="w-9 h-9 rounded-full bg-surface-700 flex items-center justify-center flex-shrink-0">
               <User className="w-4.5 h-4.5 text-surface-300" />

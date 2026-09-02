@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Wifi, WifiOff, Clock, Bot, X, Star, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, Wifi, WifiOff, Clock, Bot, X, Star, RefreshCw, Smartphone } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SectionHeader } from '../SectionHeader'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Tooltip } from '@/components/ui/Tooltip'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
@@ -14,17 +18,17 @@ import { api, whatsappNumbersApi, type WhatsappLineDependencies } from '@/servic
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { WhatsAppNumberDetailed } from '@/types'
 
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
-  connected:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    cls: 'text-online bg-status-active-bg border-status-active-border' },
-  CONNECTED:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    cls: 'text-online bg-status-active-bg border-status-active-border' },
-  disconnected: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, cls: 'text-danger bg-red-900/30 border-red-800' },
-  DISCONNECTED: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, cls: 'text-danger bg-red-900/30 border-red-800' },
-  pending:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    cls: 'text-away bg-status-pending-bg border-status-pending-border' },
-  PENDING:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    cls: 'text-away bg-status-pending-bg border-status-pending-border' },
-  DELETED:      { label: 'Removido',     icon: <WifiOff className="w-3.5 h-3.5" />, cls: 'text-surface-500 bg-surface-900/30 border-surface-800' },
+const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; chip: string }> = {
+  connected:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    chip: 'var(--color-status-active)' },
+  CONNECTED:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    chip: 'var(--color-status-active)' },
+  disconnected: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, chip: 'var(--color-danger)' },
+  DISCONNECTED: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, chip: 'var(--color-danger)' },
+  pending:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    chip: 'var(--color-status-pending)' },
+  PENDING:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    chip: 'var(--color-status-pending)' },
+  DELETED:      { label: 'Removido',     icon: <WifiOff className="w-3.5 h-3.5" />, chip: 'var(--color-status-muted)' },
 }
 
-const DEFAULT_STATUS = { label: 'Desconhecido', icon: <Clock className="w-3.5 h-3.5" />, cls: 'text-surface-500 bg-surface-900/30 border-surface-800' }
+const DEFAULT_STATUS = { label: 'Desconhecido', icon: <Clock className="w-3.5 h-3.5" />, chip: 'var(--color-status-muted)' }
 
 const QUALITY_CONFIG: Record<string, { label: string; cls: string }> = {
   green:   { label: 'Alta',      cls: 'bg-online' },
@@ -48,11 +52,13 @@ export function WhatsAppNumbers() {
   const [disconnectTarget, setDisconnectTarget] = useState<WhatsAppNumberDetailed | null>(null)
   const [dependencies, setDependencies] = useState<WhatsappLineDependencies | null>(null)
   const [savingAgent, setSavingAgent] = useState<string | null>(null)
+  const [fetchError, setFetchError] = useState(false)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [resubscribing, setResubscribing] = useState<string | null>(null)
 
   const fetchNumbers = () => {
     setLoading(true)
+    setFetchError(false)
     Promise.all([
       api.get<WhatsAppNumberDetailed[]>('/whatsapp/numbers').then((r) => Array.isArray(r.data) ? r.data : []),
       listAgents().catch(() => []),
@@ -61,6 +67,7 @@ export function WhatsAppNumbers() {
       setAgents(ags)
       setLoading(false)
     }).catch(() => {
+      setFetchError(true)
       setNumbers([])
       setAgents([])
       setLoading(false)
@@ -179,36 +186,61 @@ export function WhatsAppNumbers() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <div>
+        <SectionHeader
+          title="Números WhatsApp"
+          description="Gerencie os números WhatsApp Business conectados à plataforma."
+        />
+        <div className="flex flex-col gap-4">
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={4} />
+        </div>
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div>
+        <SectionHeader
+          title="Números WhatsApp"
+          description="Gerencie os números WhatsApp Business conectados à plataforma."
+        />
+        <ErrorState compact onRetry={fetchNumbers} />
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <SectionHeader
         title="Números WhatsApp"
         description="Gerencie os números WhatsApp Business conectados à plataforma."
         action={
-          <button
-            onClick={() => { void startConnect() }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
-          >
-            <Plus className="w-4 h-4" />
+          <Button onClick={() => { void startConnect() }} leftIcon={<Plus className="w-4 h-4" />}>
             Conectar número
-          </button>
+          </Button>
         }
       />
 
-      <div className="grid grid-cols-1 gap-4">
+      {numbers.length === 0 && (
+        <EmptyState
+          icon={Smartphone}
+          title="Nenhum número conectado"
+          hint="Conecte um número WhatsApp Business para começar a atender pela plataforma."
+          action={{ label: 'Conectar número', onClick: () => { void startConnect() } }}
+        />
+      )}
+
+      {/* Lista densa: linhas separadas por hairline — sem chrome de card. */}
+      <div className="divide-y divide-surface-800/60">
         {numbers.map((num) => {
           const status = STATUS_CONFIG[num.status] ?? DEFAULT_STATUS
           const quality = QUALITY_CONFIG[num.qualityRating] ?? DEFAULT_QUALITY
           const connected = num.status === 'connected' || num.status === 'CONNECTED'
 
           return (
-            <div key={num.id} className="bg-surface-900 border border-surface-800 rounded-2xl p-5">
+            <div key={num.id} className="py-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-xl bg-status-active-bg border border-status-active-border flex items-center justify-center flex-shrink-0">
@@ -217,7 +249,7 @@ export function WhatsAppNumbers() {
                   <div>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-semibold text-surface-50">{num.displayPhoneNumber}</p>
-                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border', status.cls)}>
+                      <span className={cn('color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
                         {status.icon}
                         {status.label}
                       </span>
@@ -258,7 +290,8 @@ export function WhatsAppNumbers() {
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-surface-800">
+                    {/* Agent AI Assignment */}
+                    <div className="mt-4 pt-4 border-t border-surface-800/60">
                       <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-2">Agente de IA</p>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-2 flex-1">

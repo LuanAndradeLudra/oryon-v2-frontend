@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
+import { Banner } from '@/components/ui/Banner'
 
 export function ActivateAccountPage() {
   const [searchParams] = useSearchParams()
@@ -59,10 +60,10 @@ export function ActivateAccountPage() {
             <img src="/oryon-logo.svg" alt="Oryon" className="w-16 h-16 mb-4 select-none" draggable={false} />
             <h1 className="text-xl font-bold text-surface-50">Oryon</h1>
           </div>
-          <p className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
+          <Banner variant="danger">
             Link de convite incompleto ou inválido. Abra o endereço completo enviado no e-mail ou peça ao
             administrador para reenviar o convite.
-          </p>
+          </Banner>
           <Link
             to="/login"
             className="inline-flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300 transition-colors"
@@ -134,7 +135,7 @@ export function ActivateAccountPage() {
           </div>
 
           {error && (
-            <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">{error}</p>
+            <Banner variant="danger">{error}</Banner>
           )}
 
           <button

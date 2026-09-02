@@ -1,4 +1,4 @@
-import { cn, hexToRgba } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { TenantStage } from '@/types'
 
 interface StageBadgeProps {
@@ -26,15 +26,11 @@ export function StageBadge({ stage, stages, size = 'sm', className }: StageBadge
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium border rounded-full',
+        'color-chip inline-flex items-center font-medium border rounded-full',
         size === 'sm' ? 'text-[11px] px-2 py-0.5' : 'text-xs px-2.5 py-1',
         className,
       )}
-      style={{
-        color: def.color,
-        backgroundColor: hexToRgba(def.color, 0.12),
-        borderColor: hexToRgba(def.color, 0.3),
-      }}
+      style={{ ['--chip']: def.color } as React.CSSProperties}
     >
       {def.label}
     </span>

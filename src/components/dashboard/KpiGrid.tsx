@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  TrendingUp, TrendingDown, Settings2, X, RotateCcw,
+  TrendingUp, TrendingDown, Settings2, X, RotateCcw, Check,
   MessageSquare, MessageCircle, Clock, CheckCircle2, XCircle,
   Target, Zap, Timer, ShieldCheck, Star, ThumbsUp, RefreshCw,
   ArrowDownLeft, ArrowUpRight, UserPlus, Bot, Users, Activity,
@@ -57,13 +57,13 @@ const KPI_ICONS: Record<KpiId, React.ReactNode> = {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Atendimento: '#6366f1',
-  Velocidade:  '#f59e0b',
-  Qualidade:   '#10b981',
-  Volume:      '#06b6d4',
-  Bot:         '#8b5cf6',
-  Equipe:      '#5588b0',
-  Disparos:    '#f97316',
+  Atendimento: 'var(--color-accent-blue)',
+  Velocidade:  'var(--color-accent-amber)',
+  Qualidade:   'var(--color-accent-green)',
+  Volume:      'var(--color-accent-cyan)',
+  Bot:         'var(--color-accent-violet)',
+  Equipe:      'var(--color-status-muted)',
+  Disparos:    'var(--color-warning)',
   Marketing:   '#1877f2',
 }
 
@@ -80,7 +80,7 @@ function loadSlots(): KpiId[] {
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
 
-function KpiCard({ metric }: { metric: KpiMetric }) {
+function KpiCard({ metric, hero }: { metric: KpiMetric; hero?: boolean }) {
   const isGood =
     (metric.trend > 0 && metric.trendIsGood === 'up') ||
     (metric.trend < 0 && metric.trendIsGood === 'down')
@@ -89,31 +89,46 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
     (metric.trend < 0 && metric.trendIsGood === 'up')
 
   const trendColor = isGood ? 'text-online' : isBad ? 'text-danger' : 'text-surface-500'
-  const catColor = CATEGORY_COLORS[metric.category] ?? '#6366f1'
+  const catColor = hero ? 'var(--color-accent-dark)' : (CATEGORY_COLORS[metric.category] ?? 'var(--color-accent-blue)')
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col gap-2.5">
+    <div
+      className={cn(
+        'card-glow bg-surface-900 border rounded-xl flex flex-col',
+        hero
+          ? 'border-surface-700/80 p-5 gap-3'
+          : 'border-surface-800 p-3.5 gap-2',
+      )}
+    >
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: catColor + '1a', color: catColor }}>
+        <div
+          className={cn('rounded-lg flex items-center justify-center flex-shrink-0', hero ? 'w-8 h-8' : 'w-6 h-6')}
+          style={{ backgroundColor: `color-mix(in srgb, ${catColor} 10%, transparent)`, color: catColor }}
+        >
           {KPI_ICONS[metric.id]}
         </div>
-        <span className="text-xs text-surface-400 font-medium leading-tight">{metric.label}</span>
+        <span className={cn('font-medium leading-tight text-surface-400', hero ? 'text-sm' : 'text-xs')}>
+          {metric.label}
+        </span>
       </div>
 
-      <div className="text-2xl font-bold text-surface-50 tabular-nums leading-none">
+      <div className={cn(
+        'font-bold tabular-nums leading-none font-display',
+        hero ? 'text-3xl kpi-hero-value' : 'text-xl text-surface-50',
+      )}>
         {formatKpiValue(metric.value, metric.unit)}
         {metric.unit === 'csat_score' && (
-          <span className="text-sm font-normal text-surface-400 ml-1">/ 5</span>
+          <span className={cn('font-normal text-surface-400 ml-1 font-sans', hero ? 'text-base' : 'text-sm')}>/ 5</span>
         )}
       </div>
 
       {metric.trend !== 0 && (
-        <div className={cn('flex items-center gap-1 text-xs font-medium', trendColor)}>
+        <div className={cn('relative flex items-center gap-1 font-medium', hero ? 'text-sm' : 'text-xs', trendColor)}>
           {metric.trend > 0
-            ? <TrendingUp className="w-3 h-3" />
-            : <TrendingDown className="w-3 h-3" />}
+            ? <TrendingUp className={hero ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
+            : <TrendingDown className={hero ? 'w-3.5 h-3.5' : 'w-3 h-3'} />}
           <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1)}%</span>
+          {hero && <span className="text-surface-600 font-normal">vs. período anterior</span>}
         </div>
       )}
     </div>
@@ -160,7 +175,7 @@ function CustomizerPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface-950 border-l border-surface-800 z-50 flex flex-col shadow-2xl"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface-950 border-l overlay-frame z-50 flex flex-col"
           >
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
           <div>
@@ -176,7 +191,7 @@ function CustomizerPanel({
           {categories.map((cat) => (
             <div key={cat}>
               <p className="text-[10px] font-bold uppercase tracking-widest mb-2"
-                style={{ color: CATEGORY_COLORS[cat] ?? '#5588b0' }}>
+                style={{ color: CATEGORY_COLORS[cat] ?? 'var(--color-status-muted)' }}>
                 {cat}
               </p>
               <div className="flex flex-col gap-1">
@@ -191,17 +206,19 @@ function CustomizerPanel({
                       className={cn(
                         'flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors',
                         isActive
-                          ? 'border-brand-500/40 bg-brand-900/20 text-brand-300'
+                          ? disabled
+                            ? 'border-transparent bg-brand-600/40 text-white/60 cursor-not-allowed'
+                            : 'border-transparent bg-brand-600 text-white hover:bg-brand-500'
                           : disabled
                             ? 'border-surface-800 text-surface-600 cursor-not-allowed'
-                            : 'border-surface-800 text-surface-300 hover:border-surface-700',
+                            : 'border-surface-800 text-surface-300 hover:border-surface-700 hover:bg-surface-900/50',
                       )}
                     >
                       <span className={cn(
-                        'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0',
-                        isActive ? 'bg-white border-white' : 'border-surface-600',
+                        'w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0',
+                        isActive ? 'bg-brand-950 border-black/40' : 'border-surface-600',
                       )}>
-                        {isActive && <span className="text-black text-[10px] font-bold">✓</span>}
+                        {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
                       </span>
                       <span className="text-xs font-medium">{def.label}</span>
                     </button>
@@ -227,7 +244,13 @@ function CustomizerPanel({
 
 // ── KPI Grid ──────────────────────────────────────────────────────────────────
 
-export function KpiGrid({ metrics }: { metrics: KpiMetric[] }) {
+export function KpiGrid({
+  metrics,
+  headerCenter,
+}: {
+  metrics: KpiMetric[]
+  headerCenter?: ReactNode
+}) {
   const [slots, setSlots] = useState<KpiId[]>(loadSlots)
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
@@ -245,22 +268,40 @@ export function KpiGrid({ metrics }: { metrics: KpiMetric[] }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest">Métricas Principais</p>
-        <button
-          onClick={() => setCustomizerOpen(true)}
-          className="flex items-center gap-1.5 text-xs text-surface-400 hover:text-surface-100 border border-surface-800 hover:border-surface-700 px-2.5 py-1.5 rounded-lg transition-colors"
-        >
-          <Settings2 className="w-3.5 h-3.5" />
-          Personalizar
-        </button>
+      <div className="flex items-center gap-3 mb-3">
+        <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest shrink-0">
+          Métricas Principais
+        </p>
+        <div className="flex-1" />
+        <div className="flex items-center gap-2 shrink-0">
+          {headerCenter}
+          <button
+            onClick={() => setCustomizerOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-surface-700/60 hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors shrink-0"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            Personalizar
+          </button>
+        </div>
       </div>
 
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {activeMetrics.map((metric) => (
-          <KpiCard key={metric.id} metric={metric} />
+      {/* Hierarquia visual: os 4 primeiros KPIs da seleção do usuário são o
+          "hero row" (maiores, com contexto de tendência); o restante fica
+          compacto abaixo. A ordem dos slots continua sendo a do usuário —
+          reordenar no customizer muda o que é destaque. */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        {activeMetrics.slice(0, 4).map((metric) => (
+          <KpiCard key={metric.id} metric={metric} hero />
         ))}
       </div>
+
+      {activeMetrics.length > 4 && (
+        <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 mt-3">
+          {activeMetrics.slice(4).map((metric) => (
+            <KpiCard key={metric.id} metric={metric} />
+          ))}
+        </div>
+      )}
 
       <CustomizerPanel
         open={customizerOpen}

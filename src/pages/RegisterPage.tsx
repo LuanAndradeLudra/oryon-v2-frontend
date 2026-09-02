@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Eye, EyeOff, Zap, Loader2, Building2 } from 'lucide-react'
+import { Eye, EyeOff, Zap, Loader2, Building2, Sun, Moon } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
+import { Banner } from '@/components/ui/Banner'
+import { useTheme } from '@/hooks/useTheme'
+import { PhoneField } from '@/components/ui/PhoneField'
+import { FormFieldContext, useFieldAria } from '@/components/ui/formField.context'
 
 interface FormState {
   companyName: string
@@ -62,6 +67,8 @@ function PasswordStrength({ password }: { password: string }) {
 export function RegisterPage() {
   const { register } = useAuth()
   const navigate = useNavigate()
+  const { theme, toggle } = useTheme()
+  const isLight = theme === 'light'
 
   const [form, setForm] = useState<FormState>(INITIAL)
   const [showPass, setShowPass] = useState(false)
@@ -111,6 +118,23 @@ export function RegisterPage() {
 
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-surface-950 px-4 overflow-auto">
+      {/* Theme toggle */}
+      <button
+        onClick={toggle}
+        title={isLight ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-900 hover:bg-surface-800 transition-colors shadow-lg"
+      >
+        <div className="relative w-8 h-4 rounded-full bg-surface-700 flex-shrink-0">
+          <motion.div
+            animate={{ x: isLight ? 16 : 0 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-brand-400"
+          />
+        </div>
+        {isLight
+          ? <Sun className="w-3.5 h-3.5 text-brand-400" />
+          : <Moon className="w-3.5 h-3.5 text-surface-400" />}
+      </button>
       <div className="w-full max-w-lg my-6">
 
         {/* Brand */}
@@ -150,8 +174,11 @@ export function RegisterPage() {
           </Field>
 
           {/* Divider */}
-          <div className="border-t border-surface-800 -mx-1 pt-1">
-            <span className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider">
+          <div className="border-t border-surface-800 -mx-1" />
+
+          <div className="flex items-center gap-2 p-2 border border-surface-800 rounded-lg">
+            <Zap className="w-3.5 h-3.5 text-surface-500" />
+            <span className="text-[11px] font-bold text-surface-500 uppercase tracking-wider">
               Admin da conta
             </span>
           </div>
@@ -175,12 +202,10 @@ export function RegisterPage() {
                 className={inputClass}
               />
             </Field>
-            <Field label="Telefone">
-              <input
-                type="tel"
+            <Field label="Telefone" hint="Com código do país e DDD.">
+              <PhoneField
                 value={form.phone}
-                onChange={set('phone')}
-                placeholder="+55 11 99999-9999"
+                onChange={(digits) => setForm((f) => ({ ...f, phone: digits }))}
                 className={inputClass}
               />
             </Field>
@@ -238,9 +263,7 @@ export function RegisterPage() {
 
           {/* Error */}
           {error && (
-            <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">
-              {error}
-            </p>
+            <Banner variant="danger">{error}</Banner>
           )}
 
           {/* Submit */}
@@ -265,23 +288,35 @@ export function RegisterPage() {
   )
 }
 
+/**
+ * Invólucro de campo do cadastro — visual próprio (rótulo em peso médio, o
+ * asterisco na cor da marca em vez de perigo). A semântica vem do mesmo
+ * `useFieldAria` do `FormField` do DS: rótulo ligado ao campo, obrigatório
+ * anunciado. Só a casca é local.
+ */
 function Field({
   label,
   required,
+  hint,
   children,
 }: {
   label: string
   required?: boolean
+  hint?: string
   children: React.ReactNode
 }) {
+  const { fieldId, hintId, aria } = useFieldAria({ hint, required })
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">
-        {label}
-        {required && <span className="text-brand-500 ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
+    <FormFieldContext.Provider value={aria}>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={fieldId} className="text-xs font-medium text-surface-300 uppercase tracking-wide">
+          {label}
+          {required && <span className="text-brand-500 ml-0.5" aria-hidden="true">*</span>}
+        </label>
+        {children}
+        {hint && <p id={hintId} className="text-xs text-surface-500">{hint}</p>}
+      </div>
+    </FormFieldContext.Provider>
   )
 }
 

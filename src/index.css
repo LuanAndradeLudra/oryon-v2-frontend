@@ -1,213 +1,467 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* ── Fonts ────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap');
 @import "tailwindcss";
 
+/* ── Design System: Workspace Glow · Teal ──────────────────────────────────
+ * Princípio 90/10: 90% neutro (teal-black/off-white + cinzas), 10% teal.
+ * Gradiente é cerimônia: logo, 1 CTA por seção, avatar IA, glow de fundo.
+ * Nunca em fundo inteiro, texto longo, sidebar ou bordas de tudo.
+ *
+ * ── RÉGUA CANÔNICA DE COMPONENTES (usar SEMPRE; não inventar variações) ────
+ * Botões / inputs (altura):  sm h-7 · md h-9 · lg h-11  (Button.tsx é a ref)
+ * Radius:  chips/badges rounded-md · botões/inputs rounded-lg ou xl (10-12px)
+ *          cards rounded-xl · painéis/drawers rounded-2xl · pill rounded-full
+ * Bordas:  divisor padrão border-surface-800 · ênfase/hover border-surface-700
+ *          nunca usar surface-600+ como borda de card
+ * Gaps:    label→input gap-1.5 · entre campos gap-4 · entre seções gap-6
+ * Títulos: página text-xl font-display · card/seção text-sm font-semibold
+ *          eyebrow .eyebrow · corpo text-sm · meta text-xs
+ * Transições: hover/estado 150ms · entrada de conteúdo 200-250ms ease-out
+ * Cores:   SEMPRE via token (bg-brand-500, text-surface-400, --color-accent-*).
+ *          Hex direto só p/ marcas de terceiros (Meta, Google, Canva) e print.
+ *          Charts (SVG): usar useChartColors() — nunca hex fixo.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
 @theme {
-  --font-sans: 'Inter', sans-serif;
+  /* ── Tipografia ──────────────────────────────────────────────────────────── */
+  --font-sans:    'Inter', sans-serif;
+  --font-display: 'Satoshi', 'Inter', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
 
-  /* ── Brand — Neutral Mono (dark mode defaults) ──────────────────────────── */
-  /* Raw light-mode values */
-  --color-brand-950-light: #fafafa;
-  --color-brand-900-light: #f5f5f5;
-  --color-brand-800-light: #e5e5e5;
-  --color-brand-600-light: #171717;
-  --color-brand-500-light: #262626;
-  --color-brand-400-light: #525252;
-  --color-brand-300-light: #404040;
+  /* ── Acento teal (dark defaults) ─────────────────────────────────────────── */
+  /* dark: sobe luminância #14B8A6 → #2DD4BF — intencional */
+  --color-accent:       #2DD4BF;
+  --color-accent-dark:  #14B8A6;
+  --color-accent-soft:  rgba(45, 212, 191, 0.14);
+  --color-accent-on:    #0A0F0F;
 
-  /* Raw dark-mode values */
-  --color-brand-950-dark:  #0a0a0a;
-  --color-brand-900-dark:  #141414;
-  --color-brand-800-dark:  #1e1e1e;
-  --color-brand-600-dark:  #e5e5e5;
-  --color-brand-500-dark:  #d4d4d4;
-  --color-brand-400-dark:  #a3a3a3;
-  --color-brand-300-dark:  #d4d4d4;
+  /* aliases de uso frequente nos componentes */
+  --color-brand-cta:       #2DD4BF;
+  --color-brand-cta-hover: #14B8A6;
+  --color-brand-surface:   #161E1E;
+  --color-brand-text:      #8FA5A5;
+  --color-brand-icon:      #6B8080;
 
-  /* ── Status — semantic tokens (dark defaults) ──────────────────────────── */
-  --color-status-pending:        #fbbf24;
+  /* brand scale (dark defaults) — componentes usam bg-brand-500 etc. */
+  --color-brand-50:  #F0FDFA;
+  --color-brand-100: #CCFBF1;
+  --color-brand-200: #99F6E4;
+  --color-brand-300: #5EEAD4;
+  --color-brand-400: #2DD4BF;
+  --color-brand-500: #2DD4BF;
+  --color-brand-600: #14B8A6;
+  --color-brand-700: #243333;
+  --color-brand-800: #161E1E;
+  --color-brand-900: #0E1414;
+  --color-brand-950: #0A0F0F;
+
+  /* Raw light values (brand) */
+  --color-brand-950-light: #F0FDFA;
+  --color-brand-900-light: #CCFBF1;
+  --color-brand-800-light: #99F6E4;
+  --color-brand-600-light: #0F766E;
+  --color-brand-500-light: #0F766E;
+  --color-brand-400-light: #14B8A6;
+  --color-brand-300-light: #0F766E;
+
+  /* Raw dark values (brand) */
+  --color-brand-950-dark:  #0A0F0F;
+  --color-brand-900-dark:  #0E1414;
+  --color-brand-800-dark:  #161E1E;
+  --color-brand-600-dark:  #ECF1F1;
+  --color-brand-500-dark:  #2DD4BF;
+  --color-brand-400-dark:  #2DD4BF;
+  --color-brand-300-dark:  #8FA5A5;
+
+  /* ── Surface scale (dark defaults) ──────────────────────────────────────── */
+  /* Mapeamento semântico → numérico:
+   *   canvas  #0A0F0F → 950 (root bg mais escuro)
+   *   bg      #0E1414 → 900 (wrapper de página)
+   *   surface #161E1E → 800 (cards / painéis)
+   *   border  #243333 → 700
+   *   dim     #6B8080 → 500
+   *   muted   #8FA5A5 → 400
+   *   text    #ECF1F1 → 100 (componentes usam text-surface-100)  */
+  --color-surface-950: #0A0F0F;
+  --color-surface-900: #0E1414;
+  --color-surface-800: #161E1E;
+  --color-surface-700: #243333;
+  --color-surface-600: #2E4040;
+  --color-surface-500: #6B8080;
+  --color-surface-400: #8FA5A5;
+  --color-surface-300: #B5C8C8;
+  --color-surface-200: #D0DEDE;
+  --color-surface-100: #ECF1F1;
+  --color-surface-50:  #F6FAFA;
+
+  /* Raw light/dark stores */
+  --color-surface-950-light: #FFFFFF;
+  --color-surface-900-light: #FAFAFC;
+  --color-surface-800-light: #F5F6F8;
+  --color-surface-700-light: #E4E6EC;
+  --color-surface-600-light: #C8CDD8;
+  --color-surface-500-light: #9098AA;
+  --color-surface-400-light: #5C657A;
+  --color-surface-300-light: #3A4252;
+  --color-surface-200-light: #2E3548;
+  --color-surface-100-light: #1A1F2E;
+  --color-surface-50-light:  #0F1422;
+
+  --color-surface-950-dark: #0A0F0F;
+  --color-surface-900-dark: #0E1414;
+  --color-surface-800-dark: #161E1E;
+  --color-surface-700-dark: #243333;
+  --color-surface-600-dark: #2E4040;
+  --color-surface-500-dark: #6B8080;
+  --color-surface-400-dark: #8FA5A5;
+  --color-surface-300-dark: #B5C8C8;
+  --color-surface-200-dark: #D0DEDE;
+  --color-surface-100-dark: #ECF1F1;
+  --color-surface-50-dark:  #F6FAFA;
+
+  /* ── Status — não substituir com teal ──────────────────────────────────── */
+  --color-success:               #22C55E;
+  --color-success-light:         #15803D;
+  --color-success-dark:          #22C55E;
+  --color-success-surface-light: #F0FDF4;
+  --color-success-surface-dark:  #0A1F0F;
+  --color-success-text-light:    #15803D;
+  --color-success-text-dark:     #86EFAC;
+
+  --color-danger:               #EF4444;
+  --color-danger-light:         #DC2626;
+  --color-danger-dark:          #EF4444;
+  --color-danger-surface-light: #FEF2F2;
+  --color-danger-surface-dark:  #1F0A0A;
+  --color-danger-text-light:    #B91C1C;
+  --color-danger-text-dark:     #FCA5A5;
+
+  --color-info:               #3B82F6;
+  --color-info-light:         #2563EB;
+  --color-info-dark:          #3B82F6;
+  --color-info-surface-light: #EFF6FF;
+  --color-info-surface-dark:  #0A1628;
+  --color-info-text-light:    #1D4ED8;
+  --color-info-text-dark:     #93C5FD;
+
+  --color-warning:               #F97316;
+  --color-warning-light:         #EA580C;
+  --color-warning-dark:          #F97316;
+  --color-warning-surface-light: #FFF7ED;
+  --color-warning-surface-dark:  #1C0F04;
+  --color-warning-text-light:    #C2410C;
+  --color-warning-text-dark:     #FDBA74;
+
+  /* ── Status semânticos ────────────────────────────────────────────────── */
+  --color-status-pending:        #FBBF24;
   --color-status-pending-bg:     rgba(251, 191, 36, 0.12);
   --color-status-pending-border: rgba(251, 191, 36, 0.25);
-  --color-status-active:         #4ade80;
+  --color-status-active:         #4ADE80;
   --color-status-active-bg:      rgba(74, 222, 128, 0.12);
   --color-status-active-border:  rgba(74, 222, 128, 0.25);
-  --color-status-open:           #3b82f6;
-  --color-status-open-bg:        rgba(59, 130, 246, 0.14);
+  --color-status-open:           #3B82F6;
+  --color-status-open-bg:        rgba(59, 130, 246, 0.12);
   --color-status-open-border:    rgba(59, 130, 246, 0.30);
-  --color-status-muted:          #8a8a8a;
-  --color-status-muted-bg:       rgba(138, 138, 138, 0.12);
-  --color-status-muted-border:   rgba(138, 138, 138, 0.25);
-  --color-status-info:           #60a5fa;
+  --color-status-muted:          #6B8080;
+  --color-status-muted-bg:       rgba(107, 128, 128, 0.12);
+  --color-status-muted-border:   rgba(107, 128, 128, 0.25);
+  --color-status-info:           #60A5FA;
   --color-status-info-bg:        rgba(96, 165, 250, 0.12);
   --color-status-info-border:    rgba(96, 165, 250, 0.25);
 
-  /* Active brand scale (dark defaults) */
-  --color-brand-50:  #fafafa;
-  --color-brand-100: #f5f5f5;
-  --color-brand-200: #e5e5e5;
-  --color-brand-300: #d4d4d4;
-  --color-brand-400: #a3a3a3;
-  --color-brand-500: #d4d4d4;
-  --color-brand-600: #e5e5e5;
-  --color-brand-700: #1e1e1e;
-  --color-brand-800: #141414;
-  --color-brand-900: #0a0a0a;
-  --color-brand-950: #0a0a0a;
+  /* ── Shell (moldura do workspace) ─────────────────────────────────────────
+     Fundo do APP atrás do canvas de conteúdo. O conteúdo flutua num cartão
+     arredondado (.workspace-canvas) sobre esta cor — padrão Linear/Slack.
+     Deve ser sempre mais profundo que surface-950. */
+  --color-shell: #050808;
 
-  /* Brand aliases (dark defaults) */
-  --color-brand-cta:       #e5e5e5;
-  --color-brand-cta-hover: #d4d4d4;
-  --color-brand-surface:   #1a1a1a;
-  --color-brand-text:      #a3a3a3;
-  --color-brand-icon:      #a3a3a3;
+  /* ── Acentos categóricos (não-status) — hues p/ chips de categoria (ações
+     de handoff, origens de campanha etc.). Sempre usar via var() para que o
+     tema claro possa escurecer os matizes e manter contraste AA. */
+  --color-accent-blue:   #3B82F6;
+  --color-accent-green:  #10B981;
+  --color-accent-violet: #8B5CF6;
+  --color-accent-amber:  #F59E0B;
+  --color-accent-rose:   #F43F5E;
+  --color-accent-cyan:   #06B6D4;
 
-  /* ── Surface — Pure Neutral (dark defaults) ──────────────────────────────── */
-  /* Raw light values */
-  --color-surface-950-light: #ffffff;
-  --color-surface-900-light: #fafafa;
-  --color-surface-800-light: #f5f5f5;
-  --color-surface-700-light: #e5e5e5;
-  --color-surface-600-light: #d4d4d4;
-  --color-surface-500-light: #858585;
-  --color-surface-400-light: #636363;
-  --color-surface-300-light: #525252;
-  --color-surface-200-light: #262626;
-  --color-surface-100-light: #171717;
-  --color-surface-50-light:  #0a0a0a;
+  /* Status de conversa — paleta isolada p/ ajustar sem mexer no success/warning
+     globais. open usa status-open (azul) · abandoned usa status-muted (cinza). */
+  --color-cstatus-pending:         #FCD34D;
+  --color-cstatus-pending-bg:      rgba(252, 211, 77, 0.12);
+  --color-cstatus-pending-border:  rgba(252, 211, 77, 0.28);
+  --color-cstatus-resolved:        #86EFAC;
+  --color-cstatus-resolved-bg:     rgba(134, 239, 172, 0.12);
+  --color-cstatus-resolved-border: rgba(134, 239, 172, 0.28);
 
-  /* Raw dark values */
-  --color-surface-950-dark:  #0a0a0a;
-  --color-surface-900-dark:  #141414;
-  --color-surface-800-dark:  #1e1e1e;
-  --color-surface-700-dark:  #2e2e2e;
-  --color-surface-600-dark:  #525252;
-  --color-surface-500-dark:  #737373;
-  --color-surface-400-dark:  #8a8a8a;
-  --color-surface-300-dark:  #a3a3a3;
-  --color-surface-200-dark:  #d4d4d4;
-  --color-surface-100-dark:  #e5e5e5;
-  --color-surface-50-dark:   #fafafa;
+  /* ── Presence ──────────────────────────────────────────────────────────── */
+  --color-presence-online:  #22C55E;
+  --color-presence-away:    #F97316;
+  --color-presence-offline: #6B8080;
+  --color-presence-busy:    #EF4444;
+  --color-online:  #22C55E;
+  --color-away:    #F97316;
+  --color-offline: #6B8080;
 
-  /* Active surface scale (dark defaults) */
-  --color-surface-50:  #fafafa;
-  --color-surface-100: #e5e5e5;
-  --color-surface-200: #d4d4d4;
-  --color-surface-300: #a3a3a3;
-  --color-surface-400: #8a8a8a;
-  --color-surface-500: #737373;
-  --color-surface-600: #525252;
-  --color-surface-700: #2e2e2e;
-  --color-surface-800: #1e1e1e;
-  --color-surface-900: #141414;
-  --color-surface-950: #0a0a0a;
+  /* ── Bubbles (dark defaults) ─────────────────────────────────────────── */
+  /* Outbound: teal-carvão da marca — calmo, mas visivelmente teal (não um
+     cinza neutro emprestado de outro componente). */
+  --color-bubble-out:      #16443C;
+  --color-bubble-out-fg:   #FFFFFF;
+  --color-bubble-out-time: rgba(255, 255, 255, 0.62);
+  /* Sombra suave compartilhada (in/outbound) — invisível no escuro (0 0
+     #0000 fica seguro pra combinar com outros box-shadow em lista). */
+  --bubble-shadow-soft: 0 0 #0000;
+  --color-bubble-in:       #161E1E;
+  --color-bubble-in-fg:    #f1f5f9;
 
-  /* ── Semantic — Success ───────────────────────────────────────────────────── */
-  --color-success:              #22c55e;
-  --color-success-light:        #16a34a;
-  --color-success-dark:         #22c55e;
-  --color-success-surface-light: #f0fdf4;
-  --color-success-surface-dark:  #0a1f0f;
-  --color-success-text-light:    #15803d;
-  --color-success-text-dark:     #86efac;
+  --color-bubble-out-dk:      #1C2E2D;
+  --color-bubble-out-fg-dk:   rgba(236, 241, 241, 0.92);
+  --color-bubble-out-time-dk: rgba(236, 241, 241, 0.55);
+  --color-bubble-in-dk:       #161E1E;
 
-  /* ── Semantic — Danger ───────────────────────────────────────────────────── */
-  --color-danger:               #ef4444;
-  --color-danger-light:         #dc2626;
-  --color-danger-dark:          #ef4444;
-  --color-danger-surface-light: #fef2f2;
-  --color-danger-surface-dark:  #1f0a0a;
-  --color-danger-text-light:    #b91c1c;
-  --color-danger-text-dark:     #fca5a5;
+  --color-bubble-out-lk:      #E0F5F2;
+  --color-bubble-out-fg-lk:   #1A1F2E;
+  --color-bubble-out-time-lk: rgba(26, 31, 46, 0.55);
+  --color-bubble-in-lk:       #FFFFFF;
 
-  /* ── Semantic — Info ─────────────────────────────────────────────────────── */
-  --color-info:               #3b82f6;
-  --color-info-light:         #2563eb;
-  --color-info-dark:          #3b82f6;
-  --color-info-surface-light: #eff6ff;
-  --color-info-surface-dark:  #0a1628;
-  --color-info-text-light:    #1d4ed8;
-  --color-info-text-dark:     #93c5fd;
+  /* ── Card Janela 24h ─────────────────────────────────────────────────── */
+  --color-card-24h-bg:     #161E1E;
+  --color-card-24h-border: #243333;
 
-  /* ── Semantic — Warning ─────────────────────────────────────────────────── */
-  --color-warning:               #f97316;
-  --color-warning-light:         #ea580c;
-  --color-warning-dark:          #f97316;
-  --color-warning-surface-light: #fff7ed;
-  --color-warning-surface-dark:  #1c0f04;
-  --color-warning-text-light:    #c2410c;
-  --color-warning-text-dark:     #fdba74;
+  /* ── Composer (campo de mensagem) ─────────────────────────────────────── */
+  --color-composer-bg:     #161E1E;
+  --color-composer-border: #243333;
 
-  /* ── Presence ───────────────────────────────────────────────────────────── */
-  --color-presence-online:  #22c55e;
-  --color-presence-away:    #f97316;
-  --color-presence-offline: #737373;
-  --color-presence-busy:    #ef4444;
+  /* ── Elevação nível 3: overlays (dropdown/popover/tooltip/notificações) ──
+     No escuro a superfície flutuante é a MAIS CLARA do app (mais perto da
+     luz = mais claro); sombra sozinha é invisível sobre fundo escuro, então
+     borda sobe um degrau e um highlight interno de 1px marca a aresta. */
+  --color-overlay:        #1E2A2A;
+  --color-overlay-border: #324646;
+  --shadow-overlay: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                    0 4px 12px rgba(0, 0, 0, 0.45),
+                    0 12px 32px rgba(0, 0, 0, 0.55);
+  /* Scrim suave: "reduz a luminosidade" da página sob menus abertos por clique */
+  --color-scrim-soft: rgba(0, 0, 0, 0.35);
 
-  /* Legacy aliases */
-  --color-online:  #22c55e;
-  --color-away:    #f97316;
-  --color-offline: #737373;
+  /* ── Copilot / IA gradient (assinatura dark) ─────────────────────────── */
+  --copilot-gradient-from: #5EEAD4;
+  --copilot-gradient-via:  #2DD4BF;
+  --copilot-gradient-to:   #14B8A6;
 
-  /* ── Message Bubbles (dark defaults) ─────────────────────────────────────── */
-  --color-bubble-out-dk:      #2e2e2e;
-  --color-bubble-out-fg-dk:   rgba(255, 255, 255, 0.92);
-  --color-bubble-out-time-dk: rgba(255, 255, 255, 0.60);
-  --color-bubble-in-dk:       #1a1a1a;
+  /* ── Border radius ──────────────────────────────────────────────────── */
+  --radius-xs:   0.25rem;   /*  4px — badges, chips pequenos */
+  --radius-sm:   0.625rem;  /* 10px — inputs, botões */
+  --radius-md:   0.75rem;   /* 12px — botões md, dropdowns */
+  --radius-lg:   1rem;      /* 16px — cards principais */
+  --radius-xl:   1.25rem;   /* 20px — painéis, drawers */
+  --radius-2xl:  1.5rem;    /* 24px — modais, hero cards */
+  --radius-full: 9999px;    /* pílulas, avatares, badges de status */
 
-  --color-bubble-out-lk:      #e5e5e5;
-  --color-bubble-out-fg-lk:   #171717;
-  --color-bubble-out-time-lk: rgba(0, 0, 0, 0.60);
-  --color-bubble-in-lk:       #f5f5f5;
+  /* ── Espaçamento semântico (múltiplos de 4px) ────────────────────────── */
+  /* Escala base */
+  --spacing-1:   0.25rem;   /*  4px */
+  --spacing-2:   0.5rem;    /*  8px */
+  --spacing-3:   0.75rem;   /* 12px */
+  --spacing-4:   1rem;      /* 16px */
+  --spacing-6:   1.5rem;    /* 24px */
+  --spacing-8:   2rem;      /* 32px */
+  --spacing-12:  3rem;      /* 48px */
+  --spacing-16:  4rem;      /* 64px */
+  --spacing-24:  6rem;      /* 96px */
+  --spacing-32:  8rem;      /* 128px */
 
-  /* Active bubble tokens (dark defaults) */
-  --color-bubble-out:      #2e2e2e;
-  --color-bubble-out-fg:   rgba(255, 255, 255, 0.92);
-  --color-bubble-out-time: rgba(255, 255, 255, 0.60);
-  --color-bubble-in:       #1a1a1a;
+  /* Semânticos de componente */
+  --spacing-px-xs:  0.5rem;    /*  8px — padding horizontal tight (chip, badge) */
+  --spacing-px-sm:  0.75rem;   /* 12px — padding horizontal padrão (input, botão sm) */
+  --spacing-px-md:  1rem;      /* 16px — padding horizontal padrão (botão md, card) */
+  --spacing-px-lg:  1.5rem;    /* 24px — padding horizontal largo (card hero) */
+  --spacing-py-xs:  0.25rem;   /*  4px — padding vertical tight */
+  --spacing-py-sm:  0.5rem;    /*  8px — padding vertical padrão (input, botão) */
+  --spacing-py-md:  0.75rem;   /* 12px — padding vertical médio */
+  --spacing-py-lg:  1rem;      /* 16px — padding vertical largo */
 
-  /* ── Card Janela 24h ─────────────────────────────────────────────────────── */
-  --color-card-24h-bg:     #1a1a1a;
-  --color-card-24h-border: #3a3a3a;
+  /* Gap entre elementos */
+  --spacing-gap-xs: 0.25rem;   /*  4px */
+  --spacing-gap-sm: 0.5rem;    /*  8px */
+  --spacing-gap-md: 0.75rem;   /* 12px */
+  --spacing-gap-lg: 1rem;      /* 16px */
+  --spacing-gap-xl: 1.5rem;    /* 24px */
 
-  /* ── Copilot Icon gradient (neutral) ─────────────────────────────────────── */
-  --copilot-gradient-from: #525252;
-  --copilot-gradient-to:   #2e2e2e;
+  /* Seções de página */
+  --spacing-section-sm: 1.5rem;   /* 24px */
+  --spacing-section-md: 2rem;     /* 32px */
+  --spacing-section-lg: 3rem;     /* 48px */
+  --spacing-section-xl: 4rem;     /* 64px */
+
+  /* ── Sombras teal-aware (spec PDF) ──────────────────────────────────── */
+  --shadow-card:     0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-elevated: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-glow:     0 6px 20px rgba(20, 184, 166, 0.35);
+  /* extra níveis */
+  --shadow-sm: 0 1px 3px  rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.10);
+  --shadow-xl: 0 16px 40px rgba(15, 23, 42, 0.12);
+  --shadow-glow-sm: 0 2px 8px  rgba(20, 184, 166, 0.25);
+  --shadow-glow-md: 0 6px 20px rgba(20, 184, 166, 0.35);
+  --shadow-glow-lg: 0 12px 40px rgba(20, 184, 166, 0.40);
 }
 
-* {
-  box-sizing: border-box;
-}
+/* ── Reset & base ────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
 
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
+  color: var(--color-surface-100);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Edge-to-edge: WebView desenha sob status bar / nav bar — sem este bg
-   * preto, areas alem do conteudo da pagina mostrariam branco padrao do
-   * WebView, dando aquela barra "branca" no topo. */
-  background: #000;
+  background: var(--color-surface-950);
 }
 
-/* Safe-area-insets (Capacitor edge-to-edge): essas utilities padronizam o
- * deslocamento necessario para conteudo nao ficar atras das system bars.
- *   pt-safe → padding-top respeitando status bar (Android/iOS notch)
- *   pb-safe → padding-bottom respeitando home indicator / nav bar gestural
- *   h-safe-top / h-safe-bottom → altura puramente do inset (uso em spacers)
- * Em web, env() retorna 0px e estas viram no-op. */
-.pt-safe { padding-top: env(safe-area-inset-top); }
+/* ── Escala global da UI (desktop) ───────────────────────────────────────────
+   Manopla única de escala: aumenta o tamanho base (rem) de TODO o app de uma vez
+   — sidebar, top bar, modais, textos e espaçamentos que usam medida relativa.
+   Escopado a >=768px para não afetar o app mobile (Capacitor). Ajuste só o valor.
+   OBS: elementos cravados em px fixo (ex.: text-[10px], size={N}) NÃO seguem
+   esta manopla — precisariam de conversão px→rem para crescer junto. */
+@media (min-width: 768px) {
+  :root { font-size: 110%; } /* 16px → 17.6px  (~+10%) */
+}
+
+/* ── Typography base ─────────────────────────────────────────────────────── */
+
+/* Display (Satoshi): títulos, números-herói, nomes */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* Mono: código, métricas, badges de número */
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
+}
+
+/*
+ * Eyebrow / label  —  Inter 700, letter-spacing .16em, UPPERCASE, teal
+ * Uso: <span className="eyebrow">Planos</span>
+ */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.6875rem;   /* 11px */
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-brand-400);
+}
+
+/*
+ * Text gradient — apenas 1–3 palavras-chave de um título
+ * Uso: <span className="text-gradient-teal">Palavra</span>
+ */
+.text-gradient-teal {
+  background: linear-gradient(135deg,
+    var(--copilot-gradient-from),
+    var(--copilot-gradient-via),
+    var(--copilot-gradient-to));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Safe-area insets (Capacitor edge-to-edge) ───────────────────────────── */
+.pt-safe { padding-top:    env(safe-area-inset-top); }
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-.pl-safe { padding-left: env(safe-area-inset-left); }
-.pr-safe { padding-right: env(safe-area-inset-right); }
-.h-safe-top { height: env(safe-area-inset-top); }
+.pl-safe { padding-left:   env(safe-area-inset-left); }
+.pr-safe { padding-right:  env(safe-area-inset-right); }
+.h-safe-top    { height: env(safe-area-inset-top); }
 .h-safe-bottom { height: env(safe-area-inset-bottom); }
-/* Composicao comum: pagina full-screen mobile que respeita ambos os topos
- * e o bottom (e.g. ChatWindow em fullscreen). */
 .pb-safe-bottom-tab { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
 
-/* ── Chat animations ──────────────────────────────────────────────────── */
+/* ── Gradiente assinatura ────────────────────────────────────────────────── */
+/* Dark: linear-gradient(135deg, #5EEAD4, #2DD4BF, #14B8A6)
+ * Light: linear-gradient(135deg, #5EEAD4, #14B8A6, #0F766E)
+ * Sempre 135°, mesma ordem de stops. */
+.gradient-teal {
+  background: linear-gradient(135deg,
+    var(--copilot-gradient-from),
+    var(--copilot-gradient-via),
+    var(--copilot-gradient-to));
+}
+.gradient-teal-text {
+  background: linear-gradient(135deg,
+    var(--copilot-gradient-from),
+    var(--copilot-gradient-via),
+    var(--copilot-gradient-to));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+:root {
+  --kpi-gradient-start: #0D9488;
+  --kpi-gradient-end:   #FFFFFF;
+
+  --kpi-gradient-green-start: #16A34A;
+  --kpi-gradient-green-end:   #86EFAC;
+
+  --kpi-gradient-orange-start: #EA580C;
+  --kpi-gradient-orange-end:   #FDBA74;
+}
+
+[data-theme="light"] {
+  --kpi-gradient-start: #042F2C;
+  --kpi-gradient-end:   #0D9488;
+
+  --kpi-gradient-green-start: #14532D;
+  --kpi-gradient-green-end:   #16A34A;
+
+  --kpi-gradient-orange-start: #7C2D12;
+  --kpi-gradient-orange-end:   #EA580C;
+}
+
+/* KPI hero cards — gradiente horizontal proporcional nos valores */
+.kpi-hero-value {
+  background: linear-gradient(
+    to right,
+    var(--kpi-gradient-start) 0%,
+    var(--kpi-gradient-end) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kpi-hero-green {
+  background: linear-gradient(
+    to right,
+    var(--kpi-gradient-green-start) 0%,
+    var(--kpi-gradient-green-end) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kpi-hero-orange {
+  background: linear-gradient(
+    to right,
+    var(--kpi-gradient-orange-start) 0%,
+    var(--kpi-gradient-orange-end) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+
+/* ── Chat animations ─────────────────────────────────────────────────────── */
 @keyframes msg-slide-in-left {
   from { opacity: 0; transform: translateX(-12px) scale(0.97); }
   to   { opacity: 1; transform: translateX(0) scale(1); }
@@ -216,40 +470,22 @@ html, body, #root {
   from { opacity: 0; transform: translateX(12px) scale(0.97); }
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
-/* No max-height transition here on purpose: animating max-height makes the
-   list's scrollHeight change for the full duration of the animation, which
-   confuses the browser's scroll-anchoring when items are appended via the
-   loadMore pagination — scrollTop ends up clamped to a partial scrollHeight
-   and the user lands somewhere in the middle of the list instead of staying
-   put. opacity + translateY animate purely on the compositor and don't
-   affect layout. */
+/* max-height NÃO animado aqui — confunde scroll-anchoring do browser */
 @keyframes conv-slide-in {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-.animate-msg-in-left {
-  animation: msg-slide-in-left 0.25s ease-out both;
-}
-.animate-msg-in-right {
-  animation: msg-slide-in-right 0.25s ease-out both;
-}
-.animate-conv-in {
-  animation: conv-slide-in 0.3s ease-out both;
-}
-
-/* Phase 16: slide-in from the right edge — used by the notifications sidebar */
 @keyframes slide-in-right {
   from { opacity: 0; transform: translateX(100%); }
   to   { opacity: 1; transform: translateX(0); }
 }
-.animate-slide-in-right {
-  animation: slide-in-right 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
 
-/* Audio transcription — word-by-word fade-in. Each .transcription-word gets
- * an inline animation-delay so words appear sequentially; `both` keeps the
- * 0% opacity applied before the delay elapses so the text doesn't flash. */
+.animate-msg-in-left  { animation: msg-slide-in-left  0.25s ease-out both; }
+.animate-msg-in-right { animation: msg-slide-in-right 0.25s ease-out both; }
+.animate-conv-in      { animation: conv-slide-in      0.30s ease-out both; }
+.animate-slide-in-right { animation: slide-in-right   0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Transcrição de áudio — fade word-by-word */
 @keyframes transcription-word-in {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -260,166 +496,427 @@ html, body, #root {
   animation: transcription-word-in 0.32s ease-out both;
 }
 
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-700);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-surface-600); }
+
+/* Scroll fino com track TRANSPARENTE nos dois motores. Necessário porque
+ * `scrollbar-width: thin` (Chromium 121+) desativa os pseudo-elementos
+ * ::-webkit-scrollbar acima — sem `scrollbar-color`, o track volta ao padrão
+ * claro do sistema (aparecia branco no tema escuro). O 2º valor = track. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-700) transparent;
 }
 
-/* Scrollbar horizontal mais grossa para filtros laterais */
 .filter-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #525252 transparent;
+  scrollbar-color: var(--color-surface-700) transparent;
 }
-.filter-scroll::-webkit-scrollbar {
-  height: 5px;
+.filter-scroll::-webkit-scrollbar             { height: 5px; }
+.filter-scroll::-webkit-scrollbar-track       { background: transparent; margin: 0 4px; }
+.filter-scroll::-webkit-scrollbar-thumb       { background: var(--color-surface-700); border-radius: 999px; }
+.filter-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-surface-600); }
+
+/* ── Colored chip (etiquetas, estágio do funil, status, etc.) ────────────────
+   A cor entra via --chip. Nos DOIS temas: cheio — fundo = cor levemente
+   escurecida + texto quase branco. O ponto (.chip-dot) segue o texto. */
+.color-chip {
+  background-color: color-mix(in srgb, var(--chip) 85%, #000);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--chip) 85%, #000);
 }
-.filter-scroll::-webkit-scrollbar-track {
-  background: transparent;
-  margin: 0 4px;
-}
-.filter-scroll::-webkit-scrollbar-thumb {
-  background: #525252;
-  border-radius: 999px;
-}
-.filter-scroll::-webkit-scrollbar-thumb:hover {
-  background: #737373;
-}
-[data-theme="light"] .filter-scroll {
-  scrollbar-color: #d4d4d4 transparent;
-}
-[data-theme="light"] .filter-scroll::-webkit-scrollbar-thumb {
-  background: #d4d4d4;
-}
-[data-theme="light"] .filter-scroll::-webkit-scrollbar-thumb:hover {
-  background: #a3a3a3;
+.chip-dot { background-color: currentColor; }
+
+/* Status trigger button — neutral at rest, colors like .color-chip on hover
+   (same --chip var), matching the "clicked/open" look one step early. */
+.status-trigger:hover {
+  background-color: color-mix(in srgb, var(--chip) 85%, #000);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--chip) 85%, #000);
 }
 
-/* Scrollbar horizontal larga para o Kanban do CRM */
-.kanban-scroll::-webkit-scrollbar {
-  height: 10px;
+/* ── Elevação nível 3: superfície de overlay (dropdown, popover, tooltip,
+   notificações). Um único lugar define fundo + borda + sombra por tema —
+   ver tokens --color-overlay / --shadow-overlay. */
+.overlay-surface {
+  background-color: var(--color-overlay);
+  border-color: var(--color-overlay-border);
+  box-shadow: var(--shadow-overlay);
 }
-.kanban-scroll::-webkit-scrollbar-track {
-  background: #141414;
-  border-radius: 999px;
+/* Fundo do overlay para elementos internos (headers sticky etc.) */
+.overlay-bg { background-color: var(--color-overlay); }
+/* Nível 4 (Modal/Drawer): mantém o bg próprio (o scrim já separa) e herda
+   apenas a borda forte + sombra do overlay. */
+.overlay-frame {
+  border-color: var(--color-overlay-border);
+  box-shadow: var(--shadow-overlay);
 }
+/* Scrim suave para menus click-to-open: escurece a página enquanto o menu
+   está aberto (z-index definido no ponto de uso, logo abaixo do popover). */
+.overlay-scrim {
+  position: fixed;
+  inset: 0;
+  background-color: var(--color-scrim-soft);
+  animation: scrim-in 160ms ease-out;
+}
+@keyframes scrim-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.kanban-scroll::-webkit-scrollbar             { height: 10px; }
+.kanban-scroll::-webkit-scrollbar-track       { background: var(--color-surface-900); border-radius: 999px; }
 .kanban-scroll::-webkit-scrollbar-thumb {
-  background: #525252;
+  background: var(--color-surface-700);
   border-radius: 999px;
-  border: 2px solid #141414;
+  border: 2px solid var(--color-surface-900);
 }
-.kanban-scroll::-webkit-scrollbar-thumb:hover {
-  background: #737373;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #525252;
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #737373;
-}
+.kanban-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-surface-600); }
 
 /* ── Light theme ─────────────────────────────────────────────────────────── */
 [data-theme="light"] {
-  /* Bubbles */
-  --color-bubble-out:      #e5e5e5;
-  --color-bubble-out-fg:   #171717;
-  --color-bubble-out-time: rgba(0, 0, 0, 0.60);
-  --color-bubble-in:       #f5f5f5;
+  /* Surface — escala invertida
+   * 950 → fundo da página (branco puro)
+   * 900 → cards/painéis (cinza claro — contrasta sobre o fundo branco)
+   * 800 → seções internas do card (cinza um pouco mais escuro)
+   * 700 → bordas                                                           */
+  /* Elevação do tema claro: canvas cinza claro → cards/inputs brancos "sobem"
+     sobre ele (+ sombras suaves). Antes o fundo era branco puro e os cards um
+     cinza quase branco — nada separava de nada. Ordem agora consistente com o
+     escuro: 950 = fundo/recua, 800 = superfície elevada. */
+  --color-surface-950: #F1F3F7;
+  --color-surface-900: #FBFBFD;
+  --color-surface-800: #FFFFFF;
+  --color-surface-700: #D9DCE5;
+  --color-surface-600: #6B7385;
+  --color-surface-500: #4B5263;
+  --color-surface-400: #374151;
+  --color-surface-300: #1f2937;
+  --color-surface-200: #2E3548;
+  --color-surface-100: #1A1F2E;
+  --color-surface-50:  #0F1422;
 
-  /* Surface — pure neutral light */
-  --color-surface-950: #ffffff;
-  --color-surface-900: #fafafa;
-  --color-surface-800: #f5f5f5;
-  --color-surface-700: #e5e5e5;
-  --color-surface-600: #d4d4d4;
-  --color-surface-500: #858585;
-  --color-surface-400: #636363;
-  --color-surface-300: #525252;
-  --color-surface-200: #262626;
-  --color-surface-100: #171717;
-  --color-surface-50:  #0a0a0a;
+  /* Brand / acento (light: #14B8A6 no lugar do dark #2DD4BF) */
+  --color-brand-50:  #F0FDFA;
+  --color-brand-100: #CCFBF1;
+  --color-brand-200: #99F6E4;
+  --color-brand-300: #5EEAD4;
+  --color-brand-400: #14B8A6;
+  --color-brand-500: #14B8A6;
+  --color-brand-600: #0F766E;
+  --color-brand-700: #E4E6EC;
+  --color-brand-800: #F5F6F8;
+  --color-brand-900: #FAFAFC;
+  --color-brand-950: #FFFFFF;
 
-  /* Brand — dark neutrals for light mode */
-  --color-brand-50:  #fafafa;
-  --color-brand-100: #f5f5f5;
-  --color-brand-200: #e5e5e5;
-  --color-brand-300: #404040;
-  --color-brand-400: #525252;
-  --color-brand-500: #262626;
-  --color-brand-600: #171717;
-  --color-brand-700: #e5e5e5;
-  --color-brand-800: #f5f5f5;
-  --color-brand-900: #fafafa;
-  --color-brand-950: #fafafa;
+  --color-brand-cta:       #14B8A6;
+  --color-brand-cta-hover: #0F766E;
+  --color-brand-surface:   #F5F6F8;
+  --color-brand-text:      #5C657A;
+  --color-brand-icon:      #9098AA;
 
-  /* Brand aliases (light) */
-  --color-brand-cta:       #171717;
-  --color-brand-cta-hover: #262626;
-  --color-brand-surface:   #f5f5f5;
-  --color-brand-text:      #525252;
-  --color-brand-icon:      #525252;
+  --color-accent:       #14B8A6;
+  --color-accent-dark:  #0F766E;
+  --color-accent-soft:  rgba(20, 184, 166, 0.10);
+  --color-accent-on:    #FFFFFF;
+
+  /* Bubbles (light) — outbound: teal sólido da marca, texto branco. Contraste
+     forte com o canvas cinza (#E4E7ED) e separação total do inbound branco. */
+  --color-bubble-out:      #0F766E;
+  --color-bubble-out-fg:   #FFFFFF;
+  --color-bubble-out-time: rgba(255, 255, 255, 0.70);
+  --color-bubble-in:       #FFFFFF;
+  --color-bubble-in-fg:    #111827;
 
   /* Card 24h */
-  --color-card-24h-bg:     #fafafa;
-  --color-card-24h-border: #e5e5e5;
+  --color-card-24h-bg:     #FAFAFC;
+  --color-card-24h-border: #E4E6EC;
 
-  /* Semantic (light) */
-  --color-success:  #16a34a;
-  --color-danger:   #dc2626;
-  --color-info:     #2563eb;
-  --color-warning:  #ea580c;
+  /* Composer */
+  --color-composer-bg:     #F5F6F8;
+  --color-composer-border: #E4E6EC;
+
+  /* Elevação nível 3 (light): overlay branco; a separação vem da sombra em
+     3 camadas (anel de recorte + contato + altura) e da borda nítida. */
+  --color-overlay:        #FFFFFF;
+  --color-overlay-border: #D5DAE3;
+  --shadow-overlay: 0 0 0 1px rgba(15, 23, 42, 0.03),
+                    0 4px 12px rgba(15, 23, 42, 0.10),
+                    0 16px 40px rgba(15, 23, 42, 0.16);
+  --color-scrim-soft: rgba(15, 23, 42, 0.18);
+
+  /* Status open (light: blue-700) */
+  --color-status-open:        #1D4ED8;
+  --color-status-open-bg:     rgba(29, 78, 216, 0.10);
+  --color-status-open-border: rgba(29, 78, 216, 0.25);
+  --color-status-muted:       #5C657A;
+  --color-status-pending:     #B45309;
+  --color-status-pending-bg:  rgba(180, 83, 9, 0.08);
+  --color-status-pending-border: rgba(180, 83, 9, 0.20);
+  --color-status-active:      #15803D;
+  --color-status-active-bg:   rgba(21, 128, 61, 0.08);
+  --color-status-active-border: rgba(21, 128, 61, 0.20);
+  --color-status-info:        #2563EB;
+  --color-status-info-bg:     rgba(37, 99, 235, 0.08);
+  --color-status-info-border: rgba(37, 99, 235, 0.20);
+
+  /* Shell (light): cinza-azulado atrás do canvas branco — profundidade Notion-like */
+  --color-shell: #E2E6ED;
+
+  /* Acentos categóricos (light: tons escurecidos p/ contraste AA em fundo claro) */
+  --color-accent-blue:   #2563EB;
+  --color-accent-green:  #047857;
+  --color-accent-violet: #6D28D9;
+  --color-accent-amber:  #B45309;
+  --color-accent-rose:   #BE123C;
+  --color-accent-cyan:   #0E7490;
+
+  /* Status de conversa (light) */
+  --color-cstatus-pending:        #D97706;
+  --color-cstatus-pending-bg:     rgba(217, 119, 6, 0.10);
+  --color-cstatus-pending-border: rgba(217, 119, 6, 0.25);
+  --color-cstatus-resolved:        #16A34A;
+  --color-cstatus-resolved-bg:     rgba(22, 163, 74, 0.10);
+  --color-cstatus-resolved-border: rgba(22, 163, 74, 0.25);
+
+  /* Semantic (light versions) */
+  --color-success:  #15803D;
+  --color-danger:   #DC2626;
+  --color-info:     #2563EB;
+  --color-warning:  #EA580C;
 
   /* Presence */
-  --color-presence-away: #ea580c;
-  --color-away: #ea580c;
+  --color-presence-away: #EA580C;
+  --color-away:          #EA580C;
 
-  /* Status — semantic tokens (light) */
-  --color-status-pending:        #b45309;
-  --color-status-pending-bg:     rgba(180, 83, 9, 0.08);
-  --color-status-pending-border: rgba(180, 83, 9, 0.20);
-  --color-status-active:         #16a34a;
-  --color-status-active-bg:      rgba(22, 163, 74, 0.08);
-  --color-status-active-border:  rgba(22, 163, 74, 0.20);
-  --color-status-muted:          #636363;
-  --color-status-muted-bg:       rgba(99, 99, 99, 0.08);
-  --color-status-muted-border:   rgba(99, 99, 99, 0.20);
-  --color-status-info:           #2563eb;
-  --color-status-info-bg:        rgba(37, 99, 235, 0.08);
-  --color-status-info-border:    rgba(37, 99, 235, 0.20);
+  /* Gradiente assinatura (light) */
+  --copilot-gradient-from: #5EEAD4;
+  --copilot-gradient-via:  #14B8A6;
+  --copilot-gradient-to:   #0F766E;
 }
 
-/* ── Scrollbar light overrides ───────────────────────────────────────────── */
-[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: #d4d4d4;
-}
-[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: #a3a3a3;
+/* ── Cards light — sombra sutil para separar do canvas ───────────────────
+ * Alvo: apenas elementos com borda arredondada (rounded-*) que são cards
+ * reais. Exclui divisores full-width (header, nav, filter bar) que usam
+ * border-b mas não têm rounded — esses criariam um contorno retangular
+ * indesejado no light mode.                                                */
+[data-theme="light"] [class*="rounded"][class*="border-surface-8"],
+[data-theme="light"] [class*="rounded"][class*="border-surface-7"] {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.09), 0 4px 12px rgba(15, 23, 42, 0.09);
 }
 
-/* ── Sidebar — sempre escura (independente do tema) ─────────────────────── */
+/* ── Página de perfil — painel esquerdo (accordion) ──────────────────────────
+ * Os cards internos são compartilhados com o drawer e usam bg-surface-900 (=
+ * o MESMO tom do painel que os abriga aqui → se fundiam, sem overlay). Nesta
+ * página eles "sobem" para surface-800 (superfície elevada do sistema) e a
+ * borda para surface-700, criando o overlay/contraste em ambos os temas. A
+ * classe da borda (border-surface-800) não muda, então a sombra sutil do
+ * tema claro (regra acima) continua sendo aplicada. Escopado ao painel — o
+ * drawer, que usa os mesmos cards sobre surface-950, fica intacto. */
+.profile-accordion [class~="bg-surface-900"] {
+  background-color: var(--color-surface-800);
+}
+.profile-accordion [class~="border-surface-800"] {
+  border-color: var(--color-surface-700);
+}
+/* Como os cards subiram para surface-800, os ELEMENTOS INTERNOS que também
+ * usavam surface-800 (tiles de ícone, trilhos de barra, hover dos botões
+ * editar/cancelar) ficariam com delta zero contra o novo fundo. Sobem mais um
+ * degrau (→ surface-700) para preservar a hierarquia interna nos dois temas. */
+.profile-accordion [class~="bg-surface-800"] {
+  background-color: var(--color-surface-700);
+}
+.profile-accordion [class~="hover:bg-surface-800"]:hover {
+  background-color: var(--color-surface-700);
+}
+
+/* ── Foco de teclado global (WCAG 2.4.7) ─────────────────────────────────────
+ * Fallback visível para qualquer controle interativo que não defina o próprio
+ * indicador. `:where()` mantém especificidade 0, então componentes com foco
+ * próprio (ex.: Button com focus-visible:ring + outline-none) continuam
+ * vencendo — sem contorno duplicado. */
+:where(button, a[href], [role="tab"], [role="menuitem"], [role="switch"], summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ── Conversas (tema claro) — lista e painel em branco sobre o canvas cinza;
+   hover/ativo dos itens em cinza (no dark o branco/50 sumia no fundo branco).
+   Escopado ao claro; o escuro mantém o comportamento por token. */
+[data-theme="light"] .conv-surface {
+  background-color: var(--color-surface-800);
+  border-color: var(--color-surface-700);
+  /* Painel de altura inteira, não um "card" — não deve herdar a sombra
+     automática que a regra de cards arredondados (mais acima) aplicaria
+     agora que este painel também ganhou um canto arredondado. */
+  box-shadow: none !important;
+}
+/* Light: contact-panel section dividers use surface-800 (= #FFFFFF in light, so
+   invisible). Remap them to surface-700 (#D9DCE5). Dark keeps surface-800. */
+[data-theme="light"] .panel-divider {
+  border-color: var(--color-surface-700);
+}
+/* Bubbles: sombra suave só no claro (sem borda), pra se destacar do canvas
+   quase-branco. No escuro --bubble-shadow-soft fica invisível (0 0 #0000). */
+[data-theme="light"] {
+  --bubble-shadow-soft: 0 1px 3px rgba(15, 23, 42, 0.10), 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.bubble-in-elevate {
+  box-shadow: var(--bubble-shadow-soft);
+}
+/* Outbound bubble (light): cor sólida teal da marca (texto branco). Removido o
+   gradiente menta pálido — ficava lavado e sem contraste sobre o canvas cinza.
+   Escuro segue com --color-bubble-out (bg-bubble-out) normal. */
+[data-theme="light"] .bubble-out-surface {
+  background: var(--color-bubble-out);
+}
+[data-theme="light"] .conv-item { background-color: #FFFFFF; }
+/* Hover: only the border reacts — no fill change (intense teal). */
+[data-theme="light"] .conv-item:hover { border-color: #4ECBB8; }
+/* Active (conversa aberta): borda com gradiente teal escuro. A largura é
+   fixada aqui (não vem do Tailwind) porque o truque de gradiente exige um
+   border-color: transparent — mantenha em sincronia com o border-[Npx] do
+   componente (ConversationItem.tsx) sempre que ajustar a espessura. */
+[data-theme="light"] .conv-item.conv-item-active {
+  border-width: 2.0px;
+  border-style: solid;
+  border-color: transparent;
+  background-image:
+    linear-gradient(#FFFFFF, #FFFFFF),
+    linear-gradient(135deg, #00A896 0%, #0A4A44 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+/* (Conversation list "background container"/lane removed — the previews now sit
+   directly on the white list surface as shadowed cards.) */
+
+/* Faceta "Situação comercial" (Contatos) — pedido do usuário: o chip ativo usa
+   o mesmo verde escuro do CTA "Novo {lead/contato}" (brand-600) no tema claro,
+   em vez do brand-500/15 translúcido (que fica pouco legível em fundo claro). */
+[data-theme="light"] .commercial-filter-chip-active {
+  background-color: var(--color-brand-600) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-brand-600) !important;
+}
+
+/* Botões "Novo estágio"/"Novo campo" (CRMConfigDrawer > Estágios do contato /
+   Campos) — mesmo pedido: verde mais escuro (brand-600) no tema claro em vez
+   do brand-500 padrão do <Button variant="primary">. Hover usa brightness()
+   em vez de trocar a cor (o :hover do Button aponta pro brand-cta-hover, que
+   nosso !important bloquearia sem reagir ao toque). */
+[data-theme="light"] .crm-manager-new-btn {
+  background-color: var(--color-brand-600) !important;
+}
+
+/* Botão "Sessões" (topbar da /copilot) — mesmo pedido: verde mais escuro
+   (brand-600) no tema claro em vez do brand-600/20 translúcido, que fica
+   claro/pouco contrastante em fundo branco. Badge de contagem vira chip
+   translúcido branco pra continuar legível sobre o verde sólido. */
+[data-theme="light"] .copilot-sessions-btn-active {
+  background-color: var(--color-brand-600) !important;
+  border-color: var(--color-brand-600) !important;
+  color: #FFFFFF !important;
+}
+[data-theme="light"] .copilot-sessions-badge-active {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: #FFFFFF !important;
+}
+
+/* ── Scrollbar light ─────────────────────────────────────────────────────── */
+[data-theme="light"] ::-webkit-scrollbar-thumb       { background: var(--color-surface-700); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: var(--color-surface-600); }
+[data-theme="light"] .filter-scroll { scrollbar-color: var(--color-surface-700) transparent; }
+
+/* ── Sidebar — SEMPRE escura, nos dois temas ────────────────────────────────
+ * A sidebar é parte da moldura do workspace (shell), não do conteúdo — fica
+ * escura mesmo quando o tema claro deixa o canvas branco. Por isso não há
+ * mais um bloco [data-theme="light"] .nav-sidebar sobrescrevendo estes
+ * tokens: os valores abaixo valem em qualquer tema. */
 .nav-sidebar {
-  --color-surface-950: #0a0a0a;
-  --color-surface-900: #141414;
-  --color-surface-800: #1e1e1e;
-  --color-surface-700: #2e2e2e;
-  --color-surface-600: #525252;
-  --color-surface-500: #737373;
-  --color-surface-400: #8a8a8a;
-  --color-surface-300: #a3a3a3;
-  --color-surface-200: #d4d4d4;
-  --color-surface-100: #e5e5e5;
-  --color-surface-50:  #fafafa;
-  --color-brand-cta:     #e5e5e5;
-  --color-brand-surface: #1a1a1a;
-  --color-brand-text:    #a3a3a3;
-  --color-brand-icon:    #a3a3a3;
-  --color-brand-400:     #a3a3a3;
-  --color-brand-500:     #d4d4d4;
-  --color-brand-600:     #e5e5e5;
+  --color-surface-950: #0A0F0F;
+  --color-surface-900: #0E1414;
+  --color-surface-800: #161E1E;
+  --color-surface-700: #243333;
+  --color-surface-600: #2E4040;
+  --color-surface-500: #6B8080;
+  --color-surface-400: #8FA5A5;
+  --color-surface-300: #B5C8C8;
+  --color-surface-200: #D0DEDE;
+  --color-surface-100: #ECF1F1;
+  --color-surface-50:  #F6FAFA;
+  --color-brand-cta:     #2DD4BF;
+  --color-brand-surface: #161E1E;
+  --color-brand-text:    #8FA5A5;
+  --color-brand-icon:    #6B8080;
+  --color-brand-400:     #2DD4BF;
+  --color-brand-500:     #2DD4BF;
+  --color-brand-600:     #ECF1F1;
+  --color-accent:        #2DD4BF;
+  --color-accent-dark:   #14B8A6;
+}
+
+/* ── Settings: hairlines legíveis no tema claro ─────────────────────────────
+ * A gramática das Configurações separa seções/linhas com border-surface-800,
+ * que no CLARO resolve para #F5F6F8 (quase branco) — divisores invisíveis e
+ * tudo parece "misturado". Remap escopado: dentro de .settings-scope, esses
+ * fios usam surface-700 (#E4E6EC), o token de borda correto do claro. */
+[data-theme="light"] .settings-scope [class*="border-surface-800"] {
+  border-color: var(--color-surface-700);
+}
+[data-theme="light"] .settings-scope [class*="divide-surface-800"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-surface-700);
+}
+/* Idem para o hover de linhas de lista (surface-900 ≈ branco no claro). */
+[data-theme="light"] .settings-scope [class*="hover:bg-surface-900"]:hover {
+  background-color: var(--color-surface-800);
+}
+
+/* Banner/aviso do modal de verificação — branco elevado por sombra no tema
+   claro (em vez de um tom de cinza, que nesta paleta fica quase imperceptível
+   contra o fundo do modal). No escuro mantém o tratamento normal do
+   componente (surface-700/50, já com contraste correto).
+   Raio de desfoque limitado a ~6px: o "O que verificar" vive numa coluna com
+   overflow-y-auto e só 8px de padding lateral (px-2) — qualquer desfoque
+   maior é cortado em linha reta contra essa borda, sobretudo nos cantos, em
+   vez de esmaecer naturalmente. */
+/* Borda: some no escuro (a sombra/tom já bastam), aparece no claro (define a
+   borda do cartão branco contra o fundo do modal). O lado esquerdo do banner
+   de handoff continua controlado à parte via inline style (borderLeftColor),
+   que tem prioridade sobre esta regra em qualquer tema. */
+.anomaly-elevated-surface,
+.anomaly-elevated-surface-compact {
+  border-color: transparent;
+}
+[data-theme="light"] .anomaly-elevated-surface,
+[data-theme="light"] .anomaly-elevated-surface-compact {
+  border-color: var(--color-surface-700);
+}
+
+[data-theme="light"] .anomaly-elevated-surface {
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22), 0 1px 2px rgba(15, 23, 42, 0.16);
+}
+
+/* Variante para caixas pequenas (ex.: "O que verificar") — a MESMA sombra
+   absoluta acima parece mais pesada num box pequeno do que num alto (a
+   mensagem retida), efeito de proporção, não de valor errado. Opacidade
+   reduzida pela metade pra igualar o peso percebido, mesmo raio/offset. */
+[data-theme="light"] .anomaly-elevated-surface-compact {
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.11), 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+/* Wordmark branca → preta no tema claro */
+[data-theme="light"] .oryon-wordmark {
+  filter: invert(1);
 }
 
 /* ── Card janela 24h ─────────────────────────────────────────────────────── */
@@ -427,12 +924,212 @@ html, body, #root {
   background: var(--color-card-24h-bg);
   border: 1.5px solid var(--color-card-24h-border);
 }
+/* No tema claro o card 24h é quase-branco, então o ícone/texto escurece
+   (toward brand-600) para ler bem ali. No escuro o card é escuro e o texto
+   claro já contrasta. */
+[data-theme="light"] .card-24h-accent {
+  color: color-mix(in srgb, var(--color-brand-600) 85%, #000);
+}
 
-/* ── Copilot icon ────────────────────────────────────────────────────────── */
+/* ── Composer (campo de mensagem) — acompanha o tema (escuro/claro) ──────── */
+.msg-composer {
+  background: var(--color-composer-bg);
+  border-color: var(--color-composer-border);
+}
+
+/* ── Copilot / IA icon — gradiente teal ─────────────────────────────────── */
 .copilot-icon {
-  background: linear-gradient(
-    to bottom right,
+  background: linear-gradient(135deg,
     var(--copilot-gradient-from),
-    var(--copilot-gradient-to)
-  );
+    var(--copilot-gradient-via),
+    var(--copilot-gradient-to));
+}
+
+/* ── Utilitários de glow ─────────────────────────────────────────────────── */
+.glow-teal-sm { box-shadow: var(--shadow-glow-sm); }
+.glow-teal-md { box-shadow: var(--shadow-glow-md); }
+.glow-teal-lg { box-shadow: var(--shadow-glow-lg); }
+
+/* ── Eyebrow / label teal ─────────────────────────────────────────────────
+ * Uso: texto pequeno de seção, rótulos de categoria acima de títulos.
+ * Inter 700, tracking largo, uppercase, cor accent.               */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+/* ── Oryon icons — global scale ─────────────────────────────────────────────
+ * Escala todos os ícones custom em 1.3× mantendo o fluxo do layout.
+ * transform-origin: center garante que o scale não desloca o ícone. */
+svg[data-oryon-icon] {
+  transform: scale(1.4);
+  transform-origin: center;
+}
+
+/* ── Card glow on hover ──────────────────────────────────────────────────────
+ * Adiciona o efeito teal (border + shadow + radial gradient) ao passar o mouse
+ * em qualquer card com a classe .card-glow. */
+.card-glow {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(20,184,166,0.14) 0%, transparent 65%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.card-glow:hover {
+  border-color: rgba(20, 184, 166, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.12);
+}
+.card-glow:hover::before {
+  opacity: 1;
+}
+
+/* Light: cards ganham sombra sutil em repouso (profundidade/sofisticação) e
+ * o glow de hover é contido — 0.35 de teal sobre branco ofusca. */
+[data-theme="light"] .card-glow {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .card-glow::before {
+  background: radial-gradient(ellipse at top left, rgba(20, 184, 166, 0.08) 0%, transparent 65%);
+}
+[data-theme="light"] .card-glow:hover {
+  border-color: rgba(15, 118, 110, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.07);
+}
+
+/* ── Workspace shell — vinheta radial de profundidade ────────────────────────
+ * O shell é a única superfície visível atrás do canvas (a sidebar não tem
+ * fundo próprio, então este gradiente É o que se vê ali). Ponto mais escuro
+ * no canto superior esquerdo (acima da logo), clareando até o tom base do
+ * shell no canto inferior direito — farthest-corner faz a distância se
+ * ajustar sozinha ao tamanho da tela.
+ * SEMPRE escuro — de propósito, independente do tema. Shell + sidebar são a
+ * "moldura" do app e ficam escuros mesmo com o conteúdo (canvas) no tema
+ * claro; por isso não há override [data-theme="light"] aqui. */
+.workspace-shell {
+  background: radial-gradient(ellipse farthest-corner at 0% 0%, #000000 0%, #050808 60%);
+}
+
+/* Chat background — no escuro usa a MESMA cor do shell/sidebar (não o
+   surface-950 do canvas), por pedido explícito. No claro segue o canvas
+   normal (o shell é sempre escuro por design, não faria sentido no claro). */
+.chat-shell-bg {
+  background: radial-gradient(ellipse farthest-corner at 0% 0%, #000000 0%, #050808 60%);
+}
+[data-theme="light"] .chat-shell-bg {
+  background: #E4E7ED;
+}
+
+/* ── Workspace canvas — o conteúdo flutua sobre o shell ─────────────────────
+ * Moldura arredondada + elevação. A sombra é o que "descola" o canvas do
+ * fundo; no light ela é mais suave (sombra pesada sobre cinza claro suja). */
+.workspace-canvas {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 16px 48px rgba(0, 0, 0, 0.42);
+}
+[data-theme="light"] .workspace-canvas {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 12px 36px rgba(15, 23, 42, 0.10);
+}
+
+/* ── Tipografia display — tracking apertado em títulos (ar editorial) ──────*/
+h1, h2, h3 {
+  letter-spacing: -0.015em;
+}
+
+/* ── Acessibilidade: usuário pediu menos movimento — respeitar sempre ───────*/
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── WhatsApp line required banner — light theme contrast fix ───────────────*/
+[data-theme="light"] .waba-banner { color: #78350f; }
+[data-theme="light"] .waba-banner .text-amber-100 { color: #78350f; }
+[data-theme="light"] .waba-banner .text-amber-200\/80 { color: #92400e; }
+[data-theme="light"] .waba-banner .text-amber-300 { color: #b45309; }
+[data-theme="light"] .waba-banner-btn { color: #78350f !important; background-color: rgba(245,158,11,0.25) !important; }
+[data-theme="light"] .waba-banner-btn:hover { background-color: rgba(245,158,11,0.35) !important; }
+
+/* ── AI chip (IA / Intervir agora) — light theme contrast fix ───────────────*/
+[data-theme="light"] .ai-chip {
+  background-color: rgba(253, 230, 138, 0.5);
+  border-color: rgba(217, 119, 6, 0.4);
+}
+[data-theme="light"] .ai-chip-icon { color: #92400e; }
+[data-theme="light"] .ai-chip-label { color: #78350f; }
+[data-theme="light"] .ai-chip-btn { color: #92400e; }
+[data-theme="light"] .ai-chip-btn:hover { color: #78350f; background-color: rgba(217,119,6,0.15); }
+
+/* ── Agente responsável tag — light theme contrast fix ──────────────────────*/
+[data-theme="light"] .assigned-agent-tag {
+  background-color: rgba(20, 184, 166, 0.12);
+  color: #0f5a52;
+}
+[data-theme="light"] .assigned-agent-tag:hover {
+  background-color: rgba(20, 184, 166, 0.22);
+}
+
+/* ── Shortcut tag (Respostas Rápidas) — light theme contrast fix ────────────*/
+[data-theme="light"] .shortcut-tag {
+  color: #0f5a52;
+  background-color: rgba(20, 184, 166, 0.12);
+}
+
+/* ── Conv tab badge — dark theme needs a darker bg for white text contrast ───*/
+.conv-tab-badge {
+  background-color: #3D4556;
+}
+[data-theme="light"] .conv-tab-badge {
+  background-color: var(--color-surface-500);
+}
+
+/* ── Chat info button (Informações do contato) — light theme: always gray ───*/
+[data-theme="light"] .chat-info-btn {
+  color: var(--color-surface-400) !important;
+  background-color: transparent !important;
+}
+[data-theme="light"] .chat-info-btn:hover {
+  background-color: var(--color-surface-800) !important;
+  color: var(--color-surface-200) !important;
+}
+
+/* ── Chat status button (Resolvida/Pendente/Aberta) — light theme: gray by default, colored when open ── */
+[data-theme="light"] .chat-status-btn {
+  background-color: var(--color-surface-800) !important;
+  color: var(--color-surface-300) !important;
+  border-color: var(--color-surface-700) !important;
+}
+[data-theme="light"] .chat-status-btn:hover {
+  background-color: var(--color-surface-700) !important;
+  color: var(--color-surface-200) !important;
+}
+/* when dropdown is open, colored status classes apply normally */
+[data-theme="light"] .chat-status-btn-open {
+  opacity: 1;
+}
+
+/* ── Contact panel timeline — light theme: dot ring matches panel background ─*/
+[data-theme="light"] .timeline-dot {
+  --tw-ring-color: var(--color-surface-950);
+}
+[data-theme="light"] .timeline-line {
+  background-color: var(--color-surface-700);
 }

@@ -4,18 +4,13 @@ import { cn } from '@/lib/utils'
 
 // ─── Markdown → JSX renderer ─────────────────────────────────────────────────
 
-export function renderPromptLine(line: string, i: number) {
-  if (line.startsWith('# '))
-    return <h1 key={i} className="text-base font-bold text-surface-50 mt-4 mb-1">{line.slice(2)}</h1>
-  if (line.startsWith('## '))
-    return <h2 key={i} className="text-sm font-semibold text-surface-200 mt-4 mb-1 border-b border-surface-800 pb-1">{line.slice(3)}</h2>
+function renderBodyLine(line: string, i: number) {
   if (line.startsWith('### '))
     return <h3 key={i} className="text-xs font-semibold text-surface-300 mt-3 mb-0.5 uppercase tracking-wide">{line.slice(4)}</h3>
   if (line.startsWith('• ') || line.startsWith('- '))
     return <li key={i} className="text-xs text-surface-400 leading-relaxed ml-2">{line.slice(2)}</li>
   if (line.trim() === '')
-    return <div key={i} className="h-2" />
-  // inline bold **text**
+    return <div key={i} className="h-1.5" />
   const parts = line.split(/(\*\*[^*]+\*\*)/)
   return (
     <p key={i} className="text-xs text-surface-400 leading-relaxed">
@@ -26,6 +21,63 @@ export function renderPromptLine(line: string, i: number) {
       )}
     </p>
   )
+}
+
+/** Groups lines into sections split by `## ` headers and renders each as a card. */
+export function renderPromptSections(lines: string[]) {
+  type Section = { title: string | null; lines: string[] }
+  const sections: Section[] = []
+  let current: Section = { title: null, lines: [] }
+
+  for (const line of lines) {
+    if (line.startsWith('# ')) {
+      // Top-level title — render standalone, no card
+      sections.push(current)
+      current = { title: null, lines: [] }
+      sections.push({ title: '__h1__' + line.slice(2), lines: [] })
+    } else if (line.startsWith('## ')) {
+      sections.push(current)
+      current = { title: line.slice(3), lines: [] }
+    } else {
+      current.lines.push(line)
+    }
+  }
+  sections.push(current)
+
+  return sections
+    .filter(s => s.title !== null || s.lines.some(l => l.trim()))
+    .map((s, idx) => {
+      if (s.title?.startsWith('__h1__')) {
+        return <h1 key={idx} className="text-base font-bold text-surface-50 mb-2">{s.title.slice(6)}</h1>
+      }
+      if (!s.title) {
+        // Preamble lines before first ## section
+        return (
+          <div key={idx} className="space-y-0.5">
+            {s.lines.map((line, i) => renderBodyLine(line, i))}
+          </div>
+        )
+      }
+      return (
+        <div key={idx} className="rounded-xl border border-surface-700 p-4">
+          <h2 className="text-sm font-semibold text-surface-200 mb-3 pb-2">
+            {s.title}
+          </h2>
+          <ul className="list-none space-y-0">
+            {s.lines.map((line, i) => renderBodyLine(line, i))}
+          </ul>
+        </div>
+      )
+    })
+}
+
+// Legacy line-by-line export (kept for external callers)
+export function renderPromptLine(line: string, i: number) {
+  if (line.startsWith('# '))
+    return <h1 key={i} className="text-base font-bold text-surface-50 mt-4 mb-1">{line.slice(2)}</h1>
+  if (line.startsWith('## '))
+    return <h2 key={i} className="text-sm font-semibold text-surface-200 mt-4 mb-1 border-b border-surface-800 pb-1">{line.slice(3)}</h2>
+  return renderBodyLine(line, i)
 }
 
 // ─── PromptArtifact ───────────────────────────────────────────────────────────
@@ -169,12 +221,10 @@ export function PromptArtifact({
         />
       ) : (
         <div className={cn(
-          'px-5 py-4',
+          'px-4 py-4 flex flex-col gap-3',
           fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : isPreview ? '' : 'max-h-[480px] overflow-y-auto',
         )}>
-          <ul className="list-none space-y-0">
-            {visibleLines.map((line, i) => renderPromptLine(line, i))}
-          </ul>
+          {renderPromptSections(visibleLines)}
           {isPreview && hiddenCount > 0 && (
             <button
               type="button"

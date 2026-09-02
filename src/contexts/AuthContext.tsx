@@ -14,6 +14,8 @@ axios.defaults.withCredentials = true
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 const SESSION_KEY = 'oryon:session'
+/** Referência estável para "nenhum flag" — evita re-render por `[]` novo a cada render. */
+const EMPTY_FLAGS: string[] = []
 
 // Note — the 401 → refresh-and-retry interceptor used to live here, but
 // it was registered on `axios` global only. The `api` instance from
@@ -28,6 +30,10 @@ interface AuthSession {
   user: User
   requiresPasswordChange: boolean
   organizationConfigured: boolean
+  /** Feature flags ligadas para o tenant (chaves de `tenant_feature_flags`,
+   *  ex.: `FF_MULTI_PIPELINE`). Só o `GET /auth/me` devolve — login/register/
+   *  activate não. Ausente = nada ligado (SCRUM-498). */
+  featureFlags?: string[]
 }
 
 interface RegisterPayload {
@@ -44,6 +50,9 @@ interface AuthContextValue {
   token: string | null
   requiresPasswordChange: boolean
   organizationConfigured: boolean
+  /** Flags por tenant vindas do `/auth/me`; `[]` até a hidratação chegar ou
+   *  quando o backend não manda o campo. Ler via `useMultiPipeline()` etc. */
+  featureFlags: string[]
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
@@ -79,6 +88,30 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(loadSession)
 
+  // ── Feature flags por tenant (SCRUM-498) ────────────────────────────────
+  // `/auth/me` é a única resposta que traz `featureFlags`. Grava na sessão
+  // (localStorage) para o próximo boot já nascer com o valor certo em vez de
+  // piscar a UI. Update funcional: se o usuário deslogou no meio da request,
+  // `prev` é null e nada é gravado.
+  const applyFeatureFlags = useCallback((flags: unknown) => {
+    const next = Array.isArray(flags) ? flags.filter((f): f is string => typeof f === 'string') : []
+    setSession((prev) => {
+      if (!prev) return prev
+      const updated: AuthSession = { ...prev, featureFlags: next }
+      saveSession(updated)
+      return updated
+    })
+  }, [])
+
+  /** Best-effort: busca `/auth/me` só para hidratar `featureFlags` após um
+   *  login/register/activate (essas respostas não trazem o campo). Falha é
+   *  silenciosa — a sessão já está válida; sem flags, tudo fica desligado. */
+  const hydrateFeatureFlags = useCallback(() => {
+    axios.get<{ featureFlags?: string[] }>(`${API}/auth/me`, { withCredentials: true, ...SKIP_AUTH_REFRESH })
+      .then((res) => applyFeatureFlags(res.data?.featureFlags))
+      .catch(() => { /* sessão continua válida; flags ficam desligadas */ })
+  }, [applyFeatureFlags])
+
   const login = useCallback(async (email: string, password: string) => {
     disconnectSocket()
     // Sprint 5.3 — em mobile usa /auth/mobile-login que retorna tokens em
@@ -100,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(s)
     setSession(s)
     sessionStorage.removeItem('oryon_dismissed_banners')
+    hydrateFeatureFlags()
     // Sprint 5.3 — em mobile, sincroniza token de push apos login. Se o
     // listener FCM ja recebeu token (caso o boot tenha disparado registro com
     // sessao stale), reusa o token cacheado e POSTa no backend agora com
@@ -123,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       details:     { role: s.user.role },
       source:      'ui',
     })
-  }, [])
+  }, [hydrateFeatureFlags])
 
   const register = useCallback(async (payload: RegisterPayload) => {
     const res = await axios.post<{
@@ -137,13 +171,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(s)
     setSession(s)
     sessionStorage.removeItem('oryon_dismissed_banners')
+    hydrateFeatureFlags()
     appLogger.logSessionEvent({
       tenant_id: s.user.tenantId ?? null,
       user_id:   s.user.id ?? null,
       user_role: s.user.role ?? null,
       event_type: 'login',
     })
-  }, [])
+  }, [hydrateFeatureFlags])
 
   const activateAccount = useCallback(async (token: string, password: string) => {
     disconnectSocket()
@@ -160,13 +195,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(s)
     setSession(s)
     sessionStorage.removeItem('oryon_dismissed_banners')
+    hydrateFeatureFlags()
     appLogger.logSessionEvent({
       tenant_id: s.user.tenantId ?? null,
       user_id:   s.user.id ?? null,
       user_role: s.user.role ?? null,
       event_type: 'login',
     })
-  }, [])
+  }, [hydrateFeatureFlags])
 
   const logout = useCallback(async () => {
     disconnectSocket()
@@ -235,7 +271,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Validate session on app load ────────────────────────────────────────
   useEffect(() => {
     if (!session?.user) return
-    axios.get(`${API}/auth/me`, { withCredentials: true, ...SKIP_AUTH_REFRESH })
+    axios.get<{ featureFlags?: string[] }>(`${API}/auth/me`, { withCredentials: true, ...SKIP_AUTH_REFRESH })
+      // Sessão válida: aproveita a mesma resposta para (re)hidratar as flags
+      // por tenant — é aqui que um flag ligado/desligado no banco chega à UI
+      // sem novo build (SCRUM-498).
+      .then((res) => applyFeatureFlags(res.data?.featureFlags))
       .catch((err) => {
         const status = err?.response?.status
         if (status === 401 || status === 403) {
@@ -275,6 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token: null, // tokens are in httpOnly cookies, not exposed to JS
       requiresPasswordChange: session?.requiresPasswordChange ?? false,
       organizationConfigured: session?.organizationConfigured ?? true,
+      featureFlags: session?.featureFlags ?? EMPTY_FLAGS,
       isAuthenticated: !!session,
       login,
       register,

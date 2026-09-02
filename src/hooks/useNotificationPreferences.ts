@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
 import { useAuth } from '@/contexts/AuthContext'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 export type NotificationChannel = 'in_app' | 'email' | 'whatsapp'
 
@@ -48,7 +47,7 @@ export function useNotificationPreferences() {
       return
     }
     try {
-      const { data } = await axios.get<ResolvedPreference[]>(`${API}/notification-preferences`)
+      const { data } = await api.get<ResolvedPreference[]>('/notification-preferences')
       setPreferences(data)
       setError(null)
     } catch (e) {
@@ -75,8 +74,8 @@ export function useNotificationPreferences() {
     })
     try {
       setSaving(true)
-      const { data } = await axios.patch<ResolvedPreference[]>(
-        `${API}/notification-preferences/${encodeURIComponent(type)}`,
+      const { data } = await api.patch<ResolvedPreference[]>(
+        `/notification-preferences/${encodeURIComponent(type)}`,
         { enabled },
       )
       setPreferences(data)
@@ -95,7 +94,7 @@ export function useNotificationPreferences() {
     const snapshot = preferences
     try {
       setSaving(true)
-      await axios.delete(`${API}/notification-preferences/${encodeURIComponent(type)}`)
+      await api.delete(`/notification-preferences/${encodeURIComponent(type)}`)
       await load()
     } catch (e) {
       setPreferences(snapshot)

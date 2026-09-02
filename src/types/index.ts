@@ -197,6 +197,18 @@ export interface Product {
   updatedAt?: string
 }
 
+// ─── Registro de Profissionais ──────────────────────────────────────────────
+export interface Practitioner {
+  id: string
+  agentId?: string | null  // reservado: null = registro da empresa toda
+  name: string
+  category?: string | null // especialidade
+  active: boolean
+  order: number
+  createdAt?: string
+  updatedAt?: string
+}
+
 // ─── Negócios / Propostas (Deals) ────────────────────────────────────────────
 export type DealStatus = 'open' | 'won' | 'lost'
 
@@ -216,18 +228,85 @@ export interface Deal {
   contactId: string
   title: string
   status: DealStatus
-  pipelineStageKey?: string | null
+  pipelineId: string            // Fase 2: pipeline de negócio
+  stageId: string               // estágio atual (fonte da verdade do status)
+  originConversationId?: string | null
+  createdByKind?: 'user' | 'automation' | 'ai'
   amountCents: number           // total em centavos
   currency?: string
   note?: string | null
   ownerUserId?: string | null
   closedAt?: string | null
-  lineItems: DealLineItem[]
+  lineItems?: DealLineItem[]
+  createdAt?: string
+  updatedAt?: string
+  /** Resumo leve do contato — presente no board por pipeline (GET /deals?pipelineId=). */
+  contact?: { id: string; displayName: string; profilePicUrl: string | null }
+}
+
+/** Pipeline de negócio (múltiplos por tenant). O `isDefault` é o pipeline padrão. */
+export interface Pipeline {
+  id: string
+  tenantId: string
+  name: string
+  description?: string | null
+  color: string
+  order: number
+  isDefault: boolean
+  isArchived: boolean
+  stages: PipelineStage[]
+  /** Contagem de negócios abertos — badge do segmented control da aba Leads. */
+  openDealsCount: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Estágio de um pipeline. `isWon`/`isLost` marcam os terminais. */
+export interface PipelineStage {
+  id: string
+  tenantId: string
+  pipelineId: string
+  key: string
+  label: string
+  color: string
+  order: number
+  isWon: boolean
+  isLost: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** Dono do negócio auto-criado pelo roteamento. */
+export type OwnerRule = 'unassigned' | 'conversation_assignee' | 'fixed_user'
+
+/** Roteamento por canal (Fase 4): linha WhatsApp → pipeline. No máx. 1 por linha. */
+export interface PipelineChannelRouting {
+  id: string
+  tenantId: string
+  whatsappNumberId: string
+  pipelineId: string
+  autoCreateDeal: boolean
+  defaultStageId: string | null
+  ownerRule: OwnerRule
+  ownerUserId: string | null
   createdAt?: string
   updatedAt?: string
 }
 
 /** Agregado de negócios de um contato (contagem + valor em centavos). Usado no card do Kanban. */
+/** Agregado por (contato, pipeline) — alimenta os chips "Negócios" da tabela de contatos. */
+export interface ContactDealsPipelineSummary {
+  pipelineId: string
+  pipelineName: string
+  pipelineColor: string
+  count: number
+  openCount: number
+  wonCount: number
+  totalCents: number
+  openCents: number
+  wonCents: number
+}
+
 export interface ContactDealsSummary {
   count: number
   openCount: number
@@ -235,6 +314,7 @@ export interface ContactDealsSummary {
   totalCents: number
   openCents: number
   wonCents: number
+  byPipeline: ContactDealsPipelineSummary[]
 }
 
 // ─── AI Onboarding ────────────────────────────────────────────────────────────
@@ -289,6 +369,11 @@ export interface ContactFilters {
   leadScoreBand?: 'high' | 'medium' | 'low'
   /** Recência do último contato (interpretada no backend a partir de lastContactedAt). */
   lastContact?: '24h' | '7d' | '30d' | 'none'
+  /** Faceta "Situação comercial" (SCRUM-293 — movida do client pro backend).
+   *  Omitido = sem filtro ("Todos"). Nunca fica guardado no estado `filters`
+   *  do useContacts (ContactsFiltersBar substitui esse objeto por inteiro a
+   *  cada mudança) — só existe no payload da requisição em si. */
+  commercial?: 'no_deal' | 'open_deal' | 'customer'
 }
 
 export interface Contact {
@@ -672,6 +757,39 @@ export interface AutomationProposal {
   automation: Omit<Automation, 'id' | 'tenantId' | 'executionCount' | 'lastExecutedAt' | 'createdAt' | 'updatedAt'>
 }
 
+// ── Histórico de execuções ──────────────────────────────────────────────────
+// Espelha a entidade AutomationRun do backend (Phase B.2), lida via
+// GET /automations/:id/runs. O painel de detalhe consome isto para responder
+// "está funcionando?" — status por run + telemetria por ação. O tipo do admin
+// (adminAuditApi.AutomationRunRow) é um paralelo com actionsExecuted opaco;
+// este é o canônico do lado do cliente, com as ações tipadas.
+export type AutomationRunStatus = 'running' | 'success' | 'partial' | 'failed'
+export type AutomationActionStatus = 'success' | 'failed' | 'skipped'
+
+export interface AutomationActionExecuted {
+  type: string
+  status: AutomationActionStatus
+  durationMs?: number
+  errorMessage?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface AutomationRun {
+  id: string
+  automationId: string
+  contactId: string | null
+  conversationId: string | null
+  triggerType: string
+  triggeredBy: string | null
+  status: AutomationRunStatus
+  errorMessage: string | null
+  durationMs: number | null
+  correlationId: string | null
+  startedAt: string
+  completedAt: string | null
+  actionsExecuted: AutomationActionExecuted[]
+}
+
 export interface Tag {
   id: string
   name: string
@@ -702,7 +820,7 @@ export interface Conversation {
   lastMessageAt: string
   lastMessagePreview: string
   /** Who sent the last message — drives the sender indicator on the preview. */
-  lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | null
+  lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
   unreadCount: number
   /** Minimal shape — only the fields the conversation list/header actually
    *  read (id, firstName, lastName for the assignee pill). The realtime
@@ -766,7 +884,7 @@ export interface Message {
   /** Sender of the replied-to message (WhatsApp `context.from`). */
   contextFrom?: string | null
   /** Origin of the message — drives the per-bubble sender indicator. */
-  senderKind?: 'client' | 'operator' | 'ai' | 'campaign' | null
+  senderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
   sentAt: string
   deliveredAt?: string
   readAt?: string
@@ -817,6 +935,10 @@ export interface Message {
     evidence?: { slots: string[]; prices: string[]; names: string[] } | null
     /** Quanto a IA tentou se corrigir antes da transferência. */
     repair?: { rung: number | null; llmCalls: number | null } | null
+    /** SCRUM-806 — quando/quem marcou a conversa como verificada DEPOIS desta
+     *  anomalia. Null enquanto pendente e sempre null em `corrected`. */
+    reviewedAt?: string | null
+    reviewedBy?: string | null
   } | null
   createdAt: string
 }
@@ -1273,6 +1395,14 @@ export interface SocketAiPauseUpdated {
    *  the AI + assigns) and sets this so the "Verificar" list badge appears in
    *  realtime. Undefined for ordinary manual pause/resume. */
   hasRecentAnomaly?: boolean
+}
+
+/** SCRUM-806 — "marcar como verificada": as bolhas de handoff pendentes da
+ *  conversa passam a exibir o check. Emitido só na sala da conversa. */
+export interface SocketAnomalyReviewed {
+  conversationId: string
+  reviewedAt: string
+  reviewedBy: string | null
 }
 
 /**

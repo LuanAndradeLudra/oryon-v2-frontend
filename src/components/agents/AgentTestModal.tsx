@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { chatWithAgent, startTestSession, endTestSession } from '@/services/agentsApi'
 import type { AgentConfigWithTools } from '@/services/agentsApi'
 import { AgentIcon } from '@/components/agents/AgentIcons'
+import { Banner } from '@/components/ui/Banner'
 
 interface Message {
   id: string
@@ -173,7 +174,7 @@ export function AgentTestModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 12 }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        className="relative z-10 w-full max-w-md h-[640px] bg-surface-950 border border-surface-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-md h-[640px] bg-surface-950 overlay-frame border rounded-2xl flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -254,13 +255,17 @@ export function AgentTestModal({
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 p-3 bg-red-500/8 border border-red-500/20 rounded-xl"
             >
-              <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
-              <p className="text-xs text-red-400 flex-1">{error}</p>
-              <button onClick={() => setError(null)} className="text-surface-500 hover:text-surface-300 transition">
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <Banner
+                variant="danger"
+                action={
+                  <button onClick={() => setError(null)} className="opacity-80 hover:opacity-100 transition">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                }
+              >
+                <p className="text-xs">{error}</p>
+              </Banner>
             </motion.div>
           )}
 

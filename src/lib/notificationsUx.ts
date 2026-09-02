@@ -42,13 +42,16 @@ export const CATEGORY_STYLE: Record<Category, {
   iconText: string
   /** Human label — kept short. */
   label: string
+  /** Cor base do chip de categoria (var --chip do .color-chip) — mesmo
+   *  padrão saturado das tags do pipeline: fundo cheio, texto branco. */
+  chip: string
 }> = {
-  conversations: { stripClass: 'border-l-brand-400',  iconBg: 'bg-brand-600/15',  iconText: 'text-brand-300',  label: 'Conversas' },
-  team:          { stripClass: 'border-l-success',    iconBg: 'bg-success/15',    iconText: 'text-success',    label: 'Equipe' },
-  campaigns:     { stripClass: 'border-l-info',       iconBg: 'bg-info/15',       iconText: 'text-info',       label: 'Campanhas' },
-  automations:   { stripClass: 'border-l-warning',    iconBg: 'bg-warning/15',    iconText: 'text-warning',    label: 'Automações' },
-  security:      { stripClass: 'border-l-danger',     iconBg: 'bg-danger/15',     iconText: 'text-danger',     label: 'Segurança' },
-  unknown:       { stripClass: 'border-l-surface-600', iconBg: 'bg-surface-700/40', iconText: 'text-surface-400', label: '—' },
+  conversations: { stripClass: 'border-l-brand-400',  iconBg: 'bg-brand-600/15',  iconText: 'text-brand-300',  label: 'Conversas',  chip: 'var(--color-brand-600)' },
+  team:          { stripClass: 'border-l-success',    iconBg: 'bg-success/15',    iconText: 'text-success',    label: 'Equipe',     chip: 'var(--color-success)' },
+  campaigns:     { stripClass: 'border-l-info',       iconBg: 'bg-info/15',       iconText: 'text-info',       label: 'Campanhas',  chip: 'var(--color-info)' },
+  automations:   { stripClass: 'border-l-warning',    iconBg: 'bg-warning/15',    iconText: 'text-warning',    label: 'Automações', chip: 'var(--color-warning)' },
+  security:      { stripClass: 'border-l-danger',     iconBg: 'bg-danger/15',     iconText: 'text-danger',     label: 'Segurança',  chip: 'var(--color-danger)' },
+  unknown:       { stripClass: 'border-l-surface-600', iconBg: 'bg-surface-700/40', iconText: 'text-surface-400', label: '—',        chip: 'var(--color-status-muted)' },
 }
 
 export function categoryOf(type: string): Category {

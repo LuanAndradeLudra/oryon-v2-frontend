@@ -69,10 +69,10 @@ const PLAN_COLORS: Record<string, string> = {
 }
 
 const BADGE_COLORS: Record<string, string> = {
-  essential: 'bg-slate-700 text-slate-300',
+  essential: 'bg-surface-700 text-surface-300',
   pro:       'bg-brand-900 text-brand-300',
-  business:  'bg-violet-900 text-violet-300',
-  scale:     'bg-amber-900 text-amber-300',
+  business:  'bg-accent-violet/20 text-accent-violet',
+  scale:     'bg-accent-amber/20 text-accent-amber',
   enterprise:'bg-surface-700 text-surface-300',
 }
 

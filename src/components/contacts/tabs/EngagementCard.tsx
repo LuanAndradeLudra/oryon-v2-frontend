@@ -5,6 +5,8 @@ import {
   TrendingUp, Target, UserCheck, Loader2, Zap,
 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { cn } from '@/lib/utils'
 
 type Stats = Awaited<ReturnType<typeof contactsApi.getStats>>['data']
 
@@ -59,19 +61,25 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 
 interface Props {
   contactId: string
+  /** Esconde o título "Engajamento" quando uma seção já o rotula. */
+  hideTitle?: boolean
 }
 
-export function EngagementCard({ contactId }: Props) {
+export function EngagementCard({ contactId, hideTitle = false }: Props) {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true)
+    setError(false)
     contactsApi.getStats(contactId)
       .then((r) => setStats(r.data))
-      .catch(() => {})
+      .catch(() => setError(true)) // nunca engolir: distingue falha de "sem dados"
       .finally(() => setLoading(false))
-  }, [contactId])
+  }
+
+  useEffect(load, [contactId])
 
   if (loading) {
     return (
@@ -81,6 +89,10 @@ export function EngagementCard({ contactId }: Props) {
         </div>
       </div>
     )
+  }
+
+  if (error) {
+    return <ErrorState compact title="Não foi possível carregar o engajamento." onRetry={load} />
   }
 
   if (!stats || (stats.messages.total === 0 && stats.conversations.total === 0)) {
@@ -94,11 +106,13 @@ export function EngagementCard({ contactId }: Props) {
   return (
     <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
-        <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-surface-400" /> Engajamento
-        </h3>
-        <span className="text-[10px] text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full">
+      <div className={cn('flex items-center px-4 py-3', hideTitle ? 'justify-start' : 'justify-between border-b border-surface-800')}>
+        {!hideTitle && (
+          <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-surface-400" /> Engajamento
+          </h3>
+        )}
+        <span className="text-[11px] text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">
           {totalMsgs} mensagens · {conversations.total} conversas
         </span>
       </div>
@@ -121,12 +135,12 @@ export function EngagementCard({ contactId }: Props) {
         {/* Direction bars */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-surface-500 w-16">Recebidas</span>
-            <MiniBar value={messages.totalInbound} max={maxDir} color="#3b82f6" />
+            <span className="text-[11px] text-surface-400 w-16">Recebidas</span>
+            <MiniBar value={messages.totalInbound} max={maxDir} color="var(--color-accent-blue)" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-surface-500 w-16">Enviadas</span>
-            <MiniBar value={messages.totalOutbound} max={maxDir} color="#10b981" />
+            <span className="text-[11px] text-surface-400 w-16">Enviadas</span>
+            <MiniBar value={messages.totalOutbound} max={maxDir} color="var(--color-accent-green)" />
           </div>
         </div>
 
@@ -186,15 +200,19 @@ export function EngagementCard({ contactId }: Props) {
             <p className="text-[10px] text-surface-500 uppercase tracking-wide mb-2">Conversas por status</p>
             <div className="flex gap-2">
               {Object.entries(conversations.byStatus).map(([status, count]) => {
-                const colors: Record<string, string> = {
-                  open: 'border-blue-500/30 bg-blue-500/10 text-blue-300',
-                  pending: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-                  resolved: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-                  abandoned: 'border-surface-600 bg-surface-800 text-surface-400',
+                const chips: Record<string, string> = {
+                  open: 'var(--color-status-open)',
+                  pending: 'var(--color-cstatus-pending)',
+                  resolved: 'var(--color-cstatus-resolved)',
+                  abandoned: 'var(--color-status-muted)',
                 }
                 const labels: Record<string, string> = { open: 'Abertas', pending: 'Pendentes', resolved: 'Resolvidas', abandoned: 'Abandonadas' }
                 return (
-                  <span key={status} className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${colors[status] ?? colors.abandoned}`}>
+                  <span
+                    key={status}
+                    className="color-chip text-[11px] font-medium px-2.5 py-1 rounded-full border"
+                    style={{ ['--chip']: chips[status] ?? chips.abandoned } as React.CSSProperties}
+                  >
                     {labels[status] ?? status} {count}
                   </span>
                 )
@@ -220,12 +238,15 @@ export function EngagementCard({ contactId }: Props) {
               </div>
               {lastAnalysis.dealValue != null && (
                 <div className="flex items-center gap-1.5">
-                  <Zap className="w-3 h-3 text-emerald-400" />
-                  <span className="text-xs text-emerald-300">R$ {lastAnalysis.dealValue.toLocaleString('pt-BR')}</span>
+                  <Zap className="w-3 h-3 text-success" />
+                  <span className="text-xs text-success">R$ {lastAnalysis.dealValue.toLocaleString('pt-BR')}</span>
                 </div>
               )}
               {lastAnalysis.status === 'confirmed' && (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                <span
+                  className="color-chip text-[10px] font-medium px-2 py-0.5 rounded-full border"
+                  style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
+                >
                   Confirmada
                 </span>
               )}

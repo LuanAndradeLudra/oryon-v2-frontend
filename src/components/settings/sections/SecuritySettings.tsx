@@ -4,7 +4,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 
 export function SecuritySettings() {
   return (
-    <div className="max-w-3xl">
+    <div>
       <SectionHeader title="Segurança" description="Monitore acessos e atividades da sua conta." />
 
       <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden p-6">

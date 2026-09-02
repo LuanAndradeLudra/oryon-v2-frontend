@@ -11,6 +11,7 @@ import { useCopilot } from '@/hooks/useCopilot'
 import { generateSessionTitle } from '@/services/copilotService'
 import { CopilotMessageBubble } from '@/components/copilot/CopilotMessage'
 import { revokeAttachmentUrls } from '@/lib/attachmentUtils'
+import { Banner } from '@/components/ui/Banner'
 import type { CopilotAttachment, CopilotMessage } from '@/contexts/CopilotContext'
 import { GlassChatInput } from './GlassChatInput'
 import { PendingApprovalBar } from './PendingApprovalBar'
@@ -258,9 +259,9 @@ export function SessionChat({
             exit={{ opacity: 0 }}
             className="relative z-10 px-4 mb-3"
           >
-            <div className="max-w-4xl mx-auto px-3 py-2 bg-danger/10 border border-danger/20 rounded-lg text-xs text-danger">
+            <Banner variant="danger" className="max-w-4xl mx-auto">
               {error}
-            </div>
+            </Banner>
           </motion.div>
         )}
       </AnimatePresence>

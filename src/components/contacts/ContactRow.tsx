@@ -6,10 +6,13 @@ import {
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { StageBadge } from './StageBadge'
+import { LeadScorePill } from './LeadScorePill'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn, relativeDate } from '@/lib/utils'
+import { formatBRL } from '@/utils/money'
 import type { Contact, ContactStage } from '@/types'
 
 const SENTIMENT_ICON = {
@@ -20,18 +23,63 @@ const SENTIMENT_ICON = {
 }
 
 const INTENT_CONFIG = {
-  high:    { label: 'Alta',    className: 'text-status-active bg-status-active-bg' },
-  medium:  { label: 'Média',   className: 'text-status-pending bg-status-pending-bg' },
-  low:     { label: 'Baixa',   className: 'text-surface-400 bg-surface-800' },
-  unknown: { label: '—',       className: 'text-surface-600 bg-surface-800' },
+  high:    { label: 'Alta',    chip: 'var(--color-status-active)' },
+  medium:  { label: 'Média',   chip: 'var(--color-status-pending)' },
+  low:     { label: 'Baixa',   chip: 'var(--color-status-muted)' },
+  unknown: { label: '—',       chip: 'var(--color-status-muted)' },
 }
 
+/** Chips de negócios por funil (spec UX 2026-07-09) — extraído pra ser
+ *  reusado igual entre `ContactRow` (desktop) e `ContactCard` (mobile,
+ *  `ContactsMobileList`), evitando duas cópias divergentes da mesma lógica. */
+export function DealsSummaryChips({
+  contact,
+  onOpenDeals,
+  className,
+}: {
+  contact: Contact
+  onOpenDeals?: (contact: Contact) => void
+  className?: string
+}) {
+  // Gate de múltiplos funis (SCRUM-498): sem o módulo o backend não manda
+  // `dealsSummary` — mostraria "sem negócio" para todo mundo, inclusive
+  // quem tem. Some (desktop e mobile passam por aqui).
+  const multiPipeline = useMultiPipeline()
+  const byPipeline = contact.dealsSummary?.byPipeline ?? []
+  if (!multiPipeline) return null
+  return (
+    <div className={cn('flex gap-1 flex-wrap', className)}>
+      {byPipeline.length === 0 ? (
+        <span className="text-[10px] text-surface-600 border border-dashed border-surface-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+          sem negócio
+        </span>
+      ) : (
+        byPipeline.map((p) => (
+          <button
+            key={p.pipelineId}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpenDeals?.(contact) }}
+            title={`${p.pipelineName} · ${p.openCount} aberto(s)`}
+            className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 transition-all"
+            style={{ color: p.pipelineColor, borderColor: `${p.pipelineColor}40`, backgroundColor: `${p.pipelineColor}18` }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.pipelineColor }} />
+            {p.pipelineName}
+            {p.openCents > 0 && <span className="opacity-80">· {formatBRL(p.openCents)}</span>}
+          </button>
+        ))
+      )}
+    </div>
+  )
+}
 
 interface ContactRowProps {
   contact: Contact
   onOpenPanel: (contact: Contact) => void
   onOpenConversation?: (contact: Contact) => void
   onMoveStage?: (contact: Contact, stage: ContactStage) => void
+  /** Abre o painel do contato direto na aba Negócios — clique num chip da coluna Negócios. */
+  onOpenDeals?: (contact: Contact) => void
   isSelected?: boolean
   onToggleSelect?: (id: string) => void
   hasSelection?: boolean
@@ -44,6 +92,7 @@ export function ContactRow({
   onOpenPanel,
   onOpenConversation,
   onMoveStage,
+  onOpenDeals,
   isSelected = false,
   onToggleSelect,
   hasSelection = false,
@@ -52,13 +101,12 @@ export function ContactRow({
 }: ContactRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const { stages } = useCRMConfig()
+  const multiPipeline = useMultiPipeline()
   const otherStages = stages.filter((s) => s.key !== contact.stage)
 
   const intent = contact.intent ?? 'unknown'
   const intentCfg = INTENT_CONFIG[intent]
   const sentimentIcon = SENTIMENT_ICON[contact.aiSentiment ?? 'unknown']
-  const score = contact.leadScore ?? 0
-  const scoreColor = score >= 80 ? 'text-status-active' : score >= 50 ? 'text-status-pending' : 'text-surface-400'
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
@@ -175,14 +223,17 @@ export function ContactRow({
 
       {/* Score */}
       <td className="px-4 py-3">
-        <span className={cn('text-sm font-semibold tabular-nums', scoreColor)}>
-          {contact.leadScore != null ? contact.leadScore : '—'}
-        </span>
+        {contact.leadScore != null
+          ? <LeadScorePill score={contact.leadScore} showIcon={false} className="text-xs" />
+          : <span className="text-surface-600 text-sm font-semibold tabular-nums">—</span>}
       </td>
 
       {/* Intenção */}
       <td className="px-4 py-3">
-        <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-full', intentCfg.className)}>
+        <span
+          className="color-chip inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border"
+          style={{ ['--chip']: intentCfg.chip } as React.CSSProperties}
+        >
           {intentCfg.label}
         </span>
       </td>
@@ -196,8 +247,8 @@ export function ContactRow({
           {(contact.tags ?? []).slice(0, 2).map((tag) => (
             <span
               key={tag.id}
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
-              style={{ color: tag.color, borderColor: `${tag.color}40`, backgroundColor: `${tag.color}18` }}
+              className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+              style={{ ['--chip']: tag.color } as React.CSSProperties}
             >
               {tag.name}
             </span>
@@ -207,6 +258,14 @@ export function ContactRow({
           )}
         </div>
       </td>
+
+      {/* Negócios — chips por funil (spec UX 2026-07-09). Coluna inteira
+          some sem o gate (SCRUM-498) — o cabeçalho em ContactsTable acompanha. */}
+      {multiPipeline && (
+        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+          <DealsSummaryChips contact={contact} onOpenDeals={onOpenDeals} className="max-w-[220px]" />
+        </td>
+      )}
 
       {/* Fonte */}
       <td className="px-4 py-3">

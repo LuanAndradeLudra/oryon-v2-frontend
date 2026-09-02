@@ -13,6 +13,8 @@ import { useOnboarding } from '@/hooks/useOnboarding'
 import { useAuth } from '@/contexts/AuthContext'
 import { useKnowledgeBase, fileToKBDocument, loadKB, KB_MAX_DOCS } from '@/hooks/useKnowledgeBase'
 import { loadHub, loadHubAsync, bootstrapFromBusinessContext, hubHasContent } from '@/services/companyContextService'
+import { cn } from '@/lib/utils'
+import { Banner } from '@/components/ui/Banner'
 import { ConfirmModal } from '@/components/ui/Modal'
 import type { BusinessContext, ExperienceLevel, CRMExperience } from '@/services/anthropicService'
 import type { AIOnboardingConfig } from '@/types'
@@ -502,8 +504,15 @@ function GeneratingView() {
           const active = i === stepIndex
           return (
             <motion.div key={s} initial={{ opacity: 0, x: -12 }} animate={{ opacity: i <= stepIndex ? 1 : 0.25, x: 0 }} transition={{ duration: 0.4, delay: i * 0.1 }} className={`flex items-center gap-3 px-3 py-2 rounded-xl border transition-all ${active ? 'bg-brand-900/30 border-brand-700/50 text-brand-300' : done ? 'bg-surface-800/40 border-surface-800 text-surface-500' : 'border-transparent text-surface-700'}`}>
-              <div className={`w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center ${done ? 'bg-green-500/20' : active ? 'bg-brand-500/20' : 'bg-surface-800'}`}>
-                {done ? <Check className="w-2.5 h-2.5 text-green-400" /> : active ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}><Loader2 className="w-2.5 h-2.5 text-brand-400" /></motion.div> : <div className="w-1 h-1 rounded-full bg-surface-700" />}
+              <div
+                className={cn(
+                  'w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center',
+                  !done && !active && 'bg-surface-800',
+                  (done || active) && 'color-chip',
+                )}
+                style={(done || active) ? ({ ['--chip']: done ? 'var(--color-success)' : 'var(--color-brand-500)' } as React.CSSProperties) : undefined}
+              >
+                {done ? <Check className="w-2.5 h-2.5" /> : active ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}><Loader2 className="w-2.5 h-2.5" /></motion.div> : <div className="w-1 h-1 rounded-full bg-surface-700" />}
               </div>
               <span className="text-xs">{s}</span>
             </motion.div>
@@ -520,8 +529,11 @@ function PreviewView({ config, onApply, onRetry, applying, error }: { config: AI
   return (
     <motion.div key="preview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.35 }} className="w-full h-full flex flex-col justify-center">
       <div className="flex flex-col items-center mb-5">
-        <div className="w-10 h-10 rounded-2xl bg-green-900/40 border border-green-700/40 flex items-center justify-center mb-2">
-          <CheckCircle2 className="w-5 h-5 text-green-400" />
+        <div
+          className="w-10 h-10 rounded-2xl color-chip border flex items-center justify-center mb-2"
+          style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
+        >
+          <CheckCircle2 className="w-5 h-5" />
         </div>
         <h2 className="text-lg font-bold text-surface-50 text-center">CRM configurado com sucesso!</h2>
         <p className="text-xs text-surface-400 text-center mt-1">Revise o que foi criado e aplique para começar.</p>
@@ -552,9 +564,9 @@ function PreviewView({ config, onApply, onRetry, applying, error }: { config: AI
         </div>
       </div>
       {error && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-red-900/20 border border-red-800/40 text-red-400 text-xs mb-3">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /><span>{error}</span>
-        </div>
+        <Banner variant="danger" className="mb-3 text-xs">
+          {error}
+        </Banner>
       )}
       <button onClick={onApply} disabled={applying} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-surface-950 disabled:opacity-60 transition-all shadow-lg shadow-brand-900/40">
         {applying ? <><Loader2 className="w-4 h-4 animate-spin" /> Aplicando configuração...</> : <><ArrowRight className="w-4 h-4" /> Aplicar e começar</>}

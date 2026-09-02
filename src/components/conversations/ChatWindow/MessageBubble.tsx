@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, AlertTriangle, MapPin, Mic, Download, Play, Pause,
-  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, UserCircle2, Megaphone, CornerUpLeft,
+  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, Megaphone, CornerUpLeft, Workflow, UserRound,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -14,6 +14,15 @@ import { renderExtendedContent, STRUCTURED_TYPES, ReferralBanner } from './messa
 import { ReplyQuoteBar } from './messageRenderers/ReplyQuoteBar'
 import { AnomalyDetailModal } from './AnomalyDetailModal'
 import { guardReasonLabel } from '@/lib/guardReason'
+
+/** SCRUM-806 — tooltip do check verde: quem verificou e quando. */
+function reviewedLabel(at: string | null, by?: string | null): string {
+  const d = at ? new Date(at) : null
+  const when = d && !Number.isNaN(d.getTime())
+    ? d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+    : null
+  return `Verificada${by ? ` por ${by}` : ''}${when ? ` em ${when}` : ''}`
+}
 
 // Robust media download: fetch blob (works cross-origin as long as CORS is
 // permissive), fall back to opening in a new tab if the browser refuses.
@@ -35,6 +44,8 @@ async function downloadMedia(url: string, filename?: string) {
 
 interface MessageBubbleProps {
   message: Message
+  /** When true, render the sender avatar above this bubble (start of a
+   *  same-sender run). Computed by MessageList. */
   showAvatar?: boolean
   prevMessage?: Message
   /** The message this one replies to, resolved by MessageList from the loaded window. */
@@ -43,12 +54,52 @@ interface MessageBubbleProps {
   onReply?: (message: Message) => void
 }
 
+/** Inline sender indicator for OUTBOUND messages, pinned to the LEFT of the
+ *  meta row. Distinguishes AI / human operator / campaign / rule by glyph — the
+ *  useful signal in an omnichannel inbox — at full bubble-foreground contrast.
+ *  The sender's name is NOT inline (it's in the bubble's hover tooltip). Inbound
+ *  needs none: the customer is identified by the header + left alignment. */
+function SenderInlineIcon({ message }: { message: Message }) {
+  // Icon only, pinned to the left of the meta row — the sender's NAME lives in
+  // the bubble's hover tooltip (senderLabelOf), not inline, so short messages
+  // never widen.
+  const icon = 'w-3 h-3 shrink-0 text-bubble-out-fg'
+  if (message.senderKind === 'campaign') return <Megaphone className={icon} />
+  if (message.senderKind === 'rule') return <Workflow className={icon} />
+  const isAi =
+    message.senderKind === 'ai' ||
+    (message.senderKind == null && !message.sentByUser && !message.sentByUserId)
+  if (!isAi) return <UserRound className={icon} />
+  return <Bot className={icon} />
+}
+
+/** Sender label for the bubble's hover tooltip (outbound only). Operator → full
+ *  name; AI → the registered agent name when known, else a generic label;
+ *  campaign / rule → their kind. */
+function senderLabelOf(message: Message, agentName?: string | null): string | null {
+  if (message.direction !== 'outbound') return null
+  if (message.senderKind === 'campaign') return 'Campanha'
+  if (message.senderKind === 'rule') return 'Resposta automática'
+  if (message.sentByUser) {
+    return `${message.sentByUser.firstName} ${message.sentByUser.lastName ?? ''}`.trim()
+  }
+  const isAi =
+    message.senderKind === 'ai' ||
+    (message.senderKind == null && !message.sentByUserId)
+  if (isAi) return agentName?.trim() || 'Agente de IA'
+  return 'Operador'
+}
+
 function StatusIcon({ status }: { status: Message['status'] }) {
-  if (status === 'sent') return <Check className="w-3 h-3 text-surface-400" />
-  if (status === 'delivered') return <CheckCheck className="w-3 h-3 text-surface-400" />
-  if (status === 'read') return <CheckCheck className="w-3 h-3 text-brand-400" />
+  // Sempre renderizado sobre o bubble outbound (teal em ambos os temas), então a
+  // cor acompanha o foreground do bubble (bubble-out-time) — antes usava
+  // surface-*, que sumia no teal sólido do tema claro. Read fica em brand-300
+  // (mint claro) para destacar sobre o teal nos dois temas.
+  if (status === 'sent') return <Check className="w-3 h-3 text-bubble-out-time" />
+  if (status === 'delivered') return <CheckCheck className="w-3 h-3 text-bubble-out-time" />
+  if (status === 'read') return <CheckCheck className="w-3 h-3 text-brand-300" />
   if (status === 'failed') return <AlertCircle className="w-3 h-3 text-danger" />
-  return <Clock className="w-3 h-3 text-surface-500" />
+  return <Clock className="w-3 h-3 text-bubble-out-time" />
 }
 
 /** Formata segundos -> "m:ss" (ex: 73.4 -> "1:13"). Retorna "0:00" para NaN / negativos. */
@@ -311,6 +362,11 @@ function MediaContent({
       if (el) {
         el.pause()
         el.src = ''
+        // load() aborta qualquer download em andamento; soltar o ref permite o
+        // GC coletar o elemento junto com os 5 listeners anexados a ele —
+        // sem isso, sessões longas de inbox acumulam Audio elements órfãos.
+        el.load()
+        audioRef.current = null
       }
     }
   }, [stopRafLoop])
@@ -574,20 +630,8 @@ function TextContent({ message }: { message: Message }) {
 export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
-  // Campaign/automation name carried in metadata, shown in the sender indicator.
-  const campaignName =
-    typeof (message.metadata as { campaignName?: unknown } | null)?.campaignName === 'string'
-      ? (message.metadata as { campaignName: string }).campaignName
-      : undefined
-  // Faixa lateral do bubble outbound: verde = operador humano, âmbar = IA
-  // (agente conversacional). Disparos de campanha/automação NÃO têm faixa.
-  const outboundAccent =
-    message.senderKind === 'campaign'
-      ? null
-      : message.sentByUser
-        ? 'rgba(16,185,129,0.7)'
-        : 'rgba(245,158,11,0.8)'
-  const gap = isSameDirection ? 'mt-0.5' : 'mt-3'
+  // Extra top spacing when a new sender run starts (the avatar sits above).
+  const gap = showAvatar ? 'mt-3' : isSameDirection ? 'mt-0.5' : 'mt-3'
 
   // Transcription toggle lives here so the "Ver transcrição" control can sit
   // next to the timestamp in the footer; the MediaContent component
@@ -595,12 +639,26 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
   const audioTranscription = getAudioTranscription(message)
   const [showTranscription, setShowTranscription] = useState(false)
   const [anomalyOpen, setAnomalyOpen] = useState(false)
+  // SCRUM-806 — feedback imediato ao "marcar como verificada": o check aparece
+  // já no clique; o socket (conversation:anomaly-reviewed) confirma em seguida
+  // com o dado do servidor, que prevalece quando chega.
+  const [reviewedLocally, setReviewedLocally] = useState<string | null>(null)
+  const anomalyReviewedAt = message.anomaly?.reviewedAt ?? reviewedLocally
+  const anomalyReviewed = message.anomaly?.kind === 'handoff' && !!anomalyReviewedAt
 
   // Stable — sentAt never changes after message creation
   const timeStr = useMemo(
     () => new Date(message.sentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     [message.sentAt],
   )
+
+  // Hover tooltip for the whole bubble: sender name (operator / AI agent) +
+  // full date & time. The sender name is no longer shown inline in the bubble.
+  const bubbleTitle = useMemo(() => {
+    const name = senderLabelOf(message)
+    const when = formatFullTime(message.sentAt)
+    return name ? `${name} · ${when}` : when
+  }, [message])
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = []
@@ -691,11 +749,8 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         transform: dragX ? `translateX(${dragX}px)` : undefined,
         transition: dragX ? 'none' : 'transform 0.15s ease-out',
       }}
-      title={formatFullTime(message.sentAt)}
+      title={bubbleTitle}
     >
-      {/* Avatar placeholder for spacing */}
-      <div className="w-0 flex-shrink-0" />
-
       {/* Desktop reply affordance — appears on hover, beside the bubble. */}
       {canReply && (
         <button
@@ -709,30 +764,23 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         </button>
       )}
 
-      {/* Bubble — handoff accent rendered as inset box-shadow on the right
-          edge so it follows the bubble's rounded corners automatically. The
-          previous absolute-positioned <span right-0> lined up with the
-          rectangular bounding box, which made the strip appear to leak past
-          the curve on the top-right when the bubble's TR corner kept the
-          full 16px radius (operator-sent messages following another
-          outbound). shadow-sm (the existing drop) is preserved in the same
-          `style` so we don't fight Tailwind's `shadow-sm` utility for
-          precedence. */}
-      <div
-        className={cn(
-          'relative max-w-[72%] px-3 py-2 rounded-2xl',
-          isOutbound
-            ? 'bg-bubble-out text-bubble-out-fg rounded-br-sm'
-            : 'bg-bubble-in text-surface-100 rounded-bl-sm shadow-sm',
-          !isSameDirection && isOutbound && 'rounded-br-2xl rounded-tr-sm',
-          !isSameDirection && !isOutbound && 'rounded-bl-2xl rounded-tl-sm'
-        )}
-        style={isOutbound ? {
-          boxShadow: outboundAccent
-            ? `0 1px 2px 0 rgb(0 0 0 / 0.05), inset -3px 0 0 0 ${outboundAccent}`
-            : '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-        } : undefined}
-      >
+      {/* Column wrapper — keeps the bubble at max 72% width, aligned to the
+          sender's side. */}
+      <div className={cn('flex flex-col max-w-[72%] min-w-0', isOutbound ? 'items-end' : 'items-start')}>
+        {/* Bubble — soft drop shadow only in light theme (invisible token in
+            dark). The sender (AI / operator / campaign / rule) is conveyed by a
+            discreet inline icon in the meta row below, outbound only. */}
+        <div
+          className={cn(
+            'relative px-3 py-2 rounded-md',
+            isOutbound
+              ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg rounded-br-xs'
+              : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-xs',
+            showAvatar && isOutbound && 'rounded-br-md rounded-tr-xs',
+            showAvatar && !isOutbound && 'rounded-bl-md rounded-tl-xs'
+          )}
+          style={isOutbound ? { boxShadow: 'var(--bubble-shadow-soft)' } : undefined}
+        >
         {message.contextWamid && <ReplyQuoteBar message={message} quoted={quotedMessage} />}
         <ReferralBanner message={message} />
         <MediaContent message={message} showTranscription={showTranscription} />
@@ -762,41 +810,11 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
             </button>
           )}
 
-          <div
-            className={cn(
-              'flex items-center gap-1 ml-auto',
-              isOutbound ? 'justify-end' : 'justify-start',
-            )}
-          >
-            {isOutbound && (
-              // Author indicator: 📣 Campanha for campaign/template sends,
-              // icon + first name for human operators, bot icon for AI.
-              // `leading-none` keeps the text baseline matching the icon's
-              // visual center so the row aligns cleanly with the timestamp.
-              message.senderKind === 'campaign' ? (
-                <span
-                  className="inline-flex items-center gap-0.5 text-[10px] leading-none text-bubble-out-time max-w-[140px]"
-                  title={campaignName ? `Campanha: ${campaignName}` : 'Enviado via campanha'}
-                >
-                  <Megaphone className="w-3 h-3 shrink-0" />
-                  <span className="leading-none truncate">{campaignName ?? 'Campanha'}</span>
-                </span>
-              ) : (
-                <span
-                  className="inline-flex items-center gap-0.5 text-[10px] leading-none text-bubble-out-time"
-                  title={message.sentByUser ? 'Enviado por um operador humano' : 'Enviado pelo agente de IA'}
-                >
-                  {message.sentByUser ? (
-                    <>
-                      <UserCircle2 className="w-3 h-3 shrink-0" />
-                      <span className="leading-none">{message.sentByUser.firstName}</span>
-                    </>
-                  ) : (
-                    <Bot className="w-3 h-3 shrink-0" />
-                  )}
-                </span>
-              )
-            )}
+          {/* Sender attribution pinned to the LEFT of the meta row; the
+              timestamp + delivery status sit on the RIGHT (ml-auto). Two
+              semantic groups at opposite ends read cleaner than one cluster. */}
+          {isOutbound && <SenderInlineIcon message={message} />}
+          <div className="flex items-center gap-1 ml-auto">
             <span className={cn('text-[10px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-400')}>
               {timeStr}
             </span>
@@ -809,52 +827,55 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           <p className="text-[10px] text-danger mt-1">Falha no envio</p>
         )}
 
-        {/* Phase 33c — phantom-confirmation flag on the exact bubble of the
-            turn where the anti-claim guard caught the AI claiming an action it
-            never executed. Full-bleed banner pinned to the bubble's bottom
-            edge (same width as the bubble); click opens a modal with the full
-            detail. Amber = handoff (needs verification); muted = the AI
-            self-corrected before sending. */}
+        {/* Phase 33c — phantom-confirmation flag: the anti-claim guard caught
+            the AI claiming an action it never executed on this turn. Shown as a
+            small circular alert pinned just OUTSIDE the bubble's left edge (not
+            a full-width banner) — click opens the detail modal. Neutral circle +
+            amber alert glyph = handoff (needs verification); muted glyph = the
+            AI self-corrected before sending. The full text lives in the tooltip
+            + modal, so it stays discreet and never bloats the bubble. */}
         {message.anomaly && (
           <>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setAnomalyOpen(true) }}
-              title="Ver detalhes da verificação"
-              // w-0 + min-w-[calc(100%+1.5rem)] makes the banner span the full
-              // bubble width (the +1.5rem cancels the bubble's px-3 on each
-              // side, reached via -mx-3) WITHOUT contributing to the bubble's
-              // max-content width — so a long warning never forces a short
-              // message's bubble to grow. It always tracks the bubble's size.
-              className={cn(
-                'flex items-start gap-1.5 text-left w-0 min-w-[calc(100%+1.5rem)] -mx-3 -mb-2 mt-2 px-3 py-1.5 rounded-b-2xl border-t transition-colors',
-                message.anomaly.kind === 'handoff'
-                  ? 'bg-amber-500/15 border-amber-500/25 hover:bg-amber-500/25'
-                  : 'bg-surface-700/40 border-surface-600/40 hover:bg-surface-700/60',
-              )}
-            >
-              <AlertTriangle
+            <div className="absolute top-1/2 -translate-y-1/2 -left-2 -translate-x-full group/anom">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setAnomalyOpen(true) }}
+                aria-label={
+                  anomalyReviewed ? 'Verificação concluída — ver detalhes'
+                    : message.anomaly.kind === 'handoff' ? 'Verificação necessária — ver detalhes'
+                    : 'IA autocorrigida — ver detalhes'
+                }
                 className={cn(
-                  'w-3 h-3 mt-0.5 shrink-0',
-                  message.anomaly.kind === 'handoff' ? 'text-amber-400' : 'text-surface-400',
-                )}
-              />
-              <span
-                className={cn(
-                  'text-[10px] leading-tight flex-1 min-w-0',
-                  message.anomaly.kind === 'handoff' ? 'text-amber-200' : 'text-surface-300',
+                  'w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white shadow-sm transition-transform duration-150 hover:scale-110',
+                  anomalyReviewed ? 'bg-success' : message.anomaly.kind === 'handoff' ? 'bg-warning' : 'bg-surface-500',
                 )}
               >
-                {guardReasonLabel(message.anomaly)}
+                {/* SCRUM-806 — verificada: check verde no lugar do alerta. O
+                    -translate-y-px optically centers the up-pointing triangle,
+                    whose visual mass sits ~1px below the viewBox center. */}
+                {anomalyReviewed
+                  ? <Check className="w-3 h-3" strokeWidth={3} />
+                  : <AlertTriangle className="w-2.5 h-2.5 -translate-y-px" />}
+              </button>
+              {/* Own hover tooltip (the shared <Tooltip> measures its wrapper,
+                  which would collapse around this absolutely-positioned button). */}
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-max max-w-[220px] px-2.5 py-1.5 rounded-lg bg-surface-800 text-surface-100 text-[11px] leading-snug text-center shadow-lg ring-1 ring-surface-700 opacity-0 translate-y-1 transition-all duration-150 group-hover/anom:opacity-100 group-hover/anom:translate-y-0"
+              >
+                {anomalyReviewed ? reviewedLabel(anomalyReviewedAt, message.anomaly.reviewedBy) : guardReasonLabel(message.anomaly)}
               </span>
-            </button>
+            </div>
             <AnomalyDetailModal
               open={anomalyOpen}
               onClose={() => setAnomalyOpen(false)}
-              anomaly={message.anomaly}
+              anomaly={anomalyReviewed ? { ...message.anomaly, reviewedAt: anomalyReviewedAt } : message.anomaly}
+              conversationId={message.conversationId}
+              onResolved={() => setReviewedLocally(new Date().toISOString())}
             />
           </>
         )}
+        </div>
       </div>
     </div>
   )

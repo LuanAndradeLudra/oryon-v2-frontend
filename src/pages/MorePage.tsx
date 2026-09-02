@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import {
   ChevronRight,
   Settings,
@@ -109,7 +109,7 @@ export function MorePage() {
     .filter((section) => section.items.length > 0)
 
   return (
-    <div className="flex flex-col h-full bg-black">
+    <div className="flex flex-col h-full bg-surface-950">
       <MobilePageHeader title="Mais" titleImage="/oryon-wordmark.png" />
       <div className="flex-1 overflow-y-auto">
         {/* User card */}
@@ -132,7 +132,7 @@ export function MorePage() {
         {/* Sections */}
         {visibleSections.map((section) => (
           <div key={section.label} className="border-b border-surface-800/60 py-1">
-            <p className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-surface-600">
+            <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-surface-500">
               {section.label}
             </p>
             <div className="flex flex-col">
@@ -145,7 +145,7 @@ export function MorePage() {
 
         {/* Settings rapidas + logout */}
         <div className="border-b border-surface-800/60 py-1">
-          <p className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-surface-600">
+          <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-surface-500">
             Voce
           </p>
           <Link

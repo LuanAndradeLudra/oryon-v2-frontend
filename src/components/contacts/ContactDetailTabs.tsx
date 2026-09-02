@@ -20,7 +20,7 @@ export function ContactDetailTabs({ activeTab, onChange }: ContactDetailTabsProp
   ]
 
   return (
-    <div className="flex border-b border-surface-800 px-5 flex-shrink-0">
+    <div className="flex px-5 flex-shrink-0">
       {tabs.map((tab) => (
         <button
           key={tab.id}

@@ -29,18 +29,30 @@ function createBeam(width: number, height: number): Beam {
   };
 }
 
-const BEAM_COLORS = [
+const BEAM_COUNT = 8;
+
+// Traços teal (logo) para tema claro, cinza para tema escuro
+const BEAM_COLORS_DARK  = [
   { r: 163, g: 163, b: 163 },
   { r: 115, g: 115, b: 115 },
   { r: 212, g: 212, b: 212 },
-];
+]
+const BEAM_COLORS_LIGHT = [
+  { r: 20,  g: 184, b: 166 }, // #14B8A6
+  { r: 45,  g: 212, b: 191 }, // #2DD4BF
+  { r: 15,  g: 118, b: 110 }, // #0F766E
+]
 
-const BEAM_COUNT = 8;
+export function LoginBeams({ bgColor = '#0a0a0a', isLight = false }: { bgColor?: string; isLight?: boolean }) {
+  const canvasRef  = useRef<HTMLCanvasElement>(null);
+  const beamsRef   = useRef<Beam[]>([]);
+  const frameRef   = useRef<number>(0);
+  const bgColorRef = useRef(bgColor);
+  const isLightRef = useRef(isLight);
 
-export function LoginBeams() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const beamsRef  = useRef<Beam[]>([]);
-  const frameRef  = useRef<number>(0);
+  // Mantém refs sempre atualizados sem reiniciar o loop
+  useEffect(() => { bgColorRef.current = bgColor; }, [bgColor]);
+  useEffect(() => { isLightRef.current = isLight; }, [isLight]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -70,7 +82,8 @@ export function LoginBeams() {
     window.addEventListener("resize", resize);
 
     const drawBeam = (beam: Beam) => {
-      const color = BEAM_COLORS[Math.floor(Math.random() * BEAM_COLORS.length)];
+      const palette = isLightRef.current ? BEAM_COLORS_LIGHT : BEAM_COLORS_DARK;
+      const color = palette[Math.floor(Math.random() * palette.length)];
       const { r, g, b } = color;
       const alpha = Math.min(1, beam.opacity * (0.8 + Math.sin(beam.pulse) * 0.35));
 
@@ -92,8 +105,8 @@ export function LoginBeams() {
     };
 
     const animate = () => {
-      // Background
-      ctx.fillStyle = "#0a0a0a";
+      // Background — usa ref para reagir a mudanças de tema sem reiniciar o loop
+      ctx.fillStyle = bgColorRef.current;
       ctx.fillRect(0, 0, w, h);
 
       for (const beam of beamsRef.current) {
@@ -124,11 +137,13 @@ export function LoginBeams() {
         className="absolute inset-0 z-0"
         style={{ filter: "blur(6px)" }}
       />
-      {/* Subtle vignette */}
-      <div
-        className="absolute inset-0 z-[1] pointer-events-none"
-        style={{ background: "radial-gradient(ellipse at center, transparent 40%, rgba(9,9,15,0.7) 100%)" }}
-      />
+      {/* Vignette escura — apenas no tema escuro */}
+      {!isLight && (
+        <div
+          className="absolute inset-0 z-[1] pointer-events-none"
+          style={{ background: "radial-gradient(ellipse at center, transparent 40%, rgba(9,9,15,0.7) 100%)" }}
+        />
+      )}
     </>
   );
 }

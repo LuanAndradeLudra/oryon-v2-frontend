@@ -29,19 +29,12 @@ import { automationsApi, stagesApi, templatesApi, tagsApi, usersApi, departments
 import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
+import { Banner } from '@/components/ui/Banner'
 import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type WizardDraft = Omit<Automation, 'id' | 'tenantId' | 'executionCount' | 'lastExecutedAt' | 'createdAt' | 'updatedAt'>
-
-interface WizardProps {
-  open: boolean
-  onClose: () => void
-  onSaved: (automation: Automation) => void
-  editTarget?: Automation | null
-  preset?: Partial<WizardDraft> | null
-}
+export type WizardDraft = Omit<Automation, 'id' | 'tenantId' | 'executionCount' | 'lastExecutedAt' | 'createdAt' | 'updatedAt'>
 
 // ── Step indicator ────────────────────────────────────────────────────────────
 
@@ -370,7 +363,7 @@ function CustomTriggerForm({
 
 // ── Step 1 — Trigger ──────────────────────────────────────────────────────────
 
-function Step1({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void }) {
+export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void; hideMeta?: boolean }) {
   const types: AutomationType[] = ['boas_vindas', 'follow_up', 'fora_horario', 'triagem_keyword', 'estagio_crm', 'inatividade', 'custom']
   const [stages, setStages] = useState<TenantStage[]>([])
   useEffect(() => { stagesApi.list().then((r) => setStages(r.data)).catch(() => {}) }, [])
@@ -392,6 +385,8 @@ function Step1({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<
 
   return (
     <div className="space-y-5">
+      {!hideMeta && (
+      <>
       {/* Name */}
       <div>
         <label className="block text-xs font-medium text-surface-300 mb-1.5">Nome <span className="text-danger">*</span></label>
@@ -434,6 +429,8 @@ function Step1({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<
           ))}
         </div>
       </div>
+      </>
+      )}
 
       {/* Trigger type grid */}
       <div>
@@ -630,7 +627,7 @@ const INTENT_OPTIONS = [
   { value: 'unknown', label: 'Desconhecida' },
 ]
 
-function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void }) {
+export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void }) {
   const conditions = draft.conditions ?? []
   const [stages, setStages] = useState<TenantStage[]>([])
   const [tags, setTags]     = useState<Array<{ id: string; name: string }>>([])
@@ -1074,7 +1071,7 @@ function ActionSubForm({
   )
 }
 
-function Step3({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void }) {
+export function Step3({ draft, onChange, hideAgentBehavior }: { draft: WizardDraft; onChange: (d: Partial<WizardDraft>) => void; hideAgentBehavior?: boolean }) {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [stages, setStages]       = useState<TenantStage[]>([])
   const [users, setUsers]         = useState<Array<{ id: string; name: string }>>([])
@@ -1178,7 +1175,7 @@ function Step3({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<
         </div>
       )}
 
-      <AgentBehaviorSelector draft={draft} onChange={onChange} />
+      {!hideAgentBehavior && <AgentBehaviorSelector draft={draft} onChange={onChange} />}
     </div>
   )
 }
@@ -1193,7 +1190,7 @@ function Step3({ draft, onChange }: { draft: WizardDraft; onChange: (d: Partial<
  * most likely to surprise operators ("why isn't my agent replying?") so
  * every option ships with a one-liner explaining the exact outcome.
  */
-function AgentBehaviorSelector({
+export function AgentBehaviorSelector({
   draft,
   onChange,
 }: {
@@ -1263,248 +1260,8 @@ function AgentBehaviorSelector({
 
 // ── Wizard root ───────────────────────────────────────────────────────────────
 
-const EMPTY_DRAFT: WizardDraft = {
+export const EMPTY_DRAFT: WizardDraft = {
   name: '', description: '', type: 'boas_vindas', status: 'active',
   trigger: { type: 'boas_vindas' }, conditionsLogic: 'and', conditions: [], actions: [],
   agentBehavior: 'auto',
-}
-
-export function AutomationWizard({ open, onClose, onSaved, editTarget, preset }: WizardProps) {
-  const [step,   setStep]   = useState<1 | 2 | 3>(1)
-  const [draft,  setDraft]  = useState<WizardDraft>(EMPTY_DRAFT)
-  const [saving, setSaving] = useState(false)
-  const [error,  setError]  = useState<string | null>(null)
-  // Pin new automations to the line the smart-default resolves (dept →
-  // primary → lone). Editing preserves whatever was set before.
-  const smartDefault = useSmartLineDefault()
-  const { numbers } = useWorkspaceNumber()
-  const sessionIdRef = useRef(`wiz-automation-${Date.now()}`)
-  const completedRef = useRef(false)
-
-  useEffect(() => {
-    if (!open) return
-    sessionIdRef.current = `wiz-automation-${Date.now()}`
-    completedRef.current = false
-    const { userId, tenantId } = readSession()
-    appLogger.logWizardEvent({
-      tenant_id: tenantId, user_id: userId,
-      wizard_type: 'automation', wizard_session_id: sessionIdRef.current,
-      step_number: 1, step_name: 'Gatilho', action: 'started',
-      data: { mode: editTarget ? 'edit' : 'create', automation_id: editTarget?.id },
-    })
-    setStep(1); setError(null)
-    if (editTarget) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, tenantId, executionCount, lastExecutedAt, createdAt, updatedAt, ...rest } = editTarget
-      setDraft({ ...EMPTY_DRAFT, ...rest })
-    } else if (preset) {
-      setDraft({ ...EMPTY_DRAFT, ...preset })
-    } else {
-      setDraft(EMPTY_DRAFT)
-    }
-  }, [open, editTarget, preset])
-
-  const updateDraft = (patch: Partial<WizardDraft>) => setDraft((prev) => ({ ...prev, ...patch }))
-
-  // Apply the smart line default once it resolves, but only for fresh
-  // creates and only if the draft hasn't already got an explicit pick.
-  // Keeps the Step1 select in sync with the callout and lets the operator
-  // override via the select without the effect stomping their choice.
-  useEffect(() => {
-    if (!open || editTarget) return
-    if (smartDefault.loading) return
-    if (!smartDefault.lineId) return
-    setDraft((prev) => (prev.whatsappNumberId ? prev : { ...prev, whatsappNumberId: smartDefault.lineId }))
-  }, [open, editTarget, smartDefault.loading, smartDefault.lineId])
-
-  // Block advancing past step 1 in multi-WABA tenants when no line is
-  // picked. Matches the backend's resolveResourceNumberOrThrow contract
-  // so the operator can't land a 400 by forgetting the field.
-  const multiWabaNoLine = numbers.length > 1 && !draft.whatsappNumberId
-
-  const canProceed = () => {
-    if (step === 1) {
-      if (!draft.name.trim() || !draft.type) return false
-      if (multiWabaNoLine) return false
-      if (draft.type === 'custom') {
-        const t = draft.trigger as Extract<AutomationTrigger, { type: 'custom' }>
-        return !!t.eventKey
-      }
-      return true
-    }
-    if (step === 2) return !multiWabaNoLine
-    if (step === 3) return draft.actions.length > 0 && !multiWabaNoLine
-    return false
-  }
-
-  const handleSave = async () => {
-    setError(null); setSaving(true)
-    const { userId, tenantId, actorName } = readSession()
-    appLogger.logWizardEvent({
-      tenant_id: tenantId, user_id: userId,
-      wizard_type: 'automation', wizard_session_id: sessionIdRef.current,
-      step_number: 3, step_name: 'Ações', action: 'started',
-      data: { automation_name: draft.name, trigger_type: draft.type, actions_count: draft.actions.length, mode: editTarget ? 'edit' : 'create' },
-    })
-    try {
-      // When creating in a multi-WABA tenant, default to the smart
-      // resolver (dept → primary → lone). If that still returns null
-      // the backend will 400 — surfaced in the catch block below and
-      // the callout warns the operator ahead of time.
-      const payload: WizardDraft = editTarget
-        ? draft
-        : { ...draft, whatsappNumberId: draft.whatsappNumberId ?? smartDefault.lineId ?? null }
-      const res = editTarget
-        ? await automationsApi.update(editTarget.id, payload)
-        : await automationsApi.create(payload)
-      completedRef.current = true
-      appLogger.logWizardEvent({
-        tenant_id: tenantId, user_id: userId,
-        wizard_type: 'automation', wizard_session_id: sessionIdRef.current,
-        step_number: 3, step_name: 'Ações', action: 'completed',
-        data: { automation_id: res.data.id, automation_name: draft.name, trigger_type: draft.type, actions_count: draft.actions.length, mode: editTarget ? 'edit' : 'create' },
-      })
-      appLogger.logActivity({
-        tenant_id: tenantId, actor_id: userId, actor_name: actorName,
-        action: editTarget ? 'automation_updated' : 'automation_created', entity_type: 'automation',
-        entity_id: res.data.id, entity_name: draft.name,
-        description: `Automação "${draft.name}" ${editTarget ? 'editada' : 'criada'} via wizard`,
-        details: { trigger_type: draft.type, actions_count: draft.actions.length },
-        source: 'ui',
-      })
-      onSaved(res.data)
-      onClose()
-    } catch {
-      appLogger.logWizardEvent({
-        tenant_id: tenantId, user_id: userId,
-        wizard_type: 'automation', wizard_session_id: sessionIdRef.current,
-        step_number: 3, step_name: 'Ações', action: 'error',
-        error_message: 'Erro ao salvar automação',
-      })
-      setError('Erro ao salvar. Tente novamente.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-        >
-          <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-
-          <motion.div
-            className="relative z-10 w-full max-w-2xl bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl flex flex-col max-h-[92vh]"
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-800 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-brand-600/15 border border-brand-500/20 flex items-center justify-center">
-                  <span className="text-surface-400">{draft.type ? TYPE_CONFIG[draft.type]?.icon : <Workflow className="w-4 h-4" />}</span>
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-surface-100">{editTarget ? 'Editar automação' : 'Nova automação'}</h2>
-                  <p className="text-xs text-surface-500 mt-0.5">Passo {step} de 3</p>
-                </div>
-              </div>
-              <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-5">
-              {/* Multi-WABA callout with embedded line selector on the
-                  right. Sits above the step progress so it's visible
-                  from every step. Hidden automatically in single-line
-                  tenants via WhatsappLineRow's internal check. */}
-              <div className="mb-4">
-                <WhatsappLineRow
-                  whatsappNumberId={draft.whatsappNumberId ?? smartDefault.lineId ?? null}
-                  variant="callout"
-                  onLineChange={(id) => updateDraft({ whatsappNumberId: id || null })}
-                />
-              </div>
-
-              <StepDots step={step} />
-              <div key={step}>
-                {step === 1 && <Step1 draft={draft} onChange={updateDraft} />}
-                {step === 2 && <Step2 draft={draft} onChange={updateDraft} />}
-                {step === 3 && <Step3 draft={draft} onChange={updateDraft} />}
-              </div>
-              {error && <p className="mt-3 text-xs text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2">{error}</p>}
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-surface-800 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                {step > 1 && (
-                  <button onClick={() => {
-                    const { userId, tenantId } = readSession()
-                    appLogger.logWizardEvent({
-                      tenant_id: tenantId, user_id: userId,
-                      wizard_type: 'automation', wizard_session_id: sessionIdRef.current,
-                      step_number: step, step_name: ['Gatilho', 'Condições', 'Ações'][step - 1], action: 'back',
-                    })
-                    setStep((s) => (s - 1) as 1 | 2 | 3)
-                  }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors">
-                    <ChevronLeft className="w-3.5 h-3.5" /> Voltar
-                  </button>
-                )}
-                {step === 2 && (
-                  <button onClick={() => {
-                    const { userId, tenantId } = readSession()
-                    appLogger.logWizardEvent({
-                      tenant_id: tenantId, user_id: userId,
-                      wizard_type: 'automation', wizard_session_id: sessionIdRef.current,
-                      step_number: 2, step_name: 'Condições', action: 'skipped',
-                    })
-                    setStep(3)
-                  }} className="text-xs text-surface-500 hover:text-surface-300 transition-colors">
-                    Pular condições
-                  </button>
-                )}
-              </div>
-
-              {step < 3 ? (
-                <button onClick={() => {
-                  const { userId, tenantId } = readSession()
-                  appLogger.logWizardEvent({
-                    tenant_id: tenantId, user_id: userId,
-                    wizard_type: 'automation', wizard_session_id: sessionIdRef.current,
-                    step_number: step, step_name: ['Gatilho', 'Condições', 'Ações'][step - 1], action: 'completed',
-                  })
-                  setStep((s) => (s + 1) as 1 | 2 | 3)
-                }} disabled={!canProceed()}
-                  title={multiWabaNoLine ? 'Escolha a linha WhatsApp no banner acima para continuar' : undefined}
-                  className={cn('flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-colors',
-                    canProceed() ? 'bg-brand-600 text-surface-950 hover:bg-brand-500' : 'bg-surface-800 text-surface-600 cursor-not-allowed',
-                  )}>
-                  Continuar <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              ) : (
-                <button onClick={handleSave} disabled={!canProceed() || saving}
-                  title={multiWabaNoLine ? 'Escolha a linha WhatsApp no banner acima para continuar' : undefined}
-                  className={cn('flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-colors',
-                    canProceed() && !saving ? 'bg-brand-600 text-surface-950 hover:bg-brand-500' : 'bg-surface-800 text-surface-600 cursor-not-allowed',
-                  )}>
-                  {saving ? 'Salvando…' : (editTarget ? 'Salvar alterações' : 'Criar automação')}
-                  {!saving && <Check className="w-3.5 h-3.5" />}
-                </button>
-              )}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
 }

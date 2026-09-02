@@ -60,7 +60,7 @@ export function DealsSummaryCard({ contactId }: { contactId: string }) {
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wide text-surface-600">Ganho</p>
-            <p className="text-sm font-semibold text-emerald-300 tabular-nums">{formatBRL(wonTotal)}</p>
+            <p className="text-sm font-semibold text-success tabular-nums">{formatBRL(wonTotal)}</p>
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wide text-surface-600">Em aberto</p>

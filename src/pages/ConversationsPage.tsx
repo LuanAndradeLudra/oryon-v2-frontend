@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { MessageSquarePlus } from 'lucide-react'
@@ -45,9 +45,10 @@ export function ConversationsPage() {
   const [totalUnread, setTotalUnread] = useState(0)
 
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
-  const { contacts: allContacts } = useContacts()
+  const { contacts: allContacts } = useContacts({}, { withDealsSummary: false })
   const { toasts, toast, dismiss } = useToast()
   const isMobile = useIsMobile()
+  const { user } = useAuth()
 
   // Persists the conversation list's scrollTop across the mobile mount/unmount
   // cycle (list ↔ chat). Without this, tapping an old conversation and then
@@ -61,6 +62,41 @@ export function ConversationsPage() {
     updateStatus, assignUser, transferUser,
     addTag, removeTag, archiveConversation, setAiPause, interveneAi,
   } = useConversations(filters)
+
+  // Sticky active conversation — keep the OPEN conversation in the list even
+  // after its status stops matching the active tab (e.g. moved to "Pendente"
+  // while viewing "Abertas"), until the operator opens another one. Prevents
+  // the list and the open chat from silently disagreeing (orphaned selection).
+  // The server list is already status-filtered, so the only rows that fall out
+  // of the active tab are ones changed locally — we drop those and re-add just
+  // the active one, flagged off-filter (dimmed + status pill).
+  const { visibleConversations, offFilterId } = useMemo(() => {
+    const statusFilter = filters.status
+    const matches = (c: Conversation) =>
+      !statusFilter || statusFilter === 'all' || c.status === statusFilter
+    const list = conversations.filter(matches)
+    let offFilterId: string | null = null
+    const active = activeConversation
+    // Sticky: if the OPEN conversation isn't in the filtered list because its
+    // status no longer matches the active tab, keep it visible (flagged
+    // off-filter). Use the freshest copy from the list if still loaded, else
+    // the activeConversation state itself — so it persists even if the list
+    // was refetched without it.
+    if (active && !list.some((c) => c.id === active.id)) {
+      const row = conversations.find((c) => c.id === active.id) ?? active
+      if (!matches(row)) {
+        offFilterId = active.id
+        const origIdx = conversations.findIndex((c) => c.id === active.id)
+        if (origIdx >= 0) {
+          const insertAt = conversations.slice(0, origIdx).filter(matches).length
+          list.splice(insertAt, 0, row)
+        } else {
+          list.unshift(row)
+        }
+      }
+    }
+    return { visibleConversations: list, offFilterId }
+  }, [conversations, filters.status, activeConversation])
 
   // ── Socket.IO real-time ────────────────────────────────────────────────────
   useSocket({
@@ -270,20 +306,111 @@ export function ConversationsPage() {
   }
 
   const handleAssign = async (convId: string, user: User | null) => {
-    await assignUser(convId, user)
-    syncActive(convId, { assignedUser: user ?? undefined })
-    invalidateActivity(convId)
-    toast(
-      user ? `Atribuído para ${user.firstName} ${user.lastName}` : 'Atribuição removida',
-      'success'
-    )
+    try {
+      await assignUser(convId, user)
+      syncActive(convId, { assignedUser: user ?? undefined })
+      invalidateActivity(convId)
+      toast(
+        user ? `Atribuído para ${user.firstName} ${user.lastName}` : 'Atribuição removida',
+        'success'
+      )
+    } catch (err) {
+      // Surface the backend reason (TenantExceptionFilter writes a human-readable
+      // message) instead of failing silently. The "sem acesso" case usually means
+      // the TARGET user isn't allowed on this conversation's WhatsApp line.
+      const raw = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
+      const msg = Array.isArray(raw) ? raw[0] : raw
+      toast(msg || 'Não foi possível atribuir a conversa', 'error')
+    }
   }
 
+  // ── Atalhos de teclado (triagem estilo Front/Gmail) ────────────────────────
+  // J/K navegam na lista, E resolve e pula p/ a próxima, R atribui a mim.
+  // Só em desktop e nunca enquanto o foco está num campo de texto — a regra
+  // é: digitar mensagem SEMPRE vence atalho.
+  // J/K navigate the VISIBLE list (incl. the sticky off-filter active one) so
+  // keyboard nav matches exactly what's on screen.
+  const shortcutsRef = useRef({ conversations: visibleConversations, activeConversation })
+  shortcutsRef.current = { conversations: visibleConversations, activeConversation }
+
+  useEffect(() => {
+    if (isMobile) return
+    const isTyping = (el: EventTarget | null) => {
+      const t = el as HTMLElement | null
+      if (!t) return false
+      const tag = t.tagName
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable
+    }
+
+    // Mantém o item selecionado visível enquanto o usuário navega por J/K —
+    // sem isso o cursor "desce" mas a lista não acompanha e o operador se
+    // perde. block:'nearest' rola o mínimo necessário (sem salto de âncora).
+    const scrollToConv = (id: string) => {
+      requestAnimationFrame(() => {
+        document
+          .querySelector(`[data-conv-id="${CSS.escape(id)}"]`)
+          ?.scrollIntoView({ block: 'nearest' })
+      })
+    }
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return
+      const key = e.key.toLowerCase()
+      if (!['j', 'k', 'e', 'r'].includes(key)) return
+
+      const { conversations: list, activeConversation: active } = shortcutsRef.current
+      if (list.length === 0) return
+      const idx = active ? list.findIndex((c) => c.id === active.id) : -1
+
+      if (key === 'j' || key === 'k') {
+        e.preventDefault()
+        const next = key === 'j'
+          ? list[Math.min(list.length - 1, idx + 1)]
+          : list[Math.max(0, idx <= 0 ? 0 : idx - 1)]
+        if (next && next.id !== active?.id) {
+          handleSelectConversation(next)
+          scrollToConv(next.id)
+        }
+        return
+      }
+
+      if (!active) return
+
+      if (key === 'e') {
+        e.preventDefault()
+        if (active.status !== 'resolved') void handleStatusChange(active.id, 'resolved')
+        // Pula para a próxima da fila — o operador segue triando sem o mouse.
+        const next = list[idx + 1] ?? list[idx - 1]
+        if (next && next.id !== active.id) {
+          handleSelectConversation(next)
+          scrollToConv(next.id)
+        }
+        return
+      }
+
+      if (key === 'r') {
+        e.preventDefault()
+        const me = allUsers.find((u) => u.id === user?.id)
+        if (me && active.assignedUser?.id !== me.id) void handleAssign(active.id, me)
+      }
+    }
+
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile, allUsers, user?.id])
+
   const handleTransfer = async (convId: string, user: User) => {
-    await transferUser(convId, user)
-    syncActive(convId, { assignedUser: user })
-    invalidateActivity(convId)
-    toast(`Transferido para ${user.firstName} ${user.lastName}`, 'success')
+    try {
+      await transferUser(convId, user)
+      syncActive(convId, { assignedUser: user })
+      invalidateActivity(convId)
+      toast(`Transferido para ${user.firstName} ${user.lastName}`, 'success')
+    } catch (err) {
+      const raw = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
+      const msg = Array.isArray(raw) ? raw[0] : raw
+      toast(msg || 'Não foi possível transferir a conversa', 'error')
+    }
   }
 
   const handleAddTag = async (convId: string, tag: Tag) => {
@@ -347,7 +474,6 @@ export function ConversationsPage() {
   // from MessageInput. Reads the human-readable `message` that the backend's
   // TenantExceptionFilter writes into the response body and toasts it.
   // Without this the operator typed → text disappeared → no feedback.
-  const { user } = useAuth()
   const handleSendError = useCallback((err: unknown) => {
     const ax = err as { response?: { data?: { message?: string | string[] } } }
     const raw = ax?.response?.data?.message
@@ -389,7 +515,7 @@ export function ConversationsPage() {
           other (a real bug we hit when adding the verification badge). */}
       {showList && (() => {
         const listProps = {
-          conversations,
+          conversations: visibleConversations,
           loading,
           loadingMore,
           hasMore,
@@ -397,6 +523,7 @@ export function ConversationsPage() {
           statusCounts,
           needsReviewCount,
           activeId: activeConversation?.id ?? null,
+          offFilterId,
           filters,
           allTags,
           allContacts,
@@ -413,7 +540,17 @@ export function ConversationsPage() {
             </div>
           </div>
         ) : (
-          <ConversationList {...listProps} />
+          <div className="flex flex-col min-h-0">
+            <div className="chat-shell-bg flex-1 min-h-0 flex">
+              <ConversationList {...listProps} roundedBottomRight />
+            </div>
+            {/* Descoberta dos atalhos de triagem — discreto, só desktop */}
+            <div className="chat-shell-bg flex items-center justify-center gap-3 px-3 py-1.5 text-[10px] text-surface-600 select-none flex-shrink-0">
+              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">J</kbd>/<kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">K</kbd> navegar</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">E</kbd> resolver</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-surface-800 text-surface-400 font-mono">R</kbd> p/ mim</span>
+            </div>
+          </div>
         )
       })()}
 
@@ -478,7 +615,7 @@ export function ConversationsPage() {
                     animate={{ x: 0 }}
                     exit={{ x: '100%' }}
                     transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-                    className="fixed top-0 right-0 bottom-0 w-full sm:w-[440px] z-[61] bg-surface-900 border-l border-surface-800 shadow-2xl flex flex-col overflow-hidden"
+                    className="fixed top-0 right-0 bottom-0 w-full sm:w-[440px] z-[61] bg-surface-900 border-l overlay-frame flex flex-col overflow-hidden"
                   >
                     <ContactPanel
                       conversation={activeConversation}

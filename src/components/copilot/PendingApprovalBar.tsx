@@ -152,7 +152,7 @@ function BarContent({ tc, extraCount }: { tc: ToolCallRecord; extraCount: number
           {remainingLabel && (
             <span className={cn(
               'flex items-center gap-0.5 tabular-nums',
-              isExpired ? 'text-red-400' : 'text-surface-500',
+              isExpired ? 'text-danger' : 'text-surface-500',
             )}>
               <Clock className="h-2.5 w-2.5" />
               {remainingLabel}
@@ -250,7 +250,7 @@ export function InChatApprovalChip({
   const variant = isPending
     ? { bg: 'bg-brand-500/10 border-brand-500/30 text-brand-200', icon: ShieldAlert, label: 'Aguardando aprovação', hint: '↑ na barra acima' }
     : isApproved
-      ? { bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300', icon: Check, label: items.length === 1 ? `${firstLabel} aprovado` : `${items.length} ações aprovadas`, hint: '' }
+      ? { bg: 'bg-success/10 border-success/20 text-success', icon: Check, label: items.length === 1 ? `${firstLabel} aprovado` : `${items.length} ações aprovadas`, hint: '' }
       : isDenied
         ? { bg: 'bg-surface-800/60 border-surface-700/60 text-surface-400', icon: X, label: items.length === 1 ? `${firstLabel} cancelado` : `${items.length} ações canceladas`, hint: '' }
         : { bg: 'bg-surface-800/40 border-surface-700/40 text-surface-400', icon: ShieldAlert, label: 'Aprovação', hint: '' }

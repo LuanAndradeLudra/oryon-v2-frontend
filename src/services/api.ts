@@ -8,6 +8,7 @@ import type {
   AdSetMetrics,
   AdAttributionTouchpoint,
   Automation,
+  AutomationRun,
   AutomationStatus,
   Campaign,
   CampaignSegment,
@@ -28,8 +29,12 @@ import type {
   MetaAdsReferral,
   PaginatedResponse,
   Product,
+  Practitioner,
   Deal,
   DealStatus,
+  Pipeline,
+  PipelineStage,
+  PipelineChannelRouting,
   ContactDealsSummary,
   SendMessageDto,
   Department,
@@ -957,6 +962,16 @@ export const conversationsApi = {
   refreshAgentBehaviorCache(agentId: string) {
     return api.post(`/conversations/agent-behavior/${agentId}/refresh`)
   },
+  /**
+   * SCRUM-806 — "Marcar como verificada": reconhece a verificação pendente
+   * (phantom-confirmation) da conversa. O badge da linha e a contagem do
+   * cabeçalho limpam via socket (ai-pause-updated com hasRecentAnomaly:false).
+   * Semântica de timestamp, não dismiss permanente: uma NOVA anomalia depois
+   * disto volta a sinalizar a conversa.
+   */
+  resolveReview(id: string) {
+    return api.post<Conversation>(`/conversations/${id}/review/resolve`)
+  },
 }
 
 export const messagesApi = {
@@ -1128,8 +1143,14 @@ export const contactsApi = {
     }>(`/contacts/${id}/stats`)
   },
 
-  sendTemplate(id: string, templateName: string, language: string) {
-    return api.post<{ conversationId: string; messageId: string }>(`/contacts/${id}/send-template`, { templateName, language })
+  /** SCRUM-807 — `variables` são os valores POSICIONAIS de {{1}}, {{2}}… do corpo;
+   *  o backend valida a contagem contra o template aprovado e monta os
+   *  `components` da Meta. Omitir para template sem variáveis. */
+  sendTemplate(id: string, templateName: string, language: string, variables?: string[]) {
+    return api.post<{ conversationId: string; messageId: string }>(
+      `/contacts/${id}/send-template`,
+      variables && variables.length > 0 ? { templateName, language, variables } : { templateName, language },
+    )
   },
 
   async getCustomFieldDefs() {
@@ -1222,9 +1243,111 @@ export const agentCatalogApi = {
   },
 }
 
+/** Resposta paginada de /practitioners — mesmo shape de PaginatedProducts. */
+interface PaginatedPractitioners {
+  data: Practitioner[]
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
+}
+
+export const practitionersApi = {
+  // Mesmo motivo de productsApi.list: o registro é a fonte única pro portão
+  // de médico (UI + IA), então junta todas as páginas por trás.
+  async list() {
+    const limit = 100
+    const all: Practitioner[] = []
+    let res = await api.get<PaginatedPractitioners | Practitioner[]>(`/practitioners?page=1&limit=${limit}`)
+    for (let page = 1; ; page++) {
+      const body = res.data
+      if (Array.isArray(body)) return { ...res, data: body } // compat: backend sem paginação
+      all.push(...body.data)
+      if (!body.hasMore || page >= 100) break
+      res = await api.get<PaginatedPractitioners | Practitioner[]>(`/practitioners?page=${page + 1}&limit=${limit}`)
+    }
+    return { ...res, data: all }
+  },
+  get(id: string) {
+    return api.get<Practitioner>(`/practitioners/${id}`)
+  },
+  create(dto: Partial<Practitioner>) {
+    return api.post<Practitioner>('/practitioners', dto)
+  },
+  update(id: string, patch: Partial<Practitioner>) {
+    return api.patch<Practitioner>(`/practitioners/${id}`, patch)
+  },
+  remove(id: string) {
+    return api.delete(`/practitioners/${id}`)
+  },
+}
+
+/** Pipelines de negócio (múltiplos pipelines, Fase 2). Lista já vem com os estágios embutidos. */
+export const pipelinesApi = {
+  list() {
+    return api.get<Pipeline[]>('/settings/pipelines')
+  },
+  create(dto: { name: string; description?: string; color?: string }) {
+    return api.post<Pipeline>('/settings/pipelines', dto)
+  },
+  update(id: string, dto: { name?: string; description?: string; color?: string; isArchived?: boolean }) {
+    return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
+  },
+  remove(id: string) {
+    return api.delete(`/settings/pipelines/${id}`)
+  },
+  setDefault(id: string) {
+    return api.patch<Pipeline>(`/settings/pipelines/${id}/default`)
+  },
+  createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+    return api.post<PipelineStage>(`/settings/pipelines/${pipelineId}/stages`, dto)
+  },
+  listStages(pipelineId: string) {
+    return api.get<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages`)
+  },
+  updateStage(pipelineId: string, id: string, dto: { label?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+    return api.patch<PipelineStage>(`/settings/pipelines/${pipelineId}/stages/${id}`, dto)
+  },
+  removeStage(pipelineId: string, id: string) {
+    return api.delete(`/settings/pipelines/${pipelineId}/stages/${id}`)
+  },
+  reorderStages(pipelineId: string, ids: string[]) {
+    return api.patch<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages/reorder`, { ids })
+  },
+}
+
+/** Roteamento por canal (Fase 4): linha WhatsApp → pipeline. Leitura livre, escrita admin. */
+export const pipelineRoutingApi = {
+  list() {
+    return api.get<PipelineChannelRouting[]>('/settings/pipeline-routing')
+  },
+  upsert(whatsappNumberId: string, dto: Partial<Omit<PipelineChannelRouting, 'id' | 'tenantId' | 'whatsappNumberId'>>) {
+    return api.put<PipelineChannelRouting>(`/settings/pipeline-routing/${whatsappNumberId}`, dto)
+  },
+  remove(whatsappNumberId: string) {
+    return api.delete(`/settings/pipeline-routing/${whatsappNumberId}`)
+  },
+}
+
 export const dealsApi = {
   list(contactId: string) {
     return api.get<Deal[]>('/deals', { params: { contactId } })
+  },
+  /** Negócios de um pipeline (board). Um card por deal; agrupar por stageId no cliente. */
+  /** `filters` espelha o card de filtros da tabela de Contatos (busca, fonte,
+   *  etiqueta, intenção, sentimento, opt-in) — agora também filtra o board de
+   *  qualquer funil, não só a tabela. */
+  board(pipelineId: string, filters?: Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'source' | 'tagId' | 'optIn'>) {
+    return api.get<Deal[]>('/deals', { params: { pipelineId, ...filters } })
+  },
+  /** Move o negócio para um estágio do seu pipeline (deriva status no backend). */
+  moveStage(id: string, stageId: string) {
+    return api.patch<Deal>(`/deals/${id}/stage`, { stageId })
+  },
+  /** Move o negócio ABERTO pra outro funil — nasce lá no 1º estágio não-terminal.
+   *  409 se o contato já tem um negócio aberto no funil de destino. */
+  movePipeline(id: string, pipelineId: string) {
+    return api.patch<Deal>(`/deals/${id}/pipeline`, { pipelineId })
   },
   get(id: string) {
     return api.get<Deal>(`/deals/${id}`)
@@ -1421,6 +1544,16 @@ export const automationsApi = {
   },
   delete(id: string) {
     return api.delete(`/automations/${id}`)
+  },
+  // Histórico de execuções de UMA automação — GET /automations/:id/runs
+  // (ADMIN/BUSINESS_ADMIN, os mesmos papéis que veem a lista). Paginação por
+  // cursor via `before`; `failedOnly` filtra só incidentes. O backend já grava
+  // tudo isto (Phase B.2) — aqui apenas passamos a consumir.
+  runs(id: string, query: { before?: string; failedOnly?: boolean; limit?: number } = {}) {
+    return api.get<{ data: AutomationRun[]; nextCursor: string | null }>(
+      `/automations/${id}/runs`,
+      { params: query },
+    )
   },
 }
 

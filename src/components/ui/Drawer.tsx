@@ -22,8 +22,8 @@ const SIDE_VARIANTS = {
 } as const
 
 const SIDE_PANEL = {
-  left: 'top-0 left-0 bottom-0 h-full w-80 max-w-[85vw] border-r',
-  right: 'top-0 right-0 bottom-0 h-full w-80 max-w-[85vw] border-l',
+  left: 'top-0 left-0 bottom-0 h-full w-96 max-w-[85vw] border-r',
+  right: 'top-0 right-0 bottom-0 h-full w-96 max-w-[85vw] border-l',
   bottom: 'bottom-0 left-0 right-0 max-h-[90vh] rounded-t-2xl border-t',
 } as const
 
@@ -93,13 +93,13 @@ export function Drawer({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
         >
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
           <motion.aside
             role="dialog"
             aria-modal="true"
             aria-label={ariaLabel}
             className={cn(
-              'absolute z-10 bg-surface-900 border-surface-700 shadow-2xl flex flex-col overflow-hidden',
+              'absolute z-10 bg-surface-900 overlay-frame flex flex-col overflow-hidden',
               panelPos,
               className,
             )}

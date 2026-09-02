@@ -16,12 +16,13 @@ import {
   type ChatExecutionRagRow,
   type ChatExecutionAntiLoopRow,
 } from '@/services/adminAiObservabilityApi'
+import { cn } from '@/lib/utils'
 
-const STATUS_STYLE: Record<string, string> = {
-  answered:     'bg-emerald-700/30 text-emerald-200',
-  aborted_loop: 'bg-status-failed-bg text-status-failed',
-  error:        'bg-status-failed-bg text-status-failed',
-  max_turns:    'bg-amber-700/30 text-amber-200',
+const STATUS_CHIP: Record<string, string> = {
+  answered:     'var(--color-success)',
+  aborted_loop: 'var(--color-danger)',
+  error:        'var(--color-danger)',
+  max_turns:    'var(--color-warning)',
 }
 
 export function ChatExecutionDrillModal({
@@ -58,7 +59,7 @@ export function ChatExecutionDrillModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="bg-surface-900 border border-surface-700 rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+        className="bg-surface-900 overlay-frame border rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <header className="flex items-start justify-between px-5 py-4 border-b border-surface-800">
@@ -105,11 +106,14 @@ export function ChatExecutionDrillModal({
 
 function ExecutionHeader({ detail }: { detail: ChatExecutionDetail }) {
   const e = detail.execution
-  const statusClass = STATUS_STYLE[e.final_status] ?? 'bg-surface-700 text-surface-200'
+  const statusChip = STATUS_CHIP[e.final_status]
   return (
     <section>
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusClass}`}>
+        <span
+          className={cn('px-2 py-0.5 rounded text-xs font-medium', !statusChip && 'bg-surface-700 text-surface-200', statusChip && 'color-chip')}
+          style={statusChip ? ({ ['--chip']: statusChip } as React.CSSProperties) : undefined}
+        >
           {e.final_status}
         </span>
         {e.model && (
@@ -175,14 +179,13 @@ function MessagesSection({ messages }: { messages: ChatExecutionMessageRow[] }) 
             className={`rounded border p-2.5 ${
               m.role === 'user'
                 ? 'border-brand-700/40 bg-brand-900/20'
-                : 'border-emerald-700/40 bg-emerald-900/15'
+                : 'border-success/30 bg-success/10'
             }`}
           >
             <div className="flex items-center gap-2 mb-1 text-xs">
               <span
-                className={`px-1.5 py-0.5 rounded font-medium ${
-                  m.role === 'user' ? 'bg-brand-700/40 text-brand-100' : 'bg-emerald-700/40 text-emerald-100'
-                }`}
+                className="px-1.5 py-0.5 rounded font-medium color-chip"
+                style={{ ['--chip']: m.role === 'user' ? 'var(--color-brand-500)' : 'var(--color-success)' } as React.CSSProperties}
               >
                 {m.role}
               </span>
@@ -238,7 +241,7 @@ function ToolsSection({ tools }: { tools: ChatExecutionToolRow[] }) {
               <td className="py-1.5 text-surface-300">{t.kind}</td>
               <td className="py-1.5 text-right">
                 {t.success ? (
-                  <span className="text-emerald-200">ok{t.status_code ? ` (${t.status_code})` : ''}</span>
+                  <span className="text-success">ok{t.status_code ? ` (${t.status_code})` : ''}</span>
                 ) : (
                   <span className="text-status-failed">
                     fail{t.status_code ? ` (${t.status_code})` : ''}

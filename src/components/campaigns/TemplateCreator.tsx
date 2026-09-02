@@ -6,6 +6,7 @@ import {
   CheckCircle2, Clock, Sparkles, Check,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Banner } from '@/components/ui/Banner'
 import { TemplatePreview } from './TemplatePreview'
 import { SubcategoryPreview } from './SubcategoryPreview'
 import { templatesApi, whatsappNumbersApi } from '@/services/api'
@@ -319,9 +320,9 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
   ]
 
   return (
-    <div className="flex flex-col h-full bg-black">
+    <div className="flex flex-col h-full bg-surface-950">
       {/* Header */}
-      <div className="flex items-center gap-4 px-6 py-3.5 border-b border-surface-700 flex-shrink-0 bg-black">
+      <div className="flex items-center gap-4 px-6 py-3.5 border-b border-surface-700 flex-shrink-0 bg-surface-950">
         <button
           onClick={onCancel}
           className="flex items-center gap-1.5 text-sm text-surface-400 hover:text-surface-200 transition-colors"
@@ -345,14 +346,11 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
           (the full-bleed page was making it feel outsized). */}
       <div className="px-6 pt-3 space-y-2">
         {isContentLocked && (
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-200">
-            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-            <p>
-              {editing?.status === 'APPROVED'
-                ? 'Templates aprovados não podem ser editados. Use Duplicar na lista para criar uma nova versão, ou exclua e crie outro.'
-                : 'Este template está em análise na Meta. Aguarde o resultado ou duplique com outro nome para alterar o conteúdo.'}
-            </p>
-          </div>
+          <Banner variant="warning">
+            {editing?.status === 'APPROVED'
+              ? 'Templates aprovados não podem ser editados. Use Duplicar na lista para criar uma nova versão, ou exclua e crie outro.'
+              : 'Este template está em análise na Meta. Aguarde o resultado ou duplique com outro nome para alterar o conteúdo.'}
+          </Banner>
         )}
         <WhatsappLineRow
           whatsappNumberId={whatsappNumberId || null}
@@ -364,7 +362,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT: step sidebar */}
-        <div className="w-44 border-r border-surface-700 py-6 px-3 flex flex-col gap-1 flex-shrink-0 bg-black">
+        <div className="w-44 border-r border-surface-700 py-6 px-3 flex flex-col gap-1 flex-shrink-0 bg-surface-950">
           {([1, 2, 3, 4] as StepNum[]).map((s) => {
             const done = s < step
             const current = s === step
@@ -398,7 +396,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
         </div>
 
         {/* CENTER: form */}
-        <div className="flex-1 overflow-y-auto p-7 bg-black">
+        <div className="flex-1 overflow-y-auto p-7 bg-surface-950">
           {step === 1 && (
             <>
               <StepCategoria
@@ -467,7 +465,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
         </div>
 
         {/* RIGHT: preview panel */}
-        <div className="w-[340px] border-l border-surface-700 flex flex-col flex-shrink-0 bg-black">
+        <div className="w-[340px] border-l border-surface-700 flex flex-col flex-shrink-0 bg-surface-950">
           <div className="px-4 py-3 border-b border-surface-700 flex-shrink-0 flex items-center justify-center gap-1.5">
             {body ? (
               <>
@@ -498,7 +496,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
       </div>
 
       {/* Footer: navigation */}
-      <div className="flex items-center justify-between px-6 py-4 border-t border-surface-700 flex-shrink-0 bg-black">
+      <div className="flex items-center justify-between px-6 py-4 border-t border-surface-700 flex-shrink-0 bg-surface-950">
         <button
           onClick={() => step > 1 ? setStep((s) => (s - 1) as StepNum) : onCancel()}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-surface-400 hover:text-surface-200 transition-colors"
@@ -629,7 +627,7 @@ function StepCategoria({
                 )}
               >
                 {comingSoon && (
-                  <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                  <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-wide text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded">
                     Em breve
                   </span>
                 )}
@@ -990,10 +988,7 @@ function StepBotoes({
       </div>
 
       {errors.buttonsGeneral && (
-        <div className="flex items-start gap-2 px-3 py-2.5 bg-rose-500/10 border border-rose-500/40 rounded-xl">
-          <Info className="w-3.5 h-3.5 text-rose-400 mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-rose-300 leading-relaxed">{errors.buttonsGeneral}</p>
-        </div>
+        <Banner variant="danger">{errors.buttonsGeneral}</Banner>
       )}
 
       {/* Button list */}
@@ -1118,7 +1113,7 @@ function StepBotoes({
                           <p className="text-[11px] text-surface-400">{bt.description}</p>
                         </div>
                         {bt.comingSoon ? (
-                          <span className="ml-auto text-[9px] font-semibold uppercase tracking-wide text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">Em breve</span>
+                          <span className="ml-auto text-[9px] font-semibold uppercase tracking-wide text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded">Em breve</span>
                         ) : alreadyHasType ? (
                           <span className="ml-auto text-[10px] text-surface-400">Já adicionado</span>
                         ) : null}
@@ -1219,9 +1214,7 @@ function StepRevisao({
       </div>
 
       {error && (
-        <p className="text-xs text-danger bg-danger/10 px-3 py-2.5 rounded-xl flex items-center gap-2">
-          <Info className="w-3.5 h-3.5 flex-shrink-0" />{error}
-        </p>
+        <Banner variant="danger">{error}</Banner>
       )}
     </div>
   )

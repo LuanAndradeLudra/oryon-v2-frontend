@@ -5,11 +5,12 @@ import axios from 'axios'
 import { appLogger } from '@/services/appLogger'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
+import { api } from '@/services/api'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin:    'Equipe Oryon',
@@ -88,6 +89,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   const [s2, setS2] = useState<Step2Data>({ role: 'agent' })
 
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   // ESC to close
   useEffect(() => {
@@ -99,7 +101,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
   // Load departments
   useEffect(() => {
     if (open) {
-      axios.get<{ data: Department[] } | Department[]>(`${API}/departments`).then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
+      api.get<{ data: Department[] } | Department[]>('/departments').then((r) => setDepartments(Array.isArray(r.data) ? r.data : r.data.data)).catch(() => {})
     }
   }, [open])
 
@@ -112,6 +114,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
       setEmailChecking(false)
       setS2({ role: 'agent' })
       setSubmitting(false)
+      setSubmitError(null)
     }
   }, [open])
 
@@ -120,7 +123,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return
     setEmailChecking(true)
     try {
-      const r = await axios.get<User[] | { data?: User[] }>(`${API}/users?email=${encodeURIComponent(normalizedEmail)}`)
+      const r = await api.get<User[] | { data?: User[] }>(`/users?email=${encodeURIComponent(normalizedEmail)}`)
       const users = Array.isArray(r.data) ? r.data : (r.data?.data ?? [])
       const duplicated = users.some((u) => u.email?.trim().toLowerCase() === normalizedEmail)
       if (duplicated) {
@@ -161,9 +164,10 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
 
   const handleSubmit = async () => {
     setSubmitting(true)
+    setSubmitError(null)
     try {
       // Send only fields the NestJS InviteUserDto accepts
-      const r = await axios.post<User>(`${API}/users`, {
+      const r = await api.post<User>('/users', {
         firstName:    s1.firstName.trim(),
         lastName:     s1.lastName.trim(),
         email:        s1.email.trim(),
@@ -195,7 +199,10 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
         setStep(1)
         return
       }
-      throw err
+      const msg = axios.isAxiosError(err)
+        ? (Array.isArray(err.response?.data?.message) ? err.response?.data?.message?.[0] : err.response?.data?.message)
+        : null
+      setSubmitError(typeof msg === 'string' ? msg : 'Erro ao criar usuário. Tente novamente.')
     } finally {
       setSubmitting(false)
     }
@@ -226,7 +233,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-[520px] bg-surface-950 border-l border-surface-800 z-50 flex flex-col shadow-2xl"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-[520px] bg-surface-950 border-l overlay-frame z-50 flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-surface-800 flex-shrink-0">
@@ -414,36 +421,37 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-surface-800 flex-shrink-0">
-              <button
+            <div className="border-t border-surface-800 flex-shrink-0">
+              {submitError && step === 3 && (
+                <p role="alert" className="px-6 pt-3 text-xs text-danger">{submitError}</p>
+              )}
+              <div className="flex items-center justify-between px-6 py-4">
+              <Button
+                variant="ghost"
                 onClick={step === 1 ? onClose : () => setStep((s) => s - 1)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-surface-300 hover:text-surface-100 transition-colors"
+                leftIcon={step > 1 ? <ArrowLeft className="w-3.5 h-3.5" /> : undefined}
               >
-                {step > 1 && <ArrowLeft className="w-3.5 h-3.5" />}
                 {step === 1 ? 'Cancelar' : 'Voltar'}
-              </button>
+              </Button>
 
               {step < 3 ? (
-                <button
+                <Button
                   onClick={handleNext}
                   disabled={step === 1 && step1Invalid}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold rounded-xl transition-colors"
+                  rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
                 >
                   Próximo
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={handleSubmit}
-                  disabled={submitting}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-surface-950 text-sm font-semibold rounded-xl transition-colors"
+                  loading={submitting}
+                  leftIcon={<Check className="w-3.5 h-3.5" />}
                 >
-                  {submitting
-                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Criando...</>
-                    : <><Check className="w-3.5 h-3.5" /> Criar Usuário</>
-                  }
-                </button>
+                  {submitting ? 'Criando...' : 'Criar Usuário'}
+                </Button>
               )}
+              </div>
             </div>
           </motion.div>
         </>

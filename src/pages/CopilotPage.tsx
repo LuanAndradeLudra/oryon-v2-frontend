@@ -153,7 +153,7 @@ function CopilotPageInner() {
         className={cn(
           'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all',
           sessionsOpen
-            ? 'bg-brand-600/20 border-brand-500/40 text-brand-300'
+            ? 'copilot-sessions-btn-active bg-brand-600/20 border-brand-500/40 text-brand-300'
             : 'bg-surface-800/60 border-surface-700/60 text-surface-400 hover:text-surface-200 hover:border-surface-600',
         )}
         title="Conversas (Ctrl/Cmd+B)"
@@ -161,7 +161,10 @@ function CopilotPageInner() {
         <PanelLeft className="w-3.5 h-3.5 flex-shrink-0" />
         <span>Sessões</span>
         {sessions.length > 0 && (
-          <span className="px-1.5 py-0.5 rounded-full bg-brand-600/25 text-brand-300 text-[10px] font-semibold">
+          <span className={cn(
+            'px-1.5 py-0.5 rounded-full text-[10px] font-semibold',
+            sessionsOpen ? 'copilot-sessions-badge-active bg-brand-600/25 text-brand-300' : 'bg-brand-600/25 text-brand-300',
+          )}>
             {sessions.length}
           </span>
         )}
@@ -197,7 +200,7 @@ function CopilotPageInner() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.97 }}
               transition={{ duration: 0.13 }}
-              className="absolute right-0 top-full mt-2 w-72 bg-surface-900 border border-surface-700 rounded-xl shadow-2xl z-50 overflow-hidden py-1"
+              className="absolute right-0 top-full mt-2 w-72 overlay-surface border rounded-xl z-50 overflow-hidden py-1"
             >
               {artifacts.length === 0 ? (
                 <div className="flex flex-col items-center py-8 px-4 text-center">
@@ -282,7 +285,7 @@ function CopilotPageInner() {
         onDelete={deleteSession}
       />
 
-      <div className="relative flex-1 flex min-w-0 overflow-hidden bg-black">
+      <div className="relative flex-1 flex min-w-0 overflow-hidden bg-surface-950">
         {/* Chat area */}
         <div className="flex-1 flex flex-col min-w-0">
           {activeSessionId ? (

@@ -15,3 +15,9 @@
 .env.*.local
 .env.development.local
 .env.production.local
+
+# Dev-only mocks (ficam apenas no localhost, não sobem para o git)
+src/mocks/
+
+# Handoff local do redesign (cópia de referência; enviada ao dev por fora, não vai para o GitHub)
+docs/HANDOFF.html

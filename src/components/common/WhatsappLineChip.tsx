@@ -9,18 +9,8 @@
 import { Phone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
+import { formatPhone } from '@/lib/phone'
 
-function formatPhone(raw?: string | null): string {
-  if (!raw) return ''
-  const digits = raw.replace(/\D/g, '')
-  if (digits.length === 13 && digits.startsWith('55')) {
-    return `+55 ${digits.slice(2, 4)} ${digits.slice(4, 9)}-${digits.slice(9)}`
-  }
-  if (digits.length === 12 && digits.startsWith('55')) {
-    return `+55 ${digits.slice(2, 4)} ${digits.slice(4, 8)}-${digits.slice(8)}`
-  }
-  return raw
-}
 
 export function WhatsappLineChip({
   whatsappNumberId,
@@ -62,10 +52,11 @@ export function WhatsappLineChip({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-md border bg-brand-500/5 border-brand-500/20 text-brand-300',
+        'color-chip inline-flex items-center rounded-md border',
         base,
         className,
       )}
+      style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
       title={line.label ? formatPhone(line.displayPhoneNumber) : label}
     >
       <Phone className={cn(size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3')} />

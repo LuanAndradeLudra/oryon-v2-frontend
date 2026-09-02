@@ -125,10 +125,10 @@ export function TagPickerContent({
             <div className="flex items-center gap-2 mt-2.5">
               <span className="text-[10px] text-surface-500">Prévia:</span>
               <span
-                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
-                style={{ backgroundColor: newColor + '28', color: newColor }}
+                className="color-chip inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium border"
+                style={{ ['--chip']: newColor } as React.CSSProperties}
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: newColor }} />
+                <span className="w-1.5 h-1.5 rounded-full chip-dot" />
                 {newName}
               </span>
             </div>
@@ -164,8 +164,8 @@ export function TagPickerContent({
           {selectedTags.map((tag) => (
             <span
               key={tag.id}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium"
-              style={{ backgroundColor: tag.color + '28', color: tag.color }}
+              className="color-chip inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium border"
+              style={{ ['--chip']: tag.color } as React.CSSProperties}
             >
               {tag.name}
               <button onClick={() => onRemove(tag.id)}>
