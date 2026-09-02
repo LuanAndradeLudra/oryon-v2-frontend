@@ -34,6 +34,10 @@ interface DealsBoardProps {
   itemNoun?: string
   /** F8 (SCRUM-869): o funil deste board — `kind` decide o card (processo: contato como título, sem valor) e os rótulos dos terminais. */
   pipeline?: Pipeline | null
+  /** B2 (SCRUM-928): `?deal=<id>` no board — destaca e centraliza o card. A
+   *  ficha em si abre pelo mesmo param, globalmente (`DealPanelContext`);
+   *  aqui é só o realce visual. */
+  highlightDealId?: string | null
 }
 
 function brl(cents: number): string {
@@ -51,6 +55,7 @@ export function DealsBoard({
   itemNoun,
   pipeline,
   stages, dealsByStage, onMoveStage, loading, onOpenContact, pipelines = [], onMovePipeline,
+  highlightDealId,
 }: DealsBoardProps) {
   // `useIsMobile` (matchMedia + resize listener) em vez de `window.innerWidth`
   // lido direto no render — o valor cru só era recalculado quando ALGUM
@@ -229,15 +234,18 @@ export function DealsBoard({
                   cards.map((deal) => (
                     <div
                       key={deal.id}
+                      ref={highlightDealId === deal.id ? (el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : undefined}
                       draggable
                       onDragStart={(e) => {
                         e.dataTransfer.effectAllowed = 'move'
                         setTimeout(() => setDraggingId(deal.id), 0)
                       }}
                       onDragEnd={() => { setDraggingId(null); setOverStageId(null) }}
+                      data-testid={highlightDealId === deal.id ? 'deal-card-highlighted' : undefined}
                       className={cn(
                         'relative group/card rounded-xl border border-surface-800 bg-surface-900 p-3 cursor-grab active:cursor-grabbing transition-opacity duration-100 hover:border-surface-700',
                         draggingId === deal.id && 'opacity-40',
+                        highlightDealId === deal.id && 'ring-2 ring-brand-500 border-brand-500',
                       )}
                     >
                       {onMovePipeline && otherPipelines.length > 0 && (

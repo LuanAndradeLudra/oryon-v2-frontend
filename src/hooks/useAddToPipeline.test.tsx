@@ -3,8 +3,8 @@
 //   * processo pela conversa → POST /deals com originConversationId, toast
 //     com "Ver no board"
 //   * 2ª tentativa no mesmo funil → 409 open_exists → modal de conflito;
-//     cada saída produz o efeito esperado (navegar · mover p/ 1ª etapa ·
-//     fechar com motivo + abrir novo)
+//     cada saída produz o efeito esperado (abrir a FICHA/B2-928 · mover p/ 1ª
+//     etapa · fechar com motivo + abrir novo)
 //   * venda → abre o "Novo negócio" de 2 passos (mockado) com o funil
 //     pré-selecionado. Era o DealModal até a A3 (SCRUM-925) — que é o
 //     formulário de EDIÇÃO e não tem campo de valor.
@@ -12,15 +12,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 // vi.mock é içado para o topo do arquivo — os mocks precisam nascer via vi.hoisted.
-const { api, navigate, toast } = vi.hoisted(() => ({
+const { api, navigate, toast, openDeal } = vi.hoisted(() => ({
   api: { create: vi.fn(), get: vi.fn(), moveStage: vi.fn(), setStatus: vi.fn() },
   navigate: vi.fn(),
   toast: vi.fn(),
+  openDeal: vi.fn(),
 }))
 vi.mock('@/services/api', () => ({ dealsApi: api }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }))
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast }) }))
 vi.mock('@/contexts/CRMConfigContext', () => ({ useCRMConfig: () => ({ pipelines: [] }) }))
+// B2 (SCRUM-928): "abrir o existente" passa a abrir a ficha (painel), não mais navegar ao board.
+vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/components/deals/NewDealDialog', () => ({
   NewDealDialog: (p: { initialPipelineId?: string | null; originConversationId?: string | null; contactName?: string | null }) => (
     <div data-testid="new-deal-dialog">{p.initialPipelineId} · {p.originConversationId ?? '-'} · {p.contactName}</div>
@@ -53,7 +56,7 @@ function Harness({ target, onCreated }: { target: AddToPipelineTarget; onCreated
 
 beforeEach(() => {
   Object.values(api).forEach((m) => m.mockReset())
-  navigate.mockReset(); toast.mockReset()
+  navigate.mockReset(); toast.mockReset(); openDeal.mockReset()
   api.get.mockResolvedValue({ data: EXISTING })
 })
 
@@ -82,7 +85,7 @@ describe('useAddToPipeline (F9)', () => {
     await waitFor(() => expect(api.create).toHaveBeenCalledWith({ contactId: 'c1', title: 'Mariana', pipelineId: 'p' }))
   })
 
-  it('409 open_exists → modal de conflito com o registro existente; "abrir o existente" navega ao board', async () => {
+  it('409 open_exists → modal de conflito com o registro existente; "abrir o existente" abre a FICHA (B2/928)', async () => {
     api.create.mockRejectedValue(conflict409)
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
     fireEvent.click(screen.getByText('add'))
@@ -90,7 +93,8 @@ describe('useAddToPipeline (F9)', () => {
     await waitFor(() => expect(api.get).toHaveBeenCalledWith('d-old'))
     await waitFor(() => expect(screen.getByTestId('conflict-summary')).toHaveTextContent('na etapa Aguardando cliente'))
     fireEvent.click(screen.getByTestId('conflict-confirm'))
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/contacts?pipeline=p'))
+    await waitFor(() => expect(openDeal).toHaveBeenCalledWith('d-old'))
+    expect(navigate).not.toHaveBeenCalled()
     expect(toast).not.toHaveBeenCalledWith(expect.anything(), 'error')
   })
 

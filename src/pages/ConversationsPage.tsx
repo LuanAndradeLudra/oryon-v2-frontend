@@ -19,6 +19,7 @@ import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useContacts } from '@/hooks/useContacts'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuth } from '@/contexts/AuthContext'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { resolveRange } from '@/lib/dateRange'
 import type {
@@ -234,6 +235,25 @@ export function ConversationsPage() {
     if (conv.unreadCount > 0) setTotalUnread((p) => Math.max(0, p - conv.unreadCount))
     setSearchParams({ id: conv.id }, { replace: true })
   }
+
+  // B2 (SCRUM-928) — a aba "Conversas" da ficha do negócio (aberta como
+  // painel, por cima desta página) precisa trocar a conversa ativa SEM
+  // navegar (`navigate('/conversations?id=')` não funcionaria: o `?id=` só é
+  // lido uma vez, no mount — mesma classe de bug do `?pipeline=` da
+  // ContactsPage). Registra um abridor direto no DealPanelContext enquanto
+  // esta página está montada; a ficha chama `openConversationBeside(id)`.
+  const { registerConversationOpener } = useDealPanel()
+  useEffect(() => {
+    registerConversationOpener((conversationId) => {
+      const match = conversations.find((c) => c.id === conversationId)
+      if (match) { handleSelectConversation(match); return }
+      conversationsApi.get(conversationId)
+        .then((res) => handleSelectConversation(res.data))
+        .catch(() => toast('Não foi possível abrir essa conversa.', 'error'))
+    })
+    return () => registerConversationOpener(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversations])
 
   // Restore active conversation from URL on load. Two cases:
   //   1. Conversation is already in the loaded list → just select it.

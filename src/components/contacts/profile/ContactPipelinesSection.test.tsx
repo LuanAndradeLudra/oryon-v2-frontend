@@ -5,15 +5,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-const { api, navigate, multi, socket } = vi.hoisted(() => ({
+const { api, openDeal, multi, socket } = vi.hoisted(() => ({
   api: { list: vi.fn(), moveStage: vi.fn(), setStatus: vi.fn(), history: vi.fn() },
-  navigate: vi.fn(),
+  openDeal: vi.fn(),
   multi: vi.fn(() => true),
   socket: { on: vi.fn(), off: vi.fn() },
 }))
 vi.mock('@/services/api', () => ({ dealsApi: api }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
-vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }))
+// `useAddToPipeline` (por baixo do "Novo negócio" do estado vazio) ainda
+// chama useNavigate — sem Router no render de teste, precisa ficar mockado.
+vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
+// B2 (SCRUM-928): "Ver no board" virou "Abrir negócio" — abre a ficha, não navega.
+vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => multi() }))
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
 
@@ -37,7 +41,7 @@ const CLOSED: Deal = { ...base, id: 'd3', pipelineId: 'v', stageId: 'v4', status
 
 beforeEach(() => {
   Object.values(api).forEach((m) => m.mockReset())
-  navigate.mockReset(); multi.mockReturnValue(true)
+  openDeal.mockReset(); multi.mockReturnValue(true)
   api.list.mockResolvedValue({ data: [OPEN_SUPORTE, OPEN_VENDAS, CLOSED] })
   api.moveStage.mockResolvedValue({ data: {} })
   api.history.mockResolvedValue({ data: [
@@ -63,7 +67,7 @@ describe('ContactPipelinesSection (F11)', () => {
     expect(screen.getByTestId('pipelines-closed')).toHaveTextContent('Outro')
   })
 
-  it('"Mover" para etapa normal chama PATCH /deals/:id/stage e recarrega; "Ver no board" abre o board do funil', async () => {
+  it('"Mover" para etapa normal chama PATCH /deals/:id/stage e recarrega; "Abrir negócio" abre a FICHA (B2/928)', async () => {
     render(<ContactPipelinesSection contactId="c1" contactName="Mariana" />)
     await waitFor(() => expect(screen.getByTestId('pipeline-move-p')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('pipeline-move-p'))
@@ -71,7 +75,7 @@ describe('ContactPipelinesSection (F11)', () => {
     await waitFor(() => expect(api.moveStage).toHaveBeenCalledWith('d1', 's1'))
     await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
     fireEvent.click(screen.getByTestId('pipeline-board-v'))
-    expect(navigate).toHaveBeenCalledWith('/contacts?pipeline=v')
+    expect(openDeal).toHaveBeenCalledWith('d2')
   })
 
   it('"Mover" para terminal pede o motivo (modal) e fecha com setStatus', async () => {
