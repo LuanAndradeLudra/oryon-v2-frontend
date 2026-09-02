@@ -962,6 +962,16 @@ export const conversationsApi = {
   refreshAgentBehaviorCache(agentId: string) {
     return api.post(`/conversations/agent-behavior/${agentId}/refresh`)
   },
+  /**
+   * SCRUM-806 — "Marcar como verificada": reconhece a verificação pendente
+   * (phantom-confirmation) da conversa. O badge da linha e a contagem do
+   * cabeçalho limpam via socket (ai-pause-updated com hasRecentAnomaly:false).
+   * Semântica de timestamp, não dismiss permanente: uma NOVA anomalia depois
+   * disto volta a sinalizar a conversa.
+   */
+  resolveReview(id: string) {
+    return api.post<Conversation>(`/conversations/${id}/review/resolve`)
+  },
 }
 
 export const messagesApi = {
@@ -1133,8 +1143,14 @@ export const contactsApi = {
     }>(`/contacts/${id}/stats`)
   },
 
-  sendTemplate(id: string, templateName: string, language: string) {
-    return api.post<{ conversationId: string; messageId: string }>(`/contacts/${id}/send-template`, { templateName, language })
+  /** SCRUM-807 — `variables` são os valores POSICIONAIS de {{1}}, {{2}}… do corpo;
+   *  o backend valida a contagem contra o template aprovado e monta os
+   *  `components` da Meta. Omitir para template sem variáveis. */
+  sendTemplate(id: string, templateName: string, language: string, variables?: string[]) {
+    return api.post<{ conversationId: string; messageId: string }>(
+      `/contacts/${id}/send-template`,
+      variables && variables.length > 0 ? { templateName, language, variables } : { templateName, language },
+    )
   },
 
   async getCustomFieldDefs() {

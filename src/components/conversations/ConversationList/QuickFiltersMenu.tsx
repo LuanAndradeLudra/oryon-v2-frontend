@@ -64,9 +64,13 @@ interface QuickFiltersMenuProps {
   /** Team roster — drives the "Equipe" flyout. Omitted callers only get the
    *  "Sem atribuição" shortcut. */
   allUsers?: User[]
+  /** Conversas que precisam de verificação (server-side, mesmo escopo da
+   *  lista). Aparece como contador âmbar no item "Precisam de verificação";
+   *  0 esconde o contador. Antes vivia num botão dedicado no cabeçalho. */
+  needsReviewCount?: number
 }
 
-export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: QuickFiltersMenuProps) {
+export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], needsReviewCount = 0 }: QuickFiltersMenuProps) {
   const [open, setOpen] = useState(false)
   const [flyout, setFlyout] = useState<null | 'team'>(null)
   const [teamSearch, setTeamSearch] = useState('')
@@ -228,6 +232,15 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [] }: Qu
               >
                 <Icon className="w-4 h-4 flex-shrink-0 opacity-90" />
                 <span className="flex-1 truncate">{label}</span>
+                {key === 'needsReview' && needsReviewCount > 0 && (
+                  <span
+                    className="color-chip min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center flex-shrink-0"
+                    style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
+                    aria-label={`${needsReviewCount} ${needsReviewCount === 1 ? 'conversa precisa' : 'conversas precisam'} de verificação`}
+                  >
+                    {needsReviewCount > 99 ? '99+' : needsReviewCount}
+                  </span>
+                )}
                 {active && <Check className="w-4 h-4 flex-shrink-0 text-surface-200" />}
               </button>
             )

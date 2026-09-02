@@ -15,6 +15,15 @@ import { ReplyQuoteBar } from './messageRenderers/ReplyQuoteBar'
 import { AnomalyDetailModal } from './AnomalyDetailModal'
 import { guardReasonLabel } from '@/lib/guardReason'
 
+/** SCRUM-806 — tooltip do check verde: quem verificou e quando. */
+function reviewedLabel(at: string | null, by?: string | null): string {
+  const d = at ? new Date(at) : null
+  const when = d && !Number.isNaN(d.getTime())
+    ? d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+    : null
+  return `Verificada${by ? ` por ${by}` : ''}${when ? ` em ${when}` : ''}`
+}
+
 // Robust media download: fetch blob (works cross-origin as long as CORS is
 // permissive), fall back to opening in a new tab if the browser refuses.
 async function downloadMedia(url: string, filename?: string) {
@@ -630,6 +639,12 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
   const audioTranscription = getAudioTranscription(message)
   const [showTranscription, setShowTranscription] = useState(false)
   const [anomalyOpen, setAnomalyOpen] = useState(false)
+  // SCRUM-806 — feedback imediato ao "marcar como verificada": o check aparece
+  // já no clique; o socket (conversation:anomaly-reviewed) confirma em seguida
+  // com o dado do servidor, que prevalece quando chega.
+  const [reviewedLocally, setReviewedLocally] = useState<string | null>(null)
+  const anomalyReviewedAt = message.anomaly?.reviewedAt ?? reviewedLocally
+  const anomalyReviewed = message.anomaly?.kind === 'handoff' && !!anomalyReviewedAt
 
   // Stable — sentAt never changes after message creation
   const timeStr = useMemo(
@@ -825,15 +840,22 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setAnomalyOpen(true) }}
-                aria-label={message.anomaly.kind === 'handoff' ? 'Verificação necessária — ver detalhes' : 'IA autocorrigida — ver detalhes'}
+                aria-label={
+                  anomalyReviewed ? 'Verificação concluída — ver detalhes'
+                    : message.anomaly.kind === 'handoff' ? 'Verificação necessária — ver detalhes'
+                    : 'IA autocorrigida — ver detalhes'
+                }
                 className={cn(
                   'w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white shadow-sm transition-transform duration-150 hover:scale-110',
-                  message.anomaly.kind === 'handoff' ? 'bg-warning' : 'bg-surface-500',
+                  anomalyReviewed ? 'bg-success' : message.anomaly.kind === 'handoff' ? 'bg-warning' : 'bg-surface-500',
                 )}
               >
-                {/* -translate-y-px optically centers the up-pointing triangle,
+                {/* SCRUM-806 — verificada: check verde no lugar do alerta. O
+                    -translate-y-px optically centers the up-pointing triangle,
                     whose visual mass sits ~1px below the viewBox center. */}
-                <AlertTriangle className="w-2.5 h-2.5 -translate-y-px" />
+                {anomalyReviewed
+                  ? <Check className="w-3 h-3" strokeWidth={3} />
+                  : <AlertTriangle className="w-2.5 h-2.5 -translate-y-px" />}
               </button>
               {/* Own hover tooltip (the shared <Tooltip> measures its wrapper,
                   which would collapse around this absolutely-positioned button). */}
@@ -841,13 +863,15 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
                 role="tooltip"
                 className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 w-max max-w-[220px] px-2.5 py-1.5 rounded-lg bg-surface-800 text-surface-100 text-[11px] leading-snug text-center shadow-lg ring-1 ring-surface-700 opacity-0 translate-y-1 transition-all duration-150 group-hover/anom:opacity-100 group-hover/anom:translate-y-0"
               >
-                {guardReasonLabel(message.anomaly)}
+                {anomalyReviewed ? reviewedLabel(anomalyReviewedAt, message.anomaly.reviewedBy) : guardReasonLabel(message.anomaly)}
               </span>
             </div>
             <AnomalyDetailModal
               open={anomalyOpen}
               onClose={() => setAnomalyOpen(false)}
-              anomaly={message.anomaly}
+              anomaly={anomalyReviewed ? { ...message.anomaly, reviewedAt: anomalyReviewedAt } : message.anomaly}
+              conversationId={message.conversationId}
+              onResolved={() => setReviewedLocally(new Date().toISOString())}
             />
           </>
         )}

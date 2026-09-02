@@ -935,6 +935,10 @@ export interface Message {
     evidence?: { slots: string[]; prices: string[]; names: string[] } | null
     /** Quanto a IA tentou se corrigir antes da transferência. */
     repair?: { rung: number | null; llmCalls: number | null } | null
+    /** SCRUM-806 — quando/quem marcou a conversa como verificada DEPOIS desta
+     *  anomalia. Null enquanto pendente e sempre null em `corrected`. */
+    reviewedAt?: string | null
+    reviewedBy?: string | null
   } | null
   createdAt: string
 }
@@ -1391,6 +1395,14 @@ export interface SocketAiPauseUpdated {
    *  the AI + assigns) and sets this so the "Verificar" list badge appears in
    *  realtime. Undefined for ordinary manual pause/resume. */
   hasRecentAnomaly?: boolean
+}
+
+/** SCRUM-806 — "marcar como verificada": as bolhas de handoff pendentes da
+ *  conversa passam a exibir o check. Emitido só na sala da conversa. */
+export interface SocketAnomalyReviewed {
+  conversationId: string
+  reviewedAt: string
+  reviewedBy: string | null
 }
 
 /**
