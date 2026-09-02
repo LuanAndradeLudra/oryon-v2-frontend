@@ -133,7 +133,10 @@ export function DashboardPage() {
       const sinceIso = new Date(Date.now() - 4 * 3600 * 1000).toISOString()
       const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.all([
         axios.get(`${API}/home/snapshot`).catch(() => ({ data: null })),
-        axios.get<HomeStats>(`${API}/home/stats`),
+        // `range` scopes appointmentsScheduled/appointmentsCancelled server-side
+        // (SCRUM-966/967). The other stats below stay on their own fixed
+        // today/week windows — unrelated pre-existing behavior, not touched here.
+        axios.get<HomeStats>(`${API}/home/stats`, { params: { range: dateRange } }),
         axios.get<{ data: ActivityFeedApiRow[] }>(`${API}/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
       ])
 
@@ -169,6 +172,8 @@ export function DashboardPage() {
         'campaign_reply_rate':      0,
         'campaign_ctr':             0,
         'campaign_optout_rate':     0,
+        'appointments_scheduled':   s.appointmentsScheduled ?? 0,
+        'appointments_cancelled':   s.appointmentsCancelled ?? 0,
       }
       snap.kpis = snap.kpis.map((kpi: KpiMetric) => {
         const val = realKpis[kpi.id]

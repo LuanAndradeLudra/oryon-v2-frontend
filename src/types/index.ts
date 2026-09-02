@@ -1198,6 +1198,8 @@ export interface HomeStats {
   myConversationsResolvedToday: number
   myAvgResponseMinutes: number
   myMessagesSentToday: number
+  appointmentsScheduled?: number
+  appointmentsCancelled?: number
 }
 
 // ─── Templates & Campaigns ────────────────────────────────────────────────────

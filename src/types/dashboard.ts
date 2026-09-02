@@ -19,13 +19,15 @@ export type KpiId =
   | 'ads_leads_meta' | 'ads_leads_google' | 'ads_total_spend'
   | 'ads_avg_cpl' | 'ads_avg_roas' | 'ads_conversion_rate'
   | 'ads_qualified_rate' | 'ads_customer_rate'
+  // ── Clínica (agentes de WhatsApp: agendar/cancelar consulta) ────────────────
+  | 'appointments_scheduled' | 'appointments_cancelled'
 
 export type KpiUnit = 'count' | 'percent' | 'seconds' | 'csat_score' | 'nps_score' | 'currency'
 
 export interface KpiDefinition {
   id: KpiId
   label: string
-  category: 'Atendimento' | 'Velocidade' | 'Qualidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing'
+  category: 'Atendimento' | 'Velocidade' | 'Qualidade' | 'Volume' | 'Bot' | 'Equipe' | 'Disparos' | 'Marketing' | 'Clínica'
   unit: KpiUnit
   trendIsGood: 'up' | 'down' | 'neutral' // whether an increasing trend is good
 }
@@ -192,6 +194,9 @@ export const KPI_CATALOG: KpiDefinition[] = [
   { id: 'ads_conversion_rate',    label: 'Taxa de Conversão (Ads)',   category: 'Marketing',   unit: 'percent',    trendIsGood: 'up'     },
   { id: 'ads_qualified_rate',     label: 'Taxa de Qualificação',      category: 'Marketing',   unit: 'percent',    trendIsGood: 'up'     },
   { id: 'ads_customer_rate',      label: 'Taxa de Fechamento',        category: 'Marketing',   unit: 'percent',    trendIsGood: 'up'     },
+  // ── Clínica (agentes de WhatsApp: agendar/cancelar consulta) ────────────────
+  { id: 'appointments_scheduled', label: 'Agendamentos Marcados',     category: 'Clínica',    unit: 'count',      trendIsGood: 'up'     },
+  { id: 'appointments_cancelled', label: 'Cancelamentos',             category: 'Clínica',    unit: 'count',      trendIsGood: 'down'   },
 ]
 
 export const DEFAULT_KPI_SLOTS: KpiId[] = [

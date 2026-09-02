@@ -1490,7 +1490,7 @@ export const activityApi = {
 }
 
 export const homeApi = {
-  getStats: () => api.get<HomeStats>('/home/stats'),
+  getStats: (range?: string) => api.get<HomeStats>('/home/stats', range ? { params: { range } } : undefined),
 }
 
 // ── Ad Accounts & Attribution ─────────────────────────────────────────────────
