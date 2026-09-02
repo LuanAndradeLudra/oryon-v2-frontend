@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Loader2, KanbanSquare, ChevronDown, CheckCircle2, XCircle, History, RotateCcw } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -10,6 +9,7 @@ import { CloseDealReasonModal } from '@/components/deals/CloseDealReasonModal'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { dealsApi } from '@/services/api'
@@ -54,7 +54,7 @@ import type { Deal, Pipeline, PipelineStage } from '@/types'
 export function DealsTab({ contactId, contactName }: { contactId: string; contactName: string }) {
   const { vocab } = useTenantVocab()
   const { toast } = useToast()
-  const navigate = useNavigate()
+  const { openDeal } = useDealPanel()
   // A aba precisa listar mesmo sem o flag — daí `requireMultiPipeline: false`.
   const {
     multiPipeline, pipelines, deals, open, closed, error, busyId,
@@ -255,11 +255,11 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
                   {pipeline && (
                     <button
                       type="button"
-                      onClick={() => navigate(`/contacts?pipeline=${pipeline.id}`)}
+                      onClick={() => openDeal(deal.id)}
                       className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
                       data-testid={`deal-board-${deal.id}`}
                     >
-                      <KanbanSquare className="w-3.5 h-3.5" /> Ver no board
+                      <KanbanSquare className="w-3.5 h-3.5" /> Abrir negócio
                     </button>
                   )}
                   <button

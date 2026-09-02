@@ -263,10 +263,18 @@ export interface Deal {
   amountCents: number           // total em centavos
   currency?: string
   note?: string | null
+  /** B1 (SCRUM-927): escopo do negócio — o que está sendo proposto. Distinto de
+   *  `note` (observação operacional) e `closeNote` (observação do desfecho). */
+  description?: string | null
   ownerUserId?: string | null
   /** B1 (SCRUM-927): previsão de fechamento (ISO). O "Novo negócio" (A3) grava;
    *  a ficha (B2) e os relatórios (D1) leem. `null` = sem previsão. */
   expectedCloseAt?: string | null
+  /** B1 (D0-7): OVERRIDE de probabilidade deste negócio, 0-100. `null` = sem
+   *  override — a EFETIVA cai na da etapa (`PipelineStage.probability`).
+   *  Resolvida na leitura por `src/lib/dealProbability.ts`, nunca persistida
+   *  calculada — só este campo cru é gravado. */
+  probability?: number | null
   closedAt?: string | null
   lineItems?: DealLineItem[]
   createdAt?: string

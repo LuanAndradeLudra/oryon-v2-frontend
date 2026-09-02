@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw, Handshake } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { CloseDealReasonModal } from '@/components/deals/CloseDealReasonModal'
 import { Button } from '@/components/ui/Button'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { pipelineKindOption, pipelineKindOf, terminalLabelsOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
@@ -60,7 +60,7 @@ function Stepper({ steps, color }: { steps: StepperStep[]; color: string }) {
  * no evento local `oryon:deals-invalidate` e no socket `deal:changed`.
  */
 export function ContactPipelinesSection({ contactId, contactName, className }: Props) {
-  const navigate = useNavigate()
+  const { openDeal } = useDealPanel()
   // Carga, tempo real, mover, fechar e histórico vêm do hook compartilhado —
   // o painel do contato nas conversas usa o mesmo. Aqui fica só a densidade
   // "card com stepper", que é a da ficha.
@@ -181,11 +181,11 @@ export function ContactPipelinesSection({ contactId, contactName, className }: P
                 </Dropdown>
                 <button
                   type="button"
-                  onClick={() => navigate(`/contacts?pipeline=${pipeline.id}`)}
+                  onClick={() => openDeal(deal.id)}
                   className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
                   data-testid={`pipeline-board-${pipeline.id}`}
                 >
-                  <KanbanSquare className="w-3.5 h-3.5" /> Ver no board
+                  <KanbanSquare className="w-3.5 h-3.5" /> Abrir negócio
                 </button>
               </div>
             </article>

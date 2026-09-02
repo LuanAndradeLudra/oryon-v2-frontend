@@ -7,15 +7,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-const { api, navigate, multi, socket } = vi.hoisted(() => ({
+const { api, openDeal, multi, socket } = vi.hoisted(() => ({
   api: { list: vi.fn(), moveStage: vi.fn(), setStatus: vi.fn(), history: vi.fn(), remove: vi.fn(), get: vi.fn(), create: vi.fn() },
-  navigate: vi.fn(),
+  openDeal: vi.fn(),
   multi: vi.fn(() => true),
   socket: { on: vi.fn(), off: vi.fn() },
 }))
 vi.mock('@/services/api', () => ({ dealsApi: api, contactsApi: { get: vi.fn(), list: vi.fn() }, usersApi: { list: vi.fn(() => Promise.resolve({ data: [] })) } }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
-vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }))
+// `useAddToPipeline` (por baixo de AddToPipelineMenu/NewDealDialog) ainda chama
+// useNavigate — sem Router no render de teste, precisa continuar mockado.
+vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
+// B2 (SCRUM-928): "Ver no board" virou "Abrir negócio" — abre a ficha, não navega.
+vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => multi() }))
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn(), toasts: [], dismiss: vi.fn() }) }))
 vi.mock('@/contexts/TenantVocabContext', () => ({ useTenantVocab: () => ({ vocab: { deal: 'Negócio', deals: 'Negócios' } }) }))
@@ -51,7 +55,7 @@ const FECHADO: Deal = { ...base, id: 'd3', stageId: 's4', status: 'lost', closed
 
 beforeEach(() => {
   Object.values(api).forEach((m) => m.mockReset())
-  navigate.mockReset(); multi.mockReturnValue(true)
+  openDeal.mockReset(); multi.mockReturnValue(true)
   api.list.mockResolvedValue({ data: [PROCESSO, VENDA, FECHADO] })
   api.moveStage.mockResolvedValue({ data: {} })
   api.remove.mockResolvedValue({ data: {} })
@@ -85,7 +89,7 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     expect(screen.getByTestId('deal-open-d2')).toHaveTextContent('Plano Anual')
   })
 
-  it('"Mover" para etapa normal faz PATCH /deals/:id/stage e recarrega; "Ver no board" abre o funil', async () => {
+  it('"Mover" para etapa normal faz PATCH /deals/:id/stage e recarrega; "Abrir negócio" abre a FICHA (B2/928)', async () => {
     renderTab()
     await waitFor(() => expect(screen.getByTestId('deal-move-d1')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('deal-move-d1'))
@@ -93,7 +97,7 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     await waitFor(() => expect(api.moveStage).toHaveBeenCalledWith('d1', 's1'))
     await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
     fireEvent.click(screen.getByTestId('deal-board-d2'))
-    expect(navigate).toHaveBeenCalledWith('/contacts?pipeline=v')
+    expect(openDeal).toHaveBeenCalledWith('d2')
   })
 
   it('o terminal usa o vocabulário do TIPO do funil e pede motivo antes de fechar', async () => {

@@ -1,8 +1,7 @@
 import { useCallback, useState, type MouseEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   MoreHorizontal, MessageSquare, ExternalLink, Smile, Meh, Frown, HelpCircle, Check, X,
-  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare, Handshake,
+  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare, Handshake, Loader2,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
@@ -11,8 +10,11 @@ import { LeadScorePill } from './LeadScorePill'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useDealPanel } from '@/contexts/DealPanelContext'
+import { dealsApi } from '@/services/api'
+import { useToast } from '@/hooks/useToast'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
-import { cn, relativeDate, getActivePipelines } from '@/lib/utils'
+import { cn, relativeDate, getActivePipelines, getApiErrorMessage } from '@/lib/utils'
 import { pipelineKindOption, pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { openPipelineChips } from '@/lib/contactPipelines'
 import type { Contact, ContactStage, Pipeline } from '@/types'
@@ -32,11 +34,17 @@ const INTENT_CONFIG = {
 }
 
 /** Chips "● Funil · Etapa" por registro ABERTO (F11-884, prancheta 6) — um por
- *  funil (I1), com o ícone do tipo; clique abre o board daquele funil
- *  (`/contacts?pipeline=`). Sem registro aberto: chip tracejado "nenhum
- *  aberto". Reusado igual entre `ContactRow` (desktop) e `ContactCard`
+ *  funil (I1), com o ícone do tipo. Sem registro aberto: chip tracejado
+ *  "nenhum aberto". Reusado igual entre `ContactRow` (desktop) e `ContactCard`
  *  (mobile, `ContactsMobileList`). Lê só o `dealsSummary` já carregado em lote
- *  (`GET /deals/summary`, 1 chamada por página) — nenhuma requisição extra. */
+ *  (`GET /deals/summary`, 1 chamada por página) — nenhuma requisição extra
+ *  para MOSTRAR o chip.
+ *
+ *  B2 (SCRUM-928): clique abre a FICHA do negócio, não mais o board. O
+ *  resumo em lote não traz `dealId` (só `pipelineId` + rótulo de etapa) — ao
+ *  clicar, busca o negócio aberto deste (contato, funil) via `GET
+ *  /deals?contactId=` (mesma chamada que `ConversationDealIndicator` já faz)
+ *  e abre a ficha assim que resolve. Único ponto do produto sem o id à mão. */
 export function DealsSummaryChips({
   contact,
   className,
@@ -49,9 +57,28 @@ export function DealsSummaryChips({
   // quem tem. Some (desktop e mobile passam por aqui).
   const multiPipeline = useMultiPipeline()
   const { pipelines } = useCRMConfig()
-  const navigate = useNavigate()
+  const { openDeal } = useDealPanel()
+  const { toast } = useToast()
+  const [resolvingPipelineId, setResolvingPipelineId] = useState<string | null>(null)
   if (!multiPipeline) return null
   const chips = openPipelineChips(contact.dealsSummary?.byPipeline ?? [], pipelines)
+
+  const handleOpen = async (e: MouseEvent, pipelineId: string) => {
+    e.stopPropagation()
+    if (resolvingPipelineId) return
+    setResolvingPipelineId(pipelineId)
+    try {
+      const res = await dealsApi.list(contact.id)
+      const match = res.data.find((d) => d.pipelineId === pipelineId && d.status === 'open')
+      if (match) openDeal(match.id)
+      else toast('Este negócio não está mais aberto — atualize a página.', 'error')
+    } catch (err: unknown) {
+      toast(getApiErrorMessage(err, 'Não foi possível abrir o negócio.'), 'error')
+    } finally {
+      setResolvingPipelineId(null)
+    }
+  }
+
   return (
     <div className={cn('flex gap-1 flex-wrap', className)}>
       {chips.length === 0 ? (
@@ -64,17 +91,19 @@ export function DealsSummaryChips({
       ) : (
         chips.map((c) => {
           const KindIcon = pipelineKindOption(c.kind).icon
+          const resolving = resolvingPipelineId === c.pipelineId
           return (
             <button
               key={c.pipelineId}
               type="button"
-              onClick={(e) => { e.stopPropagation(); navigate(`/contacts?pipeline=${c.pipelineId}`) }}
-              title={`${c.pipelineName}${c.stageLabel ? ` · ${c.stageLabel}` : ''} — abrir no board`}
+              disabled={resolving}
+              onClick={(e) => void handleOpen(e, c.pipelineId)}
+              title={`${c.pipelineName}${c.stageLabel ? ` · ${c.stageLabel}` : ''} — abrir negócio`}
               data-testid={`pipeline-chip-${c.pipelineId}`}
-              className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 transition-all"
+              className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 disabled:opacity-60 transition-all"
               style={{ color: c.color, borderColor: `${c.color}40`, backgroundColor: `${c.color}18` }}
             >
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+              {resolving ? <Loader2 className="w-2.5 h-2.5 animate-spin flex-shrink-0" /> : <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />}
               <KindIcon className="w-2.5 h-2.5 opacity-70" aria-label={pipelineKindOption(c.kind).label} />
               {c.pipelineName}
               {c.stageLabel && <span className="opacity-80">· {c.stageLabel}</span>}

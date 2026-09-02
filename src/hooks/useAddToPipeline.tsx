@@ -2,6 +2,7 @@ import { useState, useCallback, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dealsApi } from '@/services/api'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
 import { pipelineKindOf } from '@/lib/pipelineKinds'
@@ -52,6 +53,7 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
   const navigate = useNavigate()
   const { toast } = useToast()
   const { pipelines } = useCRMConfig()
+  const { openDeal } = useDealPanel()
   const [conflict, setConflict] = useState<ConflictState | null>(null)
   const [closeTarget, setCloseTarget] = useState<{ target: AddToPipelineTarget; existing: Deal; stage: PipelineStage } | null>(null)
   const [salesTarget, setSalesTarget] = useState<AddToPipelineTarget | null>(null)
@@ -114,7 +116,10 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     const stages = target.pipeline.stages.slice().sort((a, b) => a.order - b.order)
     if (choice === 'open_existing') {
       setConflict(null)
-      navigate(boardHref(target.pipeline.id))
+      // B2 (SCRUM-928, F-FUNIL-14): abre A FICHA do registro existente, não
+      // mais o board inteiro — "abrir o negócio existente" agora abre o
+      // negócio, ponto.
+      openDeal(existing.id)
       return
     }
     if (choice === 'move_to_first') {
@@ -138,7 +143,7 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     if (!lost) { toast('Este funil não tem etapa de cancelamento configurada.', 'error'); return }
     setConflict(null)
     setCloseTarget({ target, existing, stage: lost })
-  }, [conflict, navigate, toast, onCreated])
+  }, [conflict, navigate, toast, onCreated, openDeal])
 
   const handleCloseAndNew = useCallback(async (input: CloseDealReasonInput) => {
     if (!closeTarget) return

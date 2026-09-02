@@ -48,6 +48,7 @@ import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
 import { InternalChatProvider } from '@/contexts/InternalChatContext'
+import { DealPanelProvider } from '@/contexts/DealPanelContext'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
@@ -56,6 +57,7 @@ import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
+const DealDetailPage    = lazyRoute(() => import('@/pages/DealDetailPage').then(m => ({ default: m.DealDetailPage })))
 const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const SetupPage         = lazyRoute(() => import('@/pages/SetupPage').then(m => ({ default: m.SetupPage })))
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
@@ -159,7 +161,12 @@ function AnimatedRoutes() {
   // vice-versa no voltar.
   const routeKey = segments[1] === 'contacts' && segments[2]
     ? '/contacts/:id'
-    : '/' + segments[1]
+    // B2 (SCRUM-928): mesmo crossfade suave do perfil do contato — o painel
+    // da ficha (aberto de /conversations ou /contacts) "Expande" para
+    // /deals/:id, e o botão Voltar faz o caminho inverso.
+    : segments[1] === 'deals' && segments[2]
+      ? '/deals/:id'
+      : '/' + segments[1]
 
   return (
     <AnimatePresence initial={false}>
@@ -214,6 +221,13 @@ function AnimatedRoutes() {
               permanece como quick-view; esta rota é o deep-dive expandido. */}
           <Route path="/contacts/:id" element={
             <ProtectedRoute><ContactProfilePage /></ProtectedRoute>
+          } />
+          {/* B2 (SCRUM-928) — ficha do negócio como PÁGINA (deep link
+              compartilhável); o mesmo componente abre como PAINEL (via
+              DealPanelProvider, montado abaixo) de dentro de /conversations
+              e /contacts?pipeline=, sem navegar. */}
+          <Route path="/deals/:id" element={
+            <ProtectedRoute><DealDetailPage /></ProtectedRoute>
           } />
           <Route path="/more" element={
             <ProtectedRoute><MorePage /></ProtectedRoute>
@@ -317,13 +331,15 @@ export default function App() {
           <InternalChatProvider>
           <CopilotProvider>
             <ContextMenuProvider>
-              <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
-                <AnimatedRoutes />
-                <Suspense fallback={null}>
-                  <CopilotPanel />
-                </Suspense>
-                <GlobalToastContainer />
-              </div>
+              <DealPanelProvider>
+                <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
+                  <AnimatedRoutes />
+                  <Suspense fallback={null}>
+                    <CopilotPanel />
+                  </Suspense>
+                  <GlobalToastContainer />
+                </div>
+              </DealPanelProvider>
             </ContextMenuProvider>
           </CopilotProvider>
           </InternalChatProvider>

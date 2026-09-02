@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw, Handshake } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { Button } from '@/components/ui/Button'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { formatRelativeTime } from '@/lib/utils'
@@ -53,7 +53,7 @@ export function ContactPanelDeals({
   contactName: string
   conversationId: string
 }) {
-  const navigate = useNavigate()
+  const { openDeal } = useDealPanel()
   const {
     enabled, deals, open, closed, error, busyId, pipelines,
     closeTarget, setCloseTarget, history,
@@ -208,11 +208,11 @@ export function ContactPanelDeals({
                 </Dropdown>
                 <button
                   type="button"
-                  onClick={() => navigate(`/contacts?pipeline=${pipeline.id}`)}
+                  onClick={() => openDeal(deal.id)}
                   className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
                   data-testid={`panel-pipeline-board-${pipeline.id}`}
                 >
-                  <KanbanSquare className="w-3 h-3" /> Board
+                  <KanbanSquare className="w-3 h-3" /> Abrir
                 </button>
               </div>
             </article>

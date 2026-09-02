@@ -133,6 +133,24 @@ export function ContactsPage() {
   // motivo do catálogo (I5) antes de fechar — o drop fica pendente aqui.
   const [closeDealTarget, setCloseDealTarget] = useState<{ deal: Deal; stage: PipelineStage } | null>(null)
 
+  // B2 (SCRUM-928): `?deal=<id>` destaca o card no board. Capturado UMA VEZ
+  // (não reage a searchParams depois) porque o DealPanelContext global CONSOME
+  // e limpa o mesmo param ao abrir a ficha — se este estado ficasse preso ao
+  // param ao vivo, o realce desapareceria assim que a ficha abrisse.
+  const [highlightDealId] = useState<string | null>(() => searchParams.get('deal'))
+
+  // B2 (SCRUM-928, bônus): o estado inicial acima só lê `?pipeline=` no
+  // MOUNT (lazy initializer) — um clique que troca só o query param
+  // enquanto ContactsPage já está montada (ex.: chip "Funil · Etapa" da
+  // própria tabela) não re-executa o initializer, então virava um clique
+  // morto: a URL mudava, o board não. Este efeito fecha o outro sentido
+  // (URL → estado), simétrico ao de baixo (estado → URL).
+  useEffect(() => {
+    const urlPipeline = searchParams.get('pipeline')
+    if (urlPipeline && urlPipeline !== selectedPipelineIdRaw) setSelectedPipelineId(urlPipeline)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
   // "Sem negócio" não existe dentro de um funil (todo card do board já é um
   // negócio) — o botão some do segmentado ao entrar num funil (ver JSX), e
   // se o usuário já estava com esse filtro ativo ao trocar de destino,
@@ -668,6 +686,7 @@ export function ContactsPage() {
                 onNewDeal={selectedIsProcess ? undefined : (stageId) => setNewDealStageId(stageId)}
                 itemNoun={pipelineNoun(selectedPipeline)}
                 pipeline={selectedPipeline}
+                highlightDealId={highlightDealId}
               />
             )
           ) : error ? (
