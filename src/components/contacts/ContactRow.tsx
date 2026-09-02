@@ -14,7 +14,7 @@ import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn, relativeDate, getActivePipelines } from '@/lib/utils'
 import { pipelineKindOption, pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
-import { openPipelineChips } from '@/lib/contactPipelines'
+import { openPipelineChips, effectiveOpenStageLabel } from '@/lib/contactPipelines'
 import type { Contact, ContactStage, Pipeline } from '@/types'
 
 const SENTIMENT_ICON = {
@@ -186,9 +186,10 @@ export function ContactRow({
         icon: KanbanSquare,
         children: activePipelines.map((p) => {
           const open = contact.dealsSummary?.byPipeline.find((b) => b.pipelineId === p.id && b.openCount > 0)
+          const openStageLabel = open ? effectiveOpenStageLabel(open) : null
           const KindIcon = pipelineKindOption(pipelineKindOf(p)).icon
           return {
-            label: open ? `${p.name} — já está${open.stageLabel ? ` · ${open.stageLabel}` : ''}` : p.name,
+            label: open ? `${p.name} — já está${openStageLabel ? ` · ${openStageLabel}` : ''}` : p.name,
             icon: () => (
               <span className="inline-flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />

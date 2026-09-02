@@ -451,9 +451,19 @@ export interface ContactDealsPipelineSummary {
   totalCents: number
   openCents: number
   wonCents: number
-  /** F4-848: etapa do registro ABERTO neste funil (chips "Funil · Etapa", "já está · etapa"). */
+  /**
+   * F4-848: etapa do(s) registro(s) ABERTO(s) neste funil (chips "Funil ·
+   * Etapa", "já está · etapa").
+   * TODO(SCRUM-932): remover `stageKey`/`stageLabel` singulares quando a C1
+   * mesclar — hoje o backend do épico ainda devolve o formato antigo (só
+   * `openStages` de N devem sobreviver).
+   */
   stageKey?: string | null
   stageLabel?: string | null
+  /** C1 (SCRUM-932): formato novo — lista dos registros abertos, cada um com
+   *  sua etapa (`allowMultipleOpen` permite N por funil). Ausente/undefined
+   *  no backend atual do épico (pré-C1); ler com fallback para `stageLabel`. */
+  openStages?: ReadonlyArray<{ dealId: string; stageKey: string; stageLabel: string }>
 }
 
 export interface ContactDealsSummary {
