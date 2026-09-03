@@ -269,12 +269,12 @@ export function AdminAgentEditorPage() {
             <header className="flex items-start justify-between mb-3">
               <div>
                 <h2 className="text-sm font-semibold text-surface-100">Modelo de IA</h2>
-                <p className="text-[11px] text-surface-500 mt-0.5">
+                <p className="text-2xs text-surface-500 mt-0.5">
                   Haiku 4.5 é ~10x mais barato que Sonnet. Em "Automático" o sistema promove pra Sonnet
                   quando o agente tem capacidades CRM destrutivas (status, atribuição, funil).
                 </p>
               </div>
-              <span className="text-[10px] font-mono uppercase tracking-wide text-surface-500">
+              <span className="text-3xs font-mono uppercase tracking-wide text-surface-500">
                 preferred_model
               </span>
             </header>
@@ -295,7 +295,7 @@ export function AdminAgentEditorPage() {
               {savingModel && <Loading text="Salvando…" />}
             </div>
             {modelHint && (
-              <p className="mt-3 text-[11px] text-status-active">{modelHint}</p>
+              <p className="mt-3 text-2xs text-status-active">{modelHint}</p>
             )}
           </section>
         )}
@@ -315,11 +315,11 @@ export function AdminAgentEditorPage() {
                     <Bot className="w-4 h-4 text-brand-400" />
                     System prompt do cliente
                   </h2>
-                  <span className="text-[11px] font-mono tabular-nums text-surface-500">
+                  <span className="text-2xs font-mono tabular-nums text-surface-500">
                     {draft.length} chars
                   </span>
                 </header>
-                <p className="text-[11px] text-surface-500 mb-2">
+                <p className="text-2xs text-surface-500 mb-2">
                   Esse é o texto que <strong>{eff.agent_name}</strong> usa como base.
                   Skills anexadas adicionam instruções automaticamente abaixo.
                 </p>
@@ -330,7 +330,7 @@ export function AdminAgentEditorPage() {
                   className="font-mono text-[12px] leading-relaxed"
                 />
                 <div className="flex items-center justify-between mt-3">
-                  <div className="text-[11px] text-surface-500">
+                  <div className="text-2xs text-surface-500">
                     {savedHint && (
                       <span className="text-status-active">{savedHint}</span>
                     )}
@@ -379,13 +379,13 @@ export function AdminAgentEditorPage() {
                     Prompt efetivo (o que a IA recebe)
                   </h2>
                   <span className={cn(
-                    'text-[11px] font-mono tabular-nums',
+                    'text-2xs font-mono tabular-nums',
                     eff.composed_chars > 12_000 ? 'text-status-pending' : 'text-surface-500',
                   )}>
                     {eff.composed_chars} chars
                   </span>
                 </header>
-                <p className="text-[11px] text-surface-500 mb-3">
+                <p className="text-2xs text-surface-500 mb-3">
                   Concatenação do prompt do cliente com as instruções de cada skill anexada,
                   na ordem que o executor envia para o Anthropic.
                 </p>
@@ -399,13 +399,13 @@ export function AdminAgentEditorPage() {
                     tone="neutral"
                     chars={(eff.system_prompt ?? '').length}
                   >
-                    <pre className="text-[11px] text-surface-300 whitespace-pre-wrap font-mono leading-relaxed">
+                    <pre className="text-2xs text-surface-300 whitespace-pre-wrap font-mono leading-relaxed">
                       {eff.system_prompt || '(vazio)'}
                     </pre>
                   </PromptBlock>
 
                   {eff.fragments.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-surface-700 bg-surface-900/30 px-3 py-4 text-center text-[11px] text-surface-500">
+                    <div className="rounded-lg border border-dashed border-surface-700 bg-surface-900/30 px-3 py-4 text-center text-2xs text-surface-500">
                       Nenhuma skill com instruções injetadas. Cadastre <code>prompt_fragment</code> em
                       um template e atribua ao agente para vê-las aqui.
                     </div>
@@ -418,7 +418,7 @@ export function AdminAgentEditorPage() {
                         tone="brand"
                         chars={f.fragment.length}
                       >
-                        <pre className="text-[11px] text-surface-200 whitespace-pre-wrap font-mono leading-relaxed">
+                        <pre className="text-2xs text-surface-200 whitespace-pre-wrap font-mono leading-relaxed">
                           {f.fragment}
                         </pre>
                       </PromptBlock>
@@ -453,7 +453,7 @@ export function AdminAgentEditorPage() {
                 <Sparkles className="w-4 h-4 text-brand-400" />
                 Skills atribuídas
               </h2>
-              <p className="text-[11px] text-surface-500">
+              <p className="text-2xs text-surface-500">
                 Edite a configuração ou remova skills já atribuídas a este agente.
                 Para atribuir uma nova, use a tela <em>Atribuir skill</em>.
               </p>
@@ -509,14 +509,14 @@ function PromptBlock({
       <header className="flex items-center justify-between mb-2">
         <div>
           <p className={cn(
-            'text-[11px] font-semibold uppercase tracking-wide',
+            'text-2xs font-semibold uppercase tracking-wide',
             tone === 'brand' ? 'text-brand-300' : 'text-surface-400',
           )}>{label}</p>
           {sublabel && (
-            <p className="text-[10px] text-surface-500 font-mono">{sublabel}</p>
+            <p className="text-3xs text-surface-500 font-mono">{sublabel}</p>
           )}
         </div>
-        <span className="text-[10px] font-mono tabular-nums text-surface-500">{chars} chars</span>
+        <span className="text-3xs font-mono tabular-nums text-surface-500">{chars} chars</span>
       </header>
       {children}
     </div>
