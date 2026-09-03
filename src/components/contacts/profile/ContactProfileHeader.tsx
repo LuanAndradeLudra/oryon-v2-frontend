@@ -172,7 +172,9 @@ export function ContactProfileHeader({
               {window24h.label}
             </span>
           )}
-          <Button size="sm" variant="primary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={onOpenChat}>
+          {/* P2/A3 (SCRUM-965): "Novo negócio" é o único primary da ficha —
+              "Conversar" virou secondary, como nas outras superfícies. */}
+          <Button size="sm" variant="secondary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={onOpenChat}>
             Conversar
           </Button>
           {/* A3 (SCRUM-925): ação primária da ficha — criar negócio deixa de

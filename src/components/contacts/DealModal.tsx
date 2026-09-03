@@ -145,8 +145,16 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   // de valor da plataforma vivia no popover de resolver com desfecho.
   const total = isProcess ? 0 : amountCents
   const itemsDirtyNow = normalizeItems(items) !== initialItemsJson
+  // Débito técnico A3/925 (SCRUM-965): "valor estabelecido" não é só o que o
+  // operador digitou agora (`amountTouched`) — um `editDeal` já chega com um
+  // `amountCents` do banco, visível no campo Valor. Exigir só `amountTouched`
+  // deixava o "Salvar" reescrever esse valor pela soma dos itens em silêncio
+  // sempre que ele divergia sem o operador ter tocado no campo. Na criação,
+  // sem `editDeal` e sem toque no campo, não há valor estabelecido a proteger
+  // — aí sim o silêncio é correto (os dois botões seriam idênticos).
+  const hasEstablishedAmount = !!editDeal || amountTouched
   const needsAmountChoice =
-    !isProcess && itemsDirtyNow && amountTouched && amountCents !== itemsTotal
+    !isProcess && itemsDirtyNow && hasEstablishedAmount && amountCents !== itemsTotal
   // O formulário tem um `error` só; este recorte diz quais mensagens pertencem
   // à lista de itens, para o erro aparecer junto dela e não no topo do modal.
   const itemsFieldError = validateItems(items) === error && error ? error : undefined
@@ -160,9 +168,9 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
 
   /**
    * `updateAmount` só é decidido pelo operador quando a escolha tem
-   * consequência: itens alterados E valor digitado que diverge da soma (D0-2).
-   * Nos outros casos o comportamento anterior vale — itens reescritos
-   * recalculam o total.
+   * consequência: itens alterados E valor exibido (digitado agora ou vindo
+   * do banco) que diverge da soma (D0-2, ampliado na SCRUM-965). Nos outros
+   * casos o comportamento anterior vale — itens reescritos recalculam o total.
    */
   const handleSave = async (updateAmountChoice?: boolean) => {
     if (!title.trim()) {

@@ -104,14 +104,49 @@ describe('DealModal — payload do salvar (#1 da revisão)', () => {
     expect('updateAmount' in payload).toBe(false)
   })
 
-  it('com item ALTERADO: PATCH com `lineItems` e `updateAmount: true` (o valor volta a ser Σ itens — D4)', async () => {
+  it('com item ALTERADO e valor do banco já divergente da soma: sem "Salvar" — exige "Vincular e atualizar valor" (SCRUM-965)', async () => {
+    // DEAL_VENDA chega com amountCents=150000 e um item que soma 20000 — já
+    // diverge da abertura do modal, sem o operador tocar no campo Valor. Até
+    // a SCRUM-965 o "Salvar" sobrescrevia isso em silêncio (bug); agora o
+    // modal exige a escolha explícita, igual ao caso em que o operador digita
+    // o valor.
     renderModal({ editDeal: DEAL_VENDA })
     fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '3' } })
-    salvar()
+    expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Vincular e atualizar valor' }))
     await waitFor(() => expect(api.update).toHaveBeenCalled())
     const payload = api.update.mock.calls[0][1]
     expect(payload.updateAmount).toBe(true)
     expect(payload.lineItems).toEqual([expect.objectContaining({ id: 'li1', quantity: 3 })])
+    expect('amountCents' in payload).toBe(false)
+  })
+
+  it('com item ALTERADO e valor do banco já divergente: "Vincular" preserva o valor do banco sem reenviá-lo (SCRUM-965)', async () => {
+    renderModal({ editDeal: DEAL_VENDA })
+    fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Vincular' }))
+    await waitFor(() => expect(api.update).toHaveBeenCalled())
+    const payload = api.update.mock.calls[0][1]
+    expect(payload.updateAmount).toBe(false)
+    expect(payload.lineItems).toEqual([expect.objectContaining({ id: 'li1', quantity: 3 })])
+    // O valor exibido (150000) já é o do banco — não precisa viajar de volta,
+    // `updateAmount:false` já basta pro backend não recalculá-lo dos itens.
+    expect('amountCents' in payload).toBe(false)
+  })
+
+  it('criar negócio novo com itens (sem editDeal, sem tocar no Valor): sem diálogo — "Criar" direto (SCRUM-965)', async () => {
+    // Sem `editDeal` não há valor estabelecido a proteger, e sem tocar no
+    // campo Valor os dois botões seriam idênticos (amountCents nunca viaja
+    // no create quando `amountTouched` é false) — o diálogo seria só ruído.
+    renderModal({ initialPipelineId: 'v' })
+    fireEvent.change(tituloInput(), { target: { value: 'Proposta nova' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar personalizado' }))
+    fireEvent.change(screen.getByLabelText('Nome do item personalizado'), { target: { value: 'Instalação' } })
+    fireEvent.change(screen.getByLabelText('Preço unitário'), { target: { value: '5000' } })
+    expect(screen.queryByRole('button', { name: 'Vincular' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Criar' }))
+    await waitFor(() => expect(api.create).toHaveBeenCalled())
+    expect('amountCents' in api.create.mock.calls[0][0]).toBe(false)
   })
 
   it('criar em funil de PROCESSO: POST sem a chave `lineItems` (omitida, não `[]`)', async () => {
