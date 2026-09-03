@@ -19,6 +19,7 @@ import {
   Moon,
   Pin,
   PinOff,
+  Handshake,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
 import { cn } from '@/lib/utils'
@@ -34,6 +35,7 @@ import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import { conversationsApi } from '@/services/api'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 
 interface NavSidebarProps {
   totalUnread?: number
@@ -205,6 +207,7 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   const { checklist } = useSetupChecklist(user?.id)
   const { vocab } = useTenantVocab()
   const { totalUnread: internalUnread } = useInternalChat()
+  const multiPipeline = useMultiPipeline()
 
   const refreshUnread = useCallback(() => {
     conversationsApi.unreadTotal()
@@ -261,6 +264,14 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
       href: '/contacts',
       nudge: !organizationConfigured ? 'Configurar' : undefined,
     },
+    // D2 (SCRUM-935): "Funis" — Board + Relatórios de negócios, 1 clique
+    // daqui. Gate SCRUM-498: mesmo flag de tenant que já esconde o board
+    // de dentro de /contacts.
+    ...(multiPipeline ? [{
+      icon: <Handshake className="w-[16.5px] h-[16.5px]" />,
+      label: 'Funis',
+      href: '/pipelines',
+    }] : []),
   ].filter((item) => isRouteVisible(item.href))
 
   const ferramentasItems = [

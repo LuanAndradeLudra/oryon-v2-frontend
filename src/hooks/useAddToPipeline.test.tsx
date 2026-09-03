@@ -73,7 +73,7 @@ describe('useAddToPipeline (F9)', () => {
     expect(type).toBe('success')
     expect(action.label).toBe('Ver no board')
     action.onClick()
-    expect(navigate).toHaveBeenCalledWith('/contacts?pipeline=p')
+    expect(navigate).toHaveBeenCalledWith('/pipelines/p')
     expect(onCreated).toHaveBeenCalled()
     expect(screen.queryByTestId('deal-modal')).toBeNull()
   })

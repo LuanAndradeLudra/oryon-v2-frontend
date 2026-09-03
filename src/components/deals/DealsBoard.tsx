@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
-import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake } from 'lucide-react'
+import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock, UserRound } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { cn, hexToRgba, getActivePipelines } from '@/lib/utils'
-import { pipelineKindOf, terminalLabelsOf, pipelineNoun } from '@/lib/pipelineKinds'
-import { originInfo, movedByChip, timeInStage } from '@/lib/dealCard'
-import type { Deal, Pipeline, PipelineStage } from '@/types'
+import { pipelineKindOf, pipelineKindOption, terminalLabelsOf, pipelineNoun } from '@/lib/pipelineKinds'
+import { originInfo, movedByChip, timeInStage, boardStats, entrySources } from '@/lib/dealCard'
+import { dealProbability } from '@/lib/dealProbability'
+import type { Deal, Pipeline, PipelineStage, User } from '@/types'
 
 interface DealsBoardProps {
   stages: PipelineStage[]
@@ -38,6 +39,13 @@ interface DealsBoardProps {
    *  ficha em si abre pelo mesmo param, globalmente (`DealPanelContext`);
    *  aqui é só o realce visual. */
   highlightDealId?: string | null
+  /** D2 (SCRUM-935/F-FUNIL): clicar no CORPO do card abre a ficha do negócio
+   *  (B2/928). Omitido = card não abre nada ao clicar (compat com chamadores
+   *  antigos/testes que não precisam desse comportamento). */
+  onOpenDeal?: (dealId: string) => void
+  /** D2: usuários do tenant, para resolver o nome do dono no card de venda
+   *  (F-FUNIL-11). Omitido/sem match = "Sem dono". */
+  users?: User[]
 }
 
 function brl(cents: number): string {
@@ -56,6 +64,8 @@ export function DealsBoard({
   pipeline,
   stages, dealsByStage, onMoveStage, loading, onOpenContact, pipelines = [], onMovePipeline,
   highlightDealId,
+  onOpenDeal,
+  users = [],
 }: DealsBoardProps) {
   // `useIsMobile` (matchMedia + resize listener) em vez de `window.innerWidth`
   // lido direto no render — o valor cru só era recalculado quando ALGUM
@@ -65,18 +75,21 @@ export function DealsBoard({
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [overStageId, setOverStageId] = useState<string | null>(null)
   const [pipelineMenuDealId, setPipelineMenuDealId] = useState<string | null>(null)
+  // F-FUNIL-09: drag nativo não funciona por toque — "Mover ▾" abre um menu
+  // com as demais etapas, chamando o MESMO `onMoveStage` do drag-and-drop.
+  const [stageMenuDealId, setStageMenuDealId] = useState<string | null>(null)
   // Todos os `stages` recebidos são do MESMO pipeline (board de um funil só) —
   // basta ler de qualquer um pra saber qual funil excluir das opções do menu.
   const currentPipelineId = stages[0]?.pipelineId
   const otherPipelines = getActivePipelines(pipelines).filter((p) => p.id !== currentPipelineId)
 
-  // Fecha o menu "Mover para funil" ao clicar fora dele.
+  // Fecha os menus de card ("Mover para funil" / "Mover ▾") ao clicar fora deles.
   useEffect(() => {
-    if (!pipelineMenuDealId) return
-    const onDocClick = () => setPipelineMenuDealId(null)
+    if (!pipelineMenuDealId && !stageMenuDealId) return
+    const onDocClick = () => { setPipelineMenuDealId(null); setStageMenuDealId(null) }
     document.addEventListener('click', onDocClick)
     return () => document.removeEventListener('click', onDocClick)
-  }, [pipelineMenuDealId])
+  }, [pipelineMenuDealId, stageMenuDealId])
 
   const draggingDeal: Deal | null = (() => {
     if (!draggingId) return null
@@ -120,8 +133,44 @@ export function DealsBoard({
   const terminalLabels = terminalLabelsOf(pipeline)
   const noun = itemNoun ?? (pipeline ? pipelineNoun(pipeline) : 'negócio')
 
+  // D2 (SCRUM-935/F-FUNIL-10): UMA faixa de contexto só (tipo do funil,
+  // entradas, contagens e total) — antes vinham DUAS faixas empilhadas de
+  // fora (ContactsPage). Migrada pra cá porque só existe quando `pipeline`
+  // está presente (chamadores antigos/testes sem esse prop não a veem).
+  const allDeals = pipeline ? Object.values(dealsByStage).flat() : []
+  const stats = pipeline ? boardStats(allDeals) : null
+  const entries = pipeline ? entrySources(allDeals) : []
+  const kindOption = pipeline ? pipelineKindOption(pipelineKindOf(pipeline)) : null
+  const totalOpenCents = allDeals.reduce((sum, d) => sum + (d.amountCents ?? 0), 0)
+
   return (
     <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none flex flex-col">
+      {pipeline && stats && kindOption && (
+        <div className="border-b border-surface-800/60 bg-surface-950/40 flex-shrink-0 px-4 py-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-surface-500" data-testid="board-context-strip">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-surface-800 border border-surface-700 text-surface-300">
+            <kindOption.icon className="w-3 h-3" /> {kindOption.label}
+          </span>
+          <span>
+            {isProcess
+              ? `Um ${noun} por contato por passagem. Sem valor, sem produtos.`
+              : `Negócios com valor — fecham em ${terminalLabels.won} ou ${terminalLabels.lost} e entram na receita.`}
+          </span>
+          <span className="text-surface-600">·</span>
+          <span data-testid="board-stats">
+            {stats.open} aberto{stats.open === 1 ? '' : 's'}
+            {' · '}{stats.wonToday} {terminalLabels.won.toLowerCase()}{stats.wonToday === 1 ? '' : 's'} hoje
+            {' · '}{stats.lost} {terminalLabels.lost.toLowerCase()}{stats.lost === 1 ? '' : 's'}
+            {!isProcess && <> · {brl(totalOpenCents)}</>}
+          </span>
+          <span className="text-surface-600">·</span>
+          <span>
+            Entradas:{' '}
+            {entries.length > 0
+              ? entries.map((e, i) => <span key={e} className="text-surface-300">{i > 0 ? ', ' : ''}{e}</span>)
+              : <span className="text-surface-400">nenhuma ainda</span>}
+          </span>
+        </div>
+      )}
       {showEmpty && (
         <div className="px-4 pt-4 flex-shrink-0" data-testid="deals-board-empty">
           {/* A3: em funil de venda o CTA cria o NEGÓCIO (o contato é escolhido
@@ -152,6 +201,10 @@ export function DealsBoard({
           const cards = dealsByStage[stage.id] ?? []
           const isOver = overStageId === stage.id && !!draggingDeal && draggingDeal.stageId !== stage.id
           const totalCents = cards.reduce((sum, d) => sum + (d.amountCents ?? 0), 0)
+          // D2 (F-FUNIL-10): total ponderado por coluna, mesma probabilidade
+          // efetiva usada no card e na ficha (dealProbability) — nunca uma
+          // conta paralela.
+          const weightedCents = cards.reduce((sum, d) => sum + dealProbability(d, stage).weightedAmountCents, 0)
 
           return (
             <div
@@ -206,9 +259,12 @@ export function DealsBoard({
                 </div>
               </div>
 
-              {/* Total da coluna — só em funil de venda (processo não tem valor) */}
+              {/* Total (+ ponderado) da coluna — só em funil de venda (processo não tem valor) */}
               {!isProcess && totalCents > 0 && (
-                <div className="px-1 mb-2 text-[11px] text-surface-500">{brl(totalCents)}</div>
+                <div className="px-1 mb-2 text-[11px] text-surface-500">
+                  {brl(totalCents)}
+                  {weightedCents !== totalCents && <span className="text-surface-600"> · {brl(weightedCents)} ponderado</span>}
+                </div>
               )}
 
               {/* Lista de cards */}
@@ -241,82 +297,102 @@ export function DealsBoard({
                         setTimeout(() => setDraggingId(deal.id), 0)
                       }}
                       onDragEnd={() => { setDraggingId(null); setOverStageId(null) }}
+                      onClick={() => onOpenDeal?.(deal.id)}
                       data-testid={highlightDealId === deal.id ? 'deal-card-highlighted' : undefined}
                       className={cn(
                         'relative group/card rounded-xl border border-surface-800 bg-surface-900 p-3 cursor-grab active:cursor-grabbing transition-opacity duration-100 hover:border-surface-700',
+                        onOpenDeal && 'cursor-pointer',
                         draggingId === deal.id && 'opacity-40',
                         highlightDealId === deal.id && 'ring-2 ring-brand-500 border-brand-500',
                       )}
                     >
-                      {onMovePipeline && otherPipelines.length > 0 && (
-                        <div className="absolute top-2 right-2 z-10">
+                      {/* Ações do card — SEMPRE visíveis no mobile (não só no
+                          hover, que não existe por toque); no desktop seguem
+                          reveladas por hover/foco, como antes. */}
+                      <div className={cn('absolute top-2 right-2 z-10 flex items-center gap-1', !isDesktop && 'opacity-100')}>
+                        {/* F-FUNIL-09: "Mover ▾" — alternativa por toque ao
+                            drag nativo, que não funciona em touch. Lista as
+                            demais etapas do MESMO funil. */}
+                        <div className="relative">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation()
-                              setPipelineMenuDealId(pipelineMenuDealId === deal.id ? null : deal.id)
+                              setStageMenuDealId(stageMenuDealId === deal.id ? null : deal.id)
                             }}
                             className={cn(
-                              'p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
-                              pipelineMenuDealId === deal.id ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
+                              'flex items-center gap-0.5 px-1.5 py-1 rounded-md text-[10px] font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                              stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                             )}
-                            aria-label="Mais ações"
+                            aria-label={`Mover ${noun} para outra etapa`}
                           >
-                            <MoreVertical className="w-3.5 h-3.5" />
+                            Mover <ChevronDown className="w-3 h-3" />
                           </button>
-                          {pipelineMenuDealId === deal.id && (
+                          {stageMenuDealId === deal.id && (
                             <div
                               onClick={(e) => e.stopPropagation()}
-                              className="absolute right-0 top-full mt-1 w-48 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
+                              className="absolute right-0 top-full mt-1 w-44 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
                             >
-                              <div className="px-3 py-2 border-b border-surface-700">
-                                <span className="text-[10px] font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
-                                  <ArrowRightLeft className="w-3 h-3" /> Mover para funil
-                                </span>
-                              </div>
-                              {otherPipelines.map((p) => (
+                              {stages.filter((s) => s.id !== deal.stageId).map((s) => (
                                 <button
-                                  key={p.id}
+                                  key={s.id}
                                   type="button"
-                                  onClick={() => { onMovePipeline(deal, p.id); setPipelineMenuDealId(null) }}
+                                  onClick={() => { onMoveStage(deal, s.id); setStageMenuDealId(null) }}
                                   className="w-full text-left px-3 py-2 text-xs text-surface-200 hover:bg-surface-700 transition-colors flex items-center gap-2"
                                 >
-                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-                                  {p.name}
+                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                                  {s.label}
                                 </button>
                               ))}
                             </div>
                           )}
                         </div>
-                      )}
+                        {onMovePipeline && otherPipelines.length > 0 && (
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setPipelineMenuDealId(pipelineMenuDealId === deal.id ? null : deal.id)
+                              }}
+                              className={cn(
+                                'p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                                pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
+                              )}
+                              aria-label="Mais ações"
+                            >
+                              <MoreVertical className="w-3.5 h-3.5" />
+                            </button>
+                            {pipelineMenuDealId === deal.id && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-0 top-full mt-1 w-48 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
+                              >
+                                <div className="px-3 py-2 border-b border-surface-700">
+                                  <span className="text-[10px] font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
+                                    <ArrowRightLeft className="w-3 h-3" /> Mover para funil
+                                  </span>
+                                </div>
+                                {otherPipelines.map((p) => (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => { onMovePipeline(deal, p.id); setPipelineMenuDealId(null) }}
+                                    className="w-full text-left px-3 py-2 text-xs text-surface-200 hover:bg-surface-700 transition-colors flex items-center gap-2"
+                                  >
+                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                                    {p.name}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       {isProcess ? (
                         <ProcessCardBody deal={deal} onOpenContact={onOpenContact} />
                       ) : (
-                      <>
-                      <div className="text-sm font-medium text-surface-100 truncate pr-5">{deal.title}</div>
-                      <div className="mt-1 flex items-center justify-between">
-                        <span className="text-xs text-surface-400">{brl(deal.amountCents ?? 0)}</span>
-                        {deal.createdByKind === 'ai' && (
-                          <span className="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded">IA</span>
-                        )}
-                        {deal.createdByKind === 'automation' && (
-                          <span className="text-[10px] text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded">auto</span>
-                        )}
-                      </div>
-                      {deal.contact && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); onOpenContact?.(deal.contact!.id) }}
-                          className="mt-2 flex items-center gap-1.5 text-[11px] text-surface-500 hover:text-brand-400 transition-colors group/contact w-full"
-                        >
-                          <Avatar name={deal.contact.displayName} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />
-                          <span className="truncate flex-1 text-left">{deal.contact.displayName}</span>
-                          <span className="flex items-center gap-0.5 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
-                            ver contato <ArrowRight className="w-3 h-3" />
-                          </span>
-                        </button>
-                      )}
-                      </>
+                        <SalesCardBody deal={deal} onOpenContact={onOpenContact} users={users} />
                       )}
                     </div>
                   ))
@@ -349,7 +425,7 @@ function ProcessCardBody({ deal, onOpenContact }: { deal: Deal; onOpenContact?: 
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); if (deal.contact) onOpenContact?.(deal.contact.id) }}
-        className="flex items-center gap-2 pr-5 w-full text-left group/contact"
+        className="flex items-center gap-2 pr-16 w-full text-left group/contact"
         data-testid="process-card-title"
       >
         {deal.contact && <Avatar name={name} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />}
@@ -379,6 +455,72 @@ function ProcessCardBody({ deal, onOpenContact }: { deal: Deal; onOpenContact?: 
           <span className="inline-flex items-center gap-1 tabular-nums"><Phone className="w-3 h-3" /> {phone}</span>
         )}
       </div>
+    </>
+  )
+}
+
+/**
+ * Corpo do card em funil de VENDA (D2 · SCRUM-935/F-FUNIL-11): além do título
+ * e valor de sempre, agora mostra dono, previsão de fechamento, tempo na
+ * etapa e origem — o mesmo conjunto de sinais que o card de processo já
+ * tinha, adaptado ao vocabulário de venda. `users` resolve o nome do dono
+ * (o board não recebe isso embutido no `Deal`, só o `ownerUserId`).
+ */
+function SalesCardBody({ deal, onOpenContact, users }: { deal: Deal; onOpenContact?: (contactId: string) => void; users: User[] }) {
+  const origin = originInfo(deal)
+  const OriginIcon = origin.icon
+  const time = timeInStage(deal)
+  const owner = deal.ownerUserId ? users.find((u) => u.id === deal.ownerUserId) ?? null : null
+  const ownerLabel = !deal.ownerUserId ? 'Sem dono' : owner ? `${owner.firstName} ${owner.lastName ?? ''}`.trim() : 'Atribuído'
+  const forecast = deal.expectedCloseAt
+    ? new Date(deal.expectedCloseAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    : null
+
+  return (
+    <>
+      <div className="text-sm font-medium text-surface-100 truncate pr-20">{deal.title}</div>
+      <div className="mt-1 flex items-center justify-between">
+        <span className="text-xs text-surface-400">{brl(deal.amountCents ?? 0)}</span>
+        <div className="flex items-center gap-1">
+          {deal.createdByKind === 'ai' && (
+            <span className="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded">IA</span>
+          )}
+          {deal.createdByKind === 'automation' && (
+            <span className="text-[10px] text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded">auto</span>
+          )}
+        </div>
+      </div>
+      <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-surface-500">
+        <span className="inline-flex items-center gap-1 truncate" data-testid="sales-card-owner">
+          <UserRound className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{ownerLabel}</span>
+        </span>
+        <span className="inline-flex items-center gap-1 flex-shrink-0" data-testid="sales-card-forecast">
+          <CalendarClock className="w-3 h-3" /> {forecast ?? 'sem previsão'}
+        </span>
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-surface-500">
+        <span className="inline-flex items-center gap-1 truncate" title={origin.label} data-testid="sales-card-origin">
+          <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
+        </span>
+        {time && (
+          <span className="inline-flex items-center gap-1 flex-shrink-0" data-testid="sales-card-time">
+            <Clock className="w-3 h-3" /> {time}
+          </span>
+        )}
+      </div>
+      {deal.contact && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onOpenContact?.(deal.contact!.id) }}
+          className="mt-2 flex items-center gap-1.5 text-[11px] text-surface-500 hover:text-brand-400 transition-colors group/contact w-full"
+        >
+          <Avatar name={deal.contact.displayName} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />
+          <span className="truncate flex-1 text-left">{deal.contact.displayName}</span>
+          <span className="flex items-center gap-0.5 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
+            ver contato <ArrowRight className="w-3 h-3" />
+          </span>
+        </button>
+      )}
     </>
   )
 }
