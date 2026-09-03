@@ -190,7 +190,7 @@ export function SubcategoryPreview({ category, subCategory }: Props) {
           </div>
           <div className="flex-1">
             <p className="text-xs font-semibold leading-none">{cfg.contactName}</p>
-            <p className="text-[10px] text-white/55 mt-0.5">online</p>
+            <p className="text-3xs text-white/55 mt-0.5">online</p>
           </div>
           <div className="flex items-center gap-2.5 opacity-60">
             <div className="w-1 h-1 rounded-full bg-white" />
@@ -247,7 +247,7 @@ export function SubcategoryPreview({ category, subCategory }: Props) {
       </div>
 
       {/* Description */}
-      <p className="text-[11px] text-surface-500 text-center leading-relaxed px-2">
+      <p className="text-2xs text-surface-500 text-center leading-relaxed px-2">
         {cfg.description}
       </p>
     </div>
@@ -280,8 +280,8 @@ function MessageBubble({
             <span className="text-[7px] font-bold text-red-400 uppercase">pdf</span>
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-medium text-[#374151] leading-tight truncate">{cfg.documentName}</p>
-            <p className="text-[10px] text-[#6b7280] mt-0.5">2.4 MB · PDF</p>
+            <p className="text-2xs font-medium text-[#374151] leading-tight truncate">{cfg.documentName}</p>
+            <p className="text-3xs text-[#6b7280] mt-0.5">2.4 MB · PDF</p>
           </div>
         </div>
       )}
@@ -311,15 +311,15 @@ function MessageBubble({
       {/* Order details summary (inline) */}
       {subCategory === 'order_details' && (
         <div className="mx-3 mb-1 bg-[#f8f8f8] border border-[#e5e5e5] rounded-lg px-2.5 py-2 space-y-1">
-          <div className="flex justify-between text-[10px]">
+          <div className="flex justify-between text-3xs">
             <span className="text-[#6b7280]">Camiseta Básica (M)</span>
             <span className="text-[#374151] font-medium">R$ 89,90</span>
           </div>
-          <div className="flex justify-between text-[10px]">
+          <div className="flex justify-between text-3xs">
             <span className="text-[#6b7280]">Tênis Running (42)</span>
             <span className="text-[#374151] font-medium">R$ 299,00</span>
           </div>
-          <div className="flex justify-between text-[10px] border-t border-[#e5e5e5] pt-1">
+          <div className="flex justify-between text-3xs border-t border-[#e5e5e5] pt-1">
             <span className="font-semibold text-[#1f2937]">Total</span>
             <span className="font-bold text-[#111827]">R$ 388,90</span>
           </div>
@@ -329,13 +329,13 @@ function MessageBubble({
       {/* Footer */}
       {cfg.footer && (
         <div className="px-3 pb-1">
-          <p className="text-[10px] text-[#9ca3af]">{cfg.footer}</p>
+          <p className="text-3xs text-[#9ca3af]">{cfg.footer}</p>
         </div>
       )}
 
       {/* Timestamp */}
       <div className="px-3 pb-1.5 flex justify-end">
-        <span className="text-[10px] text-[#9ca3af]">12:47 ✓✓</span>
+        <span className="text-3xs text-[#9ca3af]">12:47 ✓✓</span>
       </div>
 
       {/* Action buttons */}
@@ -371,7 +371,7 @@ function CatalogPanel() {
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#f3f4f6] flex-shrink-0">
         <ChevronLeft className="w-4 h-4 text-[#0078D7]" />
         <p className="text-xs font-semibold text-[#111827] flex-1">Catálogo da loja</p>
-        <span className="text-[10px] text-[#6b7280] bg-[#f3f4f6] px-1.5 py-0.5 rounded-full">{PRODUCTS.length} itens</span>
+        <span className="text-3xs text-[#6b7280] bg-[#f3f4f6] px-1.5 py-0.5 rounded-full">{PRODUCTS.length} itens</span>
       </div>
 
       {/* Products list */}
@@ -382,10 +382,10 @@ function CatalogPanel() {
               <Emoji native={p.emoji} size="1.75rem" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold text-[#111827] leading-tight">{p.name}</p>
-              <p className="text-[11px] text-emerald-600 font-medium mt-0.5">{p.price}</p>
+              <p className="text-2xs font-semibold text-[#111827] leading-tight">{p.name}</p>
+              <p className="text-2xs text-emerald-600 font-medium mt-0.5">{p.price}</p>
             </div>
-            <button className="bg-[#0078D7] text-white text-[10px] px-2 py-1 rounded-lg font-medium flex-shrink-0 whitespace-nowrap">
+            <button className="bg-[#0078D7] text-white text-3xs px-2 py-1 rounded-lg font-medium flex-shrink-0 whitespace-nowrap">
               + Add
             </button>
           </div>
@@ -394,7 +394,7 @@ function CatalogPanel() {
 
       {/* Footer */}
       <div className="border-t border-[#f3f4f6] px-3 py-2 flex-shrink-0">
-        <p className="text-[11px] text-center text-[#0078D7] font-medium">Ver todos os produtos →</p>
+        <p className="text-2xs text-center text-[#0078D7] font-medium">Ver todos os produtos →</p>
       </div>
     </div>
   )
@@ -413,7 +413,7 @@ function FlowPanel({ phase }: { phase: FlowPhase }) {
         <div className="flex-1">
           <p className="text-xs font-semibold leading-none">Formulário de contato</p>
           {phase !== 'done' && (
-            <p className="text-[10px] text-white/55 mt-0.5">
+            <p className="text-3xs text-white/55 mt-0.5">
               {phase === 'q1' || phase === 'selecting' ? 'Passo 1 de 2' : 'Passo 2 de 2'}
             </p>
           )}
@@ -453,7 +453,7 @@ function FlowPanel({ phase }: { phase: FlowPhase }) {
                         {chosen && <div className="w-2 h-2 rounded-full bg-[#0078D7]" />}
                       </div>
                       <span className={cn(
-                        'text-[11px] transition-colors',
+                        'text-2xs transition-colors',
                         chosen ? 'text-[#0078D7] font-medium' : 'text-[#374151]'
                       )}>
                         {opt}
@@ -478,11 +478,11 @@ function FlowPanel({ phase }: { phase: FlowPhase }) {
               <p className="text-xs font-semibold text-[#111827]">Como prefere ser contatado?</p>
               <div className="bg-[#0078D7]/8 border border-[#0078D7]/30 rounded-xl px-3 py-2.5 flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-[#0078D7]" />
-                <span className="text-[11px] text-[#0078D7] font-medium">WhatsApp</span>
+                <span className="text-2xs text-[#0078D7] font-medium">WhatsApp</span>
               </div>
               <div>
-                <p className="text-[10px] text-[#6b7280] mb-1.5">Seu nome completo</p>
-                <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl px-3 py-2.5 text-[11px] text-[#9ca3af] flex items-center gap-1">
+                <p className="text-3xs text-[#6b7280] mb-1.5">Seu nome completo</p>
+                <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl px-3 py-2.5 text-2xs text-[#9ca3af] flex items-center gap-1">
                   <span className="inline-block w-0.5 h-3.5 bg-[#9ca3af] animate-pulse rounded-full" />
                   <span className="ml-1">Digitar aqui...</span>
                 </div>
@@ -509,11 +509,11 @@ function FlowPanel({ phase }: { phase: FlowPhase }) {
               </motion.div>
               <div className="text-center">
                 <p className="text-sm font-semibold text-[#111827]">Enviado com sucesso!</p>
-                <p className="text-[11px] text-[#6b7280] mt-1 leading-relaxed">
+                <p className="text-2xs text-[#6b7280] mt-1 leading-relaxed">
                   Nossa equipe entrará em contato em breve.
                 </p>
               </div>
-              <p className="text-[11px] text-[#0078D7] font-medium mt-1">Fechar</p>
+              <p className="text-2xs text-[#0078D7] font-medium mt-1">Fechar</p>
             </motion.div>
           )}
         </AnimatePresence>

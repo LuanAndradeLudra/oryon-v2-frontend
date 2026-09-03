@@ -45,7 +45,7 @@ function Section({
         <span className="text-surface-400 flex-shrink-0">{icon}</span>
         <span className="flex-1 text-sm font-medium text-surface-200">{title}</span>
         {badge && (
-          <span className="text-[10px] text-surface-500 bg-surface-800/60 px-1.5 py-0.5 rounded-full">
+          <span className="text-3xs text-surface-500 bg-surface-800/60 px-1.5 py-0.5 rounded-full">
             {badge}
           </span>
         )}
@@ -93,7 +93,7 @@ function InstructionsSection({ kb, setInstructions }: { kb: ReturnType<typeof us
 
   return (
     <div className="px-4 pb-4">
-      <p className="text-[11px] text-surface-500 mb-2 leading-relaxed">
+      <p className="text-2xs text-surface-500 mb-2 leading-relaxed">
         Personalize como a Oryon AI responde. Essas instruções são aplicadas em todas as conversas.
       </p>
       <div className="relative">
@@ -111,7 +111,7 @@ function InstructionsSection({ kb, setInstructions }: { kb: ReturnType<typeof us
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute bottom-2.5 right-2.5 flex items-center gap-1 text-[10px] text-status-active"
+              className="absolute bottom-2.5 right-2.5 flex items-center gap-1 text-3xs text-status-active"
             >
               <Check className="w-3 h-3" /> Salvo
             </motion.div>
@@ -162,12 +162,12 @@ function CompanyFieldRow({
           className="bg-transparent text-xs text-surface-300 outline-none placeholder:text-surface-600"
         />
         <div className="flex gap-2 justify-end mt-0.5">
-          <button onClick={() => setEditing(false)} className="text-[10px] text-surface-500 hover:text-surface-300">
+          <button onClick={() => setEditing(false)} className="text-3xs text-surface-500 hover:text-surface-300">
             Cancelar
           </button>
           <button
             onClick={save}
-            className="text-[10px] text-brand-400 hover:text-brand-300 font-medium"
+            className="text-3xs text-brand-400 hover:text-brand-300 font-medium"
           >
             Salvar
           </button>
@@ -179,7 +179,7 @@ function CompanyFieldRow({
   return (
     <div className="flex items-start gap-2 group">
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] text-surface-500 leading-tight">{field.label || '—'}</p>
+        <p className="text-3xs text-surface-500 leading-tight">{field.label || '—'}</p>
         <p className="text-xs text-surface-300 leading-snug mt-0.5 break-words">{field.value || '—'}</p>
       </div>
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
@@ -232,7 +232,7 @@ function CompanySection({ kb, upsertCompanyField, deleteCompanyField }: {
 
   return (
     <div className="px-4 pb-4 flex flex-col gap-2">
-      <p className="text-[11px] text-surface-500 leading-relaxed">
+      <p className="text-2xs text-surface-500 leading-relaxed">
         Informações sobre sua empresa, produtos, redes sociais e links úteis.
       </p>
 
@@ -253,20 +253,20 @@ function CompanySection({ kb, upsertCompanyField, deleteCompanyField }: {
         <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-surface-800/50 border border-surface-700/50">
           {showPresets ? (
             <>
-              <p className="text-[10px] text-surface-500 mb-1">Selecionar campo:</p>
+              <p className="text-3xs text-surface-500 mb-1">Selecionar campo:</p>
               <div className="grid grid-cols-2 gap-1">
                 {COMPANY_PRESETS.map((p) => (
                   <button
                     key={p.label}
                     onClick={() => { setNewLabel(p.label); setShowPresets(false) }}
-                    className="text-left text-[11px] text-surface-300 hover:text-brand-300 px-2 py-1 rounded-lg hover:bg-surface-700/50 transition-colors"
+                    className="text-left text-2xs text-surface-300 hover:text-brand-300 px-2 py-1 rounded-lg hover:bg-surface-700/50 transition-colors"
                   >
                     {p.label}
                   </button>
                 ))}
                 <button
                   onClick={() => setShowPresets(false)}
-                  className="text-left text-[11px] text-surface-500 hover:text-surface-300 px-2 py-1 rounded-lg hover:bg-surface-700/50 transition-colors"
+                  className="text-left text-2xs text-surface-500 hover:text-surface-300 px-2 py-1 rounded-lg hover:bg-surface-700/50 transition-colors"
                 >
                   Personalizado...
                 </button>
@@ -291,18 +291,18 @@ function CompanySection({ kb, upsertCompanyField, deleteCompanyField }: {
               <div className="flex gap-2 justify-between mt-0.5">
                 <button
                   onClick={() => setShowPresets(true)}
-                  className="text-[10px] text-surface-500 hover:text-surface-300"
+                  className="text-3xs text-surface-500 hover:text-surface-300"
                 >
                   Usar modelo
                 </button>
                 <div className="flex gap-2">
-                  <button onClick={() => { setAdding(false); setNewLabel(''); setNewValue('') }} className="text-[10px] text-surface-500 hover:text-surface-300">
+                  <button onClick={() => { setAdding(false); setNewLabel(''); setNewValue('') }} className="text-3xs text-surface-500 hover:text-surface-300">
                     Cancelar
                   </button>
                   <button
                     onClick={() => addField()}
                     disabled={!newLabel.trim()}
-                    className="text-[10px] text-brand-400 hover:text-brand-300 font-medium disabled:opacity-40"
+                    className="text-3xs text-brand-400 hover:text-brand-300 font-medium disabled:opacity-40"
                   >
                     Adicionar
                   </button>
@@ -314,7 +314,7 @@ function CompanySection({ kb, upsertCompanyField, deleteCompanyField }: {
       ) : (
         <button
           onClick={() => setAdding(true)}
-          className="flex items-center gap-1.5 text-[11px] text-surface-500 hover:text-brand-400 transition-colors self-start"
+          className="flex items-center gap-1.5 text-2xs text-surface-500 hover:text-brand-400 transition-colors self-start"
         >
           <Plus className="w-3 h-3" />
           Adicionar campo
@@ -366,7 +366,7 @@ function DocumentCard({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-surface-200 truncate">{doc.name}</p>
-            <p className="text-[10px] text-surface-500 mt-0.5">
+            <p className="text-3xs text-surface-500 mt-0.5">
               {kindLabel} · {sizeLabel}
             </p>
           </div>
@@ -486,10 +486,10 @@ function DocumentsSection({ kb, addDocument, deleteDocument, totalSize }: {
       {/* Usage bar */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-surface-500">
+          <span className="text-3xs text-surface-500">
             {kb.documents.length}/{KB_MAX_DOCS} documentos
           </span>
-          <span className="text-[10px] text-surface-500">{usedPercent.toFixed(0)}% usado</span>
+          <span className="text-3xs text-surface-500">{usedPercent.toFixed(0)}% usado</span>
         </div>
         <div className="h-1 bg-surface-800 rounded-full overflow-hidden">
           <motion.div
@@ -540,7 +540,7 @@ function DocumentsSection({ kb, addDocument, deleteDocument, totalSize }: {
 
       {/* Upload error */}
       {uploadError && (
-        <p className="text-[11px] text-status-pending/80">{uploadError}</p>
+        <p className="text-2xs text-status-pending/80">{uploadError}</p>
       )}
 
       {/* Add buttons */}
@@ -548,7 +548,7 @@ function DocumentsSection({ kb, addDocument, deleteDocument, totalSize }: {
         <div className="flex gap-2">
           <button
             onClick={() => setMode('text')}
-            className="flex items-center gap-1.5 text-[11px] text-surface-500 hover:text-brand-400 transition-colors"
+            className="flex items-center gap-1.5 text-2xs text-surface-500 hover:text-brand-400 transition-colors"
           >
             <FileText className="w-3 h-3" />
             Texto
@@ -556,7 +556,7 @@ function DocumentsSection({ kb, addDocument, deleteDocument, totalSize }: {
           <span className="text-surface-700">·</span>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 text-[11px] text-surface-500 hover:text-brand-400 transition-colors"
+            className="flex items-center gap-1.5 text-2xs text-surface-500 hover:text-brand-400 transition-colors"
           >
             <Upload className="w-3 h-3" />
             Upload (PDF / Word / MD)
@@ -618,7 +618,7 @@ export function KnowledgePanel({ isOpen, onClose, tenantId }: KnowledgePanelProp
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-surface-100">Base de Conhecimento</p>
-              <p className="text-[10px] text-surface-500">Contexto para todas as conversas</p>
+              <p className="text-3xs text-surface-500">Contexto para todas as conversas</p>
             </div>
             <button
               onClick={onClose}
@@ -669,7 +669,7 @@ export function KnowledgePanel({ isOpen, onClose, tenantId }: KnowledgePanelProp
 
           {/* Footer hint */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-surface-800/60">
-            <p className="text-[10px] text-surface-600 leading-relaxed text-center">
+            <p className="text-3xs text-surface-600 leading-relaxed text-center">
               Informações aqui são injetadas automaticamente no contexto da Oryon AI
             </p>
           </div>

@@ -77,7 +77,7 @@ function AnalyzingState() {
           style={{ width: `${((stepIndex + 1) / ANALYSIS_STEPS.length) * 100}%` }}
         />
       </div>
-      <p className="text-[11px] text-surface-500 min-h-[16px] transition-colors">
+      <p className="text-2xs text-surface-500 min-h-[16px] transition-colors">
         {ANALYSIS_STEPS[stepIndex]}
       </p>
     </div>
@@ -96,7 +96,7 @@ function ConfidenceBar({ value, color }: { value: number; color: string }) {
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-[11px] font-bold tabular-nums text-surface-300">{pct}%</span>
+      <span className="text-2xs font-bold tabular-nums text-surface-300">{pct}%</span>
     </div>
   )
 }
@@ -132,7 +132,7 @@ function CapiStatusBadge({
     return (
       <Banner variant="success">
         <p className="font-semibold">Evento enviado para Meta CAPI</p>
-        <p className="text-[10px] text-surface-500">
+        <p className="text-3xs text-surface-500">
           Conversão de R$ {(analysis.dealValue ?? analysis.conversionValue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} reportada
         </p>
       </Banner>
@@ -144,13 +144,13 @@ function CapiStatusBadge({
       <Send className="w-3.5 h-3.5 text-[#1877f2] flex-shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-surface-200">Reportar ao Meta CAPI</p>
-        <p className="text-[10px] text-surface-500 mt-0.5">
+        <p className="text-3xs text-surface-500 mt-0.5">
           Fechar o loop: enviar evento de Purchase para o Meta usando o CTWA Click ID capturado no webhook.
         </p>
         <button
           onClick={handleSend}
           disabled={sending}
-          className="mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white transition-colors disabled:opacity-60"
+          className="mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-semibold text-white transition-colors disabled:opacity-60"
           style={{ backgroundColor: '#1877f2' }}
         >
           {sending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
@@ -174,7 +174,7 @@ function FeedbackMessage({ type }: { type: 'confirmed' | 'rejected' }) {
   if (!visible) return null
 
   return (
-    <div className="flex items-center gap-1.5 text-[11px] -mt-1">
+    <div className="flex items-center gap-1.5 text-2xs -mt-1">
       {type === 'confirmed' ? (
         <>
           <CheckCircle2 className="w-3.5 h-3.5 text-online" />
@@ -236,18 +236,18 @@ function AnalysisResult({
         </div>
         <div className="flex-1 min-w-0 pt-1">
           <ConfidenceBar value={analysis.confidence} color={cfg.color} />
-          <p className="text-[10px] text-surface-500 mt-0.5">confiança da análise</p>
+          <p className="text-3xs text-surface-500 mt-0.5">confiança da análise</p>
         </div>
       </div>
 
       {/* Summary */}
-      <p className="text-[11px] text-surface-400 leading-relaxed">{analysis.summary}</p>
+      <p className="text-2xs text-surface-400 leading-relaxed">{analysis.summary}</p>
 
       {/* Signals toggle */}
       <div>
         <button
           onClick={() => setShowSignals((v) => !v)}
-          className="flex items-center gap-1 text-[11px] text-surface-500 hover:text-surface-300 transition-colors mb-1.5"
+          className="flex items-center gap-1 text-2xs text-surface-500 hover:text-surface-300 transition-colors mb-1.5"
         >
           {showSignals ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           {analysis.signals.length} sinal(is) detectado(s)
@@ -257,13 +257,13 @@ function AnalysisResult({
             {analysis.signals.map((s, i) => (
               <div key={i} className="flex items-start gap-1.5">
                 <span className="w-1 h-1 rounded-full bg-online mt-1.5 flex-shrink-0" />
-                <span className="text-[11px] text-surface-300">{s}</span>
+                <span className="text-2xs text-surface-300">{s}</span>
               </div>
             ))}
             {analysis.objections?.map((o, i) => (
               <div key={`obj-${i}`} className="flex items-start gap-1.5">
                 <span className="w-1 h-1 rounded-full bg-danger mt-1.5 flex-shrink-0" />
-                <span className="text-[11px] text-surface-400">{o}</span>
+                <span className="text-2xs text-surface-400">{o}</span>
               </div>
             ))}
           </div>
@@ -274,7 +274,7 @@ function AnalysisResult({
       {analysis.nextAction && (
         <div className="flex items-start gap-2 px-2.5 py-2 bg-brand-500/8 border border-brand-500/20 rounded-lg">
           <Sparkles className="w-3.5 h-3.5 text-brand-400 flex-shrink-0 mt-0.5" />
-          <p className="text-[11px] text-brand-300">{analysis.nextAction}</p>
+          <p className="text-2xs text-brand-300">{analysis.nextAction}</p>
         </div>
       )}
 
@@ -285,7 +285,7 @@ function AnalysisResult({
             <p className="text-[9px] text-surface-500 uppercase tracking-wide mb-0.5">Valor detectado</p>
             {isPending ? (
               <div className="flex items-center gap-1">
-                <span className="text-[10px] text-surface-500">R$</span>
+                <span className="text-3xs text-surface-500">R$</span>
                 <input
                   type="text"
                   value={dealInput}
@@ -449,9 +449,9 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
           <Sparkles className="w-3.5 h-3.5 text-brand-400" />
         </div>
         <div>
-          <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold">Análise de Conversão IA</p>
+          <p className="text-3xs text-surface-500 uppercase tracking-wide font-semibold">Análise de Conversão IA</p>
           {hasAttribution && platformName && (
-            <p className="text-[10px] mt-0.5" style={{ color: platformColor }}>
+            <p className="text-3xs mt-0.5" style={{ color: platformColor }}>
               {platformName}{campaignName ? ` · ${campaignName}` : ''}
             </p>
           )}
@@ -471,7 +471,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
           {hasAttribution && (
             <div className="flex items-start gap-2 px-2.5 py-2 bg-surface-800/60 rounded-lg border border-surface-700/50">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: platformColor }} />
-              <p className="text-[11px] text-surface-400">
+              <p className="text-2xs text-surface-400">
                 Lead com atribuição de anúncio detectada. Analise a conversa para fechar o ciclo de atribuição e calcular o ROAS real.
               </p>
             </div>
