@@ -89,7 +89,7 @@ const DEFAULT_DATA: WizardData = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STEP_LABELS = ['Identidade', 'Personalidade', 'Escopo', 'Negócio', 'Implantação', 'Base de Conhecimento', 'Gerar Prompt', 'Revisão']
+const STEP_LABELS = ['Identidade', 'Personalidade', 'Escopo', 'Negócio', 'Passar para humano', 'Base de Conhecimento', 'Gerar Prompt', 'Revisão']
 
 
 const SECTORS = [
@@ -829,7 +829,7 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
   )
 }
 
-// ─── Step 5: Implantação ──────────────────────────────────────────────────────
+// ─── Step 5: Passar para humano ───────────────────────────────────────────────
 
 function Step5({ data, setData }: { data: WizardData; setData: React.Dispatch<React.SetStateAction<WizardData>> }) {
   const businessContext: HandoffBusinessContext = {
@@ -2085,8 +2085,15 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                     transition={{ duration: 0.3, ease: 'easeOut' }}
                   >
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-9 h-9 rounded-lg bg-brand-600/20 border border-brand-500/30 flex items-center justify-center flex-shrink-0">
-                        <TeachingIcon className="w-4.5 h-4.5 text-brand-400" />
+                      <div
+                        className="w-9 h-9 rounded-lg border flex items-center justify-center flex-shrink-0"
+                        style={{
+                          color: teaching.accent,
+                          backgroundColor: `color-mix(in srgb, ${teaching.accent} 18%, transparent)`,
+                          borderColor: `color-mix(in srgb, ${teaching.accent} 32%, transparent)`,
+                        }}
+                      >
+                        <TeachingIcon className="w-4.5 h-4.5" />
                       </div>
                       <h2 className="text-base font-bold text-surface-100 leading-tight">{teaching.title}</h2>
                     </div>
@@ -2207,7 +2214,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                       exit={{ opacity: 0, x: -24 }}
                       transition={{ duration: 0.25, ease: 'easeOut' }}
                     >
-                      <div className="bg-surface-900/70 backdrop-blur-sm border border-surface-800 rounded-2xl p-6 shadow-xl">
+                      <div className="bg-surface-900/70 backdrop-blur-sm overlay-frame border rounded-2xl p-6">
                         {step === 1 && <Step1 data={data} setData={setData} />}
                         {step === 2 && <Step2 data={data} setData={setData} />}
                         {step === 3 && <Step3 data={data} setData={setData} />}
