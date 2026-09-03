@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, BarChart3, TrendingUp, Users, MessageCircle, ShoppingCart,
-  AlertTriangle, CheckCircle2, Sparkles, Loader2, ChevronRight,
+  AlertTriangle, CheckCircle2, Sparkles, ChevronRight,
   ThumbsDown, Target, Zap, Megaphone, Globe, Crown, Filter, ExternalLink,
 } from 'lucide-react'
 import {
@@ -11,6 +11,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/ui/Spinner'
 import { campaignsApi } from '@/services/api'
 import { generateCampaignInsights } from '@/services/copilotService'
 import { useChartColors } from '@/hooks/useChartColors'
@@ -126,7 +127,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
           )}
         >
           {loading ? (
-            <><Loader2 className="w-3 h-3 animate-spin" />Analisando...</>
+            <><Spinner className="w-3 h-3" />Analisando...</>
           ) : generated ? (
             <><Sparkles className="w-3 h-3" />Reanalisar</>
           ) : (
@@ -146,7 +147,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
 
       {loading && (
         <div className="flex items-center justify-center py-8 gap-2 text-xs text-surface-500">
-          <Loader2 className="w-4 h-4 animate-spin text-brand-400" />
+          <Spinner className="w-4 h-4 text-brand-400" />
           Analisando métricas da campanha...
         </div>
       )}
@@ -331,7 +332,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
 
         {loading ? (
           <div className="flex items-center justify-center flex-1 gap-2 text-xs text-surface-500">
-            <Loader2 className="w-5 h-5 animate-spin text-brand-400" />
+            <Spinner className="w-5 h-5 text-brand-400" />
             Carregando dados...
           </div>
         ) : (
