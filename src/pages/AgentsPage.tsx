@@ -20,7 +20,8 @@ import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommended
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { SkeletonList, SkeletonCard } from '@/components/ui/Skeleton'
+import { SkeletonList, SkeletonCard, Skeleton } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -61,19 +62,25 @@ function relativeTime(iso: string): string {
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
+// Acento violeta — mesmo tom já usado em todo o produto pra sinalizar "isto é
+// IA" (ex.: CHIP.violet em ConversationActivitySection/timelineSources pros
+// eventos do agente), em vez do brand-600 genérico que qualquer CTA usa.
 function NoAgentsState({ onNew }: { onNew: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8">
-      <div className="w-20 h-20 rounded-3xl bg-brand-600/8 ring-1 ring-brand-500/15 flex items-center justify-center">
-        <Bot className="w-10 h-10 text-brand-500/60" />
+      <div
+        className="w-20 h-20 rounded-3xl flex items-center justify-center"
+        style={{ backgroundColor: 'color-mix(in srgb, var(--color-accent-violet) 10%, transparent)', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--color-accent-violet) 20%, transparent)' }}
+      >
+        <Bot className="w-10 h-10" style={{ color: 'color-mix(in srgb, var(--color-accent-violet) 65%, transparent)' }} />
       </div>
       <div>
-        <p className="text-base font-semibold text-surface-200">Selecione um agente</p>
-        <p className="text-sm text-surface-500 mt-1">ou crie um novo para começar</p>
+        <p className="text-base font-semibold text-surface-200">Nenhum agente ainda</p>
+        <p className="text-sm text-surface-500 mt-1">crie o primeiro pra começar a atender no WhatsApp</p>
       </div>
       <button
         onClick={onNew}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-medium transition-colors shadow-lg shadow-brand-900/30"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-medium transition-colors shadow-lg shadow-brand-900/30"
       >
         <Sparkles className="w-4 h-4" />
         Criar primeiro agente
@@ -130,7 +137,7 @@ function AgentCard({
       onClick={onClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'relative w-full text-left pl-4 pr-3 py-3 rounded-xl border transition-colors duration-150 group cursor-pointer',
+        'relative w-full text-left pl-4 pr-3 py-3 rounded-2xl border transition-colors duration-150 group cursor-pointer',
         selected
           ? 'bg-brand-600/10 border-brand-500/30'
           : 'bg-surface-900/50 border-surface-800/60 hover:bg-surface-800/60 hover:border-surface-700',
@@ -301,9 +308,12 @@ export function AgentsPage() {
               {loadingList ? (
                 <SkeletonList items={5} />
               ) : filtered.length === 0 ? (
-                <p className="text-center text-xs text-surface-600 py-10">
-                  Nenhum agente {statusFilter !== 'all' ? 'neste status' : ''}
-                </p>
+                <EmptyState
+                  icon={Bot}
+                  title={statusFilter === 'all' ? 'Nenhum agente ainda' : 'Nenhum agente neste status'}
+                  className="py-10"
+                  iconStyle={{ color: 'color-mix(in srgb, var(--color-accent-violet) 55%, transparent)' }}
+                />
               ) : (
                 filtered.map(agent => (
                   <AgentCard
@@ -326,13 +336,13 @@ export function AgentsPage() {
             <div className="px-6 pt-6 space-y-4">
               {/* Skeleton espelha o header + tabs do detail — sem "flash" de spinner */}
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-surface-800 animate-pulse" />
+                <Skeleton className="w-12 h-12 rounded-2xl" />
                 <div className="space-y-2">
-                  <div className="h-4 w-48 rounded bg-surface-800 animate-pulse" />
-                  <div className="h-3 w-32 rounded bg-surface-800/70 animate-pulse" />
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32 bg-surface-800/70" />
                 </div>
               </div>
-              <div className="h-9 w-full max-w-lg rounded bg-surface-800/60 animate-pulse" />
+              <Skeleton className="h-9 w-full max-w-lg bg-surface-800/60" />
               <SkeletonCard lines={4} />
             </div>
           ) : selectedAgent ? (
