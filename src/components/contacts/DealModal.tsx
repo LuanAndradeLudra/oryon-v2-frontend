@@ -66,7 +66,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   const [pipelineStageId, setPipelineStageId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  // "Mover para funil" (SCRUM-293) — ação independente do Salvar: troca o
+  // "Transferir de funil" (SCRUM-293) — ação independente do Salvar: troca o
   // pipeline de um deal ABERTO já existente, algo que o create/edit normal
   // nunca permitiu (funil era imutável fora da criação).
   const [movePipelineId, setMovePipelineId] = useState('')
@@ -284,13 +284,13 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           />
         </FormField>
 
-        {/* Mover para funil (SCRUM-293) — só p/ deal ABERTO já existente; ação
+        {/* Transferir de funil (SCRUM-293) — só p/ deal ABERTO já existente; ação
             própria, imediata, independente do "Salvar" abaixo. */}
         {multiPipeline && editDeal && editDeal.status === 'open' && (
           <FormField
-            label="Mover para funil"
+            label="Transferir de funil"
             error={moveError}
-            hint={getActivePipelines(pipelines).length <= 1 ? 'Nenhum outro funil disponível pra mover.' : undefined}
+            hint={getActivePipelines(pipelines).length <= 1 ? 'Nenhum outro funil disponível pra transferir.' : undefined}
           >
             <div className="flex gap-2">
               <div className="flex-1">
@@ -311,7 +311,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                 disabled={!movePipelineId || moving}
                 className="px-3 py-2 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 disabled:opacity-50 transition-all whitespace-nowrap"
               >
-                {moving ? 'Movendo...' : 'Mover'}
+                {moving ? 'Transferindo...' : 'Transferir'}
               </button>
             </div>
           </FormField>

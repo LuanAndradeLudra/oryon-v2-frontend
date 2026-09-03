@@ -16,7 +16,7 @@ interface DealsBoardProps {
   loading?: boolean
   /** Abre a ficha do contato do negócio — chip "ver contato →" no card. */
   onOpenContact?: (contactId: string) => void
-  /** Funis do tenant — alimenta o menu "Mover para funil" de cada card
+  /** Funis do tenant — alimenta o menu "Transferir de funil" de cada card
    *  (SCRUM-293). Omitido/vazio = menu não aparece. */
   pipelines?: Pipeline[]
   onMovePipeline?: (deal: Deal, toPipelineId: string) => void
@@ -83,7 +83,7 @@ export function DealsBoard({
   const currentPipelineId = stages[0]?.pipelineId
   const otherPipelines = getActivePipelines(pipelines).filter((p) => p.id !== currentPipelineId)
 
-  // Fecha os menus de card ("Mover para funil" / "Mover ▾") ao clicar fora deles.
+  // Fecha os menus de card ("Transferir de funil" / "Mover ▾") ao clicar fora deles.
   useEffect(() => {
     if (!pipelineMenuDealId && !stageMenuDealId) return
     const onDocClick = () => { setPipelineMenuDealId(null); setStageMenuDealId(null) }
@@ -370,7 +370,7 @@ export function DealsBoard({
                               >
                                 <div className="px-3 py-2 border-b border-surface-700">
                                   <span className="text-[10px] font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
-                                    <ArrowRightLeft className="w-3 h-3" /> Mover para funil
+                                    <ArrowRightLeft className="w-3 h-3" /> Transferir de funil
                                   </span>
                                 </div>
                                 {otherPipelines.map((p) => (
