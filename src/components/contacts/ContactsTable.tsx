@@ -91,13 +91,13 @@ export function ContactsTable({
                   // seleção cobre a lista inteira filtrada.
                   aria-label={
                     allSelected
-                      ? `Desmarcar os ${contacts.length} contatos desta página`
-                      : `Selecionar os ${contacts.length} contatos desta página`
+                      ? `Desmarcar o${contacts.length === 1 ? '' : 's'} ${contacts.length} contato${contacts.length === 1 ? '' : 's'} desta página`
+                      : `Selecionar o${contacts.length === 1 ? '' : 's'} ${contacts.length} contato${contacts.length === 1 ? '' : 's'} desta página`
                   }
                   title={
                     allSelected
-                      ? `Desmarcar os ${contacts.length} contatos desta página`
-                      : `Selecionar os ${contacts.length} contatos desta página`
+                      ? `Desmarcar o${contacts.length === 1 ? '' : 's'} ${contacts.length} contato${contacts.length === 1 ? '' : 's'} desta página`
+                      : `Selecionar o${contacts.length === 1 ? '' : 's'} ${contacts.length} contato${contacts.length === 1 ? '' : 's'} desta página`
                   }
                 >
                   {allSelected ? <Check className="w-3 h-3" /> : someSelected ? <Minus className="w-3 h-3" /> : null}
