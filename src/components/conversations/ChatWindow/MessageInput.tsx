@@ -12,7 +12,6 @@ import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
 import { templateVariableSlots, variablesComplete, variablesToArray } from '@/lib/templateVariables'
 import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
-import { showToast } from '@/hooks/useToast'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
@@ -480,9 +479,9 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
     const oversize = files.filter((f) => f.size > MAX_FILE_SIZE)
     const valid = files.filter((f) => f.size <= MAX_FILE_SIZE)
     if (oversize.length > 0) {
-      showToast(
-        `Arquivo${oversize.length > 1 ? 's' : ''} muito grande${oversize.length > 1 ? 's' : ''} (máx 16MB): ${oversize.map((f) => f.name).join(', ')}`,
-        'error',
+      alert(
+        `Arquivo${oversize.length > 1 ? 's' : ''} muito grande${oversize.length > 1 ? 's' : ''} (máx 16MB):\n` +
+        oversize.map((f) => `• ${f.name}`).join('\n'),
       )
     }
     if (valid.length === 0) return
