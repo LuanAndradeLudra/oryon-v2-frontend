@@ -774,7 +774,7 @@ function ToolsTab({
                   <button
                     onClick={() => setDeleteToolTarget(tool.id)}
                     disabled={deletingId === tool.id}
-                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-surface-600 hover:text-red-400 transition"
+                    className="p-1.5 rounded-lg hover:bg-danger/10 text-surface-600 hover:text-danger transition"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -940,7 +940,7 @@ function HandoffTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate
           </span>
         )}
         {status === 'error' && (
-          <span className="inline-flex items-center gap-1.5 text-red-400">
+          <span className="inline-flex items-center gap-1.5 text-danger">
             <AlertCircle className="w-3 h-3" />
             Falha ao salvar{errorMessage ? `: ${errorMessage}` : ''}
           </span>
@@ -1329,7 +1329,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
                   <button
                     type="button" onClick={() => setDeleteDocTarget(doc.id)}
                     title="Excluir"
-                    className="p-1 rounded text-surface-600 hover:text-red-400 transition"
+                    className="p-1 rounded text-surface-600 hover:text-danger transition"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1848,7 +1848,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
                 </button>
                 <button
                   onClick={() => setDeleteTarget(rule.id)}
-                  className="p-1.5 rounded-lg hover:bg-red-500/10 text-surface-600 hover:text-red-400 transition mt-0.5"
+                  className="p-1.5 rounded-lg hover:bg-danger/10 text-surface-600 hover:text-danger transition mt-0.5"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -1960,13 +1960,13 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
           </div>
           <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Taxa de sucesso</p>
-            <p className={cn('text-xl font-bold', successRate !== null && successRate >= 95 ? 'text-status-active' : successRate !== null && successRate >= 80 ? 'text-status-pending' : 'text-red-400')}>
+            <p className={cn('text-xl font-bold', successRate !== null && successRate >= 95 ? 'text-status-active' : successRate !== null && successRate >= 80 ? 'text-status-pending' : 'text-danger')}>
               {successRate !== null ? `${successRate}%` : '—'}
             </p>
           </div>
           <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Falhas</p>
-            <p className={cn('text-xl font-bold', totals.failures === 0 ? 'text-surface-400' : 'text-red-400')}>
+            <p className={cn('text-xl font-bold', totals.failures === 0 ? 'text-surface-400' : 'text-danger')}>
               {totals.failures.toLocaleString('pt-BR')}
             </p>
           </div>
@@ -2022,10 +2022,10 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
                   <tr key={r.tool_name} className="hover:bg-surface-800/30 transition">
                     <td className="px-4 py-2.5 font-mono text-surface-200">{r.tool_name}</td>
                     <td className="px-4 py-2.5 text-right text-surface-300">{r.total}</td>
-                    <td className={cn('px-4 py-2.5 text-right font-medium', rate >= 95 ? 'text-status-active' : rate >= 80 ? 'text-status-pending' : 'text-red-400')}>
+                    <td className={cn('px-4 py-2.5 text-right font-medium', rate >= 95 ? 'text-status-active' : rate >= 80 ? 'text-status-pending' : 'text-danger')}>
                       {r.successes} <span className="text-surface-600">({rate.toFixed(1)}%)</span>
                     </td>
-                    <td className={cn('px-4 py-2.5 text-right', r.failures === 0 ? 'text-surface-500' : 'text-red-400 font-medium')}>
+                    <td className={cn('px-4 py-2.5 text-right', r.failures === 0 ? 'text-surface-500' : 'text-danger font-medium')}>
                       {r.failures}
                     </td>
                     <td className="px-4 py-2.5 text-right text-surface-400">
