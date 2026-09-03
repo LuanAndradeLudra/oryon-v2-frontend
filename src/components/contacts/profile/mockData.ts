@@ -18,7 +18,7 @@ import type {
   Deal, ContactNote, ContactTask, CampaignTouch, AutomationRun,
 } from '@/types/contactProfile'
 
-export const PROFILE_MOCKS_ENABLED = true
+export const PROFILE_MOCKS_ENABLED = false
 
 /** Hash determinístico simples (soma de char codes) — só para variar mocks. */
 function hashOf(id: string): number {
