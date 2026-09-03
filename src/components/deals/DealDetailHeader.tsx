@@ -146,12 +146,12 @@ export function DealDetailHeader({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {onExpand && (
-            <button type="button" onClick={onExpand} title="Abrir como página" className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+            <button type="button" onClick={onExpand} title="Abrir como página" aria-label="Abrir como página" className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
               <Maximize2 className="w-4 h-4" />
             </button>
           )}
           {onClose && (
-            <button type="button" onClick={onClose} title="Fechar" className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+            <button type="button" onClick={onClose} title="Fechar" aria-label="Fechar" className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -325,6 +325,7 @@ export function DealDetailHeader({
               type="button"
               onClick={() => setMoreOpen((v) => !v)}
               title="Mais ações"
+              aria-label="Mais ações"
               data-testid="deal-more-button"
               className="ml-auto p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-all"
             >

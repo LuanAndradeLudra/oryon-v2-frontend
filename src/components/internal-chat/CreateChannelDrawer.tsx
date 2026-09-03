@@ -35,6 +35,7 @@ function EmojiQuickPick({ value, onChange }: { value: string; onChange: (e: stri
           key={e}
           type="button"
           onClick={() => onChange(e)}
+          aria-label={`Usar emoji ${e}`}
           className={cn(
             'w-9 h-9 rounded-xl flex items-center justify-center text-xl transition-all hover:scale-110',
             value === e
@@ -64,6 +65,7 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (c: string)
           key={c}
           type="button"
           onClick={() => onChange(c)}
+          aria-label={`Usar cor ${c}`}
           className="w-7 h-7 rounded-full flex items-center justify-center transition-transform hover:scale-110"
           style={{ background: c }}
         >
@@ -376,6 +378,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
           </div>
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -627,7 +630,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                       className="flex-1 bg-transparent text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none"
                     />
                     {memberSearch && (
-                      <button onClick={() => setMemberSearch('')} className="text-surface-500 hover:text-surface-300">
+                      <button onClick={() => setMemberSearch('')} aria-label="Limpar busca" className="text-surface-500 hover:text-surface-300">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     )}
@@ -648,6 +651,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                             setMemberIds((p) => p.filter((_, j) => j !== i))
                             setMemberNames((p) => p.filter((_, j) => j !== i))
                           }}
+                          aria-label={`Remover ${nm} da seleção`}
                           className="ml-0.5 text-blue-400/70 hover:text-blue-300"
                         >
                           <X className="w-2.5 h-2.5" />
