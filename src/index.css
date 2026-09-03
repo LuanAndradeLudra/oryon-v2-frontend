@@ -879,6 +879,41 @@ code, pre, kbd, samp {
   background-color: var(--color-surface-800);
 }
 
+/* Banner/aviso do modal de verificação — branco elevado por sombra no tema
+   claro (em vez de um tom de cinza, que nesta paleta fica quase imperceptível
+   contra o fundo do modal). No escuro mantém o tratamento normal do
+   componente (surface-700/50, já com contraste correto).
+   Raio de desfoque limitado a ~6px: o "O que verificar" vive numa coluna com
+   overflow-y-auto e só 8px de padding lateral (px-2) — qualquer desfoque
+   maior é cortado em linha reta contra essa borda, sobretudo nos cantos, em
+   vez de esmaecer naturalmente. */
+/* Borda: some no escuro (a sombra/tom já bastam), aparece no claro (define a
+   borda do cartão branco contra o fundo do modal). O lado esquerdo do banner
+   de handoff continua controlado à parte via inline style (borderLeftColor),
+   que tem prioridade sobre esta regra em qualquer tema. */
+.anomaly-elevated-surface,
+.anomaly-elevated-surface-compact {
+  border-color: transparent;
+}
+[data-theme="light"] .anomaly-elevated-surface,
+[data-theme="light"] .anomaly-elevated-surface-compact {
+  border-color: var(--color-surface-700);
+}
+
+[data-theme="light"] .anomaly-elevated-surface {
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22), 0 1px 2px rgba(15, 23, 42, 0.16);
+}
+
+/* Variante para caixas pequenas (ex.: "O que verificar") — a MESMA sombra
+   absoluta acima parece mais pesada num box pequeno do que num alto (a
+   mensagem retida), efeito de proporção, não de valor errado. Opacidade
+   reduzida pela metade pra igualar o peso percebido, mesmo raio/offset. */
+[data-theme="light"] .anomaly-elevated-surface-compact {
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.11), 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
 /* Wordmark branca → preta no tema claro */
 [data-theme="light"] .oryon-wordmark {
   filter: invert(1);

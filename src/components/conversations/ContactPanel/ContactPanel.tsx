@@ -386,7 +386,9 @@ export function ContactPanel({
           </Modal>
         </Section>
 
-        <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
+        {isFeatureVisible('contactPanelDeals') && (
+          <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
+        )}
 
         {/* Hidden when conversionAnalysisPanel is off — covers both the
             "Analisar conversa com IA" CTA and any previously-rendered
