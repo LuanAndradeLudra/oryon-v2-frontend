@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Bot, Plus, Wrench, MoreHorizontal, Power, PauseCircle,
-  FileText, Trash2, Save, X, Check, Edit3,
+  FileText, Trash2, Archive, Save, X, Check, Edit3,
   Zap, Clock, AlertCircle, Copy, Eye, EyeOff,
   ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Shield,
   Link2, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { loadHub, hubHasContent, isAgentStale, injectHubIntoPrompt } from '@/services/companyContextService'
 import { cn } from '@/lib/utils'
-import { Tabs } from '@/components/ui/Tabs'
+import { Tabs, type TabAccent } from '@/components/ui/Tabs'
 import {
   updateAgent,
   addTool, updateTool, deleteTool,
@@ -2099,22 +2099,29 @@ export function AgentDetail({
     setAgent(prev => ({ ...prev, tools }))
   }, [])
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  // Fase 5a: `accent` dá identidade categórica pra cada seção (só a aba
+  // ATIVA fica colorida — inativas continuam neutras, então nunca aparecem
+  // duas cores ao mesmo tempo). Escolhas por afinidade semântica, não por
+  // ordem mecânica: "Visão geral" fica sem accent (cor da marca, é a aba-
+  // -padrão/casa); Skills/Ferramentas usam os mesmos tons já convencionados
+  // pra essas categorias em outras telas deste arquivo (âmbar = destaque/
+  // integração, azul = técnico/bruto, ver `METHOD_COLOR` acima).
+  const tabs: { id: Tab; label: string; icon: React.ReactNode; accent?: TabAccent }[] = [
     { id: 'overview', label: 'Visão geral', icon: <Bot className="w-3.5 h-3.5" /> },
-    { id: 'prompt',   label: 'System Prompt', icon: <FileText className="w-3.5 h-3.5" /> },
-    { id: 'capabilities', label: 'Capacidades', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
-    { id: 'criteria', label: 'Critérios', icon: <Info className="w-3.5 h-3.5" /> },
+    { id: 'prompt',   label: 'System Prompt', icon: <FileText className="w-3.5 h-3.5" />, accent: 'violet' },
+    { id: 'capabilities', label: 'Capacidades', icon: <ShieldCheck className="w-3.5 h-3.5" />, accent: 'green' },
+    { id: 'criteria', label: 'Critérios', icon: <Info className="w-3.5 h-3.5" />, accent: 'cyan' },
     ...(skillsVisible
-      ? [{ id: 'skills' as Tab, label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" /> }]
+      ? [{ id: 'skills' as Tab, label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" />, accent: 'amber' as TabAccent }]
       : []),
     // Legacy raw-HTTP tools — only visible to users that flipped Advanced Mode.
     ...(advancedMode
-      ? [{ id: 'tools' as Tab, label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" /> }]
+      ? [{ id: 'tools' as Tab, label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" />, accent: 'blue' as TabAccent }]
       : []),
-    { id: 'rules',    label: 'Regras', icon: <Workflow className="w-3.5 h-3.5" /> },
-    { id: 'knowledge', label: 'Conhecimento', icon: <BookOpen className="w-3.5 h-3.5" /> },
-    { id: 'catalog',  label: 'Catálogo', icon: <Package className="w-3.5 h-3.5" /> },
-    { id: 'metrics',  label: 'Métricas', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { id: 'rules',    label: 'Regras', icon: <Workflow className="w-3.5 h-3.5" />, accent: 'rose' },
+    { id: 'knowledge', label: 'Conhecimento', icon: <BookOpen className="w-3.5 h-3.5" />, accent: 'cyan' },
+    { id: 'catalog',  label: 'Catálogo', icon: <Package className="w-3.5 h-3.5" />, accent: 'green' },
+    { id: 'metrics',  label: 'Métricas', icon: <BarChart3 className="w-3.5 h-3.5" />, accent: 'blue' },
   ]
 
   // If the user lands on `tools` while Advanced Mode is off, bounce them to
@@ -2215,8 +2222,13 @@ export function AgentDetail({
                   disabled={deletingAgent}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 transition-colors text-left cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Excluir agente
+                  {/* QW-18 (F-AGENT-11): rótulo/ícone diziam "excluir" — a
+                      ação de verdade move pra rascunho, não apaga nada
+                      (updateAgent(id, {status:'draft'}) abaixo). Archive em
+                      vez de Trash2 pela mesma razão: a lixeira promete
+                      destruição, isto é reversível. */}
+                  <Archive className="w-3.5 h-3.5" />
+                  Desativar (vira rascunho)
                 </button>
               </div>
             </>
@@ -2234,9 +2246,9 @@ export function AgentDetail({
             .then(() => onDeleted())
             .catch(() => setDeletingAgent(false))
         }}
-        title="Excluir agente"
-        description={`Excluir o agente "${agent.name}"? Ele será movido para rascunho e deixará de responder conversas.`}
-        confirmLabel="Excluir"
+        title="Desativar agente"
+        description={`Desativar o agente "${agent.name}"? Ele vira rascunho e deixa de responder conversas — pode reativar quando quiser.`}
+        confirmLabel="Desativar"
         danger
         loading={deletingAgent}
       />

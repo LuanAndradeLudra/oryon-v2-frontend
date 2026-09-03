@@ -63,3 +63,34 @@ describe('Tabs', () => {
     screen.getAllByRole('tab').forEach((tab) => expect(tab).toHaveAttribute('type', 'button'))
   })
 })
+
+// Fase 5a — accent categórico, só na aba ativa (AgentDetail.tsx).
+describe('Tabs — accent (Fase 5a)', () => {
+  const ACCENT_TABS: TabOption<Section>[] = [
+    { id: 'overview', label: 'Visão geral' }, // sem accent — fica na cor da marca
+    { id: 'prompt', label: 'System Prompt', accent: 'violet' },
+    { id: 'metrics', label: 'Métricas', accent: 'blue' },
+  ]
+
+  it('aba ativa com accent usa a classe do tom informado, não a cor da marca', () => {
+    render(<Tabs tabs={ACCENT_TABS} value="prompt" onChange={vi.fn()} label="Seções de teste" />)
+    const active = screen.getByRole('tab', { name: 'System Prompt' })
+    expect(active.className).toContain('text-accent-violet')
+    expect(active.className).toContain('border-accent-violet')
+    expect(active.className).not.toContain('border-brand-500')
+  })
+
+  it('aba ativa SEM accent mantém o default (cor da marca) — não quebra quem não usa a prop', () => {
+    render(<Tabs tabs={ACCENT_TABS} value="overview" onChange={vi.fn()} label="Seções de teste" />)
+    const active = screen.getByRole('tab', { name: 'Visão geral' })
+    expect(active.className).toContain('border-brand-500')
+    expect(active.className).toContain('text-surface-50')
+  })
+
+  it('aba INATIVA com accent configurado continua neutra — a cor só aparece quando ativa', () => {
+    render(<Tabs tabs={ACCENT_TABS} value="overview" onChange={vi.fn()} label="Seções de teste" />)
+    const inactive = screen.getByRole('tab', { name: 'System Prompt' })
+    expect(inactive.className).not.toContain('accent-violet')
+    expect(inactive.className).toContain('text-surface-500')
+  })
+})
