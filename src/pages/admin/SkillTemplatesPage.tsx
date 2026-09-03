@@ -11,6 +11,7 @@ import type { SkillTemplate } from '@/types/skills'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import { ToastContainer } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -276,6 +277,20 @@ function TemplateCard({
     .sort((a, b) => b.agentCount - a.agentCount)
   const totalAgents = assignments.reduce((sum, a) => sum + a.agentCount, 0)
 
+  // F-ADM-10: disabling used to fire updateSkillTemplate(enabled:false)
+  // straight off the icon click, with zero warning about how many agents
+  // across how many clients lose the skill immediately. Only the risky
+  // direction (enabled → disabled) with attached agents gates on a
+  // confirmation; reactivating stays a single click.
+  const [confirmingDisable, setConfirmingDisable] = useState(false)
+  function handleToggleClick() {
+    if (template.enabled && totalAgents > 0) {
+      setConfirmingDisable(true)
+      return
+    }
+    onToggle()
+  }
+
   return (
     <div
       className={cn(
@@ -354,8 +369,10 @@ function TemplateCard({
         </div>
       )}
 
-      {/* Action row — horizontal, fixed at the bottom of the card. Icon-only
-          for compactness; tooltips on hover spell out each action. */}
+      {/* Action row — horizontal, fixed at the bottom of the card. Every
+          action carries its own label (F-ADM-10: the disable/reactivate
+          toggle used to be icon-only, readable only via hover tooltip);
+          tooltips add detail on top of the label, not instead of it. */}
       <div className="mt-3 pt-3 border-t border-surface-800 flex items-center gap-1">
         <Tooltip content="Editar template" side="top">
           <button
@@ -388,9 +405,9 @@ function TemplateCard({
           side="top"
         >
           <button
-            onClick={onToggle}
+            onClick={handleToggleClick}
             className={cn(
-              'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs flex-shrink-0',
+              'inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs flex-shrink-0',
               template.enabled
                 ? 'bg-surface-800 hover:bg-surface-700 text-surface-300'
                 : 'bg-status-active-bg hover:bg-status-active-bg/80 text-status-active',
@@ -399,9 +416,23 @@ function TemplateCard({
             {template.enabled
               ? <PowerOff className="w-3.5 h-3.5" />
               : <Power className="w-3.5 h-3.5" />}
+            {template.enabled ? 'Desabilitar' : 'Reativar'}
           </button>
         </Tooltip>
       </div>
+
+      <ConfirmModal
+        open={confirmingDisable}
+        onClose={() => setConfirmingDisable(false)}
+        onConfirm={() => { setConfirmingDisable(false); onToggle() }}
+        title="Desabilitar template"
+        description={
+          `${totalAgents} ${totalAgents === 1 ? 'agente' : 'agentes'} em ${assignments.length} ${assignments.length === 1 ? 'cliente' : 'clientes'} ` +
+          `${totalAgents === 1 ? 'usa' : 'usam'} "${template.name}" agora. Desabilitar tira a skill do ar para todos eles imediatamente — ela some da lista de tools da IA até ser reativada. Continuar?`
+        }
+        confirmLabel="Desabilitar mesmo assim"
+        danger
+      />
     </div>
   )
 }

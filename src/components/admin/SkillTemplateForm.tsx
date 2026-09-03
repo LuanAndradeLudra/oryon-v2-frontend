@@ -40,6 +40,8 @@ import {
 type StepId = 'identity' | 'ai' | 'config' | 'n8n'
 const STEP_ORDER: StepId[] = ['identity', 'ai', 'config', 'n8n']
 
+type CascadingField = { key: 'config_schema' | 'webhook_path' | 'http_method' | 'timeout_ms' | 'prompt_fragment'; label: string }
+
 interface Props {
   /** When provided, the form is in edit mode and pre-fills from this template. */
   template?: SkillTemplate | null
@@ -134,11 +136,12 @@ export function SkillTemplateForm({ template }: Props) {
   const isEdit = !!template
   const [form, setForm] = useState<FormState>(() => fromTemplate(template, user?.tenantId ?? ''))
   const [saving, setSaving] = useState(false)
-  // Cascade gate: when editing a template's config_schema and there are
-  // attached instances, the next Save click pops a confirmation first so
-  // the operator knows how many agent configs may end up flagged as
-  // "desatualizada" by the change. Null = no pending gate.
-  const [cascade, setCascade] = useState<{ instanceCount: number } | null>(null)
+  // Cascade gate: when editing a field that every attached instance/agent
+  // inherits (config_schema, webhook_path, http_method, timeout_ms,
+  // prompt_fragment) and there are attached instances, the next Save click
+  // pops a confirmation first so the operator sees what's about to change
+  // for every client using this template. Null = no pending gate.
+  const [cascade, setCascade] = useState<{ instanceCount: number; fields: CascadingField[] } | null>(null)
   // Tracks whether the user has manually touched the slug — until then,
   // typing the name keeps slug auto-synced for convenience on new templates.
   const [slugTouched, setSlugTouched] = useState(isEdit)
@@ -202,12 +205,28 @@ export function SkillTemplateForm({ template }: Props) {
     goToStep(STEP_ORDER[stepIndex + 1])
   }
 
-  /** True when the operator changed the config_schema (deep stringify is
-   *  enough — both sides come from the same JSON-Schema editor and key order
-   *  is stable). Drives the cascade-warning gate below. */
-  function configSchemaChanged(): boolean {
-    if (!template) return false
-    return JSON.stringify(form.config_schema) !== JSON.stringify(template.config_schema)
+  /** Fields every attached instance/agent inherits from the template, each
+   *  with its own blast radius: config_schema can leave instances flagged
+   *  "desatualizada"; webhook_path/http_method/timeout_ms change where and
+   *  how n8n receives every live call for every client; prompt_fragment is
+   *  auto-injected into every agent's system prompt. The cascade gate below
+   *  used to check only config_schema (F-ADM-03) — the other three saved
+   *  instantly with zero warning even though they affect every client
+   *  using this template. */
+  function cascadingChanges(): CascadingField[] {
+    if (!template) return []
+    const changed: CascadingField[] = []
+    if (JSON.stringify(form.config_schema) !== JSON.stringify(template.config_schema)) {
+      changed.push({ key: 'config_schema', label: 'Campos de configuração' })
+    }
+    if (form.webhook_path !== template.webhook_path) changed.push({ key: 'webhook_path', label: 'Webhook path' })
+    if (form.http_method !== template.http_method) changed.push({ key: 'http_method', label: 'Método HTTP' })
+    if (form.timeout_ms !== template.timeout_ms) changed.push({ key: 'timeout_ms', label: 'Timeout' })
+    const nextFragment = form.prompt_fragment.trim().length > 0 ? form.prompt_fragment.trim() : null
+    if (nextFragment !== (template.prompt_fragment ?? null)) {
+      changed.push({ key: 'prompt_fragment', label: 'Instruções para o agente' })
+    }
+    return changed
   }
 
   async function handleSubmit(skipCascadeGate = false) {
@@ -215,20 +234,24 @@ export function SkillTemplateForm({ template }: Props) {
       toast(validation.error, 'error')
       return
     }
-    // Cascade gate — only relevant when editing AND the config_schema is
-    // changing. We fetch the live instance list (vs. relying on a stale
-    // count cached at page load) so the modal never under-reports.
-    if (!skipCascadeGate && isEdit && template && configSchemaChanged()) {
-      try {
-        const instances = await listSkillTemplateInstances(template.id)
-        if (instances.length > 0) {
-          setCascade({ instanceCount: instances.length })
-          return // wait for the operator to confirm via the modal
+    // Cascade gate — relevant when editing AND at least one field that
+    // affects every attached instance is changing. We fetch the live
+    // instance list (vs. relying on a stale count cached at page load) so
+    // the modal never under-reports.
+    if (!skipCascadeGate && isEdit && template) {
+      const changedFields = cascadingChanges()
+      if (changedFields.length > 0) {
+        try {
+          const instances = await listSkillTemplateInstances(template.id)
+          if (instances.length > 0) {
+            setCascade({ instanceCount: instances.length, fields: changedFields })
+            return // wait for the operator to confirm via the modal
+          }
+        } catch (err) {
+          // Non-fatal: if we can't count instances, fall through to save.
+          // The catalogue badge will surface drift after the save anyway.
+          toast(`Não consegui checar instâncias antes de salvar: ${err instanceof Error ? err.message : String(err)}`, 'error')
         }
-      } catch (err) {
-        // Non-fatal: if we can't count instances, fall through to save.
-        // The catalogue badge will surface drift after the save anyway.
-        toast(`Não consegui checar instâncias antes de salvar: ${err instanceof Error ? err.message : String(err)}`, 'error')
       }
     }
     setSaving(true)
@@ -588,10 +611,14 @@ Depois de criar a consulta, envie uma confirmação amigável com emoji ✅.`}
           setCascade(null)
           void handleSubmit(true)
         }}
-        title="Mudança no schema afeta instâncias atribuídas"
+        title="Mudança afeta instâncias atribuídas"
         description={cascade
           ? `Este template tem ${cascade.instanceCount} ${cascade.instanceCount === 1 ? 'instância atribuída' : 'instâncias atribuídas'}. ` +
-            `Mudar o config_schema pode deixá-las desatualizadas (badge "⚠ desatualizada" na lista de instâncias) até o config de cada agente ser corrigido. Continuar?`
+            `Você está mudando: ${cascade.fields.map((f) => f.label).join(', ')} — vale para todo cliente que usa este template a partir de agora` +
+            (cascade.fields.some((f) => f.key === 'config_schema')
+              ? ' (instâncias existentes podem ficar com o badge "⚠ desatualizada" até o config de cada agente ser corrigido)'
+              : '') +
+            '. Continuar?'
           : ''}
         confirmLabel="Salvar mesmo assim"
         danger
