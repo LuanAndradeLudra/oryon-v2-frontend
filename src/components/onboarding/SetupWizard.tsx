@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { showToast } from '@/hooks/useToast'
 import { saveHub, loadHub, type CompanyHubData, type BrandFile, DEFAULT_HUB } from '@/services/companyContextService'
 import { extractBrandFile } from '@/services/agentsApi'
 import { onboardingApi } from '@/services/api'
@@ -63,8 +64,8 @@ function BrandFilesSection({ files, onChange }: { files: BrandFile[]; onChange: 
   }, [entries])
 
   const processFile = useCallback(async (raw: File) => {
-    if (raw.size > MAX_FILE_MB * 1024 * 1024) { alert(`"${raw.name}" excede ${MAX_FILE_MB} MB.`); return }
-    if (!ACCEPTED_TYPES.includes(raw.type)) { alert(`Tipo não suportado: ${raw.type || raw.name}`); return }
+    if (raw.size > MAX_FILE_MB * 1024 * 1024) { showToast(`"${raw.name}" excede ${MAX_FILE_MB} MB.`, 'error'); return }
+    if (!ACCEPTED_TYPES.includes(raw.type)) { showToast(`Tipo não suportado: ${raw.type || raw.name}`, 'error'); return }
 
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
     setEntries(prev => [{ file: { id, name: raw.name, size: raw.size, mimeType: raw.type, extractedText: '', addedAt: new Date().toISOString() }, status: 'analyzing' }, ...prev])

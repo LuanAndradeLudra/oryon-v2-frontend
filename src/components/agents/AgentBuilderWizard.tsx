@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFile } from '@/services/agentsApi'
+import { showToast } from '@/hooks/useToast'
 import {
   loadHub, loadHubAsync, saveHub, hubToBrandLinks, hubHasContent,
   DEFAULT_HUB, type CompanyHubData,
@@ -1213,9 +1214,9 @@ function Step6KB({
       }
     }
     if (failed.length > 0) {
-      alert(
-        `Falha ao processar ${failed.length} arquivo${failed.length > 1 ? 's' : ''}:\n` +
-        failed.map((n) => `• ${n}`).join('\n'),
+      showToast(
+        `Falha ao processar ${failed.length} arquivo${failed.length > 1 ? 's' : ''}: ${failed.join(', ')}`,
+        'error',
       )
     }
     setUploadingFile(null)

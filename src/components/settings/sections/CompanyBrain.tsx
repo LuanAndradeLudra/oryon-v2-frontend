@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { ToastContainer } from '@/components/ui/Toast'
-import { useToast } from '@/hooks/useToast'
+import { useToast, showToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   loadHub, saveHub, syncBrainToRag, DEFAULT_HUB,
@@ -173,11 +173,11 @@ function BrandFilesSection({
 
   const processFile = useCallback(async (raw: File) => {
     if (raw.size > MAX_FILE_MB * 1024 * 1024) {
-      alert(`"${raw.name}" excede o limite de ${MAX_FILE_MB} MB.`)
+      showToast(`"${raw.name}" excede o limite de ${MAX_FILE_MB} MB.`, 'error')
       return
     }
     if (!ACCEPTED_TYPES.includes(raw.type)) {
-      alert(`Tipo de arquivo não suportado: ${raw.type || raw.name}`)
+      showToast(`Tipo de arquivo não suportado: ${raw.type || raw.name}`, 'error')
       return
     }
 
