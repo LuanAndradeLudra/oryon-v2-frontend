@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
+import { Button } from '@/components/ui/Button'
 import { TemplatePreview } from './TemplatePreview'
 import { SubcategoryPreview } from './SubcategoryPreview'
 import { templatesApi, whatsappNumbersApi } from '@/services/api'
@@ -495,46 +496,40 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
         </div>
       </div>
 
-      {/* Footer: navigation */}
+      {/* Footer: navigation — secundária à esquerda, primária à direita */}
       <div className="flex items-center justify-between px-6 py-4 border-t border-surface-700 flex-shrink-0 bg-surface-950">
-        <button
+        <Button
+          variant="ghost"
+          leftIcon={<ChevronLeft className="w-4 h-4" />}
           onClick={() => step > 1 ? setStep((s) => (s - 1) as StepNum) : onCancel()}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-surface-400 hover:text-surface-200 transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" />
           {step === 1 ? 'Cancelar' : 'Voltar'}
-        </button>
+        </Button>
 
         <div className="flex items-center gap-3">
           {/* Step 3: "Skip buttons" link */}
           {step === 3 && (
-            <button
-              onClick={() => setStep(4)}
-              className="text-sm text-surface-400 hover:text-surface-300 transition-colors"
-            >
+            <Button variant="ghost" onClick={() => setStep(4)}>
               Pular botões →
-            </button>
+            </Button>
           )}
 
           {step < 4 ? (
-            <button
+            <Button
+              variant="primary"
+              rightIcon={<ChevronRight className="w-4 h-4" />}
               onClick={() => setStep((s) => (s + 1) as StepNum)}
               disabled={!canAdvance()}
               title={needsExplicitLine ? 'Escolha a linha WhatsApp no banner acima para continuar' : undefined}
-              className={cn(
-                'flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium transition-all',
-                canAdvance()
-                  ? 'bg-brand-600 hover:bg-brand-500 text-surface-950'
-                  : 'bg-surface-700 text-surface-400 cursor-not-allowed'
-              )}
             >
               Próximo
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
+              variant="primary"
               onClick={handleSave}
-              disabled={!canSave || saving || isContentLocked}
+              loading={saving}
+              disabled={!canSave || isContentLocked}
               title={
                 isContentLocked
                   ? 'Este template não pode ser editado no estado atual'
@@ -542,19 +537,9 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
                     ? 'Escolha a linha WhatsApp no banner acima para continuar'
                     : undefined
               }
-              className={cn(
-                'px-5 py-2 rounded-xl text-sm font-medium transition-all',
-                canSave && !saving && !isContentLocked
-                  ? 'bg-brand-600 hover:bg-brand-500 text-surface-950'
-                  : 'bg-surface-700 text-surface-400 cursor-not-allowed'
-              )}
             >
-              {saving
-                ? 'Enviando...'
-                : editing
-                  ? (canEditContent ? 'Salvar e reenviar para aprovação' : 'Não editável')
-                  : 'Enviar para aprovação'}
-            </button>
+              {editing ? (canEditContent ? 'Salvar e reenviar para aprovação' : 'Não editável') : 'Enviar para aprovação'}
+            </Button>
           )}
         </div>
       </div>
@@ -643,9 +628,9 @@ function StepCategoria({
         <div className="mt-3 flex items-start gap-2 px-2.5 py-2 bg-surface-800/50 border border-surface-700/60 rounded-lg">
           <Info className="w-3 h-3 text-surface-400 mt-0.5 flex-shrink-0" />
           <p className="text-[11px] text-surface-400 leading-relaxed">
-            <strong className="text-amber-400">Marketing</strong> cobra por conversa aberta.
-            <strong className="text-blue-400"> Utilidade</strong> tem tarifa reduzida (transacional).
-            <strong className="text-purple-400"> Autenticação</strong> usa cobrança única por OTP.
+            <strong className="text-accent-amber">Marketing</strong> cobra por conversa aberta.
+            <strong className="text-accent-blue"> Utilidade</strong> tem tarifa reduzida (transacional).
+            <strong className="text-accent-violet"> Autenticação</strong> usa cobrança única por OTP.
           </p>
         </div>
 
@@ -734,11 +719,11 @@ function StepMensagem({
               placeholder="ex: boas_vindas_novos_clientes"
               className={cn(
                 'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
-                errors.name ? 'border-rose-500/60 focus:border-rose-500' : 'border-surface-700 focus:border-brand-500',
+                errors.name ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
               )}
             />
             {errors.name ? (
-              <p className="text-[11px] text-rose-400 mt-1">{errors.name}</p>
+              <p className="text-[11px] text-danger mt-1">{errors.name}</p>
             ) : (
               <p className="text-[11px] text-surface-400 mt-1">Apenas letras minúsculas, números e underscore ( _ )</p>
             )}
@@ -794,11 +779,11 @@ function StepMensagem({
               placeholder="Texto do cabeçalho — pode conter {{1}}"
               className={cn(
                 'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
-                errors.headerText ? 'border-rose-500/60 focus:border-rose-500' : 'border-surface-700 focus:border-brand-500',
+                errors.headerText ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
               )}
             />
             {errors.headerText ? (
-              <p className="text-[11px] text-rose-400 mt-1">{errors.headerText}</p>
+              <p className="text-[11px] text-danger mt-1">{errors.headerText}</p>
             ) : (
               <p className="text-[11px] text-surface-400 mt-1">
                 Sem emojis, sem * _ ~ e sem quebra de linha — a Meta rejeita o template. Use o body ou o footer para isso.
@@ -816,11 +801,11 @@ function StepMensagem({
               placeholder="https://exemplo.com/imagem.jpg"
               className={cn(
                 'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
-                errors.headerMediaUrl ? 'border-rose-500/60 focus:border-rose-500' : 'border-surface-700 focus:border-brand-500',
+                errors.headerMediaUrl ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
               )}
             />
             {errors.headerMediaUrl ? (
-              <p className="text-[11px] text-rose-400 mt-1">{errors.headerMediaUrl}</p>
+              <p className="text-[11px] text-danger mt-1">{errors.headerMediaUrl}</p>
             ) : (
               <p className="text-[11px] text-surface-400 mt-1">URL pública e acessível. A Meta usará esta amostra para revisar o template.</p>
             )}
@@ -888,16 +873,16 @@ function StepMensagem({
             placeholder="Olá, {{1}}! Sua mensagem aqui..."
             className={cn(
               'w-full bg-surface-800 border rounded-xl px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors resize-none',
-              errors.body ? 'border-rose-500/60 focus:border-rose-500' : 'border-surface-700 focus:border-brand-500',
+              errors.body ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
             )}
           />
           <span className="absolute bottom-2.5 right-3 text-[11px] text-surface-400">{body.length}/1024</span>
         </div>
         {errors.body && (
-          <p className="text-[11px] text-rose-400 mt-1.5">{errors.body}</p>
+          <p className="text-[11px] text-danger mt-1.5">{errors.body}</p>
         )}
         {errors.vars && !errors.body && (
-          <p className="text-[11px] text-rose-400 mt-1.5">{errors.vars}</p>
+          <p className="text-[11px] text-danger mt-1.5">{errors.vars}</p>
         )}
 
         {/* Variable examples */}
@@ -982,8 +967,8 @@ function StepBotoes({
       <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-xl">
         <Info className="w-3.5 h-3.5 text-surface-400 mt-0.5 flex-shrink-0" />
         <p className="text-[11px] text-surface-400 leading-relaxed">
-          Botões são opcionais — pule este passo se não precisar. Você pode adicionar até 10 botões;
-          acima de 3 eles aparecem em <strong className="text-surface-300">lista</strong> no WhatsApp.
+          Botões são opcionais — pule este passo se não precisar. Você pode adicionar
+          até <strong className="text-surface-300">3 botões</strong> — a Meta rejeita templates com mais que isso.
         </p>
       </div>
 
@@ -998,7 +983,7 @@ function StepBotoes({
           if (!cfg) return null
           const Icon = cfg.icon
           return (
-            <div key={i} className="bg-surface-800 border border-surface-700 rounded-xl overflow-hidden">
+            <div key={i} className="bg-surface-800 border border-surface-700 rounded-2xl overflow-hidden">
               <div className="flex items-center gap-3 px-3 py-2 border-b border-surface-700/60">
                 <Icon className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
                 <select
@@ -1053,7 +1038,7 @@ function StepBotoes({
                   <InputRow value={btn.phoneNumber} onChange={(v) => updateButton(i, 'phoneNumber', v)} placeholder="+55 11 99999-9999" label="Número de telefone" />
                 )}
                 {errors.buttonByIndex?.[i] && (
-                  <p className="text-[11px] text-rose-400">{errors.buttonByIndex[i]}</p>
+                  <p className="text-[11px] text-danger">{errors.buttonByIndex[i]}</p>
                 )}
                 {btn.type === 'FLOW' && (
                   <InputRow value={btn.flowId} onChange={(v) => updateButton(i, 'flowId', v)} placeholder="ID do Flow no Meta Business Manager" label="Flow ID" />
@@ -1070,7 +1055,7 @@ function StepBotoes({
       </div>
 
       {/* Add button picker */}
-      {buttons.length < 10 && (
+      {buttons.length < 3 && (
         <div>
           <button
             onClick={() => onShowAddButton(!showAddButton)}
@@ -1147,7 +1132,7 @@ function StepRevisao({
   return (
     <div className="space-y-5">
       {/* Card: Sobre o template */}
-      <div className="bg-surface-800/50 border border-surface-700 rounded-xl p-4 space-y-2">
+      <div className="bg-surface-800/50 border border-surface-700 rounded-2xl p-4 space-y-2">
         <p className="text-xs font-bold text-surface-300 uppercase tracking-wider mb-3">Sobre o template</p>
         <div className="flex items-center justify-between">
           <span className="text-xs text-surface-400">Nome</span>
@@ -1182,7 +1167,7 @@ function StepRevisao({
       </div>
 
       {/* Card: Processo de aprovação */}
-      <div className="bg-surface-800/50 border border-surface-700 rounded-xl overflow-hidden">
+      <div className="bg-surface-800/50 border border-surface-700 rounded-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-surface-700">
           <p className="text-xs font-bold text-surface-200 uppercase tracking-wider">Processo de aprovação</p>
         </div>
