@@ -32,6 +32,7 @@ import { CATEGORY_LABELS } from './constants'
 import type {
   Campaign, Contact, ContactIntent, ContactSource, ContactSentiment,
   WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
+  ContactCustomFieldDef,
 } from '@/types'
 
 interface CampaignWizardProps {
@@ -51,6 +52,17 @@ interface CampaignWizardProps {
 type Step = 1 | 2 | 3 | 4 | 5
 
 const STEP_LABELS = ['Template', 'Segmento', 'Variáveis', 'Agendar', 'Revisão']
+
+// Um acento categórico por etapa — só para orientação visual dentro do
+// wizard (não carrega o mesmo significado do accent-rose em CampaignReport,
+// que marca resultado negativo de campanha).
+const STEP_ACCENTS: { icon: typeof Sparkles; color: string }[] = [
+  { icon: Sparkles,          color: 'var(--color-accent-blue)' },
+  { icon: Users,             color: 'var(--color-accent-green)' },
+  { icon: SlidersHorizontal, color: 'var(--color-accent-violet)' },
+  { icon: Calendar,          color: 'var(--color-accent-amber)' },
+  { icon: Check,             color: 'var(--color-accent-rose)' },
+]
 
 const CONTACT_FIELDS = [
   { value: 'displayName', label: 'Nome do contato' },
@@ -116,7 +128,7 @@ export function CampaignWizard({
   const [selectedTagIds, setSelectedTagIds]   = useState<string[]>([])
   const [selectedStages, setSelectedStages]   = useState<string[]>([])
   const [tags, setTags]                       = useState<Tag[]>([])
-  const { stages } = useCRMConfig()
+  const { stages, fieldDefs } = useCRMConfig()
 
   // Step 2 — manual picker
   const [contacts, setContacts]               = useState<Contact[]>([])
@@ -453,6 +465,20 @@ export function CampaignWizard({
 
               {/* Step content */}
               <div className="flex-1 overflow-y-auto p-5">
+                {(() => {
+                  const { icon: StepIcon, color } = STEP_ACCENTS[step - 1]
+                  return (
+                    <div className="flex items-center gap-2 mb-4">
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
+                      >
+                        <StepIcon className="w-4 h-4" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-surface-100">{STEP_LABELS[step - 1]}</h3>
+                    </div>
+                  )
+                })()}
                 {step === 1 && (
                   <>
                     <Step1
@@ -506,6 +532,7 @@ export function CampaignWizard({
                     template={selectedTemplate}
                     mappings={mappings}
                     onUpdate={updateMapping}
+                    fieldDefs={fieldDefs}
                   />
                 )}
                 {step === 4 && (
@@ -521,6 +548,7 @@ export function CampaignWizard({
                   <Step5
                     template={selectedTemplate}
                     mappings={mappings}
+                    fieldDefs={fieldDefs}
                     segmentType={segmentType}
                     tags={tags}
                     stages={stages}
@@ -581,7 +609,11 @@ export function CampaignWizard({
                       setStep((s) => (s + 1) as Step)
                     }}
                     disabled={!canAdvance}
-                    title={needsExplicitLine ? 'Escolha a linha WhatsApp no banner acima para continuar' : undefined}
+                    title={
+                      needsExplicitLine ? 'Escolha a linha WhatsApp no banner acima para continuar' :
+                      !canAdvance && step === 3 ? 'Preencha o mapeamento de todas as variáveis para continuar' :
+                      undefined
+                    }
                     className={cn(
                       'flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium transition-all',
                       canAdvance
@@ -1175,11 +1207,12 @@ function FilterGroup({ label, children }: { label: React.ReactNode; children: Re
 // ─── Step 3: Variable Mapping ─────────────────────────────────────────────────
 
 function Step3({
-  template, mappings, onUpdate,
+  template, mappings, onUpdate, fieldDefs,
 }: {
   template: WhatsAppTemplate
   mappings: CampaignVariableMapping[]
   onUpdate: (position: number, patch: Partial<CampaignVariableMapping>) => void
+  fieldDefs: ContactCustomFieldDef[]
 }) {
   if (mappings.length === 0) {
     return (
@@ -1195,7 +1228,7 @@ function Step3({
   mappings.forEach((m) => {
     const val = m.source === 'literal'       ? (m.literal ?? '') :
                 m.source === 'contact_field' ? (CONTACT_FIELDS.find((f) => f.value === m.contactField)?.label ?? m.contactField ?? '') :
-                m.customFieldKey ?? ''
+                fieldDefs.find((f) => f.key === m.customFieldKey)?.label ?? m.customFieldKey ?? ''
     previewVars[String(m.position)] = val || `{{${m.position}}}`
   })
 
@@ -1221,7 +1254,9 @@ function Step3({
             </div>
 
             <div className="flex items-center gap-2">
-              {(['contact_field', 'custom_field', 'literal'] as const).map((src) => (
+              {(['contact_field', 'custom_field', 'literal'] as const)
+                .filter((src) => src !== 'custom_field' || fieldDefs.length > 0)
+                .map((src) => (
                 <button
                   key={src}
                   onClick={() => onUpdate(m.position, { source: src })}
@@ -1248,6 +1283,28 @@ function Step3({
                   <option key={f.value} value={f.value}>{f.label}</option>
                 ))}
               </select>
+            )}
+
+            {m.source === 'custom_field' && (
+              fieldDefs.length > 0 ? (
+                <select
+                  value={m.customFieldKey ?? ''}
+                  onChange={(e) => onUpdate(m.position, { customFieldKey: e.target.value })}
+                  className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                >
+                  <option value="" disabled>Selecione um campo…</option>
+                  {fieldDefs.map((f) => (
+                    <option key={f.key} value={f.key}>{f.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex items-start gap-2 px-3 py-2.5 bg-accent-amber/10 border border-accent-amber/25 rounded-xl">
+                  <Info className="w-3.5 h-3.5 text-accent-amber mt-0.5 flex-shrink-0" />
+                  <p className="text-[11px] text-surface-300 leading-relaxed">
+                    Nenhum campo personalizado cadastrado. Crie um em Configurações → CRM.
+                  </p>
+                </div>
+              )
             )}
 
             {m.source === 'literal' && (
@@ -1357,7 +1414,7 @@ function SummaryRow({ label, value, mono }: { label: string; value: string; mono
 // ─── Step 5: Review ────────────────────────────────────────────────────────────
 
 function Step5({
-  template, mappings, segmentType,
+  template, mappings, fieldDefs, segmentType,
   tags, stages, contacts,
   selectedTagIds, selectedStages, selectedContactIds,
   filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
@@ -1366,6 +1423,7 @@ function Step5({
 }: {
   template: WhatsAppTemplate
   mappings: CampaignVariableMapping[]
+  fieldDefs: ContactCustomFieldDef[]
   segmentType: CampaignSegment['type']
   tags: Tag[]
   stages: { key: string; label: string; color: string }[]
@@ -1401,7 +1459,7 @@ function Step5({
   mappings.forEach((m) => {
     const val = m.source === 'literal'       ? (m.literal ?? '') :
                 m.source === 'contact_field' ? (CONTACT_FIELDS.find((f) => f.value === m.contactField)?.label ?? m.contactField ?? '') :
-                m.customFieldKey ?? ''
+                fieldDefs.find((f) => f.key === m.customFieldKey)?.label ?? m.customFieldKey ?? ''
     previewVars[String(m.position)] = val || `{{${m.position}}}`
   })
 
