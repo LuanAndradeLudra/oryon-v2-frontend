@@ -5,6 +5,8 @@ import {
 import axios from 'axios'
 import type { InternalChannel, InternalMessage, UserPresence, UserPresenceStatus } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/hooks/useToast'
+import { getApiErrorMessage } from '@/lib/utils'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
 
@@ -61,6 +63,7 @@ const InternalChatContext = createContext<InternalChatCtx>({
 
 export function InternalChatProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
+  const { toast } = useToast()
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
   const [channels, setChannels] = useState<InternalChannel[]>([])
   const [messages, setMessages] = useState<Record<string, InternalMessage[]>>({})
@@ -209,8 +212,10 @@ export function InternalChatProvider({ children }: { children: ReactNode }) {
       })
       setActiveChannelId(res.data.id)
       fetchMessages(res.data.id)
-    } catch { /* */ }
-  }, [channels, user, fetchMessages])
+    } catch (err) {
+      toast(getApiErrorMessage(err, 'Não foi possível iniciar a conversa.'), 'error')
+    }
+  }, [channels, user, fetchMessages, toast])
 
   // ── Create group / department channel ────────────────────────────────────────
   const createChannel = useCallback(async (payload: CreateChannelPayload): Promise<InternalChannel> => {
@@ -269,14 +274,15 @@ export function InternalChatProvider({ children }: { children: ReactNode }) {
             }
           : ch,
       ))
-    } catch {
+    } catch (err) {
       // revert optimistic on failure
       setMessages((prev) => ({
         ...prev,
         [channelId]: prev[channelId].filter((m) => m.id !== optimistic.id),
       }))
+      toast(getApiErrorMessage(err, 'Não foi possível enviar a mensagem.'), 'error')
     }
-  }, [user])
+  }, [user, toast])
 
   // ── Toggle reaction ──────────────────────────────────────────────────────────
   const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
@@ -295,8 +301,10 @@ export function InternalChatProvider({ children }: { children: ReactNode }) {
         }
         return updated
       })
-    } catch { /* */ }
-  }, [user])
+    } catch (err) {
+      toast(getApiErrorMessage(err, 'Não foi possível reagir à mensagem.'), 'error')
+    }
+  }, [user, toast])
 
   // ── Delete message (soft delete) ─────────────────────────────────────────────
   const deleteMessage = useCallback(async (messageId: string) => {
@@ -314,7 +322,7 @@ export function InternalChatProvider({ children }: { children: ReactNode }) {
     })
     try {
       await axios.delete(`${API}/internal/messages/${messageId}`)
-    } catch {
+    } catch (err) {
       // revert on failure
       setMessages((prev) => {
         const updated = { ...prev }
@@ -326,8 +334,9 @@ export function InternalChatProvider({ children }: { children: ReactNode }) {
         }
         return updated
       })
+      toast(getApiErrorMessage(err, 'Não foi possível excluir a mensagem.'), 'error')
     }
-  }, [])
+  }, [toast])
 
   // ── Mark as read ─────────────────────────────────────────────────────────────
   const markAsRead = useCallback((channelId: string) => {
