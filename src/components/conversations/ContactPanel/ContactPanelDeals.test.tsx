@@ -75,6 +75,13 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
     expect(screen.queryByTestId('panel-pipelines-money')).not.toBeInTheDocument()
   })
 
+  it('B4 (SCRUM-930): vazio mostra "Novo negócio" — o componente não distingue mobile/desktop, o menu ⋯ do ChatHeader é quem varia', async () => {
+    api.list.mockResolvedValue({ data: [] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('0 abertos'))
+    expect(screen.getByRole('button', { name: /Novo negócio/i })).toBeInTheDocument()
+  })
+
   it('"Mover etapa" chama PATCH /deals/:id/stage; "Abrir" abre a ficha (B2/928)', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
     renderPanel()

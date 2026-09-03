@@ -26,7 +26,7 @@ function Harness({ onResolve }: { onResolve: (o?: unknown) => Promise<void> | vo
   return (
     <>
       <button onClick={() => void r.requestResolve()}>resolver</button>
-      <span data-testid="state">{r.loading ? 'loading' : r.target ? `target:${r.target.pipelineName}:${r.currentAmountCents}` : 'idle'}</span>
+      <span data-testid="state">{r.loading ? 'loading' : r.target ? `target:${r.target.pipelineName}:${r.currentAmountCents}:${r.hasLineItems ? 'items' : 'manual'}` : 'idle'}</span>
       <button onClick={() => void r.confirm({ dealOutcome: { outcome: 'won', reason: 'fechou' }, amountCents: 12990 })}>confirmar-com-valor</button>
       <button onClick={() => void r.confirm({})}>so-resolver</button>
     </>
@@ -83,6 +83,21 @@ describe('useResolveWithOutcome (F10)', () => {
     expect(listener).toHaveBeenCalled()
     await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('idle'))
     window.removeEventListener(DEALS_INVALIDATE_EVENT, listener)
+  })
+
+  it('B4 (SCRUM-930): negócio com itens de linha expõe hasLineItems=true', async () => {
+    api.conversationTarget.mockResolvedValue({ data: TARGET })
+    api.get.mockResolvedValue({ data: { id: 'd1', amountCents: 5000, lineItems: [{ id: 'li1' }] } })
+    render(<Harness onResolve={vi.fn()} />)
+    fireEvent.click(screen.getByText('resolver'))
+    await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('target:Vendas:5000:items'))
+  })
+
+  it('B4 (SCRUM-930): negócio sem itens (manual) expõe hasLineItems=false', async () => {
+    api.conversationTarget.mockResolvedValue({ data: TARGET })
+    render(<Harness onResolve={vi.fn()} />)
+    fireEvent.click(screen.getByText('resolver'))
+    await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('target:Vendas:5000:manual'))
   })
 
   it('"só resolver": resolve sem dealOutcome e sem PATCH no registro', async () => {

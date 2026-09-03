@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   ChevronDown, Info,
-  Check, Archive, ArrowLeft, MoreVertical, Handshake,
+  Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -10,7 +10,10 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { cn, hexToRgba } from '@/lib/utils'
+import { useDealPanel } from '@/contexts/DealPanelContext'
+import { useToast } from '@/hooks/useToast'
+import { dealsApi } from '@/services/api'
+import { cn, hexToRgba, getApiErrorMessage } from '@/lib/utils'
 import { HandoffChip } from './AiHandoffBanner'
 import { ConversationDealIndicator } from './ConversationDealIndicator'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
@@ -89,6 +92,26 @@ export function ChatHeader({
     contactId: contact.id,
     onResolve: (dealOutcome) => onStatusChange('resolved', dealOutcome),
   })
+  const { openDeal } = useDealPanel()
+  const { toast } = useToast()
+  const [viewDealLoading, setViewDealLoading] = useState(false)
+  // B4 (SCRUM-930): "Ver negócio" no menu ⋯ do mobile — mesma precedência do
+  // "Resolver com desfecho" (`GET /deals/ai/stages`, §4.7: conversa de
+  // origem → campanha única → `no_target`) pra achar o registro desta
+  // conversa, sem inventar um seletor novo (o de múltiplos negócios abertos
+  // é da C2/SCRUM-933, fora de escopo aqui).
+  const handleViewDeal = async () => {
+    setViewDealLoading(true)
+    try {
+      const { data } = await dealsApi.conversationTarget(conversation.id)
+      if (data?.dealId) openDeal(data.dealId)
+      else toast('Nenhum negócio vinculado a esta conversa ainda.', 'error')
+    } catch (err: unknown) {
+      toast(getApiErrorMessage(err, 'Não foi possível abrir o negócio.'), 'error')
+    } finally {
+      setViewDealLoading(false)
+    }
+  }
 
   const [archiveOpen,  setArchiveOpen]  = useState(false)
   const [statusOpen,   setStatusOpen]   = useState(false)
@@ -197,6 +220,7 @@ export function ChatHeader({
         target={resolve.target}
         contactName={contact.displayName || contact.waId}
         currentAmountCents={resolve.currentAmountCents}
+        hasLineItems={resolve.hasLineItems}
         busy={resolve.busy}
         onConfirm={resolve.confirm}
         onCancel={resolve.close}
@@ -230,11 +254,16 @@ export function ChatHeader({
           <p className="text-sm font-semibold text-surface-50 truncate">
             {contact.displayName}
           </p>
-          <div className="flex items-center gap-1 text-[11px] text-surface-400">
+          {/* B4 (SCRUM-930): o chip do negócio entra NESTA linha (telefone),
+              não numa linha própria — o cabeçalho mobile já empilha até 5
+              linhas (nome/telefone/tags/handoff) e não pode crescer mais
+              (F-CONV-24). `flex-wrap` deixa o chip cair pra baixo do telefone
+              só se não couber, sem abrir uma nova linha estrutural fixa. */}
+          <div className="flex items-center gap-1 text-[11px] text-surface-400 flex-wrap">
             <WhatsAppIcon size={10} />
             <span className="truncate">{contact.waId}</span>
+            <ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} conversationId={conversation.id} />
           </div>
-          <div className="mt-0.5"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} conversationId={conversation.id} /></div>
           {tags.length > 0 && (
             <div className="flex items-center flex-wrap gap-1 mt-0.5">
               {visibleTags.map((t) => (
@@ -313,6 +342,15 @@ export function ChatHeader({
                 Novo {vocab.deal.toLowerCase()}
               </DropdownItem>
             )}
+            {/* B4 (SCRUM-930): paridade com o chip do cabeçalho (que já abre a
+                ficha) — mesma resolução do "Resolver com desfecho". */}
+            <DropdownItem
+              icon={KanbanSquare}
+              disabled={viewDealLoading}
+              onClick={() => { setMoreOpen(false); void handleViewDeal() }}
+            >
+              Ver negócio
+            </DropdownItem>
             <DropdownItem
               icon={Archive}
               danger

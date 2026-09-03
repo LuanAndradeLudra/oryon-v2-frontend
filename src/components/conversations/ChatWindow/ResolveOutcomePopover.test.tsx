@@ -1,9 +1,17 @@
 // F10 (SCRUM-880/881/882/883) — prancheta 5: três saídas, motivo do catálogo por
 // tipo, valor só em venda + fechou, "Só resolver" mantém o registro aberto,
 // vocabulário de processo, Esc fecha, foco inicial na 1ª opção.
+//
+// B4 (SCRUM-930): o campo de valor vira "Confirmar valor" — editável (modo
+// manual, sem itens) ou somente leitura com "ajustar itens" (modo items).
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+
+const { openDeal } = vi.hoisted(() => ({ openDeal: vi.fn() }))
+vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
+
 import { ResolveOutcomePanel, ResolveOutcomePopover } from './ResolveOutcomePopover'
+import { formatCentsBRL } from '@/lib/resolveOutcome'
 import type { AiDealTargetView } from '@/types'
 
 const SALES: AiDealTargetView = {
@@ -19,7 +27,7 @@ const PROCESS: AiDealTargetView = {
 function setup(target = SALES, extra: Partial<React.ComponentProps<typeof ResolveOutcomePanel>> = {}) {
   const onConfirm = vi.fn(async () => {})
   const onCancel = vi.fn()
-  render(<ResolveOutcomePanel target={target} contactName="Mariana" currentAmountCents={5000} busy={false} onConfirm={onConfirm} onCancel={onCancel} {...extra} />)
+  render(<ResolveOutcomePanel target={target} contactName="Mariana" currentAmountCents={5000} hasLineItems={false} busy={false} onConfirm={onConfirm} onCancel={onCancel} {...extra} />)
   return { onConfirm, onCancel }
 }
 
@@ -38,6 +46,28 @@ describe('ResolveOutcomePanel (F10)', () => {
     await waitFor(() => expect(onConfirm).toHaveBeenCalledWith({
       dealOutcome: { outcome: 'won', reason: 'fechou', note: 'Adesão ao plano Família' },
       amountCents: 12990,
+    }))
+  })
+
+  it('B4 (SCRUM-930): modo manual (sem itens) — "Confirmar valor" pré-preenchido e editável', () => {
+    setup(SALES, { hasLineItems: false })
+    const input = screen.getByTestId('resolve-amount')
+    expect(input).toHaveValue('50,00')
+    expect(input).not.toHaveAttribute('readonly')
+    expect(screen.queryByTestId('resolve-adjust-items')).toBeNull()
+  })
+
+  it('B4 (SCRUM-930): modo items (negócio com itens) — "Confirmar valor" pré-preenchido, somente leitura, com "ajustar itens"', async () => {
+    const { onConfirm } = setup(SALES, { hasLineItems: true })
+    const input = screen.getByTestId('resolve-amount')
+    expect(input).toHaveValue(formatCentsBRL(5000))
+    expect(input).toHaveAttribute('readonly')
+    fireEvent.click(screen.getByTestId('resolve-adjust-items'))
+    expect(openDeal).toHaveBeenCalledWith('d1')
+    // Confirmar sem editar não manda amountCents — a ficha é quem soma os itens.
+    fireEvent.click(screen.getByTestId('resolve-confirm'))
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledWith({
+      dealOutcome: { outcome: 'won', reason: 'fechou', note: undefined },
     }))
   })
 
@@ -82,7 +112,7 @@ describe('ResolveOutcomePanel (F10)', () => {
   it('erro da API aparece inline; Esc chama onCancel', async () => {
     const onConfirm = vi.fn(async () => { throw { response: { status: 400, data: { message: 'Motivo de desfecho inválido para este tipo de funil.' } } } })
     const onCancel = vi.fn()
-    render(<ResolveOutcomePanel target={SALES} contactName="Mariana" currentAmountCents={0} busy={false} onConfirm={onConfirm} onCancel={onCancel} />)
+    render(<ResolveOutcomePanel target={SALES} contactName="Mariana" currentAmountCents={0} hasLineItems={false} busy={false} onConfirm={onConfirm} onCancel={onCancel} />)
     fireEvent.click(screen.getByTestId('resolve-confirm'))
     await waitFor(() => expect(screen.getByText('Motivo de desfecho inválido para este tipo de funil.')).toBeInTheDocument())
     fireEvent.keyDown(screen.getByTestId('resolve-outcome-panel'), { key: 'Escape' })
@@ -92,7 +122,7 @@ describe('ResolveOutcomePanel (F10)', () => {
 
 describe('ResolveOutcomePopover (F10-883)', () => {
   it('não renderiza sem alvo; desktop = dialog ancorado; mobile = bottom sheet', () => {
-    const base = { contactName: 'Mariana', currentAmountCents: 0, busy: false, onConfirm: vi.fn(async () => {}), onCancel: vi.fn() }
+    const base = { contactName: 'Mariana', currentAmountCents: 0, hasLineItems: false, busy: false, onConfirm: vi.fn(async () => {}), onCancel: vi.fn() }
     const { rerender, container } = render(<ResolveOutcomePopover open mobile={false} target={null} {...base} />)
     expect(container).toBeEmptyDOMElement()
     rerender(<ResolveOutcomePopover open mobile={false} target={SALES} {...base} />)

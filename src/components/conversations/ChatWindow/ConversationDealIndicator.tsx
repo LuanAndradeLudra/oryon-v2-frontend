@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { KanbanSquare, CheckCircle2, XCircle } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
 import { pickIndicatorDeals } from '@/lib/dealIndicator'
 import { cn, hexToRgba } from '@/lib/utils'
@@ -13,7 +13,6 @@ import type { Deal } from '@/types'
 interface DealChip {
   dealId: string
   pipeline: string
-  pipelineId: string
   stage: string
   color: string
   /** F11-887: registro que NASCEU nesta conversa (`originConversationId`) — destacado no chip.
@@ -29,10 +28,15 @@ interface DealChip {
  * fechado (F10). Destaque = registro que nasceu NESTA conversa (F11-887; o
  * roteamento por linha está congelado no Modelo B e não é mais consultado).
  * Atualiza ao vivo via socket `deal:changed` e pelo evento local
- * `oryon:deals-invalidate`. Clique em qualquer chip leva ao board do funil.
+ * `oryon:deals-invalidate`. Clique em qualquer chip abre a ficha do negócio.
  *
  * A lista de funis vem do cache compartilhado (`CRMConfigContext`, SCRUM-293)
  * — este componente faz só 1 `GET /deals?contactId=` por conversa aberta.
+ *
+ * B4 (SCRUM-930): clique abre a FICHA do negócio em painel lateral
+ * (`useDealPanel`), não navega mais pro board — `/contacts?pipeline=`
+ * abandonava a conversa e o rascunho da mensagem (F-CONV-29). O painel é um
+ * portal por cima da página atual; a conversa nunca desmonta.
  */
 export function ConversationDealIndicator({ contactId, conversationId }: { contactId: string; whatsappNumberId?: string; conversationId?: string }) {
   const { pipelines } = useCRMConfig()
@@ -40,7 +44,7 @@ export function ConversationDealIndicator({ contactId, conversationId }: { conta
   // (`pipelines` vem vazio), então os deals nem são buscados.
   const multiPipeline = useMultiPipeline()
   const [openDeals, setOpenDeals] = useState<Deal[]>([])
-  const navigate = useNavigate()
+  const { openDeal } = useDealPanel()
 
   const load = useCallback(() => {
     // Gate fechado: sem fetch. Os chips já saem vazios no `useMemo` abaixo.
@@ -84,7 +88,6 @@ export function ConversationDealIndicator({ contactId, conversationId }: { conta
       next.push({
         dealId: deal.id,
         pipeline: pipe.name,
-        pipelineId: pipe.id,
         stage: stage.label,
         color: stage.color,
         isOrigin: !!conversationId && deal.originConversationId === conversationId,
@@ -108,8 +111,8 @@ export function ConversationDealIndicator({ contactId, conversationId }: { conta
         <button
           key={chip.dealId}
           type="button"
-          onClick={() => navigate(`/contacts?pipeline=${chip.pipelineId}`)}
-          title={`${chip.pipeline} · ${chip.stage}${chip.closed ? ' — fechado nesta conversa' : chip.isOrigin ? ' — registro desta conversa' : ''} — abrir no board`}
+          onClick={() => openDeal(chip.dealId)}
+          title={`${chip.pipeline} · ${chip.stage}${chip.closed ? ' — fechado nesta conversa' : chip.isOrigin ? ' — registro desta conversa' : ''} — abrir negócio`}
           data-testid={chip.closed ? 'deal-chip-closed' : 'deal-chip-open'}
           data-origin={chip.isOrigin || undefined}
           className={cn(
