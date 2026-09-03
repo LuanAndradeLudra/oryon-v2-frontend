@@ -257,7 +257,7 @@ const PanelCode = memo(function PanelCode({ lang, content }: { lang: string; con
           <span className="text-[11px] font-semibold text-surface-400 font-mono">{lang}</span>
           <span className="text-[10px] text-surface-600">{content.split('\n').length} linhas</span>
         </div>
-        <button onClick={copy} className="p-1 rounded text-surface-500 hover:text-surface-300 transition-colors">
+        <button onClick={copy} aria-label="Copiar código" className="p-1 rounded text-surface-500 hover:text-surface-300 transition-colors">
           {copied ? <Check className="w-3.5 h-3.5 text-status-active" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       </div>
@@ -701,6 +701,7 @@ function FullscreenOverlay({ content, title, type, onClose }: { content: string;
         <span className="text-xs font-medium text-surface-400 truncate">{title}</span>
         <button
           onClick={onClose}
+          aria-label="Fechar tela cheia (Esc)"
           className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors ml-4 flex-shrink-0"
           title="Fechar tela cheia (Esc)"
         >
@@ -766,6 +767,7 @@ function VersionNav({
         type="button"
         onClick={() => canPrev && onSwitch(artifact.id, artifact.versionIndex - 1)}
         disabled={!canPrev}
+        aria-label="Versão anterior"
         className="flex h-4 w-4 items-center justify-center rounded text-surface-400 hover:text-surface-100 disabled:opacity-30"
         title="Versão anterior"
       >
@@ -778,6 +780,7 @@ function VersionNav({
         type="button"
         onClick={() => canNext && onSwitch(artifact.id, artifact.versionIndex + 1)}
         disabled={!canNext}
+        aria-label="Próxima versão"
         className="flex h-4 w-4 items-center justify-center rounded text-surface-400 hover:text-surface-100 disabled:opacity-30"
         title="Próxima versão"
       >
@@ -1073,6 +1076,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                 {hasPreview && (
                   <button
                     onClick={openFullscreen}
+                    aria-label="Tela cheia"
                     className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
                     title="Tela cheia"
                   >
@@ -1083,6 +1087,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                 {/* Copy */}
                 <button
                   onClick={copy}
+                  aria-label="Copiar conteúdo"
                   className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
                   title="Copiar conteúdo"
                 >
@@ -1219,6 +1224,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                 {/* Close */}
                 <button
                   onClick={closeArtifact}
+                  aria-label="Fechar"
                   className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors ml-1"
                   title="Fechar"
                 >
