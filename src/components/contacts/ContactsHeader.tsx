@@ -56,7 +56,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
         <button
           onClick={onConfigure}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-all"
-          title="Configurar estágios e campos"
+          title="Configurar situações e campos"
         >
           <Settings2 className="w-3.5 h-3.5" />
           Configurar

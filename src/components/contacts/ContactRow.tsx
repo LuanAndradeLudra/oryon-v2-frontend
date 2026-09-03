@@ -1,7 +1,8 @@
 import { useCallback, useState, type MouseEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   MoreHorizontal, MessageSquare, ExternalLink, Smile, Meh, Frown, HelpCircle, Check, X,
-  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2,
+  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
@@ -11,9 +12,10 @@ import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
-import { cn, relativeDate } from '@/lib/utils'
-import { formatBRL } from '@/utils/money'
-import type { Contact, ContactStage } from '@/types'
+import { cn, relativeDate, getActivePipelines } from '@/lib/utils'
+import { pipelineKindOption, pipelineKindOf } from '@/lib/pipelineKinds'
+import { openPipelineChips } from '@/lib/contactPipelines'
+import type { Contact, ContactStage, Pipeline } from '@/types'
 
 const SENTIMENT_ICON = {
   positive: <Smile className="w-4 h-4 text-status-active" />,
@@ -29,45 +31,56 @@ const INTENT_CONFIG = {
   unknown: { label: '—',       chip: 'var(--color-status-muted)' },
 }
 
-/** Chips de negócios por funil (spec UX 2026-07-09) — extraído pra ser
- *  reusado igual entre `ContactRow` (desktop) e `ContactCard` (mobile,
- *  `ContactsMobileList`), evitando duas cópias divergentes da mesma lógica. */
+/** Chips "● Funil · Etapa" por registro ABERTO (F11-884, prancheta 6) — um por
+ *  funil (I1), com o ícone do tipo; clique abre o board daquele funil
+ *  (`/contacts?pipeline=`). Sem registro aberto: chip tracejado "nenhum
+ *  aberto". Reusado igual entre `ContactRow` (desktop) e `ContactCard`
+ *  (mobile, `ContactsMobileList`). Lê só o `dealsSummary` já carregado em lote
+ *  (`GET /deals/summary`, 1 chamada por página) — nenhuma requisição extra. */
 export function DealsSummaryChips({
   contact,
-  onOpenDeals,
   className,
 }: {
   contact: Contact
-  onOpenDeals?: (contact: Contact) => void
   className?: string
 }) {
   // Gate de múltiplos funis (SCRUM-498): sem o módulo o backend não manda
-  // `dealsSummary` — mostraria "sem negócio" para todo mundo, inclusive
+  // `dealsSummary` — mostraria "nenhum aberto" para todo mundo, inclusive
   // quem tem. Some (desktop e mobile passam por aqui).
   const multiPipeline = useMultiPipeline()
-  const byPipeline = contact.dealsSummary?.byPipeline ?? []
+  const { pipelines } = useCRMConfig()
+  const navigate = useNavigate()
   if (!multiPipeline) return null
+  const chips = openPipelineChips(contact.dealsSummary?.byPipeline ?? [], pipelines)
   return (
     <div className={cn('flex gap-1 flex-wrap', className)}>
-      {byPipeline.length === 0 ? (
-        <span className="text-[10px] text-surface-600 border border-dashed border-surface-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-          sem negócio
+      {chips.length === 0 ? (
+        <span
+          className="text-[10px] text-surface-600 border border-dashed border-surface-700 px-1.5 py-0.5 rounded-full whitespace-nowrap"
+          data-testid="pipeline-chip-none"
+        >
+          nenhum aberto
         </span>
       ) : (
-        byPipeline.map((p) => (
-          <button
-            key={p.pipelineId}
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onOpenDeals?.(contact) }}
-            title={`${p.pipelineName} · ${p.openCount} aberto(s)`}
-            className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 transition-all"
-            style={{ color: p.pipelineColor, borderColor: `${p.pipelineColor}40`, backgroundColor: `${p.pipelineColor}18` }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.pipelineColor }} />
-            {p.pipelineName}
-            {p.openCents > 0 && <span className="opacity-80">· {formatBRL(p.openCents)}</span>}
-          </button>
-        ))
+        chips.map((c) => {
+          const KindIcon = pipelineKindOption(c.kind).icon
+          return (
+            <button
+              key={c.pipelineId}
+              type="button"
+              onClick={(e) => { e.stopPropagation(); navigate(`/contacts?pipeline=${c.pipelineId}`) }}
+              title={`${c.pipelineName}${c.stageLabel ? ` · ${c.stageLabel}` : ''} — abrir no board`}
+              data-testid={`pipeline-chip-${c.pipelineId}`}
+              className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 transition-all"
+              style={{ color: c.color, borderColor: `${c.color}40`, backgroundColor: `${c.color}18` }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+              <KindIcon className="w-2.5 h-2.5 opacity-70" aria-label={pipelineKindOption(c.kind).label} />
+              {c.pipelineName}
+              {c.stageLabel && <span className="opacity-80">· {c.stageLabel}</span>}
+            </button>
+          )
+        })
       )}
     </div>
   )
@@ -78,8 +91,10 @@ interface ContactRowProps {
   onOpenPanel: (contact: Contact) => void
   onOpenConversation?: (contact: Contact) => void
   onMoveStage?: (contact: Contact, stage: ContactStage) => void
-  /** Abre o painel do contato direto na aba Negócios — clique num chip da coluna Negócios. */
+  /** @deprecated F11-884: os chips da coluna "Funis" abrem o board do funil; mantido só para compat de props. */
   onOpenDeals?: (contact: Contact) => void
+  /** F9 (SCRUM-875): "Adicionar ao funil" no menu da linha — o fluxo (criação/conflito) é do chamador. */
+  onAddToPipeline?: (contact: Contact, pipeline: Pipeline) => void
   isSelected?: boolean
   onToggleSelect?: (id: string) => void
   hasSelection?: boolean
@@ -92,7 +107,7 @@ export function ContactRow({
   onOpenPanel,
   onOpenConversation,
   onMoveStage,
-  onOpenDeals,
+  onAddToPipeline,
   isSelected = false,
   onToggleSelect,
   hasSelection = false,
@@ -100,7 +115,7 @@ export function ContactRow({
   onDeleteSelected,
 }: ContactRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const { stages } = useCRMConfig()
+  const { stages, pipelines } = useCRMConfig()
   const multiPipeline = useMultiPipeline()
   const otherStages = stages.filter((s) => s.key !== contact.stage)
 
@@ -146,6 +161,32 @@ export function ContactRow({
         })),
       })
     }
+    // F9 (SCRUM-875/876): funis com ícone do tipo; onde o contato já tem
+    // registro aberto (resumo por funil, F4-848) a entrada fica desabilitada
+    // com "já está · etapa" — I1, um aberto por funil.
+    const activePipelines = multiPipeline && onAddToPipeline ? getActivePipelines(pipelines) : []
+    if (activePipelines.length > 0) {
+      items.push({ separator: true })
+      items.push({
+        label: 'Adicionar ao funil',
+        icon: KanbanSquare,
+        children: activePipelines.map((p) => {
+          const open = contact.dealsSummary?.byPipeline.find((b) => b.pipelineId === p.id && b.openCount > 0)
+          const KindIcon = pipelineKindOption(pipelineKindOf(p)).icon
+          return {
+            label: open ? `${p.name} — já está${open.stageLabel ? ` · ${open.stageLabel}` : ''}` : p.name,
+            icon: () => (
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                <KindIcon className="w-3 h-3 opacity-70" />
+              </span>
+            ),
+            disabled: !!open,
+            onClick: () => onAddToPipeline!(contact, p),
+          }
+        }),
+      })
+    }
     if (onDeleteSelected && hasSelection && isSelected && selectionCount > 0) {
       items.push({ separator: true })
       items.push({
@@ -156,7 +197,7 @@ export function ContactRow({
       })
     }
     return items
-  }, [contact, onOpenPanel, onMoveStage, onToggleSelect, isSelected, otherStages, hasSelection, selectionCount, onDeleteSelected])
+  }, [contact, onOpenPanel, onMoveStage, onToggleSelect, isSelected, otherStages, hasSelection, selectionCount, onDeleteSelected, multiPipeline, onAddToPipeline, pipelines])
 
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
@@ -259,11 +300,11 @@ export function ContactRow({
         </div>
       </td>
 
-      {/* Negócios — chips por funil (spec UX 2026-07-09). Coluna inteira
-          some sem o gate (SCRUM-498) — o cabeçalho em ContactsTable acompanha. */}
+      {/* Funis — chips "● Funil · Etapa" por registro aberto (F11-884). Coluna
+          inteira some sem o gate (SCRUM-498) — o cabeçalho em ContactsTable acompanha. */}
       {multiPipeline && (
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-          <DealsSummaryChips contact={contact} onOpenDeals={onOpenDeals} className="max-w-[220px]" />
+          <DealsSummaryChips contact={contact} className="max-w-[260px]" />
         </td>
       )}
 

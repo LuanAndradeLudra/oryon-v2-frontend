@@ -51,6 +51,16 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
       >
         <Icon className="w-4 h-4 flex-shrink-0" />
         <span className="text-sm font-medium flex-1">{latest.message}</span>
+        {latest.action && (
+          <button
+            type="button"
+            onClick={() => { latest.action?.onClick(); onDismiss(latest.id) }}
+            className="text-xs font-semibold underline underline-offset-2 opacity-90 hover:opacity-100 whitespace-nowrap"
+            data-testid="toast-action"
+          >
+            {latest.action.label}
+          </button>
+        )}
         <button
           onClick={() => onDismiss(latest.id)}
           className="opacity-70 hover:opacity-100 transition-opacity"

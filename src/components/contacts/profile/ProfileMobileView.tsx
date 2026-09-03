@@ -1,6 +1,7 @@
 import { useState, type RefObject } from 'react'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ContactProfileHeader } from './ContactProfileHeader'
+import { ContactPipelinesSection } from './ContactPipelinesSection'
 import { ContactTimeline } from './ContactTimeline'
 import { TimelineComposer } from './TimelineComposer'
 import { NextActionPanel } from './NextActionPanel'
@@ -90,6 +91,8 @@ export function ProfileMobileView({
       <div className="flex flex-col gap-3 px-3">
         {segment === 'summary' && (
           <>
+            {/* F11 (SCRUM-885): visão consolidada por funil também no mobile. */}
+            <ContactPipelinesSection contactId={contact.id} contactName={contact.displayName} />
             <NextActionPanel
               tasks={tasks}
               aiSuggestion={contact.aiNextBestAction}

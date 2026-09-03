@@ -6,24 +6,27 @@ import { ColorPicker } from '@/components/ui/ColorPicker'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { getApiErrorMessage } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import type { PipelineStage } from '@/types'
+import type { PipelineStage, TerminalLabels } from '@/types'
 
 interface PipelineStageModalProps {
   open: boolean
   onClose: () => void
   onSave: (data: { label: string; color: string; isWon: boolean; isLost: boolean }) => Promise<void>
   editStage?: PipelineStage | null
+  /** F7 (SCRUM-868): rótulos dos terminais do funil (Ganho/Perdido × Concluído/Cancelado). */
+  terminalLabels?: TerminalLabels
 }
 
 type Kind = 'normal' | 'won' | 'lost'
 
-const KIND_OPTIONS: { key: Kind; label: string }[] = [
-  { key: 'normal', label: 'Normal' },
-  { key: 'won', label: 'Ganho' },
-  { key: 'lost', label: 'Perdido' },
-]
+const DEFAULT_TERMINAL_LABELS: TerminalLabels = { won: 'Ganho', lost: 'Perdido' }
 
-export function PipelineStageModal({ open, onClose, onSave, editStage }: PipelineStageModalProps) {
+export function PipelineStageModal({ open, onClose, onSave, editStage, terminalLabels = DEFAULT_TERMINAL_LABELS }: PipelineStageModalProps) {
+  const KIND_OPTIONS: { key: Kind; label: string }[] = [
+    { key: 'normal', label: 'Normal' },
+    { key: 'won', label: terminalLabels.won },
+    { key: 'lost', label: terminalLabels.lost },
+  ]
   const [label, setLabel] = useState('')
   const [color, setColor] = useState(DEFAULT_ENTITY_COLOR)
   const [kind, setKind] = useState<Kind>('normal')
@@ -81,7 +84,7 @@ export function PipelineStageModal({ open, onClose, onSave, editStage }: Pipelin
         <div className="pt-1">
           <p className="text-sm font-medium text-surface-200 mb-1">Tipo de estágio</p>
           <p className="text-xs text-surface-500 mb-2">
-            Ganho/Perdido são terminais — fecham o negócio ao entrar neles.
+            {terminalLabels.won}/{terminalLabels.lost} são terminais — fecham o registro ao entrar neles.
           </p>
           <div className="flex items-center bg-surface-800 border border-surface-700 rounded-xl p-1 w-fit">
             {KIND_OPTIONS.map((opt) => (

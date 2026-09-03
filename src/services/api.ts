@@ -34,6 +34,10 @@ import type {
   DealStatus,
   Pipeline,
   PipelineStage,
+  PipelineKind,
+  PipelineTemplate,
+  CloseReason,
+  CreatePipelineStageInput,
   PipelineChannelRouting,
   ContactDealsSummary,
   SendMessageDto,
@@ -44,6 +48,9 @@ import type {
   WhatsAppNumber,
   WhatsAppTemplate,
   TemplateHeaderTypeInput,
+  AiDealTargetView,
+  DealOutcomeInput,
+  DealStageHistoryEntry,
 } from '@/types'
 
 import { apiBaseUrl, isNativePlatform } from '@/config/env'
@@ -902,8 +909,11 @@ export const conversationsApi = {
     return api.get<Conversation>(`/conversations/${id}`)
   },
 
-  updateStatus(id: string, status: 'resolved' | 'open' | 'pending') {
-    return api.patch<Conversation>(`/conversations/${id}/status`, { status })
+  /** F10 (SCRUM-882): `dealOutcome` só com `resolved` — fecha o registro-alvo da
+   *  conversa (precedência §4.7) pela porta única ANTES de resolver; motivo
+   *  inválido → 400 sem resolver. Omitir = "sem decisão" (registro segue aberto). */
+  updateStatus(id: string, status: 'resolved' | 'open' | 'pending', dealOutcome?: DealOutcomeInput) {
+    return api.patch<Conversation>(`/conversations/${id}/status`, dealOutcome ? { status, dealOutcome } : { status })
   },
 
   assign(id: string, userId: string | null) {
@@ -1078,7 +1088,8 @@ export const contactsApi = {
     return api.delete(`/contacts/${id}`)
   },
 
-  create(dto: Partial<Contact> & { displayName: string; waId: string }) {
+  /** `pipelineId`/`pipelineStageId` (F2-836): o backend chama `enter` na mesma transação — o frontend não cria o negócio por conta própria. */
+  create(dto: Partial<Contact> & { displayName: string; waId: string; pipelineId?: string; pipelineStageId?: string }) {
     // Map frontend fields to backend DTO fields
     const { tags, customFields, ...rest } = dto as Record<string, unknown>
     const payload = {
@@ -1287,8 +1298,24 @@ export const pipelinesApi = {
   list() {
     return api.get<Pipeline[]>('/settings/pipelines')
   },
-  create(dto: { name: string; description?: string; color?: string }) {
+  /** Criação atômica (F1-825): `kind` + `stages[]` (ou `templateKey`). Sem `stages` o backend usa o template padrão do tipo. */
+  create(dto: {
+    name: string
+    description?: string
+    color?: string
+    kind?: PipelineKind
+    templateKey?: string
+    stages?: CreatePipelineStageInput[]
+  }) {
     return api.post<Pipeline>('/settings/pipelines', dto)
+  },
+  /** Modelos de etapas por tipo (F1-826). Sem `kind` devolve todos. */
+  templates(kind?: PipelineKind) {
+    return api.get<PipelineTemplate[]>('/settings/pipelines/templates', { params: kind ? { kind } : undefined })
+  },
+  /** Catálogo de motivos de desfecho por tipo (F1-827). */
+  closeReasons(kind?: PipelineKind) {
+    return api.get<CloseReason[] | Record<PipelineKind, CloseReason[]>>('/settings/pipelines/close-reasons', { params: kind ? { kind } : undefined })
   },
   update(id: string, dto: { name?: string; description?: string; color?: string; isArchived?: boolean }) {
     return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
@@ -1352,13 +1379,24 @@ export const dealsApi = {
   get(id: string) {
     return api.get<Deal>(`/deals/${id}`)
   },
+  /** F10 (SCRUM-882): alvo da conversa pela MESMA precedência que o backend usa ao
+   *  resolver com desfecho (§4.7: conversa de origem → campanha única → `no_target`).
+   *  `no_target` é resposta normal. Traz tipo, terminais e catálogo de motivos. */
+  conversationTarget(conversationId: string) {
+    return api.get<AiDealTargetView>('/deals/ai/stages', { params: { conversationId } })
+  },
+  /** F11 (SCRUM-886): passagens do registro com rótulos das etapas ("ver histórico" na ficha). */
+  history(id: string) {
+    return api.get<DealStageHistoryEntry[]>(`/deals/${id}/history`)
+  },
   create(dto: Partial<Deal>) {
     return api.post<Deal>('/deals', dto)
   },
   update(id: string, patch: Partial<Deal>) {
     return api.patch<Deal>(`/deals/${id}`, patch)
   },
-  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string }) {
+  /** `closeReason`/`closeNote` (F2, I5): motivo do catálogo ao fechar; sem eles o backend usa o compat `outro`. */
+  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string; closeReason?: string; closeNote?: string }) {
     return api.patch<Deal>(`/deals/${id}/status`, body)
   },
   /** Agregados por contato (batch), p/ o card do Kanban. Só retorna contatos que têm negócios. */

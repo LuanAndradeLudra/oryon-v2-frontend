@@ -6,13 +6,14 @@ import { MessageInput } from './MessageInput'
 import { HandoffStripe } from './AiHandoffBanner'
 import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
-import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, SocketAnomalyReviewed } from '@/types'
+import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, DealOutcomeInput, SocketAnomalyReviewed } from '@/types'
 
 interface ChatWindowProps {
   conversation: Conversation | null
   allTags: Tag[]
   allUsers: User[]
-  onStatusChange: (id: string, status: 'open' | 'pending' | 'resolved') => void
+  /** F10 (SCRUM-882): `dealOutcome` chega junto com `resolved` quando o atendente registrou o desfecho. */
+  onStatusChange: (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => void | Promise<void>
   onToggleInfo: () => void
   infoOpen: boolean
   onAddTag: (convId: string, tag: Tag) => void
@@ -111,10 +112,10 @@ export function ChatWindow({
     }
   }, [conversation?.id, addIncomingMessage, updateMessageStatus, markAnomaliesReviewed, onAiPauseSocketEvent])
 
-  const handleStatusChange = (status: 'open' | 'pending' | 'resolved') => {
+  const handleStatusChange = async (status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => {
     if (!conversation) return
     if (conversation.status === status) return
-    onStatusChange(conversation.id, status)
+    await onStatusChange(conversation.id, status, dealOutcome)
   }
 
   const windowOpen = conversation

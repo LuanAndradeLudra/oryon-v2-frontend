@@ -20,7 +20,11 @@ import { ImportContactsDrawer } from '@/components/contacts/ImportContactsDrawer
 import { BulkActionBar } from '@/components/contacts/BulkActionBar'
 import { CampaignWizard } from '@/components/campaigns/CampaignWizard'
 import { DealsBoard } from '@/components/deals/DealsBoard'
-import { CreatePipelineModal } from '@/components/deals/CreatePipelineModal'
+import { CreatePipelineModal, type CreatePipelineData } from '@/components/deals/CreatePipelineModal'
+import { pipelineNoun, pipelineKindOf, pipelineKindOption, terminalLabelsOf } from '@/lib/pipelineKinds'
+import { boardStats, entrySources } from '@/lib/dealCard'
+import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { Avatar } from '@/components/ui/Avatar'
@@ -34,11 +38,11 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
-import { tagsApi, pipelinesApi, pipelineRoutingApi, whatsappNumbersApi } from '@/services/api'
+import { tagsApi, pipelinesApi, dealsApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { formatBRL } from '@/utils/money'
 import { cn, getApiErrorMessage, getActivePipelines, getDefaultPipeline } from '@/lib/utils'
-import type { Contact, ContactFilters, ContactStage, Tag, Pipeline, Deal, PipelineChannelRouting, WhatsAppNumber } from '@/types'
+import type { Contact, ContactFilters, ContactStage, Tag, Pipeline, Deal, PipelineStage } from '@/types'
 
 /**
  * Faceta "Situação comercial" (D-10). Na LISTA de contatos (base, fora de um
@@ -97,13 +101,10 @@ export function ContactsPage() {
   const [showNewContact, setShowNewContact] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showCRMConfig, setShowCRMConfig] = useState(false)
-  // SCRUM-293 — criar um funil redireciona direto pro editor de estágios
-  // (aba "Funis" do CRMConfigDrawer, já no funil recém-criado) em vez de só
-  // voltar pro board: o funil nasce SEM estágios agora (backend não semeia
-  // mais os 5 de venda), então sem isto o usuário ficaria com um funil
-  // invisível/inutilizável até lembrar de configurá-lo manualmente.
-  const [crmConfigInitialTab, setCrmConfigInitialTab] = useState<'stages' | 'pipelineStages' | 'fields'>('stages')
-  const [crmConfigInitialPipelineId, setCrmConfigInitialPipelineId] = useState<string | null>(null)
+  // F7 (SCRUM-867) — o funil nasce COM etapas (tipo + modelo, invariante I2
+  // validado na criação), então o redirect da SCRUM-293 para o editor de
+  // estágios saiu: criar abre o board do funil novo direto, com o empty
+  // state "Adicionar contato ao funil".
   const [commercial, setCommercial] = useState<CommercialSituation>('all')
 
   // ── Funis de negócio (múltiplos pipelines) ──────────────────────────────
@@ -134,8 +135,9 @@ export function ContactsPage() {
   const [deletePipelineConfirmOpen, setDeletePipelineConfirmOpen] = useState(false)
   const [deletingPipeline, setDeletingPipeline] = useState(false)
   const [funilMenuOpen, setFunilMenuOpen] = useState(false)
-  const [routing, setRouting] = useState<PipelineChannelRouting[]>([])
-  const [whatsappNumbers, setWhatsappNumbers] = useState<WhatsAppNumber[]>([])
+  // F8 (SCRUM-872): mover um registro de PROCESSO para um terminal pede o
+  // motivo do catálogo (I5) antes de fechar — o drop fica pendente aqui.
+  const [closeDealTarget, setCloseDealTarget] = useState<{ deal: Deal; stage: PipelineStage } | null>(null)
 
   // "Sem negócio" não existe dentro de um funil (todo card do board já é um
   // negócio) — o botão some do segmentado ao entrar num funil (ver JSX), e
@@ -230,13 +232,10 @@ export function ContactsPage() {
     // depois da 1ª renderização da página). Sem o flag: nada de pipelines
     // nem roteamento (SCRUM-498).
     if (!multiPipeline) return
+    // F8 (SCRUM-871): o strip do funil deixou de mostrar "Alimentado por
+    // linha X" (`pipeline_channel_routing` congelada, decisão b) — a página
+    // não busca mais roteamento nem linhas WhatsApp.
     fetchPipelines()
-    Promise.all([pipelineRoutingApi.list(), whatsappNumbersApi.list()])
-      .then(([routingRes, numbersRes]) => {
-        setRouting(routingRes.data ?? [])
-        setWhatsappNumbers(numbersRes.data ?? [])
-      })
-      .catch(() => { /* strip de roteamento é best-effort — não bloqueia a página */ })
     // `fetchPipelines` fora das deps de propósito: só muda com `multiPipeline`
     // (já listado) e com `toast`, cuja identidade nova causaria refetch em loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -303,17 +302,38 @@ export function ContactsPage() {
     return out
   }, [dealsByStage, commercial])
 
-  // Linhas de WhatsApp que alimentam o funil selecionado, via roteamento por canal.
-  const routingLinesForSelected = useMemo(() => {
-    if (!selectedPipelineId) return []
-    return routing
-      .filter((r) => r.pipelineId === selectedPipelineId)
-      .map((r) => whatsappNumbers.find((n) => n.id === r.whatsappNumberId))
-      .filter((n): n is WhatsAppNumber => !!n)
-  }, [routing, whatsappNumbers, selectedPipelineId])
+  // Strip do funil (F8 · SCRUM-871): tipo, entradas (origens presentes no
+  // board) e contagens "abertos · concluídos hoje · cancelados" — tudo a
+  // partir dos registros já carregados, sem chamada extra.
+  const selectedKindOption = pipelineKindOption(pipelineKindOf(selectedPipeline))
+  const selectedIsProcess = pipelineKindOf(selectedPipeline) === 'process'
+  const selectedTerminalLabels = terminalLabelsOf(selectedPipeline)
+  const boardDeals = useMemo(() => Object.values(dealsByStage).flat(), [dealsByStage])
+  const boardStatsLine = useMemo(() => boardStats(boardDeals), [boardDeals])
+  const boardEntries = useMemo(() => entrySources(boardDeals), [boardDeals])
 
   const handleMoveDeal = (deal: Deal, toStageId: string) => {
-    moveDealStage(deal, toStageId).catch(() => toast('Não foi possível mover o negócio.', 'error'))
+    const stage = sortedPipelineStages.find((st) => st.id === toStageId)
+    // F8 (SCRUM-872): em funil de processo, terminal = fechamento com motivo
+    // do catálogo; abre o mini-modal e só fecha depois de confirmar. Venda
+    // continua como antes (compat `outro`) até a F10 pedir o motivo.
+    if (stage && selectedIsProcess && (stage.isWon || stage.isLost)) {
+      setCloseDealTarget({ deal, stage })
+      return
+    }
+    moveDealStage(deal, toStageId).catch(() => toast(`Não foi possível mover o ${pipelineNoun(selectedPipeline)}.`, 'error'))
+  }
+
+  const handleCloseDealWithReason = async (input: CloseDealReasonInput) => {
+    if (!closeDealTarget) return
+    await dealsApi.setStatus(closeDealTarget.deal.id, {
+      status: input.outcome,
+      closeReason: input.reason,
+      closeNote: input.note,
+    })
+    toast(input.outcome === 'won' ? `${selectedTerminalLabels.won}.` : `${selectedTerminalLabels.lost}.`, 'success')
+    void refetchDeals()
+    void fetchPipelines()
   }
 
   const handleMovePipelineDeal = (deal: Deal, toPipelineId: string) => {
@@ -328,33 +348,34 @@ export function ContactsPage() {
       .catch((e: unknown) => toast(getApiErrorMessage(e, 'Não foi possível mover o negócio para o funil.'), 'error'))
   }
 
+  // F9 (SCRUM-875): "Adicionar ao funil" pelo menu da linha da tabela —
+  // fluxo compartilhado (criação / DealModal em venda / modal de conflito).
+  const addToPipeline = useAddToPipeline({ onCreated: () => { void refetch(); void fetchPipelines() } })
+
   const handleOpenDealContact = (contactId: string) => {
     setSelectedContactId(contactId)
     setInitialPanelTab('deals')
   }
 
-  const handleCreatePipeline = async (data: { name: string; color: string }) => {
+  const handleCreatePipeline = async (data: CreatePipelineData) => {
     let created
     try {
-      // Funil nasce SEM estágios (SCRUM-293) — não herda os 5 estágios de
-      // VENDAS do preset antigo sem o usuário escolher nada. Por isso o
-      // redirect logo abaixo: sem estágio nenhum o funil não aceita deals
-      // (backend rejeita "Pipeline sem estágios configurados."), então o
-      // próximo passo natural é sempre configurar as colunas do board.
-      const res = await pipelinesApi.create({ name: data.name, color: data.color })
+      // F7 (SCRUM-865/866): criação atômica com `kind` + `stages[]` (F1) — o
+      // funil nasce válido (≥1 normal, 1 Ganho, 1 Perdido) e utilizável.
+      const res = await pipelinesApi.create({ name: data.name, color: data.color, kind: data.kind, stages: data.stages })
       created = res.data
     } catch (e: unknown) {
-      throw new Error(getApiErrorMessage(e, 'Erro ao criar pipeline.'))
+      throw new Error(getApiErrorMessage(e, 'Erro ao criar funil.'))
     }
+    // Abre o board do funil novo direto (SCRUM-867); o empty state do board
+    // oferece "Adicionar contato ao funil". Zero chamadas extras de estágio:
+    // a lista já vem com `stages` embutidas.
     await fetchPipelines(created.id)
     refetchPipelines()
-    toast('Funil criado — configure os estágios abaixo.', 'success')
-    setCrmConfigInitialTab('pipelineStages')
-    setCrmConfigInitialPipelineId(created.id)
-    setShowCRMConfig(true)
+    toast('Funil criado. Adicione o primeiro contato para começar.', 'success')
   }
 
-  const handleEditPipeline = async (data: { name: string; color: string }) => {
+  const handleEditPipeline = async (data: CreatePipelineData) => {
     if (!selectedPipelineId) return
     try {
       await pipelinesApi.update(selectedPipelineId, { name: data.name, color: data.color })
@@ -415,14 +436,7 @@ export function ContactsPage() {
       </span>
 
       <button
-        onClick={() => {
-          // Acesso manual — sempre abre no default ("Estágios do contato"),
-          // nunca com um funil forçado do último "criar funil" (esse reset
-          // só vale pra próxima criação).
-          setCrmConfigInitialTab('stages')
-          setCrmConfigInitialPipelineId(null)
-          setShowCRMConfig(true)
-        }}
+        onClick={() => setShowCRMConfig(true)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors"
       >
         <Settings2 className="w-3.5 h-3.5" />
@@ -606,6 +620,7 @@ export function ContactsPage() {
                   )}
                 >
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                  {(() => { const KindIcon = pipelineKindOption(pipelineKindOf(p)).icon; return <KindIcon className="w-3 h-3 opacity-70 flex-shrink-0" aria-label={pipelineKindOption(pipelineKindOf(p)).label} /> })()}
                   {p.name}
                   <span className="text-[10px] tabular-nums opacity-70">{p.openDealsCount}</span>
                 </button>
@@ -667,16 +682,29 @@ export function ContactsPage() {
                     ver na tabela de contatos ›
                   </button>
                 </p>
-                <p className="text-surface-500 whitespace-nowrap tabular-nums">
-                  {dealsSummaryLine.count} aberto{dealsSummaryLine.count === 1 ? '' : 's'} · {formatBRL(dealsSummaryLine.openCents)}
+                <p className="text-surface-500 whitespace-nowrap tabular-nums" data-testid="board-stats">
+                  {boardStatsLine.open} aberto{boardStatsLine.open === 1 ? '' : 's'}
+                  {' · '}{boardStatsLine.wonToday} {selectedTerminalLabels.won.toLowerCase()}{boardStatsLine.wonToday === 1 ? '' : 's'} hoje
+                  {' · '}{boardStatsLine.lost} {selectedTerminalLabels.lost.toLowerCase()}{boardStatsLine.lost === 1 ? '' : 's'}
+                  {!selectedIsProcess && <> · {formatBRL(dealsSummaryLine.openCents)}</>}
                 </p>
               </div>
-              <div className="px-4 pb-2 text-[11px] text-surface-500">
-                {routingLinesForSelected.length > 0 ? (
-                  <span>Alimentado por: {routingLinesForSelected.map((n) => n.label || n.displayPhoneNumber).join(', ')}</span>
-                ) : (
-                  <span>Nenhuma linha WhatsApp roteada para este funil ainda — configure em Configurações › Roteamento por Canal.</span>
-                )}
+              <div className="px-4 pb-2 text-[11px] text-surface-500 flex items-center gap-2 flex-wrap" data-testid="board-strip">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-surface-800 border border-surface-700 text-surface-300">
+                  <selectedKindOption.icon className="w-3 h-3" /> {selectedKindOption.label}
+                </span>
+                <span>
+                  {selectedIsProcess
+                    ? `Um ${pipelineNoun(selectedPipeline)} por contato por passagem. Sem valor, sem produtos.`
+                    : 'Negócios com valor — fecham em Ganho ou Perdido e entram na receita.'}
+                </span>
+                <span className="text-surface-600">·</span>
+                <span>
+                  Entradas:{' '}
+                  {boardEntries.length > 0
+                    ? boardEntries.map((e, i) => <span key={e} className="text-surface-300">{i > 0 ? ', ' : ''}{e}</span>)
+                    : <span className="text-surface-400">nenhuma ainda</span>}
+                </span>
               </div>
             </div>
           )}
@@ -703,6 +731,9 @@ export function ContactsPage() {
                 loading={dealsLoading}
                 pipelines={pipelines}
                 onMovePipeline={handleMovePipelineDeal}
+                onAddContact={() => setShowNewContact(true)}
+                itemNoun={pipelineNoun(selectedPipeline)}
+                pipeline={selectedPipeline}
               />
             )
           ) : error ? (
@@ -734,6 +765,7 @@ export function ContactsPage() {
               onOpenPanel={handleOpenPanel}
               onMoveStage={handleMoveStage}
               onOpenDeals={handleOpenDealContact ? (c) => handleOpenDealContact(c.id) : undefined}
+              onAddToPipeline={(c, p) => addToPipeline.requestAdd({ contactId: c.id, contactName: c.displayName || c.waId, pipeline: p })}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelect}
               onSelectAll={selectAll}
@@ -881,17 +913,30 @@ export function ContactsPage() {
         onClose={() => setShowCRMConfig(false)}
         pipelines={pipelines}
         onPipelinesChanged={fetchPipelines}
-        initialTab={crmConfigInitialTab}
-        initialPipelineId={crmConfigInitialPipelineId}
+      />
+
+      {/* F9 (SCRUM-875): diálogos do "Adicionar ao funil" (conflito / motivo / negócio) */}
+      {addToPipeline.dialogs}
+
+      {/* F8 (SCRUM-872): motivo ao fechar um registro de processo pelo board */}
+      <CloseDealReasonModal
+        open={!!closeDealTarget}
+        onClose={() => setCloseDealTarget(null)}
+        deal={closeDealTarget?.deal ?? null}
+        stage={closeDealTarget?.stage ?? null}
+        pipeline={selectedPipeline}
+        onConfirm={handleCloseDealWithReason}
       />
 
       {/* Funis de negócio (múltiplos pipelines) */}
       <CreatePipelineModal
+        tenantId={user?.tenantId}
         open={createPipelineModalOpen}
         onClose={() => setCreatePipelineModalOpen(false)}
         onSave={handleCreatePipeline}
       />
       <CreatePipelineModal
+        tenantId={user?.tenantId}
         open={editPipelineModalOpen}
         onClose={() => setEditPipelineModalOpen(false)}
         onSave={handleEditPipeline}

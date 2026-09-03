@@ -5,11 +5,11 @@ import {
   Tag as TagIcon, ToggleLeft, ToggleRight, ChevronDown,
   Loader2, Check,
 } from 'lucide-react'
-import { cn, getDefaultPipeline, getPipelineStages, getActivePipelines } from '@/lib/utils'
+import { cn, getPipelineStages, getActivePipelines } from '@/lib/utils'
 import { useToast } from '@/hooks/useToast'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
-import { tagsApi, dealsApi } from '@/services/api'
+import { tagsApi } from '@/services/api'
 import type { Contact, ContactSource, Tag, Pipeline } from '@/types'
 import { Input } from '@/components/ui/Input'
 import { PhoneField } from '@/components/ui/PhoneField'
@@ -29,7 +29,7 @@ const SOURCE_OPTIONS: { value: ContactSource; label: string }[] = [
 interface NewContactDrawerProps {
   open: boolean
   onClose: () => void
-  onCreate: (dto: Partial<Contact> & { displayName: string; waId: string }) => Promise<Contact>
+  onCreate: (dto: Partial<Contact> & { displayName: string; waId: string; pipelineId?: string; pipelineStageId?: string }) => Promise<Contact>
   onCreated?: (contact: Contact) => void
   /** Funis de negócio do tenant — todo novo lead precisa nascer com um negócio
    *  num funil (spec: "selecionar obrigatoriamente em qual funil esse contato vai"). */
@@ -231,9 +231,12 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
   // tenant. Depende de `pipelines`/`defaultPipelineId` (não só `open`) para
   // não travar em '' caso o drawer seja aberto antes de `pipelines` carregar
   // — quando a lista chegar depois, este efeito preenche o valor.
+  // F9 (SCRUM-878): funil é OPCIONAL — default = nenhum. Só pré-seleciona
+  // quando o chamador está dentro de um funil (`defaultPipelineId`, ex.: CTA
+  // "Adicionar contato ao funil" do board).
   useEffect(() => {
-    if (open && !pipelineId && pipelines.length > 0) {
-      setPipelineId(defaultPipelineId ?? getDefaultPipeline(pipelines)?.id ?? '')
+    if (open && !pipelineId && defaultPipelineId && pipelines.some((p) => p.id === defaultPipelineId)) {
+      setPipelineId(defaultPipelineId)
     }
   }, [open, pipelines, defaultPipelineId, pipelineId])
 
@@ -253,9 +256,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
     if (!displayName.trim()) e.displayName = 'Nome é obrigatório'
     if (!waId.trim()) e.waId = 'Número WhatsApp é obrigatório'
     else if (!/^\d{10,15}$/.test(waId.replace(/\D/g, ''))) e.waId = 'Formato inválido (somente números)'
-    // Gate de múltiplos funis (SCRUM-498): sem o flag o campo não existe,
-    // logo não pode bloquear o cadastro.
-    if (multiPipeline && !pipelineId) e.pipelineId = 'Funil é obrigatório'
+    // F9 (SCRUM-878): funil opcional — nunca bloqueia o cadastro.
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -279,26 +280,13 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
         optIn,
         ...(tags.length > 0 && { tags }),
         ...(customFields.length > 0 && { customFields }),
+        // F9 (SCRUM-878): com funil escolhido, o backend faz o `enter` NA
+        // MESMA transação do contato (F2-836) — sem `POST /deals` daqui.
+        // Falha do funil desfaz o contato e cai no catch abaixo (mensagem).
+        ...(multiPipeline && pipelineId && { pipelineId, ...(pipelineStageId && { pipelineStageId }) }),
       }
 
       const created = await onCreate(dto)
-
-      // Todo lead nasce com um negócio no funil escolhido (spec: seleção
-      // obrigatória de funil). Best-effort: o contato já foi criado com
-      // sucesso, então uma falha aqui não desfaz o contato — só avisa.
-      // Sem o gate de funis não há negócio automático (comportamento legado).
-      if (multiPipeline) {
-        try {
-          await dealsApi.create({
-            contactId: created.id,
-            title: created.displayName,
-            pipelineId,
-            stageId: pipelineStageId || undefined,
-          })
-        } catch {
-          toast('Contato criado, mas não foi possível criar o negócio no funil. Adicione manualmente pela ficha do contato.', 'error')
-        }
-      }
 
       setSaved(true)
       setTimeout(() => {
@@ -448,14 +436,15 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                       múltiplos funis (SCRUM-498). Sem ele, o cadastro é o
                       legado: nome/telefone + estágio do contato. */}
                   {multiPipeline && (
-                  <Field label="Funil" required>
+                  <Field label="Funil (opcional)">
                     <div className="relative">
                       <select
                         value={pipelineId}
                         onChange={(e) => { setPipelineId(e.target.value); setErrors((v) => ({ ...v, pipelineId: undefined })) }}
                         className={cn(inputCls(!!errors.pipelineId), 'appearance-none pr-8')}
+                        data-testid="new-contact-pipeline"
                       >
-                        {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
+                        <option value="">— nenhum —</option>
                         {getActivePipelines(pipelines).map((p) => (
                           <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                         ))}
@@ -464,17 +453,17 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                     </div>
                     {errors.pipelineId
                       ? <p className="text-[11px] text-red-400">{errors.pipelineId}</p>
-                      : <p className="text-[11px] text-surface-600">O contato nasce com um negócio aberto neste funil.</p>
+                      : <p className="text-[11px] text-surface-600">Com funil, o contato já entra na etapa escolhida — na mesma operação.</p>
                     }
                   </Field>
                   )}
 
                   <div className={cn('grid gap-3', multiPipeline ? 'grid-cols-2' : 'grid-cols-1')}>
                     {/* Estágio do FUNIL — coluna do board em que o negócio
-                        nasce. Eixo distinto de "Estágio do contato" abaixo
+                        nasce. Eixo distinto da "Situação do contato" abaixo
                         (ciclo de vida) — modelo híbrido, os dois não se
                         confundem. Reativo ao funil escolhido acima. */}
-                    {multiPipeline && (
+                    {multiPipeline && pipelineId && (
                     <Field label="Estágio do funil">
                       <div className="relative">
                         <select
@@ -483,7 +472,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                           className={cn(inputCls(), 'appearance-none pr-8')}
                         >
                           {getPipelineStages(pipelines, pipelineId).length === 0 && (
-                            <option value="">Nenhum estágio disponível</option>
+                            <option value="">Nenhuma situação disponível</option>
                           )}
                           {getPipelineStages(pipelines, pipelineId).map((s) => (
                             <option key={s.id} value={s.id}>{s.label}</option>
@@ -494,7 +483,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                     </Field>
                     )}
 
-                    <Field label="Estágio do contato">
+                    <Field label="Situação do contato">
                       <div className="relative">
                         <select
                           value={stage}

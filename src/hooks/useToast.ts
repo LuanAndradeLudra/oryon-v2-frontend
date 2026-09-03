@@ -2,10 +2,17 @@ import { useEffect, useState, useCallback } from 'react'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
+/** Ação opcional no toast (F9 · SCRUM-879): "Ver no board" depois de adicionar ao funil. */
+export interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 export interface Toast {
   id: string
   type: ToastType
   message: string
+  action?: ToastAction
 }
 
 // ─── Global singleton store ──────────────────────────────────────────────────
@@ -34,14 +41,15 @@ function genToastId(): string {
   return `toast-${Date.now()}-${_toastCounter}`
 }
 
-export function showToast(message: string, type: ToastType = 'success'): string {
+export function showToast(message: string, type: ToastType = 'success', action?: ToastAction): string {
   const id = genToastId()
-  _toasts = [..._toasts, { id, type, message }]
+  _toasts = [..._toasts, { id, type, message, ...(action ? { action } : {}) }]
   emit()
+  // Toast com ação fica um pouco mais para dar tempo de clicar.
   setTimeout(() => {
     _toasts = _toasts.filter((t) => t.id !== id)
     emit()
-  }, 3500)
+  }, action ? 6000 : 3500)
   return id
 }
 

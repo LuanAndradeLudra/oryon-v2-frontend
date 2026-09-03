@@ -223,6 +223,11 @@ export interface DealLineItem {
   order?: number
 }
 
+/** Origem do registro no funil (Modelo B §4.2, F1-823). */
+export type DealOriginKind = 'manual' | 'import' | 'campaign' | 'journey' | 'event' | 'ai'
+/** Quem executou o último movimento (histórico, F2). */
+export type DealMovedByKind = 'user' | 'ai' | 'journey' | 'campaign' | 'system' | 'automation'
+
 export interface Deal {
   id: string
   contactId: string
@@ -232,6 +237,19 @@ export interface Deal {
   stageId: string               // estágio atual (fonte da verdade do status)
   originConversationId?: string | null
   createdByKind?: 'user' | 'automation' | 'ai'
+  /** F1: de onde o registro veio (campanha, evento, IA, manual, importação, jornada). */
+  originKind?: DealOriginKind
+  originId?: string | null
+  /** F8-870 (board): nome da campanha de origem quando `originKind = 'campaign'`. */
+  originLabel?: string | null
+  /** F1: motivo do desfecho (catálogo por tipo de funil, I5). */
+  closeReason?: string | null
+  closeNote?: string | null
+  /** F8-870 (board): quando entrou na etapa atual (último movimento; fallback updatedAt/createdAt). */
+  stageEnteredAt?: string | null
+  /** F8-870 (board): quem fez o último movimento — `ai` = Judge/tool, `user` = humano, demais = automático. */
+  lastMovedByKind?: DealMovedByKind | null
+  lastMovedByActorName?: string | null
   amountCents: number           // total em centavos
   currency?: string
   note?: string | null
@@ -240,8 +258,63 @@ export interface Deal {
   lineItems?: DealLineItem[]
   createdAt?: string
   updatedAt?: string
-  /** Resumo leve do contato — presente no board por pipeline (GET /deals?pipelineId=). */
-  contact?: { id: string; displayName: string; profilePicUrl: string | null }
+  /** Resumo leve do contato — presente no board por pipeline (GET /deals?pipelineId=). `phone` desde a F8. */
+  contact?: { id: string; displayName: string; profilePicUrl: string | null; phone?: string | null }
+}
+
+/** Tipo do funil (Modelo B §4.2, F1): `sales` = negócios com valor, termina em
+ *  Ganho/Perdido; `process` = registros de atendimento/onboarding/pós-venda,
+ *  sem valor, termina em Concluído/Cancelado. Imutável após a criação. */
+export type PipelineKind = 'sales' | 'process'
+
+/** Rótulos dos dois terminais, derivados do `kind` pelo backend (nunca coluna). */
+export interface TerminalLabels {
+  won: string
+  lost: string
+}
+
+/** Motivo de desfecho do catálogo por `kind` (§4.6, I5). */
+export interface CloseReason {
+  key: string
+  label: string
+  outcome: 'won' | 'lost' | 'any'
+}
+
+/** F10 (SCRUM-882): desfecho ao resolver a conversa (`PATCH /conversations/:id/status`). */
+export interface DealOutcomeInput {
+  outcome: 'won' | 'lost'
+  /** Motivo do catálogo por tipo de funil (I5). */
+  reason: string
+  note?: string
+}
+
+/** F10 (SCRUM-882): envelope de `GET /deals/ai/stages?conversationId=` (F6) — o
+ *  registro-alvo da conversa pela precedência §4.7. `no_target` é resposta
+ *  normal (a conversa não tem registro aberto). */
+export interface AiDealTargetView {
+  target: 'origin_conversation' | 'campaign' | 'no_target'
+  dealId?: string
+  pipelineId?: string
+  pipelineName?: string | null
+  pipelineKind?: PipelineKind
+  terminalLabels?: TerminalLabels
+  currentStageKey?: string | null
+  currentStageLabel?: string | null
+  /** Só etapas não-terminais. */
+  stages: Array<{ id: string; key: string; label: string; order: number }>
+  closeReasons?: { won: Array<{ key: string; label: string }>; lost: Array<{ key: string; label: string }> }
+}
+
+/** F11 (SCRUM-886): uma passagem do histórico do registro (`GET /deals/:id/history`), já com rótulos. */
+export interface DealStageHistoryEntry {
+  id: string
+  fromStageId: string | null
+  fromStageLabel: string | null
+  toStageId: string
+  toStageLabel: string | null
+  movedByKind: DealMovedByKind
+  movedByActorName: string | null
+  createdAt: string
 }
 
 /** Pipeline de negócio (múltiplos por tenant). O `isDefault` é o pipeline padrão. */
@@ -254,11 +327,47 @@ export interface Pipeline {
   order: number
   isDefault: boolean
   isArchived: boolean
+  /** F1 (SCRUM-822): tipo do funil. Backends anteriores ao épico não mandam — tratar ausência como `sales`. */
+  kind?: PipelineKind
+  /** F1 (SCRUM-828): Ganho/Perdido × Concluído/Cancelado — usar em chips, tooltips e modais em vez de texto fixo. */
+  terminalLabels?: TerminalLabels
+  /** F1 (SCRUM-824): ids dos setores com acesso (`pipeline_access`). */
+  access?: string[]
+  /** F1 (SCRUM-827): catálogo de motivos de fechamento do tipo. */
+  closeReasons?: CloseReason[]
   stages: PipelineStage[]
   /** Contagem de negócios abertos — badge do segmented control da aba Leads. */
   openDealsCount: number
   createdAt?: string
   updatedAt?: string
+}
+
+/** Etapa de um modelo de funil (`GET /settings/pipelines/templates`, F1-826). */
+export interface PipelineTemplateStage {
+  key: string
+  label: string
+  color: string
+  isWon?: boolean
+  isLost?: boolean
+}
+
+/** Modelo de etapas por tipo — o funil nunca nasce vazio (I2). */
+export interface PipelineTemplate {
+  key: string
+  kind: PipelineKind
+  name: string
+  description: string
+  isDefault?: boolean
+  stages: PipelineTemplateStage[]
+}
+
+/** Etapa enviada na criação atômica do funil (`POST /settings/pipelines`, F1-825). */
+export interface CreatePipelineStageInput {
+  label: string
+  key?: string
+  color?: string
+  isWon?: boolean
+  isLost?: boolean
 }
 
 /** Estágio de um pipeline. `isWon`/`isLost` marcam os terminais. */
@@ -305,6 +414,9 @@ export interface ContactDealsPipelineSummary {
   totalCents: number
   openCents: number
   wonCents: number
+  /** F4-848: etapa do registro ABERTO neste funil (chips "Funil · Etapa", "já está · etapa"). */
+  stageKey?: string | null
+  stageLabel?: string | null
 }
 
 export interface ContactDealsSummary {
@@ -315,25 +427,6 @@ export interface ContactDealsSummary {
   openCents: number
   wonCents: number
   byPipeline: ContactDealsPipelineSummary[]
-}
-
-// ─── AI Onboarding ────────────────────────────────────────────────────────────
-
-export interface AIOnboardingConfig {
-  stages: Array<{
-    label: string
-    color: string
-    order: number
-    isTerminal: boolean
-  }>
-  customFields: Array<{
-    label: string
-    type: CustomFieldType
-    placeholder?: string
-    required: boolean
-    order: number
-    options?: string[]
-  }>
 }
 
 export type ContactHistoryEventType =

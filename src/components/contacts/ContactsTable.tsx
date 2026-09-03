@@ -2,7 +2,7 @@ import { Loader2, UserX, Check, Minus } from 'lucide-react'
 import { ContactRow } from './ContactRow'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { cn } from '@/lib/utils'
-import type { Contact, ContactStage } from '@/types'
+import type { Contact, ContactStage, Pipeline } from '@/types'
 
 interface ContactsTableProps {
   contacts: Contact[]
@@ -11,6 +11,8 @@ interface ContactsTableProps {
   onOpenConversation?: (contact: Contact) => void
   onMoveStage?: (contact: Contact, stage: ContactStage) => void
   onOpenDeals?: (contact: Contact) => void
+  /** F9 (SCRUM-875): repassado à linha — "Adicionar ao funil" no menu de contexto. */
+  onAddToPipeline?: (contact: Contact, pipeline: Pipeline) => void
   selectedIds?: Set<string>
   onToggleSelect?: (id: string) => void
   onSelectAll?: (ids: string[]) => void
@@ -28,6 +30,7 @@ export function ContactsTable({
   onOpenConversation,
   onMoveStage,
   onOpenDeals,
+  onAddToPipeline,
   selectedIds,
   onToggleSelect,
   onSelectAll,
@@ -36,12 +39,12 @@ export function ContactsTable({
   loadingMore,
   onLoadMore,
 }: ContactsTableProps) {
-  // Gate de múltiplos funis (SCRUM-498): a coluna "Negócios" (chips por
-  // funil) só existe com o flag — `ContactRow` omite a célula em paralelo.
+  // Gate de múltiplos funis (SCRUM-498): a coluna "Funis" (chips "Funil ·
+  // Etapa", F11-884) só existe com o flag — `ContactRow` omite a célula em paralelo.
   const multiPipeline = useMultiPipeline()
   const columns = [
-    'Contato', 'Estágio', 'Score', 'Intenção', 'Sentimento', 'Tags',
-    ...(multiPipeline ? ['Negócios'] : []),
+    'Contato', 'Situação', 'Score', 'Intenção', 'Sentimento', 'Tags',
+    ...(multiPipeline ? ['Funis'] : []),
     'Fonte', 'Último contato', 'Opt-in', '',
   ]
   // +1 = coluna do checkbox de seleção.
@@ -129,6 +132,7 @@ export function ContactsTable({
                 onOpenConversation={onOpenConversation}
                 onMoveStage={onMoveStage}
                 onOpenDeals={onOpenDeals}
+                onAddToPipeline={onAddToPipeline}
                 isSelected={selectedIds?.has(contact.id) ?? false}
                 onToggleSelect={onToggleSelect}
                 hasSelection={hasSelection}

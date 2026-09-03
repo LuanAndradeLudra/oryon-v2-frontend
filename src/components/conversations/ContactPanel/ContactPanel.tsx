@@ -387,7 +387,7 @@ export function ContactPanel({
         </Section>
 
         {isFeatureVisible('contactPanelDeals') && (
-          <ContactPanelDeals contactId={contact.id} conversationId={conversation.id} />
+          <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
         )}
 
         {/* Hidden when conversionAnalysisPanel is off — covers both the

@@ -3,7 +3,7 @@ import { conversationsApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
 import { conversationMatchesFilters } from '@/lib/conversationFilterPredicate'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User } from '@/types'
+import type { Conversation, ConversationFilters, ConversationStatusCounts, SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, Tag, User, DealOutcomeInput } from '@/types'
 
 /**
  * Phase 27 — sentinel timestamp used by the UI to mean "pause indefinitely
@@ -358,8 +358,10 @@ export function useConversations(filters: ConversationFilters = {}) {
   // acabou de abrir, sob o filtro "não lidas", seria hostil) e as tags, cujo
   // caminho de patch é próprio.
 
-  const updateStatus = useCallback(async (id: string, status: 'resolved' | 'open' | 'pending') => {
-    const { data } = await conversationsApi.updateStatus(id, status)
+  // F10 (SCRUM-882): `dealOutcome` opcional só com `resolved` — fecha o registro-alvo
+  // da conversa antes de resolver; omitido = "sem decisão" (registro segue aberto).
+  const updateStatus = useCallback(async (id: string, status: 'resolved' | 'open' | 'pending', dealOutcome?: DealOutcomeInput) => {
+    const { data } = await conversationsApi.updateStatus(id, status, dealOutcome)
     patchAndReconcile(id, { status: data.status })
     return data
   }, [patchAndReconcile])
