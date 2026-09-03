@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
+import { WizardProgress } from '@/components/ui/WizardProgress'
 import { getReadableTextColor } from '@/lib/colorPalette'
 import { Emoji } from '@/lib/emojiText'
 import { campaignsApi, contactsApi, templatesApi, tagsApi, whatsappNumbersApi } from '@/services/api'
@@ -447,23 +448,12 @@ export function CampaignWizard({
               </div>
 
               {/* Progress */}
-              <div className="flex px-5 py-3 gap-1.5 border-b border-surface-800 flex-shrink-0">
-                {([1, 2, 3, 4, 5] as Step[]).map((s) => (
-                  <div key={s} className="flex-1 flex items-center gap-1.5">
-                    <div className={cn(
-                      'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all',
-                      s < step  ? 'bg-brand-600 text-surface-950' :
-                      s === step ? 'bg-brand-600/20 border-2 border-brand-500 text-brand-400' :
-                                   'bg-surface-800 text-surface-500'
-                    )}>
-                      {s < step ? <Check className="w-3 h-3" /> : s}
-                    </div>
-                    <span className={cn('text-xs transition-colors', s === step ? 'text-surface-200' : 'text-surface-600')}>
-                      {STEP_LABELS[s - 1]}
-                    </span>
-                    {s < 5 && <div className={cn('flex-1 h-px', s < step ? 'bg-brand-600/50' : 'bg-surface-700')} />}
-                  </div>
-                ))}
+              <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
+                <WizardProgress
+                  steps={STEP_LABELS.map((label) => ({ label }))}
+                  current={step}
+                  onStepClick={(s) => setStep(s as Step)}
+                />
               </div>
 
               {/* Step content */}
