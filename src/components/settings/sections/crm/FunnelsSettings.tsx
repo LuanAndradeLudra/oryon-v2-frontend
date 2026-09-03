@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Archive, ArchiveRestore, Star } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Pencil, Trash2, Archive, ArchiveRestore, Star, ArrowRight } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { CreatePipelineModal, type CreatePipelineData } from '@/components/deals/CreatePipelineModal'
@@ -39,8 +39,24 @@ export function FunnelsSettings() {
   const [archiving, setArchiving] = useState(false)
   const [settingDefault, setSettingDefault] = useState(false)
 
+  // Achado do Auditor (auditoria noturna): logo após criar um funil, este
+  // efeito rodava com `selectedId` já apontando pro funil novo mas
+  // `pipelines` (do CRMConfigContext) ainda com a lista ANTIGA — a condição
+  // de baixo não encontrava o id e caía no fallback pro funil padrão,
+  // silenciosamente reexibindo as etapas do funil errado. `pendingSelectRef`
+  // segura a intenção até o refetch assíncrono realmente trazer o funil novo.
+  const pendingSelectRef = useRef<string | null>(null)
+
   useEffect(() => {
     if (pipelines.length === 0) { setSelectedId(''); return }
+    if (pendingSelectRef.current) {
+      if (pipelines.some((p) => p.id === pendingSelectRef.current)) {
+        setSelectedId(pendingSelectRef.current)
+        pendingSelectRef.current = null
+      }
+      // Ainda não chegou no refetch — não cai pro fallback abaixo.
+      return
+    }
     if (selectedId && pipelines.some((p) => p.id === selectedId)) return
     setSelectedId(getDefaultPipeline(pipelines)?.id ?? pipelines[0]?.id ?? '')
   }, [pipelines, selectedId])
@@ -56,7 +72,7 @@ export function FunnelsSettings() {
     } catch (e: unknown) {
       throw new Error(getApiErrorMessage(e, 'Erro ao criar funil.'))
     }
-    setSelectedId(created.id)
+    pendingSelectRef.current = created.id
     refetchPipelines()
     toast('Funil criado. Adicione o primeiro contato para começar.', 'success')
   }
@@ -169,6 +185,20 @@ export function FunnelsSettings() {
                 >
                   <Pencil className="w-3.5 h-3.5" /> Renomear / cor
                 </button>
+              )}
+              {/* Achado do Auditor: o pencil "Renomear / cor" fica visualmente
+                  perto de "Novo funil" e tem cara de "editar tudo" — quem
+                  clica achando que vai editar etapas só acha nome/cor e pode
+                  não perceber a seção "Etapas" mais abaixo (mesma tela, sem
+                  scroll excessivo, mas sem vínculo visual). Link direto pro
+                  id que o SettingsSection já registra (`slugify("Etapas")`). */}
+              {selected && (
+                <a
+                  href="#etapas"
+                  className="flex items-center gap-1 px-2 py-2 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors"
+                >
+                  Editar etapas <ArrowRight className="w-3.5 h-3.5" />
+                </a>
               )}
               {selected && !selected.isDefault && (
                 <button
