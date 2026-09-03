@@ -6,7 +6,6 @@ import { ContactTimeline } from './ContactTimeline'
 import { TimelineComposer } from './TimelineComposer'
 import { NextActionPanel } from './NextActionPanel'
 import { RelationshipHealthPanel } from './RelationshipHealthPanel'
-import { BestTimePanel } from './BestTimePanel'
 import { PROFILE_MOCKS_ENABLED } from './mockData'
 import { AIContextCard } from '@/components/contacts/tabs/AIContextCard'
 import { ContactInfoCard } from '@/components/contacts/tabs/ContactInfoCard'
@@ -101,7 +100,9 @@ export function ProfileMobileView({
             />
             {showAiContext && <AIContextCard contact={contact} onRefresh={onRefresh} />}
             <RelationshipHealthPanel contact={contact} stats={stats} />
-            <BestTimePanel contactId={contact.id} />
+            {/* BestTimePanel removido — ver ContactProfilePage.tsx (achado do
+                Lince, gap no PR #81): fabricava "Melhor horário" por hash do
+                contactId sem fonte de dado real. */}
           </>
         )}
 

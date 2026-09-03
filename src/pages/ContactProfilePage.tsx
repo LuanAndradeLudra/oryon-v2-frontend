@@ -24,7 +24,6 @@ import { ContactTimeline } from '@/components/contacts/profile/ContactTimeline'
 import { TimelineComposer } from '@/components/contacts/profile/TimelineComposer'
 import { NextActionPanel } from '@/components/contacts/profile/NextActionPanel'
 import { RelationshipHealthPanel } from '@/components/contacts/profile/RelationshipHealthPanel'
-import { BestTimePanel } from '@/components/contacts/profile/BestTimePanel'
 import { DealsTabMock } from '@/components/contacts/profile/DealsTabMock'
 import { CampaignTouchesMock } from '@/components/contacts/profile/CampaignTouchesMock'
 import { AutomationRunsMock } from '@/components/contacts/profile/AutomationRunsMock'
@@ -319,7 +318,13 @@ export function ContactProfilePage() {
       />
       {showAiContext && <AIContextCard contact={contact} onRefresh={profile.refresh} />}
       <RelationshipHealthPanel contact={contact} stats={stats} />
-      <BestTimePanel contactId={contactId} />
+      {/* Achado do Lince (revisão do PR #81, gap no QW-01/P14): "Melhor
+          horário" era hash(contactId) travestido de dado real — o backend
+          ainda não expõe timestamps de mensagens por contato (a query por
+          hora/dia só existe agregada no dashboard). Removido em vez de
+          gated: sem fonte de verdade, o elemento não é montado (P6), não
+          basta esconder atrás de PROFILE_MOCKS_ENABLED. Volta quando
+          existir o endpoint real. */}
     </>
   )
 
