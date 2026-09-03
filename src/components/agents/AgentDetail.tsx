@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { loadHub, hubHasContent, isAgentStale, injectHubIntoPrompt } from '@/services/companyContextService'
 import { cn } from '@/lib/utils'
+import { Tabs } from '@/components/ui/Tabs'
 import {
   updateAgent,
   addTool, updateTool, deleteTool,
@@ -2269,30 +2270,16 @@ export function AgentDetail({
       </AnimatePresence>
 
       {/* Tabs — underline (mais leve que pílulas com 9 opções; o indicador
-          de 2px comunica seleção sem competir com o conteúdo) */}
-      <div
-        role="tablist"
-        aria-label="Seções do agente"
-        className="flex items-center gap-1 px-6 border-b border-surface-800/60 flex-shrink-0 overflow-x-auto"
-      >
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-2.5 -mb-px border-b-2 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
-              activeTab === tab.id
-                ? 'text-surface-50 border-brand-500'
-                : 'text-surface-500 border-transparent hover:text-surface-300',
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+          de 2px comunica seleção sem competir com o conteúdo). Extraído pra
+          `ui/Tabs.tsx` (Fase 3 do plano de reestilização) — mesma marcação,
+          mesmas classes, só reaproveitável agora. */}
+      <Tabs
+        tabs={tabs}
+        value={activeTab}
+        onChange={setActiveTab}
+        label="Seções do agente"
+        className="px-6"
+      />
 
       {/* Tab content — "Regras" with Roteamento sub-tab needs flex-contained
           layout for the sticky save bar; everything else scrolls normally. */}
