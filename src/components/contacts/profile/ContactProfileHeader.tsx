@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { StageBadge } from '@/components/contacts/StageBadge'
+import { MoveStageModal } from '@/components/contacts/MoveStageModal'
 import { LeadScorePill } from '@/components/contacts/LeadScorePill'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -39,6 +40,13 @@ interface ContactProfileHeaderProps {
   onDelete: () => Promise<void> | void
   /** Compacto (mobile): esconde ações secundárias e tags. */
   compact?: boolean
+  /** PROPOSTA do Auditor (protótipo reversível — ver PR): o badge de situação
+   *  do contato vira clicável aqui no cabeçalho (N1) em vez de morar num card
+   *  de largura inteira no corpo da ficha, que competia visualmente com os
+   *  Funis reais e usava "funil" pra nomear o ciclo de vida do contato (achado
+   *  de colisão de vocabulário). Opcional: sem isto, o badge fica só leitura
+   *  (comportamento anterior). */
+  onStageChanged?: (next: string) => void
 }
 
 const MAX_TAGS = 3
@@ -58,7 +66,7 @@ const WINDOW_CHIP: Record<WhatsAppWindowState, string> = {
  */
 export function ContactProfileHeader({
   contact, lastActivityAt, lastMessagePreview, lastMessageSenderKind, assignedTo,
-  onBack, onOpenChat, onSendTemplate, onAddNote, onAddTask, onDelete, compact = false,
+  onBack, onOpenChat, onSendTemplate, onAddNote, onAddTask, onDelete, onStageChanged, compact = false,
 }: ContactProfileHeaderProps) {
   const addToPipeline = useAddToPipeline()
   const { stages, pipelines } = useCRMConfig()
@@ -68,6 +76,7 @@ export function ContactProfileHeader({
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [stageModalOpen, setStageModalOpen] = useState(false)
   const canDelete = isAdminTier(user?.role)
 
   const handleCopyWa = () => {
@@ -100,7 +109,27 @@ export function ContactProfileHeader({
             <h1 className={cn('font-display font-semibold text-surface-50 truncate', compact ? 'text-base' : 'text-xl')}>
               {contact.displayName || contact.waId}
             </h1>
-            {contact.stage && <StageBadge stage={contact.stage} stages={stages} size={compact ? 'sm' : 'md'} />}
+            {onStageChanged ? (
+              <button
+                type="button"
+                onClick={() => setStageModalOpen(true)}
+                title="Mudar situação do contato"
+                className="rounded-full transition-opacity hover:opacity-80 cursor-pointer"
+              >
+                {contact.stage
+                  ? <StageBadge stage={contact.stage} stages={stages} size={compact ? 'sm' : 'md'} />
+                  : (
+                    <span className={cn(
+                      'inline-flex items-center font-medium border rounded-full border-dashed border-surface-600 text-surface-500',
+                      compact ? 'text-[11px] px-2 py-0.5' : 'text-xs px-2.5 py-1',
+                    )}>
+                      Definir situação
+                    </span>
+                  )}
+              </button>
+            ) : (
+              contact.stage && <StageBadge stage={contact.stage} stages={stages} size={compact ? 'sm' : 'md'} />
+            )}
             {typeof contact.leadScore === 'number' && contact.leadScore > 0 && (
               <LeadScorePill score={contact.leadScore} />
             )}
@@ -259,6 +288,17 @@ export function ContactProfileHeader({
         confirmLabel="Excluir contato"
         danger
       />
+
+      {onStageChanged && (
+        <MoveStageModal
+          open={stageModalOpen}
+          onClose={() => setStageModalOpen(false)}
+          contactId={contact.id}
+          contactName={contact.displayName}
+          currentStage={contact.stage}
+          onStageChanged={(next) => { setStageModalOpen(false); onStageChanged(next) }}
+        />
+      )}
     </div>
   )
 }
