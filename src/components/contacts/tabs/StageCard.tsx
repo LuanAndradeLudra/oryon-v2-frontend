@@ -11,8 +11,8 @@ interface StageCardProps {
   /** Parent updates the loaded Contact so the badge + timeline re-render
    *  without a full refetch after the operator moves the contact. */
   onStageChanged?: (next: string) => void
-  /** Esconde o título "Estágio no funil" quando uma seção já rotula o card
-   *  (evita headers duplicados). Mantém a posição e o botão "Mover". */
+  /** Esconde o título "Situação" quando uma seção já rotula o card (evita
+   *  headers duplicados). Mantém a posição e o botão "Mover". */
   hideTitle?: boolean
 }
 
@@ -23,8 +23,8 @@ interface StageCardProps {
  *   - a horizontal mini-timeline of every stage with the current one
  *     highlighted (helps the operator picture where the lead is),
  *   - quick "previous / next" buttons for the adjacent stages,
- *   - a primary "Mover para outro estágio" CTA that opens the mini-kanban
- *     modal (same component used in the conversations panel).
+ *   - a primary "Mudar situação" CTA that opens the mini-kanban modal (same
+ *     component used in the conversations panel).
  *
  * If the tenant has no stages configured yet, we show a clear CTA explaining
  * where to set them up — the operator shouldn't see a dead card.
@@ -62,7 +62,10 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {!hideTitle && <Milestone className="w-4 h-4 text-surface-500" />}
-            {!hideTitle && <h3 className="text-sm font-semibold text-surface-100">Estágio no funil</h3>}
+            {/* SCRUM-985: "Situação" — este card é o eixo de ciclo de vida do
+                CONTATO (contact.stage), não o funil de negócio (esse é
+                DealsSummaryCard/DealsTab). Ver PRINCIPIOS-DE-INTERFACE.md:360. */}
+            {!hideTitle && <h3 className="text-sm font-semibold text-surface-100">Situação</h3>}
             {stages.length > 0 && currentIndex >= 0 && (
               <span className="text-xs text-surface-400">
                 {currentIndex + 1} de {stages.length}
@@ -91,19 +94,19 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
         {/* ── Empty state ──────────────────────────────────────────────── */}
         {loadingStages ? (
           <div className="flex items-center gap-2 text-xs text-surface-500 py-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Carregando estágios…
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Carregando situações…
           </div>
         ) : stages.length === 0 ? (
           <p className="text-xs text-surface-500 italic">
-            Nenhum estágio configurado. Crie estágios em Configurações → CRM
-            para começar a posicionar contatos no funil.
+            Nenhuma situação configurada. Crie situações em Configurações → CRM
+            para começar a posicionar contatos.
           </p>
         ) : !current ? (
           /* Contact has no stage — likely a new lead. Make the empty state
              actionable instead of just "—". */
           <div className="flex flex-col gap-2 rounded-xl border border-dashed border-surface-700 bg-surface-800/40 p-4">
             <p className="text-xs text-surface-400">
-              Este contato ainda não está em nenhum estágio do funil.
+              Este contato ainda não está em nenhuma situação.
             </p>
             <button
               type="button"
@@ -111,7 +114,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
               className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-brand-300 hover:text-brand-200 bg-brand-600/15 hover:bg-brand-600/25 border border-brand-500/30 px-3 py-1.5 rounded-lg transition-colors"
             >
               <Flag className="w-3 h-3" />
-              Definir estágio inicial
+              Definir situação inicial
             </button>
           </div>
         ) : (
@@ -136,19 +139,19 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
                   {isTerminal && (
                     <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25">
                       <Flag className="w-2.5 h-2.5" />
-                      Estágio final
+                      Situação final
                     </span>
                   )}
                   {isFirst && !isTerminal && (
                     <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25">
-                      Início do funil
+                      Situação inicial
                     </span>
                   )}
                 </div>
                 <p className="text-[11px] text-white/75 mt-1.5 leading-relaxed">
                   Posição <strong className="text-white">{currentIndex + 1}</strong> de{' '}
-                  <strong className="text-white">{stages.length}</strong> no funil.
-                  {isTerminal && ' Este é um estágio terminal — contatos aqui não devem avançar.'}
+                  <strong className="text-white">{stages.length}</strong>.
+                  {isTerminal && ' Esta é a última situação — contatos aqui não devem avançar.'}
                 </p>
               </div>
             </div>
@@ -156,7 +159,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
             {/* ── Mini horizontal timeline ────────────────────────────── */}
             <div className="flex flex-col gap-1.5">
               <p className="text-[11px] text-surface-400 uppercase tracking-wide font-semibold">
-                Funil
+                Situações
               </p>
               <div className="flex gap-1 overflow-x-auto scroll-thin pb-1">
                 {stages.map((s, idx) => {
@@ -210,7 +213,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
                       ? 'text-surface-500 cursor-not-allowed bg-surface-800/30'
                       : 'text-surface-300 bg-surface-800 hover:bg-surface-700',
                   )}
-                  title={previous ? `Voltar para ${previous.label}` : 'Já está no início do funil'}
+                  title={previous ? `Voltar para ${previous.label}` : 'Já está na primeira situação'}
                 >
                   {quickMovePending === previous?.key ? (
                     <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
@@ -231,7 +234,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
                       ? 'text-surface-500 cursor-not-allowed bg-surface-800/30'
                       : 'text-surface-300 bg-surface-800 hover:bg-surface-700',
                   )}
-                  title={next ? `Avançar para ${next.label}` : 'Já está no fim do funil'}
+                  title={next ? `Avançar para ${next.label}` : 'Já está na última situação'}
                 >
                   <span className="truncate">
                     {next ? next.label : 'Fim'}
