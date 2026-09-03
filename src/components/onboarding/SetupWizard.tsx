@@ -107,7 +107,7 @@ function BrandFilesSection({ files, onChange }: { files: BrandFile[]; onChange: 
         </div>
         <div>
           <p className="text-xs font-medium text-surface-200">Arraste ou <span className="text-brand-400">clique para selecionar</span></p>
-          <p className="text-[11px] text-surface-500 mt-0.5">PDF · DOCX · PNG · JPG · TXT — até {MAX_FILE_MB} MB</p>
+          <p className="text-2xs text-surface-500 mt-0.5">PDF · DOCX · PNG · JPG · TXT — até {MAX_FILE_MB} MB</p>
         </div>
       </div>
 
@@ -119,11 +119,11 @@ function BrandFilesSection({ files, onChange }: { files: BrandFile[]; onChange: 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-xs font-medium text-surface-200 truncate">{file.name}</p>
-                  <span className="text-[10px] text-surface-600 flex-shrink-0">{formatBytes(file.size)}</span>
+                  <span className="text-3xs text-surface-600 flex-shrink-0">{formatBytes(file.size)}</span>
                 </div>
-                {status === 'analyzing' && <p className="text-[11px] text-brand-400 mt-0.5 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />Analisando com IA...</p>}
-                {status === 'done' && file.extractedText && <p className="text-[11px] text-status-active mt-0.5 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />Contexto extraído · {file.extractedText.length} chars</p>}
-                {status === 'error' && <p className="text-[11px] text-red-400 mt-0.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{error ?? 'Erro ao analisar'}</p>}
+                {status === 'analyzing' && <p className="text-2xs text-brand-400 mt-0.5 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />Analisando com IA...</p>}
+                {status === 'done' && file.extractedText && <p className="text-2xs text-status-active mt-0.5 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />Contexto extraído · {file.extractedText.length} chars</p>}
+                {status === 'error' && <p className="text-2xs text-red-400 mt-0.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{error ?? 'Erro ao analisar'}</p>}
               </div>
               {status !== 'analyzing' && (
                 <button type="button" onClick={() => setEntries(prev => prev.filter(e => e.file.id !== file.id))}
@@ -240,7 +240,7 @@ function StepChrome({
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-surface-200">{label}</p>
-                  <p className="text-[11px] text-surface-500">{desc}</p>
+                  <p className="text-2xs text-surface-500">{desc}</p>
                 </div>
               </div>
             ))}
@@ -292,7 +292,7 @@ function StepChrome({
 function StepCounter({ step }: { step: SetupStep }) {
   return (
     <div className="mb-6" data-testid="setup-step-counter">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-surface-500 mb-2">
+      <p className="text-3xs font-bold uppercase tracking-wide text-surface-500 mb-2">
         Passo {stepNumber(step)} de {SETUP_STEPS.length}
       </p>
       <div className="flex items-center gap-1.5">
@@ -431,14 +431,14 @@ function HubStep({
               </div>
               <div>
                 <p className="text-xs font-semibold text-surface-200">{label}</p>
-                <p className="text-[11px] text-surface-500">{desc}</p>
+                <p className="text-2xs text-surface-500">{desc}</p>
               </div>
             </div>
           ))}
         </div>
 
         <div className="mt-auto pt-6">
-          <p className="text-[11px] text-surface-600 leading-relaxed">
+          <p className="text-2xs text-surface-600 leading-relaxed">
             Você pode editar essas informações a qualquer momento em{' '}
             <span className="text-surface-500">Configurações → Contexto da IA</span>
           </p>
@@ -558,7 +558,7 @@ function HubStep({
                 <label className="block text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">
                   Arquivos da marca <span className="normal-case text-surface-600 font-normal">(opcional)</span>
                 </label>
-                <p className="text-[11px] text-surface-500 mb-3 leading-relaxed">
+                <p className="text-2xs text-surface-500 mb-3 leading-relaxed">
                   PDFs, catálogos, scripts de venda ou imagens. A IA extrai o contexto e usa em todo o sistema.
                 </p>
                 <BrandFilesSection
@@ -579,13 +579,13 @@ function HubStep({
                     <div key={label} className="flex items-start gap-2.5">
                       <Icon className={`w-3.5 h-3.5 ${color} flex-shrink-0 mt-0.5`} />
                       <div>
-                        <p className="text-[11px] font-medium text-surface-300 leading-tight">{label}</p>
-                        <p className="text-[10px] text-surface-600 mt-0.5">{desc}</p>
+                        <p className="text-2xs font-medium text-surface-300 leading-tight">{label}</p>
+                        <p className="text-3xs text-surface-600 mt-0.5">{desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[10px] text-surface-600 mt-3 pt-3 border-t border-surface-700/60 leading-relaxed">
+                <p className="text-3xs text-surface-600 mt-3 pt-3 border-t border-surface-700/60 leading-relaxed">
                   Você pode adicionar mais arquivos a qualquer momento em <span className="text-surface-500">Configurações → Contexto da IA</span>
                 </p>
               </div>
