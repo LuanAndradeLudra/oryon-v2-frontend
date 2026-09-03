@@ -37,7 +37,6 @@ import {
 
 import { SendTemplateDrawer } from '@/components/contacts/SendTemplateDrawer'
 import { AIContextCard } from '@/components/contacts/tabs/AIContextCard'
-import { StageCard } from '@/components/contacts/tabs/StageCard'
 import { ContactInfoCard } from '@/components/contacts/tabs/ContactInfoCard'
 import { QualificationCard } from '@/components/contacts/tabs/QualificationCard'
 import { CustomFieldsCard } from '@/components/contacts/tabs/CustomFieldsCard'
@@ -374,6 +373,7 @@ export function ContactProfilePage() {
               onAddNote={focusComposer}
               onAddTask={PROFILE_MOCKS_ENABLED ? () => setTaskModalOpen(true) : undefined}
               onDelete={handleDelete}
+              onStageChanged={profile.setStage}
             />
           </div>
 
@@ -400,9 +400,22 @@ export function ContactProfilePage() {
                     <ContactInfoCard contact={contact} onSave={profile.save} />
                     <QualificationCard contact={contact} onSave={profile.save} hideStage />
                   </CollapsibleSection>
-                  <CollapsibleSection title={vocab.pipeline} storageKey="profile.pipeline">
-                    <StageCard contact={contact} onStageChanged={profile.setStage} hideTitle />
-                  </CollapsibleSection>
+                  {/* PROPOSTA do Auditor, decisão do Maestro registrada no PR:
+                      a situação do contato (contacts.stage, ciclo de vida)
+                      saiu deste acordeão — que antes ocupava ~2x a altura da
+                      seção real de Funis logo acima e era rotulado com o
+                      vocabulário de "Funil" (P15: "Situação do contato" é
+                      conceito distinto de "Funil"), colidindo com o conceito
+                      de Funis de negócio. Virou o StageBadge clicável no
+                      cabeçalho (N1) — decisão deliberada de manter em N1
+                      apesar de o P4 documentado não listar "situação" entre
+                      os itens de exemplo: o problema reportado era PESO
+                      VISUAL (card grande competindo com Funis), não "não
+                      deveria aparecer de cara"; um badge pequeno não estoura
+                      o orçamento do N1 do jeito que o card estourava, e N2
+                      (acordeão) reduziria a visibilidade rápida de que
+                      precisa quem quer saber se é lead ou cliente batendo o
+                      olho. Reversível — ver descrição do PR. */}
                   <CollapsibleSection title="Campos personalizados" storageKey="profile.customFields">
                     <CustomFieldsCard contact={contact} onSave={profile.save} hideTitle />
                   </CollapsibleSection>
