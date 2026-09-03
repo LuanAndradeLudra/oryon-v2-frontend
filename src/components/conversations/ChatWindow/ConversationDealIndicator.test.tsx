@@ -1,17 +1,22 @@
 // F10 (SCRUM-883) — o chip do cabeçalho passa a mostrar o registro desta conversa
 // também depois de fechado (terminal + ícone de fechado) e recarrega no evento
 // local `oryon:deals-invalidate` (antes do socket).
+//
+// B4 (SCRUM-930): clique abre a ficha em painel (`useDealPanel`) — não navega
+// mais pro board. `react-router-dom` nem precisa de mock aqui (o componente
+// não usa mais `useNavigate`).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
 
-const { api, socket } = vi.hoisted(() => ({
+const { api, socket, openDeal } = vi.hoisted(() => ({
   api: { list: vi.fn() },
   socket: { on: vi.fn(), off: vi.fn() },
+  openDeal: vi.fn(),
 }))
 vi.mock('@/services/api', () => ({ dealsApi: api }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => true }))
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
+vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/contexts/CRMConfigContext', () => ({
   useCRMConfig: () => ({
     pipelines: [{
@@ -30,7 +35,7 @@ import type { Deal } from '@/types'
 
 const base: Deal = { id: 'd', contactId: 'c1', title: 'x', status: 'open', pipelineId: 'p', stageId: 's1', amountCents: 0 }
 
-beforeEach(() => { api.list.mockReset() })
+beforeEach(() => { api.list.mockReset(); openDeal.mockReset() })
 
 describe('pickIndicatorDeals', () => {
   it('abertos sempre; fechados só quando nasceram nesta conversa', () => {
@@ -56,6 +61,14 @@ describe('ConversationDealIndicator (F10-883)', () => {
     await waitFor(() => expect(screen.getByTestId('deal-chip-closed')).toHaveTextContent('Vendas · Ganho'))
     expect(screen.getByLabelText('Fechado como ganho')).toBeInTheDocument()
     expect(api.list).toHaveBeenCalledTimes(2)
+  })
+
+  it('B4 (SCRUM-930): clique no chip abre a ficha em painel (useDealPanel), não navega', async () => {
+    api.list.mockResolvedValueOnce({ data: [{ ...base }] })
+    render(<ConversationDealIndicator contactId="c1" conversationId="conv-1" />)
+    const chip = await screen.findByTestId('deal-chip-open')
+    fireEvent.click(chip)
+    expect(openDeal).toHaveBeenCalledWith('d')
   })
 
   it('F11-887: destaque é o registro que nasceu nesta conversa (sem consultar roteamento)', async () => {

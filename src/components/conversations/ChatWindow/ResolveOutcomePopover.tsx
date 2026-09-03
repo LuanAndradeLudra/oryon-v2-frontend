@@ -4,6 +4,7 @@ import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { CloseReasonFields, emptyCloseReasonValue, type CloseReasonValue } from '@/components/deals/CloseReasonFields'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { composeCloseReason } from '@/lib/closeReason'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import {
@@ -16,6 +17,9 @@ interface PanelProps {
   target: AiDealTargetView
   contactName: string
   currentAmountCents: number | null
+  /** B4 (SCRUM-930): negócio com itens de linha → valor vira somente leitura
+   *  aqui (editar valor com itens é exclusivo da ficha, que soma os itens). */
+  hasLineItems: boolean
   busy: boolean
   onConfirm: (payload: ResolvePayload) => Promise<void>
   onCancel: () => void
@@ -29,7 +33,8 @@ interface PanelProps {
  * conversa tem registro-alvo (o hook decide); por isso nunca muda o caminho de
  * quem resolve uma conversa sem funil.
  */
-export function ResolveOutcomePanel({ target, contactName, currentAmountCents, busy, onConfirm, onCancel }: PanelProps) {
+export function ResolveOutcomePanel({ target, contactName, currentAmountCents, hasLineItems, busy, onConfirm, onCancel }: PanelProps) {
+  const { openDeal } = useDealPanel()
   const options = useMemo(() => decisionOptions(target), [target])
   const [decision, setDecisionState] = useState<ResolveDecision>('won')
   const reasons = useMemo(() => reasonsFor(target, decision), [target, decision])
@@ -40,6 +45,13 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, b
   const [amountRaw, setAmountRaw] = useState(() => (currentAmountCents ? (currentAmountCents / 100).toFixed(2).replace('.', ',') : ''))
   const [error, setError] = useState('')
   const firstRadioRef = useRef<HTMLInputElement>(null)
+
+  // B4 (SCRUM-930): negócio com itens de linha → "ajustar itens" fecha o
+  // popover e abre a ficha em painel, onde o valor é a soma dos itens.
+  const adjustItems = () => {
+    if (target.dealId) openDeal(target.dealId)
+    onCancel()
+  }
 
   const setDecision = (d: ResolveDecision) => {
     setDecisionState(d)
@@ -131,15 +143,34 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, b
       )}
 
       {showAmount && (
-        <FormField label="Valor (opcional)" error={error.startsWith('Valor') ? error : undefined}>
-          <Input
-            inputMode="decimal"
-            placeholder={currentAmountCents ? formatCentsBRL(currentAmountCents) : 'R$ 0,00'}
-            value={amountRaw}
-            onChange={(e) => { setAmountRaw(e.target.value); setError('') }}
-            aria-label="Valor do negócio"
-            data-testid="resolve-amount"
-          />
+        <FormField label="Confirmar valor" error={error.startsWith('Valor') ? error : undefined}>
+          {hasLineItems ? (
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={currentAmountCents != null ? formatCentsBRL(currentAmountCents) : 'R$ 0,00'}
+                aria-label="Confirmar valor"
+                data-testid="resolve-amount"
+              />
+              <button
+                type="button"
+                onClick={adjustItems}
+                className="text-xs text-brand-300 hover:text-brand-200 whitespace-nowrap flex-shrink-0"
+                data-testid="resolve-adjust-items"
+              >
+                ajustar itens
+              </button>
+            </div>
+          ) : (
+            <Input
+              inputMode="decimal"
+              placeholder={currentAmountCents ? formatCentsBRL(currentAmountCents) : 'R$ 0,00'}
+              value={amountRaw}
+              onChange={(e) => { setAmountRaw(e.target.value); setError('') }}
+              aria-label="Confirmar valor"
+              data-testid="resolve-amount"
+            />
+          )}
         </FormField>
       )}
 
