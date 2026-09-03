@@ -58,6 +58,8 @@ const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').th
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
 const DealDetailPage    = lazyRoute(() => import('@/pages/DealDetailPage').then(m => ({ default: m.DealDetailPage })))
+const PipelinePage      = lazyRoute(() => import('@/pages/PipelinePage').then(m => ({ default: m.PipelinePage })))
+const PipelinesIndexPage = lazyRoute(() => import('@/pages/PipelinesIndexPage').then(m => ({ default: m.PipelinesIndexPage })))
 const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const SetupPage         = lazyRoute(() => import('@/pages/SetupPage').then(m => ({ default: m.SetupPage })))
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
@@ -228,6 +230,14 @@ function AnimatedRoutes() {
               e /contacts?pipeline=, sem navegar. */}
           <Route path="/deals/:id" element={
             <ProtectedRoute><DealDetailPage /></ProtectedRoute>
+          } />
+          {/* D2 (SCRUM-935) — entrada "Funis" da navegação: /pipelines cai no
+              funil padrão do tenant; /pipelines/:id é o board+relatórios. */}
+          <Route path="/pipelines" element={
+            <ProtectedRoute><PipelinesIndexPage /></ProtectedRoute>
+          } />
+          <Route path="/pipelines/:id" element={
+            <ProtectedRoute><PipelinePage /></ProtectedRoute>
           } />
           <Route path="/more" element={
             <ProtectedRoute><MorePage /></ProtectedRoute>

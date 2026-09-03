@@ -53,6 +53,7 @@ import type {
   DealOutcomeInput,
   DealStageHistoryEntry,
 } from '@/types'
+import type { PipelineOverview, PipelineSummaryItem } from '@/types/pipelineAnalytics'
 
 import { apiBaseUrl, isNativePlatform } from '@/config/env'
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth-storage'
@@ -1810,6 +1811,20 @@ export const cannedResponsesApi = {
       page++
     }
     return all
+  },
+}
+
+/**
+ * Relatórios de funil (D1 · SCRUM-934, já mesclado — D2/SCRUM-935 só consome).
+ * `GET /analytics/pipelines/...` — Modelo B §4.7: agregados de funil (por
+ * etapa, ganho/perdido por motivo, conversão, ciclo, por dono).
+ */
+export const pipelineAnalyticsApi = {
+  overview(pipelineId: string, params: { from?: string; to?: string; ownerUserId?: string } = {}) {
+    return api.get<PipelineOverview>(`/analytics/pipelines/${pipelineId}/overview`, { params })
+  },
+  summary() {
+    return api.get<PipelineSummaryItem[]>('/analytics/pipelines/summary')
   },
 }
 

@@ -60,7 +60,9 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
   const [busy, setBusy] = useState(false)
   const { onCreated } = opts
 
-  const boardHref = (pipelineId: string) => `/contacts?pipeline=${pipelineId}`
+  // D2 (SCRUM-935): o board mora em /pipelines/:id agora — link direto em vez
+  // do antigo /contacts?pipeline= (que ainda funciona, mas só redireciona pra cá).
+  const boardHref = (pipelineId: string) => `/pipelines/${pipelineId}`
 
   const announce = useCallback((deal: Deal, target: AddToPipelineTarget) => {
     const stage = target.pipeline.stages.find((s) => s.id === deal.stageId)
