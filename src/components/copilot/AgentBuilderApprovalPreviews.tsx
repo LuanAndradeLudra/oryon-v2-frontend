@@ -52,7 +52,7 @@ export function ExpandableTextarea({
   }, [value, isExpanded, minRows, maxRows])
 
   const fontClass = monospace
-    ? 'font-mono text-[11px] leading-snug'
+    ? 'font-mono text-2xs leading-snug'
     : 'text-xs leading-relaxed'
 
   const charCount = value.length
@@ -60,15 +60,15 @@ export function ExpandableTextarea({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">
+        <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">
           {label}
         </label>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] tabular-nums text-surface-500">{charCount.toLocaleString('pt-BR')} chars</span>
+          <span className="text-3xs tabular-nums text-surface-500">{charCount.toLocaleString('pt-BR')} chars</span>
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
-            className="inline-flex items-center gap-1 text-[10px] text-surface-400 hover:text-brand-300 transition-colors"
+            className="inline-flex items-center gap-1 text-3xs text-surface-400 hover:text-brand-300 transition-colors"
             aria-label="Abrir editor em tela cheia"
           >
             <Maximize2 className="h-3 w-3" />
@@ -77,7 +77,7 @@ export function ExpandableTextarea({
         </div>
       </div>
       {helperText && (
-        <p className="text-[10px] text-surface-500 italic">{helperText}</p>
+        <p className="text-3xs text-surface-500 italic">{helperText}</p>
       )}
       <textarea
         ref={textareaRef}
@@ -153,7 +153,7 @@ function ExpandedEditorModal({
           autoFocus
           className={`flex-1 resize-none bg-surface-900 px-6 py-4 text-surface-100 placeholder:text-surface-600 focus:outline-none ${fontClass}`}
         />
-        <div className="flex items-center justify-between border-t border-surface-800 px-5 py-2.5 text-[11px] text-surface-500">
+        <div className="flex items-center justify-between border-t border-surface-800 px-5 py-2.5 text-2xs text-surface-500">
           <span>Esc para fechar. As alterações já estão salvas no card.</span>
           <button
             type="button"
@@ -184,19 +184,19 @@ export function MatchCountHint({
   replaceAll: boolean
 }) {
   if (loading) {
-    return <p className="text-[10px] text-surface-500 italic">Buscando conteúdo atual...</p>
+    return <p className="text-3xs text-surface-500 italic">Buscando conteúdo atual...</p>
   }
   if (currentText === null) {
     return null // not fetched yet or failed silently
   }
   if (!find) {
-    return <p className="text-[10px] text-surface-500 italic">Preencha o campo &quot;Buscar&quot; para ver quantas ocorrências casam.</p>
+    return <p className="text-3xs text-surface-500 italic">Preencha o campo &quot;Buscar&quot; para ver quantas ocorrências casam.</p>
   }
   // Count occurrences in the current text
   const count = currentText.split(find).length - 1
   if (count === 0) {
     return (
-      <p className="text-[10px] flex items-center gap-1 text-danger">
+      <p className="text-3xs flex items-center gap-1 text-danger">
         <AlertTriangle className="h-3 w-3" />
         <span><strong>0 ocorrências</strong> encontradas — a tool vai falhar. Verifique pontuação/acentos exatos.</span>
       </p>
@@ -204,7 +204,7 @@ export function MatchCountHint({
   }
   if (count === 1) {
     return (
-      <p className="text-[10px] flex items-center gap-1 text-success">
+      <p className="text-3xs flex items-center gap-1 text-success">
         <Sparkles className="h-3 w-3" />
         <span><strong>1 ocorrência</strong> encontrada — substituição segura.</span>
       </p>
@@ -213,14 +213,14 @@ export function MatchCountHint({
   // Multiple matches
   if (replaceAll) {
     return (
-      <p className="text-[10px] flex items-center gap-1 text-warning">
+      <p className="text-3xs flex items-center gap-1 text-warning">
         <AlertTriangle className="h-3 w-3" />
         <span><strong>{count} ocorrências</strong> — todas serão substituídas (replaceAll).</span>
       </p>
     )
   }
   return (
-    <p className="text-[10px] flex items-center gap-1 text-danger">
+    <p className="text-3xs flex items-center gap-1 text-danger">
       <AlertTriangle className="h-3 w-3" />
       <span><strong>{count} ocorrências</strong> — a tool vai falhar sem replaceAll. Use find mais específico OU ative replaceAll.</span>
     </p>
@@ -257,20 +257,20 @@ export function DiffContextPreview({ find, replace, currentText }: DiffContextPr
 
   return (
     <div className="mt-2 space-y-1.5">
-      <div className="text-[10px] font-medium uppercase tracking-wider text-surface-500">
+      <div className="text-3xs font-medium uppercase tracking-wider text-surface-500">
         Pré-visualização (primeira ocorrência)
       </div>
       {/* BEFORE — red-highlighted find */}
       <div className="rounded-md border border-danger/20 bg-danger/5 px-2.5 py-1.5">
         <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-danger">antes</div>
-        <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-snug text-surface-300">
+        <pre className="whitespace-pre-wrap break-words font-mono text-2xs leading-snug text-surface-300">
 {truncBefore ? '… ' : ''}{leading}<span className="rounded bg-danger/30 px-0.5 text-danger line-through decoration-danger/70">{find}</span>{trailing}{truncAfter ? ' …' : ''}
         </pre>
       </div>
       {/* AFTER — green-highlighted replace */}
       <div className="rounded-md border border-success/20 bg-success/5 px-2.5 py-1.5">
         <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-success">depois</div>
-        <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-snug text-surface-300">
+        <pre className="whitespace-pre-wrap break-words font-mono text-2xs leading-snug text-surface-300">
 {truncBefore ? '… ' : ''}{leading}<span className="rounded bg-success/30 px-0.5 text-success">{replace || <span className="italic text-success/70">(vazio)</span>}</span>{trailing}{truncAfter ? ' …' : ''}
         </pre>
       </div>
@@ -362,7 +362,7 @@ export function SystemPromptApprovalPreview({
     <div className="space-y-3">
       {/* Agent reference */}
       <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
+        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
       </div>
 
@@ -381,14 +381,14 @@ export function SystemPromptApprovalPreview({
       {isReplace && (
         <div className="space-y-2.5">
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-surface-500">
+            <div className="mb-1 flex items-center gap-1.5 text-3xs font-medium uppercase tracking-wider text-surface-500">
               <Search className="h-3 w-3" /> Buscar (texto EXATO)
             </div>
             <textarea
               value={String(input.find ?? '')}
               onChange={(e) => onChange('find', e.target.value)}
               rows={4}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-[11px] leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-2xs leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
               placeholder="Trecho exato a procurar no prompt atual (case-sensitive)"
             />
             <MatchCountHint
@@ -400,14 +400,14 @@ export function SystemPromptApprovalPreview({
           </div>
 
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-surface-500">
+            <div className="mb-1 flex items-center gap-1.5 text-3xs font-medium uppercase tracking-wider text-surface-500">
               <Replace className="h-3 w-3" /> Substituir por
             </div>
             <textarea
               value={String(input.replace ?? '')}
               onChange={(e) => onChange('replace', e.target.value)}
               rows={4}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-[11px] leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-2xs leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
               placeholder="Texto que substitui o trecho acima"
             />
           </div>
@@ -477,11 +477,11 @@ export function KnowledgeDocApprovalPreview({
   return (
     <div className="space-y-3">
       <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
+        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente alvo</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
         {docId && (
           <>
-            <div className="mt-1.5 text-[10px] font-medium text-surface-500 uppercase tracking-wider">Documento</div>
+            <div className="mt-1.5 text-3xs font-medium text-surface-500 uppercase tracking-wider">Documento</div>
             <div className="font-mono text-xs text-surface-300">{docId}</div>
           </>
         )}
@@ -491,7 +491,7 @@ export function KnowledgeDocApprovalPreview({
         <>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Nome do documento</label>
+              <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome do documento</label>
               <input
                 type="text"
                 value={String(input.documentName ?? '')}
@@ -501,7 +501,7 @@ export function KnowledgeDocApprovalPreview({
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Tipo</label>
+              <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Tipo</label>
               <select
                 value={String(input.sourceType ?? 'text')}
                 onChange={(e) => onChange('sourceType', e.target.value)}
@@ -537,14 +537,14 @@ export function KnowledgeDocApprovalPreview({
       {isReplace && (
         <div className="space-y-2.5">
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-surface-500">
+            <div className="mb-1 flex items-center gap-1.5 text-3xs font-medium uppercase tracking-wider text-surface-500">
               <Search className="h-3 w-3" /> Buscar no documento
             </div>
             <textarea
               value={String(input.find ?? '')}
               onChange={(e) => onChange('find', e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-[11px] leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-2xs leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
             />
             <MatchCountHint
               find={String(input.find ?? '')}
@@ -554,14 +554,14 @@ export function KnowledgeDocApprovalPreview({
             />
           </div>
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-surface-500">
+            <div className="mb-1 flex items-center gap-1.5 text-3xs font-medium uppercase tracking-wider text-surface-500">
               <Replace className="h-3 w-3" /> Substituir por
             </div>
             <textarea
               value={String(input.replace ?? '')}
               onChange={(e) => onChange('replace', e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-[11px] leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-2 font-mono text-2xs leading-snug text-surface-200 placeholder:text-surface-600 focus:border-brand-500/50 focus:outline-none resize-none"
             />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -628,7 +628,7 @@ export function HandoffRuleApprovalPreview({
     return (
       <div className="space-y-2.5">
         <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-          <div className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+          <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
           <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
         </div>
         <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
@@ -637,7 +637,7 @@ export function HandoffRuleApprovalPreview({
         </div>
         {input.ruleName !== undefined && (
           <div>
-            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Nome da regra a remover</label>
+            <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome da regra a remover</label>
             <input
               type="text"
               value={String(input.ruleName ?? '')}
@@ -648,7 +648,7 @@ export function HandoffRuleApprovalPreview({
         )}
         {input.ruleIndex !== undefined && (
           <div>
-            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Índice da regra (0-based)</label>
+            <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Índice da regra (0-based)</label>
             <input
               type="number"
               value={String(input.ruleIndex ?? '')}
@@ -675,12 +675,12 @@ export function HandoffRuleApprovalPreview({
   return (
     <div className="space-y-2.5">
       <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
         <div className="font-mono text-xs text-surface-300">{agentId || '—'}</div>
       </div>
 
       <div>
-        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Nome da regra</label>
+        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome da regra</label>
         <input
           type="text"
           value={String(rule.name ?? '')}
@@ -691,7 +691,7 @@ export function HandoffRuleApprovalPreview({
       </div>
 
       <div>
-        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">
+        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">
           Palavras-chave (separadas por vírgula)
         </label>
         <textarea
@@ -708,7 +708,7 @@ export function HandoffRuleApprovalPreview({
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Modo</label>
+          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Modo</label>
           <select
             value={String(rule.matchMode ?? 'any_keyword')}
             onChange={(e) => updateRule('matchMode', e.target.value)}
@@ -720,7 +720,7 @@ export function HandoffRuleApprovalPreview({
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Ação</label>
+          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Ação</label>
           <select
             value={String(rule.action ?? 'human_handoff')}
             onChange={(e) => updateRule('action', e.target.value)}
@@ -734,7 +734,7 @@ export function HandoffRuleApprovalPreview({
       </div>
 
       <div>
-        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">
+        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">
           Template de resposta (opcional)
         </label>
         <textarea
@@ -747,7 +747,7 @@ export function HandoffRuleApprovalPreview({
       </div>
 
       <div>
-        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">
+        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">
           Departamento (opcional)
         </label>
         <input
@@ -781,7 +781,7 @@ export function AgentConfigApprovalPreview({
     <div className="space-y-2.5">
       {!isCreate && (
         <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-          <div className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+          <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
           <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
         </div>
       )}
@@ -789,7 +789,7 @@ export function AgentConfigApprovalPreview({
       {(isCreate || isMetadata) && (
         <>
           <div>
-            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Nome</label>
+            <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome</label>
             <input
               type="text"
               value={String(input.name ?? '')}
@@ -800,7 +800,7 @@ export function AgentConfigApprovalPreview({
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Setor</label>
+              <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Setor</label>
               <input
                 type="text"
                 value={String(input.sector ?? '')}
@@ -810,7 +810,7 @@ export function AgentConfigApprovalPreview({
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Ícone</label>
+              <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Ícone</label>
               <input
                 type="text"
                 value={String(input.icon ?? 'bot')}
@@ -820,7 +820,7 @@ export function AgentConfigApprovalPreview({
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Objetivo</label>
+            <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Objetivo</label>
             <textarea
               value={String(input.objective ?? '')}
               onChange={(e) => onChange('objective', e.target.value)}
@@ -834,7 +834,7 @@ export function AgentConfigApprovalPreview({
 
       {isStatus && (
         <div>
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Novo status</label>
+          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Novo status</label>
           <select
             value={String(input.status ?? 'draft')}
             onChange={(e) => onChange('status', e.target.value)}
@@ -862,11 +862,11 @@ export function AgentFaqApprovalPreview({
   return (
     <div className="space-y-2.5">
       <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
         <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
       </div>
       <div>
-        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Nome da FAQ</label>
+        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome da FAQ</label>
         <input
           type="text"
           value={String(input.name ?? '')}
@@ -875,7 +875,7 @@ export function AgentFaqApprovalPreview({
         />
       </div>
       <div>
-        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Palavras-chave</label>
+        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Palavras-chave</label>
         <textarea
           value={keywords}
           onChange={(e) => {
@@ -889,7 +889,7 @@ export function AgentFaqApprovalPreview({
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Modo</label>
+          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Modo</label>
           <select
             value={String(input.matchMode ?? 'any_keyword')}
             onChange={(e) => onChange('matchMode', e.target.value)}
@@ -901,7 +901,7 @@ export function AgentFaqApprovalPreview({
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Prioridade</label>
+          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Prioridade</label>
           <input
             type="number"
             value={String(input.priority ?? '0')}
@@ -929,12 +929,12 @@ export function AgentToolHttpApprovalPreview({
   return (
     <div className="space-y-2.5">
       <div className="rounded-lg border border-surface-800 bg-surface-900/50 px-3 py-2">
-        <div className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Agente</div>
+        <div className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agente</div>
         <div className="font-mono text-xs text-surface-300">{String(input.agentId ?? '—')}</div>
       </div>
       <div className="grid grid-cols-[1fr_auto] gap-2">
         <div>
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Nome</label>
+          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Nome</label>
           <input
             type="text"
             value={String(input.name ?? '')}
@@ -943,7 +943,7 @@ export function AgentToolHttpApprovalPreview({
           />
         </div>
         <div>
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Método</label>
+          <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Método</label>
           <select
             value={String(input.method ?? 'GET')}
             onChange={(e) => onChange('method', e.target.value)}
@@ -956,17 +956,17 @@ export function AgentToolHttpApprovalPreview({
         </div>
       </div>
       <div>
-        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">URL</label>
+        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">URL</label>
         <input
           type="text"
           value={String(input.url ?? '')}
           onChange={(e) => onChange('url', e.target.value)}
-          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 font-mono text-[11px] text-surface-200 focus:border-brand-500/50 focus:outline-none"
+          className="w-full rounded-lg border border-surface-700/60 bg-surface-800/60 px-2.5 py-1.5 font-mono text-2xs text-surface-200 focus:border-brand-500/50 focus:outline-none"
           placeholder="https://api.exemplo.com/endpoint"
         />
       </div>
       <div>
-        <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">Descrição (o que o LLM chama isso)</label>
+        <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">Descrição (o que o LLM chama isso)</label>
         <textarea
           value={String(input.description ?? '')}
           onChange={(e) => onChange('description', e.target.value)}
@@ -1003,7 +1003,7 @@ export function CompanyBrainApprovalPreview({
           ].map(([key, label]) => (
             input[key as string] !== undefined ? (
               <div key={key as string}>
-                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-surface-500">{label}</label>
+                <label className="mb-1 block text-3xs font-medium uppercase tracking-wider text-surface-500">{label}</label>
                 {(key === 'description' || key === 'productsServices') ? (
                   <textarea
                     value={String(input[key as string] ?? '')}
@@ -1034,7 +1034,7 @@ export function CompanyBrainApprovalPreview({
             minRows={6} maxRows={20}
           />
           {input.documents !== undefined && (
-            <div className="rounded-lg border border-surface-800 bg-surface-900/40 px-3 py-2 text-[11px] text-surface-400">
+            <div className="rounded-lg border border-surface-800 bg-surface-900/40 px-3 py-2 text-2xs text-surface-400">
               {Array.isArray(input.documents) ? `${(input.documents as unknown[]).length} documento(s) na payload` : 'documents incluído'}
             </div>
           )}

@@ -29,6 +29,26 @@
   --font-display: 'Satoshi', 'Inter', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 
+  /* Escala "micro" abaixo de text-xs (12px) — auditoria de tokens visuais:
+   * 1200+ ocorrências de text-[10px]/[11px] espalhadas por 180+ arquivos
+   * (badges, labels uppercase, metadados) porque a escala padrão do
+   * Tailwind não desce abaixo de text-xs. Sem line-height companion de
+   * propósito — os usos arbitrários que estes tokens substituem nunca
+   * definiam um, então nomear sem adicionar um mantém o tamanho renderizado
+   * idêntico (migração mecânica, zero risco visual). text-[9px] fica de
+   * fora por não ter volume que justifique um 3º token — poucas dezenas de
+   * ocorrências vs. centenas de cada um destes dois.
+   *
+   * EM PX, NÃO REM: a "manopla de escala" do desktop (linha ~347,
+   * `:root { font-size: 110% }` a partir de 768px) só afeta medidas em rem.
+   * O comentário dela já avisa: "elementos cravados em px fixo (ex.:
+   * text-[10px]) NÃO seguem esta manopla". Se estes tokens fossem definidos
+   * em rem, herdariam o crescimento no desktop (11px→12.1px, 10px→11px) —
+   * uma mudança visual real que os valores arbitrários que substituem nunca
+   * tiveram. px preserva o comportamento fixo exato. */
+  --text-2xs: 11px;
+  --text-3xs: 10px;
+
   /* ── Acento teal (dark defaults) ─────────────────────────────────────────── */
   /* dark: sobe luminância #14B8A6 → #2DD4BF — intencional */
   --color-accent:       #2DD4BF;
