@@ -86,7 +86,19 @@ export function ContactsTable({
                       ? 'bg-brand-500 border-brand-400 text-surface-950'
                       : 'bg-surface-900 border-surface-600 text-transparent hover:border-brand-400',
                   )}
-                  aria-label={allSelected ? 'Deselecionar todos' : 'Selecionar todos'}
+                  // QW-06: "todos" aqui é sempre só a página carregada (ex. 50 de
+                  // 1.234) — o rótulo deixa isso explícito pra não sugerir que a
+                  // seleção cobre a lista inteira filtrada.
+                  aria-label={
+                    allSelected
+                      ? `Desmarcar os ${contacts.length} contatos desta página`
+                      : `Selecionar os ${contacts.length} contatos desta página`
+                  }
+                  title={
+                    allSelected
+                      ? `Desmarcar os ${contacts.length} contatos desta página`
+                      : `Selecionar os ${contacts.length} contatos desta página`
+                  }
                 >
                   {allSelected ? <Check className="w-3 h-3" /> : someSelected ? <Minus className="w-3 h-3" /> : null}
                 </button>
