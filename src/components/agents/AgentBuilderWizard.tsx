@@ -1788,6 +1788,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
   const [publishing, setPublishing] = useState(false)
   const [publishError, setPublishError] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
   const sessionIdRef    = useRef(`wiz-agent-${Date.now()}`)
   const completedRef    = useRef(false)
 
@@ -1879,6 +1880,19 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
       step_number: step, step_name: STEP_LABELS[step - 1], action: 'back',
     })
     setStep(s => Math.max(s - 1, 1))
+  }
+
+  // Any real user input (name/objective/sector) or advancement past step 1
+  // counts as progress worth confirming before discarding.
+  const isDirty = step > 1
+    || data.name.trim() !== ''
+    || data.objective.trim() !== ''
+    || data.sector !== ''
+
+  const handleCloseClick = () => {
+    if (publishing) return
+    if (isDirty) { setCloseConfirmOpen(true); return }
+    onClose()
   }
 
   const handlePublish = async (status: 'active' | 'draft') => {
@@ -2051,7 +2065,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   <h1 className="text-sm font-bold text-surface-50 truncate">Criar Agente IA</h1>
                 </div>
                 <button
-                  onClick={!publishing ? onClose : undefined}
+                  onClick={handleCloseClick}
                   disabled={publishing}
                   aria-label="Fechar"
                   className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition disabled:opacity-40"
@@ -2277,6 +2291,16 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
               </div>
             </div>
           </div>
+
+      <ConfirmModal
+        open={closeConfirmOpen}
+        onClose={() => setCloseConfirmOpen(false)}
+        onConfirm={() => { setCloseConfirmOpen(false); onClose() }}
+        title="Descartar agente em criação?"
+        description={`Você está na etapa ${step} de ${STEP_LABELS.length}. Ao fechar agora, todo o progresso feito neste agente será perdido.`}
+        confirmLabel="Descartar"
+        danger
+      />
     </motion.div>
   )
 }
