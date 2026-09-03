@@ -116,7 +116,13 @@ export function ConversationDealIndicator({ contactId, conversationId }: { conta
           data-testid={chip.closed ? 'deal-chip-closed' : 'deal-chip-open'}
           data-origin={chip.isOrigin || undefined}
           className={cn(
-            'inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium max-w-full',
+            // Achado do Lince (revisão do PR #76): a pílula visível tem só
+            // ~18-20px de alvo de toque. `before` transparente, absoluto e
+            // centralizado (sem afetar o layout — não empurra os chips
+            // vizinhos) garante ≥44×44px de área clicável sem mudar a
+            // aparência: cor/padding/borda da pílula continuam os mesmos.
+            'relative inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium max-w-full',
+            "before:content-[''] before:absolute before:left-1/2 before:top-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:min-w-[44px] before:min-h-[44px]",
             chip.closed && 'opacity-80',
           )}
           style={{
