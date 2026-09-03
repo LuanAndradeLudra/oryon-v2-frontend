@@ -6,8 +6,9 @@ import {
 } from 'lucide-react'
 import { conversionApi } from '@/services/api'
 import { Banner } from '@/components/ui/Banner'
+import { useToast } from '@/hooks/useToast'
 import type { ConversationAnalysisResult, ConversionOutcome, Contact } from '@/types'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 
 // ── Outcome config ────────────────────────────────────────────────────────────
 
@@ -365,6 +366,7 @@ interface ConversionAnalysisPanelProps {
 export function ConversionAnalysisPanel({ conversationId, contact }: ConversionAnalysisPanelProps) {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'analyzing' | 'done'>('loading')
   const [analysis, setAnalysis] = useState<ConversationAnalysisResult | null>(null)
+  const { toast } = useToast()
 
   // Try to load existing analysis on mount
   const mapAnalysis = (raw: Record<string, unknown>) => ({
@@ -403,8 +405,9 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
       const res = await conversionApi.triggerAnalysis(conversationId)
       setAnalysis(mapAnalysis(res.data as unknown as Record<string, unknown>))
       setPhase('done')
-    } catch {
+    } catch (err) {
       setPhase('idle')
+      toast(getApiErrorMessage(err, 'Não foi possível analisar a conversa.'), 'error')
     }
   }
 
@@ -421,6 +424,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
       console.log('[Analysis] Confirmed successfully')
     } catch (err) {
       console.error('[Analysis] Confirm failed:', err)
+      toast(getApiErrorMessage(err, 'Não foi possível confirmar a análise.'), 'error')
     }
   }
 
@@ -433,6 +437,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
       console.log('[Analysis] Rejected successfully')
     } catch (err) {
       console.error('[Analysis] Reject failed:', err)
+      toast(getApiErrorMessage(err, 'Não foi possível rejeitar a análise.'), 'error')
     }
   }
 
