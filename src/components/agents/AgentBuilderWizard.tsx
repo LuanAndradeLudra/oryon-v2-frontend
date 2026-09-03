@@ -327,7 +327,7 @@ function Step1({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
       <div>
         <label className="block text-xs font-medium text-surface-400 mb-1.5">
-          Nome do agente <span className="text-red-400">*</span>
+          Nome do agente <span className="text-danger">*</span>
         </label>
         <input
           value={data.name}
@@ -339,7 +339,7 @@ function Step1({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
       <div>
         <label className="block text-xs font-medium text-surface-400 mb-1.5">
-          Setor / Indústria <span className="text-red-400">*</span>
+          Setor / Indústria <span className="text-danger">*</span>
         </label>
         <select
           value={data.sector}
@@ -353,7 +353,7 @@ function Step1({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
       <div>
         <label className="block text-xs font-medium text-surface-400 mb-1.5">
-          Objetivo principal <span className="text-red-400">*</span>
+          Objetivo principal <span className="text-danger">*</span>
         </label>
         <textarea
           value={data.objective}
@@ -393,7 +393,7 @@ function Step2({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 
       <div>
         <label className="block text-xs font-medium text-surface-400 mb-2">
-          Tom de comunicação <span className="text-red-400">*</span>
+          Tom de comunicação <span className="text-danger">*</span>
         </label>
         <div className="grid grid-cols-5 gap-2">
           {TONES.map(t => {
@@ -1312,7 +1312,7 @@ function Step6KB({
                 </button>
                 <button
                   type="button" onClick={() => setRemoveDocTarget(doc.id)}
-                  className="p-1 rounded text-surface-600 hover:text-red-400 transition"
+                  className="p-1 rounded text-surface-600 hover:text-danger transition"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -1516,7 +1516,7 @@ function Step6({
           </button>
           {error && (
             <div className="flex flex-col items-center gap-2 text-center">
-              <p className="text-xs text-red-400 flex items-center gap-1.5">
+              <p className="text-xs text-danger flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5" /> {error}
               </p>
               <button
@@ -2106,7 +2106,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   <motion.p
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-1 text-xs text-red-400 flex items-start gap-1.5"
+                    className="mb-1 text-xs text-danger flex items-start gap-1.5"
                   >
                     <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{validationError}</span>
                   </motion.p>
@@ -2115,7 +2115,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   <motion.p
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-1 text-xs text-red-400 flex items-start gap-1.5"
+                    className="mb-1 text-xs text-danger flex items-start gap-1.5"
                   >
                     <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{publishError}</span>
                   </motion.p>
