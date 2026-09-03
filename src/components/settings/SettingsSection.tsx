@@ -10,7 +10,8 @@
 // register/unregister (foi exatamente o bug que congelava a troca de abas).
 
 import {
-  createContext, useCallback, useContext, useEffect, useState, type ReactNode,
+  createContext, useCallback, useContext, useEffect, useState,
+  type ComponentType, type ReactNode,
 } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -64,9 +65,17 @@ interface SettingsSectionProps {
   description?: string
   children: ReactNode
   className?: string
+  /** Ícone exclusivo do eixo conceitual desta seção, tingido com `accentColor`.
+   *  Omitido na maioria das seções (identidade puramente tipográfica) — só
+   *  vale a pena quando a seção precisa se diferenciar de uma vizinha visualmente
+   *  quase idêntica (ex. "Situação do contato" vs. "Etapas" de Funis, F-CONF-02). */
+  icon?: ComponentType<{ className?: string; style?: React.CSSProperties }>
+  /** Cor do acento (ex. 'var(--color-accent-cyan)') aplicada ao `icon`. Sem
+   *  efeito se `icon` não for passado. */
+  accentColor?: string
 }
 
-export function SettingsSection({ title, description, children, className }: SettingsSectionProps) {
+export function SettingsSection({ title, description, children, className, icon: Icon, accentColor }: SettingsSectionProps) {
   const register = useContext(RegisterCtx)
   const id = slugify(title)
   // register é estável (useCallback []) → roda 1x por montagem da seção.
@@ -82,7 +91,10 @@ export function SettingsSection({ title, description, children, className }: Set
       )}
     >
       <div className="mb-4 md:mb-0 md:sticky md:top-2">
-        <h3 className="text-sm font-semibold text-surface-100">{title}</h3>
+        <h3 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
+          {Icon && <Icon className="w-4 h-4 flex-shrink-0" style={accentColor ? { color: accentColor } : undefined} />}
+          {title}
+        </h3>
         {description && (
           <p className="text-xs text-surface-500 mt-1 leading-relaxed">{description}</p>
         )}
