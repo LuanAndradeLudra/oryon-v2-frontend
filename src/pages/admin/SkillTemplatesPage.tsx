@@ -9,7 +9,6 @@ import { listSkillTemplates, updateSkillTemplate } from '@/services/skillTemplat
 import { listAdminOrganizations, type AdminOrganization } from '@/services/adminApi'
 import type { SkillTemplate } from '@/types/skills'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
-import { ToastContainer } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -31,7 +30,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export function SkillTemplatesPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { toasts, toast, dismiss } = useToast()
+  const { toast } = useToast()
   // The Assign screen pushes its result via navigation state — fire a toast
   // once on mount instead of holding a banner forever (cleaner UX, fewer
   // moving parts on the list).
@@ -213,7 +212,6 @@ export function SkillTemplatesPage() {
         ))}
       </div>
       </div>
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

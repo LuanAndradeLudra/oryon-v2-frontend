@@ -3,7 +3,6 @@ import { Loader2 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { ContactDetailHeader } from './ContactDetailHeader'
 import { ContactDetailTabs, type TabId } from './ContactDetailTabs'
 import { OverviewTab } from './tabs/OverviewTab'
@@ -29,7 +28,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
   const [contact, setContact] = useState<Contact | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? 'overview')
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
 
   // Reabre na aba pedida sempre que o contato ou a aba solicitada mudarem
   // (ex.: clicar num chip de negócio de OUTRO contato enquanto o painel já está aberto).
@@ -188,7 +187,6 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
           </div>
         </>
       )}
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

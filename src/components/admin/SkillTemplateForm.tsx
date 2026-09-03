@@ -17,7 +17,6 @@ import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
 import { Stepper, type StepperSection } from '@/components/ui/Stepper'
-import { ToastContainer } from '@/components/ui/Toast'
 import { SchemaFieldsBuilder } from './SchemaFieldsBuilder'
 import { CategoryPills } from './CategoryPills'
 import { ScopeSelector, type ScopeValue } from './ScopeSelector'
@@ -130,7 +129,7 @@ function slugify(text: string): string {
 export function SkillTemplateForm({ template }: Props) {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { toasts, toast, dismiss } = useToast()
+  const { toast } = useToast()
   const isEdit = !!template
   const [form, setForm] = useState<FormState>(() => fromTemplate(template, user?.tenantId ?? ''))
   const [saving, setSaving] = useState(false)
@@ -575,7 +574,6 @@ Depois de criar a consulta, envie uma confirmação amigável com emoji ✅.`}
           )}
         </div>
       </div>
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       {/* Cascade warning — fires only when editing AND the operator changed
           config_schema AND there are attached instances. Confirmation calls

@@ -3,7 +3,6 @@ import { Plus, Pencil, GripVertical, Check, X } from 'lucide-react'
 import { Switch } from '@/components/ui/Switch'
 import { Select } from '@/components/ui/Select'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { pipelinesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -27,7 +26,7 @@ const OUTCOME_LABEL: Record<'won' | 'lost' | 'any', string> = {
  *  mesmo catálogo"), então uma mudança aqui afeta todos os funis desse tipo,
  *  não só o selecionado. `allowFreeCloseReason`, ao contrário, é POR funil. */
 export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineCloseReasonsManagerProps) {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
   const kind = pipeline.kind ?? 'sales'
@@ -243,7 +242,6 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
         <Switch checked={!!pipeline.allowFreeCloseReason} onChange={handleToggleFree} disabled={!canManage || savingFreeToggle} />
       </div>
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

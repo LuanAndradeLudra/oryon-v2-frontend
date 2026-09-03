@@ -4,7 +4,6 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { PipelineStageModal } from '@/components/settings/modals/PipelineStageModal'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { pipelinesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -29,7 +28,7 @@ interface PipelineStagesManagerProps {
  *  (estágios do ciclo de vida do contato), mas aponta para os endpoints de
  *  pipeline e usa isWon/isLost em vez de isTerminal. */
 export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesManagerProps) {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
 
@@ -256,8 +255,6 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
         danger
         loading={deleting}
       />
-
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   )
 }

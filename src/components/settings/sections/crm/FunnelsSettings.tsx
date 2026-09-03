@@ -8,7 +8,6 @@ import { PipelineSalesSettings } from './PipelineSalesSettings'
 import { PipelineCloseReasonsManager } from './PipelineCloseReasonsManager'
 import { PipelineAccessManager } from './PipelineAccessManager'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
@@ -27,7 +26,7 @@ import { pipelineKindOption, pipelineKindOf } from '@/lib/pipelineKinds'
  */
 export function FunnelsSettings() {
   const { pipelines, loadingPipelines, refetchPipelines } = useCRMConfig()
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
 
@@ -273,8 +272,6 @@ export function FunnelsSettings() {
         danger
         loading={deleting}
       />
-
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   )
 }

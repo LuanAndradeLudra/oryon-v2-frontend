@@ -21,7 +21,6 @@ import { CampaignWizard } from '@/components/campaigns/CampaignWizard'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
@@ -141,7 +140,6 @@ export function ContactsPage() {
     return () => { alive = false }
   }, [])
   const { vocab } = useTenantVocab()
-  const { toasts, dismiss } = useToast()
 
   // F9 (SCRUM-875): "Adicionar ao funil" pelo menu da linha da tabela —
   // fluxo compartilhado (criação / DealModal em venda / modal de conflito).
@@ -396,9 +394,6 @@ export function ContactsPage() {
           />
         )}
       </AnimatePresence>
-
-      {/* Toasts */}
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       {/* Bulk delete confirmation — shared between bar and context menu.
           Uses the raw Modal so we can preview the contacts being deleted. */}
