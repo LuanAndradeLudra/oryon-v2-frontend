@@ -123,6 +123,8 @@ function NotasSection() {
         <button
           type="button"
           onClick={() => setAdding(true)}
+          title="Adicionar nota"
+          aria-label="Adicionar nota"
           className="w-6 h-6 rounded-md flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -265,15 +267,15 @@ export function ContactPanel({
           {/* SCRUM-929 (F-FICHA-08): "Mudar situação" — ícone e verbo distintos
               de "Mover etapa" (DealSummary, ícone KanbanSquare) — etapa é do
               FUNIL do negócio, situação é o ciclo de vida do CONTATO. */}
-          <button onClick={() => setStageOpen(true)} title="Mudar situação"
+          <button onClick={() => setStageOpen(true)} title="Mudar situação" aria-label="Mudar situação"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <Milestone className="w-4 h-4" />
           </button>
-          <button onClick={() => navigate(`/contacts?contact=${contact.id}`)} title="Ver no CRM"
+          <button onClick={() => navigate(`/contacts?contact=${contact.id}`)} title="Ver no CRM" aria-label="Ver no CRM"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <ExternalLink className="w-4 h-4" />
           </button>
-          <button onClick={onClose} title="Fechar"
+          <button onClick={onClose} title="Fechar" aria-label="Fechar"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <X className="w-4 h-4" />
           </button>
@@ -327,7 +329,7 @@ export function ContactPanel({
                   style={{ ['--chip']: tag.color } as React.CSSProperties}>
                   <span className="w-1.5 h-1.5 rounded-full chip-dot" />
                   {tag.name}
-                  <button onClick={() => onRemoveTag(tag.id)} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
+                  <button onClick={() => onRemoveTag(tag.id)} title={`Remover etiqueta ${tag.name}`} aria-label={`Remover etiqueta ${tag.name}`} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </span>

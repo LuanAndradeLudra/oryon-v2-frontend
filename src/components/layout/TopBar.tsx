@@ -1559,6 +1559,8 @@ export function TopBar() {
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setNotifOpen((v) => !v)}
+            title="Notificações"
+            aria-label={unreadCount > 0 ? `Notificações (${unreadCount > 9 ? '9+' : unreadCount} não lidas)` : 'Notificações'}
             className="relative flex items-center justify-center w-8 h-8 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
           >
             <Bell className="w-4 h-4" />
@@ -1622,6 +1624,7 @@ export function TopBar() {
                       type="button"
                       onClick={() => { setQuery(''); inputRef.current?.focus() }}
                       title="Limpar"
+                      aria-label="Limpar busca"
                       className="text-surface-500 hover:text-surface-300 transition-colors flex-shrink-0"
                     >
                       <X className="w-4 h-4" />
