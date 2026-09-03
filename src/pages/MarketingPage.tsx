@@ -63,7 +63,7 @@ function FrequencyBar({ frequency }: { frequency: number }) {
       <div className="flex-1 h-1.5 bg-surface-800 rounded-full overflow-hidden min-w-[48px]">
         <div className="h-full rounded-full transition-colors" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[10px] font-medium tabular-nums" style={{ color }}>
+      <span className="text-3xs font-medium tabular-nums" style={{ color }}>
         {frequency.toFixed(1)}×
       </span>
       {frequency >= 3.5 && <AlertTriangle className="w-3 h-3 text-danger flex-shrink-0" />}
@@ -157,7 +157,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
             </div>
 
             {/* Body text */}
-            <p className="text-[11px] text-surface-400 leading-relaxed px-3.5 pb-2.5 line-clamp-2">
+            <p className="text-2xs text-surface-400 leading-relaxed px-3.5 pb-2.5 line-clamp-2">
               {cr.body}
             </p>
 
@@ -243,15 +243,15 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-surface-700/60">
-            <th className="text-left px-4 py-2.5 text-surface-500 font-medium text-[10px] uppercase tracking-wide">
+            <th className="text-left px-4 py-2.5 text-surface-500 font-medium text-3xs uppercase tracking-wide">
               Conjunto
             </th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-[10px]">Alcance</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-[10px]">Freq.</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-[10px]">Investimento</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-[10px]">Leads</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-[10px]">CPL</th>
-            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-[10px]">ROAS</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">Alcance</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">Freq.</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">Investimento</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">Leads</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">CPL</th>
+            <th className="text-right px-3 py-2.5 text-surface-500 font-medium text-3xs">ROAS</th>
             <th className="w-8" />
           </tr>
         </thead>
@@ -278,7 +278,7 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-surface-500 mt-0.5 tabular-nums">
+                    <p className="text-3xs text-surface-500 mt-0.5 tabular-nums">
                       {as.impressions.toLocaleString('pt-BR')} imp · CTR {as.ctr.toFixed(2)}%
                     </p>
                   </td>
@@ -320,7 +320,7 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
                       <div className="border-t border-surface-700/40">
                         <div className="flex items-center gap-2 px-4 py-2 bg-surface-800/30">
                           <LayoutGrid className="w-3.5 h-3.5 text-surface-500" />
-                          <p className="text-[11px] font-semibold text-surface-400 uppercase tracking-wide">
+                          <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wide">
                             Criativos deste conjunto
                           </p>
                         </div>
@@ -383,7 +383,7 @@ function KpiStrip({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
           <p className={cn('text-sm font-bold tabular-nums', kpi.highlight ? 'text-online' : 'text-surface-100')}>
             {kpi.value}
           </p>
-          <p className="text-[10px] text-surface-500 mt-0.5">{kpi.label}</p>
+          <p className="text-3xs text-surface-500 mt-0.5">{kpi.label}</p>
         </div>
       ))}
     </div>
@@ -530,7 +530,7 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
                         className="w-14 rounded-t transition-colors"
                         style={{ height: Math.max(8, pct * 0.5), backgroundColor: stage.stageColor, opacity: 0.85 }}
                       />
-                      <span className="text-[10px] text-surface-500 text-center leading-tight max-w-[56px]">
+                      <span className="text-3xs text-surface-500 text-center leading-tight max-w-[56px]">
                         {stage.stageLabel}
                       </span>
                     </div>
@@ -557,7 +557,7 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
               { label: 'Conv. %',    value: `${campaign.conversionRate.toFixed(1)}%` },
             ].map((s) => (
               <div key={s.label} className="bg-surface-800 rounded-lg px-3 py-2">
-                <p className="text-[10px] text-surface-500">{s.label}</p>
+                <p className="text-3xs text-surface-500">{s.label}</p>
                 <p className={cn('text-sm font-semibold tabular-nums', s.good ? 'text-online' : 'text-surface-100')}>
                   {s.value}
                 </p>
@@ -585,7 +585,7 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
             <p className="text-xs text-surface-400">
               Clique em um conjunto para ver os criativos individuais
             </p>
-            <span className="text-[10px] text-surface-600 flex items-center gap-1">
+            <span className="text-3xs text-surface-600 flex items-center gap-1">
               <span className="w-2.5 h-2.5 rounded-full bg-danger/70 inline-block" />
               Frequência {'>'} 3.5× = fatiga criativa
             </span>
@@ -640,7 +640,7 @@ function CampaignTable({
     return (
       <th
         className={cn(
-          'text-right px-3 py-3 font-medium cursor-pointer hover:text-surface-200 transition-colors text-[11px] whitespace-nowrap',
+          'text-right px-3 py-3 font-medium cursor-pointer hover:text-surface-200 transition-colors text-2xs whitespace-nowrap',
           sortKey === c.key ? 'text-surface-200' : c.crm ? 'text-surface-400' : 'text-surface-500',
         )}
         onClick={() => handleSort(c.key)}
@@ -676,7 +676,7 @@ function CampaignTable({
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-surface-800">
-              <th className="text-left px-5 py-3 text-surface-400 font-medium text-[11px]">Campanha</th>
+              <th className="text-left px-5 py-3 text-surface-400 font-medium text-2xs">Campanha</th>
               {cols.map((c) => <Th key={c.key} c={c} />)}
               <th className="w-8" />
             </tr>
@@ -795,7 +795,7 @@ function ConversionFunnel({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
                 <span className="text-surface-300 font-medium">{stage.label}</span>
                 <span className="tabular-nums text-surface-400">
                   {stage.value.toLocaleString('pt-BR')}
-                  <span className="text-surface-600 text-[10px]">{prevConv}</span>
+                  <span className="text-surface-600 text-3xs">{prevConv}</span>
                 </span>
               </div>
               <div className="h-3 bg-surface-800 rounded-full overflow-hidden">
@@ -842,14 +842,14 @@ function SummaryPanel({ campaigns, totals }: { campaigns: AdCampaignMetrics[]; t
             {item.icon}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-surface-500">{item.label}</p>
+            <p className="text-3xs text-surface-500">{item.label}</p>
             <p className="text-sm font-bold text-surface-100 tabular-nums leading-tight">{item.value}</p>
           </div>
         </div>
       ))}
       {totals && (
         <div className="pt-2 border-t border-surface-800">
-          <p className="text-[10px] text-surface-600 mb-1">Conv. Lead → Cliente</p>
+          <p className="text-3xs text-surface-600 mb-1">Conv. Lead → Cliente</p>
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-surface-800 rounded-full overflow-hidden">
               <div
@@ -916,18 +916,18 @@ function CapiEventsSection() {
         </div>
         <div className="flex items-center gap-3 text-xs">
           <div className="text-right">
-            <p className="text-[10px] text-surface-500">Enviados</p>
+            <p className="text-3xs text-surface-500">Enviados</p>
             <p className="text-sm font-bold text-online tabular-nums">{sentCount}</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-surface-500">Receita reportada</p>
+            <p className="text-3xs text-surface-500">Receita reportada</p>
             <p className="text-sm font-bold text-surface-100 tabular-nums">
               R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
           </div>
           {failedCount > 0 && (
             <div className="text-right">
-              <p className="text-[10px] text-surface-500">Falhas</p>
+              <p className="text-3xs text-surface-500">Falhas</p>
               <p className="text-sm font-bold text-danger tabular-nums">{failedCount}</p>
             </div>
           )}
@@ -937,10 +937,10 @@ function CapiEventsSection() {
       {/* Callout */}
       <div className="flex items-start gap-3 px-5 py-3 bg-[#1877f2]/5 border-b border-[#1877f2]/10">
         <Sparkles className="w-3.5 h-3.5 text-[#1877f2] flex-shrink-0 mt-0.5" />
-        <p className="text-[11px] text-surface-400 leading-relaxed">
+        <p className="text-2xs text-surface-400 leading-relaxed">
           Quando um lead CTWA é confirmado como convertido pela IA, a plataforma envia um evento{' '}
           <strong className="text-surface-300">Purchase</strong> ao Meta usando o{' '}
-          <code className="bg-surface-800 px-1 rounded text-[10px] font-mono text-brand-300">ctwa_click_id</code>
+          <code className="bg-surface-800 px-1 rounded text-3xs font-mono text-brand-300">ctwa_click_id</code>
           {' '}capturado no webhook. O Meta passa a otimizar para perfis similares, reduzindo o CPL ao longo do tempo.
         </p>
       </div>
@@ -968,13 +968,13 @@ function CapiEventsSection() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-surface-800">
-                <th className="text-left px-5 py-3 text-surface-500 font-medium text-[11px]">Contato</th>
-                <th className="text-left px-3 py-3 text-surface-500 font-medium text-[11px]">Campanha</th>
-                <th className="text-left px-3 py-3 text-surface-500 font-medium text-[11px]">Evento</th>
-                <th className="text-right px-3 py-3 text-surface-500 font-medium text-[11px]">Valor</th>
-                <th className="text-left px-3 py-3 text-surface-500 font-medium text-[11px]">CTWA Click ID</th>
-                <th className="text-left px-3 py-3 text-surface-500 font-medium text-[11px]">Enviado em</th>
-                <th className="text-left px-3 py-3 text-surface-500 font-medium text-[11px]">Status</th>
+                <th className="text-left px-5 py-3 text-surface-500 font-medium text-2xs">Contato</th>
+                <th className="text-left px-3 py-3 text-surface-500 font-medium text-2xs">Campanha</th>
+                <th className="text-left px-3 py-3 text-surface-500 font-medium text-2xs">Evento</th>
+                <th className="text-right px-3 py-3 text-surface-500 font-medium text-2xs">Valor</th>
+                <th className="text-left px-3 py-3 text-surface-500 font-medium text-2xs">CTWA Click ID</th>
+                <th className="text-left px-3 py-3 text-surface-500 font-medium text-2xs">Enviado em</th>
+                <th className="text-left px-3 py-3 text-surface-500 font-medium text-2xs">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -984,13 +984,13 @@ function CapiEventsSection() {
                   <tr key={evt.id} className="border-b border-surface-800/50 hover:bg-surface-800/20">
                     <td className="px-5 py-3">
                       <p className="text-surface-200 font-medium">{evt.contactName}</p>
-                      <p className="text-[10px] text-surface-500 font-mono">{evt.contactId}</p>
+                      <p className="text-3xs text-surface-500 font-mono">{evt.contactId}</p>
                     </td>
                     <td className="px-3 py-3 max-w-[180px]">
                       <p className="text-surface-300 truncate">{evt.campaignName ?? '—'}</p>
                     </td>
                     <td className="px-3 py-3">
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#1877f2]/15 text-[#1877f2]">
+                      <span className="px-2 py-0.5 rounded-md text-3xs font-semibold bg-[#1877f2]/15 text-[#1877f2]">
                         {EVENT_LABEL[evt.eventName]}
                       </span>
                     </td>
@@ -1000,7 +1000,7 @@ function CapiEventsSection() {
                         : <span className="text-surface-600">—</span>}
                     </td>
                     <td className="px-3 py-3">
-                      <code className="text-[10px] font-mono text-surface-500 bg-surface-800 px-1.5 py-0.5 rounded">
+                      <code className="text-3xs font-mono text-surface-500 bg-surface-800 px-1.5 py-0.5 rounded">
                         {evt.ctwaClickId.slice(0, 20)}…
                       </code>
                     </td>
@@ -1015,7 +1015,7 @@ function CapiEventsSection() {
                         <span className="font-medium">{stCfg.label}</span>
                       </div>
                       {evt.errorMessage && (
-                        <p className="text-[10px] text-danger/70 mt-0.5">{evt.errorMessage}</p>
+                        <p className="text-3xs text-danger/70 mt-0.5">{evt.errorMessage}</p>
                       )}
                     </td>
                   </tr>
@@ -1188,11 +1188,11 @@ function MarketingPageDesktop() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-online opacity-60" />
                         <span className="relative inline-flex rounded-full w-2 h-2 bg-online" />
                       </span>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Conta conectada</p>
+                      <p className="text-3xs font-bold uppercase tracking-widest text-surface-500">Conta conectada</p>
                     </div>
                     <p className="text-sm font-display font-bold text-surface-50 truncate">{account.accountName}</p>
                     <p className="text-xs text-surface-500 font-mono mt-0.5 truncate">{account.accountId}</p>
-                    <p className="text-[11px] text-surface-500 mt-2">
+                    <p className="text-2xs text-surface-500 mt-2">
                       Sincronizado:{' '}
                       {account.lastSyncAt
                         ? new Date(account.lastSyncAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
