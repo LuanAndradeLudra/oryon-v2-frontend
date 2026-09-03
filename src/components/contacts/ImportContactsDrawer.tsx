@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { appLogger } from '@/services/appLogger'
 import { Banner } from '@/components/ui/Banner'
+import { ConfirmModal } from '@/components/ui/Modal'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { cn, getPipelineStages, getActivePipelines } from '@/lib/utils'
 import type { Contact, ContactSource, Pipeline } from '@/types'
@@ -354,6 +355,17 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
 
   const handleClose = () => { reset(); onClose() }
 
+  // Dirty-check antes de fechar (mesmo padrão do AgentBuilderWizard): só
+  // pergunta quando há algo real a perder. Em 'upload' sem arquivo/texto
+  // colado ainda não há nada — fecha direto, sem fricção. 'done' também
+  // fecha direto (já concluiu, nada a descartar).
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const isDirty =
+    step === 'map' || step === 'preview' || step === 'importing' ||
+    (step === 'upload' && (!!file || pasteText.trim().length > 0))
+  const requestClose = () => { if (isDirty) setConfirmDiscard(true); else handleClose() }
+  const confirmDiscardAndClose = () => { setConfirmDiscard(false); handleClose() }
+
   // ── Parse helpers ──────────────────────────────────────────────────────────
 
   const applyParsed = useCallback((parsed: { headers: string[]; rows: ParsedRow[] }, errorMsg: string) => {
@@ -504,7 +516,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             className="fixed inset-0 bg-black/40 z-[39]"
-            onClick={handleClose}
+            onClick={requestClose}
           />
 
           <motion.div
@@ -519,7 +531,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                 <h2 className="text-base font-semibold text-surface-50">Importar contatos</h2>
                 <p className="text-xs text-surface-500 mt-0.5">CSV, JSON ou XML — até 1.000 contatos por vez</p>
               </div>
-              <button onClick={handleClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+              <button onClick={requestClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1069,6 +1081,20 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
               </div>
             )}
           </motion.div>
+
+          <ConfirmModal
+            open={confirmDiscard}
+            onClose={() => setConfirmDiscard(false)}
+            onConfirm={confirmDiscardAndClose}
+            title="Descartar importação?"
+            description={
+              step === 'importing'
+                ? 'A importação está em andamento. Fechar agora não interrompe os contatos já em processamento, mas você perde o acompanhamento do progresso.'
+                : 'Você tem um arquivo ou mapeamento em andamento que ainda não foi importado. Fechar agora descarta esse progresso.'
+            }
+            confirmLabel="Descartar"
+            danger
+          />
         </>
       )}
     </AnimatePresence>
