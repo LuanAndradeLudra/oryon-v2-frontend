@@ -427,12 +427,7 @@ export function CampaignWizard({
             >
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
-                <div>
-                  <h2 className="text-base font-semibold text-surface-50">Nova campanha</h2>
-                  <p className="text-xs text-surface-500 mt-0.5">
-                    Passo {step} de 5 — {STEP_LABELS[step - 1]}
-                  </p>
-                </div>
+                <h2 className="text-base font-semibold text-surface-50">Nova campanha</h2>
                 <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
                   <X className="w-4 h-4" />
                 </button>
@@ -448,10 +443,10 @@ export function CampaignWizard({
               </div>
 
               {/* Progress */}
-              <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
+              <div className="border-b border-surface-800 flex-shrink-0">
                 <WizardProgress
-                  steps={STEP_LABELS.map((label) => ({ label }))}
-                  current={step}
+                  steps={STEP_LABELS}
+                  currentStep={step}
                   onStepClick={(s) => setStep(s as Step)}
                 />
               </div>
