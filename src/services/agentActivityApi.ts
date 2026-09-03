@@ -52,3 +52,40 @@ export async function fetchAgentActionsByContact(contactId: string, limit = 100)
   )
   return res.actions ?? []
 }
+
+// B6 (SCRUM-941) — the CRM Judge's own decisions (agent B, fire-and-forget
+// after /chat), separate from agent A's actions above. Includes SKIPS
+// (executed=false with a skipReason) on purpose: "IA visível e simétrica"
+// means an operator reading the audit trail sees what the AI chose NOT to
+// do too, not just what it did.
+export interface JudgeDecision {
+  id: string
+  judgeDecisionId: string
+  agentId: string
+  triggerReason: string
+  type: string | null
+  params: unknown
+  confidence: number | null
+  rationale: string | null
+  executed: boolean
+  skipReason: string | null
+  createdAt: string
+}
+
+interface JudgeDecisionsResponse {
+  conversation_id: string
+  decisions: JudgeDecision[]
+}
+
+/**
+ * Returns the CRM Judge's decided actions (including skips) for a
+ * conversation, most recent first. Shadow-mode runs are excluded server-side
+ * — they never execute anything and would just confuse an operator reading
+ * a real audit trail.
+ */
+export async function fetchJudgeDecisions(conversationId: string, limit = 50): Promise<JudgeDecision[]> {
+  const res = await apiFetch<JudgeDecisionsResponse>(
+    `/conversations/${conversationId}/judge-decisions?limit=${limit}`,
+  )
+  return res.decisions ?? []
+}

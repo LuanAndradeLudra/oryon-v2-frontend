@@ -86,6 +86,14 @@ export interface CrmCapabilityConstraints {
   allowedStatuses?: ConversationStatus[]
   allowedTagIds?: string[]
   allowedStageKeys?: string[]
+  /** manage_deal_pipeline only (B6/SCRUM-941) — opt-in flags mirroring the
+   *  agent-server's AgentCrmToolExecutor gates. Omitted/false = platform
+   *  default (closed/no-entry/forward-only). */
+  canClose?: boolean
+  canEnter?: boolean
+  allowBackward?: boolean
+  /** Subconjunto de funis liberado para enter_pipeline/move_deal; vazio/ausente = todos os do setor. */
+  allowedPipelineIds?: string[]
 }
 
 export interface AgentCrmCapabilityConfig {

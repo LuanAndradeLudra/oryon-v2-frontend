@@ -465,10 +465,17 @@ function ProcessCardBody({ deal, onOpenContact }: { deal: Deal; onOpenContact?: 
  * etapa e origem — o mesmo conjunto de sinais que o card de processo já
  * tinha, adaptado ao vocabulário de venda. `users` resolve o nome do dono
  * (o board não recebe isso embutido no `Deal`, só o `ownerUserId`).
+ *
+ * B6 (SCRUM-941): o selo IA/auto usa `movedByChip` (quem MOVEU por último),
+ * igual ao card de processo — antes olhava só `createdByKind` (quem CRIOU),
+ * então um negócio criado por humano e depois movido pela IA (F6b) não
+ * mostrava nada. `movedByChip` já cai pra `createdByKind` quando o backend
+ * é anterior à F8 (sem `lastMovedByKind`), então nenhum caso existente muda.
  */
 function SalesCardBody({ deal, onOpenContact, users }: { deal: Deal; onOpenContact?: (contactId: string) => void; users: User[] }) {
   const origin = originInfo(deal)
   const OriginIcon = origin.icon
+  const by = movedByChip(deal)
   const time = timeInStage(deal)
   const owner = deal.ownerUserId ? users.find((u) => u.id === deal.ownerUserId) ?? null : null
   const ownerLabel = !deal.ownerUserId ? 'Sem dono' : owner ? `${owner.firstName} ${owner.lastName ?? ''}`.trim() : 'Atribuído'
@@ -482,11 +489,11 @@ function SalesCardBody({ deal, onOpenContact, users }: { deal: Deal; onOpenConta
       <div className="mt-1 flex items-center justify-between">
         <span className="text-xs text-surface-400">{brl(deal.amountCents ?? 0)}</span>
         <div className="flex items-center gap-1">
-          {deal.createdByKind === 'ai' && (
-            <span className="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded">IA</span>
+          {by === 'ia' && (
+            <span className="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
           )}
-          {deal.createdByKind === 'automation' && (
-            <span className="text-[10px] text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded">auto</span>
+          {by === 'auto' && (
+            <span className="text-[10px] text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
           )}
         </div>
       </div>
