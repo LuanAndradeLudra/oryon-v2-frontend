@@ -10,6 +10,7 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { dealsApi } from '@/services/api'
@@ -92,6 +93,7 @@ export function ChatHeader({
     contactId: contact.id,
     onResolve: (dealOutcome) => onStatusChange('resolved', dealOutcome),
   })
+  const multiPipeline = useMultiPipeline()
   const { openDeal } = useDealPanel()
   const { toast } = useToast()
   const [viewDealLoading, setViewDealLoading] = useState(false)
@@ -202,13 +204,24 @@ export function ChatHeader({
                   setStatusOpen(false)
                 }}
                 className={cn(
-                  'w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-medium text-left transition-colors',
+                  'w-full flex flex-col items-stretch gap-0.5 px-3 py-2 text-xs font-medium text-left transition-colors',
                   statusBg,
                   statusText,
                 )}
               >
-                {label}
-                {active && <Check className={cn('w-3.5 h-3.5 flex-shrink-0', statusText)} />}
+                <span className="flex items-center justify-between gap-2">
+                  {label}
+                  {active && <Check className={cn('w-3.5 h-3.5 flex-shrink-0', statusText)} />}
+                </span>
+                {/* F-CONV achado do Auditor: "Resolver com desfecho" ficava
+                    escondido atrás desta opção, sem nenhuma pista de que
+                    também fecha o negócio vinculado — hint estático (sem
+                    request extra, o alvo só é buscado ao clicar). */}
+                {v === 'resolved' && multiPipeline && (
+                  <span className="text-[10px] font-normal opacity-70">
+                    Também fecha o {vocab.deal.toLowerCase()} vinculado, se houver
+                  </span>
+                )}
               </button>
             )
           })}
