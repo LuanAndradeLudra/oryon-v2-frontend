@@ -57,10 +57,10 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
 
         <div className="flex items-center gap-2">
           <span className="text-sm text-surface-400">{contact.waId}</span>
-          <button onClick={handleCopyWa} className="text-surface-500 hover:text-surface-200 transition-colors">
+          <button onClick={handleCopyWa} aria-label="Copiar número do WhatsApp" className="text-surface-500 hover:text-surface-200 transition-colors">
             <Copy className="w-3.5 h-3.5" />
           </button>
-          <button onClick={handleOpenChat} title="Abrir conversa" className="text-surface-500 hover:text-emerald-400 transition-colors cursor-pointer">
+          <button onClick={handleOpenChat} title="Abrir conversa" aria-label="Abrir conversa" className="text-surface-500 hover:text-emerald-400 transition-colors cursor-pointer">
             <ExternalLink className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -89,6 +89,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
             <button
               onClick={() => setConfirmDelete(true)}
               title="Excluir contato"
+              aria-label="Excluir contato"
               className="p-1.5 rounded-lg text-surface-600 hover:text-red-400 hover:bg-surface-800 transition-all"
             >
               <Trash2 className="w-4 h-4" />
@@ -106,6 +107,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
         )}
         <button
           onClick={onClose}
+          aria-label="Fechar"
           className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
         >
           <X className="w-4 h-4" />
