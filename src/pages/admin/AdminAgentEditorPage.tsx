@@ -12,10 +12,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  AlertCircle, ArrowLeft, Bot, Eye, Loader2, RefreshCcw, Save,
+  AlertCircle, ArrowLeft, Bot, Eye, RefreshCcw, Save,
   ShieldCheck, Sparkles,
 } from 'lucide-react'
 import { Select } from '@/components/ui/Select'
+import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
 import { SkillsTab } from '@/components/agents/SkillsTab'
 import { listAdminOrganizations, type AdminOrganization } from '@/services/adminApi'
@@ -364,7 +365,7 @@ export function AdminAgentEditorPage() {
                       )}
                     >
                       {saving
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Salvando…</>
+                        ? <><Spinner className="w-3.5 h-3.5" /> Salvando…</>
                         : <><Save className="w-3.5 h-3.5" /> Salvar</>}
                     </button>
                   </div>
@@ -480,7 +481,7 @@ function PickerBlock({ label, children }: { label: string; children: React.React
 function Loading({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-2 text-sm text-surface-400">
-      <Loader2 className="w-4 h-4 animate-spin" />
+      <Spinner className="w-4 h-4" />
       <span>{text}</span>
     </div>
   )

@@ -9,8 +9,9 @@
 // placeholder so the operator knows what they'd be overriding.
 
 import { useState, useMemo } from 'react'
-import { Loader2, Save, AlertCircle, Copy, CheckCircle2, History, ExternalLink } from 'lucide-react'
+import { Save, AlertCircle, Copy, CheckCircle2, History, ExternalLink } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
+import { Spinner } from '@/components/ui/Spinner'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
@@ -171,7 +172,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
               )}
             >
               {saving
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Salvando…</>
+                ? <><Spinner className="w-4 h-4" /> Salvando…</>
                 : <><Save className="w-4 h-4" /> Salvar</>}
             </button>
           </div>
@@ -202,7 +203,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
           </button>
         ) : loadingInstances ? (
           <span className="inline-flex items-center gap-1.5 text-surface-400">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Carregando agentes…
+            <Spinner className="w-3.5 h-3.5" /> Carregando agentes…
           </span>
         ) : !otherInstances || otherInstances.length === 0 ? (
           <span className="text-surface-500">
@@ -352,7 +353,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
 
             {loadingExecutions && (
               <div className="flex items-center gap-2 py-6 text-sm text-surface-400">
-                <Loader2 className="w-4 h-4 animate-spin" /> Carregando histórico…
+                <Spinner className="w-4 h-4" /> Carregando histórico…
               </div>
             )}
 
