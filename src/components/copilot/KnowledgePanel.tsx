@@ -185,12 +185,14 @@ function CompanyFieldRow({
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
         <button
           onClick={() => setEditing(true)}
+          aria-label={`Editar campo "${field.label || 'sem nome'}"`}
           className="p-1 rounded text-surface-500 hover:text-surface-300 hover:bg-surface-700/50 transition-colors"
         >
           <Pencil className="w-2.5 h-2.5" />
         </button>
         <button
           onClick={onDelete}
+          aria-label={`Remover campo "${field.label || 'sem nome'}"`}
           className="p-1 rounded text-surface-500 hover:text-danger hover:bg-danger/10 transition-colors"
         >
           <Trash2 className="w-2.5 h-2.5" />
@@ -375,6 +377,7 @@ function DocumentCard({
           {!isPdf && onEdit && (
             <button
               onClick={onEdit}
+              aria-label={`Editar ${doc.name}`}
               className="p-1 rounded text-surface-500 hover:text-surface-300 hover:bg-surface-700/50 transition-colors"
             >
               <Pencil className="w-2.5 h-2.5" />
@@ -382,6 +385,7 @@ function DocumentCard({
           )}
           <button
             onClick={() => setConfirmOpen(true)}
+            aria-label={`Excluir ${doc.name}`}
             className="p-1 rounded text-surface-500 hover:text-danger hover:bg-danger/10 transition-colors"
           >
             <Trash2 className="w-2.5 h-2.5" />
@@ -622,6 +626,7 @@ export function KnowledgePanel({ isOpen, onClose, tenantId }: KnowledgePanelProp
             </div>
             <button
               onClick={onClose}
+              aria-label="Fechar"
               className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors flex-shrink-0"
             >
               <X className="w-3.5 h-3.5" />
