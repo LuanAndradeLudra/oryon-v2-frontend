@@ -6,7 +6,8 @@
 // the flag is false).
 
 import { useState } from 'react'
-import { X, Phone, Star, Loader2, Check } from 'lucide-react'
+import { X, Phone, Star, Check } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { templatesApi, campaignsApi, automationsApi } from '@/services/api'
@@ -163,32 +164,25 @@ export function AssignWabaModal({
         )}
 
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-surface-800/60 bg-surface-950/30">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
             disabled={saving}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors disabled:opacity-40"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            size="sm"
             onClick={handleSave}
             disabled={!picked || saving || numbers.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            loading={saving}
+            leftIcon={<Check className="w-3.5 h-3.5" />}
           >
-            {saving ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                Atribuir linha
-              </>
-            )}
-          </button>
+            {saving ? 'Salvando...' : 'Atribuir linha'}
+          </Button>
         </div>
       </div>
     </div>

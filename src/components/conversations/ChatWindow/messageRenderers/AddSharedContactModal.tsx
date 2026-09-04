@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, Phone, ExternalLink, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
@@ -138,33 +139,30 @@ export function AddSharedContactModal({
     if (status === 'created' && created) {
       return (
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg text-surface-300 hover:bg-surface-800 transition-colors">Fechar</button>
-          <button onClick={() => openContact(created.id)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-500 text-surface-950 inline-flex items-center gap-1.5 transition-colors">
-            <ExternalLink className="w-4 h-4" /> Abrir contato
-          </button>
+          <Button variant="ghost" onClick={onClose}>Fechar</Button>
+          <Button onClick={() => openContact(created.id)} leftIcon={<ExternalLink className="w-4 h-4" />}>Abrir contato</Button>
         </div>
       )
     }
     if (status === 'exists' && existing) {
       return (
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg text-surface-300 hover:bg-surface-800 transition-colors">Fechar</button>
-          <button onClick={() => openContact(existing.id)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-500 text-surface-950 inline-flex items-center gap-1.5 transition-colors">
-            <ExternalLink className="w-4 h-4" /> Abrir contato
-          </button>
+          <Button variant="ghost" onClick={onClose}>Fechar</Button>
+          <Button onClick={() => openContact(existing.id)} leftIcon={<ExternalLink className="w-4 h-4" />}>Abrir contato</Button>
         </div>
       )
     }
     return (
       <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg text-surface-300 hover:bg-surface-800 transition-colors">Cancelar</button>
-        <button
+        <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+        <Button
           onClick={handleCreate}
           disabled={busy || status === 'checking'}
-          className="px-4 py-2 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 inline-flex items-center gap-1.5 transition-colors"
+          loading={busy}
+          leftIcon={<User className="w-4 h-4" />}
         >
-          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />} Adicionar ao CRM
-        </button>
+          Adicionar ao CRM
+        </Button>
       </div>
     )
   })()
