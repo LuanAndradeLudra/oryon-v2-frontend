@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Check, ArrowRight, X, Loader2 } from 'lucide-react'
+import { Check, ArrowRight, X } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
 import { cn } from '@/lib/utils'
 import { pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { timeInStage } from '@/lib/dealCard'
@@ -75,7 +76,7 @@ export function PipelineConflictModal({ open, onClose, contactName, pipeline, ex
             . O funil permite um {noun} aberto por contato.
           </p>
         ) : (
-          <p className="flex items-center gap-2 text-sm text-surface-400"><Loader2 className="w-4 h-4 animate-spin" /> Carregando o {noun} existente…</p>
+          <p className="flex items-center gap-2 text-sm text-surface-400"><Spinner className="w-4 h-4" /> Carregando o {noun} existente…</p>
         )}
         <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="O que fazer">
           {OPTIONS.map((opt) => {
