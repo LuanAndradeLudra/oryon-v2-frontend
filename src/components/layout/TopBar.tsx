@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import { useTopBarActions } from '@/contexts/TopBarActionsContext'
 import { TopBarReadinessIndicator } from './TopBarReadinessIndicator'
+import { EmptyState } from '@/components/ui/EmptyState'
 import {
   useNotifications,
   type AppNotification,
@@ -1215,7 +1216,7 @@ function NotificationsPanel() {
               <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : sortedVisible.length === 0 ? (
-            <EmptyState title={empty.title} hint={empty.hint} />
+            <EmptyState icon={Bell} title={empty.title} hint={empty.hint} className="py-12 border-none bg-transparent" />
           ) : (
             <>
               {/* Phase 20 X2: animated list. AnimatePresence handles enter/exit
@@ -1292,19 +1293,6 @@ function Kbd({ children }: { children: React.ReactNode }) {
     <span className="px-1 py-0.5 rounded border border-surface-700 bg-surface-900 text-surface-400 font-mono text-[9px] leading-none">
       {children}
     </span>
-  )
-}
-
-/** Phase 20 I3: empty state with contextual copy per filter. */
-function EmptyState({ title, hint }: { title: string; hint?: string }) {
-  return (
-    <div className="py-12 px-6 text-center">
-      <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-surface-800/60 mb-3">
-        <Bell className="w-4 h-4 text-surface-500" />
-      </div>
-      <p className="text-xs font-medium text-surface-300">{title}</p>
-      {hint && <p className="text-2xs text-surface-500 mt-1">{hint}</p>}
-    </div>
   )
 }
 
