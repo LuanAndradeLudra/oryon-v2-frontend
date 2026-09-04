@@ -308,6 +308,7 @@ function OpenDensity(props: OpenDealProps) {
             type="button"
             onClick={onEdit}
             title={`Editar ${kind.noun}`}
+            aria-label={`Editar ${kind.noun}`}
             className="ml-auto p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
             data-testid={`${testIdPrefix}-edit-${testIdKey}`}
           >
@@ -319,6 +320,7 @@ function OpenDensity(props: OpenDealProps) {
             type="button"
             onClick={onDelete}
             title={`Excluir ${kind.noun}`}
+            aria-label={`Excluir ${kind.noun}`}
             className={cn('p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all', !onEdit && 'ml-auto')}
             data-testid={`${testIdPrefix}-delete-${testIdKey}`}
           >
