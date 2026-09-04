@@ -57,7 +57,7 @@ function StepDots({ step }: { step: number }) {
               )}>
                 {done ? <Check className="w-3.5 h-3.5" /> : num}
               </div>
-              <span className={cn('text-[10px] font-medium whitespace-nowrap', active ? 'text-surface-200' : 'text-surface-600')}>
+              <span className={cn('text-3xs font-medium whitespace-nowrap', active ? 'text-surface-200' : 'text-surface-600')}>
                 {label}
               </span>
             </div>
@@ -231,7 +231,7 @@ function CustomTriggerForm({
                 <p className={cn('text-xs font-semibold', isSelected ? 'text-surface-100' : 'text-surface-300')}>
                   {def.label}
                 </p>
-                <p className="text-[10px] text-surface-500 mt-0.5">{def.desc}</p>
+                <p className="text-3xs text-surface-500 mt-0.5">{def.desc}</p>
               </div>
             </button>
           )
@@ -241,7 +241,7 @@ function CustomTriggerForm({
       {/* Params form */}
       {selectedDef?.params && selectedDef.params.length > 0 && (
         <div className="bg-surface-800/60 border border-surface-700 rounded-xl p-3 space-y-3">
-          <p className="text-[10px] font-semibold text-surface-400 uppercase tracking-wider">Configuração do evento</p>
+          <p className="text-3xs font-semibold text-surface-400 uppercase tracking-wider">Configuração do evento</p>
 
           {selectedDef.params.includes('minutes') && (
             <div>
@@ -256,7 +256,7 @@ function CustomTriggerForm({
                 <div className="flex gap-1.5">
                   {[15, 30, 60, 120].map((m) => (
                     <button key={m} onClick={() => updateParam({ minutes: m })}
-                      className={cn('px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors',
+                      className={cn('px-2 py-1 rounded-lg text-3xs font-medium border transition-colors',
                         (trigger.params?.minutes ?? 30) === m
                           ? 'bg-brand-600/20 border-brand-600 text-brand-400'
                           : 'bg-surface-700 border-surface-600 text-surface-500 hover:text-surface-300',
@@ -278,7 +278,7 @@ function CustomTriggerForm({
                 placeholder="Ex: VIP, Urgente, Prospect..."
                 className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-600"
               />
-              <p className="text-[10px] text-surface-500 mt-1">Deixe em branco para disparar com qualquer tag.</p>
+              <p className="text-3xs text-surface-500 mt-1">Deixe em branco para disparar com qualquer tag.</p>
             </div>
           )}
 
@@ -310,7 +310,7 @@ function CustomTriggerForm({
                   <div className="flex gap-1.5">
                     {[25, 50, 70, 90].map((v) => (
                       <button key={v} onClick={() => updateParam({ threshold: v })}
-                        className={cn('px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors',
+                        className={cn('px-2 py-1 rounded-lg text-3xs font-medium border transition-colors',
                           (trigger.params?.threshold ?? 70) === v
                             ? 'bg-brand-600/20 border-brand-600 text-brand-400'
                             : 'bg-surface-700 border-surface-600 text-surface-500 hover:text-surface-300',
@@ -451,7 +451,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                 <span className="text-surface-400 flex-shrink-0">{cfg.icon}</span>
                 <div className="min-w-0">
                   <p className={cn('text-xs font-semibold', active ? 'text-surface-100' : 'text-surface-300')}>{cfg.label}</p>
-                  <p className="text-[10px] text-surface-500 leading-tight mt-0.5 line-clamp-1">{cfg.triggerLabel}</p>
+                  <p className="text-3xs text-surface-500 leading-tight mt-0.5 line-clamp-1">{cfg.triggerLabel}</p>
                 </div>
               </button>
             )
@@ -468,7 +468,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
             {(trigger.type === 'fora_horario') && (
               <div className="space-y-2">
                 <p className="text-xs text-surface-400">Dispara quando mensagem chega <strong className="text-surface-200">fora do horário comercial</strong> configurado em Configurações → Conta.</p>
-                <p className="text-[10px] text-surface-500">Útil para informar o horário de retorno ou coletar dados enquanto a equipe está offline.</p>
+                <p className="text-3xs text-surface-500">Útil para informar o horário de retorno ou coletar dados enquanto a equipe está offline.</p>
               </div>
             )}
             {trigger.type === 'follow_up' && (
@@ -485,7 +485,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                     <div className="flex gap-1.5">
                       {[6, 12, 24, 48, 72].map((h) => (
                         <button key={h} onClick={() => onChange({ trigger: { type: 'follow_up', afterHours: h } })}
-                          className={cn('px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors',
+                          className={cn('px-2 py-1 rounded-lg text-3xs font-medium border transition-colors',
                             (trigger as Extract<AutomationTrigger, { type: 'follow_up' }>).afterHours === h
                               ? 'bg-brand-600/20 border-brand-600 text-brand-400'
                               : 'bg-surface-700 border-surface-600 text-surface-500 hover:text-surface-300',
@@ -496,7 +496,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                     </div>
                   </div>
                 </div>
-                <p className="text-[10px] text-surface-500">Conta horas a partir da última mensagem recebida na conversa.</p>
+                <p className="text-3xs text-surface-500">Conta horas a partir da última mensagem recebida na conversa.</p>
               </div>
             )}
             {trigger.type === 'inatividade' && (
@@ -513,7 +513,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                     <div className="flex gap-1.5">
                       {[3, 7, 14, 30].map((d) => (
                         <button key={d} onClick={() => onChange({ trigger: { type: 'inatividade', afterDays: d } })}
-                          className={cn('px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors',
+                          className={cn('px-2 py-1 rounded-lg text-3xs font-medium border transition-colors',
                             (trigger as Extract<AutomationTrigger, { type: 'inatividade' }>).afterDays === d
                               ? 'bg-brand-600/20 border-brand-600 text-brand-400'
                               : 'bg-surface-700 border-surface-600 text-surface-500 hover:text-surface-300',
@@ -524,7 +524,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                     </div>
                   </div>
                 </div>
-                <p className="text-[10px] text-surface-500">Sem mensagens, sem mudança de estágio, sem notas. Qualquer atividade reinicia o contador.</p>
+                <p className="text-3xs text-surface-500">Sem mensagens, sem mudança de estágio, sem notas. Qualquer atividade reinicia o contador.</p>
               </div>
             )}
             {trigger.type === 'triagem_keyword' && (() => {
@@ -540,7 +540,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                           <button onClick={() => onChange({ trigger: { ...t, keywords: t.keywords.filter((_, j) => j !== i) } })} className="text-surface-500 hover:text-danger ml-0.5">×</button>
                         </span>
                       ))}
-                      {t.keywords.length === 0 && <span className="text-[11px] text-surface-600">Nenhuma palavra adicionada</span>}
+                      {t.keywords.length === 0 && <span className="text-2xs text-surface-600">Nenhuma palavra adicionada</span>}
                     </div>
                     <KeywordInput onAdd={(kw) => onChange({ trigger: { ...t, keywords: [...t.keywords, kw] } })} />
                   </div>
@@ -557,7 +557,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                       ))}
                     </div>
                   </div>
-                  <p className="text-[10px] text-surface-500">A detecção é case-insensitive e funciona em mensagens do cliente, não do agente.</p>
+                  <p className="text-3xs text-surface-500">A detecção é case-insensitive e funciona em mensagens do cliente, não do agente.</p>
                 </div>
               )
             })()}
@@ -572,7 +572,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                   <option value="">Selecione uma situação…</option>
                   {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
-                <p className="text-[10px] text-surface-500">Dispara quando qualquer usuário mover um contato para esta situação.</p>
+                <p className="text-3xs text-surface-500">Dispara quando qualquer usuário mover um contato para esta situação.</p>
               </div>
             )}
             {trigger.type === 'custom' && (
@@ -837,7 +837,7 @@ function ActionSubForm({
     <div key={action.type} className="mt-2 space-y-2">
         {action.type === 'send_message' && (
           <div>
-            <label className="block text-[10px] font-medium text-surface-400 mb-1">Template WhatsApp (aprovado)</label>
+            <label className="block text-3xs font-medium text-surface-400 mb-1">Template WhatsApp (aprovado)</label>
             <select
               value={action.templateId}
               onChange={(e) => {
@@ -849,30 +849,30 @@ function ActionSubForm({
               <option value="">Selecione um template…</option>
               {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            {templates.length === 0 && <p className="text-[10px] text-surface-500 mt-1">Nenhum template aprovado. Crie em Disparos → Templates.</p>}
+            {templates.length === 0 && <p className="text-3xs text-surface-500 mt-1">Nenhum template aprovado. Crie em Disparos → Templates.</p>}
           </div>
         )}
         {action.type === 'send_text' && (
           <div>
-            <label className="block text-[10px] font-medium text-surface-400 mb-1">Mensagem de texto</label>
+            <label className="block text-3xs font-medium text-surface-400 mb-1">Mensagem de texto</label>
             <textarea rows={3} value={action.body}
               onChange={(e) => onUpdate({ type: 'send_text', body: e.target.value })}
               placeholder="Olá! Estamos aqui para ajudar..."
               className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-600 resize-none"
             />
-            <p className="text-[10px] text-surface-600 mt-0.5">Apenas em conversas abertas dentro da janela de 24h.</p>
+            <p className="text-3xs text-surface-600 mt-0.5">Apenas em conversas abertas dentro da janela de 24h.</p>
           </div>
         )}
         {action.type === 'send_note' && (
           <div className="space-y-3">
             <div>
-              <label className="block text-[10px] font-medium text-surface-400 mb-1">Nota interna (opcional)</label>
+              <label className="block text-3xs font-medium text-surface-400 mb-1">Nota interna (opcional)</label>
               <textarea rows={2} value={action.note}
                 onChange={(e) => onUpdate({ ...action, type: 'send_note', note: e.target.value })}
                 placeholder="Opcional. Se deixar vazio, o Oryon gera o texto a partir do contexto."
                 className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-600 resize-none"
               />
-              <p className="text-[10px] text-surface-500 mt-1 leading-relaxed">
+              <p className="text-3xs text-surface-500 mt-1 leading-relaxed">
                 O sistema já gera título e descrição com a origem real (ex: &quot;disparada manualmente por João&quot;).
                 Essa nota aparece como observação extra. Você pode usar variáveis:{' '}
                 <code className="text-brand-300">{'{{contact.name}}'}</code>,{' '}
@@ -885,7 +885,7 @@ function ActionSubForm({
 
             {/* Phase 19: who receives this notification? */}
             <div>
-              <label className="block text-[10px] font-medium text-surface-400 mb-1">Notificar</label>
+              <label className="block text-3xs font-medium text-surface-400 mb-1">Notificar</label>
               <select
                 value={action.notifyScope ?? 'admins'}
                 onChange={(e) => {
@@ -906,14 +906,14 @@ function ActionSubForm({
                 <option value="user">Um usuário específico</option>
                 <option value="all">Todos os usuários ativos</option>
               </select>
-              <p className="text-[10px] text-surface-500 mt-1">
+              <p className="text-3xs text-surface-500 mt-1">
                 Default: administradores. Evite &quot;todos&quot; em automações que disparam com alta frequência.
               </p>
             </div>
 
             {action.notifyScope === 'department' && (
               <div>
-                <label className="block text-[10px] font-medium text-surface-400 mb-1">Departamento</label>
+                <label className="block text-3xs font-medium text-surface-400 mb-1">Departamento</label>
                 <select
                   value={action.departmentId ?? ''}
                   onChange={(e) => {
@@ -935,7 +935,7 @@ function ActionSubForm({
 
             {action.notifyScope === 'user' && (
               <div>
-                <label className="block text-[10px] font-medium text-surface-400 mb-1">Usuário</label>
+                <label className="block text-3xs font-medium text-surface-400 mb-1">Usuário</label>
                 <select
                   value={action.notifyUserId ?? ''}
                   onChange={(e) => {
@@ -958,7 +958,7 @@ function ActionSubForm({
         )}
         {action.type === 'assign_agent' && (
           <div>
-            <label className="block text-[10px] font-medium text-surface-400 mb-1">Atribuir para</label>
+            <label className="block text-3xs font-medium text-surface-400 mb-1">Atribuir para</label>
             <select
               value={action.userId}
               onChange={(e) => {
@@ -974,7 +974,7 @@ function ActionSubForm({
         )}
         {action.type === 'assign_dept' && (
           <div>
-            <label className="block text-[10px] font-medium text-surface-400 mb-1">Departamento</label>
+            <label className="block text-3xs font-medium text-surface-400 mb-1">Departamento</label>
             <select
               value={action.departmentId}
               onChange={(e) => {
@@ -986,12 +986,12 @@ function ActionSubForm({
               <option value="">Selecione um departamento…</option>
               {depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
-            {depts.length === 0 && <p className="text-[10px] text-surface-500 mt-1">Nenhum departamento cadastrado. Crie em Configurações → Setores.</p>}
+            {depts.length === 0 && <p className="text-3xs text-surface-500 mt-1">Nenhum departamento cadastrado. Crie em Configurações → Setores.</p>}
           </div>
         )}
         {(action.type === 'add_tag' || action.type === 'remove_tag') && (
           <div>
-            <label className="block text-[10px] font-medium text-surface-400 mb-1">{action.type === 'add_tag' ? 'Tag a adicionar' : 'Tag a remover'}</label>
+            <label className="block text-3xs font-medium text-surface-400 mb-1">{action.type === 'add_tag' ? 'Tag a adicionar' : 'Tag a remover'}</label>
             <select
               value={action.tagId}
               onChange={(e) => {
@@ -1007,7 +1007,7 @@ function ActionSubForm({
         )}
         {action.type === 'change_stage' && (
           <div>
-            <label className="block text-[10px] font-medium text-surface-400 mb-1">Mover para estágio</label>
+            <label className="block text-3xs font-medium text-surface-400 mb-1">Mover para estágio</label>
             <select
               value={action.stageKey}
               onChange={(e) => {
@@ -1023,7 +1023,7 @@ function ActionSubForm({
         )}
         {action.type === 'set_lead_score' && (
           <div>
-            <label className="block text-[10px] font-medium text-surface-400 mb-1">Pontuação (0–100)</label>
+            <label className="block text-3xs font-medium text-surface-400 mb-1">Pontuação (0–100)</label>
             <div className="flex items-center gap-3">
               <input type="number" min={0} max={100} value={action.score}
                 onChange={(e) => onUpdate({ type: 'set_lead_score', score: Math.min(100, Math.max(0, Number(e.target.value))) })}
@@ -1032,7 +1032,7 @@ function ActionSubForm({
               <div className="flex gap-1.5">
                 {[0, 25, 50, 75, 100].map((v) => (
                   <button key={v} onClick={() => onUpdate({ type: 'set_lead_score', score: v })}
-                    className={cn('px-2 py-1 rounded-lg text-[10px] font-medium border transition-colors',
+                    className={cn('px-2 py-1 rounded-lg text-3xs font-medium border transition-colors',
                       action.score === v ? 'bg-brand-600/20 border-brand-600 text-brand-400' : 'bg-surface-800 border-surface-700 text-surface-500 hover:text-surface-300',
                     )}>
                     {v}
@@ -1043,12 +1043,12 @@ function ActionSubForm({
           </div>
         )}
         {action.type === 'resolve_conversation' && (
-          <p className="text-[11px] text-surface-500">A conversa será marcada como <strong className="text-surface-300">resolvida</strong> automaticamente. Nenhuma configuração adicional necessária.</p>
+          <p className="text-2xs text-surface-500">A conversa será marcada como <strong className="text-surface-300">resolvida</strong> automaticamente. Nenhuma configuração adicional necessária.</p>
         )}
         {action.type === 'send_webhook' && (
           <div className="space-y-2">
             <div>
-              <label className="block text-[10px] font-medium text-surface-400 mb-1">URL do endpoint</label>
+              <label className="block text-3xs font-medium text-surface-400 mb-1">URL do endpoint</label>
               <input placeholder="https://sua-api.com/webhook" value={action.url}
                 onChange={(e) => onUpdate({ type: 'send_webhook', url: e.target.value, method: action.method })}
                 className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-600"
@@ -1064,7 +1064,7 @@ function ActionSubForm({
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-surface-600">O payload inclui: contactId, conversationId, triggerType, timestamp.</p>
+            <p className="text-3xs text-surface-600">O payload inclui: contactId, conversationId, triggerType, timestamp.</p>
           </div>
         )}
     </div>
@@ -1167,7 +1167,7 @@ export function Step3({ draft, onChange, hideAgentBehavior }: { draft: WizardDra
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-surface-300">{opt.label}</p>
-                  <p className="text-[10px] text-surface-500 leading-tight">{opt.description}</p>
+                  <p className="text-3xs text-surface-500 leading-tight">{opt.description}</p>
                 </div>
               </button>
             ))}
@@ -1220,7 +1220,7 @@ export function AgentBehaviorSelector({
       <label className="block text-xs font-medium text-surface-300 mb-1">
         Comportamento do agente IA
       </label>
-      <p className="text-[11px] text-surface-500 mb-2.5 leading-relaxed">
+      <p className="text-2xs text-surface-500 mb-2.5 leading-relaxed">
         Quando esta automação dispara em uma conversa que tem IA ativa, como os dois devem coexistir?
       </p>
       <div className="space-y-1.5">
@@ -1249,7 +1249,7 @@ export function AgentBehaviorSelector({
                   {opt.label}
                 </span>
               </div>
-              <p className="text-[10px] text-surface-500 leading-tight mt-1 ml-5">{opt.help}</p>
+              <p className="text-3xs text-surface-500 leading-tight mt-1 ml-5">{opt.help}</p>
             </button>
           )
         })}

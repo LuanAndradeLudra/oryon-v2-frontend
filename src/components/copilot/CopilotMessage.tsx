@@ -147,7 +147,7 @@ function ThinkingLabel({ toolCalls, messageStatusLabel, agentLabel, toolLabel }:
         <motion.span
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-[10px] text-surface-600 ml-0.5 flex items-center gap-1"
+          className="text-3xs text-surface-600 ml-0.5 flex items-center gap-1"
         >
           <CheckCircle2 className="w-2.5 h-2.5 text-status-active" />
           {completedCount} {completedCount === 1 ? 'etapa concluída' : 'etapas concluídas'}
@@ -259,7 +259,7 @@ function CitationChip({ tool }: { tool: string }) {
   return (
     <span
       title={`Fonte: ${tool}`}
-      className="inline-flex items-center gap-1 rounded bg-surface-800/70 px-1.5 py-0.5 text-[10px] font-medium text-surface-400 align-middle"
+      className="inline-flex items-center gap-1 rounded bg-surface-800/70 px-1.5 py-0.5 text-3xs font-medium text-surface-400 align-middle"
     >
       <Search className="w-2.5 h-2.5" />
       {tool}
@@ -279,7 +279,7 @@ function InlineCode({ lang, content }: { lang: string; content: string }) {
       <div className="flex items-center gap-3 px-4 py-3">
         <Code2 className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
         <span className="text-[13px] font-medium text-surface-200 flex-1">{lang}</span>
-        <span className="text-[10px] text-surface-500 font-mono">{lines.length} linhas</span>
+        <span className="text-3xs text-surface-500 font-mono">{lines.length} linhas</span>
         <button
           onClick={() => navigator.clipboard.writeText(content).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })}
           className="p-1 rounded text-surface-500 hover:text-surface-300 transition-colors"
@@ -290,7 +290,7 @@ function InlineCode({ lang, content }: { lang: string; content: string }) {
           onClick={() => setOpen((v) => !v)}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/50 transition-colors"
         >
-          <span className="text-[11px] font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
+          <span className="text-2xs font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
           {open ? <ChevronDown className="w-3 h-3 text-surface-500" /> : <ChevronRight className="w-3 h-3 text-surface-500" />}
         </button>
       </div>
@@ -323,12 +323,12 @@ function InlinePlan({ title, items }: { title: string; items: string[] }) {
       <div className="flex items-center gap-3 px-4 py-3">
         <ListOrdered className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
         <span className="text-[13px] font-medium text-surface-200 flex-1">{title}</span>
-        <span className="text-[10px] text-surface-500">{items.length} etapas</span>
+        <span className="text-3xs text-surface-500">{items.length} etapas</span>
         <button
           onClick={() => setOpen((v) => !v)}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/50 transition-colors"
         >
-          <span className="text-[11px] font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
+          <span className="text-2xs font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
           {open ? <ChevronDown className="w-3 h-3 text-surface-500" /> : <ChevronRight className="w-3 h-3 text-surface-500" />}
         </button>
       </div>
@@ -345,7 +345,7 @@ function InlinePlan({ title, items }: { title: string; items: string[] }) {
             <div className="border-t border-surface-800/50 px-4 py-4 flex flex-col gap-3">
               {items.map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-brand-600/15 border border-brand-500/25 flex items-center justify-center text-[10px] font-bold text-brand-400 mt-0.5">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-brand-600/15 border border-brand-500/25 flex items-center justify-center text-3xs font-bold text-brand-400 mt-0.5">
                     {i + 1}
                   </span>
                   <span className="text-sm text-surface-200 leading-snug flex-1">{stripInline(item)}</span>
@@ -366,12 +366,12 @@ function InlineTable({ headers, rows }: { headers: string[]; rows: string[][] })
       <div className="flex items-center gap-3 px-4 py-3">
         <Table2 className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
         <span className="text-[13px] font-medium text-surface-200 flex-1">Tabela</span>
-        <span className="text-[10px] text-surface-500">{rows.length} linhas</span>
+        <span className="text-3xs text-surface-500">{rows.length} linhas</span>
         <button
           onClick={() => setOpen((v) => !v)}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/50 transition-colors"
         >
-          <span className="text-[11px] font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
+          <span className="text-2xs font-medium text-brand-400">{open ? 'Fechar' : 'Abrir'}</span>
           {open ? <ChevronDown className="w-3 h-3 text-surface-500" /> : <ChevronRight className="w-3 h-3 text-surface-500" />}
         </button>
       </div>
@@ -507,7 +507,7 @@ function ArtifactBuilding({ content, type }: { content: string; type: ArtifactTy
                 ref={previewRef}
                 className="max-h-72 overflow-y-auto px-4 py-3 scroll-smooth"
               >
-                <pre className="text-[11px] font-mono text-surface-400 leading-relaxed whitespace-pre-wrap break-words">
+                <pre className="text-2xs font-mono text-surface-400 leading-relaxed whitespace-pre-wrap break-words">
                   {content || ' '}
                   <span
                     className="inline-block w-[2px] h-[0.9em] bg-brand-400 ml-[1px] align-[-0.05em]"
@@ -580,12 +580,12 @@ function ArtifactCard({ content, title, type }: { content: string; title: string
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium text-surface-200 truncate">{title}</p>
             {showVersionBadge && (
-              <span className="flex-shrink-0 rounded bg-brand-500/15 border border-brand-500/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-300">
+              <span className="flex-shrink-0 rounded bg-brand-500/15 border border-brand-500/30 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-brand-300">
                 v{currentVersion}
               </span>
             )}
           </div>
-          <p className="text-[11px] text-surface-500 mt-0.5">
+          <p className="text-2xs text-surface-500 mt-0.5">
             {wordCount} palavras · {artifactTypeLabel(type)}
             {showVersionBadge && <> · <span className="text-brand-400">versão {currentVersion} de {totalVersions}</span></>}
           </p>
@@ -1028,7 +1028,7 @@ function EditableField({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">{label}</label>
+      <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">{label}</label>
       {multiline ? (
         <textarea
           value={value}
@@ -1061,7 +1061,7 @@ function SelectField({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">{label}</label>
+      <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(fieldKey, e.target.value)}
@@ -1179,7 +1179,7 @@ function TemplateApprovalPreview({
               </div>
               <div className="flex items-center gap-2 px-2.5 py-1">
                 <ImageIcon className="w-3 h-3 text-brand-400" />
-                <span className="text-[10px] text-surface-400">Header: Imagem</span>
+                <span className="text-3xs text-surface-400">Header: Imagem</span>
               </div>
             </div>
           ) : headerType === 'DOCUMENT' && mediaUrl ? (
@@ -1196,10 +1196,10 @@ function TemplateApprovalPreview({
                   <FileText className="w-3 h-3 text-accent-rose" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-medium text-surface-300 truncate">Documento PDF</p>
+                  <p className="text-3xs font-medium text-surface-300 truncate">Documento PDF</p>
                   <p className="text-[9px] text-surface-500 truncate">{mediaUrl.split('/').pop()}</p>
                 </div>
-                <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-brand-400 hover:text-brand-300 transition-colors flex-shrink-0">
+                <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="text-3xs text-brand-400 hover:text-brand-300 transition-colors flex-shrink-0">
                   Abrir
                 </a>
               </div>
@@ -1210,7 +1210,7 @@ function TemplateApprovalPreview({
               {headerType === 'VIDEO' && <FileText className="w-3 h-3 text-brand-400" />}
               {headerType === 'TEXT' && <FileText className="w-3 h-3 text-brand-400" />}
               {headerType === 'DOCUMENT' && <FileText className="w-3 h-3 text-brand-400" />}
-              <span className="text-[10px] text-surface-400">Header: {headerType}</span>
+              <span className="text-3xs text-surface-400">Header: {headerType}</span>
             </div>
           )}
         </div>
@@ -1219,7 +1219,7 @@ function TemplateApprovalPreview({
       {/* Body + footer */}
       <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Mensagem</label>
+          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Mensagem</label>
           <textarea
             value={body}
             onChange={(e) => onChange('body', e.target.value)}
@@ -1234,7 +1234,7 @@ function TemplateApprovalPreview({
       {/* Editable buttons */}
       {buttons.length > 0 && (
         <div className="space-y-1.5">
-          <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Botões</label>
+          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Botões</label>
           <div className="flex flex-wrap gap-1.5">
             {buttons.map((btn, i) => (
               <div
@@ -1248,7 +1248,7 @@ function TemplateApprovalPreview({
                   type="text"
                   value={btnTexts[i] ?? btn.text}
                   onChange={(e) => handleBtnChange(i, e.target.value)}
-                  className="bg-transparent border-none text-[10px] text-surface-300 focus:outline-none w-28 py-1 pr-1.5"
+                  className="bg-transparent border-none text-3xs text-surface-300 focus:outline-none w-28 py-1 pr-1.5"
                 />
               </div>
             ))}
@@ -1263,16 +1263,16 @@ function TemplateApprovalPreview({
       {placeholderCount > 0 && (
         <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
           <div>
-            <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">
+            <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">
               Exemplos das variáveis
             </label>
-            <p className="text-[10px] text-surface-500 mt-0.5">
+            <p className="text-3xs text-surface-500 mt-0.5">
               Estes valores vão para a Meta como exemplo de aprovação. Troque por algo real antes de enviar.
             </p>
           </div>
           {variableSlots.map((value, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="text-[11px] font-mono text-brand-400 w-9 flex-shrink-0">{`{{${i + 1}}}`}</span>
+              <span className="text-2xs font-mono text-brand-400 w-9 flex-shrink-0">{`{{${i + 1}}}`}</span>
               <input
                 type="text"
                 value={value}
@@ -1283,7 +1283,7 @@ function TemplateApprovalPreview({
             </div>
           ))}
           {hasVariableMismatch && (
-            <p className="text-[10px] text-status-pending flex items-start gap-1 mt-1">
+            <p className="text-3xs text-status-pending flex items-start gap-1 mt-1">
               <AlertTriangle className="w-2.5 h-2.5 flex-shrink-0 mt-0.5" />
               O corpo tem {placeholderCount} variável(is) mas foram preenchidos {currentVariables.length} exemplo(s).
               A Meta rejeita se não baterem.
@@ -1337,7 +1337,7 @@ function CampaignApprovalPreview({
             <FileText className="w-3.5 h-3.5 text-brand-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-surface-500">Template vinculado</p>
+            <p className="text-3xs text-surface-500">Template vinculado</p>
             <p className="text-xs text-surface-200 font-medium truncate">{String(input.templateName ?? input.templateId ?? '')}</p>
           </div>
         </div>
@@ -1355,13 +1355,13 @@ function CampaignApprovalPreview({
         {(segment?.tagIds as string[] | undefined)?.length ? (
           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-surface-800/40">
             <Tag className="w-3 h-3 text-brand-400" />
-            <span className="text-[10px] text-surface-300">{(segment!.tagIds as string[]).length} tags selecionadas</span>
+            <span className="text-3xs text-surface-300">{(segment!.tagIds as string[]).length} tags selecionadas</span>
           </div>
         ) : null}
         {(segment?.stages as string[] | undefined)?.length ? (
           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-surface-800/40">
             <Layers className="w-3 h-3 text-brand-400" />
-            <span className="text-[10px] text-surface-300">{(segment!.stages as string[]).length} estágios selecionados</span>
+            <span className="text-3xs text-surface-300">{(segment!.stages as string[]).length} estágios selecionados</span>
           </div>
         ) : null}
       </div>
@@ -1369,11 +1369,11 @@ function CampaignApprovalPreview({
       {/* Variáveis */}
       {mappings && mappings.length > 0 && (
         <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
-          <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Mapeamento de variáveis</label>
+          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Mapeamento de variáveis</label>
           <div className="mt-1.5 space-y-1">
             {mappings.map((m, i) => (
               <div key={i} className="flex items-center gap-2 px-2 py-1 rounded bg-surface-900/40 text-xs">
-                <span className="text-brand-400 font-mono text-[10px] flex-shrink-0">{'{{' + String(m.position) + '}}'}</span>
+                <span className="text-brand-400 font-mono text-3xs flex-shrink-0">{'{{' + String(m.position) + '}}'}</span>
                 <span className="text-surface-600">→</span>
                 <span className="text-surface-300">{String(m.contactField ?? m.literal ?? m.customFieldKey ?? '—')}</span>
                 <span className="text-[9px] text-surface-500 ml-auto">({String(m.source ?? '')})</span>
@@ -1387,7 +1387,7 @@ function CampaignApprovalPreview({
       <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
         <div className="flex items-center gap-2 mb-1.5">
           <Clock className="w-3 h-3 text-surface-500" />
-          <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Agendamento</label>
+          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agendamento</label>
         </div>
         <EditableField label="" value={String(input.scheduledAt ?? '')} fieldKey="scheduledAt" onChange={onChange} placeholder="Imediato (deixe vazio) ou data ISO (2026-04-10T10:00:00)" />
       </div>
@@ -1428,7 +1428,7 @@ function ContactApprovalPreview({
       {!isCreate && !!input.contactId && (
         <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-800/40 border border-surface-700/40">
           <UserCog className="w-3 h-3 text-surface-500 flex-shrink-0" />
-          <span className="text-[10px] text-surface-400">Contato: <span className="text-surface-300 font-mono">{String(input.contactId).slice(0, 12)}...</span></span>
+          <span className="text-3xs text-surface-400">Contato: <span className="text-surface-300 font-mono">{String(input.contactId).slice(0, 12)}...</span></span>
         </div>
       )}
       <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
@@ -1467,11 +1467,11 @@ function MessageApprovalPreview({
     <div className="space-y-2.5">
       <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-800/40 border border-surface-700/40">
         <MessageSquare className="w-3 h-3 text-surface-500 flex-shrink-0" />
-        <span className="text-[10px] text-surface-400">Conversa: <span className="text-surface-300 font-mono">{String(input.conversationId ?? '').slice(0, 12)}...</span></span>
+        <span className="text-3xs text-surface-400">Conversa: <span className="text-surface-300 font-mono">{String(input.conversationId ?? '').slice(0, 12)}...</span></span>
       </div>
       {/* WhatsApp-style bubble preview */}
       <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
-        <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Mensagem que será enviada</label>
+        <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Mensagem que será enviada</label>
         <textarea
           value={text}
           onChange={(e) => onChange('text', e.target.value)}
@@ -1506,7 +1506,7 @@ function TagApprovalPreview({
     <div className="space-y-2.5">
       <EditableField label="Nome da etiqueta" value={String(input.name ?? '')} fieldKey="name" onChange={onChange} placeholder="Nome da tag" />
       <div className="flex flex-col gap-1">
-        <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Cor</label>
+        <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Cor</label>
         <div className="flex items-center gap-2">
           <input
             type="color"
@@ -1520,7 +1520,7 @@ function TagApprovalPreview({
             onChange={(e) => onChange('color', e.target.value)}
             className="flex-1 px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 font-mono focus:outline-none focus:border-brand-500/50"
           />
-          <div className="px-3 py-1 rounded-full text-[10px] font-medium" style={{ backgroundColor: color, color: getReadableTextColor(color) }}>
+          <div className="px-3 py-1 rounded-full text-3xs font-medium" style={{ backgroundColor: color, color: getReadableTextColor(color) }}>
             {String(input.name ?? 'Preview')}
           </div>
         </div>
@@ -1543,7 +1543,7 @@ function StageApprovalPreview({
     <div className="space-y-2.5">
       <EditableField label="Nome do estágio" value={String(input.label ?? '')} fieldKey="label" onChange={onChange} placeholder="Ex: Qualificado" />
       <div className="flex flex-col gap-1">
-        <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Cor</label>
+        <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Cor</label>
         <div className="flex items-center gap-2">
           <input
             type="color"
@@ -1628,7 +1628,7 @@ function AutomationApprovalPreview({
       {/* Trigger */}
       {trigger && Object.keys(trigger).length > 0 && (
         <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
-          <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Gatilho</label>
+          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Gatilho</label>
           <div className="mt-1.5 space-y-1.5">
             {!!trigger.stageKey && (
               <div className="flex items-center gap-2">
@@ -1669,7 +1669,7 @@ function AutomationApprovalPreview({
       {conditions.length > 0 && (
         <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Condições</label>
+            <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Condições</label>
             <div className="w-32">
               <SelectField label="" value={String(input.conditionsLogic ?? 'and')} fieldKey="conditionsLogic" options={CONDITIONS_LOGIC} onChange={onChange} />
             </div>
@@ -1677,7 +1677,7 @@ function AutomationApprovalPreview({
           <div className="space-y-1">
             {conditions.map((c, i) => (
               <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-surface-900/40 text-xs">
-                <span className="text-brand-400 font-mono text-[10px] flex-shrink-0">{i + 1}.</span>
+                <span className="text-brand-400 font-mono text-3xs flex-shrink-0">{i + 1}.</span>
                 <span className="text-surface-300">
                   {String(c.field ?? '')} <span className="text-surface-500">{String(c.operator ?? '')}</span> <span className="text-surface-200 font-medium">{String(c.value ?? '')}</span>
                 </span>
@@ -1690,7 +1690,7 @@ function AutomationApprovalPreview({
       {/* Actions */}
       {actions.length > 0 && (
         <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
-          <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Ações</label>
+          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Ações</label>
           <div className="mt-1.5 space-y-1.5">
             {actions.map((a, i) => {
               const actionType = String(a.type ?? a.action ?? '')
@@ -1710,20 +1710,20 @@ function AutomationApprovalPreview({
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-surface-200 font-medium">{actionType || 'Ação'}</p>
                     {!!a.templateId && (
-                      <p className="text-[10px] text-surface-400 mt-0.5">
+                      <p className="text-3xs text-surface-400 mt-0.5">
                         Template: <span className="text-surface-300 font-mono">{String(a.templateId).slice(0, 12)}...</span>
                         {!!a.templateName && <span className="text-surface-300 ml-1">({String(a.templateName)})</span>}
                       </p>
                     )}
                     {!!a.message && (
-                      <p className="text-[10px] text-surface-400 mt-0.5">
+                      <p className="text-3xs text-surface-400 mt-0.5">
                         Mensagem: <span className="text-surface-300">"{String(a.message).slice(0, 80)}{String(a.message).length > 80 ? '...' : ''}"</span>
                       </p>
                     )}
-                    {!!a.tagId && <p className="text-[10px] text-surface-400 mt-0.5">Tag: <span className="font-mono text-surface-300">{String(a.tagId).slice(0, 8)}...</span></p>}
-                    {!!a.stageKey && <p className="text-[10px] text-surface-400 mt-0.5">Estágio: <span className="text-surface-300">{String(a.stageKey)}</span></p>}
-                    {!!a.userId && <p className="text-[10px] text-surface-400 mt-0.5">Atendente: <span className="font-mono text-surface-300">{String(a.userId).slice(0, 8)}...</span></p>}
-                    {!!a.delay && <p className="text-[10px] text-surface-400 mt-0.5">Atraso: <span className="text-surface-300">{String(a.delay)}</span></p>}
+                    {!!a.tagId && <p className="text-3xs text-surface-400 mt-0.5">Tag: <span className="font-mono text-surface-300">{String(a.tagId).slice(0, 8)}...</span></p>}
+                    {!!a.stageKey && <p className="text-3xs text-surface-400 mt-0.5">Estágio: <span className="text-surface-300">{String(a.stageKey)}</span></p>}
+                    {!!a.userId && <p className="text-3xs text-surface-400 mt-0.5">Atendente: <span className="font-mono text-surface-300">{String(a.userId).slice(0, 8)}...</span></p>}
+                    {!!a.delay && <p className="text-3xs text-surface-400 mt-0.5">Atraso: <span className="text-surface-300">{String(a.delay)}</span></p>}
                   </div>
                 </div>
               )
@@ -1735,7 +1735,7 @@ function AutomationApprovalPreview({
       {/* No trigger/conditions/actions — show hint */}
       {!trigger && conditions.length === 0 && actions.length === 0 && (
         <div className="px-2.5 py-2 rounded-lg bg-surface-800/30 border border-dashed border-surface-700/40">
-          <span className="text-[10px] text-surface-500">Gatilho, condições e ações serão configurados com valores padrão para o tipo selecionado.</span>
+          <span className="text-3xs text-surface-500">Gatilho, condições e ações serão configurados com valores padrão para o tipo selecionado.</span>
         </div>
       )}
     </div>
@@ -1771,13 +1771,13 @@ function ConversationApprovalPreview({
         <div className="flex items-center gap-2">
           <MessageSquare className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
           <div>
-            <p className="text-[10px] text-surface-500">Conversa</p>
+            <p className="text-3xs text-surface-500">Conversa</p>
             <p className="text-xs text-surface-200 font-mono">{String(input.conversationId ?? '').slice(0, 16)}...</p>
           </div>
         </div>
 
         <div className="border-t border-surface-700/30 pt-2.5">
-          <p className="text-[10px] font-medium text-surface-500 uppercase tracking-wider mb-1.5">
+          <p className="text-3xs font-medium text-surface-500 uppercase tracking-wider mb-1.5">
             {CONV_ACTION_LABELS[toolName] ?? toolName}
           </p>
 
@@ -1820,7 +1820,7 @@ function CannedResponseApprovalPreview({
       </div>
       <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Conteúdo da resposta</label>
+          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Conteúdo da resposta</label>
           <textarea
             value={String(input.content ?? '')}
             onChange={(e) => onChange('content', e.target.value)}
@@ -1866,12 +1866,12 @@ function DestructiveApprovalPreview({
         <div className="flex-1 min-w-0">
           <p className="text-xs text-danger font-medium">Excluir {itemType}</p>
           {targetName && <p className="text-xs text-surface-300 mt-0.5">{targetName}</p>}
-          <p className="text-[10px] text-danger/60 font-mono mt-0.5">{targetId}</p>
+          <p className="text-3xs text-danger/60 font-mono mt-0.5">{targetId}</p>
         </div>
       </div>
       <div className="flex items-center gap-1.5 px-3 py-2 bg-danger/5 border-t border-danger/15">
         <AlertTriangle className="w-3 h-3 text-danger/70 flex-shrink-0" />
-        <span className="text-[10px] text-danger/70">Esta ação não pode ser desfeita.</span>
+        <span className="text-3xs text-danger/70">Esta ação não pode ser desfeita.</span>
       </div>
     </div>
   )
@@ -1893,12 +1893,12 @@ function SendCampaignApprovalPreview({
         <div className="flex-1 min-w-0">
           <p className="text-xs text-status-pending font-medium">Disparar campanha</p>
           {!!input.campaignName && <p className="text-xs text-surface-300 mt-0.5">{String(input.campaignName)}</p>}
-          <p className="text-[10px] text-status-pending/60 font-mono mt-0.5">{String(input.campaignId ?? '')}</p>
+          <p className="text-3xs text-status-pending/60 font-mono mt-0.5">{String(input.campaignId ?? '')}</p>
         </div>
       </div>
       <div className="flex items-center gap-1.5 px-3 py-2 bg-status-pending-bg border-t border-status-pending-border">
         <AlertTriangle className="w-3 h-3 text-status-pending/70 flex-shrink-0" />
-        <span className="text-[10px] text-status-pending/70">As mensagens serão enviadas imediatamente para todos os contatos do segmento.</span>
+        <span className="text-3xs text-status-pending/70">As mensagens serão enviadas imediatamente para todos os contatos do segmento.</span>
       </div>
     </div>
   )
@@ -1928,7 +1928,7 @@ function CustomFieldApprovalPreview({
       <div className="grid grid-cols-2 gap-2">
         <SelectField label="Tipo do campo" value={fieldType} fieldKey="type" options={FIELD_TYPES} onChange={onChange} />
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-medium text-surface-500 uppercase tracking-wider">Obrigatório</label>
+          <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Obrigatório</label>
           <label className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-surface-700/60 bg-surface-800/60 cursor-pointer h-[30px]">
             <input
               type="checkbox"
@@ -1951,9 +1951,9 @@ function CustomFieldApprovalPreview({
       )}
       {/* Preview do campo */}
       <div className="rounded-lg border border-dashed border-surface-700/40 bg-surface-800/20 px-3 py-2">
-        <span className="text-[10px] text-surface-500">Preview: </span>
+        <span className="text-3xs text-surface-500">Preview: </span>
         <span className="text-xs text-surface-300">{String(input.label ?? 'Campo')}</span>
-        <span className="text-[10px] text-surface-500 ml-1">({fieldType}{(input.required === true || input.required === 'true') ? ', obrigatório' : ''})</span>
+        <span className="text-3xs text-surface-500 ml-1">({fieldType}{(input.required === true || input.required === 'true') ? ', obrigatório' : ''})</span>
       </div>
     </div>
   )
@@ -2206,7 +2206,7 @@ function ChooseLineCard({
     >
       <div className="px-3 py-2.5 border-b border-surface-800/60">
         <p className="text-xs text-surface-200 font-medium">Qual linha WhatsApp?</p>
-        <p className="text-[10px] text-surface-500 mt-0.5">
+        <p className="text-3xs text-surface-500 mt-0.5">
           {result.message ?? 'Este tenant tem mais de uma linha ativa. Escolha para continuar.'}
         </p>
       </div>
@@ -2243,7 +2243,7 @@ function ChooseLineCard({
       </div>
       {submitted && (
         <div className="px-3 py-1.5 bg-surface-800/40 border-t border-surface-800/60">
-          <p className="text-[10px] text-surface-500">Escolhida: <span className="text-surface-300">{submitted}</span></p>
+          <p className="text-3xs text-surface-500">Escolhida: <span className="text-surface-300">{submitted}</span></p>
         </div>
       )}
     </motion.div>
@@ -2347,7 +2347,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                     href={fetchUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-accent-amber/80 hover:text-accent-amber break-all hover:underline leading-relaxed"
+                    className="text-3xs text-accent-amber/80 hover:text-accent-amber break-all hover:underline leading-relaxed"
                   >
                     {fetchUrl}
                   </a>
@@ -2360,7 +2360,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                     href={`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-accent-amber/80 hover:text-accent-amber italic hover:underline"
+                    className="text-3xs text-accent-amber/80 hover:text-accent-amber italic hover:underline"
                   >
                     "{searchQuery}" ↗
                   </a>
@@ -2382,7 +2382,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
                         href={s.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] text-surface-400 hover:text-accent-amber truncate hover:underline"
+                        className="text-3xs text-surface-400 hover:text-accent-amber truncate hover:underline"
                       >
                         {s.title ?? getDomain(s.url)}
                       </a>
@@ -2592,7 +2592,7 @@ export function ToolCallChip({
       </button>
       {expanded && tc.result != null && (
         <div className="px-3 pb-2 border-t border-surface-700/30">
-          <pre className="text-[10px] text-surface-500 overflow-x-auto mt-1.5 leading-relaxed whitespace-pre-wrap">
+          <pre className="text-3xs text-surface-500 overflow-x-auto mt-1.5 leading-relaxed whitespace-pre-wrap">
             {JSON.stringify(tc.result, null, 2)}
           </pre>
         </div>
@@ -2735,7 +2735,7 @@ function UserMessageBubble({
               >
                 <ChevronLeft className="w-3 h-3" />
               </button>
-              <span className="text-[11px] text-surface-500 tabular-nums px-0.5">
+              <span className="text-2xs text-surface-500 tabular-nums px-0.5">
                 {(message.branchIndex ?? 0) + 1}/{message.totalBranches}
               </span>
               <button
@@ -2890,10 +2890,10 @@ export const CopilotMessageBubble = memo(function CopilotMessageBubble({
             <Loader2 className="w-3 h-3 text-status-pending animate-spin flex-shrink-0" />
             <div className="flex flex-col">
               {activeAgentLabel && (
-                <span className="text-[11px] text-status-pending/70">{activeAgentLabel}</span>
+                <span className="text-2xs text-status-pending/70">{activeAgentLabel}</span>
               )}
               {activeToolName && (
-                <span className="text-[11px] text-status-pending">{activeToolName}</span>
+                <span className="text-2xs text-status-pending">{activeToolName}</span>
               )}
             </div>
           </motion.div>
