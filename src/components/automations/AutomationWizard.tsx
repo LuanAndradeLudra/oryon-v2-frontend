@@ -135,9 +135,9 @@ const INTERNAL_EVENTS: Record<InternalEventCategory, { label: string; icon: stri
     ],
   },
   crm: {
-    label: 'CRM / Pipeline', icon: 'crm',
+    label: 'CRM / Contatos', icon: 'crm',
     events: [
-      { key: 'estagio_mudou',    label: 'Estágio do pipeline alterado',      desc: 'Contato avançou ou regrediu no funil', params: ['stageKey'] },
+      { key: 'estagio_mudou',    label: 'Situação do contato alterada',      desc: 'Contato mudou de situação no ciclo de vida', params: ['stageKey'] },
       { key: 'lead_qualificado', label: 'Lead marcado como qualificado',     desc: 'Contato atingiu critérios de qualificação' },
       { key: 'deal_ganho',       label: 'Oportunidade ganha',               desc: 'Deal fechado com sucesso' },
       { key: 'deal_perdido',     label: 'Oportunidade perdida',             desc: 'Deal marcado como perdido' },
@@ -569,10 +569,10 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                   onChange={(e) => onChange({ trigger: { type: 'estagio_crm', stageKey: e.target.value } })}
                   className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-600"
                 >
-                  <option value="">Selecione um estágio…</option>
+                  <option value="">Selecione uma situação…</option>
                   {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
-                <p className="text-[10px] text-surface-500">Dispara quando qualquer usuário mover um contato para este estágio no pipeline.</p>
+                <p className="text-[10px] text-surface-500">Dispara quando qualquer usuário mover um contato para esta situação.</p>
               </div>
             )}
             {trigger.type === 'custom' && (
@@ -659,7 +659,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
       case 'stage':
         return (
           <select value={cond.value} onChange={(e) => updateCondition(i, { value: e.target.value })} className={selectClass}>
-            <option value="">Selecione um estágio…</option>
+            <option value="">Selecione uma situação…</option>
             {stages.map((s) => <option key={s.key ?? s.id} value={s.key ?? s.id}>{s.label ?? s.name}</option>)}
           </select>
         )
@@ -809,7 +809,7 @@ const ACTION_OPTIONS: { type: ActionType; label: string; description: string; ic
   { type: 'assign_dept',         label: 'Atribuir depto.',       description: 'Encaminhar para departamento',     icon: <Building2 className="w-3.5 h-3.5" />,     color: '#a1a1aa' },
   { type: 'add_tag',             label: 'Adicionar tag',         description: 'Marcar o contato com uma tag',     icon: <Tag className="w-3.5 h-3.5" />,           color: '#a1a1aa' },
   { type: 'remove_tag',          label: 'Remover tag',           description: 'Remover tag do contato',           icon: <XCircle className="w-3.5 h-3.5" />,       color: '#a1a1aa' },
-  { type: 'change_stage',        label: 'Mudar estágio',         description: 'Mover no pipeline do CRM',         icon: <GitBranch className="w-3.5 h-3.5" />,     color: '#a1a1aa' },
+  { type: 'change_stage',        label: 'Mudar situação',        description: 'Mover o contato no ciclo de vida', icon: <GitBranch className="w-3.5 h-3.5" />,     color: '#a1a1aa' },
   { type: 'set_lead_score',      label: 'Definir lead score',    description: 'Atribuir pontuação 0–100',         icon: <Star className="w-3.5 h-3.5" />,          color: '#a1a1aa' },
   { type: 'resolve_conversation',label: 'Resolver conversa',     description: 'Marcar conversa como resolvida',   icon: <CheckCircle className="w-3.5 h-3.5" />,   color: '#a1a1aa' },
   { type: 'send_note',           label: 'Nota interna',          description: 'Adicionar nota à conversa',        icon: <StickyNote className="w-3.5 h-3.5" />,    color: '#a1a1aa' },
@@ -1016,7 +1016,7 @@ function ActionSubForm({
               }}
               className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
             >
-              <option value="">Selecione um estágio…</option>
+              <option value="">Selecione uma situação…</option>
               {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
           </div>

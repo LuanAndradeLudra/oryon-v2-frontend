@@ -8,8 +8,9 @@ import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
-import { dealsApi } from '@/services/api'
+import { dealsApi, contactsApi } from '@/services/api'
 import { getDefaultPipeline, getPipelineStages, getApiErrorMessage, getActivePipelines } from '@/lib/utils'
+import { pipelineKindOf, pipelineNoun } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
 import type { Deal, DealStatus, Pipeline } from '@/types'
 
@@ -46,9 +47,17 @@ interface DealModalProps {
   pipelines: Pipeline[]
   onClose: () => void
   onSaved: () => void
+  /** F8 (SCRUM-873): nome do contato para pré-preencher o título em funil de processo. Omitido = busca `GET /contacts/:id`. */
+  contactName?: string | null
+  /** F9 (SCRUM-874): funil pré-selecionado ("Adicionar ao funil" em funil de venda). */
+  initialPipelineId?: string | null
+  /** F9 (SCRUM-874): conversa de origem — o registro nasce ligado a ela. */
+  originConversationId?: string | null
+  /** F9 (SCRUM-877): `409 open_exists` na criação → o chamador abre o modal de conflito. Sem isto, vira mensagem no formulário. */
+  onConflict?: (info: { openDealId: string; pipelineId: string }) => void
 }
 
-export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSaved }: DealModalProps) {
+export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSaved, contactName, initialPipelineId, originConversationId, onConflict }: DealModalProps) {
   const { products, stages } = useCRMConfig()
   const { vocab } = useTenantVocab()
   const [title, setTitle] = useState('')
@@ -67,6 +76,26 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   const [movePipelineId, setMovePipelineId] = useState('')
   const [moving, setMoving] = useState(false)
   const [moveError, setMoveError] = useState('')
+  // F8 (SCRUM-873): funil de PROCESSO não tem itens/valor e o título é o
+  // contato (decisão (a): o card é o "registro" do contato). O tipo vem do
+  // funil escolhido (create) ou do funil do registro (edit).
+  const effectivePipeline = pipelines.find((p) => p.id === (editDeal?.pipelineId ?? pipelineId)) ?? null
+  const isProcess = pipelineKindOf(effectivePipeline) === 'process'
+  const [resolvedContactName, setResolvedContactName] = useState<string | null>(null)
+  useEffect(() => {
+    if (!open || editDeal || !isProcess) return
+    if (contactName) { setResolvedContactName(contactName); return }
+    let cancelled = false
+    contactsApi.get(contactId)
+      .then((res) => { if (!cancelled) setResolvedContactName(res.data?.displayName ?? null) })
+      .catch(() => { /* sem nome, o usuário digita o título */ })
+    return () => { cancelled = true }
+  }, [open, editDeal, isProcess, contactName, contactId])
+  useEffect(() => {
+    if (open && !editDeal && isProcess && resolvedContactName && !title.trim()) setTitle(resolvedContactName)
+    // `title` fora das deps de propósito: só pré-preenche quando está vazio.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editDeal, isProcess, resolvedContactName])
 
   useEffect(() => {
     if (open) {
@@ -102,11 +131,12 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
   // NewContactDrawer/ImportContactsDrawer).
   useEffect(() => {
     if (open && !editDeal && !pipelineId && pipelines.length > 0) {
-      setPipelineId(getDefaultPipeline(pipelines)?.id ?? '')
+      const preset = initialPipelineId && pipelines.some((p) => p.id === initialPipelineId) ? initialPipelineId : null
+      setPipelineId(preset ?? getDefaultPipeline(pipelines)?.id ?? '')
     }
-  }, [open, editDeal, pipelines, pipelineId])
+  }, [open, editDeal, pipelines, pipelineId, initialPipelineId])
 
-  // "Estágio do funil" — eixo distinto do "Estágio do contato" (ciclo de
+  // "Etapa do funil" — eixo distinto da "Situação do contato" (ciclo de
   // vida, seletor "Mover contato para" abaixo). Reativo à troca de funil: se
   // o estágio selecionado não existe mais no funil atual (trocou de funil,
   // ou é a primeira carga), recai pro 1º estágio não-terminal dele. Só se
@@ -169,7 +199,9 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     }
     setSaving(true)
     try {
-      const lineItems = items.map((it, index) => ({
+      // Funil de processo não tem itens (F8-873) — mesmo que o usuário tenha
+      // trocado de um funil de venda com itens rascunhados.
+      const lineItems = (isProcess ? [] : items).map((it, index) => ({
         id: it.id,
         productId: it.productId,
         variationLabel: it.variationLabel ?? undefined,
@@ -196,6 +228,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           note: note.trim() || undefined,
           lineItems,
           ...(multiPipeline && { pipelineId, stageId: pipelineStageId || undefined }),
+          ...(originConversationId ? { originConversationId } : {}),
         })
         // create não move o estágio do contato — se ganho com estágio, aplica via setStatus.
         if (stageKey) {
@@ -204,6 +237,13 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
       }
       onSaved()
     } catch (e: unknown) {
+      // F9 (SCRUM-877): conflito I1 vira o modal de conflito de quem chamou.
+      const err = e as { response?: { status?: number; data?: { code?: string; openDealId?: string; pipelineId?: string } } }
+      const body = err?.response?.data
+      if (!editDeal && onConflict && err?.response?.status === 409 && body?.code === 'open_exists' && body.openDealId) {
+        onConflict({ openDealId: body.openDealId, pipelineId: body.pipelineId ?? pipelineId })
+        return
+      }
       setError(getApiErrorMessage(e, 'Erro ao salvar.'))
     } finally {
       setSaving(false)
@@ -230,7 +270,9 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
     <Modal
       open={open}
       onClose={onClose}
-      title={editDeal ? `Editar ${vocab.deal.toLowerCase()}` : `Novo ${vocab.deal.toLowerCase()}`}
+      title={editDeal
+        ? `Editar ${isProcess ? pipelineNoun(effectivePipeline) : vocab.deal.toLowerCase()}`
+        : `Novo ${isProcess ? pipelineNoun(effectivePipeline) : vocab.deal.toLowerCase()}`}
       className="max-w-2xl"
     >
       <div className="flex flex-col gap-4">
@@ -312,7 +354,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                   ))}
                 </Select>
               </FormField>
-              {/* Estágio do FUNIL — eixo distinto do "Estágio do contato"
+              {/* Etapa do FUNIL — eixo distinto da "Situação do contato"
                   abaixo (ciclo de vida). Reativo ao funil escolhido acima. */}
               {multiPipeline && (
               <FormField label="Estágio do funil" hint="Coluna do board em que o negócio nasce.">
@@ -329,7 +371,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             </>
           )}
           {status === 'won' && (
-            <FormField label="Estágio do contato (opcional)" hint="Ao ganhar, move o contato a este estágio de ciclo de vida.">
+            <FormField label="Situação do contato (opcional)" hint="Ao ganhar, move o contato para esta situação do ciclo de vida.">
               <Select value={moveStageKey} onChange={(e) => setMoveStageKey(e.target.value)}>
                 <option value="">— não mover —</option>
                 {stages.map((s) => (
@@ -342,6 +384,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           )}
         </div>
 
+        {!isProcess && (
         <FormField
           label="Itens"
           error={error === 'Selecione um produto em cada item (ou remova a linha).' ? error : undefined}
@@ -419,15 +462,22 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             {items.length === 0 && <p className="text-xs text-surface-600">Nenhum item.</p>}
           </div>
         </FormField>
+        )}
 
         <FormField label="Observação (opcional)">
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Detalhes da proposta" />
         </FormField>
 
         <div className="flex items-center justify-between border-t border-surface-800 pt-3">
+          {isProcess ? (
+            <span className="text-xs text-surface-500" data-testid="deal-modal-process-note">
+              {`Registro de processo — sem valor nem produtos.`}
+            </span>
+          ) : (
           <span className="text-sm font-semibold text-surface-100">
             Total: <span className="tabular-nums">{formatBRL(total)}</span>
           </span>
+          )}
           <div className="flex gap-2">
             <button
               onClick={onClose}

@@ -8,7 +8,7 @@ import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import type { Pipeline } from '@/types'
 
 const TABS = [
-  { id: 'stages', label: 'Estágios do contato', icon: Columns },
+  { id: 'stages', label: 'Situação do contato', icon: Columns },
   { id: 'pipelineStages', label: 'Estágios do funil', icon: Workflow },
   { id: 'fields', label: 'Campos', icon: SlidersHorizontal },
 ] as const
@@ -26,7 +26,7 @@ interface CRMConfigDrawerProps {
   onPipelinesChanged: () => void
   /** Aba a abrir (SCRUM-293 — redirect "criar funil → configurar estágios"
    *  abre já na aba "Estágios do funil"). Omitido = comportamento normal
-   *  ("Estágios do contato"). */
+   *  ("Situação do contato"). */
   initialTab?: Tab
   /** Repassado pra `PipelineStagesManager` — pré-seleciona o funil recém-criado. */
   initialPipelineId?: string | null
@@ -50,7 +50,7 @@ export function CRMConfigDrawer({
 
   // Gate de múltiplos funis (SCRUM-498): sem o flag, a aba "Estágios do
   // funil" não existe — e se alguém pedir por `initialTab`, cai em
-  // "Estágios do contato" (derivado, sem efeito).
+  // "Situação do contato" (derivado, sem efeito).
   const multiPipeline = useMultiPipeline()
   const visibleTabs = multiPipeline ? TABS : TABS.filter((t) => t.id !== 'pipelineStages')
   const currentTab: Tab = !multiPipeline && activeTab === 'pipelineStages' ? 'stages' : activeTab

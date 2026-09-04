@@ -181,7 +181,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
                 onContactUpdate?.(updated)
               }}
             />}
-            {activeTab === 'deals'         && <DealsTab contactId={contactId} />}
+            {activeTab === 'deals'         && <DealsTab contactId={contactId} contactName={contact.displayName} />}
             {activeTab === 'history'       && <HistoryTab contactId={contactId} />}
             {activeTab === 'conversations' && <ConversationsTab contactId={contactId} />}
             {activeTab === 'campaigns'     && <CampaignsTab />}

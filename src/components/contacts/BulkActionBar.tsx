@@ -166,7 +166,7 @@ export function BulkActionBar({
             )}
           >
             {stages.length === 0 && (
-              <div className="px-3 py-2 text-xs text-surface-500">Nenhum estágio configurado</div>
+              <div className="px-3 py-2 text-xs text-surface-500">Nenhuma situação configurada</div>
             )}
             {stages.map((stage) => (
               <button

@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useState, useEffect, Component, Suspense } from 'react'
+import { useEffect, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
 import type { ReactNode, ErrorInfo } from 'react'
 import * as Sentry from '@sentry/react'
@@ -51,15 +51,13 @@ import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
-import { SetupWizard }        from '@/components/onboarding/SetupWizard'
-import { useIsMobile }        from '@/hooks/useIsMobile'
-import { Monitor }            from 'lucide-react'
 
 // Lazy-loaded pages — only downloaded when the route is visited (lazyRoute = reload on stale chunk after deploy)
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
 const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const SetupPage         = lazyRoute(() => import('@/pages/SetupPage').then(m => ({ default: m.SetupPage })))
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const HomePage          = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
 const WelcomePage       = lazyRoute(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })))
@@ -114,45 +112,18 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
 function OnboardingGate({ children }: { children: ReactNode }) {
   const { organizationConfigured, user } = useAuth()
-  const [dismissed, setDismissed] = useState(false)
-  const isMobile = useIsMobile()
   // Oryon staff (super_admin) must always reach the app shell — they may
   // be inspecting a half-configured tenant precisely to debug what the
   // wizard left undone. Without this bypass, super_admin gets trapped in
-  // the SetupWizard for any tenant whose onboarding isn't finished.
+  // the setup flow for any tenant whose onboarding isn't finished.
   if (isOryonStaff(user?.role)) {
     return <>{children}</>
   }
-  if (!organizationConfigured && !dismissed) {
-    // SetupWizard tem multi-step de configuracao inicial (dados da empresa,
-    // numero WhatsApp, primeiros agentes). Em mobile e ilegivel — exigimos
-    // desktop para o onboarding.
-    if (isMobile) {
-      return (
-        <div className="h-screen w-screen bg-black flex flex-col items-center justify-center px-6 text-center gap-4">
-          <div
-            className="w-16 h-16 rounded-2xl color-chip border flex items-center justify-center"
-            style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
-          >
-            <Monitor className="w-8 h-8" />
-          </div>
-          <h1 className="text-lg font-semibold text-surface-50">Configuração inicial requer desktop</h1>
-          <p className="text-sm text-surface-400 leading-relaxed max-w-xs">
-            O assistente de configuração tem múltiplos passos com formulários e
-            integrações. Abra o Oryon no seu computador para configurar sua
-            empresa. Depois disso, o app mobile fica liberado para uso operacional.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigator.clipboard.writeText(window.location.origin).catch(() => {})}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-900 border border-surface-700 text-sm text-surface-200 hover:bg-surface-800 transition-colors"
-          >
-            Copiar link do Oryon
-          </button>
-        </div>
-      )
-    }
-    return <SetupWizard onComplete={() => setDismissed(true)} />
+  // F13-899: o wizard virou rota (`/setup`) — retomável e linkável. O gate só
+  // redireciona; o bloqueio de mobile e o provider de linha WhatsApp moram na
+  // página. `/setup` fica FORA deste gate, senão o redirect entraria em loop.
+  if (!organizationConfigured) {
+    return <Navigate to="/setup" replace />
   }
   return <>{children}</>
 }
@@ -218,6 +189,12 @@ function AnimatedRoutes() {
           {/* Password setup gate */}
           <Route path="/set-password" element={
             <RequireAuth><SetPasswordPage /></RequireAuth>
+          } />
+
+          {/* Primeiro uso — protegido por login, mas FORA do OnboardingGate
+              (é o destino dele) e fora do AppShell (é tela cheia). */}
+          <Route path="/setup" element={
+            <RequireAuth><SetupPage /></RequireAuth>
           } />
 
           {/* Protected */}

@@ -6,10 +6,9 @@ import {
   Users, ClipboardPaste, FolderOpen, Sparkles,
 } from 'lucide-react'
 import { appLogger } from '@/services/appLogger'
-import { dealsApi } from '@/services/api'
 import { Banner } from '@/components/ui/Banner'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
-import { cn, getDefaultPipeline, getPipelineStages, getActivePipelines } from '@/lib/utils'
+import { cn, getPipelineStages, getActivePipelines } from '@/lib/utils'
 import type { Contact, ContactSource, Pipeline } from '@/types'
 
 // Anthropic SDK removed — AI-powered import mapping will use Agent Server in the future
@@ -38,7 +37,7 @@ const TARGET_FIELDS: FieldDef[] = [
   { key: 'company',     label: 'Empresa' },
   { key: 'jobTitle',    label: 'Cargo' },
   { key: 'source',      label: 'Origem' },
-  { key: 'stage',       label: 'Estágio do contato' },
+  { key: 'stage',       label: 'Situação do contato' },
   { key: '__skip__',    label: '— Ignorar coluna —' },
 ]
 
@@ -48,7 +47,7 @@ type ParsedRow  = Record<string, string>
 interface ImportContactDrawerProps {
   open: boolean
   onClose: () => void
-  onCreate: (dto: Partial<Contact> & { displayName: string; waId: string }) => Promise<Contact>
+  onCreate: (dto: Partial<Contact> & { displayName: string; waId: string; pipelineId?: string; pipelineStageId?: string }) => Promise<Contact>
   onDone?: (count: number) => void
   /** Funis de negócio do tenant — todo contato importado nasce com um negócio
    *  neste funil (mesma regra do "Novo Lead" manual, spec 2026-07-09). */
@@ -333,14 +332,16 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
   // tenant) — mesma regra do drawer de Novo Lead. Reage a `pipelines`
   // chegando depois do open para não travar em '' (mesma corrida corrigida
   // em NewContactDrawer).
+  // F9 (SCRUM-878): funil de destino é OPCIONAL — default = nenhum; só
+  // pré-seleciona quando o chamador está dentro de um funil.
   useEffect(() => {
-    if (open && !pipelineId && pipelines.length > 0) {
-      setPipelineId(defaultPipelineId ?? getDefaultPipeline(pipelines)?.id ?? '')
+    if (open && !pipelineId && defaultPipelineId && pipelines.some((p) => p.id === defaultPipelineId)) {
+      setPipelineId(defaultPipelineId)
     }
   }, [open, pipelines, defaultPipelineId, pipelineId])
 
   // "Estágio do funil" — aplica-se a TODOS os negócios criados nesta
-  // importação (eixo distinto da coluna "Estágio do contato" mapeada por
+  // importação (eixo distinto da coluna "Situação do contato" mapeada por
   // linha, ver TARGET_FIELDS). Reativo à troca de funil: se o estágio
   // selecionado não existe mais no funil atual, recai pro 1º não-terminal.
   useEffect(() => {
@@ -465,25 +466,11 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
           ...(get(row, 'source')   && { source:   get(row, 'source') as ContactSource }),
           ...(get(row, 'stage')    && { stage:    get(row, 'stage') }),
           source: (get(row, 'source') as ContactSource) || 'import' as ContactSource,
+          // F9 (SCRUM-878): com funil, o backend faz o `enter(origin=import)`
+          // na mesma transação do contato (F2-836) — sem `POST /deals` daqui.
+          ...(multiPipeline && pipelineId && { pipelineId, ...(pipelineStageId && { pipelineStageId }) }),
         }
-        const created = await onCreate(dto)
-        // Todo contato importado nasce com um negócio no funil escolhido —
-        // mesma regra do "Novo Lead" manual (spec 2026-07-09). Best-effort:
-        // o contato já foi criado, então uma falha aqui não desfaz a linha,
-        // só entra na lista de falhas parciais mostrada no fim. Sem o gate
-        // de funis (SCRUM-498) não há negócio automático.
-        if (multiPipeline && pipelineId) {
-          try {
-            await dealsApi.create({
-              contactId: created.id,
-              title: created.displayName,
-              pipelineId,
-              stageId: pipelineStageId || undefined,
-            })
-          } catch {
-            errs.push(`Linha ${rows.indexOf(row) + 2}: contato criado, mas negócio no funil falhou`)
-          }
-        }
+        await onCreate(dto)
         done++
         setImportedCount(done)
         setProgress(Math.round((done / validRows.length) * 100))
@@ -874,7 +861,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   {/* Funil + estágio de destino — todo contato importado nasce
                       com um negócio neste funil (mesma regra do "Novo Lead"
                       manual). "Estágio do funil" é a coluna do board em que o
-                      negócio nasce; eixo distinto do "Estágio do contato"
+                      negócio nasce; eixo distinto da "Situação do contato"
                       mapeado por coluna acima (ciclo de vida).
                       Só com o gate de múltiplos funis (SCRUM-498). */}
                   {multiPipeline && (
@@ -882,15 +869,16 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1">
                       <label className="text-xs font-semibold text-surface-400 mb-1.5 block">
-                        Funil de destino <span className="text-red-400">*</span>
+                        Funil de destino <span className="text-surface-500 font-normal">(opcional)</span>
                       </label>
                       <div className="relative w-full">
                         <select
                           value={pipelineId}
                           onChange={(e) => setPipelineId(e.target.value)}
                           className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
+                          data-testid="import-pipeline"
                         >
-                          {getActivePipelines(pipelines).length === 0 && <option value="">Nenhum funil disponível</option>}
+                          <option value="">— nenhum —</option>
                           {getActivePipelines(pipelines).map((p) => (
                             <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
                           ))}
@@ -910,7 +898,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg py-1.5 pl-2.5 pr-7 text-xs text-surface-100 focus:outline-none focus:ring-1 focus:ring-brand-500/40 focus:border-brand-500/60 transition-colors"
                         >
                           {getPipelineStages(pipelines, pipelineId).length === 0 && (
-                            <option value="">Nenhum estágio disponível</option>
+                            <option value="">Nenhuma situação disponível</option>
                           )}
                           {getPipelineStages(pipelines, pipelineId).map((s) => (
                             <option key={s.id} value={s.id}>{s.label}</option>
@@ -921,7 +909,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                     </div>
                   </div>
                   <p className="text-[11px] text-surface-600 -mt-1">
-                    Cada contato importado nasce com um negócio aberto neste funil e estágio.
+                    Com funil, cada contato importado já entra na etapa escolhida — na mesma operação. Sem funil, só o contato é criado.
                   </p>
                   </>
                   )}
@@ -1071,8 +1059,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                 ) : (
                   <button
                     onClick={handleImport}
-                    disabled={validCount === 0 || !pipelineId}
-                    title={!pipelineId ? 'Selecione um funil de destino' : undefined}
+                    disabled={validCount === 0}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-50 transition-all"
                   >
                     <Upload className="w-3.5 h-3.5" />
