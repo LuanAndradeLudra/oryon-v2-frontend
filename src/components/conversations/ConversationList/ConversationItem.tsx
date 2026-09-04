@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
-import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
 import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
@@ -106,11 +105,19 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
 
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
+  // Densidade da lista (achado do relatório): o telefone completo tinha
+  // linha própria, sempre visível, para um dado que só importa em raros
+  // casos de desambiguação — agora só no title (hover/foco), sem custo de
+  // espaço na leitura rápida. A informação continua acessível, só não
+  // compete mais pela atenção em toda conversa da lista.
+  const hoverTitle = contact.waId ? `${contact.displayName} · ${contact.waId}` : contact.displayName
+
   return (
     <button
       onClick={() => onSelect(conversation)}
       onContextMenu={onContextMenu}
       data-conv-id={conversation.id}
+      title={hoverTitle}
       className={cn(
         'conv-item relative w-full flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-left transition-all duration-100 rounded-xl',
         isActive
@@ -119,13 +126,12 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
         offFilter && 'opacity-70',
       )}
     >
-      {/* Avatar with WhatsApp badge */}
+      {/* Avatar — sem o badge de canal do WhatsApp: toda conversa desta
+          lista É WhatsApp (whatsappNumber é campo obrigatório em Conversation,
+          e `channel` nunca é lido em nenhum lugar da UI hoje) — o selo
+          repetia a mesma informação em 100% das linhas, sem distinguir nada. */}
       <div className="relative mt-0.5 flex-shrink-0">
         <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
-        <WhatsAppIcon
-          size={14}
-          className="absolute -bottom-0.5 -right-0.5 rounded-full ring-2 ring-surface-900"
-        />
       </div>
 
       {/* Content */}
@@ -153,12 +159,11 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           </div>
         </div>
 
-        {/* Row 2: WhatsApp number */}
-        <div className="flex items-center gap-1 mb-0.5">
-          <span className="text-[10px] text-surface-500 truncate">{contact.waId}</span>
-        </div>
+        {/* O número do WhatsApp saiu da linha própria fixa (era a "Row 2") —
+            fica disponível via `title` no botão inteiro (hover/foco), não
+            mais sempre visível. Ver reasoning acima e no PR/commit. */}
 
-        {/* Row 3: message preview + unread badge */}
+        {/* Row 2 (era Row 3): message preview + unread badge */}
         <div className="flex items-center justify-between gap-2">
           <div className={cn(
             'flex items-center gap-1 min-w-0 text-xs',
@@ -176,7 +181,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           )}
         </div>
 
-        {/* Row 4: categorization (left, pills) + state signals (right, ghost).
+        {/* Row 3 (era Row 4): categorization (left, pills) + state signals (right, ghost).
             Two semantic groups on one line — pills for attributes that
             classify the conversation, ghost icons+text for live state. */}
         <div className="flex items-center gap-1.5 mt-1.5">
