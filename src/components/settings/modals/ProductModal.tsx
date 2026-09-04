@@ -5,6 +5,7 @@ import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { MoneyInput } from '@/components/ui/MoneyInput'
+import { Button } from '@/components/ui/Button'
 import type { Product, ProductPriceVariation } from '@/types'
 
 interface ProductModalProps {
@@ -249,19 +250,12 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
         </div>
 
         <div className="flex gap-2 justify-end pt-1">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-all"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || hasLimitError}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleSave} disabled={saving || hasLimitError}>
             {saving ? 'Salvando...' : editProduct ? 'Salvar alterações' : 'Criar produto'}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

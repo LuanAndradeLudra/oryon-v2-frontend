@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { ColorPicker } from '@/components/ui/ColorPicker'
+import { Button } from '@/components/ui/Button'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { getApiErrorMessage } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -137,19 +138,12 @@ export function PipelineStageModal({ open, onClose, onSave, editStage, terminalL
         )}
 
         <div className="flex gap-2 justify-end pt-1">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-all"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Salvando...' : editStage ? 'Salvar alterações' : 'Criar estágio'}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>
