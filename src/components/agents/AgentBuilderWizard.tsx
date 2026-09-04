@@ -32,6 +32,7 @@ import { HandoffRulesPanel } from '@/components/agents/HandoffRuleBuilder'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
+import { WizardProgress } from '@/components/ui/WizardProgress'
 import { Banner } from '@/components/ui/Banner'
 import { AGENT_ICONS, AgentIcon } from '@/components/agents/AgentIcons'
 import { STEP_TEACHINGS } from './agentBuilderTeachings'
@@ -88,7 +89,7 @@ const DEFAULT_DATA: WizardData = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STEP_LABELS = ['Identidade', 'Personalidade', 'Escopo', 'Negócio', 'Implantação', 'Base de Conhecimento', 'Gerar Prompt', 'Revisão']
+const STEP_LABELS = ['Identidade', 'Personalidade', 'Escopo', 'Negócio', 'Passar para humano', 'Base de Conhecimento', 'Gerar Prompt', 'Revisão']
 
 
 const SECTORS = [
@@ -828,7 +829,7 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
   )
 }
 
-// ─── Step 5: Implantação ──────────────────────────────────────────────────────
+// ─── Step 5: Passar para humano ───────────────────────────────────────────────
 
 function Step5({ data, setData }: { data: WizardData; setData: React.Dispatch<React.SetStateAction<WizardData>> }) {
   const businessContext: HandoffBusinessContext = {
@@ -1788,6 +1789,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
   const [publishing, setPublishing] = useState(false)
   const [publishError, setPublishError] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
   const sessionIdRef    = useRef(`wiz-agent-${Date.now()}`)
   const completedRef    = useRef(false)
 
@@ -1879,6 +1881,19 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
       step_number: step, step_name: STEP_LABELS[step - 1], action: 'back',
     })
     setStep(s => Math.max(s - 1, 1))
+  }
+
+  // Any real user input (name/objective/sector) or advancement past step 1
+  // counts as progress worth confirming before discarding.
+  const isDirty = step > 1
+    || data.name.trim() !== ''
+    || data.objective.trim() !== ''
+    || data.sector !== ''
+
+  const handleCloseClick = () => {
+    if (publishing) return
+    if (isDirty) { setCloseConfirmOpen(true); return }
+    onClose()
   }
 
   const handlePublish = async (status: 'active' | 'draft') => {
@@ -2022,7 +2037,6 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
 
   const teaching = STEP_TEACHINGS[step - 1]
   const TeachingIcon = teaching.icon
-  const progressPct = Math.round(((step - 1) / (STEP_LABELS.length - 1)) * 100)
 
   return (
     <motion.div
@@ -2051,7 +2065,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   <h1 className="text-sm font-bold text-surface-50 truncate">Criar Agente IA</h1>
                 </div>
                 <button
-                  onClick={!publishing ? onClose : undefined}
+                  onClick={handleCloseClick}
                   disabled={publishing}
                   aria-label="Fechar"
                   className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition disabled:opacity-40"
@@ -2071,8 +2085,15 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                     transition={{ duration: 0.3, ease: 'easeOut' }}
                   >
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-9 h-9 rounded-lg bg-brand-600/20 border border-brand-500/30 flex items-center justify-center flex-shrink-0">
-                        <TeachingIcon className="w-4.5 h-4.5 text-brand-400" />
+                      <div
+                        className="w-9 h-9 rounded-lg border flex items-center justify-center flex-shrink-0"
+                        style={{
+                          color: teaching.accent,
+                          backgroundColor: `color-mix(in srgb, ${teaching.accent} 18%, transparent)`,
+                          borderColor: `color-mix(in srgb, ${teaching.accent} 32%, transparent)`,
+                        }}
+                      >
+                        <TeachingIcon className="w-4.5 h-4.5" />
                       </div>
                       <h2 className="text-base font-bold text-surface-100 leading-tight">{teaching.title}</h2>
                     </div>
@@ -2175,80 +2196,12 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
             {/* ── RIGHT FORM PANEL ─────────────────────────────────────── */}
             <div className="relative z-10 flex-1 flex flex-col">
               {/* Sticky top: progress bar + horizontal stepper */}
-              <div className="flex-shrink-0 bg-surface-950/85 backdrop-blur-md border-b border-surface-800/40">
-                {/* Progress bar */}
-                <div className="px-10 pt-5 pb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">
-                      Etapa {step} de {STEP_LABELS.length} — {STEP_LABELS[step - 1]}
-                    </p>
-                    <p className="text-[10px] font-medium text-surface-500">
-                      {progressPct}% concluído
-                    </p>
-                  </div>
-                  <div className="h-1 bg-surface-800/60 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={false}
-                      animate={{ width: `${progressPct}%` }}
-                      transition={{ duration: 0.5, ease: 'easeOut' }}
-                      className="h-full bg-gradient-to-r from-brand-600 to-brand-400"
-                    />
-                  </div>
-                </div>
-
-                {/* Horizontal step indicator */}
-                <div className="px-10 pb-5 pt-2">
-                  <div className="flex items-start">
-                    {STEP_LABELS.map((label, i) => {
-                      const s = i + 1
-                      const isLast = s === STEP_LABELS.length
-                      const done = s < step
-                      const active = s === step
-                      return (
-                        <div key={s} className={cn('flex items-start', !isLast && 'flex-1')}>
-                          <button
-                            type="button"
-                            onClick={() => { if (done) { setValidationError(null); setStep(s) } }}
-                            disabled={!done}
-                            className={cn(
-                              'flex flex-col items-center gap-1.5 w-[88px] flex-shrink-0',
-                              done && 'cursor-pointer group',
-                              !done && 'cursor-default',
-                            )}
-                          >
-                            <div className={cn(
-                              'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold border-2 transition-all duration-300',
-                              done && 'bg-brand-600 border-brand-600 text-surface-950 group-hover:scale-110',
-                              active && 'bg-brand-600/15 border-brand-500 text-brand-400',
-                              !done && !active && 'bg-surface-900 border-surface-700 text-surface-600',
-                            )}>
-                              {done ? <Check className="w-3.5 h-3.5" /> : s}
-                            </div>
-                            <span className={cn(
-                              'text-[10px] font-medium text-center leading-tight max-w-full transition-colors duration-300',
-                              active && 'text-surface-100',
-                              done && !active && 'text-surface-500',
-                              !done && !active && 'text-surface-600',
-                            )}>{label}</span>
-                            {active && (
-                              <motion.div
-                                layoutId="active-step-dot"
-                                className="w-1 h-1 rounded-full bg-brand-500"
-                              />
-                            )}
-                          </button>
-                          {!isLast && (
-                            <div className={cn(
-                              'h-px flex-1 mt-3.5 mx-1 transition-colors duration-300',
-                              done ? 'bg-brand-600/60' : 'bg-surface-800',
-                            )} />
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
+              <WizardProgress
+                steps={STEP_LABELS}
+                currentStep={step}
+                onStepClick={s => { setValidationError(null); setStep(s) }}
+                className="flex-shrink-0 bg-surface-950/85 backdrop-blur-md border-b border-surface-800/40"
+              />
 
               {/* Scrollable form content */}
               <div className="flex-1 overflow-y-auto">
@@ -2261,7 +2214,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                       exit={{ opacity: 0, x: -24 }}
                       transition={{ duration: 0.25, ease: 'easeOut' }}
                     >
-                      <div className="bg-surface-900/70 backdrop-blur-sm border border-surface-800 rounded-2xl p-6 shadow-xl">
+                      <div className="bg-surface-900/70 backdrop-blur-sm overlay-frame border rounded-2xl p-6">
                         {step === 1 && <Step1 data={data} setData={setData} />}
                         {step === 2 && <Step2 data={data} setData={setData} />}
                         {step === 3 && <Step3 data={data} setData={setData} />}
@@ -2277,6 +2230,16 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
               </div>
             </div>
           </div>
+
+      <ConfirmModal
+        open={closeConfirmOpen}
+        onClose={() => setCloseConfirmOpen(false)}
+        onConfirm={() => { setCloseConfirmOpen(false); onClose() }}
+        title="Descartar agente em criação?"
+        description={`Você está na etapa ${step} de ${STEP_LABELS.length}. Ao fechar agora, todo o progresso feito neste agente será perdido.`}
+        confirmLabel="Descartar"
+        danger
+      />
     </motion.div>
   )
 }

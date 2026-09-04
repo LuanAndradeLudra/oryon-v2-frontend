@@ -14,7 +14,7 @@ import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import {
-  loadHub, saveHub, syncBrainToRag, DEFAULT_HUB,
+  loadHubAsync, saveHub, syncBrainToRag, DEFAULT_HUB,
   type CompanyHubData, type BrandFile,
 } from '@/services/companyContextService'
 import { extractBrandFile } from '@/services/agentsApi'
@@ -364,11 +364,20 @@ export function CompanyBrain() {
   const { user } = useAuth()
   const { toast, toasts, dismiss } = useToast()
   const [form, setForm] = useState<CompanyHubData>({ ...DEFAULT_HUB })
+  const [fetching, setFetching] = useState(true)
   const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
-    if (user?.tenantId) setForm(loadHub(user.tenantId))
+    if (!user?.tenantId) { setFetching(false); return }
+    let cancelled = false
+    setFetching(true)
+    loadHubAsync(user.tenantId).then(hub => {
+      if (cancelled) return
+      setForm(hub)
+      setFetching(false)
+    })
+    return () => { cancelled = true }
   }, [user?.tenantId])
 
   const patch = (partial: Partial<CompanyHubData>) =>
@@ -568,7 +577,7 @@ export function CompanyBrain() {
         >
           Sincronizar com IA
         </Button>
-        <Button onClick={save} loading={loading}>Salvar contexto</Button>
+        <Button onClick={save} loading={loading} disabled={fetching}>Salvar contexto</Button>
       </div>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
