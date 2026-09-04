@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Button } from './Button'
+import { Banner, type BannerVariant } from './Banner'
 
 interface ModalProps {
   open: boolean
@@ -135,23 +136,56 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
   )
 }
 
+/**
+ * Alcance real da ação — "QUANTO/QUEM" ela afeta, antes de confirmar.
+ * Achado de várias revisões: cada tela que precisava disso escrevia o
+ * texto na mão dentro de `description`, sem nenhuma estrutura nem
+ * destaque visual — confirmar "excluir 12 contatos" tinha a MESMA
+ * aparência de confirmar "excluir 1 contato". `count`, quando fizer
+ * sentido ter um número em destaque, fica separado de `label` (que
+ * continua sendo a frase inteira, com ou sem o número já embutido — os
+ * dois usos são válidos, ver exemplos no componente).
+ */
+export interface ConfirmModalImpact {
+  /** Frase do alcance — ex: "3 contatos selecionados" ou "Template será enviado para João Silva". */
+  label: string
+  /** Opcional: número pra destacar separado do texto (ex.: count=12, label="contatos serão excluídos permanentemente"). */
+  count?: number
+  /** neutral = informativo; warning/danger = ação sensível ou irreversível. Default: 'neutral'. */
+  tone?: 'neutral' | 'warning' | 'danger'
+}
+
 interface ConfirmModalProps {
   open: boolean
   onClose: () => void
   onConfirm: () => void
   title: string
   description: string
+  /** Alcance real da ação, renderizado como bloco destacado acima da descrição — ver `ConfirmModalImpact`. */
+  impact?: ConfirmModalImpact
   confirmLabel?: string
   danger?: boolean
   loading?: boolean
 }
 
 export function ConfirmModal({
-  open, onClose, onConfirm, title, description,
+  open, onClose, onConfirm, title, description, impact,
   confirmLabel = 'Confirmar', danger = false, loading = false,
 }: ConfirmModalProps) {
   return (
     <Modal open={open} onClose={onClose} title={title} className="max-w-sm">
+      {impact && (
+        <Banner variant={(impact.tone ?? 'neutral') as BannerVariant} className="mb-4">
+          <p className="leading-snug">
+            {typeof impact.count === 'number' && (
+              <span className="font-display text-base font-bold mr-1.5 tabular-nums">
+                {impact.count}
+              </span>
+            )}
+            {impact.label}
+          </p>
+        </Banner>
+      )}
       <p className="text-sm text-surface-400 mb-5">{description}</p>
       <div className="flex gap-2 justify-end">
         <Button variant="ghost" onClick={onClose}>Cancelar</Button>
