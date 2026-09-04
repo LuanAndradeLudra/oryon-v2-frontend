@@ -85,7 +85,7 @@ function KeywordInput({ onAdd }: { onAdd: (kw: string) => void }) {
         placeholder="Digite e pressione Enter…"
         className="flex-1 bg-surface-700 border border-surface-600 rounded-lg px-3 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-600"
       />
-      <button onClick={submit} className="px-3 py-1.5 bg-surface-700 border border-surface-600 rounded-lg text-xs text-surface-300 hover:text-surface-100 transition-colors">
+      <button onClick={submit} title="Adicionar palavra-chave" aria-label="Adicionar palavra-chave" className="px-3 py-1.5 bg-surface-700 border border-surface-600 rounded-lg text-xs text-surface-300 hover:text-surface-100 transition-colors">
         <Plus className="w-3.5 h-3.5" />
       </button>
     </div>
@@ -537,7 +537,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                       {t.keywords.map((kw, i) => (
                         <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-700 border border-surface-600 rounded-full text-xs text-surface-200">
                           {kw}
-                          <button onClick={() => onChange({ trigger: { ...t, keywords: t.keywords.filter((_, j) => j !== i) } })} className="text-surface-500 hover:text-danger ml-0.5">×</button>
+                          <button onClick={() => onChange({ trigger: { ...t, keywords: t.keywords.filter((_, j) => j !== i) } })} title={`Remover "${kw}"`} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-500 hover:text-danger ml-0.5">×</button>
                         </span>
                       ))}
                       {t.keywords.length === 0 && <span className="text-2xs text-surface-600">Nenhuma palavra adicionada</span>}
@@ -777,7 +777,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
                 >
                   {ops.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
                 </select>
-                <button onClick={() => removeCondition(i)} className="text-surface-600 hover:text-danger transition-colors flex-shrink-0">
+                <button onClick={() => removeCondition(i)} title="Remover condição" aria-label="Remover condição" className="text-surface-600 hover:text-danger transition-colors flex-shrink-0">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -1134,7 +1134,7 @@ export function Step3({ draft, onChange, hideAgentBehavior }: { draft: WizardDra
                     {opt.icon}
                   </div>
                   <span className="text-xs font-semibold text-surface-200 flex-1">{i + 1}. {opt.label}</span>
-                  <button onClick={() => removeAction(i)} className="text-surface-600 hover:text-danger transition-colors">
+                  <button onClick={() => removeAction(i)} title={`Remover ação "${opt.label}"`} aria-label={`Remover ação "${opt.label}"`} className="text-surface-600 hover:text-danger transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
