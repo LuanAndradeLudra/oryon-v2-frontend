@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Loader2, MessageSquare, CheckCircle2 } from 'lucide-react'
 import { templatesApi, contactsApi } from '@/services/api'
+import { ConfirmModal } from '@/components/ui/Modal'
 import type { WhatsAppTemplate, Contact } from '@/types'
 
 interface SendTemplateDrawerProps {
@@ -18,12 +19,14 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [convId, setConvId] = useState<string | null>(null)
+  const [pendingTemplate, setPendingTemplate] = useState<WhatsAppTemplate | null>(null)
 
   useEffect(() => {
     if (!open) return
     setLoading(true)
     setSent(false)
     setConvId(null)
+    setPendingTemplate(null)
     templatesApi.list('APPROVED')
       .then((r) => setTemplates(Array.isArray(r.data) ? r.data : []))
       .catch(() => setTemplates([]))
@@ -40,6 +43,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
       // error
     } finally {
       setSending(false)
+      setPendingTemplate(null)
     }
   }
 
@@ -117,7 +121,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
                   {templates.map((tpl) => (
                     <button
                       key={tpl.id}
-                      onClick={() => handleSend(tpl)}
+                      onClick={() => setPendingTemplate(tpl)}
                       disabled={sending}
                       className="flex items-start gap-3 px-4 py-3 hover:bg-surface-800/50 transition-colors text-left group disabled:opacity-60"
                     >
@@ -149,6 +153,22 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
           </motion.div>
         </>
       )}
+
+      {/* QW-07: envio de template dispara mensagem real pro contato — confirma
+          antes de disparar, mostrando pra quem e qual template. */}
+      <ConfirmModal
+        open={pendingTemplate !== null}
+        onClose={() => { if (!sending) setPendingTemplate(null) }}
+        onConfirm={() => { if (pendingTemplate) void handleSend(pendingTemplate) }}
+        title="Enviar template"
+        description={
+          pendingTemplate
+            ? `Enviar o template "${pendingTemplate.name.replace(/_/g, ' ')}" para ${contact.displayName}?`
+            : ''
+        }
+        confirmLabel="Enviar"
+        loading={sending}
+      />
     </AnimatePresence>
   )
 }
