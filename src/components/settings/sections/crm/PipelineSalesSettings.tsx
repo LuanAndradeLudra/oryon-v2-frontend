@@ -3,7 +3,6 @@ import { FormField } from '@/components/ui/FormField'
 import { Select } from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { pipelinesApi, usersApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
@@ -24,7 +23,7 @@ const LITERAL_RULES = new Set(['creator', 'none'])
  *  negócio quando ninguém escolhe um dono (o "Novo negócio"/A3, o read-model/
  *  B1 e a IA/B6 respeitam este default); sem regra, o negócio nasce sem dono. */
 export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSettingsProps) {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
 
@@ -104,7 +103,6 @@ export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSett
         />
       </div>
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

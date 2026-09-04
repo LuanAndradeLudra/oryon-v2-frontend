@@ -5,7 +5,6 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { CustomFieldModal } from '@/components/settings/modals/CustomFieldModal'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { customFieldsApi } from '@/services/api'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { ContactCustomFieldDef } from '@/types'
@@ -25,7 +24,7 @@ const TYPE_LABELS: Record<ContactCustomFieldDef['type'], string> = {
 
 export function CustomFieldsManager() {
   const { fieldDefs, refetchFieldDefs } = useCRMConfig()
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const [modalOpen, setModalOpen] = useState(false)
   const [editField, setEditField] = useState<ContactCustomFieldDef | null>(null)
   const [deleteField, setDeleteField] = useState<ContactCustomFieldDef | null>(null)
@@ -155,8 +154,6 @@ export function CustomFieldsManager() {
         danger
         loading={deleting}
       />
-
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   )
 }

@@ -7,7 +7,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ConversationList } from '@/components/conversations/ConversationList/ConversationList'
 import { ChatWindow } from '@/components/conversations/ChatWindow/ChatWindow'
 import { ContactPanel } from '@/components/conversations/ContactPanel/ContactPanel'
-import { ToastContainer } from '@/components/ui/Toast'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
 import { useConversations } from '@/hooks/useConversations'
@@ -46,7 +45,7 @@ export function ConversationsPage() {
 
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
   const { contacts: allContacts } = useContacts({}, { withDealsSummary: false })
-  const { toasts, toast, dismiss } = useToast()
+  const { toast } = useToast()
   const isMobile = useIsMobile()
   const { user } = useAuth()
 
@@ -682,8 +681,6 @@ export function ConversationsPage() {
           onClick={() => navigate('/contacts')}
         />
       )}
-
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   )
 }

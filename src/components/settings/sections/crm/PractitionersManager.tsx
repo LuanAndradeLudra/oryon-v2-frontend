@@ -4,7 +4,6 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { Switch } from '@/components/ui/Switch'
 import { PractitionerModal } from '@/components/settings/modals/PractitionerModal'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { practitionersApi } from '@/services/api'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -13,7 +12,7 @@ import type { Practitioner } from '@/types'
 
 export function PractitionersManager() {
   const { practitioners, refetchPractitioners } = useCRMConfig()
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   // Espelha @Roles(ADMIN, BUSINESS_ADMIN) na escrita de /practitioners. GET é aberto (a lista
   // aparece p/ todos), mas criar/editar/excluir/ativar fica só p/ admin.
@@ -198,8 +197,6 @@ export function PractitionersManager() {
         danger
         loading={deleting}
       />
-
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   )
 }

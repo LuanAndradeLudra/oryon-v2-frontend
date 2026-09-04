@@ -11,7 +11,6 @@ import { dealsApi, usersApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { getApiErrorMessage } from '@/lib/utils'
 import { movedByLabel } from '@/lib/contactPipelines'
@@ -40,7 +39,7 @@ function statusFromError(err: unknown): 404 | 403 | 'other' {
 
 export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelProps) {
   const { pipelines } = useCRMConfig()
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const [deal, setDeal] = useState<Deal | null>(null)
   const [loadState, setLoadState] = useState<'loading' | 'ok' | 404 | 403 | 'error'>('loading')
   const [history, setHistory] = useState<DealStageHistoryEntry[] | 'loading' | 'error'>('loading')
@@ -271,7 +270,6 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
         onConfirm={handleCloseWithReason}
       />
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

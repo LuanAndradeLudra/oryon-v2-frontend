@@ -14,7 +14,6 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { CreateUserDrawer } from '../drawers/CreateUserDrawer'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
@@ -124,7 +123,7 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
 }
 
 export function AgentManagement() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
@@ -407,7 +406,6 @@ export function AgentManagement() {
         confirmLabel={deactivateTarget?.isActive ? 'Desativar' : 'Reativar'}
         danger={deactivateTarget?.isActive}
       />
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

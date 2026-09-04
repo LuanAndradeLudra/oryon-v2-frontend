@@ -24,7 +24,6 @@ import type { AgentSkillWithTemplate } from '@/types/skills'
 import { Switch } from '@/components/ui/Switch'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { ToastContainer } from '@/components/ui/Toast'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { EditAgentSkillConfigModal } from '@/components/admin/EditAgentSkillConfigModal'
 import { TestAgentSkillModal } from '@/components/admin/TestAgentSkillModal'
@@ -59,7 +58,7 @@ export function SkillsTab({ agentId, tenantId }: Props) {
   const [removing, setRemoving] = useState<AgentSkillWithTemplate | null>(null)
   const [removingPending, setRemovingPending] = useState(false)
   const [testing, setTesting] = useState<AgentSkillWithTemplate | null>(null)
-  const { toasts, toast, dismiss } = useToast()
+  const { toast } = useToast()
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -234,7 +233,6 @@ export function SkillsTab({ agentId, tenantId }: Props) {
         </AnimatePresence>
       </div>
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       {/* Staff-only modals — only mounted when an action is triggered. */}
       {editing && (

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Info } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { pipelinesApi, departmentsApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
@@ -19,7 +18,7 @@ interface PipelineAccessManagerProps {
  *  o conjunto — nunca faz merge — então a tela sempre manda tudo o que está
  *  marcado, nunca só o que mudou. */
 export function PipelineAccessManager({ pipeline, onChanged }: PipelineAccessManagerProps) {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
 
@@ -123,7 +122,6 @@ export function PipelineAccessManager({ pipeline, onChanged }: PipelineAccessMan
         </button>
       )}
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }
