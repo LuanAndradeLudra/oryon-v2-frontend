@@ -146,8 +146,8 @@ export function DealsBoard({
   return (
     <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none flex flex-col">
       {pipeline && stats && kindOption && (
-        <div className="border-b border-surface-800/60 bg-surface-950/40 flex-shrink-0 px-4 py-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-surface-500" data-testid="board-context-strip">
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-surface-800 border border-surface-700 text-surface-300">
+        <div className="border-b border-surface-800/60 bg-surface-950/40 flex-shrink-0 px-4 py-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-surface-500" data-testid="board-context-strip">
+          <span className="inline-flex items-center gap-1 text-3xs font-semibold px-1.5 py-0.5 rounded-full bg-surface-800 border border-surface-700 text-surface-300">
             <kindOption.icon className="w-3 h-3" /> {kindOption.label}
           </span>
           <span>
@@ -221,7 +221,7 @@ export function DealsBoard({
                   <span className="text-xs font-semibold truncate" style={{ color: stage.color }}>{stage.label}</span>
                   {stage.isWon && (
                     <span
-                      className="text-[10px] px-1.5 py-0.5 rounded border color-chip"
+                      className="text-3xs px-1.5 py-0.5 rounded border color-chip"
                       style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
                     >
                       {terminalLabels.won.toLowerCase()}
@@ -229,7 +229,7 @@ export function DealsBoard({
                   )}
                   {stage.isLost && (
                     <span
-                      className="text-[10px] px-1.5 py-0.5 rounded border color-chip"
+                      className="text-3xs px-1.5 py-0.5 rounded border color-chip"
                       style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
                     >
                       {terminalLabels.lost.toLowerCase()}
@@ -261,7 +261,7 @@ export function DealsBoard({
 
               {/* Total (+ ponderado) da coluna — só em funil de venda (processo não tem valor) */}
               {!isProcess && totalCents > 0 && (
-                <div className="px-1 mb-2 text-[11px] text-surface-500">
+                <div className="px-1 mb-2 text-2xs text-surface-500">
                   {brl(totalCents)}
                   {weightedCents !== totalCents && <span className="text-surface-600"> · {brl(weightedCents)} ponderado</span>}
                 </div>
@@ -321,7 +321,7 @@ export function DealsBoard({
                               setStageMenuDealId(stageMenuDealId === deal.id ? null : deal.id)
                             }}
                             className={cn(
-                              'flex items-center gap-0.5 px-1.5 py-1 rounded-md text-[10px] font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                              'flex items-center gap-0.5 px-1.5 py-1 rounded-md text-3xs font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
                               stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                             )}
                             aria-label={`Mover ${noun} para outra etapa`}
@@ -369,7 +369,7 @@ export function DealsBoard({
                                 className="absolute right-0 top-full mt-1 w-48 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
                               >
                                 <div className="px-3 py-2 border-b border-surface-700">
-                                  <span className="text-[10px] font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
+                                  <span className="text-3xs font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
                                     <ArrowRightLeft className="w-3 h-3" /> Transferir de funil
                                   </span>
                                 </div>
@@ -431,23 +431,23 @@ function ProcessCardBody({ deal, onOpenContact }: { deal: Deal; onOpenContact?: 
         {deal.contact && <Avatar name={name} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />}
         <span className="text-sm font-medium text-surface-100 truncate flex-1">{name}</span>
         {deal.contact && (
-          <span className="flex items-center gap-0.5 text-[10px] text-surface-500 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
+          <span className="flex items-center gap-0.5 text-3xs text-surface-500 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
             ver <ArrowRight className="w-3 h-3" />
           </span>
         )}
       </button>
       <div className="mt-1.5 flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1 text-[11px] text-surface-400 truncate" title={origin.label} data-testid="process-card-origin">
+        <span className="inline-flex items-center gap-1 text-2xs text-surface-400 truncate" title={origin.label} data-testid="process-card-origin">
           <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
         </span>
         {by === 'ia' && (
-          <span className="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
+          <span className="text-3xs text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
         )}
         {by === 'auto' && (
-          <span className="text-[10px] text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
+          <span className="text-3xs text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
         )}
       </div>
-      <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-surface-500">
+      <div className="mt-1 flex items-center justify-between gap-2 text-2xs text-surface-500">
         {time ? (
           <span className="inline-flex items-center gap-1" data-testid="process-card-time"><Clock className="w-3 h-3" /> {time}</span>
         ) : <span />}
@@ -490,14 +490,14 @@ function SalesCardBody({ deal, onOpenContact, users }: { deal: Deal; onOpenConta
         <span className="text-xs text-surface-400">{brl(deal.amountCents ?? 0)}</span>
         <div className="flex items-center gap-1">
           {by === 'ia' && (
-            <span className="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
+            <span className="text-3xs text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
           )}
           {by === 'auto' && (
-            <span className="text-[10px] text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
+            <span className="text-3xs text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
           )}
         </div>
       </div>
-      <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-surface-500">
+      <div className="mt-1.5 flex items-center justify-between gap-2 text-2xs text-surface-500">
         <span className="inline-flex items-center gap-1 truncate" data-testid="sales-card-owner">
           <UserRound className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{ownerLabel}</span>
         </span>
@@ -505,7 +505,7 @@ function SalesCardBody({ deal, onOpenContact, users }: { deal: Deal; onOpenConta
           <CalendarClock className="w-3 h-3" /> {forecast ?? 'sem previsão'}
         </span>
       </div>
-      <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-surface-500">
+      <div className="mt-1 flex items-center justify-between gap-2 text-2xs text-surface-500">
         <span className="inline-flex items-center gap-1 truncate" title={origin.label} data-testid="sales-card-origin">
           <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
         </span>
@@ -519,7 +519,7 @@ function SalesCardBody({ deal, onOpenContact, users }: { deal: Deal; onOpenConta
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onOpenContact?.(deal.contact!.id) }}
-          className="mt-2 flex items-center gap-1.5 text-[11px] text-surface-500 hover:text-brand-400 transition-colors group/contact w-full"
+          className="mt-2 flex items-center gap-1.5 text-2xs text-surface-500 hover:text-brand-400 transition-colors group/contact w-full"
         >
           <Avatar name={deal.contact.displayName} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />
           <span className="truncate flex-1 text-left">{deal.contact.displayName}</span>

@@ -148,7 +148,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
       className="max-w-2xl"
       footer={
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] text-surface-500">
+          <p className="text-2xs text-surface-500">
             Alterações se aplicam às próximas execuções da skill.
           </p>
           <div className="flex items-center gap-2">
@@ -250,7 +250,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
       <section className="mb-6">
         <header className="mb-3">
           <h3 className="text-sm font-semibold text-surface-100">Configuração da integração</h3>
-          <p className="text-[11px] text-surface-500">
+          <p className="text-2xs text-surface-500">
             Campos preenchidos pelo Oryon staff. O cliente final nunca vê esses valores.
           </p>
         </header>
@@ -261,7 +261,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
           emptyHint="Esse template não exige configuração."
         />
         {missingRequired.length > 0 && (
-          <p className="text-[11px] text-status-pending mt-3">
+          <p className="text-2xs text-status-pending mt-3">
             Preencha {missingRequired.map((n) => `"${n}"`).join(', ')} antes de salvar.
           </p>
         )}
@@ -271,7 +271,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
       <section>
         <header className="mb-3">
           <h3 className="text-sm font-semibold text-surface-100">Como a IA vê esta skill (opcional)</h3>
-          <p className="text-[11px] text-surface-500">
+          <p className="text-2xs text-surface-500">
             Sobrescreve o nome/descrição que o modelo enxerga neste agente específico.
             Deixe em branco para usar o default do template.
           </p>
@@ -322,19 +322,19 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
               <History className="w-4 h-4 text-brand-400" />
               Histórico de execuções
               {executions && executions.length > 0 && (
-                <span className="text-[11px] font-normal text-surface-500">
+                <span className="text-2xs font-normal text-surface-500">
                   ({executions.length}{executions.length >= 20 ? '+' : ''})
                 </span>
               )}
             </h3>
-            <span className="text-[11px] text-surface-500 group-open:hidden">
+            <span className="text-2xs text-surface-500 group-open:hidden">
               Clique para ver
             </span>
           </summary>
 
           <div className="mt-3">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] text-surface-500">
+              <p className="text-2xs text-surface-500">
                 Últimas 20 chamadas registradas. Cada linha tem o request_id pra correlacionar com logs do n8n.
               </p>
               <button
@@ -344,7 +344,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
                   void loadExecutions()
                 }}
                 disabled={loadingExecutions}
-                className="text-[11px] text-brand-400 hover:text-brand-300 disabled:opacity-50"
+                className="text-2xs text-brand-400 hover:text-brand-300 disabled:opacity-50"
               >
                 Recarregar
               </button>
@@ -373,7 +373,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-[10px] uppercase tracking-wide text-surface-500 border-b border-surface-800">
+                    <tr className="text-3xs uppercase tracking-wide text-surface-500 border-b border-surface-800">
                       <th className="text-left font-medium py-2 pr-3">Quando</th>
                       <th className="text-left font-medium py-2 pr-3">Status</th>
                       <th className="text-right font-medium py-2 pr-3">Latência</th>
@@ -412,19 +412,19 @@ function ExecutionRow({ row }: { row: SkillExecutionRow }) {
       </td>
       <td className="py-2 pr-3">
         {row.success ? (
-          <span className="inline-flex items-center gap-1 text-[11px] text-status-active">
+          <span className="inline-flex items-center gap-1 text-2xs text-status-active">
             <CheckCircle2 className="w-3 h-3" /> {row.status_code ?? 'ok'}
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-[11px] text-danger">
+          <span className="inline-flex items-center gap-1 text-2xs text-danger">
             <AlertCircle className="w-3 h-3" /> {row.status_code ?? 'erro'}
           </span>
         )}
       </td>
-      <td className="py-2 pr-3 text-right text-surface-400 font-mono text-[11px]">
+      <td className="py-2 pr-3 text-right text-surface-400 font-mono text-2xs">
         {row.duration_ms !== null ? `${row.duration_ms} ms` : '—'}
       </td>
-      <td className="py-2 pr-3 text-surface-400 text-[11px] max-w-[280px]">
+      <td className="py-2 pr-3 text-surface-400 text-2xs max-w-[280px]">
         {row.error_message ? (
           <Tooltip content={row.error_message} side="top">
             <span className="cursor-help text-danger truncate inline-block max-w-full align-bottom">
@@ -441,7 +441,7 @@ function ExecutionRow({ row }: { row: SkillExecutionRow }) {
             <button
               type="button"
               onClick={copyRequestId}
-              className="inline-flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-mono text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+              className="inline-flex items-center gap-1 px-1.5 py-1 rounded text-3xs font-mono text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
             >
               <ExternalLink className="w-3 h-3" />
               {row.request_id.slice(0, 8)}…
