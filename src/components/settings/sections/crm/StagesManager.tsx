@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, GripVertical, Lock, Layers } from 'lucide-react'
+import { Plus, Pencil, Trash2, GripVertical, Milestone, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { StageModal } from '@/components/settings/modals/StageModal'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -13,6 +14,13 @@ import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { TenantStage } from '@/types'
+
+// F-CONF-02: acento exclusivo do eixo "situação do contato" (ciclo de vida),
+// pra não ficar visualmente idêntico ao card de Etapas do Funil ao lado no
+// menu de Configurações — mesmo ícone que já marca este eixo na ficha do
+// contato (ContactPanel, "Mudar situação", SCRUM-929/F-FICHA-08).
+const STAGE_AXIS_ICON = Milestone
+const STAGE_AXIS_COLOR = 'var(--color-accent-cyan)'
 
 export function StagesManager() {
   const { stages, refetchStages, setStagesOptimistic } = useCRMConfig()
@@ -78,14 +86,14 @@ export function StagesManager() {
   )
 
   return (
-    <>
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-surface-100">Situação do contato</h3>
-          <p className="text-xs text-surface-500 mt-0.5">
-            Defina as etapas do ciclo de vida do contato (eixo distinto dos estágios de funil/negócio). Arraste para reordenar.
-          </p>
-        </div>
+    <SettingsSection
+      title="Situação do contato"
+      description="Defina as etapas do ciclo de vida do contato — eixo distinto dos estágios de funil/negócio (aquele fica em Funis)."
+      icon={STAGE_AXIS_ICON}
+      accentColor={STAGE_AXIS_COLOR}
+    >
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-xs text-surface-500">Arraste para reordenar.</p>
         {canManageStages && (
           <Button
             size="sm"
@@ -140,8 +148,11 @@ export function StagesManager() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-surface-100">{stage.label}</span>
                     {stage.isTerminal && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-surface-500 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full">
-                        <Lock className="w-2.5 h-2.5" /> Terminal
+                      <span
+                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border"
+                        style={{ ['--chip']: STAGE_AXIS_COLOR } as React.CSSProperties}
+                      >
+                        <STAGE_AXIS_ICON className="w-2.5 h-2.5" /> Terminal
                       </span>
                     )}
                   </div>
@@ -191,6 +202,6 @@ export function StagesManager() {
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
-    </>
+    </SettingsSection>
   )
 }
