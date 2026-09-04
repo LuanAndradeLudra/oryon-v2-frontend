@@ -172,14 +172,6 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
               onRefresh={() => {
                 contactsApi.get(contactId).then((r) => { setContact(r.data); onContactUpdate?.(r.data) }).catch(() => {})
               }}
-              onStageChanged={(next) => {
-                // StageCard / MoveStageModal already PATCH'd the backend.
-                // Just sync local state so the badge, timeline, and any
-                // header consumer re-render immediately.
-                const updated = { ...contact, stage: next }
-                setContact(updated)
-                onContactUpdate?.(updated)
-              }}
             />}
             {activeTab === 'deals'         && <DealsTab contactId={contactId} contactName={contact.displayName} />}
             {activeTab === 'history'       && <HistoryTab contactId={contactId} />}

@@ -7,7 +7,6 @@ import { ContactInfoCard } from './ContactInfoCard'
 import { CustomFieldsCard } from './CustomFieldsCard'
 import { AttributionCard } from './AttributionCard'
 import { TagsCard } from './TagsCard'
-import { StageCard } from './StageCard'
 import { isFeatureVisible } from '@/config/featureFlags'
 import type { Contact, Tag } from '@/types'
 
@@ -17,13 +16,15 @@ interface OverviewTabProps {
   onAddTag: (tag: Tag) => Promise<void>
   onRemoveTag: (tagId: string) => Promise<void>
   onRefresh?: () => void
-  /** Called after StageCard or MoveStageModal already hit the backend with
-   *  the new stage. We DON'T re-PATCH via onSave — that would be a duplicate
-   *  request — just refresh local state so the badge updates. */
-  onStageChanged?: (next: string) => void
 }
 
-export function OverviewTab({ contact, onSave, onAddTag, onRemoveTag, onRefresh, onStageChanged }: OverviewTabProps) {
+// Fase 1 (plano de UI do drawer, achado do usuário): o `StageCard` full-size
+// saiu daqui — misturava "Estágio" (fase do contato, ciclo de vida) com os
+// funis de negócio de verdade, mostrados logo acima por `DealsSummaryCard`.
+// O componente continua existindo (outros lugares o usam — `ContactDetailPanel`,
+// `ContactsStatsBar`, `ProfileMobileView`, `QualificationCard`, `DealSummary`),
+// só não mais como card irmão do resumo de negócios nesta aba.
+export function OverviewTab({ contact, onSave, onAddTag, onRemoveTag, onRefresh }: OverviewTabProps) {
   // Card "Contexto da IA" gateado por feature flag — escondido enquanto a
   // geração automática está desligada (FF_AUTO_AI_PROFILE_ON_RESOLVE=false
   // no backend). Para reativar, basta flippar `aiContextCard` em
@@ -37,7 +38,6 @@ export function OverviewTab({ contact, onSave, onAddTag, onRemoveTag, onRefresh,
       <EngagementCard contactId={contact.id} />
       <DealsSummaryCard contactId={contact.id} contactName={contact.displayName} />
       <TagsCard contact={contact} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
-      <StageCard contact={contact} onStageChanged={onStageChanged} />
       <QualificationCard contact={contact} onSave={onSave} />
       <ContactInfoCard contact={contact} onSave={onSave} />
       <CustomFieldsCard contact={contact} onSave={onSave} />

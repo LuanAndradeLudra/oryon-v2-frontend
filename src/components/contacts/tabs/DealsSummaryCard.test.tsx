@@ -1,8 +1,11 @@
-// B3 (SCRUM-929) — resumo dos negócios na Visão Geral: "Total"/"Ganho"/"Em
-// aberto" somam só registro de VENDA, a mesma regra do painel de conversas
-// (`ContactPanelDeals`) — processo nunca entra na conta, nem como zero.
+// Fase 1 (plano de UI do drawer, achado do usuário) — o card deixou de
+// esconder funil de PROCESSO: "Total"/"Ganho"/"Em aberto" continuam somando
+// só VENDA (valor em dinheiro não faz sentido pra processo), mas cada
+// registro ABERTO de processo ganha sua própria linha (nome do funil +
+// etapa), e a ação de mover/adicionar (`AddToPipelineMenu`) fica SEMPRE
+// visível — não só no vazio como antes (SCRUM-929).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 const { api, multi, socket } = vi.hoisted(() => ({
   api: { list: vi.fn() },
@@ -13,7 +16,7 @@ vi.mock('@/services/api', () => ({ dealsApi: api }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => multi() }))
-// `useAddToPipeline` (por baixo do botão "Novo negócio" do vazio) chama
+// `useAddToPipeline` (por baixo da ação de mover/adicionar) chama
 // `useDealPanel` — sem `<DealPanelProvider>` no teste, precisa ficar mockado.
 vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal: vi.fn() }) }))
 
@@ -39,8 +42,8 @@ beforeEach(() => {
   api.list.mockReset(); multi.mockReturnValue(true)
 })
 
-describe('DealsSummaryCard — regra de soma (B3 · SCRUM-929)', () => {
-  it('"Total"/"Ganho"/"Em aberto" somam só VENDA — processo (com amountCents) fica de fora', async () => {
+describe('DealsSummaryCard — soma de venda × visibilidade de processo (SCRUM-929 + Fase 1)', () => {
+  it('"Total"/"Ganho"/"Em aberto" somam só VENDA — processo (com amountCents) fica de fora da soma', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO, VENDA_ABERTA, VENDA_GANHA] })
     render(<DealsSummaryCard contactId="c1" contactName="Mariana" />)
     await waitFor(() => expect(screen.getByText('R$ 4.500,00')).toBeInTheDocument()) // Total: 1.500 + 3.000
@@ -48,10 +51,51 @@ describe('DealsSummaryCard — regra de soma (B3 · SCRUM-929)', () => {
     expect(screen.getByText('1 de 2')).toBeInTheDocument() // Em aberto: só VENDA_ABERTA, de 2 vendas
   })
 
-  it('sem nenhum registro de venda, mostra o vazio com ação — não soma processo como zero', async () => {
+  it('funil de PROCESSO aparece com nome + etapa, sem valor — não fica mais invisível', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO, VENDA_ABERTA] })
+    render(<DealsSummaryCard contactId="c1" contactName="Mariana" />)
+    await waitFor(() => expect(screen.getByTestId('deals-summary-process-rows')).toBeInTheDocument())
+    expect(screen.getByText('Suporte')).toBeInTheDocument()
+    expect(screen.getByText('Em atendimento')).toBeInTheDocument() // etapa do PROCESSO (stageId: s2)
+    // Sem valor monetário associado à linha de processo — só a de venda soma.
+    expect(screen.queryByText('R$ 9.000,00')).not.toBeInTheDocument() // amountCents de PROCESSO nunca aparece
+  })
+
+  it('sem NENHUM registro (nem venda nem processo), mostra o vazio genérico — sem "de venda" no texto', async () => {
+    api.list.mockResolvedValue({ data: [] })
+    render(<DealsSummaryCard contactId="c1" contactName="Mariana" />)
+    await waitFor(() => expect(screen.getByText(/Nenhum negócio nos funis ainda/i)).toBeInTheDocument())
+    expect(screen.queryByText('Total')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('deals-summary-process-rows')).not.toBeInTheDocument()
+  })
+
+  it('só com processo (sem nenhuma venda), NÃO mostra o vazio — mostra a linha de processo', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO] })
     render(<DealsSummaryCard contactId="c1" contactName="Mariana" />)
-    await waitFor(() => expect(screen.getByText(/Nenhum negócio de venda ainda/i)).toBeInTheDocument())
-    expect(screen.queryByText('Total')).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Suporte')).toBeInTheDocument())
+    expect(screen.queryByText(/Nenhum negócio/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Total')).not.toBeInTheDocument() // sem venda, sem grade de venda
+  })
+
+  it('a ação de mover/adicionar fica visível mesmo com negócios já abertos (era só no vazio antes)', async () => {
+    api.list.mockResolvedValue({ data: [VENDA_ABERTA, VENDA_GANHA] })
+    render(<DealsSummaryCard contactId="c1" contactName="Mariana" />)
+    await waitFor(() => expect(screen.getByText('R$ 4.500,00')).toBeInTheDocument())
+    // `AddToPipelineMenu` (flag de múltiplos funis ligado) — não é mais um
+    // botão só do estado vazio.
+    expect(screen.getByTestId('add-to-pipeline-trigger')).toBeInTheDocument()
+  })
+
+  it('a ação de mover/adicionar desabilita o funil onde o contato já está, com "já está · etapa"', async () => {
+    api.list.mockResolvedValue({ data: [VENDA_ABERTA] })
+    render(<DealsSummaryCard contactId="c1" contactName="Mariana" />)
+    await waitFor(() => expect(screen.getByTestId('add-to-pipeline-trigger')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('add-to-pipeline-trigger'))
+    const vendasItem = await screen.findByTestId('add-to-pipeline-v')
+    expect(vendasItem).toBeDisabled()
+    expect(vendasItem).toHaveTextContent('já está')
+    expect(vendasItem).toHaveTextContent('Proposta')
+    const suporteItem = screen.getByTestId('add-to-pipeline-p')
+    expect(suporteItem).not.toBeDisabled()
   })
 })
