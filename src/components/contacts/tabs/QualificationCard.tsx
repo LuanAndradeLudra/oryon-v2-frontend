@@ -7,7 +7,8 @@ import { Switch } from '@/components/ui/Switch'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
-import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/useToast'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, ContactStage, ContactIntent, ContactSource } from '@/types'
 import { EmojiText } from '@/lib/emojiText'
 const INTENTS: { value: ContactIntent; label: string }[] = [
@@ -41,6 +42,7 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
   const [editing, setEditing] = useState(false)
   const { stages } = useCRMConfig()
   const { vocab } = useTenantVocab()
+  const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     stage: contact.stage ?? 'lead',
@@ -61,6 +63,7 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
       setEditing(false)
     } catch (err) {
       console.error('[QualificationCard] save failed:', err)
+      toast(getApiErrorMessage(err, 'Não foi possível salvar a qualificação.'), 'error')
     } finally {
       setSaving(false)
     }
