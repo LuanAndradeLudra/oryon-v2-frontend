@@ -1056,7 +1056,7 @@ export async function endTestSession(agentId: string, sessionId: string): Promis
 export async function chatWithAgent(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  meta: { sessionId?: string; agentId?: string } = {},
+  meta: { sessionId?: string; agentId?: string; handoffRules?: HandoffRule[] } = {},
 ): Promise<string> {
   const data = await apiFetch<{ message: string }>('/chat', {
     method: 'POST',
@@ -1065,6 +1065,10 @@ export async function chatWithAgent(
       messages,
       session_id: meta.sessionId ?? null,
       agent_id:   meta.agentId  ?? null,
+      // Opcional — repassado só quando o chamador tem regras de um rascunho
+      // não publicado (A2). Zero mudança de comportamento quando ausente.
+      // Se o agent-server ainda não aceitar este campo, ele é só ignorado.
+      ...(meta.handoffRules ? { handoff_rules: meta.handoffRules } : {}),
     }),
   })
   return data.message

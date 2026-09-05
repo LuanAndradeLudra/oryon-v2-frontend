@@ -162,7 +162,7 @@ vi.mock('@/services/companyContextService', () => ({
   isAgentStale: vi.fn().mockReturnValue(false),
 }))
 
-vi.mock('@/components/agents/AgentBuilderWizard', () => ({
+vi.mock('@/components/agents/studio/AgentBuilderWizard', () => ({
   AgentBuilderWizard: () => null,
 }))
 
