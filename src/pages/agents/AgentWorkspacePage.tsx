@@ -6,7 +6,8 @@ import type { AgentConfig, AgentConfigWithTools, AgentTool } from '@/services/ag
 import { WorkspaceLayout } from '@/components/agents/workspace/WorkspaceLayout'
 import { SectionContent } from '@/components/agents/workspace/SectionContent'
 import { SimulatorColumn } from '@/components/agents/workspace/SimulatorColumn'
-import { DEFAULT_SECTION, isSectionId } from '@/components/agents/workspace/sectionNavCore'
+import { useAgentDraft } from '@/components/agents/workspace/useAgentDraft'
+import { DEFAULT_SECTION, isSectionId, type SectionId } from '@/components/agents/workspace/sectionNavCore'
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 
@@ -99,17 +100,58 @@ function AgentWorkspaceForAgent({ id, section }: { id: string; section?: string 
   const current = isSectionId(section) ? section : DEFAULT_SECTION
 
   return (
-    <WorkspaceLayout
+    <LoadedWorkspace
       agent={agent}
       agents={agents}
       section={current}
-      simulator={<SimulatorColumn agent={agent} />}
+      onUpdate={handleUpdate}
+      onToolsChange={handleToolsChange}
+    />
+  )
+}
+
+/** Separado do componente acima porque `useAgentDraft` precisa de um agente
+ *  JÁ CARREGADO: chamá-lo lá em cima obrigaria a aceitar `agent | null` e a
+ *  conviver com os returns antecipados de loading/404, que quebrariam a ordem
+ *  dos hooks. */
+function LoadedWorkspace({
+  agent, agents, section, onUpdate, onToolsChange,
+}: {
+  agent: AgentConfigWithTools
+  agents: AgentConfig[]
+  section: SectionId
+  onUpdate: (a: AgentConfig) => void
+  onToolsChange: (tools: AgentTool[]) => void
+}) {
+  const draft = useAgentDraft(agent, onUpdate)
+
+  // A promessa central da tela: o simulador testa o RASCUNHO, não só o
+  // publicado — prompt e regras ainda não publicados já valem na conversa ao
+  // lado (decisão 6 do Maestro).
+  const draftPrompt = typeof draft.draft?.system_prompt === 'string'
+    ? draft.draft.system_prompt
+    : undefined
+  const draftRules = draft.draft?.handoff_rules as AgentConfigWithTools['handoff_rules'] | undefined
+
+  return (
+    <WorkspaceLayout
+      agent={agent}
+      agents={agents}
+      section={section}
+      simulator={
+        <SimulatorColumn
+          agent={agent}
+          systemPrompt={draftPrompt}
+          handoffRules={draftRules?.rules}
+          isDirty={draft.isDirty}
+        />
+      }
     >
       <SectionContent
-        section={current}
+        section={section}
         agent={agent}
-        onUpdate={handleUpdate}
-        onToolsChange={handleToolsChange}
+        onUpdate={onUpdate}
+        onToolsChange={onToolsChange}
       />
     </WorkspaceLayout>
   )
