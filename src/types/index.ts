@@ -1663,3 +1663,10 @@ export type CopilotIntentCategory =
 export type CopilotAgentId =
   | 'intent_classifier' | 'orchestrator' | 'crm_read' | 'crm_write'
   | 'analytics' | 'artifact' | 'composer' | 'web'
+
+// ─── Redesign Agentes IA & Disparos (SCRUM-992) — contratos pré-declarados ─────
+// W0.6/SCRUM-999. Único ponto de toque neste arquivo nesta onda — os tipos
+// em si moram em types/agentsOps.ts e types/campaignsV2.ts.
+
+export * from './agentsOps'
+export * from './campaignsV2'
