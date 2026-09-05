@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
 import { WizardProgress } from '@/components/ui/WizardProgress'
 import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
-import { useComposerDraft, STEP_LABELS, STEP_ACCENTS } from './composer/useComposerDraft'
+import { useWizardDraft, STEP_LABELS, STEP_ACCENTS } from './composer/useWizardDraft'
 import { Step1Template } from './composer/steps/Step1Template'
 import { Step2Segmento } from './composer/steps/Step2Segmento'
 import { Step3Variaveis } from './composer/steps/Step3Variaveis'
@@ -29,7 +29,7 @@ interface CampaignWizardProps {
 export function CampaignWizard({
   open, onClose, onCreated, initialContactIds, initialName,
 }: CampaignWizardProps) {
-  const draft = useComposerDraft(open, onCreated, initialContactIds, initialName)
+  const draft = useWizardDraft(open, onCreated, initialContactIds, initialName)
   const {
     step, setStep, goBack, goNext,
     templates, loadingTemplates, selectedTemplate, setSelectedTemplate, campaignName, setCampaignName,
