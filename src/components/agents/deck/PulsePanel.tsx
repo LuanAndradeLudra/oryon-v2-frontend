@@ -26,7 +26,7 @@ export function PulsePanel({ pulse, pulseAvailable, feed, feedAvailable, loading
     <section aria-label="Pulso" className="flex flex-col min-w-0">
       {(pulseAvailable || loading) && (
         <>
-          <h2 className="text-3xs font-bold uppercase tracking-[0.08em] text-surface-400 mb-3">Pulso · hoje</h2>
+          <h2 className="text-3xs font-bold uppercase tracking-[0.1em] text-surface-400 mb-3">Pulso · hoje</h2>
           {loading || !pulse ? (
             <div className="grid grid-cols-3 gap-2 mb-[18px]">
               <Skeleton className="w-16 h-16 rounded-full mx-auto" />
@@ -58,9 +58,9 @@ export function PulsePanel({ pulse, pulseAvailable, feed, feedAvailable, loading
       {(feedAvailable || loading) && (
         <>
           <div className="flex items-center justify-between mb-1.5">
-            <h2 className="text-3xs font-bold uppercase tracking-[0.08em] text-surface-400">Ao vivo</h2>
+            <h2 className="text-3xs font-bold uppercase tracking-[0.1em] text-surface-400">Ao vivo</h2>
             <span
-              className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-3xs font-semibold"
+              className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
               style={{ backgroundColor: 'var(--color-status-active-bg)', color: 'var(--color-status-active)' }}
             >
               <i className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" aria-hidden />

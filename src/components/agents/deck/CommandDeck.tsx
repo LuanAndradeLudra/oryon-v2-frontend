@@ -56,7 +56,7 @@ export function CommandDeck({ agents, loading, onOpenAgent, onResumeAgent }: Com
   return (
     <div className="grid grid-cols-[272px_1fr_300px] flex-1 min-h-0">
       {/* ── Esquerda: Atenção ── */}
-      <div className="p-5 min-w-0 border-r border-surface-800 bg-surface-950/50 overflow-y-auto">
+      <div className="p-5 min-w-0 border-r border-surface-800 bg-surface-900/50 overflow-y-auto">
         <DeckAttention
           items={deck.attention}
           loading={loading}
@@ -69,9 +69,9 @@ export function CommandDeck({ agents, loading, onOpenAgent, onResumeAgent }: Com
       <div className="p-5 min-w-0 overflow-y-auto">
         <div className="flex items-center justify-between gap-3 mb-3.5">
           <div className="flex items-center gap-2 min-w-0">
-            <h2 className="text-3xs font-bold uppercase tracking-[0.08em] text-surface-400">Agentes</h2>
+            <h2 className="text-3xs font-bold uppercase tracking-[0.1em] text-surface-400">Agentes</h2>
             {!loading && (
-              <span className="text-xs text-surface-500 truncate">
+              <span className="text-[13.2px] text-surface-500 truncate">
                 · {counts.active} {counts.active === 1 ? 'ativo' : 'ativos'} · {counts.paused} {counts.paused === 1 ? 'pausado' : 'pausados'} · {counts.draft} {counts.draft === 1 ? 'rascunho' : 'rascunhos'}
               </span>
             )}
@@ -114,7 +114,7 @@ export function CommandDeck({ agents, loading, onOpenAgent, onResumeAgent }: Com
       </div>
 
       {/* ── Direita: Pulso ── */}
-      <div className="p-5 min-w-0 border-l border-surface-800 bg-surface-950/50 overflow-y-auto">
+      <div className="p-5 min-w-0 border-l border-surface-800 bg-surface-900/50 overflow-y-auto">
         {loading ? (
           <Skeleton className="h-24 rounded-2xl" />
         ) : (

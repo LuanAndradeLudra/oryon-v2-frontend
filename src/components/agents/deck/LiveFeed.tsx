@@ -42,12 +42,12 @@ export function LiveFeed({ items }: { items: AgentFeedItem[] }) {
               {style.icon}
             </span>
             <div className="min-w-0">
-              <div className="text-xs leading-relaxed text-surface-300">
+              <div className="text-[12.5px] leading-[1.45] text-surface-300">
                 <b className="font-semibold text-surface-100">{item.agentName}</b>
                 <span className="sr-only"> {style.label}: </span>
                 <span> {item.text}</span>
               </div>
-              <div className="text-3xs text-surface-500 tabular-nums mt-0.5">{relativeTime(item.at)}</div>
+              <div className="text-[10.5px] text-surface-500 tabular-nums mt-0.5">{relativeTime(item.at)}</div>
             </div>
           </li>
         )
