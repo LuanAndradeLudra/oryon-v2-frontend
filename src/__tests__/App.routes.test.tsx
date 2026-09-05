@@ -53,6 +53,15 @@ vi.mock('@/contexts/CopilotContext', () => ({
   useCopilot: () => ({ isOpen: false, toggle: vi.fn() }),
 }))
 
+// Normalmente montado dentro do AppShell real (mockado como passthrough
+// abaixo) — sem isso, useWorkspaceNumber() (usado por ListView de verdade
+// desde a W0.4/SCRUM-997) quebra com "must be used within
+// <WorkspaceNumberProvider>".
+vi.mock('@/contexts/WorkspaceNumberContext', () => ({
+  WorkspaceNumberProvider: ({ children }: { children: ReactNode }) => children,
+  useWorkspaceNumber: () => ({ numbers: [], findById: () => null, refresh: vi.fn(), loading: false }),
+}))
+
 vi.mock('@/contexts/InternalChatContext', () => ({
   InternalChatProvider: ({ children }: { children: ReactNode }) => children,
   useInternalChat: () => ({ messages: [] }),
@@ -163,8 +172,18 @@ vi.mock('@/components/agents/AgentDetail', () => ({
   ),
 }))
 
-vi.mock('@/components/campaigns/CampaignsTab', () => ({
-  CampaignsTab: () => <div>CampaignsTab-stub</div>,
+// CampaignWizard e CampaignReport sao montados pelo ListView real. Os dois
+// puxam recharts, que sozinho responde pela maior parte do tempo desta
+// suite e faz a duracao oscilar de ~33s a ~85s conforme a carga da maquina
+// — foi essa oscilacao que produziu as falhas intermitentes de hoje. Nenhum
+// dos dois faz parte do que esta sob teste aqui (roteamento), entao ambos
+// entram como stub.
+vi.mock('@/components/campaigns/CampaignWizard', () => ({
+  CampaignWizard: () => <div>CampaignWizard-stub</div>,
+}))
+
+vi.mock('@/components/campaigns/CampaignReport', () => ({
+  CampaignReport: () => <div>CampaignReport-stub</div>,
 }))
 
 vi.mock('@/components/campaigns/TemplatesTab', () => ({
@@ -197,9 +216,17 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(await screen.findByText(/Nenhum agente ainda/i)).toBeInTheDocument()
   }, SLOW)
 
-  it('mantém /campaigns alcançável, view padrão = list (ListView → CampaignsTab)', async () => {
+  it('mantém /campaigns alcançável, view padrão = list (CampaignsPage → ListView real, SCRUM-997/W0.4)', async () => {
     await renderAt('/campaigns')
-    expect(await screen.findByText('CampaignsTab-stub')).toBeInTheDocument()
+    // ListView é o componente real (não mais um wrapper mockável de
+    // CampaignsTab, removido — a extração da W0.4 tornou o antigo stub
+    // dela código morto); com campanhas=[] (axios mockado), renderiza o
+    // EmptyState. O timeout SLOW fica no próprio findByText (não só no
+    // `it`) porque esta é a primeira rota da suíte a montar a árvore de
+    // campaigns/ e a janela padrão de 1s do testing-library estoura antes
+    // do import dinâmico + efeito assentarem — mesmo com CampaignWizard e
+    // CampaignReport mockados acima.
+    expect(await screen.findByText(/Nenhuma campanha de disparo encontrada/i, {}, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
   it('/campaigns?view=agenda mostra o esqueleto da Agenda', async () => {
