@@ -272,8 +272,12 @@ describe('App routes — SCRUM-994/W0.1', () => {
     // mock não existe mais aqui. A asserção nova olha a nav de seções e QUAL
     // seção está corrente — é mais forte que a antiga, porque verifica que a
     // URL realmente comanda a UI em vez de só confirmar que algo renderizou.
-    expect(await screen.findByRole('navigation', { name: 'Seções do agente' })).toBeInTheDocument()
-    expect(await screen.findByRole('link', { name: 'Visão geral', current: 'page' })).toBeInTheDocument()
+    // `findBy*` tem timeout PROPRIO de 1s, independente do SLOW do teste: esta
+    // rota faz redirect + import dinamico + getAgent async, e sob contencao a
+    // nav nao aparece dentro de 1s. Sem o timeout explicito o teste fica
+    // intermitente (reproduzido: passa e falha alternando, mesmo codigo).
+    expect(await screen.findByRole('navigation', { name: 'Seções do agente' }, { timeout: SLOW })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Visão geral', current: 'page' }, { timeout: SLOW })).toBeInTheDocument()
   })
 
   it('/agents/:id/:section com seção desconhecida redireciona para overview', async () => {
@@ -286,7 +290,7 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(window.location.pathname).toBe('/agents/agent-1/rules')
     // Mesma troca do teste acima: a seção da URL tem que ser a corrente na
     // nav — aqui "Regras", não a default.
-    expect(await screen.findByRole('link', { name: 'Regras', current: 'page' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Regras', current: 'page' }, { timeout: SLOW })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Visão geral' })).not.toHaveAttribute('aria-current')
   })
 })

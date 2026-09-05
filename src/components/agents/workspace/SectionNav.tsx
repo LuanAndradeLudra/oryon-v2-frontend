@@ -25,7 +25,7 @@ export function SectionNav({ agent, current, counters, promptVersion }: SectionN
   return (
     <nav
       aria-label="Seções do agente"
-      className="border-r border-surface-800 bg-surface-950/30 px-3 py-4.5 flex flex-col gap-0.5 overflow-y-auto"
+      className="border-r border-surface-800 bg-surface-900/30 px-3 py-4.5 flex flex-col gap-0.5 overflow-y-auto"
     >
       <NavHeader agent={agent} promptVersion={promptVersion} />
 
@@ -101,9 +101,11 @@ function NavItem({
       )}
     >
       <Icon
-        className="w-[15px] h-[15px]"
-        // Ícone da seção ativa ganha o acento categórico dela (mockup); os
-        // inativos ficam neutros para a nav não virar um arco-íris.
+        // Inativo é um degrau MAIS apagado que o rótulo (mockup: `.lucide` em
+        // --s500 contra o label em --s400) — sem isso o ícone herda a cor do
+        // texto e a hierarquia dentro do item some. O ativo sobrescreve com o
+        // acento categórico da seção.
+        className={cn('w-[15px] h-[15px]', !active && 'text-surface-500')}
         style={active ? { color: accentColor(section.accent) } : undefined}
       />
       <span className="truncate">{section.label}</span>
