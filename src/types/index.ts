@@ -1398,7 +1398,14 @@ export interface WhatsAppTemplate {
   updatedAt: string
 }
 
-export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled'
+// `paused` (7º valor) chega com a BE.2/SCRUM-1001 — `POST /campaigns/:id/pause`
+// precisa de um estado que não seja `sending` nem `cancelled` para o retomar
+// saber de onde continuar (CONTRATOS.md §BE.2, Decisão D3). Adicionado aqui
+// pela D1/SCRUM-1018, primeira consumidora, como exceção ao congelamento
+// deste arquivo autorizada pelo Maestro (coord/D1-decisoes.md, decisão 1) —
+// a alternativa era um enum divergente espalhado por Agenda, Board e Lista.
+export type CampaignStatus =
+  | 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled' | 'paused'
 
 export interface CampaignSegment {
   type: 'all' | 'tag' | 'stage' | 'manual' | 'filter'
