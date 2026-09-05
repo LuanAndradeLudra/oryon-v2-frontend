@@ -53,6 +53,15 @@ vi.mock('@/contexts/CopilotContext', () => ({
   useCopilot: () => ({ isOpen: false, toggle: vi.fn() }),
 }))
 
+// Normalmente montado dentro do AppShell real (mockado como passthrough
+// abaixo) — sem isso, useWorkspaceNumber() (usado por ListView de verdade
+// desde a W0.4/SCRUM-997) quebra com "must be used within
+// <WorkspaceNumberProvider>".
+vi.mock('@/contexts/WorkspaceNumberContext', () => ({
+  WorkspaceNumberProvider: ({ children }: { children: ReactNode }) => children,
+  useWorkspaceNumber: () => ({ numbers: [], findById: () => null, refresh: vi.fn(), loading: false }),
+}))
+
 vi.mock('@/contexts/InternalChatContext', () => ({
   InternalChatProvider: ({ children }: { children: ReactNode }) => children,
   useInternalChat: () => ({ messages: [] }),
@@ -163,10 +172,6 @@ vi.mock('@/components/agents/AgentDetail', () => ({
   ),
 }))
 
-vi.mock('@/components/campaigns/CampaignsTab', () => ({
-  CampaignsTab: () => <div>CampaignsTab-stub</div>,
-}))
-
 vi.mock('@/components/campaigns/TemplatesTab', () => ({
   TemplatesTab: () => <div>TemplatesTab-stub</div>,
 }))
@@ -197,19 +202,27 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(await screen.findByText(/Nenhum agente ainda/i)).toBeInTheDocument()
   }, SLOW)
 
-  it('mantém /campaigns alcançável, view padrão = list (ListView → CampaignsTab)', async () => {
+  it('mantém /campaigns alcançável, view padrão = list (CampaignsPage → ListView real, SCRUM-997/W0.4)', async () => {
     await renderAt('/campaigns')
-    expect(await screen.findByText('CampaignsTab-stub')).toBeInTheDocument()
+    // ListView é o componente real (não mais um wrapper mockável de
+    // CampaignsTab, removido — a extração da W0.4 tornou o antigo stub
+    // dela código morto); com campanhas=[] (axios mockado), renderiza o
+    // EmptyState. É a primeira rota desta suíte a puxar a árvore pesada de
+    // campaigns/ (CampaignWizard+CampaignReport com recharts) — precisa do
+    // mesmo timeout SLOW no próprio findByText (não só no `it`), senão a
+    // janela padrão de 1s do testing-library estoura antes do primeiro
+    // import dinâmico + efeito assentarem.
+    expect(await screen.findByText(/Nenhuma campanha de disparo encontrada/i, {}, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
   it('/campaigns?view=agenda mostra o esqueleto da Agenda', async () => {
     await renderAt('/campaigns?view=agenda')
-    expect(await screen.findByText(/Agenda em construção/i)).toBeInTheDocument()
+    expect(await screen.findByText(/visão de agenda das campanhas/i)).toBeInTheDocument()
   })
 
   it('/campaigns?view=board mostra o esqueleto do Board', async () => {
     await renderAt('/campaigns?view=board')
-    expect(await screen.findByText(/Board em construção/i)).toBeInTheDocument()
+    expect(await screen.findByText(/board por status das campanhas/i)).toBeInTheDocument()
   })
 
   it('/campaigns/new mostra o esqueleto do Composer', async () => {
