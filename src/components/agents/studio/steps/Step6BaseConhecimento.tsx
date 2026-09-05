@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, BookOpen, FileUp, FileText, Upload, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { extractBrandFile } from '@/services/agentsApi'
 import { showToast } from '@/hooks/useToast'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
+import { fileToKnowledgeDoc, KNOWLEDGE_ACCEPT } from '../knowledgeUpload'
 import type { WizardData } from '../types'
 import { TEXTAREA } from './constants'
 
@@ -87,33 +87,14 @@ export function Step6BaseConhecimento({
       const file = files[i]
       setUploadingFile(total > 1 ? `${file.name} (${i + 1}/${total})` : file.name)
       try {
-        const isText = file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')
-        let content: string
-        let contentType: 'base64' | 'text'
-
-        if (isText) {
-          content = await file.text()
-          contentType = 'text'
-        } else {
-          const buffer = await file.arrayBuffer()
-          const bytes = new Uint8Array(buffer)
-          let binary = ''
-          for (let j = 0; j < bytes.length; j++) binary += String.fromCharCode(bytes[j])
-          content = btoa(binary)
-          contentType = 'base64'
-        }
-
-        const extracted = await extractBrandFile(file.name, file.type || 'text/plain', content, contentType)
-        // Suffix the id with the index so a fast batch (sub-ms apart) doesn't
-        // collide on Date.now() and produce duplicate doc ids.
-        const id = `kb-${Date.now()}-${i}`
-        setData(d => ({
-          ...d,
-          knowledge_docs: [...d.knowledge_docs, { id, name: file.name, content: extracted, source_type: 'file' }],
-        }))
+        // Leitura/extração vivem em `studio/knowledgeUpload.ts` — o corpo
+        // reduzido da etapa 6 no Studio (A3) usa exatamente a mesma conversão,
+        // e duplicar a parte de base64 seria pedir para as duas divergirem.
+        const doc = await fileToKnowledgeDoc(file, i)
+        setData(d => ({ ...d, knowledge_docs: [...d.knowledge_docs, doc] }))
         // Only auto-focus the LAST successful upload — focusing each one
         // mid-batch is jarring when the user picked 10 files at once.
-        if (i === files.length - 1) setViewingDocId(id)
+        if (i === files.length - 1) setViewingDocId(doc.id)
       } catch (err) {
         console.error('[KB upload]', file.name, err)
         failed.push(file.name)
@@ -155,7 +136,7 @@ export function Step6BaseConhecimento({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.docx,.doc,.txt,.md,.png,.jpg,.jpeg,.webp"
+          accept={KNOWLEDGE_ACCEPT}
           multiple
           onChange={handleFileUpload}
           className="hidden"
