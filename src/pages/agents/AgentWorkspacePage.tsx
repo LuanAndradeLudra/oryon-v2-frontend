@@ -5,6 +5,7 @@ import { getAgent, listAgents } from '@/services/agentsApi'
 import type { AgentConfig, AgentConfigWithTools, AgentTool } from '@/services/agentsApi'
 import { WorkspaceLayout } from '@/components/agents/workspace/WorkspaceLayout'
 import { SectionContent } from '@/components/agents/workspace/SectionContent'
+import { SimulatorColumn } from '@/components/agents/workspace/SimulatorColumn'
 import { DEFAULT_SECTION, isSectionId } from '@/components/agents/workspace/sectionNavCore'
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -98,7 +99,12 @@ function AgentWorkspaceForAgent({ id, section }: { id: string; section?: string 
   const current = isSectionId(section) ? section : DEFAULT_SECTION
 
   return (
-    <WorkspaceLayout agent={agent} agents={agents} section={current}>
+    <WorkspaceLayout
+      agent={agent}
+      agents={agents}
+      section={current}
+      simulator={<SimulatorColumn agent={agent} />}
+    >
       <SectionContent
         section={current}
         agent={agent}
