@@ -32,7 +32,7 @@ export function AgentRail({ agents, activeAgentId, section }: AgentRailProps) {
   return (
     <nav
       aria-label="Agentes"
-      className="border-r border-surface-800 bg-surface-950/50 py-3.5 flex flex-col items-center gap-2 overflow-y-auto"
+      className="border-r border-surface-800 bg-surface-900/50 py-3.5 flex flex-col items-center gap-2 overflow-y-auto"
     >
       {agents.map((agent) => {
         const active = agent.id === activeAgentId
