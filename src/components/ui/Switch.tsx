@@ -6,14 +6,26 @@ interface SwitchProps {
   onChange: (checked: boolean) => void
   disabled?: boolean
   className?: string
+  /** Rótulo acessível. O switch não tem texto próprio, então sem isto (ou
+   *  sem `aria-labelledby` apontando para o rótulo visível ao lado) o leitor
+   *  de tela anuncia só "ligado/desligado", sem dizer do quê. */
+  'aria-label'?: string
+  /** Id do elemento que já rotula o switch visualmente — prefira este quando
+   *  o rótulo existe na tela, em vez de repetir o texto em `aria-label`. */
+  'aria-labelledby'?: string
 }
 
-export function Switch({ checked, onChange, disabled = false, className }: SwitchProps) {
+export function Switch({
+  checked, onChange, disabled = false, className,
+  'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledBy,
+}: SwitchProps) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       disabled={disabled}
       onClick={() => !disabled && onChange(!checked)}
       className={cn(
