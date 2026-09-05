@@ -6,7 +6,7 @@
 import type { ReactNode } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { tint } from '@/components/ui/accentColor'
+import { accentSurface, accentText } from './audienceTint'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 interface SegmentGroupProps {
@@ -34,12 +34,12 @@ export function SegmentGroup({
   return (
     <div
       className={cn('rounded-[18px] border bg-surface-800 px-4 py-3.5 relative', !isExclude && 'border-surface-700', className)}
-      style={isExclude ? { borderColor: tint('rose', 30) } : undefined}
+      style={isExclude ? { borderColor: accentSurface('rose', 30) } : undefined}
     >
       <div className="flex items-center justify-between mb-2.5 gap-3">
         <span
           className={cn('text-[10px] font-bold tracking-[0.12em] uppercase', !isExclude && 'text-surface-400')}
-          style={isExclude ? { color: tint('rose', 70) } : undefined}
+          style={isExclude ? { color: accentText('rose') } : undefined}
         >
           {title}
         </span>

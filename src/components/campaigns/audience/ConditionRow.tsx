@@ -13,7 +13,8 @@ import { ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { accentColor, tint, type Accent } from '@/components/ui/accentColor'
+import { type Accent } from '@/components/ui/accentColor'
+import { accentSurface, accentText } from './audienceTint'
 import { fieldSpec, FIELD_CATALOG, operatorLabel, type FieldSpec } from './fieldCatalog'
 import type { EditorCondition } from './segmentBuilder'
 import type { SegmentField, SegmentOperator } from '@/types/campaignsV2'
@@ -56,9 +57,11 @@ function ValueChip({ children, negative }: { children: React.ReactNode; negative
     <span
       className="rounded-[7px] px-2 py-1 text-[12.5px] border"
       style={{
-        backgroundColor: tint(accent, 12),
-        borderColor: tint(accent, 30),
-        color: accentColor(accent),
+        backgroundColor: accentSurface(accent, 12),
+        borderColor: accentSurface(accent, 30),
+        // Texto no tom claro do acento, como o mockup faz — o acento cheio
+        // neste tamanho fica abaixo do contraste mínimo. Ver `audienceTint`.
+        color: accentText(accent),
       }}
     >
       {children}
@@ -154,9 +157,19 @@ export function ConditionRow({
           </span>
 
           <span className="ml-auto flex items-center gap-2">
-            {typeof condition.count === 'number' && !disabled && (
-              <span className="font-mono text-[11.5px] text-surface-500 tabular-nums">
-                {negative && '−'}{condition.count.toLocaleString('pt-BR')}
+            {/* `null` é resposta, não silêncio: a API avaliou e ignorou esta
+                condição porque ela está sem valor (Decisão D38). Travessão
+                diz isso; um número seria indistinguível de um filtro real
+                muito permissivo. `undefined` (ainda não avaliada) não mostra
+                nada. */}
+            {condition.count !== undefined && !disabled && (
+              <span
+                className="font-mono text-[11.5px] text-surface-500 tabular-nums"
+                title={condition.count === null ? 'Sem valor: esta condição não está filtrando nada' : undefined}
+              >
+                {condition.count === null
+                  ? '—'
+                  : `${negative ? '−' : ''}${condition.count.toLocaleString('pt-BR')}`}
               </span>
             )}
             <button

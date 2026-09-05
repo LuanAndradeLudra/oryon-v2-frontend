@@ -15,7 +15,7 @@ import type { ReactNode } from 'react'
 import { Bot, Send, ShieldOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/Input'
-import { tint } from '@/components/ui/accentColor'
+import { accentSurface, accentText } from './audienceTint'
 import { SegmentGroup } from './SegmentGroup'
 import type { SegmentExclusions } from '@/types/campaignsV2'
 
@@ -44,7 +44,7 @@ function ToggleChip({ on, onToggle, label, children }: { on: boolean; onToggle: 
       aria-label={label}
       onClick={onToggle}
       className={cn('rounded-[7px] px-2 py-1 text-[12.5px] border transition-colors', !on && 'border-surface-700 text-surface-400 hover:border-surface-600')}
-      style={on ? { backgroundColor: tint('rose', 12), borderColor: tint('rose', 30), color: tint('rose', 85) } : undefined}
+      style={on ? { backgroundColor: accentSurface('rose', 12), borderColor: accentSurface('rose', 30), color: accentText('rose') } : undefined}
     >
       {children}
     </button>
@@ -95,7 +95,7 @@ export function ExclusionGroup({ value, onChange, counts, degraded = false }: Ex
           degraded ? (
             <span
               className="rounded-[7px] px-2 py-1 text-[12.5px] border"
-              style={{ backgroundColor: tint('rose', 12), borderColor: tint('rose', 30), color: tint('rose', 85) }}
+              style={{ backgroundColor: accentSurface('rose', 12), borderColor: accentSurface('rose', 30), color: accentText('rose') }}
             >
               não
             </span>
