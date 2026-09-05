@@ -267,7 +267,13 @@ describe('App routes — SCRUM-994/W0.1', () => {
   it('/agents/:id redireciona para /agents/:id/overview e monta o Workspace', async () => {
     await renderAt('/agents/agent-1')
     await waitFor(() => expect(window.location.pathname).toBe('/agents/agent-1/overview'))
-    expect(await screen.findByTestId('agent-detail')).toHaveTextContent('agent-1')
+    // A2/SCRUM-1013: a página deixou de delegar ao AgentDetail e passou a
+    // montar o layout do Workspace, então o `data-testid="agent-detail"` do
+    // mock não existe mais aqui. A asserção nova olha a nav de seções e QUAL
+    // seção está corrente — é mais forte que a antiga, porque verifica que a
+    // URL realmente comanda a UI em vez de só confirmar que algo renderizou.
+    expect(await screen.findByRole('navigation', { name: 'Seções do agente' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Visão geral', current: 'page' })).toBeInTheDocument()
   })
 
   it('/agents/:id/:section com seção desconhecida redireciona para overview', async () => {
@@ -278,6 +284,9 @@ describe('App routes — SCRUM-994/W0.1', () => {
   it('/agents/:id/:section com seção válida monta o Workspace direto', async () => {
     await renderAt('/agents/agent-1/rules')
     expect(window.location.pathname).toBe('/agents/agent-1/rules')
-    expect(await screen.findByTestId('agent-detail')).toHaveTextContent('agent-1')
+    // Mesma troca do teste acima: a seção da URL tem que ser a corrente na
+    // nav — aqui "Regras", não a default.
+    expect(await screen.findByRole('link', { name: 'Regras', current: 'page' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Visão geral' })).not.toHaveAttribute('aria-current')
   })
 })

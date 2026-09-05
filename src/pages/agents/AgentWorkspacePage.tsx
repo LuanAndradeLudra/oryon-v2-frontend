@@ -1,20 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Bot } from 'lucide-react'
-import { getAgent } from '@/services/agentsApi'
-import type { AgentConfigWithTools } from '@/services/agentsApi'
-import { AgentDetail } from '@/components/agents/AgentDetail'
+import { getAgent, listAgents } from '@/services/agentsApi'
+import type { AgentConfig, AgentConfigWithTools, AgentTool } from '@/services/agentsApi'
+import { WorkspaceLayout } from '@/components/agents/workspace/WorkspaceLayout'
+import { SectionContent } from '@/components/agents/workspace/SectionContent'
+import { DEFAULT_SECTION, isSectionId } from '@/components/agents/workspace/sectionNavCore'
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
-
-// Ids de aba do AgentDetail atual (components/agents/AgentDetail.tsx — `type
-// Tab`). O W0.2/SCRUM-995 (Tecelã) vai expor controle externo de aba nele;
-// até lá esta página só VALIDA a URL contra essa lista (redireciona seção
-// desconhecida pra "overview") — a aba inicial do AgentDetail continua sendo
-// sempre "overview" internamente, igual ao comportamento de hoje.
-const AGENT_SECTION_IDS = [
-  'overview', 'prompt', 'tools', 'skills', 'capabilities', 'criteria', 'rules', 'knowledge', 'catalog', 'metrics',
-] as const
 
 export function AgentWorkspacePage() {
   const { id, section } = useParams<{ id: string; section: string }>()
@@ -24,19 +17,21 @@ export function AgentWorkspacePage() {
   // `key={id}` força remount ao trocar de agente — mesmo padrão de
   // `key={selectedAgent.id}` em AgentDetail (pages/agents/AgentsPage.tsx) —
   // então o estado abaixo já nasce correto por agente, sem precisar resetá-lo
-  // manualmente dentro de um effect.
+  // manualmente dentro de um effect. Importa mais agora que o rail troca de
+  // agente sem sair da rota.
   return <AgentWorkspaceForAgent key={id} id={id} section={section} />
 }
 
 function AgentWorkspaceForAgent({ id, section }: { id: string; section?: string }) {
   const navigate = useNavigate()
   const [agent, setAgent] = useState<AgentConfigWithTools | null>(null)
+  const [agents, setAgents] = useState<AgentConfig[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    if (section && !(AGENT_SECTION_IDS as readonly string[]).includes(section)) {
-      navigate(`/agents/${id}/overview`, { replace: true })
+    if (section && !isSectionId(section)) {
+      navigate(`/agents/${id}/${DEFAULT_SECTION}`, { replace: true })
     }
   }, [id, section, navigate])
 
@@ -48,6 +43,28 @@ function AgentWorkspaceForAgent({ id, section }: { id: string; section?: string 
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [id])
+
+  // Lista que alimenta o rail. Falha silenciosa de propósito: sem ela o rail
+  // fica vazio, mas a seção continua utilizável — a tela é sobre ESTE agente,
+  // e derrubá-la inteira porque a lista lateral não carregou seria pior.
+  useEffect(() => {
+    let cancelled = false
+    listAgents()
+      .then((result) => { if (!cancelled) setAgents(result) })
+      .catch(() => { if (!cancelled) setAgents([]) })
+    return () => { cancelled = true }
+  }, [])
+
+  // Mantém o rail em dia (nome/status) quando uma seção salva o agente, sem
+  // refazer o GET — é o mesmo registro nos dois lugares.
+  const handleUpdate = useCallback((updated: AgentConfig) => {
+    setAgent(prev => (prev ? { ...prev, ...updated } : prev))
+    setAgents(prev => prev.map(a => (a.id === updated.id ? { ...a, ...updated } : a)))
+  }, [])
+
+  const handleToolsChange = useCallback((tools: AgentTool[]) => {
+    setAgent(prev => (prev ? { ...prev, tools } : prev))
+  }, [])
 
   if (loading) {
     return (
@@ -76,12 +93,18 @@ function AgentWorkspaceForAgent({ id, section }: { id: string; section?: string 
     )
   }
 
+  // Seção inválida já disparou o redirect acima; até ele acontecer, renderiza
+  // a default em vez de piscar uma tela vazia.
+  const current = isSectionId(section) ? section : DEFAULT_SECTION
+
   return (
-    <AgentDetail
-      agent={agent}
-      tested={false}
-      onTested={() => {}}
-      onDeleted={() => navigate('/agents')}
-    />
+    <WorkspaceLayout agent={agent} agents={agents} section={current}>
+      <SectionContent
+        section={current}
+        agent={agent}
+        onUpdate={handleUpdate}
+        onToolsChange={handleToolsChange}
+      />
+    </WorkspaceLayout>
   )
 }
