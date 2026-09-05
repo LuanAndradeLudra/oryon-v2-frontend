@@ -54,6 +54,13 @@ function Foot({ metrics }: { metrics: FootMetric[] }) {
   )
 }
 
+/** Número só quando é número de verdade. Protege o rodapé de uma resposta
+ *  parcial do BE.7 (campo ausente/nulo): a métrica vira "—" em vez de derrubar
+ *  o card ou exibir um zero que ninguém mediu. */
+function num(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) ? v : null
+}
+
 /** Verde acima de 80%, âmbar entre 60 e 80, sem cor abaixo — mesma leitura do
  *  mockup (82% verde, 74% âmbar). */
 function resolutionColor(pct: number | null): string | undefined {
@@ -100,20 +107,22 @@ export function PersonaCard({ agent, live, metrics, queue, onOpen, onResume }: P
   // Rodapé — só com métricas reais. Ativo: janela de 7 dias (rotulada como
   // tal, não como "Hoje": o contrato do BE.7 não expõe o dia corrente por
   // agente). Pausado: fila + resolução de 30 dias + última atividade.
+  const started = num(metrics?.started)
+  const resolved = num(metrics?.resolvedByAi)
+  const pct = started && resolved !== null ? Math.round((resolved / started) * 100) : null
+
   const foot: FootMetric[] = []
   if (paused) {
     if (queue !== undefined) foot.push({ label: 'Fila', parts: { value: String(queue) }, color: queue > 0 ? 'var(--color-status-pending)' : undefined })
     if (metrics) {
-      const pct = metrics.started ? Math.round((metrics.resolvedByAi / metrics.started) * 100) : null
-      foot.push({ label: 'Resolução · 30d', parts: formatPct(metrics.resolvedByAi, metrics.started), color: resolutionColor(pct) })
+      foot.push({ label: 'Resolução · 30d', parts: formatPct(resolved ?? 0, started ?? 0), color: resolutionColor(pct) })
     }
     const days = daysSince(agent.updated_at)
     if (days !== null) foot.push({ label: 'Última ativ.', parts: { value: String(days), unit: 'd' } })
   } else if (metrics) {
-    const pct = metrics.started ? Math.round((metrics.resolvedByAi / metrics.started) * 100) : null
-    foot.push({ label: '7 dias', parts: { value: metrics.started.toLocaleString('pt-BR') } })
-    foot.push({ label: 'Resolução', parts: formatPct(metrics.resolvedByAi, metrics.started), color: resolutionColor(pct) })
-    foot.push({ label: 'Resposta', parts: formatDuration(metrics.avgResponseSec) })
+    foot.push({ label: '7 dias', parts: started === null ? { value: '—' } : { value: started.toLocaleString('pt-BR') } })
+    foot.push({ label: 'Resolução', parts: formatPct(resolved ?? 0, started ?? 0), color: resolutionColor(pct) })
+    foot.push({ label: 'Resposta', parts: formatDuration(num(metrics.avgResponseSec)) })
   }
 
   const subtitle = [agent.sector, agent.objective].filter(Boolean).join(' · ')
