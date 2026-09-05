@@ -19,6 +19,7 @@ import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type {
   Campaign, Contact, WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
 } from '@/types'
+import type { CampaignSegmentDefinition } from '@/types/campaignsV2'
 
 /** Linha de WhatsApp reduzida ao que os seletores de campanha usam. */
 export interface DraftLineOption {
@@ -49,14 +50,24 @@ export function readSession(): CampaignDraftSession {
 
 type CreateDto = Parameters<typeof campaignsApi.create>[0]
 
-/** O que `createCampaign` recebe além do que o núcleo já controla. Hoje só o
- *  `segment` legado; o Composer passa a mandar `segmentId`/`audience` quando
- *  o BE.3 existir (coord/D6-plano.md §0). */
-export interface CreateCampaignInput {
-  segment: CampaignSegment
+/** Como o público viaja para o backend. Exatamente uma das três formas
+ *  (Decisão D25, `types/campaignsV2.ts`): o `segment` legado que o wizard
+ *  manda hoje, ou `segmentId`/`audience` que o Composer manda quando o BE.3
+ *  existir (coord/D6-plano.md §0). */
+export type SubmitAudienceFields =
+  | { segment: CampaignSegment; segmentId?: never; audience?: never }
+  | { segmentId: string; segment?: never; audience?: never }
+  | { audience: CampaignSegmentDefinition; segment?: never; segmentId?: never }
+
+export interface SubmitCampaignInput {
+  audienceFields: SubmitAudienceFields
+  /** Presente → `PATCH /campaigns/:id` (modo edição do Composer). Ausente →
+   *  `POST /campaigns`. Só a criação dispara o envio imediato: editar uma
+   *  campanha já existente nunca a dispara como efeito colateral. */
+  campaignId?: string
 }
 
-export type CreateCampaignResult =
+export type SubmitCampaignResult =
   | { ok: true; campaign: Campaign; sendError?: string }
   /** `rawMessage` é a mensagem do backend sem tratamento — quem chama usa
    *  para telemetria; o texto amigável já foi para o estado `error`. */
@@ -179,15 +190,15 @@ export function useCampaignDraftCore({ active, initialName }: CampaignDraftCoreO
   /** `true` quando o "quando enviar" está resolvido (agora, ou data escolhida). */
   const scheduleReady = scheduleMode === 'now' || !!scheduledAt
 
-  // ── Criação (e disparo imediato, no modo "agora") ─────────────────────────
-  const createCampaign = useCallback(async (input: CreateCampaignInput): Promise<CreateCampaignResult> => {
+  // ── Criação/edição (e disparo imediato, no modo "agora") ──────────────────
+  const submitCampaign = useCallback(async (input: SubmitCampaignInput): Promise<SubmitCampaignResult> => {
     if (!selectedTemplate) return { ok: false }
+    const editing = !!input.campaignId
     setSaving(true); setError('')
     try {
-      const dto: CreateDto & { whatsappNumberId?: string } = {
+      const dto = {
         name: campaignName.trim(),
         templateId: selectedTemplate.id,
-        segment: input.segment,
         variableMappings: mappings,
         // Converte para ISO UTC antes de enviar. O datetime-local devolve
         // "YYYY-MM-DDTHH:mm" sem timezone — new Date() no browser interpreta
@@ -195,17 +206,23 @@ export function useCampaignDraftCore({ active, initialName }: CampaignDraftCoreO
         // Isso garante que o servidor (UTC na AWS) dispare no horário certo.
         scheduledAt: scheduleMode === 'later' ? new Date(scheduledAt).toISOString() : undefined,
         ...(whatsappNumberId ? { whatsappNumberId } : {}),
+        ...input.audienceFields,
       }
-      // `whatsappNumberId` ainda não está no DTO de `campaignsApi.create`
-      // (services/api.ts é congelado — ver cabeçalho de campaignsV2Api.ts),
-      // mas o backend aceita. Cast estreito, sem `any`.
-      const res = await campaignsApi.create(dto as CreateDto)
+      // Nem `whatsappNumberId` nem `segmentId`/`audience` estão nos DTOs de
+      // `campaignsApi` (services/api.ts é congelado — ver cabeçalho de
+      // campaignsV2Api.ts), mas o backend aceita os três. Cast estreito por
+      // endpoint, sem `any`.
+      const res = input.campaignId
+        ? await campaignsApi.update(input.campaignId, dto as Partial<Campaign>)
+        : await campaignsApi.create(dto as unknown as CreateDto)
 
       let campaign = res.data
       let sendError: string | undefined
 
-      // Quando o modo é "agora", disparar imediatamente após criar.
-      if (scheduleMode === 'now') {
+      // Quando o modo é "agora", disparar imediatamente após criar. Editar
+      // uma campanha existente nunca dispara — quem edita está corrigindo
+      // um rascunho, não mandando enviar.
+      if (scheduleMode === 'now' && !editing) {
         try {
           const sendRes = await campaignsApi.send(res.data.id)
           campaign = sendRes.data
@@ -219,9 +236,11 @@ export function useCampaignDraftCore({ active, initialName }: CampaignDraftCoreO
       }
 
       return { ok: true, campaign, sendError }
-    } catch (createErr) {
-      const rawMessage = messageOf(createErr)
-      setError(rawMessage?.trim() || 'Erro ao criar campanha. Verifique os campos e tente novamente.')
+    } catch (submitErr) {
+      const rawMessage = messageOf(submitErr)
+      setError(rawMessage?.trim() || (editing
+        ? 'Erro ao salvar campanha. Verifique os campos e tente novamente.'
+        : 'Erro ao criar campanha. Verifique os campos e tente novamente.'))
       return { ok: false, rawMessage }
     } finally {
       setSaving(false)
@@ -237,7 +256,7 @@ export function useCampaignDraftCore({ active, initialName }: CampaignDraftCoreO
     scheduleMode, setScheduleMode, scheduledAt, setScheduledAt, scheduleReady,
     waNumbers, whatsappNumberId, setWhatsappNumberId, needsExplicitLine,
     // submissão
-    saving, error, setError, createCampaign,
+    saving, error, setError, submitCampaign,
   }
 }
 

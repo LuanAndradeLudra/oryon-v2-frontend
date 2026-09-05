@@ -176,7 +176,7 @@ export function useWizardDraft(
   }, [step])
 
   // ── Submissão ─────────────────────────────────────────────────────────────
-  const { selectedTemplate, campaignName, scheduleMode, createCampaign } = core
+  const { selectedTemplate, campaignName, scheduleMode, submitCampaign } = core
 
   const handleSubmit = async () => {
     if (!selectedTemplate) return
@@ -205,7 +205,7 @@ export function useWizardDraft(
       } : {}),
     }
 
-    const result = await createCampaign({ segment })
+    const result = await submitCampaign({ audienceFields: { segment } })
 
     if (!result.ok) {
       appLogger.logWizardEvent({
