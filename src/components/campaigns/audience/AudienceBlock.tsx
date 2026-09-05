@@ -50,7 +50,15 @@ export interface AudienceBlockProps {
    *  condição montada, ou o cálculo falhou). Nunca devolve 0 por erro:
    *  público desconhecido não é público vazio. */
   onResolvedChange?: (result: AudienceResolved | null) => void
-  /** "Usar N": o operador terminou de configurar o público. */
+  /** "Usar N": o operador terminou de configurar o público.
+   *
+   *  `count` é **`eligible`**, nunca `matched` — é o número que aparece no
+   *  botão e o único que corresponde a quem vai receber mensagem de fato.
+   *  `matched` é o bruto antes das exclusões (opt-out, disparo recente,
+   *  conversa com a IA) e serve só para a frase "de N que atendem às
+   *  condições". Usar `matched` para custo ou para a cota da linha
+   *  superestimaria o envio. Quem precisar dos dois números pega em
+   *  `onResolvedChange`, que devolve o par. */
   onConfirm?: (definition: AudienceDefinition, count: number) => void
   /** "ver os N": a D2 abre o `ContactListModal` dela com esta definição. */
   onViewAll?: (definition: AudienceDefinition) => void
@@ -115,6 +123,15 @@ export function AudienceBlock({
   useEffect(() => {
     onResolvedChange?.(result ? { eligible: result.eligible, matched: result.matched } : null)
   }, [result, onResolvedChange])
+
+  // Contagem parcial de cada linha. Só entra no estado local: é exibição, o
+  // pai não precisa saber, e `toEvaluateGroups` descarta `count`, então isto
+  // não realimenta o hook nem gera uma segunda avaliação.
+  useEffect(() => {
+    if (result?.available && result.perCondition.length > 0) {
+      dispatch({ type: 'apply_counts', perCondition: result.perCondition })
+    }
+  }, [result])
 
   const run = useCallback(
     (action: SegmentBuilderAction) => {

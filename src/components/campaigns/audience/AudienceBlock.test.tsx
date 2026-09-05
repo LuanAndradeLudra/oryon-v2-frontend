@@ -72,6 +72,17 @@ describe('AudienceBlock', () => {
     expect(screen.getByText('Júlia P.')).toBeInTheDocument()
   })
 
+  it('pinta a contagem parcial em cada linha de condição', async () => {
+    // Regressão: o redutor tinha `apply_counts` e o hook trazia
+    // `perCondition`, mas ninguém ligava os dois — as linhas ficavam sem
+    // número, que é metade do que a rubrica pede na linha de condição.
+    evaluate.mockResolvedValue({ data: { ...evaluation, perCondition: [[1412]] } })
+
+    render(<AudienceBlock value={draft()} onChange={vi.fn()} />)
+
+    expect(await screen.findByText('1.412')).toBeInTheDocument()
+  })
+
   it('degrada para o motor antigo quando o evaluate ainda não existe', async () => {
     evaluate.mockRejectedValue(notFound())
     countSegment.mockResolvedValue({ data: { count: 42 } })
