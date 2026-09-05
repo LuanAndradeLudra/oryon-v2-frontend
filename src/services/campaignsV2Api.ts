@@ -63,12 +63,15 @@ export const segmentsApi = {
   },
 }
 
-// ── [D2] enviar teste (Composer "Enviar teste") ─────────────────────────────
+// ── [D2] enviar teste (Composer "Enviar teste") — BE.10/SCRUM-1025 ──────────
 
-// TODO CONFIRMAR — endpoint ainda não documentado em CONTRATOS.md (a Solda
-// vai acrescentar). Path/verbo/envelope são um chute a partir do padrão do
-// resto do arquivo (POST + body estruturado, sem envelope `{data}` como
-// evaluate/cost-estimate) — REAJUSTAR quando o contrato real sair.
+// Erros: 404 template ou linha WhatsApp não encontrados; 409 template não
+// aprovado (mesma regra do processor de campanhas — nunca envia template
+// não aprovado, nem em teste); 422 `to` ausente + usuário sem telefone
+// cadastrado; 429 limite de 5 envios/min/usuário (UserRateLimitGuard, não
+// por IP). Não passa pela fila `campaign-send` nem grava
+// campaign_recipients/messages.campaignId — não é uma campanha, não
+// aparece em relatório nenhum.
 export const campaignComposerApi = {
   testSend(body: CampaignTestSendRequest) {
     return api.post<CampaignTestSendResult>('/campaigns/test-send', body)

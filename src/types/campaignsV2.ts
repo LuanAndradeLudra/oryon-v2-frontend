@@ -106,22 +106,22 @@ export type CampaignAudienceFields =
   | { audience: CampaignSegmentDefinition; segmentId?: never; segment?: never }
   | { segment: import('./index').CampaignSegment; segmentId?: never; audience?: never }
 
-// ── [D2] enviar teste (Composer "Enviar teste") ─────────────────────────
-// TODO CONFIRMAR — `POST /campaigns/test-send` ainda não está em
-// CONTRATOS.md (a Solda vai acrescentar). Shape abaixo é um placeholder a
-// partir do mockup do Composer (D2: botão "Enviar teste" ao lado de
-// "Agendar", telefone com dados do 1º contato) — REAJUSTAR quando o
-// contrato real sair; não inventar mais campos além do que o mockup exige.
+// ── [D2] enviar teste (Composer "Enviar teste") — BE.10/SCRUM-1025 ───────
+// Envia UMA mensagem avulsa (sem criar Campaign/campaign_recipients) —
+// "testar antes de agendar de verdade". `to` ausente usa o telefone do
+// usuário logado (Decisão D27).
 export interface CampaignTestSendRequest {
   templateId: string
   variableMappings: import('./index').CampaignVariableMapping[]
-  /** Número de WhatsApp (com DDI) que recebe a mensagem de teste. */
-  phone: string
+  whatsappNumberId: string
+  /** Opcional — ausente usa `User.phone` do usuário logado. */
+  to?: string
 }
 
-// TODO CONFIRMAR — shape de resposta não documentado ainda (messageId? status?).
 export interface CampaignTestSendResult {
-  ok: true
+  messageId: string
+  to: string
+  sentAt: string
 }
 
 // ── [D3] analytics estendido (BE.1) ─────────────────────────────────────
