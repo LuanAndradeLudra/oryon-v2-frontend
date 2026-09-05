@@ -269,7 +269,13 @@ export function Step7GerarPrompt({
     const prompt = await generatePrompt()
     // Open the review modal right after a successful generation so the user
     // can read the full prompt comfortably and edit before confirming.
-    if (prompt) setReviewOpen(true)
+    //
+    // `!== null` e nao `if (prompt)`: o hook so devolve null quando a geracao
+    // FALHA — string vazia e um retorno de sucesso legal. Com o truthy check,
+    // um prompt vazio parava o spinner sem abrir modal e sem erro (no-op
+    // silencioso), enquanto o comportamento original abria o modal mesmo
+    // vazio. Achado pelo Lince na revisao do #122.
+    if (prompt !== null) setReviewOpen(true)
   }, [generatePrompt])
 
   const summaryItems = [
