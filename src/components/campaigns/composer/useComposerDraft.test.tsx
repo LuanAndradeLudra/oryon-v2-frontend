@@ -26,8 +26,12 @@ vi.mock('./useCampaignDraftCore', () => ({
 
 const { useComposerDraft } = await import('./useComposerDraft')
 
-const DEF_A: CampaignSegmentDefinition = { groups: [{ id: 'g1', op: 'and', conditions: [] }] }
-const DEF_B: CampaignSegmentDefinition = { groups: [{ id: 'g2', op: 'or', conditions: [] }] }
+// `SegmentGroup` (types/campaignsV2.ts) NAO tem `id`: os ids de grupo e
+// condicao existem so no reducer do Crivo, como chave de React, e nunca vao
+// para a API (D6-plano.md §2). Por isso as duas definicoes se distinguem
+// pelo conteudo, que e exatamente o que viaja no body.
+const DEF_A: CampaignSegmentDefinition = { groups: [{ op: 'and', conditions: [] }] }
+const DEF_B: CampaignSegmentDefinition = { groups: [{ op: 'or', conditions: [] }] }
 
 /** Deixa os blocos Template/Variáveis/Envio verdes, isolando o Público. */
 function readyCore() {
@@ -151,7 +155,7 @@ describe('useComposerDraft — contagem não pode piscar (§9.3)', () => {
     // Mesmo conteúdo, objeto novo — o `AudienceBlock` recria a definição a
     // cada render, então a comparação precisa ser estrutural, não por
     // referência.
-    act(() => { result.current.setAudience({ definition: { groups: [{ id: 'g1', op: 'and', conditions: [] }] } }) })
+    act(() => { result.current.setAudience({ definition: { groups: [{ op: 'and', conditions: [] }] } }) })
     act(() => { result.current.onAudienceResolved(null) })
     expect(result.current.audienceCount).toBe(42)
     expect(result.current.blocks.publico).toBe('done')
