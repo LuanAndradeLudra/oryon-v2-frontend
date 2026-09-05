@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Bot, AlertCircle, RefreshCw, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -49,10 +50,25 @@ export function SimulatorPanel({
   dismissError: () => void
   send: () => void | Promise<void>
 }) {
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, loading])
+
+  // `send()` ja resolve depois do seu proprio finally (setLoading(false)),
+  // entao o foco cai no mesmo ponto do fluxo que caia antes da extracao.
+  const runSend = () => {
+    void Promise.resolve(send()).finally(() => {
+      setTimeout(() => inputRef.current?.focus(), 50)
+    })
+  }
+
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      void send()
+      runSend()
     }
   }
 
@@ -134,11 +150,14 @@ export function SimulatorPanel({
             </Banner>
           </motion.div>
         )}
+
+        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
       <div className="flex items-end gap-2 px-4 py-3 border-t border-surface-800/60 bg-surface-900/60 flex-shrink-0">
         <textarea
+          ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
@@ -149,7 +168,7 @@ export function SimulatorPanel({
           style={{ minHeight: '42px' }}
         />
         <button
-          onClick={() => void send()}
+          onClick={runSend}
           disabled={!input.trim() || loading}
           className="w-10 h-10 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 flex items-center justify-center flex-shrink-0 transition-all"
         >
