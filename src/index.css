@@ -189,6 +189,15 @@
   --color-status-info:           #60A5FA;
   --color-status-info-bg:        rgba(96, 165, 250, 0.12);
   --color-status-info-border:    rgba(96, 165, 250, 0.25);
+  /* `paused` (7o status de campanha, SCRUM-1018). Excecao autorizada ao
+     congelamento do index.css — ver coord/D1-decisoes.md e ONDA-1-MAPA §2.
+     Ambar proprio porque a familia de estado nao tinha um segundo ambar, e
+     `paused` e `pending` (Enviando) aparecem lado a lado no mesmo dia da
+     agenda oferecendo acoes OPOSTAS (Retomar x Pausar). No escuro fica em
+     #F59E0B: o chip pinta color-mix 85% com preto sob texto branco, dando
+     2,96:1 — o melhor dos ambar/verde da familia (pending da 2,33:1) e ainda
+     distinto do pending. Escurecer mais encostaria no vermelho de `failed`. */
+  --color-status-paused:         #F59E0B;
 
   /* ── Shell (moldura do workspace) ─────────────────────────────────────────
      Fundo do APP atrás do canvas de conteúdo. O conteúdo flutua num cartão
@@ -685,6 +694,10 @@ code, pre, kbd, samp {
   --color-status-info:        #2563EB;
   --color-status-info-bg:     rgba(37, 99, 235, 0.08);
   --color-status-info-border: rgba(37, 99, 235, 0.20);
+  /* `paused` (light): #92400E contra o #B45309 do pending. Sob o color-mix
+     85% do .color-chip da 8,79:1 com texto branco — distinto do pending E
+     acima de todos os irmaos do tema claro (pending e active dao 6,44:1). */
+  --color-status-paused:      #92400E;
 
   /* Shell (light): cinza-azulado atrás do canvas branco — profundidade Notion-like */
   --color-shell: #E2E6ED;
