@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/Button'
 import type { AgentConfig } from '@/services/agentsApi'
 import type { AgentLiveInfo, AgentMetrics } from '@/types/agentsOps'
 import {
-  WIZARD_STEPS,
   daysSince,
   draftProgress,
   formatDuration,
@@ -208,7 +207,9 @@ export function PersonaCard({ agent, live, metrics, queue, onOpen, onResume }: P
 // sem ele, o card aparece sem barra em vez de fingir "0 de 8".
 
 function DraftCard({ agent, onOpen }: { agent: AgentConfig; onOpen: (id: string) => void }) {
-  const done = draftProgress(agent.wizard_config)
+  // O prompt gerado é a 5ª etapa e não vive no `wizard_config` — vem do
+  // próprio agente.
+  const progress = draftProgress(agent.wizard_config, agent.system_prompt)
 
   return (
     <div className="rounded-[20px] border border-dashed border-surface-700 bg-transparent flex flex-col items-center justify-center text-center gap-2 p-6">
@@ -216,17 +217,24 @@ function DraftCard({ agent, onOpen }: { agent: AgentConfig; onOpen: (id: string)
         <PencilLine className="w-[18px] h-[18px]" />
       </span>
       <div className="font-semibold text-sm text-surface-200 truncate max-w-full">{agent.name || 'Rascunho sem nome'}</div>
-      {done !== null && <div className="text-[13.2px] text-surface-400">Parou em {done} de {WIZARD_STEPS}</div>}
-      {done !== null && (
+      {progress && (
+        <div className="text-[13.2px] text-surface-400">
+          Parou em {progress.done} de {progress.total}
+        </div>
+      )}
+      {progress && (
         <div
           className="w-[140px] h-1.5 rounded-full bg-surface-700 overflow-hidden"
           role="progressbar"
-          aria-valuenow={done}
+          aria-valuenow={progress.done}
           aria-valuemin={0}
-          aria-valuemax={WIZARD_STEPS}
+          aria-valuemax={progress.total}
           aria-label={`Progresso do rascunho ${agent.name || 'sem nome'}`}
         >
-          <i className="block h-full rounded-full bg-brand-500" style={{ width: `${(done / WIZARD_STEPS) * 100}%` }} />
+          <i
+            className="block h-full rounded-full bg-brand-500"
+            style={{ width: `${(progress.done / progress.total) * 100}%` }}
+          />
         </div>
       )}
       {/* O mockup diz "Continuar no Studio", mas o Studio de rascunho

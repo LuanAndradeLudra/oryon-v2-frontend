@@ -140,11 +140,18 @@ describe('PersonaCard · agente pausado', () => {
 
 describe('PersonaCard · rascunho', () => {
   it('desenha cartão tracejado com barra de progresso e CTA de continuar', () => {
+    // `wizard_config` no shape real do wizard: aninhado por seção.
     const draft = agent({
       id: 'a3',
       name: 'Rascunho sem nome',
       status: 'draft',
-      wizard_config: { nome: 'x', setor: 'y', objetivo: 'z' },
+      system_prompt: '',
+      wizard_config: {
+        identity: { name: 'Sofia', sector: 'Vendas', objective: 'vender' },
+        personality: { tone: 'formal' },
+        scope: { can_do: ['responder'] },
+        business: { company_name: '', company_description: '' },
+      },
     })
     const onOpen = vi.fn()
     const { container } = render(<PersonaCard agent={draft} onOpen={onOpen} />)
@@ -152,14 +159,14 @@ describe('PersonaCard · rascunho', () => {
     expect(container.querySelector('.border-dashed')).not.toBeNull()
     const bar = screen.getByRole('progressbar')
     expect(bar).toHaveAttribute('aria-valuenow', '3')
-    expect(bar).toHaveAttribute('aria-valuemax', '8')
-    expect(screen.getByText('Parou em 3 de 8')).toBeInTheDocument()
+    expect(bar).toHaveAttribute('aria-valuemax', '5')
+    expect(screen.getByText('Parou em 3 de 5')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Continuar rascunho' }))
     expect(onOpen).toHaveBeenCalledWith('a3')
   })
 
-  it('sem wizard_config, mostra o rascunho sem barra em vez de "0 de 8"', () => {
+  it('sem wizard_config, mostra o rascunho sem barra em vez de um número inventado', () => {
     const draft = agent({ id: 'a4', status: 'draft', wizard_config: undefined as unknown as Record<string, unknown> })
     render(<PersonaCard agent={draft} onOpen={vi.fn()} />)
 
