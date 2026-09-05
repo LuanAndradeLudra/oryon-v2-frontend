@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { useEffect, Component, Suspense } from 'react'
 import { lazyRoute, clearChunkReloadFlag } from '@/lib/lazyRoute'
 import type { ReactNode, ErrorInfo } from 'react'
@@ -70,10 +70,15 @@ const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').t
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
 const RegisterPage       = lazyRoute(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
 const CampaignsPage     = lazyRoute(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
+const CampaignComposerPage = lazyRoute(() => import('@/pages/campaigns/CampaignComposerPage').then(m => ({ default: m.CampaignComposerPage })))
+const CampaignReportPage   = lazyRoute(() => import('@/pages/campaigns/CampaignReportPage').then(m => ({ default: m.CampaignReportPage })))
 const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
 const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
 const AutomationsPage   = lazyRoute(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
 const AgentsPage        = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
+const AgentWorkspacePage = lazyRoute(() => import('@/pages/agents/AgentWorkspacePage').then(m => ({ default: m.AgentWorkspacePage })))
+const AgentStudioPage    = lazyRoute(() => import('@/pages/agents/AgentStudioPage').then(m => ({ default: m.AgentStudioPage })))
+const HandoffInboxPage   = lazyRoute(() => import('@/pages/agents/HandoffInboxPage').then(m => ({ default: m.HandoffInboxPage })))
 const PricingPage       = lazyRoute(() => import('@/pages/PricingPage').then(m => ({ default: m.PricingPage })))
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
@@ -142,6 +147,14 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
       </OnboardingGate>
     </RequireAuth>
   )
+}
+
+// /agents/:id sozinho não é uma tela — redireciona pra aba padrão do
+// Workspace (SCRUM-994/W0.1). Absoluto (não relativo) pra não depender de
+// como o router resolve `to` num Route folha sem <Outlet>.
+function AgentRedirectToOverview() {
+  const { id } = useParams<{ id: string }>()
+  return <Navigate to={`/agents/${id}/overview`} replace />
 }
 
 function RequireGuest({ children }: { children: ReactNode }) {
@@ -248,6 +261,17 @@ function AnimatedRoutes() {
           <Route path="/campaigns" element={
             <ProtectedRoute><CampaignsPage /></ProtectedRoute>
           } />
+          {/* SCRUM-994/W0.1 — esqueletos do redesign de Disparos; "new" e
+              ":id/edit" antes de outras rotas dinâmicas de /campaigns. */}
+          <Route path="/campaigns/new" element={
+            <ProtectedRoute><CampaignComposerPage /></ProtectedRoute>
+          } />
+          <Route path="/campaigns/:id/edit" element={
+            <ProtectedRoute><CampaignComposerPage /></ProtectedRoute>
+          } />
+          <Route path="/campaigns/:id/report" element={
+            <ProtectedRoute><CampaignReportPage /></ProtectedRoute>
+          } />
           {/* Raiz de settings = hub navegável (mapa das configurações) */}
           <Route path="/settings" element={
             <ProtectedRoute><SettingsPage /></ProtectedRoute>
@@ -269,6 +293,21 @@ function AnimatedRoutes() {
           } />
           <Route path="/agents" element={
             <ProtectedRoute><AgentsPage /></ProtectedRoute>
+          } />
+          {/* SCRUM-994/W0.1 — esqueletos do redesign de Agentes IA;
+              "handoffs" e "new" ANTES de ":id/:section" (segmentos
+              estáticos não podem cair na rota dinâmica). */}
+          <Route path="/agents/handoffs" element={
+            <ProtectedRoute><HandoffInboxPage /></ProtectedRoute>
+          } />
+          <Route path="/agents/new" element={
+            <ProtectedRoute><AgentStudioPage /></ProtectedRoute>
+          } />
+          <Route path="/agents/:id/:section" element={
+            <ProtectedRoute><AgentWorkspacePage /></ProtectedRoute>
+          } />
+          <Route path="/agents/:id" element={
+            <ProtectedRoute><AgentRedirectToOverview /></ProtectedRoute>
           } />
 
           {/* ── Admin (Oryon staff) ──────────────────────────────────── */}
