@@ -37,7 +37,7 @@ export function InsightCard({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-surface-700 p-3 flex gap-3 items-start',
+        'rounded-lg border border-surface-700 px-3.5 py-3 flex gap-3 items-start',
         dashed ? 'border-dashed bg-transparent' : 'bg-surface-800',
         className,
       )}
@@ -50,7 +50,7 @@ export function InsightCard({
       </span>
       <div className="min-w-0 flex-1">
         <div className="text-[13.2px] font-semibold text-surface-100">{title}</div>
-        <div className="text-xs text-surface-400 mt-0.5 leading-relaxed">{description}</div>
+        <div className="text-xs text-surface-400 mt-0.5 leading-[1.45]">{description}</div>
         {actions && <div className="flex gap-1.5 mt-2">{actions}</div>}
       </div>
     </div>
