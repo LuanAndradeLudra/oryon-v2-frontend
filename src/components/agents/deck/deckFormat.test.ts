@@ -73,6 +73,22 @@ describe('formatDuration', () => {
     expect(formatDuration(null).value).toBe('—')
     expect(formatDuration(undefined).value).toBe('—')
     expect(formatDuration(Number.NaN).value).toBe('—')
+    expect(formatDuration(Number.POSITIVE_INFINITY).value).toBe('—')
+  })
+
+  // Regressão (achado do Lince no #126): `avgResponseSec` é uma média e chega
+  // fracionada do backend. Arredondar o resto DEPOIS de dividir produzia
+  // carimbos que não existem no relógio.
+  it('não produz "60s", "1m60" nem "59m60" com segundos fracionados', () => {
+    expect(formatDuration(59.6)).toEqual({ value: '1', unit: 'm' })
+    expect(formatDuration(119.6)).toEqual({ value: '2', unit: 'm' })
+    expect(formatDuration(3599.8)).toEqual({ value: '1', unit: 'h' })
+  })
+
+  it('arredonda o total uma vez só, sem deslocar a faixa', () => {
+    expect(formatDuration(59.4)).toEqual({ value: '59', unit: 's' })
+    expect(formatDuration(102.4)).toEqual({ value: '1m42', unit: undefined })
+    expect(formatDuration(3599.4)).toEqual({ value: '59m59', unit: undefined })
   })
 })
 
@@ -103,17 +119,60 @@ describe('personaAccent / personaInitial', () => {
 })
 
 describe('draftProgress', () => {
-  it('conta só os campos preenchidos do wizard', () => {
-    expect(draftProgress({ a: 'x', b: 'y', c: 'z' })).toBe(3)
-    expect(draftProgress({ a: 'x', b: '', c: null, d: undefined, e: [] })).toBe(1)
+  // O wizard grava `wizard_config` ANINHADO por seção (useStudioDraft), não
+  // plano. Estes testes usam o shape real.
+  const cheio = {
+    identity: { name: 'Sofia', icon: 'bot', sector: 'Vendas', objective: 'vender' },
+    personality: { persona_name: '', tone: 'entusiasmada', language: 'pt-BR', response_style: [] },
+    scope: { can_do: ['responder'], cannot_do: [], faqs: [] },
+    business: { company_name: 'Acme', company_description: 'loja', products_services: '' },
+    deployment: { channels_whatsapp: true, channels_messenger: false, handoff_rules: [] },
+  }
+
+  // Regressão (achado do Lince no #126): a versão anterior contava CAMPOS
+  // sobre denominador de ETAPAS e tratava qualquer valor não-vazio como
+  // preenchido. Um rascunho recém-criado nascia com a barra quase cheia — no
+  // estado inicial, que é onde o card de rascunho passa a vida.
+  it('rascunho recém-criado começa em zero, não cheio', () => {
+    const vazio = {
+      identity: { name: '', icon: 'bot', sector: '', objective: '' },
+      personality: { persona_name: '', tone: '', language: 'pt-BR', response_style: [] },
+      scope: { can_do: [], cannot_do: [], faqs: [] },
+      business: { company_name: '', company_description: '', products_services: '' },
+      deployment: { channels_whatsapp: true, channels_messenger: false, handoff_rules: [] },
+    }
+    expect(draftProgress(vazio, '')).toEqual({ done: 0, total: 5 })
   })
 
-  it('nunca passa do total de etapas', () => {
-    const cheio = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`k${i}`, 'v']))
-    expect(draftProgress(cheio)).toBe(WIZARD_STEPS)
+  it('não conta `false` como preenchido (o canal desligado não é progresso)', () => {
+    const soCanais = { deployment: { channels_whatsapp: true, channels_messenger: false }, identity: {} }
+    expect(draftProgress(soCanais, '')).toEqual({ done: 0, total: 5 })
   })
 
-  it('sem wizard_config, devolve null — o card some com a barra em vez de dizer "0 de 8"', () => {
-    expect(draftProgress(undefined)).toBeNull()
+  it('conta uma etapa só quando TODOS os campos que o wizard exige estão lá', () => {
+    const meiaIdentidade = { ...cheio, identity: { name: 'Sofia', sector: '', objective: '' } }
+    expect(draftProgress(meiaIdentidade, '')?.done).toBe(3) // personalidade, escopo, negócio
+    expect(draftProgress(cheio, '')?.done).toBe(4)
+  })
+
+  it('a quinta etapa é o prompt gerado, que não vive no wizard_config', () => {
+    expect(draftProgress(cheio, 'Você é a Sofia...')).toEqual({ done: 5, total: 5 })
+  })
+
+  it('espaço em branco não conta como preenchido', () => {
+    const brancos = { ...cheio, personality: { tone: '   ' } }
+    expect(draftProgress(brancos, '')?.done).toBe(3)
+  })
+
+  it('sem wizard_config, devolve null — o card some com a barra', () => {
+    expect(draftProgress(undefined, '')).toBeNull()
+  })
+
+  it('com wizard_config de shape desconhecido, devolve null em vez de chutar', () => {
+    expect(draftProgress({ foo: 'bar', baz: 1 }, '')).toBeNull()
+  })
+
+  it('WIZARD_STEPS é o total contado, não o número de telas do wizard', () => {
+    expect(WIZARD_STEPS).toBe(5)
   })
 })

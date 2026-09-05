@@ -44,16 +44,23 @@ export interface MetricParts {
   unit?: string
 }
 
-/** 58s · 1m42 · 2h — mesma leitura de "Resposta" no mockup. */
+/** 58s · 1m42 · 2h — mesma leitura de "Resposta" no mockup.
+ *
+ *  O arredondamento acontece UMA vez, no total de segundos, antes de decompor
+ *  em minutos e segundos. Arredondar o resto depois da divisão produzia
+ *  carimbos impossíveis quando o valor chega fracionado do backend
+ *  (`avgResponseSec` é média, então vem float): 59.6 virava "60s", 119.6
+ *  virava "1m60" e 3599.8 virava "59m60". */
 export function formatDuration(seconds: number | null | undefined): MetricParts {
-  if (seconds === null || seconds === undefined || Number.isNaN(seconds)) return { value: '—' }
-  if (seconds < 60) return { value: String(Math.round(seconds)), unit: 's' }
-  if (seconds < 3600) {
-    const m = Math.floor(seconds / 60)
-    const s = Math.round(seconds % 60)
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) return { value: '—' }
+  const total = Math.round(seconds)
+  if (total < 60) return { value: String(total), unit: 's' }
+  if (total < 3600) {
+    const m = Math.floor(total / 60)
+    const s = total % 60
     return { value: s > 0 ? `${m}m${String(s).padStart(2, '0')}` : String(m), unit: s > 0 ? undefined : 'm' }
   }
-  return { value: String(Math.floor(seconds / 3600)), unit: 'h' }
+  return { value: String(Math.floor(total / 3600)), unit: 'h' }
 }
 
 /** Percentual inteiro, ou "—" quando o denominador é 0 (uma taxa sem base não
@@ -82,19 +89,67 @@ export function personaInitial(name: string): string {
 
 // ── Rascunho ──────────────────────────────────────────────────────────────
 
-/** Etapas do wizard de criação (AgentBuilderWizard) — denominador da barra de
- *  progresso do card de rascunho. */
-export const WIZARD_STEPS = 8
+/** As etapas do wizard que têm critério objetivo de "preenchida" — as mesmas
+ *  cinco que `useStudioDraft.validate()` exige para avançar. O wizard tem oito
+ *  telas, mas três delas (passar para humano, base de conhecimento, revisão)
+ *  não têm campo obrigatório: contá-las exigiria inventar um critério, e um
+ *  denominador de 8 com três etapas que ninguém sabe medir daria um número
+ *  bonito e falso. Por isso a barra conta 5, e o card diz "de 5". */
+const DRAFT_STEPS = [
+  'identidade',
+  'personalidade',
+  'escopo',
+  'negócio',
+  'prompt',
+] as const
 
-/** Quantas etapas do rascunho já têm valor em `wizard_config`. `null` quando o
- *  agente não tem `wizard_config` nenhum: aí o card mostra o rascunho sem
- *  barra, em vez de afirmar "0 de 8" sobre um progresso desconhecido. */
-export function draftProgress(wizardConfig: Record<string, unknown> | undefined): number | null {
+export const WIZARD_STEPS = DRAFT_STEPS.length
+
+export interface DraftProgress {
+  done: number
+  total: number
+}
+
+/** Estrutura que o wizard grava em `agent_configs.wizard_config` — aninhada
+ *  por seção (`useStudioDraft`), não plana. */
+interface WizardConfigShape {
+  identity?: { name?: unknown; sector?: unknown; objective?: unknown }
+  personality?: { tone?: unknown }
+  scope?: { can_do?: unknown }
+  business?: { company_name?: unknown; company_description?: unknown }
+}
+
+const preenchido = (v: unknown): boolean =>
+  typeof v === 'string' ? v.trim().length > 0 : Array.isArray(v) ? v.length > 0 : false
+
+/**
+ * Progresso do rascunho, contado por ETAPA com o mesmo critério que o wizard
+ * usa para deixar o usuário avançar. `null` quando o `wizard_config` não tem
+ * nenhuma das seções conhecidas — aí o card aparece sem barra, em vez de
+ * afirmar um progresso que ninguém consegue verificar.
+ *
+ * A versão anterior contava CAMPOS sobre um denominador de ETAPAS e tratava
+ * qualquer valor não-vazio como preenchido, inclusive `false`. Como o
+ * `wizard_config` real é aninhado em cinco seções, um rascunho recém-criado
+ * contava as seções como cinco campos preenchidos e a barra nascia quase
+ * cheia — no estado inicial, que é justamente onde o card de rascunho vive.
+ */
+export function draftProgress(
+  wizardConfig: Record<string, unknown> | undefined,
+  systemPrompt?: string | null,
+): DraftProgress | null {
   if (!wizardConfig || typeof wizardConfig !== 'object') return null
-  const filled = Object.values(wizardConfig).filter((v) => {
-    if (v === null || v === undefined || v === '') return false
-    if (Array.isArray(v)) return v.length > 0
-    return true
-  }).length
-  return Math.min(WIZARD_STEPS, filled)
+  const cfg = wizardConfig as WizardConfigShape
+  const conhecido = ['identity', 'personality', 'scope', 'business'].some((k) => k in cfg)
+  if (!conhecido) return null
+
+  let done = 0
+  const id = cfg.identity
+  if (id && preenchido(id.name) && preenchido(id.sector) && preenchido(id.objective)) done++
+  if (cfg.personality && preenchido(cfg.personality.tone)) done++
+  if (cfg.scope && preenchido(cfg.scope.can_do)) done++
+  if (cfg.business && preenchido(cfg.business.company_name) && preenchido(cfg.business.company_description)) done++
+  if (preenchido(systemPrompt)) done++
+
+  return { done, total: WIZARD_STEPS }
 }
