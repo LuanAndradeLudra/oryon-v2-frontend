@@ -77,9 +77,3 @@ export function parsePromptDoc(content: string): PromptLine[] {
   if (content === '') return []
   return content.split('\n').map(parsePromptLine)
 }
-
-/** Largura do gutter em caracteres, para a coluna não "pular" ao passar de 9
- *  para 10 linhas. */
-export function gutterWidth(lineCount: number): number {
-  return String(Math.max(lineCount, 1)).length
-}

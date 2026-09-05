@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { gutterWidth, parseBold, parsePromptDoc, parsePromptLine } from './promptDocCore'
+import { parseBold, parsePromptDoc, parsePromptLine } from './promptDocCore'
 
 describe('promptDocCore — classificação de linha', () => {
   it('reconhece os 3 níveis de cabeçalho e tira o marcador', () => {
@@ -78,12 +78,5 @@ describe('promptDocCore — documento', () => {
 
   it('preserva a linha em branco final (o textarea a tem, o doc também)', () => {
     expect(parsePromptDoc('a\n')).toHaveLength(2)
-  })
-
-  it('gutter não muda de largura no meio da lista', () => {
-    expect(gutterWidth(9)).toBe(1)
-    expect(gutterWidth(10)).toBe(2)
-    expect(gutterWidth(100)).toBe(3)
-    expect(gutterWidth(0)).toBe(1)
   })
 })
