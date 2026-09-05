@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { chatWithAgent, startTestSession, endTestSession } from '@/services/agentsApi'
-import type { AgentConfigWithTools } from '@/services/agentsApi'
+import type { AgentConfigWithTools, HandoffRule } from '@/services/agentsApi'
 
 export interface SimulatorMessage {
   id: string
@@ -55,11 +55,14 @@ Quando uma regra for ativada, responda SOMENTE com o texto do template configura
  * `systemPrompt` is optional so a caller with an unpublished draft (A2) can
  * override the prompt sent to the backend; when omitted, behavior is
  * unchanged from before the extraction — it falls back to
- * `buildTestSystemPrompt(agent)`.
+ * `buildTestSystemPrompt(agent)`. `handoffRules` is the same idea for a
+ * draft's not-yet-published rules — passed through to `POST
+ * /agents/builder/chat` only when present; omitted, it's zero behavior
+ * change (and a no-op today if the endpoint doesn't read the field yet).
  */
 export function useAgentSimulator(
   agent: AgentConfigWithTools,
-  opts?: { systemPrompt?: string; onFirstReply?: () => void },
+  opts?: { systemPrompt?: string; handoffRules?: HandoffRule[]; onFirstReply?: () => void },
 ) {
   const [messages, setMessages] = useState<SimulatorMessage[]>([])
   const [input, setInput] = useState('')
@@ -92,6 +95,7 @@ export function useAgentSimulator(
       const reply = await chatWithAgent(effectiveSystemPrompt, history, {
         sessionId: sessionIdRef.current ?? undefined,
         agentId:   agent.id,
+        handoffRules: opts?.handoffRules,
       })
       const agentMsg: SimulatorMessage = { id: `a-${Date.now()}`, role: 'assistant', content: reply, ts: new Date() }
       setMessages(prev => [...prev, agentMsg])
