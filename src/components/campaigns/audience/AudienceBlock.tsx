@@ -274,7 +274,11 @@ export function AudienceBlock({
       </div>
 
       {/* ── Coluna viva ── */}
-      <div className="border-l border-surface-800 bg-surface-900 p-5 flex flex-col gap-3.5 overflow-auto">
+      {/* `min-w-0` nas DUAS colunas, como o mockup faz em `.aud>div` — sem
+          isso o `min-width:auto` do grid deixa um nome de contato longo ou o
+          texto do insight empurrar a coluna além dos 380 e quebrar o layout,
+          justamente quando o público tem alguém de nome comprido. */}
+      <div className="border-l border-surface-800 bg-surface-900 p-5 flex flex-col gap-3.5 overflow-auto min-w-0">
         <LiveCount
           evaluation={result}
           loading={loading}

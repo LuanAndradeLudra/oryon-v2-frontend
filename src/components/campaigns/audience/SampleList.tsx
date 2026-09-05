@@ -40,7 +40,10 @@ export function SampleList({ contacts, total, onViewAll, stageLabel }: SampleLis
             className="flex gap-2.5 items-center py-2 text-[12.5px] border-b border-surface-800 last:border-b-0"
           >
             <Avatar name={contact.displayName} size="sm" />
-            <span className="font-semibold text-surface-100 truncate">{contact.displayName}</span>
+            {/* `truncate` sozinho nao corta dentro de um flex: o item so
+                encolhe abaixo do proprio conteudo com `min-w-0`. Sem os dois
+                juntos, um nome longo continua empurrando a coluna. */}
+            <span className="font-semibold text-surface-100 truncate min-w-0">{contact.displayName}</span>
             {contact.stage && (
               <span className="text-[10px] px-1.5 rounded border border-surface-700 text-surface-400 flex-shrink-0">
                 {stageLabel?.(contact.stage) ?? contact.stage}
