@@ -5,7 +5,8 @@ import { Banner } from '@/components/ui/Banner'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { AgentIcon } from '@/components/agents/AgentIcons'
 import { CRM_CAPABILITIES_CATALOG } from '@/components/agents/crmCapabilitiesCatalog'
-import type { AgentCrmCapabilities, AgentCrmCapabilityConfig, CrmCapabilityId } from '@/services/agentsApi'
+import type { AgentCrmCapabilityConfig, CrmCapabilityId } from '@/services/agentsApi'
+import { toggleCrmCapability } from '../crmCapabilities'
 import type { WizardData } from '../types'
 import { SECTORS, TONES } from './constants'
 import { PromptReviewModal } from './PromptReviewModal'
@@ -26,25 +27,13 @@ function CapabilitiesReview({
     data.crm_capabilities.capabilities.map((c) => [c.id, c]),
   )
 
+  // A regra vive em `studio/crmCapabilities.ts` porque o card "Capacidades de
+  // CRM" do blueprint (A3) liga as mesmas capacidades. O que não pode divergir
+  // entre os dois é a aplicação dos `defaultConstraints` conservadores do
+  // catálogo (ex.: bloquear "resolved") — esquecer isso num dos caminhos
+  // habilitaria a capacidade sem limite nenhum.
   const toggle = (id: CrmCapabilityId, enable: boolean) => {
-    const entry = CRM_CAPABILITIES_CATALOG.find((c) => c.id === id)
-    setData((d) => {
-      const without = d.crm_capabilities.capabilities.filter((c) => c.id !== id)
-      const nextCaps: AgentCrmCapabilityConfig[] = enable
-        ? [
-            ...without,
-            {
-              id,
-              enabled: true,
-              // Apply the catalog's conservative defaults (e.g. block 'resolved'
-              // status). User can refine later in the "Capacidades" tab.
-              ...(entry?.defaultConstraints ? { constraints: entry.defaultConstraints } : {}),
-            },
-          ]
-        : without
-      const updated: AgentCrmCapabilities = { capabilities: nextCaps }
-      return { ...d, crm_capabilities: updated }
-    })
+    setData((d) => toggleCrmCapability(d, id, enable))
   }
 
   const enabledCount = data.crm_capabilities.capabilities.filter((c) => c.enabled).length

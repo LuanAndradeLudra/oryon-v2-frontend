@@ -54,7 +54,7 @@ export function SimulatorPanel({
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' })
   }, [messages, loading])
 
   // `send()` ja resolve depois do seu proprio finally (setLoading(false)),

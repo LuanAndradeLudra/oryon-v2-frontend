@@ -24,9 +24,21 @@ export function readSession() {
  * cross step boundaries (creation/publish, prompt generation). Step-local UI
  * state (the Contexto da IA hub editor in Step4, file-upload progress in
  * Step6) stays inside those step components — see W0.3-mapa.md, decisão (1).
+ *
+ * Dois consumidores hoje: o wizard modal (`studio/AgentBuilderWizard.tsx`) e a
+ * página do Studio (`pages/agents/AgentStudioPage.tsx`, A3). Nenhum dos dois
+ * precisa saber do outro.
  */
-export function useStudioDraft() {
-  const [data, setData] = useState<WizardData>(DEFAULT_DATA)
+export function useStudioDraft(inicial?: Partial<WizardData>) {
+  // `inicial` existe para a A5 (galeria de arquétipos): escolher um arquétipo
+  // pré-preenche tom, escopo, regras e capacidades típicas, e a pessoa cai no
+  // Studio já com o rascunho encaminhado. Ausente = DEFAULT_DATA, que é o
+  // comportamento de sempre — o wizard modal não passa nada e não muda.
+  //
+  // Inicializador preguiçoso: só o primeiro render conta. Trocar de arquétipo
+  // depois teria de ser um remount, não uma mudança de prop, senão sobrescrever-
+  // -ia o que a pessoa já digitou.
+  const [data, setData] = useState<WizardData>(() => ({ ...DEFAULT_DATA, ...inicial }))
   const [step, setStep] = useState(1)
   const [publishing, setPublishing] = useState(false)
   const [publishError, setPublishError] = useState<string | null>(null)
