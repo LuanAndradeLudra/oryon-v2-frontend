@@ -3,7 +3,7 @@
 // conteúdo real de AgentDetail/CampaignsTab (fora do escopo desta história —
 // são mockados aqui como stubs).
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
 // ── Mocks compartilhados com smoke.test.tsx (mesmo padrão) ──────────────────
@@ -241,10 +241,21 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(await screen.findByText(/Nenhuma campanha de disparo encontrada/i, {}, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
-  it('/campaigns?view=agenda mostra o esqueleto da Agenda', async () => {
+  it('/campaigns?view=agenda mostra a Agenda real (D1/SCRUM-1018)', async () => {
     await renderAt('/campaigns?view=agenda')
-    expect(await screen.findByText(/Agenda em construção/i)).toBeInTheDocument()
-  })
+    // A casca deixou de ser esqueleto: com campanhas=[] (axios mockado) a
+    // Agenda renderiza o próprio estado vazio.
+    expect(await screen.findByText(/Nenhum disparo por aqui/i, {}, { timeout: SLOW }))
+      .toBeInTheDocument()
+  }, SLOW)
+
+  it('o seletor de vista dá acesso a Agenda e Board (antes só pela query string)', async () => {
+    await renderAt('/campaigns?view=agenda')
+    const seletor = await screen.findByRole('tablist', { name: 'Vista dos disparos' }, { timeout: SLOW })
+    expect(within(seletor).getByRole('tab', { name: /Agenda/ })).toHaveAttribute('aria-selected', 'true')
+    expect(within(seletor).getByRole('tab', { name: /Board/ })).toBeInTheDocument()
+    expect(within(seletor).getByRole('tab', { name: /Lista/ })).toBeInTheDocument()
+  }, SLOW)
 
   it('/campaigns?view=board mostra o esqueleto do Board', async () => {
     await renderAt('/campaigns?view=board')
