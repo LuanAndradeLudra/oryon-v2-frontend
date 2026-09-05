@@ -1,306 +1,155 @@
 // ─── Agentes · view de Lista ──────────────────────────────────────────────
-// MOVIMENTO PURO (A1/SCRUM-1012): este arquivo é o list+detail que vivia
-// dentro de `pages/agents/AgentsPage.tsx`, recortado sem mudança de
-// comportamento — mesma coluna de 320px com filtro por status, mesmo painel de
-// detalhe, mesmos textos. A única alteração de conteúdo é o `STATUS_CONFIG`,
-// que era uma cópia byte-a-byte da constante e agora vem de
-// `agents/detail/constants` (achado do Lince na revisão da W0.2).
+// A4 (SCRUM-1015): a Lista deixa de ser coluna + painel de detalhe e passa a
+// ser uma coluna de linhas que abrem no lugar (`.xrow` do mockup). A
+// configuração do agente sai daqui e passa a viver no Workspace, atrás de
+// "Abrir workspace" — decisão do Maestro: a Lista é triagem, o Workspace é
+// onde se configura. Configurar num painel espremido ao lado de uma lista era
+// justamente o que o redesenho veio corrigir.
 //
-// Por que sair da página: a `AgentsPage` virou um roteador fino entre as duas
-// views (Deck e Lista), e a A4 vai reescrever a Lista por dentro — linha com
-// sparkline e expansão inline. Com o recorte feito agora, a A4 mexe só neste
-// diretório e nunca mais na página, em vez de a A1 pôr de pé um bloco que a A4
-// jogaria fora.
-//
-// O estado "nenhum agente no tenant" NÃO mora aqui: é condição da rota, vale
-// igual para o Deck, e é decidido um nível acima (ver AgentsPage).
+// A assinatura de props é a mesma que a A1 deixou, então `AgentsPage` não muda.
 
-import { useCallback, useEffect, useState } from 'react'
-import { Bot, ChevronRight, ExternalLink, Copy, ToggleRight, Pause, FileText } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Bot, Search } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SkeletonList } from '@/components/ui/Skeleton'
+import { AgentTestModal } from '@/components/agents/AgentTestModal'
+import { useDeckData } from '@/components/agents/deck/useDeckData'
 import { getAgent } from '@/services/agentsApi'
 import type { AgentConfig, AgentConfigWithTools } from '@/services/agentsApi'
-import { useContextMenu } from '@/hooks/useContextMenu'
-import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
-import { AgentIcon } from '@/components/agents/AgentIcons'
-import { AgentDetail } from '@/components/agents/AgentDetail'
-import { STATUS_CONFIG } from '@/components/agents/detail/constants'
-import { SkeletonList, SkeletonCard, Skeleton } from '@/components/ui/Skeleton'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { isAgentStale, type CompanyHubData } from '@/services/companyContextService'
+import type { CompanyHubData } from '@/services/companyContextService'
+import { AgentRow } from './AgentRow'
+import { AgentRowExpanded } from './AgentRowExpanded'
+import { useAgentHealth } from './useAgentHealth'
 
-// ─── Relative time ────────────────────────────────────────────────────────────
-// Formato próprio da Lista ("3d atrás"), preservado como estava. O Deck usa um
-// formato diferente ("há 3d") em `deck/deckFormat`; unificar os dois mudaria o
-// texto de uma das telas, o que este movimento não deve fazer.
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const min = Math.floor(diff / 60000)
-  if (min < 1)  return 'agora mesmo'
-  if (min < 60) return `${min}min atrás`
-  const h = Math.floor(min / 60)
-  if (h < 24)   return `${h}h atrás`
-  const d = Math.floor(h / 24)
-  if (d < 30)   return `${d}d atrás`
-  return new Date(iso).toLocaleDateString('pt-BR')
-}
-
-// ─── Agent card (left list) ───────────────────────────────────────────────────
-
-function AgentCard({
-  agent,
-  selected,
-  onClick,
-  stale,
-  onStatusChange,
-}: {
-  agent: AgentConfig
-  selected: boolean
-  onClick: () => void
-  stale?: boolean
-  onStatusChange?: (id: string, status: AgentConfig['status']) => void
-}) {
-  const buildContextMenu = useCallback((): ContextMenuEntry[] => {
-    const items: ContextMenuEntry[] = [
-      { label: 'Abrir', icon: ExternalLink, onClick },
-      {
-        label: 'Copiar nome',
-        icon: Copy,
-        onClick: () => navigator.clipboard.writeText(agent.name).catch(() => {}),
-      },
-    ]
-    if (onStatusChange) {
-      items.push({ separator: true })
-      if (agent.status !== 'active') {
-        items.push({ label: 'Ativar', icon: ToggleRight, onClick: () => onStatusChange(agent.id, 'active') })
-      }
-      if (agent.status !== 'paused') {
-        items.push({ label: 'Pausar', icon: Pause, onClick: () => onStatusChange(agent.id, 'paused') })
-      }
-      if (agent.status !== 'draft') {
-        items.push({ label: 'Mover para rascunho', icon: FileText, onClick: () => onStatusChange(agent.id, 'draft') })
-      }
-    }
-    return items
-  }, [agent, onClick, onStatusChange])
-
-  const { onContextMenu } = useContextMenu(buildContextMenu)
-
-  const statusCfg = STATUS_CONFIG[agent.status]
-
-  return (
-    <button
-      onClick={onClick}
-      onContextMenu={onContextMenu}
-      className={cn(
-        'relative w-full text-left pl-4 pr-3 py-3 rounded-2xl border transition-colors duration-150 group cursor-pointer',
-        selected
-          ? 'bg-brand-600/10 border-brand-500/30'
-          : 'bg-surface-900/50 border-surface-800/60 hover:bg-surface-800/60 hover:border-surface-700',
-      )}
-    >
-      {/* Accent bar de seleção — sinal periférico que não depende de cor de fundo */}
-      <span
-        aria-hidden
-        className={cn(
-          'absolute left-0 top-3 bottom-3 w-[3px] rounded-full transition-colors',
-          selected ? 'bg-brand-500' : 'bg-transparent',
-        )}
-      />
-      <div className="flex items-center gap-3">
-        <AgentIcon iconId={agent.icon} className="w-9 h-9" />
-        <div className="flex-1 min-w-0">
-          {/* Nome em linha própria — status desceu p/ a meta row, então o
-              nome não trunca mais por competir com o badge */}
-          <span className="block text-sm font-semibold text-surface-100 truncate">{agent.name}</span>
-          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-surface-500">
-            <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: statusCfg.chip }}
-            />
-            <span>{statusCfg.label}</span>
-            <span className="text-surface-700">·</span>
-            <span className="truncate">{relativeTime(agent.updated_at)}</span>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-          {stale && (
-            <span
-              title="Contexto da IA foi atualizado — sincronize o prompt"
-              className="w-2 h-2 rounded-full bg-status-pending ring-2 ring-status-pending-border"
-            />
-          )}
-          <ChevronRight className={cn(
-            'w-4 h-4 transition-all',
-            selected ? 'text-brand-400 translate-x-0.5' : 'text-surface-700 group-hover:text-surface-500',
-          )} />
-        </div>
-      </div>
-    </button>
-  )
-}
-
-// ─── View ─────────────────────────────────────────────────────────────────────
+type StatusFilter = 'all' | AgentConfig['status']
 
 export interface AgentsListViewProps {
   agents: AgentConfig[]
   loading: boolean
-  /** Hub de contexto da empresa — alimenta o ponto "prompt desatualizado". */
+  /** Mantido na assinatura por compatibilidade com a página. A A4 não usa o
+   *  marcador de "prompt desatualizado" na linha: esse sinal passou para o
+   *  bloco Saúde da expansão e para a coluna Atenção do Deck. */
   hub: CompanyHubData | null
-  /** Muda o status e devolve o agente atualizado (ou `null` se falhou), para
-   *  a view refletir a mudança também no painel de detalhe aberto — que é o
-   *  que a página fazia antes do recorte. */
   onStatusChange: (id: string, status: AgentConfig['status']) => Promise<AgentConfig | null>
-  /** Chamado quando um agente é excluído: a página recarrega a lista. */
+  /** Chamado quando a lista precisa ser recarregada. */
   onAgentsChanged: () => void
-  /** Agente recém-criado pelo wizard. A view o adota como seleção — é o que a
-   *  AgentsPage fazia com `setSelectedAgent(agent)` antes deste recorte. Vem
-   *  completo do wizard, então não precisa de `getAgent`. */
-  createdAgent?: AgentConfigWithTools | null
+  /** Abre o Workspace do agente. Opcional: sem ela, a view navega sozinha
+   *  para `/agents/:id/overview`. Existe para a página poder injetar outra
+   *  navegação sem que a Lista precise de mudança. */
+  onOpenAgent?: (id: string) => void
 }
 
-export function AgentsListView({ agents, loading, hub, createdAgent, onStatusChange, onAgentsChanged }: AgentsListViewProps) {
-  const [selectedAgent, setSelectedAgent] = useState<AgentConfigWithTools | null>(null)
-  const [loadingDetail, setLoadingDetail] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<'all' | AgentConfig['status']>('all')
-  const [testedAgentIds, setTestedAgentIds] = useState<Set<string>>(new Set())
+export function AgentsListView({ agents, loading, onStatusChange, onOpenAgent }: AgentsListViewProps) {
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [query, setQuery] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [testAgent, setTestAgent] = useState<AgentConfigWithTools | null>(null)
+  const [testLoadingId, setTestLoadingId] = useState<string | null>(null)
+  const navigate = useNavigate()
 
-  // Espelha no detalhe aberto a mudança feita pelo menu de contexto da linha —
-  // comportamento preservado do que a AgentsPage fazia antes deste recorte.
-  const handleStatusChange = useCallback(async (id: string, status: AgentConfig['status']) => {
-    const updated = await onStatusChange(id, status)
-    if (updated) setSelectedAgent((prev) => (prev && prev.id === id ? { ...prev, ...updated } : prev))
-  }, [onStatusChange])
+  const deck = useDeckData(agents, !loading)
+  const health = useAgentHealth(expandedId)
 
-  // Só reage à identidade do agente criado: uma seleção posterior do usuário
-  // não é desfeita, porque `createdAgent` continua o mesmo objeto.
-  useEffect(() => {
-    if (createdAgent) setSelectedAgent(createdAgent)
-  }, [createdAgent])
+  const counts = useMemo(() => ({
+    all: agents.length,
+    active: agents.filter((a) => a.status === 'active').length,
+    paused: agents.filter((a) => a.status === 'paused').length,
+    draft: agents.filter((a) => a.status === 'draft').length,
+  }), [agents])
 
-  const selectAgent = async (id: string) => {
-    setLoadingDetail(true)
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return agents
+      .filter((a) => (statusFilter === 'all' ? true : a.status === statusFilter))
+      .filter((a) => (q ? a.name.toLowerCase().includes(q) || (a.sector ?? '').toLowerCase().includes(q) : true))
+  }, [agents, statusFilter, query])
+
+  /** Acordeão: abrir uma fecha a outra, como no mockup. */
+  const toggle = useCallback((id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id))
+  }, [])
+
+  // O simulador precisa do agente completo (`AgentConfigWithTools`) e a Lista
+  // só tem o resumo. Busca no clique, não ao expandir: quem abre a linha para
+  // ver saúde não paga por um teste que não vai rodar.
+  const abrirSimulador = useCallback(async (id: string) => {
+    setTestLoadingId(id)
     try {
-      const agent = await getAgent(id)
-      setSelectedAgent(agent)
+      setTestAgent(await getAgent(id))
+    } catch {
+      // sem toast aqui: o botão volta ao normal e a ação pode ser repetida
     } finally {
-      setLoadingDetail(false)
+      setTestLoadingId(null)
     }
-  }
-
-  const filtered = statusFilter === 'all' ? agents : agents.filter(a => a.status === statusFilter)
-
-  const counts = {
-    all:    agents.length,
-    active:  agents.filter(a => a.status === 'active').length,
-    draft:   agents.filter(a => a.status === 'draft').length,
-    paused:  agents.filter(a => a.status === 'paused').length,
-  }
+  }, [])
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      {/* ── Left: Agent list ── */}
-      <div className="w-80 flex-shrink-0 flex flex-col border-r border-surface-800/60">
-        {/* Cabeçalho da coluna — identifica a lista e o total sem depender do TopBar */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
-          <h2 className="text-sm font-display font-bold text-surface-100">Agentes</h2>
-          <span className="text-xs font-medium text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full tabular-nums">
-            {counts.all}
-          </span>
-        </div>
-
-        {/* Status filter */}
-        <div className="px-3 pb-2 flex-shrink-0">
-          <div className="flex items-center gap-0.5 bg-surface-900 border border-surface-800 rounded-xl p-1">
-            {([['all', 'Todos'], ['active', 'Ativos'], ['draft', 'Rascunhos'], ['paused', 'Pausados']] as const).map(([val, label]) => (
-              <button
-                key={val}
-                onClick={() => setStatusFilter(val)}
-                className={cn(
-                  'flex-1 text-center text-xs py-1.5 rounded-lg transition-colors cursor-pointer',
-                  statusFilter === val
-                    ? 'bg-surface-700 text-surface-100 font-medium shadow-sm'
-                    : 'text-surface-500 hover:text-surface-300',
-                )}
-              >
-                {label}
-                {counts[val] > 0 && (
-                  <span className={cn('ml-1 tabular-nums', statusFilter === val ? 'text-surface-400' : 'text-surface-600')}>
-                    {counts[val]}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* List */}
-        <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
-          {loading ? (
-            <SkeletonList items={5} />
-          ) : filtered.length === 0 ? (
-            <EmptyState
-              icon={Bot}
-              title={statusFilter === 'all' ? 'Nenhum agente ainda' : 'Nenhum agente neste status'}
-              className="py-10"
-              iconStyle={{ color: 'color-mix(in srgb, var(--color-accent-violet) 55%, transparent)' }}
-            />
-          ) : (
-            filtered.map(agent => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                selected={selectedAgent?.id === agent.id}
-                onClick={() => selectAgent(agent.id)}
-                stale={hub ? isAgentStale(agent.updated_at, hub) : false}
-                onStatusChange={(id, status) => { void handleStatusChange(id, status) }}
-              />
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* ── Right: Detail panel ── */}
-      <div className="flex-1 overflow-hidden">
-        {loadingDetail ? (
-          <div className="px-6 pt-6 space-y-4">
-            {/* Skeleton espelha o header + tabs do detail — sem "flash" de spinner */}
-            <div className="flex items-center gap-4">
-              <Skeleton className="w-12 h-12 rounded-2xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-3 w-32 bg-surface-800/70" />
-              </div>
-            </div>
-            <Skeleton className="h-9 w-full max-w-lg bg-surface-800/60" />
-            <SkeletonCard lines={4} />
-          </div>
-        ) : selectedAgent ? (
-          <AgentDetail
-            key={selectedAgent.id}
-            agent={selectedAgent}
-            tested={testedAgentIds.has(selectedAgent.id)}
-            onTested={() => setTestedAgentIds(prev => new Set([...prev, selectedAgent.id]))}
-            onDeleted={() => {
-              setSelectedAgent(null)
-              onAgentsChanged()
-            }}
+    <div className="flex-1 min-h-0 overflow-y-auto p-6 bg-surface-950">
+      <div className="flex items-center justify-between gap-3 mb-3.5">
+        <SegmentedControl<StatusFilter>
+          label="Filtrar agentes por status"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: 'all', label: 'Todos', count: counts.all },
+            { value: 'active', label: 'Ativos', count: counts.active },
+            { value: 'paused', label: 'Pausados', count: counts.paused },
+            { value: 'draft', label: 'Rascunhos', count: counts.draft },
+          ]}
+        />
+        <label className="relative flex-shrink-0">
+          <span className="sr-only">Buscar agente</span>
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-surface-500" aria-hidden />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar"
+            className="w-[240px] pl-8 pr-3 py-2 rounded-[8px] bg-surface-800 border border-surface-700 text-xs text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500"
           />
-        ) : (
-          /* Has agents but none selected */
-          <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
-            <div className="w-16 h-16 rounded-2xl bg-surface-900 ring-1 ring-surface-800 flex items-center justify-center">
-              <Bot className="w-8 h-8 text-surface-700" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-surface-500">Selecione um agente</p>
-              <p className="text-xs text-surface-600 mt-1">ou crie um novo para começar</p>
-            </div>
-          </div>
-        )}
+        </label>
       </div>
+
+      {loading ? (
+        <SkeletonList items={4} />
+      ) : visible.length === 0 ? (
+        <EmptyState
+          icon={query ? Search : Bot}
+          title={query ? 'Nenhum agente com esse nome' : 'Nenhum agente neste status'}
+          className="py-10"
+          iconStyle={{ color: 'color-mix(in srgb, var(--color-accent-violet) 55%, transparent)' }}
+        />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {visible.map((agent) => (
+            <AgentRow
+              key={agent.id}
+              agent={agent}
+              expanded={expandedId === agent.id}
+              onToggle={toggle}
+              live={deck.liveAvailable ? deck.live[agent.id] : undefined}
+              metrics={deck.metrics[agent.id]}
+              queue={deck.queue[agent.id]}
+            >
+              <AgentRowExpanded
+                agent={agent}
+                live={deck.liveAvailable ? deck.live[agent.id] : undefined}
+                health={health}
+                onOpenWorkspace={(id) => (onOpenAgent ? onOpenAgent(id) : navigate(`/agents/${id}/overview`))}
+                onTest={(id) => { void abrirSimulador(id) }}
+                onToggleStatus={(id, status) => { void onStatusChange(id, status) }}
+                testLoading={testLoadingId === agent.id}
+              />
+            </AgentRow>
+          ))}
+        </div>
+      )}
+
+      {testAgent && (
+        <AgentTestModal agent={testAgent} onClose={() => setTestAgent(null)} onTested={() => {}} />
+      )}
     </div>
   )
 }
