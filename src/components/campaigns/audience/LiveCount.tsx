@@ -22,7 +22,7 @@ interface LiveCountProps {
 
 function Kpi({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-surface-700 bg-surface-800 px-3 py-2.5">
+    <div className="rounded-lg border border-surface-700 bg-surface-800 px-3 py-2.5">
       <div className="text-[10px] uppercase tracking-[0.1em] text-surface-400">{label}</div>
       <div className="text-xl text-surface-50 mt-0.5 tabular-nums">{value}</div>
     </div>
@@ -36,7 +36,7 @@ function formatBRL(cents: number): string {
 export function LiveCount({ evaluation, loading, error, estimatedCostCents }: LiveCountProps) {
   if (error) {
     return (
-      <div className="rounded-xl border border-surface-700 bg-surface-800 p-3 text-xs text-surface-300">
+      <div className="rounded-lg border border-surface-700 bg-surface-800 p-3 text-xs text-surface-300">
         {error}
       </div>
     )

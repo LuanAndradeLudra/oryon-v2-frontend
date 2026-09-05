@@ -32,7 +32,7 @@ export function SavedSegmentsBar({ segments, activeId, onSelect, onSelectCustom 
             aria-pressed={on}
             onClick={() => onSelect(s)}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition-colors',
+              'inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5 text-xs transition-colors',
               on
                 ? 'border-brand-500/40 bg-brand-500/15 text-brand-300'
                 : 'border-surface-700 text-surface-300 hover:border-surface-600',
@@ -49,7 +49,7 @@ export function SavedSegmentsBar({ segments, activeId, onSelect, onSelectCustom 
         aria-pressed={!activeId}
         onClick={onSelectCustom}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition-colors',
+          'inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5 text-xs transition-colors',
           !activeId
             ? 'border-brand-500/40 bg-brand-500/15 text-brand-300'
             : 'border-surface-700 text-surface-300 hover:border-surface-600',
