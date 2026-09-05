@@ -144,21 +144,30 @@ export function segmentBuilderReducer(
     case 'set_exclude':
       return { ...state, exclude: { ...state.exclude, ...action.patch } }
 
-    // `perCondition` é posicional (grupo × condição, na ordem enviada). O
-    // hook envia a definição corrente e a resposta volta na mesma ordem;
-    // índices fora do intervalo (resposta atrasada de uma definição já
-    // editada) simplesmente não pintam contagem, em vez de casar errado.
-    case 'apply_counts':
+    // `perCondition` é posicional, mas na ordem de `toEvaluateGroups`, que
+    // DESCARTA grupos sem condição. Indexar `state.groups` cru desloca tudo
+    // que vem depois de um grupo vazio: a resposta do grupo seguinte pousa
+    // no anterior, e a linha passa a exibir a contagem de outro filtro.
+    // Percorro na mesma ordem que enviei, pulando os grupos que não foram.
+    case 'apply_counts': {
+      let sentIndex = -1
       return {
         ...state,
-        groups: state.groups.map((g, gi) => ({
-          ...g,
-          conditions: g.conditions.map((c, ci) => {
-            const count = action.perCondition[gi]?.[ci]
-            return typeof count === 'number' ? { ...c, count } : c
-          }),
-        })),
+        groups: state.groups.map((g) => {
+          if (g.conditions.length === 0) return g
+          sentIndex += 1
+          const row = action.perCondition[sentIndex]
+          if (!row) return g
+          return {
+            ...g,
+            conditions: g.conditions.map((c, ci) => {
+              const count = row[ci]
+              return typeof count === 'number' ? { ...c, count } : c
+            }),
+          }
+        }),
       }
+    }
 
     case 'load_definition':
       return action.definition
@@ -197,13 +206,31 @@ export function fromSegmentDefinition(saved: CampaignSegmentDefinition): Audienc
   }))
   return {
     groups: groups.length > 0 ? groups : [createGroup()],
-    exclude: saved.exclude ?? {},
+    // Mesmo padrão conservador de `createEmptyDefinition`: um segmento salvo
+    // que não diz nada sobre opt-out não pode virar um público mais permissivo
+    // do que um construtor recém-aberto. Um `optOut: false` explícito no que
+    // veio da API continua vencendo.
+    exclude: { optOut: true, ...saved.exclude },
   }
 }
 
-/** Uma definição só é avaliável quando tem ao menos uma condição preenchida —
- *  sem isso o evaluate devolveria a base inteira, que não é o que o operador
- *  quis dizer com um construtor recém-aberto. */
+/** Uma condição só conta quando tem valor de verdade. `createCondition` nasce
+ *  com o valor vazio (é uma linha que a pessoa ainda vai preencher), e mandar
+ *  isso para o `evaluate` pede um filtro sem critério. */
+export function isConditionFilled(condition: SegmentCondition): boolean {
+  const { value } = condition
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === 'string') return value.trim().length > 0
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (typeof value === 'boolean') return true
+  return false
+}
+
+/** Uma definição só é avaliável quando tem ao menos uma condição PREENCHIDA.
+ *  Contar `conditions.length` não serve: `createEmptyDefinition` já nasce com
+ *  uma condição em branco, então o construtor recém-aberto dispararia um
+ *  `evaluate` sem critério nenhum — que devolve a base inteira e faria o
+ *  bloco anunciar um público que a pessoa não pediu. */
 export function hasAnyCondition(definition: AudienceDefinition): boolean {
-  return definition.groups.some((g) => g.conditions.length > 0)
+  return definition.groups.some((g) => g.conditions.some(isConditionFilled))
 }

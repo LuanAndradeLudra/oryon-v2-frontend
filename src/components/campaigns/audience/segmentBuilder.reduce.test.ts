@@ -5,6 +5,7 @@ import {
   createGroup,
   fromSegmentDefinition,
   hasAnyCondition,
+  isConditionFilled,
   segmentBuilderReducer as reduce,
   toEvaluateGroups,
   toSegmentDefinition,
@@ -161,6 +162,41 @@ describe('segmentBuilderReducer — apply_counts', () => {
     const next = reduce(fixture(), { type: 'apply_counts', perCondition: [[1412, 618]] })
     expect(next.groups[1].conditions[0].count).toBeUndefined()
   })
+
+  it('pula os grupos vazios, que não foram enviados, em vez de deslocar tudo', () => {
+    // A resposta é posicional na ordem de `toEvaluateGroups`, que descarta
+    // grupo sem condição. Um grupo vazio ANTES dos outros era o caso que
+    // fazia a contagem de C pousar na primeira condição de B — número errado
+    // ao lado do filtro errado, que é pior do que contagem nenhuma.
+    const vazio = createGroup([])
+    const b = createGroup([
+      createCondition('tags', 'includes_any', ['t1']),
+      createCondition('stage', 'in', ['negociacao']),
+    ])
+    const c = createGroup([createCondition('source', 'in', ['whatsapp'])])
+    const state: AudienceDefinition = { groups: [vazio, b, c], exclude: {} }
+
+    // Exatamente o que a API devolve para esse estado: 2 linhas, uma por
+    // grupo enviado — o vazio não vai.
+    const next = reduce(state, { type: 'apply_counts', perCondition: [[10, 20], [30]] })
+
+    expect(next.groups[1].conditions.map((x) => x.count)).toEqual([10, 20])
+    expect(next.groups[2].conditions.map((x) => x.count)).toEqual([30])
+    expect(next.groups[1].conditions[0].count).not.toBe(30)
+  })
+
+  it('mantém o alinhamento com um grupo vazio no meio da lista', () => {
+    const a = createGroup([createCondition('tags', 'includes_any', ['t1'])])
+    const vazio = createGroup([])
+    const c = createGroup([createCondition('source', 'in', ['whatsapp'])])
+    const state: AudienceDefinition = { groups: [a, vazio, c], exclude: {} }
+
+    const next = reduce(state, { type: 'apply_counts', perCondition: [[7], [99]] })
+
+    expect(next.groups[0].conditions[0].count).toBe(7)
+    expect(next.groups[1].conditions).toHaveLength(0)
+    expect(next.groups[2].conditions[0].count).toBe(99)
+  })
 })
 
 describe('segmentBuilderReducer — load_definition', () => {
@@ -197,6 +233,19 @@ describe('serialização para a API', () => {
     expect(toSegmentDefinition(fixture()).exclude).toEqual({ optOut: true, campaignedWithinDays: 7 })
   })
 
+  it('fromSegmentDefinition mantém o opt-out conservador quando o salvo é omisso', () => {
+    // Um segmento salvo que não fala de opt-out não pode render um público
+    // mais permissivo do que um construtor recém-aberto, que já nasce com a
+    // exclusão ligada.
+    const omisso = fromSegmentDefinition({ groups: [], exclude: {} })
+    expect(omisso.exclude.optOut).toBe(true)
+    expect(createEmptyDefinition().exclude.optOut).toBe(true)
+
+    // Mas um `false` explícito é uma escolha de quem salvou, e continua valendo.
+    const explicito = fromSegmentDefinition({ groups: [], exclude: { optOut: false } })
+    expect(explicito.exclude.optOut).toBe(false)
+  })
+
   it('fromSegmentDefinition gera ids únicos e sobrevive a uma definição sem grupos', () => {
     const carregada = fromSegmentDefinition({
       groups: [{ op: 'or', conditions: [{ field: 'tags', operator: 'includes_any', value: ['x'] }] }],
@@ -217,9 +266,40 @@ describe('serialização para a API', () => {
   })
 })
 
+describe('isConditionFilled', () => {
+  it('reconhece valor de verdade em cada tipo de campo', () => {
+    expect(isConditionFilled(createCondition('tags', 'includes_any', ['t1']))).toBe(true)
+    expect(isConditionFilled(createCondition('search', 'contains', 'Marina'))).toBe(true)
+    expect(isConditionFilled(createCondition('lastActivityAt', 'within_days', 30))).toBe(true)
+    // Booleano preenchido é `false` tanto quanto `true` — "opt-in é não" é
+    // um critério, não uma linha em branco.
+    expect(isConditionFilled(createCondition('optIn', 'eq', false))).toBe(true)
+  })
+
+  it('recusa o que a pessoa ainda não preencheu', () => {
+    expect(isConditionFilled(createCondition('tags', 'includes_any', []))).toBe(false)
+    expect(isConditionFilled(createCondition('search', 'contains', '   '))).toBe(false)
+    expect(isConditionFilled(createCondition('lastActivityAt', 'within_days', Number.NaN))).toBe(false)
+    expect(isConditionFilled(createCondition('tags', 'includes_any', undefined))).toBe(false)
+  })
+})
+
 describe('hasAnyCondition', () => {
-  it('é falso só quando nenhum grupo tem condição', () => {
-    expect(hasAnyCondition(fixture())).toBe(true)
+  it('é falso enquanto as condições existem mas estão em branco', () => {
+    // O portão que segura o `evaluate`: o construtor recém-aberto já tem uma
+    // linha, então contar `length` deixaria passar uma avaliação sem critério
+    // nenhum — que devolve a base inteira e anuncia um público que ninguém
+    // pediu.
+    expect(hasAnyCondition(createEmptyDefinition())).toBe(false)
     expect(hasAnyCondition({ groups: [createGroup([])], exclude: {} })).toBe(false)
+  })
+
+  it('vira verdadeiro assim que uma condição ganha valor', () => {
+    expect(hasAnyCondition(fixture())).toBe(true)
+    const meio = {
+      groups: [createGroup([createCondition('tags', 'includes_any', [])]), createGroup([createCondition('stage', 'in', ['ativo'])])],
+      exclude: {},
+    }
+    expect(hasAnyCondition(meio)).toBe(true)
   })
 })

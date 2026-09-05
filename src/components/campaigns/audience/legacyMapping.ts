@@ -54,6 +54,9 @@ function toStringArray(value: unknown): string[] {
 
 export function toLegacySegment(definition: AudienceDefinition): LegacyMappingResult {
   const unsupported: string[] = []
+  /** Condição de opt-in que a pessoa montou, se houver — precisa ser
+   *  confrontada com a exclusão imposta no fim (ver comentário lá embaixo). */
+  let optInCondition: EditorCondition | undefined
 
   // Sem grupos entre si: o motor antigo só sabe UM conjunto de critérios
   // AND-combinados. Só o primeiro grupo com condições é traduzido; os demais
@@ -100,7 +103,10 @@ export function toLegacySegment(definition: AudienceDefinition): LegacyMappingRe
         break
       }
       case 'optIn':
-        if (typeof condition.value === 'boolean') segment.filterOptIn = condition.value
+        if (typeof condition.value === 'boolean') {
+          segment.filterOptIn = condition.value
+          optInCondition = condition
+        }
         break
       case 'search':
         if (typeof condition.value === 'string' && condition.value.trim().length > 0) {
@@ -117,11 +123,24 @@ export function toLegacySegment(definition: AudienceDefinition): LegacyMappingRe
 
   // Opt-out imposto: o motor antigo não tem "excluir depois de incluir", só
   // filtros positivos. `filterOptIn: true` ("só quem tem opt-in") é a única
-  // forma de expressar "não mandar para quem não aceitou" ali — mais grosseiro
-  // que a Decisão D6 do BE.3, que também trata `optIn IS NULL` como opt-out,
-  // mas na mesma direção conservadora. Vence uma condição `optIn` que o
-  // usuário tenha montado no grupo: exclusão sempre ganha de inclusão.
-  if (definition.exclude.optOut) segment.filterOptIn = true
+  // forma de expressar "não mandar para quem não aceitou" ali, e é equivalente
+  // à Decisão D6 do BE.3, que exclui `optIn = false` e nada mais — a coluna é
+  // NOT NULL com default `false`, então não existe terceiro estado a tratar.
+  if (definition.exclude.optOut) {
+    // ARMADILHA, e a razão de a condição virar `unsupported` em vez de ser
+    // só sobrescrita: quando a pessoa montou `optIn = false` — a campanha de
+    // re-permissão, que é um caso real — o imposto não recorta o que ela
+    // pediu, INVERTE. O motor novo devolveria perto de zero contatos; o
+    // legado devolve todo mundo que deu opt-in, que é o público exatamente
+    // oposto, e o maior possível. Como o passo seguinte do fluxo é disparar,
+    // deixar a linha passar como honrada seria mandar mensagem justamente
+    // para quem ela quis excluir. Marcada aqui, a UI esmaece a linha e para
+    // de prometer um filtro que não vai acontecer.
+    if (optInCondition && optInCondition.value === false) {
+      unsupported.push(optInCondition.id)
+    }
+    segment.filterOptIn = true
+  }
 
   return { segment, unsupported }
 }

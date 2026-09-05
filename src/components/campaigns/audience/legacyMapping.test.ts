@@ -87,10 +87,25 @@ describe('toLegacySegment — opt-out imposto', () => {
     expect(segment.filterOptIn).toBe(true)
   })
 
-  it('sobrepõe uma condição de opt-in montada no grupo — exclusão ganha de inclusão', () => {
-    const { segment } = toLegacySegment(
-      def([createGroup([createCondition('optIn', 'eq', false)])], { optOut: true }),
-    )
+  it('marca como não suportada a condição de opt-in que o imposto INVERTE', () => {
+    // Campanha de re-permissão: "quem NÃO deu opt-in". O motor novo devolveria
+    // perto de zero; o legado, com `filterOptIn: true`, devolve todo mundo que
+    // DEU opt-in — o público oposto, e o maior possível. Como o passo seguinte
+    // é disparar, a linha não pode aparecer como honrada.
+    const condicao = createCondition('optIn', 'eq', false)
+    const { segment, unsupported } = toLegacySegment(def([createGroup([condicao])], { optOut: true }))
+
+    expect(unsupported).toContain(condicao.id)
+    expect(segment.filterOptIn).toBe(true)
+  })
+
+  it('não marca nada quando a condição de opt-in concorda com o imposto', () => {
+    // "quem deu opt-in" + opt-out imposto dão o mesmo recorte: não há
+    // contradição a sinalizar, e esmaecer a linha aqui seria ruído.
+    const condicao = createCondition('optIn', 'eq', true)
+    const { segment, unsupported } = toLegacySegment(def([createGroup([condicao])], { optOut: true }))
+
+    expect(unsupported).toEqual([])
     expect(segment.filterOptIn).toBe(true)
   })
 
