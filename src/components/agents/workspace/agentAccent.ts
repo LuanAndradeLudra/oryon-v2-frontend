@@ -1,5 +1,6 @@
 // ─── Acento categórico por agente (A2 / SCRUM-1013) ──────────────────────────
-// O mockup pinta cada avatar do rail com um hex fixo (`--tc:#3B82F6` etc.).
+// O mockup pinta cada avatar do rail com um hex fixo, cravado inline no
+// atributo de estilo de cada item.
 // A Carta de Padrões §7 proíbe cor categórica em hex: tem que sair de
 // `--color-accent-*` via `accentColor()`. Como não existe "cor do agente" em
 // contrato nenhum (`AgentConfig` não tem campo de cor), derivo um acento
