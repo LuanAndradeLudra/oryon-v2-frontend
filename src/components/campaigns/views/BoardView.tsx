@@ -1,16 +1,14 @@
-import { KanbanSquare } from 'lucide-react'
+import { Kanban } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 
-// Skeleton (W0.1/SCRUM-994) — stub que o W0.4/SCRUM-997 (Alavanca) substitui;
-// o conteúdo real (5 colunas por status) chega no D1b (Andaime). Sem props
-// nesta onda.
 export function BoardView() {
   return (
-    <EmptyState
-      icon={KanbanSquare}
-      title="Board em construção"
-      hint="A visão em colunas por status dos disparos chega em uma próxima leva."
-      className="m-6"
-    />
+    <div className="flex-1 flex items-center justify-center p-5">
+      <EmptyState
+        icon={Kanban}
+        title="Em construção"
+        hint="A visão de board por status das campanhas está sendo desenhada — por enquanto, use a lista."
+      />
+    </div>
   )
 }
