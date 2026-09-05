@@ -18,7 +18,11 @@ import type {
  *  `count` é a última contagem parcial conhecida, vinda de `perCondition`. */
 export interface EditorCondition extends SegmentCondition {
   id: string
-  count?: number
+  /** Três estados, e a diferença entre eles é o que a linha mostra:
+   *  `undefined` = ainda não houve resposta para esta condição, não mostra
+   *  nada; `null` = a API avaliou e IGNOROU, porque a condição está sem
+   *  valor (Decisão D38), mostra travessão; número = contagem de verdade. */
+  count?: number | null
 }
 
 export interface EditorGroup {
@@ -49,7 +53,7 @@ export type SegmentBuilderAction =
   | { type: 'update_condition'; groupId: string; conditionId: string; patch: Partial<Omit<EditorCondition, 'id'>> }
   | { type: 'remove_condition'; groupId: string; conditionId: string }
   | { type: 'set_exclude'; patch: Partial<SegmentExclusions> }
-  | { type: 'apply_counts'; perCondition: number[][] }
+  | { type: 'apply_counts'; perCondition: (number | null)[][] }
   | { type: 'load_definition'; definition: AudienceDefinition }
 
 let idCounter = 0
@@ -161,8 +165,13 @@ export function segmentBuilderReducer(
           return {
             ...g,
             conditions: g.conditions.map((c, ci) => {
+              // Fora do comprimento da resposta: não afirma nada, mantém o
+              // que havia. Dentro dele, `null` é uma resposta — "avaliei e
+              // ignorei, está sem valor" (D38) — e precisa apagar a contagem
+              // anterior, senão a linha exibe um número que não vale mais.
+              if (ci >= row.length) return c
               const count = row[ci]
-              return typeof count === 'number' ? { ...c, count } : c
+              return { ...c, count: typeof count === 'number' ? count : null }
             }),
           }
         }),

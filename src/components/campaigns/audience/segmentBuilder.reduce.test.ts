@@ -185,6 +185,30 @@ describe('segmentBuilderReducer — apply_counts', () => {
     expect(next.groups[1].conditions[0].count).not.toBe(30)
   })
 
+  it('guarda null como "avaliei e ignorei", apagando a contagem anterior', () => {
+    // Decisão D38: condição sem valor é ignorada pelo evaluate mas mantém a
+    // posição e volta `null`. Guardar o `null` é o que faz a linha mostrar
+    // travessão; manter o número velho exibiria uma contagem que não vale
+    // mais, e número indistinguível de dado verdadeiro é pior que a ausência
+    // declarada.
+    const comNumero = reduce(fixture(), { type: 'apply_counts', perCondition: [[10, 20], [30]] })
+    expect(comNumero.groups[0].conditions[0].count).toBe(10)
+
+    const depois = reduce(comNumero, { type: 'apply_counts', perCondition: [[null, 20], [30]] })
+    expect(depois.groups[0].conditions[0].count).toBeNull()
+    expect(depois.groups[0].conditions[1].count).toBe(20)
+  })
+
+  it('não confunde "sem resposta ainda" com "ignorada pela API"', () => {
+    // Resposta mais curta que o grupo não é `null`: é silêncio sobre aquela
+    // condição, e o que havia continua valendo até a próxima avaliação.
+    const comNumero = reduce(fixture(), { type: 'apply_counts', perCondition: [[10, 20], [30]] })
+    const curta = reduce(comNumero, { type: 'apply_counts', perCondition: [[99], [30]] })
+
+    expect(curta.groups[0].conditions[0].count).toBe(99)
+    expect(curta.groups[0].conditions[1].count).toBe(20)
+  })
+
   it('mantém o alinhamento com um grupo vazio no meio da lista', () => {
     const a = createGroup([createCondition('tags', 'includes_any', ['t1'])])
     const vazio = createGroup([])
