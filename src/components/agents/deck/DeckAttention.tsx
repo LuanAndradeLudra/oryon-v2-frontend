@@ -32,10 +32,10 @@ export function DeckAttention({ items, loading, onOpenAgent, onResumeAgent }: De
   return (
     <section aria-label="Atenção" className="flex flex-col min-w-0">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-3xs font-bold uppercase tracking-[0.08em] text-surface-400">Atenção</h2>
+        <h2 className="text-3xs font-bold uppercase tracking-[0.1em] text-surface-400">Atenção</h2>
         {!loading && items.length > 0 && (
           <span
-            className="text-3xs font-semibold rounded-full px-1.5 py-0.5 tabular-nums"
+            className="text-xs font-medium rounded-full px-2 py-0.5 tabular-nums"
             style={{ backgroundColor: 'var(--color-status-pending-bg)', color: 'var(--color-status-pending)' }}
           >
             {items.length}

@@ -42,7 +42,7 @@ function Foot({ metrics }: { metrics: FootMetric[] }) {
         <div key={m.label} className="min-w-0">
           <div className="text-3xs font-bold uppercase tracking-[0.08em] text-surface-500 truncate">{m.label}</div>
           <div
-            className="font-display font-bold text-lg tabular-nums tracking-tight text-surface-50"
+            className="font-display font-bold text-lg tabular-nums tracking-[-0.02em] text-surface-50"
             style={m.color ? { color: m.color } : undefined}
           >
             {m.parts.value}
@@ -72,7 +72,7 @@ function resolutionColor(pct: number | null): string | undefined {
 
 function LiveStrip({ accent, icon, children }: { accent: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="mx-4 rounded-xl bg-surface-950 border border-surface-800 px-3 py-2.5 text-xs text-surface-300 flex gap-2 items-start min-h-[56px]">
+    <div className="mx-4 rounded-[12px] bg-surface-950 border border-surface-800 px-3 py-2.5 text-xs text-surface-300 flex gap-2 items-start min-h-[56px]">
       <span className="flex-shrink-0 mt-0.5 [&>svg]:w-[13px] [&>svg]:h-[13px]" style={{ color: accent }}>
         {icon}
       </span>
@@ -144,7 +144,7 @@ export function PersonaCard({ agent, live, metrics, queue, onOpen, onResume }: P
       >
         <div className="flex items-center gap-3 min-w-0">
           <span
-            className="w-10 h-10 rounded-xl flex items-center justify-center font-display font-bold text-sm flex-shrink-0"
+            className="w-10 h-10 rounded-[12px] flex items-center justify-center font-display font-bold text-base flex-shrink-0"
             style={{ backgroundColor: tint(accent, 18), color: tc, boxShadow: `inset 0 0 0 1px ${tint(accent, 30)}` }}
             aria-hidden
           >
@@ -152,16 +152,16 @@ export function PersonaCard({ agent, live, metrics, queue, onOpen, onResume }: P
           </span>
           <div className="min-w-0">
             <div className="font-bold text-sm text-surface-100 truncate">{agent.name}</div>
-            {subtitle && <div className="text-xs text-surface-500 truncate">{subtitle}</div>}
+            {subtitle && <div className="text-[13.2px] text-surface-500 truncate">{subtitle}</div>}
           </div>
         </div>
         {paused ? (
-          <span className="inline-flex items-center gap-1.5 flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold" style={{ backgroundColor: 'var(--color-status-pending-bg)', color: 'var(--color-status-pending)' }}>
+          <span className="inline-flex items-center gap-1.5 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: 'var(--color-status-pending-bg)', color: 'var(--color-status-pending)' }}>
             <i className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden />
             Pausado
           </span>
         ) : live ? (
-          <span className="inline-flex items-center gap-1.5 flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold" style={{ backgroundColor: 'var(--color-status-active-bg)', color: 'var(--color-status-active)' }}>
+          <span className="inline-flex items-center gap-1.5 flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: 'var(--color-status-active-bg)', color: 'var(--color-status-active)' }}>
             <i className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" aria-hidden />
             {live.count} ao vivo
           </span>
@@ -216,10 +216,10 @@ function DraftCard({ agent, onOpen }: { agent: AgentConfig; onOpen: (id: string)
         <PencilLine className="w-[18px] h-[18px]" />
       </span>
       <div className="font-semibold text-sm text-surface-200 truncate max-w-full">{agent.name || 'Rascunho sem nome'}</div>
-      {done !== null && <div className="text-xs text-surface-500">Parou em {done} de {WIZARD_STEPS}</div>}
+      {done !== null && <div className="text-[13.2px] text-surface-400">Parou em {done} de {WIZARD_STEPS}</div>}
       {done !== null && (
         <div
-          className="w-[140px] h-1.5 rounded-full bg-surface-800 overflow-hidden"
+          className="w-[140px] h-1.5 rounded-full bg-surface-700 overflow-hidden"
           role="progressbar"
           aria-valuenow={done}
           aria-valuemin={0}
