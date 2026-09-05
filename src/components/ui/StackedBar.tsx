@@ -29,7 +29,11 @@ function segmentColor(color: StackedBarSegment['color']): string {
 
 export function StackedBar({ segments, height = 10, legend = false, total, className }: StackedBarProps) {
   const sum = segments.reduce((acc, s) => acc + s.value, 0)
-  const effectiveTotal = total ?? sum
+  // Nunca deixa o total efetivo ficar abaixo da soma dos segmentos — um
+  // `total` explícito menor que `sum` faria os segmentos somarem >100% de
+  // largura (cortados de forma arbitrária pelo `overflow-hidden`, em vez de
+  // proporcionais).
+  const effectiveTotal = Math.max(total ?? sum, sum)
   const remainder = Math.max(0, effectiveTotal - sum)
 
   return (

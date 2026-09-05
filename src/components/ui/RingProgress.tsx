@@ -35,12 +35,16 @@ export function RingProgress({
   const offset = CIRCUMFERENCE * (1 - pct / 100)
   const centerContent = children ?? (max === 100 ? `${Math.round(value)}%` : value.toLocaleString('pt-BR'))
   const ariaLabel = typeof label === 'string' ? label : 'Progresso'
+  // aria-valuenow precisa ficar dentro de [aria-valuemin, aria-valuemax] mesmo
+  // quando `value` estoura `max` (o arco já clampa via `pct` — o valor
+  // reportado a leitores de tela precisa acompanhar).
+  const ariaValueNow = Math.min(max, Math.max(0, value))
 
   return (
     <div className={cn('flex flex-col items-center', className)}>
       <div
         role="progressbar"
-        aria-valuenow={value}
+        aria-valuenow={ariaValueNow}
         aria-valuemin={0}
         aria-valuemax={max}
         aria-label={ariaLabel}

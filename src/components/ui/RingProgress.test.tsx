@@ -69,6 +69,19 @@ describe('RingProgress', () => {
     expect(Number(arc.getAttribute('stroke-dashoffset'))).toBeCloseTo(2 * Math.PI * 27, 1)
   })
 
+  it('aria-valuenow nunca excede aria-valuemax mesmo com value > max', () => {
+    render(<RingProgress value={150} max={100} />)
+    const ring = screen.getByRole('progressbar')
+    expect(ring).toHaveAttribute('aria-valuenow', '100')
+    expect(ring).toHaveAttribute('aria-valuemax', '100')
+  })
+
+  it('aria-valuenow nunca fica abaixo de aria-valuemin mesmo com value negativo', () => {
+    render(<RingProgress value={-10} max={100} />)
+    const ring = screen.getByRole('progressbar')
+    expect(ring).toHaveAttribute('aria-valuenow', '0')
+  })
+
   it('size muda width/height renderizado sem mudar a geometria interna (viewBox/raio)', () => {
     const { container } = render(<RingProgress value={50} size={72} />)
     const svg = container.querySelector('svg')

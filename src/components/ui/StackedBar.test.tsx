@@ -72,6 +72,23 @@ describe('StackedBar', () => {
     expect(screen.queryByText('Elegíveis')).not.toBeInTheDocument()
   })
 
+  it('com `total` explícito MENOR que a soma dos segmentos, não estoura 100% de largura', () => {
+    const { container } = render(
+      <StackedBar
+        total={50}
+        segments={[
+          { value: 60, color: 'brand' },
+          { value: 40, color: 'rose' },
+        ]}
+      />,
+    )
+    const track = container.querySelector('[role="img"]')!
+    // effectiveTotal deve ser clampado pra soma (100), não o `total` informado (50)
+    expect(track.children).toHaveLength(2) // sem remainder — soma já preenche tudo
+    const widths = Array.from(track.children).map((c) => (c as HTMLElement).style.width)
+    expect(widths).toEqual(['60%', '40%'])
+  })
+
   it('height controla a altura renderizada da trilha', () => {
     const { container } = render(<StackedBar segments={[{ value: 1, color: 'brand' }]} height={14} />)
     const track = container.querySelector('[role="img"]') as HTMLElement
