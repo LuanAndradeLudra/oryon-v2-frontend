@@ -172,6 +172,20 @@ vi.mock('@/components/agents/AgentDetail', () => ({
   ),
 }))
 
+// CampaignWizard e CampaignReport sao montados pelo ListView real. Os dois
+// puxam recharts, que sozinho responde pela maior parte do tempo desta
+// suite e faz a duracao oscilar de ~33s a ~85s conforme a carga da maquina
+// — foi essa oscilacao que produziu as falhas intermitentes de hoje. Nenhum
+// dos dois faz parte do que esta sob teste aqui (roteamento), entao ambos
+// entram como stub.
+vi.mock('@/components/campaigns/CampaignWizard', () => ({
+  CampaignWizard: () => <div>CampaignWizard-stub</div>,
+}))
+
+vi.mock('@/components/campaigns/CampaignReport', () => ({
+  CampaignReport: () => <div>CampaignReport-stub</div>,
+}))
+
 vi.mock('@/components/campaigns/TemplatesTab', () => ({
   TemplatesTab: () => <div>TemplatesTab-stub</div>,
 }))
@@ -207,22 +221,22 @@ describe('App routes — SCRUM-994/W0.1', () => {
     // ListView é o componente real (não mais um wrapper mockável de
     // CampaignsTab, removido — a extração da W0.4 tornou o antigo stub
     // dela código morto); com campanhas=[] (axios mockado), renderiza o
-    // EmptyState. É a primeira rota desta suíte a puxar a árvore pesada de
-    // campaigns/ (CampaignWizard+CampaignReport com recharts) — precisa do
-    // mesmo timeout SLOW no próprio findByText (não só no `it`), senão a
-    // janela padrão de 1s do testing-library estoura antes do primeiro
-    // import dinâmico + efeito assentarem.
+    // EmptyState. O timeout SLOW fica no próprio findByText (não só no
+    // `it`) porque esta é a primeira rota da suíte a montar a árvore de
+    // campaigns/ e a janela padrão de 1s do testing-library estoura antes
+    // do import dinâmico + efeito assentarem — mesmo com CampaignWizard e
+    // CampaignReport mockados acima.
     expect(await screen.findByText(/Nenhuma campanha de disparo encontrada/i, {}, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
   it('/campaigns?view=agenda mostra o esqueleto da Agenda', async () => {
     await renderAt('/campaigns?view=agenda')
-    expect(await screen.findByText(/visão de agenda das campanhas/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Agenda em construção/i)).toBeInTheDocument()
   })
 
   it('/campaigns?view=board mostra o esqueleto do Board', async () => {
     await renderAt('/campaigns?view=board')
-    expect(await screen.findByText(/board por status das campanhas/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Board em construção/i)).toBeInTheDocument()
   })
 
   it('/campaigns/new mostra o esqueleto do Composer', async () => {

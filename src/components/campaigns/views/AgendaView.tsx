@@ -1,14 +1,16 @@
-import { Calendar } from 'lucide-react'
+import { CalendarDays } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 
+// Skeleton (W0.1/SCRUM-994) — stub que o W0.4/SCRUM-997 (Alavanca) substitui;
+// o conteúdo real (mini-calendário + fluxo vertical) chega no D1 (Andaime).
+// Sem props nesta onda.
 export function AgendaView() {
   return (
-    <div className="flex-1 flex items-center justify-center p-5">
-      <EmptyState
-        icon={Calendar}
-        title="Em construção"
-        hint="A visão de agenda das campanhas está sendo desenhada — por enquanto, use a lista."
-      />
-    </div>
+    <EmptyState
+      icon={CalendarDays}
+      title="Agenda em construção"
+      hint="A visão de agenda dos disparos chega em uma próxima leva."
+      className="m-6"
+    />
   )
 }
