@@ -8,7 +8,7 @@ export type CardTone = 'default' | 'sending' | 'paused' | 'failed' | 'draft' | '
 
 const toneClass: Record<CardTone, string> = {
   default:   'border-surface-700 bg-surface-800',
-  sending:   'border-status-pending/40 bg-surface-800',
+  sending:   'border-status-pending/40 bg-linear-90 from-status-pending/6 from-0% to-surface-800 to-40%',
   // `paused` NÃO herda a moldura neutra do `default`: pausada e enviando
   // aparecem lado a lado no mesmo dia oferecendo ações opostas (Retomar x
   // Pausar), e sem borda própria a única diferença entre os dois cartões seria
