@@ -134,3 +134,74 @@ describe('useCostEstimate — o número nunca fica errado', () => {
     expect(result.current.available).toBe(true)
   })
 })
+
+// ─── Ordem de chegada das respostas (achado do Calibre no #130) ────────────
+// A tabela de casos deste PR foi enumerada pelos STATUS do contrato (200,
+// 404, 500, rede). O eixo que ninguém enumerou — em que ORDEM as respostas
+// chegam — era justamente onde estava o defeito: um `useRef` compartilhado
+// entre rodadas do efeito fazia a rodada nova zerar a marca da antiga, e a
+// resposta atrasada do público velho voltava a escrever por cima. O sintoma
+// era o custo travar em "calculando…" para sempre, que é exatamente o
+// `costLoading && !cost` que a ComposerBar renderiza.
+describe('useCostEstimate — ordem de chegada', () => {
+  /** Uma promessa que só resolve quando o teste mandar. */
+  function deferred<T>() {
+    let resolve!: (v: T) => void
+    const promise = new Promise<T>((r) => { resolve = r })
+    return { promise, resolve }
+  }
+
+  it('C1 — resposta atrasada do público ANTERIOR não trava o custo', async () => {
+    const a = deferred<{ data: typeof ESTIMATE }>()
+    const b = deferred<{ data: typeof ESTIMATE }>()
+    costEstimate.mockReturnValueOnce(a.promise).mockReturnValueOnce(b.promise)
+
+    const { result, rerender } = renderHook(
+      ({ audience }) => useCostEstimate(audience, 'tpl_1'),
+      { initialProps: { audience: { definition: DEF_A } as AudienceDraft } },
+    )
+    await passDebounce()
+
+    // Troca para B antes de A responder.
+    rerender({ audience: { definition: DEF_B } as AudienceDraft })
+    await passDebounce()
+
+    // B responde primeiro…
+    await act(async () => { b.resolve({ data: { ...ESTIMATE, totalCents: 2200 } }) })
+    // …e A, do público que já não está na tela, chega depois.
+    await act(async () => { a.resolve({ data: { ...ESTIMATE, totalCents: 1111 } }) })
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.estimate?.totalCents).toBe(2200)
+  })
+
+  it('C2 — controle: na ordem natural, vale o último público', async () => {
+    const a = deferred<{ data: typeof ESTIMATE }>()
+    const b = deferred<{ data: typeof ESTIMATE }>()
+    costEstimate.mockReturnValueOnce(a.promise).mockReturnValueOnce(b.promise)
+
+    const { result, rerender } = renderHook(
+      ({ audience }) => useCostEstimate(audience, 'tpl_1'),
+      { initialProps: { audience: { definition: DEF_A } as AudienceDraft } },
+    )
+    await passDebounce()
+    rerender({ audience: { definition: DEF_B } as AudienceDraft })
+    await passDebounce()
+
+    await act(async () => { a.resolve({ data: { ...ESTIMATE, totalCents: 1111 } }) })
+    await act(async () => { b.resolve({ data: { ...ESTIMATE, totalCents: 2200 } }) })
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.estimate?.totalCents).toBe(2200)
+  })
+
+  it('C3 — guarda contra correção que descarte demais: pedido único aparece', async () => {
+    // Existe de propósito: um conserto que jogue fora resposta demais passaria
+    // no C1 e quebraria o caso normal, que é o que acontece 99% das vezes.
+    costEstimate.mockResolvedValue({ data: ESTIMATE })
+    const { result } = renderHook(() => useCostEstimate(INLINE, 'tpl_1'))
+    await passDebounce()
+    await waitFor(() => expect(result.current.estimate?.totalCents).toBe(1472))
+    expect(result.current.loading).toBe(false)
+  })
+})

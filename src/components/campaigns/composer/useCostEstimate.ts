@@ -9,7 +9,7 @@
 // "endpoint ainda não implantado". Nesse caso a métrica é OCULTADA — nunca
 // mostrada como "R$ 0,00", que seria um número errado e não um número
 // ausente (coord/D2-plano.md §5).
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { campaignSchedulingApi } from '@/services/campaignsV2Api'
 import { withFallback } from '@/services/withFallback'
 import type { CampaignCostEstimate, CampaignCostEstimateRequest } from '@/types/campaignsV2'
@@ -40,11 +40,14 @@ export function useCostEstimate(audience: AudienceDraft | null, templateId?: str
   const request = buildRequest(audience, templateId)
   const requestKey = request ? JSON.stringify(request) : null
 
-  const staleRef = useRef(false)
-
   useEffect(() => {
     if (!requestKey) return
-    staleRef.current = false
+    // `let` do efeito, e nao `useRef`: o ref e' UM so' para todas as rodadas,
+    // entao a rodada nova zerava a marca que a rodada velha tinha deixado, e
+    // uma resposta atrasada da chave antiga voltava a escrever por cima —
+    // travando o custo em "calculando..." para sempre (achado do Calibre no
+    // #130). Cada rodada precisa da propria marca.
+    let stale = false
 
     const timer = setTimeout(() => {
       withFallback(
@@ -52,7 +55,7 @@ export function useCostEstimate(audience: AudienceDraft | null, templateId?: str
         null,
       )
         .then((res) => {
-          if (staleRef.current) return
+          if (stale) return
           setAvailable(res.available)
           setEntry({ key: requestKey, value: res.available && res.data ? res.data.data : null })
         })
@@ -60,12 +63,12 @@ export function useCostEstimate(audience: AudienceDraft | null, templateId?: str
           // 401/403/500/rede: não é "recurso inexistente". Guarda a chave
           // com valor nulo para não repetir a chamada em loop e para não
           // mostrar um preço velho ao lado de um público novo.
-          if (!staleRef.current) setEntry({ key: requestKey, value: null })
+          if (!stale) setEntry({ key: requestKey, value: null })
         })
     }, DEBOUNCE_MS)
 
     return () => {
-      staleRef.current = true
+      stale = true
       clearTimeout(timer)
     }
   }, [requestKey])
