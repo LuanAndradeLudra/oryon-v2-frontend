@@ -28,7 +28,11 @@ export function DeliveryFunnel({ steps, avgTimeToReadMinutes }: DeliveryFunnelPr
     [steps],
   )
 
-  const paleta = [colors.cyan, colors.online, colors.purple, colors.brand]
+  // Ordem e matizes do mockup: Enviadas azul, Entregues verde, Lidas violeta,
+  // Responderam teal. Antes eram `cyan`/`online` nas duas primeiras, que eram a
+  // aproximação mais próxima do que o `getChartColors()` expunha — os tokens
+  // `accent-blue` e `accent-green` já existiam, só não estavam ali.
+  const paleta = [colors.blue, colors.green, colors.purple, colors.brand]
   const altura = funnelHeight(steps.length)
   const respondido = steps[steps.length - 1]
   const chip = respondido?.value != null ? bands[bands.length - 1]?.pct : null

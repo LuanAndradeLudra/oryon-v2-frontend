@@ -10,6 +10,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { ResultTab } from './ResultTab'
+import { corDeLeitura } from './heatmapRamp'
 import { buildReportModel } from './reportModel'
 import type { Campaign } from '@/types'
 
@@ -127,5 +128,33 @@ describe('ResultTab — com a resposta antiga (o que o backend devolve hoje)', (
   it('omite o tempo médio até ler em vez de estimar no cliente', () => {
     renderTab(ANALYTICS_ANTIGO)
     expect(screen.queryByText(/tempo médio até ler/i)).not.toBeInTheDocument()
+  })
+})
+
+// A cor da célula do heatmap é calculada em JS e nunca vira classe, então ela
+// escapa do gate de CSS por construção — o gate enumera o que o `vite build`
+// emite, e isto não é emitido. Estas asserções são o que a traz de volta para
+// dentro de um gate que roda.
+describe('corDeLeitura — a rampa do heatmap segue o mockup', () => {
+  it('usa o token violeta, nunca hex, e varre a faixa 3%–95% do mockup', () => {
+    expect(corDeLeitura(0)).toBe('color-mix(in srgb, var(--color-accent-violet) 3%, transparent)')
+    expect(corDeLeitura(1)).toBe('color-mix(in srgb, var(--color-accent-violet) 95%, transparent)')
+    // Nenhum hex literal, em ponto nenhum da rampa.
+    for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+      expect(corDeLeitura(t)).not.toMatch(/#[0-9a-fA-F]{3,6}/)
+      expect(corDeLeitura(t)).toContain('--color-accent-violet')
+    }
+  })
+
+  it('e o violeta casa com o chip de pico — não pinta teal ao lado de um rótulo violeta', () => {
+    // Era a contradição: as células saíam da rampa teal do dashboard enquanto o
+    // chip "pico 18h–20h" é accent-violet.
+    expect(corDeLeitura(0.8)).not.toContain('brand')
+    expect(corDeLeitura(0.8)).not.toContain('teal')
+  })
+
+  it('satura fora do intervalo em vez de extrapolar', () => {
+    expect(corDeLeitura(-1)).toBe(corDeLeitura(0))
+    expect(corDeLeitura(9)).toBe(corDeLeitura(1))
   })
 })

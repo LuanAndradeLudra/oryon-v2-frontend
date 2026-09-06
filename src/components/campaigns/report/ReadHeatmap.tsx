@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
 import { Card, CardHeader } from '@/components/ui/Card'
-import { heatmapColor } from '@/components/dashboard/utils'
 import { PendingDataCard } from './PendingDataCard'
+import { corDeLeitura } from './heatmapRamp'
 import type { HeatmapModel } from './reportModel'
 
 const HORAS_ROTULADAS = [0, 3, 6, 9, 12, 15, 18, 21]
+
 
 /**
  * Mapa de calor de leituras: dias × 24 horas.
@@ -28,7 +29,7 @@ export function ReadHeatmap({ heatmap, hasRecipientData }: { heatmap: HeatmapMod
       heatmap.matrix.map((linha) =>
         linha.map((count) => ({
           count,
-          cor: heatmap.max > 0 ? heatmapColor(count / heatmap.max) : heatmapColor(0),
+          cor: heatmap.max > 0 ? corDeLeitura(count / heatmap.max) : corDeLeitura(0),
         })),
       ),
     [heatmap.matrix, heatmap.max],
