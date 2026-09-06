@@ -55,6 +55,13 @@ class ResizeObserverMock {
 // ── Mock scrollTo ────────────────────────────────────────────────────────────
 window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
 
+// ── Mock scrollIntoView ──────────────────────────────────────────────────────
+// A2 (SCRUM-1013): jsdom não implementa scrollIntoView — qualquer componente
+// que rola até o fim de uma lista (SimulatorPanel, MessageList) lança
+// "not a function" ao ser montado num teste. É a mesma classe de lacuna do
+// matchMedia/ResizeObserver acima, então mora aqui e não em cada suíte.
+Element.prototype.scrollIntoView = vi.fn()
+
 // ── Mock socket.io-client ────────────────────────────────────────────────────
 vi.mock('socket.io-client', () => {
   const socket = {
