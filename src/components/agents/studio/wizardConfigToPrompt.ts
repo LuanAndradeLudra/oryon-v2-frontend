@@ -10,6 +10,12 @@
 //   · `business.faqs`      ← `scope.faqs`         (mora em outra seção)
 //   · `deployment.*`       ← `channels_*` + `handoff_rules`  (derivação)
 //
+// E um cuidado que só aparece de quem CONSOME (achado da Tecelã): o
+// `wizard_config` é um RETRATO do momento do wizard, mas regras de handoff e
+// canais têm coluna própria no agente vivo, editada pelo workspace. O retrato
+// serve o que só existe nele; o que tem fonte viva vem da fonte viva — ver
+// `EstadoVivoDoAgente`.
+//
 // A terceira é ESPELHO de `useStudioDraft.generatePrompt()`: mesmo `flatMap`
 // das keywords com o mesmo corte em 20, mesmo `map` das descrições com queda
 // para o nome da regra, mesmo `find` do primeiro departamento, mesma montagem
@@ -22,10 +28,14 @@
 // precisou pela mesma razão — ler campo de um objeto que o TypeScript não
 // conhece é a fronteira onde a tipagem para de valer.
 
-import type { AgentPromptRequest, HandoffRule } from '@/services/agentsApi'
+import type { AgentChannels, AgentPromptRequest, HandoffRule, HandoffRules } from '@/services/agentsApi'
 
 /** Teto de keywords, idêntico ao do `useStudioDraft.generatePrompt()`. */
 const MAX_KEYWORDS = 20
+
+/** Regra de handoff reduzida ao que o prompt usa. O resto do `HandoffRule`
+ *  (id, prioridade, ação, template…) não participa da derivação. */
+type RegraParaPrompt = Pick<HandoffRule, 'name' | 'description' | 'keywords' | 'department'>
 
 // ── estreitamento ──────────────────────────────────────────────────────────
 
@@ -61,11 +71,10 @@ function listaDeFaqs(v: unknown): Array<{ question: string; answer: string }> {
   return out
 }
 
-/** Regras de handoff, com os campos que a derivação usa. O resto do
- *  `HandoffRule` (id, prioridade, ação…) não participa do prompt. */
-function listaDeRegras(v: unknown): Array<Pick<HandoffRule, 'name' | 'description' | 'keywords' | 'department'>> {
+/** Regras de handoff, com os campos que a derivação usa. */
+function listaDeRegras(v: unknown): RegraParaPrompt[] {
   if (!Array.isArray(v)) return []
-  const out: Array<Pick<HandoffRule, 'name' | 'description' | 'keywords' | 'department'>> = []
+  const out: RegraParaPrompt[] = []
   for (const item of v) {
     if (item === null || typeof item !== 'object') continue
     const o = item as Record<string, unknown>
@@ -79,7 +88,57 @@ function listaDeRegras(v: unknown): Array<Pick<HandoffRule, 'name' | 'descriptio
   return out
 }
 
+/**
+ * A derivação de `deployment`, num lugar só. Espelha
+ * `useStudioDraft.generatePrompt()` — mesmo `flatMap` com o mesmo corte, mesmo
+ * `map` caindo para o nome da regra, mesmo `find` do PRIMEIRO departamento,
+ * mesma ordem de canais.
+ *
+ * Os dois caminhos (retrato e estado vivo) passam por aqui de propósito: um
+ * segundo caminho seria uma segunda regra para manter em sincronia, que é
+ * exatamente o problema que o teste de espelho existe para impedir.
+ */
+function derivarDeployment(
+  regras: RegraParaPrompt[],
+  canais: { whatsapp: boolean; messenger: boolean; instagram: boolean },
+): AgentPromptRequest['deployment'] {
+  return {
+    escalation_keywords: regras.flatMap((r) => r.keywords).slice(0, MAX_KEYWORDS),
+    escalation_conditions: regras.map((r) => r.description ?? r.name).filter(Boolean),
+    escalation_department: regras.find((r) => r.department)?.department ?? '',
+    channels: [
+      canais.whatsapp && 'WhatsApp',
+      canais.messenger && 'Messenger',
+      canais.instagram && 'Instagram',
+    ].filter(Boolean) as string[],
+  }
+}
+
 // ── resultado ──────────────────────────────────────────────────────────────
+
+/**
+ * Estado VIVO do agente, para as partes que têm fonte de verdade fora do
+ * retrato do wizard.
+ *
+ * `wizard_config.deployment` é um **retrato do momento do wizard**. Já as
+ * regras de handoff e os canais do agente vivo têm coluna própria
+ * (`agent.handoff_rules`, `agent.channels`) e é ela que a seção de Regras do
+ * workspace edita. Sem isto, quem cria pelo wizard, adiciona duas regras no
+ * workspace e clica em "Regenerar" recebe um prompt remontado com as regras
+ * ANTIGAS — as novas somem e nada avisa.
+ *
+ * É argumento da função, e não sobrescrita no chamador, porque a correção
+ * precisa viajar COM o mapeador: quem consumir depois (a Onda 2 religa isto)
+ * cairia na mesma armadilha se o conserto morasse num call site.
+ *
+ * Cada campo presente **manda**, inclusive vazio: `{ rules: [] }` significa
+ * "o usuário apagou todas as regras", e isso vence o retrato. Campo ausente
+ * cai no retrato.
+ */
+export interface EstadoVivoDoAgente {
+  handoff_rules?: HandoffRules | null
+  channels?: AgentChannels | null
+}
 
 export interface WizardConfigMapResult {
   /** `null` quando não há entrada suficiente para gerar. */
@@ -113,6 +172,7 @@ export const MOTIVO_SEM_WIZARD =
  */
 export function wizardConfigToPromptRequest(
   wizardConfig: Record<string, unknown> | null | undefined,
+  estadoVivo?: EstadoVivoDoAgente | null,
 ): WizardConfigMapResult {
   if (!wizardConfig || typeof wizardConfig !== 'object') {
     return { request: null, motivo: MOTIVO_SEM_WIZARD }
@@ -130,8 +190,25 @@ export function wizardConfigToPromptRequest(
     return { request: null, motivo: MOTIVO_SEM_WIZARD }
   }
 
-  const regras = listaDeRegras(deployment?.handoff_rules)
   const nome = texto(identity?.name)
+
+  // O retrato serve o que SÓ existe nele; o que tem fonte viva vem da fonte
+  // viva. Presença manda, inclusive vazia — `{ rules: [] }` é "apaguei todas".
+  const regras = estadoVivo?.handoff_rules
+    ? listaDeRegras(estadoVivo.handoff_rules.rules)
+    : listaDeRegras(deployment?.handoff_rules)
+
+  const canais = estadoVivo?.channels
+    ? {
+        whatsapp: bool(estadoVivo.channels.whatsapp?.enabled),
+        messenger: bool(estadoVivo.channels.messenger?.enabled),
+        instagram: bool(estadoVivo.channels.instagram?.enabled),
+      }
+    : {
+        whatsapp: bool(deployment?.channels_whatsapp),
+        messenger: bool(deployment?.channels_messenger),
+        instagram: bool(deployment?.channels_instagram),
+      }
 
   const request: AgentPromptRequest = {
     identity: {
@@ -167,17 +244,9 @@ export function wizardConfigToPromptRequest(
         .filter(Boolean)
         .join('\n\n'),
     },
-    // Remapeamento 3: derivação espelhada do generatePrompt.
-    deployment: {
-      escalation_keywords: regras.flatMap((r) => r.keywords).slice(0, MAX_KEYWORDS),
-      escalation_conditions: regras.map((r) => r.description ?? r.name).filter(Boolean),
-      escalation_department: regras.find((r) => r.department)?.department ?? '',
-      channels: [
-        bool(deployment?.channels_whatsapp) && 'WhatsApp',
-        bool(deployment?.channels_messenger) && 'Messenger',
-        bool(deployment?.channels_instagram) && 'Instagram',
-      ].filter(Boolean) as string[],
-    },
+    // Remapeamento 3: derivação espelhada do generatePrompt, num lugar só,
+    // servida pelo retrato ou pelo estado vivo conforme decidido acima.
+    deployment: derivarDeployment(regras, canais),
   }
 
   return { request, motivo: null }

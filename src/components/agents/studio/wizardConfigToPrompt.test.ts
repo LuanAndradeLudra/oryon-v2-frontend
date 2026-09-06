@@ -14,7 +14,8 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { wizardConfigToPromptRequest, MOTIVO_SEM_WIZARD } from './wizardConfigToPrompt'
+import { wizardConfigToPromptRequest, MOTIVO_SEM_WIZARD, type EstadoVivoDoAgente } from './wizardConfigToPrompt'
+import type { HandoffRule } from '@/services/agentsApi'
 
 // Shape REAL gravado por `useStudioDraft.publish()`, não inventado — é o
 // mesmo critério que pegou os dois bugs do deckFormat: teste que constrói o
@@ -202,5 +203,89 @@ describe('wizardConfigToPromptRequest · espelho do generatePrompt', () => {
     }
 
     expect(wizardConfigToPromptRequest(CFG_COMPLETO).request?.deployment).toEqual(comoNoWizard)
+  })
+})
+
+// Achado da Tecelã, que só aparece de quem consome: o `wizard_config` é um
+// RETRATO do momento do wizard, mas `agent.handoff_rules` e `agent.channels`
+// são colunas próprias do agente vivo, e é o workspace que as edita. Sem o
+// estado vivo, quem cria pelo wizard, adiciona regras no workspace e clica em
+// "Regenerar" recebe o prompt remontado com as regras ANTIGAS — as novas somem
+// e nada avisa. Falha em silêncio, que é a pior categoria.
+describe('wizardConfigToPromptRequest · estado vivo sobrepõe o retrato', () => {
+  // `HandoffRule` COMPLETO, não o subconjunto que o mapeador lê. O tipo do
+  // parâmetro é `HandoffRules` de propósito: o chamador real passa
+  // `agent.handoff_rules` inteiro, e uma fixture com menos campos provaria o
+  // raciocínio em vez da realidade — foi assim que os dois bugs do deckFormat
+  // passaram verdes.
+  const regraViva = (over: Partial<HandoffRule>): HandoffRule => ({
+    id: 'n', name: 'R', priority: 1, enabled: true, matchMode: 'any_keyword',
+    keywords: [], action: 'human_handoff',
+    aiGenerated: false, createdAt: '2026-09-01T00:00:00Z', updatedAt: '2026-09-01T00:00:00Z',
+    ...over,
+  })
+
+  const VIVO: EstadoVivoDoAgente = {
+    handoff_rules: {
+      rules: [
+        regraViva({ id: 'n1', name: 'Cancelamento', description: 'quer cancelar', keywords: ['cancelar'], department: 'Retenção' }),
+        regraViva({ id: 'n2', name: 'Urgência', keywords: ['urgente', 'agora'], department: 'Plantão' }),
+      ],
+    },
+    channels: {
+      whatsapp: { enabled: false },
+      messenger: { enabled: true },
+      instagram: { enabled: false },
+    },
+  }
+
+  it('regra ADICIONADA no workspace entra; a antiga do retrato sai', () => {
+    const { request } = wizardConfigToPromptRequest(CFG_COMPLETO, VIVO)
+
+    expect(request?.deployment.escalation_keywords).toEqual(['cancelar', 'urgente', 'agora'])
+    expect(request?.deployment.escalation_conditions).toEqual(['quer cancelar', 'Urgência'])
+    expect(request?.deployment.escalation_department).toBe('Retenção')
+    // as do retrato não sobraram em lugar nenhum
+    expect(request?.deployment.escalation_keywords).not.toContain('reclamar')
+    expect(request?.deployment.escalation_department).not.toBe('Suporte')
+  })
+
+  it('canais vivos usam `{ enabled }`, não os booleanos do retrato', () => {
+    const { request } = wizardConfigToPromptRequest(CFG_COMPLETO, VIVO)
+    // retrato dizia WhatsApp+Instagram; o vivo diz só Messenger
+    expect(request?.deployment.channels).toEqual(['Messenger'])
+  })
+
+  it('sem estado vivo, continua valendo o retrato — nada mudou para quem já chamava', () => {
+    const { request } = wizardConfigToPromptRequest(CFG_COMPLETO)
+    expect(request?.deployment.escalation_department).toBe('Suporte')
+    expect(request?.deployment.channels).toEqual(['WhatsApp', 'Instagram'])
+  })
+
+  it('presença MANDA, inclusive vazia: apagar todas as regras vence o retrato', () => {
+    const semRegras = wizardConfigToPromptRequest(CFG_COMPLETO, { handoff_rules: { rules: [] } })
+    expect(semRegras.request?.deployment.escalation_keywords).toEqual([])
+    expect(semRegras.request?.deployment.escalation_department).toBe('')
+    // mas os canais, ausentes do estado vivo, seguem vindo do retrato
+    expect(semRegras.request?.deployment.channels).toEqual(['WhatsApp', 'Instagram'])
+  })
+
+  it('campo ausente no estado vivo cai no retrato, um a um', () => {
+    const soCanais = wizardConfigToPromptRequest(CFG_COMPLETO, { channels: VIVO.channels })
+    expect(soCanais.request?.deployment.channels).toEqual(['Messenger'])
+    // regras não vieram no vivo → retrato
+    expect(soCanais.request?.deployment.escalation_department).toBe('Suporte')
+  })
+
+  it('o estado vivo NÃO salva um agente sem wizard — o retrato ainda é a entrada', () => {
+    const r = wizardConfigToPromptRequest({}, VIVO)
+    expect(r.request).toBeNull()
+    expect(r.motivo).toBe(MOTIVO_SEM_WIZARD)
+  })
+
+  it('estado vivo torto não derruba: cai no vazio, não no retrato nem em exceção', () => {
+    const torto = { handoff_rules: { rules: 'não é array' } } as unknown as Parameters<typeof wizardConfigToPromptRequest>[1]
+    const { request } = wizardConfigToPromptRequest(CFG_COMPLETO, torto)
+    expect(request?.deployment.escalation_keywords).toEqual([])
   })
 })
