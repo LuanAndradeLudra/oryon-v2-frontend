@@ -31,8 +31,10 @@ const live: AgentLiveInfo = {
 }
 
 const metrics: AgentMetrics = {
-  started: 100, resolvedByAi: 82, transferred: 10, assistedSales: 2,
-  avgTimeToHumanResponseSec: 58, intents: [], deltaPct: 1,
+  started: 100, resolvedByAi: 82, transferred: 10, conversationsWithSaleOutcome: 2,
+  avgTimeToHumanResponseSec: 58, intents: [],
+  deltas: { started: 1, resolvedByAi: 3, transferred: -2, avgTimeToHumanResponseSec: null },
+  series: [{ date: '2026-09-05', count: 12 }, { date: '2026-09-06', count: 0 }],
 }
 
 describe('AgentRow · agente ativo', () => {
