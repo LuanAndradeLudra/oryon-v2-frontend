@@ -72,6 +72,43 @@ describe('StackedBar', () => {
     expect(screen.queryByText('Elegíveis')).not.toBeInTheDocument()
   })
 
+  // SCRUM-1046, achado do Prumo. No mockup (`d6-publico.html`) o primeiro
+  // `<b class="mono">` da legenda não tem override de cor e os seguintes
+  // trazem `color:var(--s400)`. O código pintava todos igual, achatando a
+  // hierarquia: o primeiro segmento é o número que a linha afirma, o resto é
+  // contexto.
+  it('só o PRIMEIRO valor da legenda vem destacado; os demais em s400', () => {
+    render(
+      <StackedBar
+        legend
+        segments={[
+          { value: 184, color: 'brand', label: 'Elegíveis' },
+          { value: 127, color: 'rose', label: 'Receberam disparo' },
+          { value: 12, color: 'muted', label: 'Sem opt-in' },
+        ]}
+      />,
+    )
+
+    expect(screen.getByText('184').className).toContain('text-surface-100')
+    expect(screen.getByText('127').className).toContain('text-surface-400')
+    expect(screen.getByText('12').className).toContain('text-surface-400')
+    expect(screen.getByText('127').className).not.toContain('text-surface-100')
+  })
+
+  // A armadilha que originou o card: a escala de raio deste projeto começa em
+  // `sm` = 10 nominal, então `rounded-sm` NÃO é os 2px do Tailwind. O mockup
+  // pede `border-radius:2px` no quadradinho, e 2 não tem token — literal é a
+  // única forma de acertar.
+  it('o quadradinho da legenda usa 2px literal, não a classe de escala', () => {
+    const { container } = render(
+      <StackedBar legend segments={[{ value: 10, color: 'brand', label: 'Elegíveis' }]} />,
+    )
+    const quadrado = container.querySelector('span.inline-block')!
+
+    expect(quadrado.className).toContain('rounded-[2px]')
+    expect(quadrado.className).not.toContain('rounded-sm')
+  })
+
   it('com `total` explícito MENOR que a soma dos segmentos, não estoura 100% de largura', () => {
     const { container } = render(
       <StackedBar
