@@ -14,6 +14,7 @@ import { conversationsApi } from '@/services/api'
 import type { HandoffItem, HandoffStatus } from '@/types/agentsOps'
 import { HandoffKpis } from '@/components/agents/handoffs/HandoffKpis'
 import { HandoffQueueChips } from '@/components/agents/handoffs/HandoffQueueChips'
+import { HandoffDetailPanel } from '@/components/agents/handoffs/HandoffDetailPanel'
 import { HandoffRow } from '@/components/agents/handoffs/HandoffRow'
 import {
   esperaAoVivo, useChipsDeFila, useHandoffQueue, useRelogioSla,
@@ -36,6 +37,7 @@ export function HandoffInboxPage() {
 
   const q = useHandoffQueue(status, fila)
   const { filas, mostrarContagem } = useChipsDeFila(q.itens, q.total)
+  const itemSelecionado = q.itens.find((i) => i.id === selecionada) ?? null
 
   // O relógio só corre em "Aguardando": nos outros dois a espera é histórica e
   // congelada pelo BE.6, e vê-la subir seria mentira sobre conversa já atendida.
@@ -116,7 +118,11 @@ export function HandoffInboxPage() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      {/* `.hand` do mockup: fila + painel de 420. `min-w-0` nos dois filhos,
+          senão o grid não deixa o conteúdo encolher e a linha estoura. O painel
+          some abaixo de `lg` — 420px fixos num celular não sobram. */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1fr_420px]">
+      <div className="min-w-0 overflow-y-auto px-6 py-4">
         {q.resumo && <HandoffKpis resumo={q.resumo} />}
 
         {(filas.length > 0 || q.total > q.itens.length) && (
@@ -166,6 +172,21 @@ export function HandoffInboxPage() {
             />
           ))}
         </div>
+      </div>
+
+        {itemSelecionado && (
+          <div className="hidden min-w-0 lg:block">
+            <HandoffDetailPanel
+              // Reinicia o estado do painel ao trocar de conversa — ver o
+              // comentário em `useHandoffDetail`.
+              key={itemSelecionado.id}
+              item={itemSelecionado}
+              ocupada={ocupada === itemSelecionado.id}
+              onAssumir={() => acao(itemSelecionado, 'claim')}
+              onAcao={q.recarregar}
+            />
+          </div>
+        )}
       </div>
 
       {/* "Devolver à IA" é destrutivo o bastante para confirmar: a conversa
