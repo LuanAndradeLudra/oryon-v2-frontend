@@ -563,12 +563,15 @@ code, pre, kbd, samp {
    a tinta por cor E por superfície em vez de fração fixa.
    Escurecer o âmbar até passar tinha sido a alternativa descartada — ele
    encostaria no vermelho do `failed`, trocando um problema de contraste por
-   um de diferenciação. Medições em `src/lib/contrast.test.ts`, que falha se
-   algum token de status ou swatch do ColorPicker sair do piso.
-   ATENÇÃO: aquele teste guarda uma CÓPIA das porcentagens abaixo (12 e 50),
-   porque nem `node:fs` nem `?raw` conseguem ler CSS de dentro do vitest. Se
-   mudar os números aqui, mude lá — senão o gate segue verde medindo uma regra
-   que não existe mais.
+   um de diferenciação. Medições em `src/lib/contrast.test.ts`.
+   ATENÇÃO — O QUE AQUELE GATE NÃO PEGA, e a primeira versão desta nota
+   descrevia errado: ele guarda uma CÓPIA das porcentagens abaixo (12 e 50)
+   **e também dos valores dos tokens de status**, porque nem `node:fs` nem
+   `?raw` conseguem ler CSS de dentro do vitest. Consequência real, provada
+   pelo revisor: escurecer `--color-status-pending` aqui e rodar a suíte dá
+   verde. Só o `CURATED_PALETTE` do ColorPicker está vivo, por import.
+   Se mudar QUALQUER valor daqui — porcentagem ou cor de token —, mude lá
+   também; senão o gate segue verde medindo uma regra que não existe mais.
 
    CLARO: mantém o cheio de sempre, DE PROPÓSITO. A mesma forma esmaecida
    reprova 7 de 7 aqui, porque escurecer por fração fixa não salva uma cor já
@@ -607,12 +610,21 @@ code, pre, kbd, samp {
    acima do alvo padrão do Vite). O Lightning CSS gera sozinho um fallback
    `background-color: var(--chip)` e `color: var(--chip)` — ou seja, fundo e
    texto na MESMA cor, texto invisível. A regra antiga degradava para fundo
-   colorido com `#fff`, que era legível; sem este bloco eu trocaria contraste
+   colorido com `#fff`, que era legível; sem este bloco trocaríamos contraste
    ruim por texto nenhum, para uma fatia pequena mas real de navegadores.
-   Devolve exatamente o comportamento de antes onde `color-mix` não existe. */
+
+   A GUARDA É UM PADRÃO, NÃO UMA LISTA. A primeira versão nomeava só
+   `.color-chip` e `.status-trigger:hover`, e por isso deixou passar o contador
+   do `ui/SegmentedControl` — que pede fundo e texto por `color-mix` em VALOR
+   ARBITRÁRIO do Tailwind e reintroduzia, no mesmo commit, o defeito que este
+   card conserta. A condição que colapsa não é "ser um destes componentes", é
+   **pedir fundo E texto por `color-mix` da mesma variável**; o seletor de
+   atributo abaixo descreve exatamente isso, e alcança o que for escrito
+   depois sem ninguém lembrar de vir aqui. */
 @supports not (color: color-mix(in srgb, red, red)) {
   .color-chip,
-  .status-trigger:hover {
+  .status-trigger:hover,
+  [class*="bg-[color-mix"][class*="text-[color-mix"] {
     color: #fff;
   }
 }

@@ -79,12 +79,22 @@ const AA_SMALL = 4.5
 // `httpClient.guard.test.ts`, devolve vazio para folha de estilo, porque o
 // vitest não processa CSS.
 //
-// O que este gate PEGA: mudança em cor de token — o caso realista, alguém
-// ajusta um `--color-status-*` e derruba o contraste sem perceber — e qualquer
-// regressão que passe por estas funções.
-// O que ele NÃO pega: alguém reverter as declarações do `.color-chip` no
-// `index.css` sem tocar aqui. Contra isso, a revisão e o comentário que ficou
-// no próprio `index.css` apontando para este arquivo.
+// O QUE ESTE GATE PEGA — e a primeira versão desta lista estava ERRADA, o que
+// vale registrar porque o erro é do mesmo tipo que o arquivo combate:
+//   • regressão da aritmética (as funções acima);
+//   • qualquer swatch novo no `CURATED_PALETTE`, que entra por IMPORT e
+//     portanto é o único dado vivo aqui;
+//   • o limite do hex livre nas superfícies reais.
+//
+// O QUE ELE NÃO PEGA:
+//   • mudança nos valores de `STATUS_TOKENS`. Eles são CÓPIA, igual ao
+//     `CHIP_RULE`. Escurecer `--color-status-pending` no `index.css` não
+//     derruba nada aqui — o revisor provou fazendo exatamente isso e a suíte
+//     passou verde. Eu tinha escrito que este gate pegava esse caso; não pega.
+//   • alguém reverter as declarações do `.color-chip` sem tocar aqui.
+//
+// Contra os dois: a revisão, e o aviso no `index.css` apontando para cá.
+// Documentar limite também precisa de gate — e este parágrafo não tem um.
 const CHIP_RULE = {
   backgroundPct: 12,  // color-mix(in srgb, var(--chip) 12%, transparent)
   inkPct: 50,         // color-mix(in srgb, var(--chip) 50%, white)
@@ -106,7 +116,8 @@ function chipContrast(chip: RGB, surface: RGB = SURFACE_800): number {
 }
 
 /** Tokens do tema escuro (bloco `:root` do `index.css`) que chegam ao `--chip`
- *  de algum chip de status na árvore. `accent-amber` entra porque a D1 o usa
+ *  de algum chip de status na árvore. SÃO CÓPIA: mudar o valor no `index.css`
+ *  NÃO derruba este arquivo (ver a nota acima). `accent-amber` entra porque a D1 o usa
  *  para "pausada" — foi ele, e não um token de status, o terceiro reprovado do
  *  relatório original. */
 const STATUS_TOKENS: Record<string, string> = {
