@@ -60,7 +60,14 @@ export interface SegmentEvaluateResult {
    *  contar em mais de um motivo ao mesmo tempo (Decisão D5). Não montar
    *  gráfico de pizza assumindo que somam `matched - eligible`. */
   excluded: { optOut: number; recentlyCampaigned: number; activeAi: number }
-  perCondition: number[][]
+  /** Contagem parcial por condição, na MESMA ordem e no MESMO comprimento do
+   *  `groups[].conditions` que foi enviado (Decisão D38). Condição sem valor
+   *  é ignorada na avaliação mas MANTÉM a posição e volta `null` — a lista
+   *  nunca colapsa, então o alinhamento posicional continua valendo sem o
+   *  cliente filtrar nem reindexar. `null` vira travessão na tela: um número
+   *  ali seria indistinguível de um filtro real muito permissivo, e número
+   *  indistinguível de dado verdadeiro é pior que ausência declarada. */
+  perCondition: (number | null)[][]
   within24h: number
   sample: SegmentSampleContact[]
 }
