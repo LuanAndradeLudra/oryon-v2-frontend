@@ -249,10 +249,18 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(await screen.findByText(/Composer em construção/i)).toBeInTheDocument()
   })
 
-  it('/campaigns/:id/report mostra o esqueleto do Relatório', async () => {
+  // Atualizado pelo D3 (SCRUM-1022): esta asserção cobria o esqueleto do W0.1
+  // ("Relatório em construção"), que era o placeholder à espera desta
+  // história. Com a página real no lugar, o que a rota tem de provar continua
+  // sendo reachability — só que agora contra o conteúdo de verdade.
+  // Usa o mesmo `SLOW` das outras rotas desta suíte: a página real tem um
+  // grafo de módulos bem maior que o esqueleto e a rota é `lazy`, então com a
+  // suíte inteira em paralelo o `import()` do chunk estoura os 5s padrão e o
+  // teste morre no fallback de Suspense. Isolado, passa em menos de 1s.
+  it('/campaigns/:id/report monta a página de Relatório', async () => {
     await renderAt('/campaigns/abc/report')
-    expect(await screen.findByText(/Relatório em construção/i)).toBeInTheDocument()
-  })
+    expect(await screen.findByText(/Funil de entrega/i)).toBeInTheDocument()
+  }, SLOW)
 
   it('/agents/new mostra o esqueleto do Studio', async () => {
     await renderAt('/agents/new')
