@@ -50,7 +50,7 @@ export function ComposerBar({
   const SubmitIcon = scheduleMode === 'now' ? Send : CalendarCheck
 
   return (
-    <div className="sticky bottom-0 -mx-7 -mb-6 mt-2 px-7 py-3.5 flex items-center justify-between gap-4 border-t border-surface-800 bg-[color-mix(in_srgb,var(--color-surface-950)_85%,transparent)] backdrop-blur-lg">
+    <div className="sticky bottom-0 -mx-7 -mb-6 mt-2 px-7 py-3.5 flex items-center justify-between gap-4 border-t border-surface-800 bg-[color-mix(in_srgb,var(--color-surface-950)_85%,transparent)] backdrop-blur-sm">
       <div className="flex items-center gap-4.5">
         {/* Custo: só existe quando o BE.5 responde. Ausente é ausente —
             mostrar "R$ 0,00" seria um número errado, não um número faltando. */}
@@ -79,7 +79,7 @@ export function ComposerBar({
           <div className="text-3xs uppercase tracking-wider text-surface-500">
             {firstPending ? 'Falta' : 'Pronto'}
           </div>
-          <div className={firstPending ? 'text-xs text-accent-amber' : 'text-xs text-accent-green'}>
+          <div className={firstPending ? 'text-xs text-status-pending' : 'text-xs text-status-active'}>
             {firstPending ? PENDING_HINT[firstPending] : 'Os 4 blocos estão completos'}
           </div>
         </div>

@@ -16,7 +16,6 @@
 import { useEffect, useRef, useId, type ReactNode } from 'react'
 import { ChevronDown, ChevronUp, Check, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { accentColor, tint, type Accent } from '@/components/ui/accentColor'
 import type { BlockStatus } from './useComposerDraft'
 
 interface ComposerBlockProps {
@@ -26,7 +25,6 @@ interface ComposerBlockProps {
   status: BlockStatus
   /** Ícone do bloco fechado/pendente. Concluído mostra sempre o check. */
   icon: LucideIcon
-  accent: Accent
   /** Chip à direita do cabeçalho (contagem, categoria, "pendente"). */
   badge?: ReactNode
   open: boolean
@@ -35,7 +33,7 @@ interface ComposerBlockProps {
 }
 
 export function ComposerBlock({
-  title, summary, status, icon: Icon, accent, badge, open, onToggle, children,
+  title, summary, status, icon: Icon, badge, open, onToggle, children,
 }: ComposerBlockProps) {
   const headerId = useId()
   const bodyId = useId()
@@ -82,24 +80,26 @@ export function ComposerBlock({
         onClick={onToggle}
         className="w-full grid grid-cols-[32px_1fr_auto] gap-3.5 items-center px-4.5 py-3.5 text-left cursor-pointer"
       >
+        {/* O mockup pinta o quadradinho so' em dois estados: concluido
+            (verde de status) e aberto (marca). O bloco pendente usa o fundo
+            neutro `.bi` — o acento da categoria vive no chip a' direita, nao
+            aqui, senao todo bloco fechado ja' chega colorido. */}
         <span
-          className="w-8 h-8 rounded-[9px] flex items-center justify-center"
-          style={
+          className={cn(
+            'w-8 h-8 rounded-[9px] flex items-center justify-center',
             done
-              ? { background: tint('green', 14), color: accentColor('green') }
+              ? 'bg-status-active/14 text-status-active'
               : open
-                ? { background: tint('brand', 14), color: accentColor('brand') }
-                : undefined
-          }
+                ? 'bg-brand-cta/14 text-brand-cta'
+                : 'bg-surface-700 text-surface-300',
+          )}
         >
-          {done
-            ? <Check className="w-4 h-4" />
-            : <Icon className="w-4 h-4" style={{ color: open ? undefined : accentColor(accent) }} />}
+          {done ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
         </span>
 
         <span className="min-w-0">
           <span className="block text-[15.4px] font-semibold text-surface-100">{title}</span>
-          <span className="block text-xs text-surface-400 mt-px truncate">{summary}</span>
+          <span className="block text-[12.5px] text-surface-400 mt-px truncate">{summary}</span>
         </span>
 
         <span className="flex items-center gap-2">

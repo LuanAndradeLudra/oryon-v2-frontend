@@ -33,7 +33,6 @@ function Harness({ initialOpen = false }: { initialOpen?: boolean }) {
       summary="Quando e por qual linha."
       status="pending"
       icon={Calendar}
-      accent="brand"
       open={open}
       onToggle={() => setOpen((v) => !v)}
     >
