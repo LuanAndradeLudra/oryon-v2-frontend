@@ -47,8 +47,23 @@ function over(fg: RGB, alphaPct: number, bg: RGB): RGB {
 }
 
 const WHITE: RGB = [255, 255, 255]
-/** `--color-surface-800`, a superfície mais comum atrás de um chip no escuro. */
-const SURFACE_800: RGB = [0x16, 0x1e, 0x1e]
+
+/** As superfícies onde um chip realmente aparece no escuro, levantadas na
+ *  árvore (`bg-surface-*` e `overlay-surface` nos 84 arquivos que usam
+ *  `.color-chip`). Importam porque o fundo do chip é semitransparente: quanto
+ *  MAIS CLARA a superfície, menor o contraste com a tinta clareada. O piso é
+ *  dado pela mais clara, não pela mais comum. */
+const SURFACES: Record<string, RGB> = {
+  'surface-950': [0x0a, 0x0f, 0x0f],
+  'surface-900': [0x0e, 0x14, 0x14],
+  'surface-800': [0x16, 0x1e, 0x1e],
+  'overlay':     [0x1e, 0x2a, 0x2a],
+  'surface-700': [0x24, 0x33, 0x33],
+}
+/** A mais comum — usada onde um número único precisa de referência. */
+const SURFACE_800 = SURFACES['surface-800']
+/** A mais CLARA das reais: é ela que define o piso. */
+const WORST_SURFACE = SURFACES['surface-700']
 
 /** Mínimo do WCAG 2.1 AA para texto pequeno. */
 const AA_SMALL = 4.5
@@ -78,16 +93,16 @@ const CHIP_RULE = {
 /** A regra ANTIGA, guardada para o teste medir o defeito, e não só o estado. */
 const OLD_RULE = { backgroundPct: 85 } as const
 
-function chipBackground(chip: RGB): RGB {
-  return over(chip, CHIP_RULE.backgroundPct, SURFACE_800)
+function chipBackground(chip: RGB, surface: RGB = SURFACE_800): RGB {
+  return over(chip, CHIP_RULE.backgroundPct, surface)
 }
 
 function chipInk(chip: RGB): RGB {
   return mix(chip, WHITE, CHIP_RULE.inkPct)
 }
 
-function chipContrast(chip: RGB): number {
-  return contrastRatio(chipBackground(chip), chipInk(chip))
+function chipContrast(chip: RGB, surface: RGB = SURFACE_800): number {
+  return contrastRatio(chipBackground(chip, surface), chipInk(chip))
 }
 
 /** Tokens do tema escuro (bloco `:root` do `index.css`) que chegam ao `--chip`
@@ -108,6 +123,18 @@ describe('contraste do .color-chip no tema escuro (SCRUM-1048)', () => {
   it.each(Object.entries(STATUS_TOKENS))('%s passa no mínimo AA para texto pequeno', (_name, hex) => {
     expect(chipContrast(parseHex(hex))).toBeGreaterThanOrEqual(AA_SMALL)
   })
+
+  it.each(Object.entries(SURFACES))(
+    'passa em TODA superfície real da árvore — inclusive %s, e não só na mais comum',
+    (_name, surface) => {
+      // O fundo do chip é semitransparente: numa superfície mais clara ele
+      // sobe menos e o contraste com a tinta clareada cai. Medir só o
+      // `surface-800` daria um piso otimista.
+      for (const hex of [...Object.values(STATUS_TOKENS), ...CURATED_PALETTE]) {
+        expect(chipContrast(parseHex(hex), surface)).toBeGreaterThanOrEqual(AA_SMALL)
+      }
+    },
+  )
 
   it.each(CURATED_PALETTE)('o swatch %s do ColorPicker passa', (hex) => {
     // A cor da tag é escolhida pelo usuário e vai para o MESMO `--chip`.
@@ -146,14 +173,35 @@ describe('robustez contra o picker de hex livre', () => {
         }
       }
     }
-    // 4096 amostras. As que reprovam ficam coladas no preto, com ~4.47 — a um
-    // décimo do piso, e só porque clarear o preto em 50% ainda dá um cinza
-    // médio. Documentado em vez de escondido: se este número subir, alguém
-    // mexeu na regra e precisa olhar.
+    // 4096 amostras SOBRE `surface-800`. As que reprovam ficam coladas no
+    // preto, com ~4.47 — a um décimo do piso, e só porque clarear o preto em
+    // 50% ainda dá um cinza médio. Se este número subir, alguém mexeu na
+    // regra e precisa olhar.
     expect(failures.length).toBeLessThanOrEqual(2)
     for (const hex of failures) {
       expect(chipContrast(parseHex(hex))).toBeGreaterThan(4.4)
     }
+  })
+
+  it('na superfície mais clara a fração fixa cede — e o limite fica medido', () => {
+    // ESTE É O LIMITE REAL DA ETAPA 1, e ele não estava medido antes: numa
+    // superfície mais clara (`surface-700`, que hospeda chip em 30 lugares da
+    // árvore) a tinta fixa de 50% não basta para cor arbitrária ESCURA. Os
+    // nossos tokens e os 12 swatches passam em todas as superfícies — o teste
+    // acima prova. O que cede é o hex livre perto do preto.
+    let failures = 0
+    for (let r = 0; r < 256; r += 16) {
+      for (let g = 0; g < 256; g += 16) {
+        for (let b = 0; b < 256; b += 16) {
+          if (chipContrast([r, g, b], WORST_SURFACE) < AA_SMALL) failures += 1
+        }
+      }
+    }
+    // 307 de 4096, todas na vizinhança do preto. Fica FIXADO: se subir,
+    // alguém piorou a regra; e é exatamente isto que a Etapa 2 resolve, com
+    // tinta calculada por cor E por superfície em vez de fração fixa.
+    expect(failures).toBeLessThanOrEqual(307)
+    expect(failures).toBeGreaterThan(0)
   })
 
   it('o preto puro, que é o pior caso, ainda fica acima de 4.4:1', () => {

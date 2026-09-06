@@ -553,7 +553,14 @@ code, pre, kbd, samp {
    `status-info` 3.46) e em 6 dos 12 swatches curados do ColorPicker. Como `--chip` também recebe cor
    escolhida pelo usuário por picker de hex LIVRE, a regra precisa aguentar
    entrada arbitrária, e não só os nossos tokens: nesta forma, varrendo 4096
-   cores do espaço, só 2 reprovam, coladas em #000000 (pior caso 4.47).
+   cores do espaço sobre `surface-800`, só 2 reprovam, coladas em #000000
+   (pior caso 4.47).
+   LIMITE MEDIDO: o fundo do chip é semitransparente, então numa superfície
+   mais CLARA ele sobe menos e o contraste cai. Todos os tokens e os 12
+   swatches passam nas cinco superfícies reais da árvore (pior caso 5.91 em
+   `surface-700`), mas cor arbitrária perto do preto cede: 79 de 4096 sobre
+   `overlay` e 307 sobre `surface-700`. É o que a Etapa 2 resolve, calculando
+   a tinta por cor E por superfície em vez de fração fixa.
    Escurecer o âmbar até passar tinha sido a alternativa descartada — ele
    encostaria no vermelho do `failed`, trocando um problema de contraste por
    um de diferenciação. Medições em `src/lib/contrast.test.ts`, que falha se
