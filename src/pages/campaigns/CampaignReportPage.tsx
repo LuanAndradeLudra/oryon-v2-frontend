@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -21,7 +21,6 @@ type Aba = 'resultado' | 'contatos'
 export function CampaignReportPage() {
   const { id } = useParams<{ id: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [failureCode, setFailureCode] = useState<string | undefined>()
 
   const { campaign, model, loading, error, reload } = useCampaignReport(id)
 
@@ -30,8 +29,7 @@ export function CampaignReportPage() {
   // A aba vive na URL para o "Ver contatos" da tabela de falhas e o "Ver as N"
   // das respostas poderem apontar direto, e para o link ser compartilhável.
   const irPara = useCallback(
-    (destino: Aba, code?: string) => {
-      setFailureCode(code)
+    (destino: Aba) => {
       setSearchParams(
         (atual) => {
           const proximo = new URLSearchParams(atual)
@@ -81,7 +79,7 @@ export function CampaignReportPage() {
         {aba === 'resultado' ? (
           <ResultTab
             model={model}
-            onVerContatos={(code) => irPara('contatos', code)}
+            onVerContatos={() => irPara('contatos')}
             onVerRespostas={() => irPara('contatos')}
           />
         ) : (
@@ -89,7 +87,6 @@ export function CampaignReportPage() {
             <ContactsTab
               campaignId={id}
               hasRecipientData={model.hasRecipientData}
-              initialFailureCode={failureCode}
             />
           )
         )}

@@ -40,8 +40,6 @@ const ROTULO_STATUS: Record<string, string> = {
 interface ContactsTabProps {
   campaignId: string
   hasRecipientData: boolean
-  /** Filtro inicial vindo da tabela de falhas ("Ver contatos" numa linha). */
-  initialFailureCode?: string
   initialStatus?: FiltroStatus
 }
 
@@ -54,8 +52,8 @@ interface ContactsTabProps {
  * contatos. O relatório antigo engolia o erro num `catch` vazio, e por isso
  * ninguém notou. Está registrado como achado no corpo do PR.
  */
-export function ContactsTab({ campaignId, hasRecipientData, initialFailureCode, initialStatus }: ContactsTabProps) {
-  const [status, setStatus] = useState<FiltroStatus>(initialStatus ?? (initialFailureCode ? 'failed' : 'todos'))
+export function ContactsTab({ campaignId, hasRecipientData, initialStatus }: ContactsTabProps) {
+  const [status, setStatus] = useState<FiltroStatus>(initialStatus ?? 'todos')
   const [page, setPage] = useState(1)
   const [resposta, setResposta] = useState<CampaignRecipientsResponse>(VAZIO)
   // Identifica a página pedida. `carregando` é DERIVADO da comparação com a
@@ -103,13 +101,21 @@ export function ContactsTab({ campaignId, hasRecipientData, initialFailureCode, 
   }
 
   const totalPaginas = Math.max(1, Math.ceil(resposta.total / LIMITE))
-  // O filtro por código de falha é aplicado no cliente: o contrato de
-  // `getRecipients` tem `status`, não `errorCode`. Filtrar aqui vale para a
-  // página carregada; refinar isso exige um parâmetro novo na BE.1 e está
-  // registrado como candidato de Onda 2.
-  const linhas = initialFailureCode
-    ? resposta.data.filter((r) => r.errorCode === initialFailureCode)
-    : resposta.data
+  // NÃO existe filtro por código de falha, de propósito.
+  //
+  // Uma versão anterior aceitava um `initialFailureCode` e filtrava no
+  // cliente, sobre a página carregada — o contrato de `getRecipients` tem
+  // `status`, não `errorCode`. O resultado era a tela se contradizendo em voz
+  // alta: o contador dizia 120, a tabela mostrava 3, a paginação oferecia 5
+  // páginas, e quando nada casava aparecia "Nenhum contato nesta seleção"
+  // logo abaixo de um contador dizendo 120. É a armadilha de o filtro
+  // quebrado ficar indistinguível do vazio honesto, e desta vez com a
+  // contradição na própria tela.
+  //
+  // Pelo mesmo argumento do §1 do `D3-decisoes.md`: enquanto a BE.1 não
+  // aceitar `errorCode`, a tela não oferece o recorte. A tabela de falhas
+  // leva à lista filtrada por `failed`, que é verdade inteira.
+  const linhas = resposta.data
 
   return (
     <div className="flex flex-col gap-3">

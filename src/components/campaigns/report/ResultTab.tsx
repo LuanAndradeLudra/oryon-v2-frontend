@@ -7,7 +7,7 @@ import type { ReportViewModel } from './reportModel'
 
 interface ResultTabProps {
   model: ReportViewModel
-  onVerContatos: (failureCode?: string) => void
+  onVerContatos: () => void
   onVerRespostas: () => void
 }
 

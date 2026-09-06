@@ -213,7 +213,11 @@ const SLOW = 30_000
 describe('App routes — SCRUM-994/W0.1', () => {
   it('mantém /agents alcançável (URL antiga intacta)', async () => {
     await renderAt('/agents')
-    expect(await screen.findByText(/Nenhum agente ainda/i)).toBeInTheDocument()
+    // O timeout vai no `findBy*`, não só no `it`: `findBy*` tem janela PRÓPRIA
+    // de 1s e ignora o timeout do teste. Com o SLOW só no `it`, esta asserção
+    // falhava em ~1s e o teste inteiro morria — e continuava listada no
+    // baseline como falha esperada, parecendo consertada.
+    expect(await screen.findByText(/Nenhum agente ainda/i, {}, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
   it('mantém /campaigns alcançável, view padrão = list (CampaignsPage → ListView real, SCRUM-997/W0.4)', async () => {
@@ -259,7 +263,8 @@ describe('App routes — SCRUM-994/W0.1', () => {
   // teste morre no fallback de Suspense. Isolado, passa em menos de 1s.
   it('/campaigns/:id/report monta a página de Relatório', async () => {
     await renderAt('/campaigns/abc/report')
-    expect(await screen.findByText(/Funil de entrega/i)).toBeInTheDocument()
+    // Idem: o SLOW precisa estar AQUI, não só no `it`.
+    expect(await screen.findByText(/Funil de entrega/i, {}, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
   it('/agents/new mostra o esqueleto do Studio', async () => {

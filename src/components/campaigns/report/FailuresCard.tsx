@@ -15,7 +15,9 @@ interface FailuresCardProps {
   total: number
   hasRecipientData: boolean
   /** Leva à aba Contatos filtrada por aquele código de falha. */
-  onVerContatos: (code?: string) => void
+  /** Leva à aba Contatos filtrada por `failed`. Sem código: ver o comentário
+   *  sobre o filtro por motivo no `ContactsTab`. */
+  onVerContatos: () => void
 }
 
 /**
@@ -71,15 +73,6 @@ export function FailuresCard({ failures, total, hasRecipientData, onVerContatos 
                   </td>
                   <td className="px-2 py-[11px] text-right font-mono text-[12.5px] tabular-nums text-surface-200">
                     {f.count.toLocaleString('pt-BR')}
-                  </td>
-                  <td className="px-3.5 py-[11px] text-right">
-                    <button
-                      type="button"
-                      onClick={() => onVerContatos(f.code)}
-                      className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
-                    >
-                      Ver contatos
-                    </button>
                   </td>
                 </tr>
               )
