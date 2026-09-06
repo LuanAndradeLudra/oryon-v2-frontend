@@ -33,7 +33,7 @@ export function FailuresCard({ failures, total, hasRecipientData, onVerContatos 
   return (
     <Card noPadding className="overflow-hidden">
       <CardHeader
-        className="px-4 pt-4 mb-3"
+        className="px-4 pt-3.5 mb-3"
         title={`Falhas${total ? ` · ${total.toLocaleString('pt-BR')}` : ''}`}
         action={
           hasRecipientData && failures.length > 0 ? (
@@ -55,23 +55,24 @@ export function FailuresCard({ failures, total, hasRecipientData, onVerContatos 
       ) : failures.length === 0 ? (
         <p className="px-4 pb-4 text-xs text-surface-400">Nenhuma falha neste disparo.</p>
       ) : (
-        <table className="w-full text-sm">
+        // `.ctable` do mockup: 13.2px, linhas separadas por surface-800.
+        <table className="w-full text-[13.2px]">
           <caption className="sr-only">Falhas do disparo por motivo</caption>
           <tbody>
             {failures.map((f) => {
               const { Icon, tom } = ICONE_POR_CODIGO[f.code] ?? { Icon: AlertCircle, tom: 'text-surface-500' }
               return (
-                <tr key={f.code} className="border-t border-surface-700/70">
-                  <td className="px-4 py-2.5">
+                <tr key={f.code} className="border-t border-surface-800">
+                  <td className="px-3.5 py-[11px]">
                     <span className="flex items-center gap-2 text-surface-200">
                       <Icon className={`w-4 h-4 shrink-0 ${tom}`} aria-hidden="true" />
                       {f.reason}
                     </span>
                   </td>
-                  <td className="px-2 py-2.5 text-right font-mono text-surface-200">
+                  <td className="px-2 py-[11px] text-right font-mono text-[12.5px] tabular-nums text-surface-200">
                     {f.count.toLocaleString('pt-BR')}
                   </td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-3.5 py-[11px] text-right">
                     <button
                       type="button"
                       onClick={() => onVerContatos(f.code)}

@@ -59,7 +59,7 @@ export function ReadHeatmap({ heatmap, hasRecipientData }: { heatmap: HeatmapMod
       ) : (
         <div className="overflow-x-auto">
           <div
-            className="grid gap-[3px] min-w-[520px]"
+            className="grid items-center gap-[3px] min-w-[520px]"
             style={{ gridTemplateColumns: '36px repeat(24, minmax(0, 1fr))' }}
           >
             {celulas.map((linha, dia) => (
@@ -69,7 +69,8 @@ export function ReadHeatmap({ heatmap, hasRecipientData }: { heatmap: HeatmapMod
             {/* Régua de horas */}
             <span aria-hidden="true" />
             {Array.from({ length: 24 }, (_, h) => (
-              <span key={h} className="text-[10px] text-surface-500 text-center leading-4">
+              // `.hx` do mockup: 9px, surface-600, centralizado.
+              <span key={h} className="text-[9px] text-surface-600 text-center leading-4">
                 {HORAS_ROTULADAS.includes(h) ? h : ''}
               </span>
             ))}
@@ -83,7 +84,8 @@ export function ReadHeatmap({ heatmap, hasRecipientData }: { heatmap: HeatmapMod
 function FragmentoDeDia({ label, linha }: { label: string; linha: { count: number; cor: string }[] }) {
   return (
     <>
-      <span className="text-[11px] text-surface-400 leading-4 self-center">{label}</span>
+      {/* `.hl` do mockup: 10px, surface-500, alinhado à direita com 4px de folga. */}
+      <span className="text-[10px] text-surface-500 leading-4 text-right pr-1">{label}</span>
       {linha.map((celula, hora) => (
         <div
           key={hora}
