@@ -2,6 +2,12 @@
 // Grupo de filtros/abas em pílula usado em toolbars (status de campanhas,
 // tipos de automação, abas de página). Substitui as 4+ reimplementações
 // inline que divergiam em padding/radius/estados.
+//
+// RAIO: o `.seg` do mockup pede 12px no contêiner e 8px no item. A escala
+// deste projeto NÃO é a do Tailwind — `rounded-lg` são 16px e `rounded-xl`
+// são 20px aqui —, então `rounded-md` (12px) e `rounded-[8px]` são o que
+// casa. Achado do Buril no gate de CSS da A4; corrigido junto com a D4 por
+// ser primitivo compartilhado.
 
 import type { ComponentType, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
@@ -42,7 +48,7 @@ export function SegmentedControl<T extends string>({
       role="tablist"
       aria-label={label}
       className={cn(
-        'inline-flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-xl p-1',
+        'inline-flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-md p-1',
         className,
       )}
     >
@@ -57,7 +63,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(opt.value)}
             style={active && solid ? ({ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties) : undefined}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-lg font-medium transition-all cursor-pointer',
+              'inline-flex items-center gap-1.5 rounded-[8px] font-medium transition-all cursor-pointer',
               size === 'sm' ? 'px-3 py-1 text-xs' : 'px-3.5 py-1.5 text-sm',
               active
                 ? solid
