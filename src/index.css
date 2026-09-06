@@ -544,9 +544,48 @@ code, pre, kbd, samp {
 .filter-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-surface-600); }
 
 /* ── Colored chip (etiquetas, estágio do funil, status, etc.) ────────────────
-   A cor entra via --chip. Nos DOIS temas: cheio — fundo = cor levemente
-   escurecida + texto quase branco. O ponto (.chip-dot) segue o texto. */
+   A cor entra via --chip. O ponto (.chip-dot) segue o texto.
+
+   ESCURO (SCRUM-1048): fundo esmaecido + texto num tom CLARO da própria cor.
+   A regra antiga era `--chip` a 85% com `color:#fff` cravado, e reprovava o
+   mínimo de 4.5:1 do WCAG para texto pequeno em 4 dos 7 tokens que chegam ao
+   `--chip` (`status-pending` 2.33, `status-active` 2.41, `accent-amber` 2.96,
+   `status-info` 3.46) e em 6 dos 12 swatches curados do ColorPicker. Como `--chip` também recebe cor
+   escolhida pelo usuário por picker de hex LIVRE, a regra precisa aguentar
+   entrada arbitrária, e não só os nossos tokens: nesta forma, varrendo 4096
+   cores do espaço sobre `surface-800`, só 2 reprovam, coladas em #000000
+   (pior caso 4.47).
+   LIMITE MEDIDO: o fundo do chip é semitransparente, então numa superfície
+   mais CLARA ele sobe menos e o contraste cai. Todos os tokens e os 12
+   swatches passam nas cinco superfícies reais da árvore (pior caso 5.91 em
+   `surface-700`), mas cor arbitrária perto do preto cede: 79 de 4096 sobre
+   `overlay` e 307 sobre `surface-700`. É o que a Etapa 2 resolve, calculando
+   a tinta por cor E por superfície em vez de fração fixa.
+   Escurecer o âmbar até passar tinha sido a alternativa descartada — ele
+   encostaria no vermelho do `failed`, trocando um problema de contraste por
+   um de diferenciação. Medições em `src/lib/contrast.test.ts`.
+   ATENÇÃO — O QUE AQUELE GATE NÃO PEGA, e a primeira versão desta nota
+   descrevia errado: ele guarda uma CÓPIA das porcentagens abaixo (12 e 50)
+   **e também dos valores dos tokens de status**, porque nem `node:fs` nem
+   `?raw` conseguem ler CSS de dentro do vitest. Consequência real, provada
+   pelo revisor: escurecer `--color-status-pending` aqui e rodar a suíte dá
+   verde. Só o `CURATED_PALETTE` do ColorPicker está vivo, por import.
+   Se mudar QUALQUER valor daqui — porcentagem ou cor de token —, mude lá
+   também; senão o gate segue verde medindo uma regra que não existe mais.
+
+   CLARO: mantém o cheio de sempre, DE PROPÓSITO. A mesma forma esmaecida
+   reprova 7 de 7 aqui, porque escurecer por fração fixa não salva uma cor já
+   clara — uma tag amarelo-pálida continua pálida. O tema claro precisa de um
+   piso de luminância por cor, que é conta em JS e não `color-mix`; está na
+   Etapa 2 (SCRUM-1048b), fora deste PR. Os status passam no claro hoje
+   (6.29–7.36) por terem variante escurecida própria; as TAGS reprovam aqui
+   também, e é a Etapa 2 que resolve. */
 .color-chip {
+  background-color: color-mix(in srgb, var(--chip) 12%, transparent);
+  color: color-mix(in srgb, var(--chip) 50%, white);
+  border-color: color-mix(in srgb, var(--chip) 30%, transparent);
+}
+[data-theme="light"] .color-chip {
   background-color: color-mix(in srgb, var(--chip) 85%, #000);
   color: #fff;
   border-color: color-mix(in srgb, var(--chip) 85%, #000);
@@ -554,11 +593,40 @@ code, pre, kbd, samp {
 .chip-dot { background-color: currentColor; }
 
 /* Status trigger button — neutral at rest, colors like .color-chip on hover
-   (same --chip var), matching the "clicked/open" look one step early. */
+   (same --chip var), matching the "clicked/open" look one step early.
+   Segue o chip nos dois temas: era o mesmo defeito, 5 linhas abaixo. */
 .status-trigger:hover {
+  background-color: color-mix(in srgb, var(--chip) 12%, transparent);
+  color: color-mix(in srgb, var(--chip) 50%, white);
+  border-color: color-mix(in srgb, var(--chip) 30%, transparent);
+}
+[data-theme="light"] .status-trigger:hover {
   background-color: color-mix(in srgb, var(--chip) 85%, #000);
   color: #fff;
   border-color: color-mix(in srgb, var(--chip) 85%, #000);
+}
+
+/* Navegador sem `color-mix` (abaixo de Chrome 111 / Safari 16.2, um degrau
+   acima do alvo padrão do Vite). O Lightning CSS gera sozinho um fallback
+   `background-color: var(--chip)` e `color: var(--chip)` — ou seja, fundo e
+   texto na MESMA cor, texto invisível. A regra antiga degradava para fundo
+   colorido com `#fff`, que era legível; sem este bloco trocaríamos contraste
+   ruim por texto nenhum, para uma fatia pequena mas real de navegadores.
+
+   A GUARDA É UM PADRÃO, NÃO UMA LISTA. A primeira versão nomeava só
+   `.color-chip` e `.status-trigger:hover`, e por isso deixou passar o contador
+   do `ui/SegmentedControl` — que pede fundo e texto por `color-mix` em VALOR
+   ARBITRÁRIO do Tailwind e reintroduzia, no mesmo commit, o defeito que este
+   card conserta. A condição que colapsa não é "ser um destes componentes", é
+   **pedir fundo E texto por `color-mix` da mesma variável**; o seletor de
+   atributo abaixo descreve exatamente isso, e alcança o que for escrito
+   depois sem ninguém lembrar de vir aqui. */
+@supports not (color: color-mix(in srgb, red, red)) {
+  .color-chip,
+  .status-trigger:hover,
+  [class*="bg-[color-mix"][class*="text-[color-mix"] {
+    color: #fff;
+  }
 }
 
 /* ── Elevação nível 3: superfície de overlay (dropdown, popover, tooltip,

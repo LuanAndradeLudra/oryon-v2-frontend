@@ -30,9 +30,12 @@ interface SegmentedControlProps<T extends string> {
    * Estilo do estado ativo:
    * - `subtle` (default): pílula cinza discreta (bg-surface-700). Usado em
    *   toolbars/abas por todo o app — NÃO alterar sem revisar os callers.
-   * - `solid`: pílula saturada teal + texto/ícone brancos (padrão .color-chip
-   *   dos badges de tags); o contador do item ativo fica branco com número
-   *   preto para contraste. Para filtros de destaque.
+   * - `solid`: pílula da cor da marca no padrão `.color-chip` dos badges de
+   *   tags. Desde o SCRUM-1048 o `.color-chip` é fundo esmaecido com texto
+   *   num tom claro da própria cor, então o contador do item ativo segue a
+   *   mesma família em vez do branco-sobre-saturado de antes — um selo branco
+   *   sobre fundo esmaecido leria como outro componente. Para filtros de
+   *   destaque.
    */
   variant?: 'subtle' | 'solid'
   /** aria-label do grupo (obrigatório para leitores de tela). */
@@ -80,7 +83,7 @@ export function SegmentedControl<T extends string>({
                   'min-w-[18px] px-1 rounded-full text-[10px] font-semibold text-center tabular-nums',
                   active
                     ? solid
-                      ? 'bg-white text-black'
+                      ? 'bg-[color-mix(in_srgb,var(--chip)_28%,transparent)] text-[color-mix(in_srgb,var(--chip)_60%,white)]'
                       : 'bg-surface-600 text-surface-100'
                     : 'bg-surface-700 text-surface-400',
                 )}
