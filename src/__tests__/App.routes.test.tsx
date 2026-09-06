@@ -225,7 +225,11 @@ const SLOW = 30_000
 describe('App routes — SCRUM-994/W0.1', () => {
   it('mantém /agents alcançável (URL antiga intacta)', async () => {
     await renderAt('/agents')
-    expect(await screen.findByText(/Nenhum agente ainda/i)).toBeInTheDocument()
+    // O timeout vai no `findBy*`, não só no `it`: `findBy*` tem janela PRÓPRIA
+    // de 1s e ignora o timeout do teste. Com o SLOW só no `it`, esta asserção
+    // falhava em ~1s e o teste inteiro morria — e continuava listada no
+    // baseline como falha esperada, parecendo consertada.
+    expect(await screen.findByText(/Nenhum agente ainda/i, {}, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
   it('mantém /campaigns alcançável, view padrão = list (CampaignsPage → ListView real, SCRUM-997/W0.4)', async () => {
@@ -261,10 +265,19 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(await screen.findByText(/Composer em construção/i)).toBeInTheDocument()
   })
 
-  it('/campaigns/:id/report mostra o esqueleto do Relatório', async () => {
+  // Atualizado pelo D3 (SCRUM-1022): esta asserção cobria o esqueleto do W0.1
+  // ("Relatório em construção"), que era o placeholder à espera desta
+  // história. Com a página real no lugar, o que a rota tem de provar continua
+  // sendo reachability — só que agora contra o conteúdo de verdade.
+  // Usa o mesmo `SLOW` das outras rotas desta suíte: a página real tem um
+  // grafo de módulos bem maior que o esqueleto e a rota é `lazy`, então com a
+  // suíte inteira em paralelo o `import()` do chunk estoura os 5s padrão e o
+  // teste morre no fallback de Suspense. Isolado, passa em menos de 1s.
+  it('/campaigns/:id/report monta a página de Relatório', async () => {
     await renderAt('/campaigns/abc/report')
-    expect(await screen.findByText(/Relatório em construção/i)).toBeInTheDocument()
-  })
+    // Idem: o SLOW precisa estar AQUI, não só no `it`.
+    expect(await screen.findByText(/Funil de entrega/i, {}, { timeout: SLOW })).toBeInTheDocument()
+  }, SLOW)
 
   it('/agents/new monta o Studio na etapa 1 de 8', async () => {
     // Era o esqueleto "Studio em construção" da W0.1; a A3 (SCRUM-1014) pôs a
