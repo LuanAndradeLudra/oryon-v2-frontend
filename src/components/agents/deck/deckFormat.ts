@@ -44,12 +44,12 @@ export interface MetricParts {
   unit?: string
 }
 
-/** 58s · 1m42 · 2h — mesma leitura de "Resposta" no mockup.
+/** 58s · 1m42 · 2h — mesma leitura da métrica de duração do mockup.
  *
  *  O arredondamento acontece UMA vez, no total de segundos, antes de decompor
  *  em minutos e segundos. Arredondar o resto depois da divisão produzia
  *  carimbos impossíveis quando o valor chega fracionado do backend
- *  (`avgResponseSec` é média, então vem float): 59.6 virava "60s", 119.6
+ *  (`avgTimeToHumanResponseSec` é média, então vem float): 59.6 virava "60s", 119.6
  *  virava "1m60" e 3599.8 virava "59m60". */
 export function formatDuration(seconds: number | null | undefined): MetricParts {
   if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) return { value: '—' }

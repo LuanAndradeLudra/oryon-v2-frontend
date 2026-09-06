@@ -123,7 +123,13 @@ export function PersonaCard({ agent, live, metrics, queue, onOpen, onResume }: P
   } else if (metrics) {
     foot.push({ label: '7 dias', parts: started === null ? { value: '—' } : { value: started.toLocaleString('pt-BR') } })
     foot.push({ label: 'Resolução', parts: formatPct(resolved ?? 0, started ?? 0), color: resolutionColor(pct) })
-    foot.push({ label: 'Resposta', parts: formatDuration(num(metrics.avgResponseSec)) })
+    // Divergência de rótulo assumida (D47). O mockup diz "Resposta", mas o
+    // campo mede o tempo até a primeira resposta HUMANA — a coluna de origem
+    // (`conversations.firstResponseAt`) é explícita: "sent by a human agent,
+    // NOT the AI". Manter "Resposta" num painel de operação de IA leria como
+    // latência da IA, que é justamente o que o número não é. O que ele mede é
+    // quando a automação não deu conta.
+    foot.push({ label: 'Até humano', parts: formatDuration(num(metrics.avgTimeToHumanResponseSec)) })
   }
 
   const subtitle = [agent.sector, agent.objective].filter(Boolean).join(' · ')

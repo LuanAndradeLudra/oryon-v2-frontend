@@ -62,7 +62,7 @@ describe('relativeTime', () => {
 })
 
 describe('formatDuration', () => {
-  it('formata a métrica "Resposta" como no mockup (58s, 1m42, 2h)', () => {
+  it('formata a métrica de duração como no mockup (58s, 1m42, 2h)', () => {
     expect(formatDuration(58)).toEqual({ value: '58', unit: 's' })
     expect(formatDuration(102)).toEqual({ value: '1m42', unit: undefined })
     expect(formatDuration(120)).toEqual({ value: '2', unit: 'm' })
@@ -76,7 +76,7 @@ describe('formatDuration', () => {
     expect(formatDuration(Number.POSITIVE_INFINITY).value).toBe('—')
   })
 
-  // Regressão (achado do Lince no #126): `avgResponseSec` é uma média e chega
+  // Regressão (achado do Lince no #126): `avgTimeToHumanResponseSec` é uma média e chega
   // fracionada do backend. Arredondar o resto DEPOIS de dividir produzia
   // carimbos que não existem no relógio.
   it('não produz "60s", "1m60" nem "59m60" com segundos fracionados', () => {

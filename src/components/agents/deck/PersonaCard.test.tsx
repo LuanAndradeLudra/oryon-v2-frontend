@@ -53,7 +53,7 @@ const metrics: AgentMetrics = {
   resolvedByAi: 82,
   transferred: 10,
   assistedSales: 2,
-  avgResponseSec: 58,
+  avgTimeToHumanResponseSec: 58,
   intents: [],
   deltaPct: 1,
 }
