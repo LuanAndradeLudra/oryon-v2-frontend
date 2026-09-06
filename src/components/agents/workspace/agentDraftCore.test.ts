@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import type { AgentConfigWithTools } from '@/services/agentsApi'
 import {
-  DRAFT_FIELDS, changedFields, draftStorageKey, fieldLabel, isDraftField,
-  pruneDraft, readStoredDraft, sameValue, writeStoredDraft,
+  DRAFT_FIELDS, changeSummary, changedFields, draftStorageKey, fieldAccent,
+  fieldLabel, isDraftField, pruneDraft, readStoredDraft, sameValue,
+  writeStoredDraft,
 } from './agentDraftCore'
 
 function makeAgent(over: Partial<AgentConfigWithTools> = {}): AgentConfigWithTools {
@@ -157,5 +158,61 @@ describe('agentDraftCore — persistência local', () => {
   it('objeto só com campos inválidos vira null, não rascunho vazio', () => {
     localStorage.setItem(draftStorageKey('a1'), JSON.stringify({ status: 'active' }))
     expect(readStoredDraft('a1')).toBeNull()
+  })
+})
+
+describe('agentDraftCore — acento por campo', () => {
+  it('usa o acento da seção dona, o mesmo que o snav pinta', () => {
+    // O mockup (`p2a-agentes.html:142`) pinta "Regras" em rosa e "Capacidades"
+    // em verde, que são exatamente os acentos dessas seções na nav.
+    expect(fieldAccent('handoff_rules')).toBe('rose')
+    expect(fieldAccent('crm_capabilities')).toBe('green')
+    expect(fieldAccent('system_prompt')).toBe('violet')
+    expect(fieldAccent('decision_criteria_tags')).toBe('cyan')
+  })
+
+  it('campo desconhecido cai em brand em vez de sumir da lista', () => {
+    // Mesma razão do `fieldLabel`: sumir faria o contador dizer 3 e a lista
+    // mostrar 2.
+    expect(fieldAccent('campo_que_o_backend_inventou')).toBe('brand')
+  })
+})
+
+describe('agentDraftCore — resumo da alteração', () => {
+  it('conta as regras em vez de dizer só que mudou', () => {
+    const agent = makeAgent({ handoff_rules: { rules: [{ id: '1' }, { id: '2' }, { id: '3' }] } } as never)
+    const draft = { handoff_rules: { rules: [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }] } }
+    expect(changeSummary(agent, draft, 'handoff_rules')).toBe('3 → 4 regras')
+  })
+
+  it('usa o singular quando o resultado é um só', () => {
+    const agent = makeAgent({ handoff_rules: { rules: [{ id: '1' }, { id: '2' }] } } as never)
+    expect(changeSummary(agent, { handoff_rules: { rules: [{ id: '1' }] } }, 'handoff_rules')).toBe('2 → 1 regra')
+  })
+
+  it('conta só o canal LIGADO, não a chave presente', () => {
+    const agent = makeAgent({ channels: { whatsapp: true, instagram: false } } as never)
+    expect(changeSummary(agent, { channels: { whatsapp: true, instagram: true } }, 'channels'))
+      .toBe('1 → 2 canais')
+  })
+
+  it('texto longo vira tamanho, com separador de milhar pt-BR', () => {
+    const agent = makeAgent({ system_prompt: 'x'.repeat(1842) })
+    expect(changeSummary(agent, { system_prompt: 'x'.repeat(1910) }, 'system_prompt'))
+      .toBe('1.842 → 1.910 caracteres')
+  })
+
+  it('texto curto mostra o VALOR, que diz mais que o tamanho dele', () => {
+    const agent = makeAgent()
+    expect(changeSummary(agent, { preferred_model: 'claude-opus-5' }, 'preferred_model'))
+      .toBe('— → claude-opus-5')
+  })
+
+  it('não inventa número quando o shape não é o esperado', () => {
+    // `handoff_rules` sem a lista dentro: cai no genérico em vez de afirmar
+    // uma contagem que ninguém consegue verificar.
+    const agent = makeAgent({ handoff_rules: { outra_coisa: 1 } } as never)
+    expect(changeSummary(agent, { handoff_rules: { outra_coisa: 2 } }, 'handoff_rules'))
+      .toBe('Editado neste rascunho')
   })
 })

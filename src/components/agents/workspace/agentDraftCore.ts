@@ -3,7 +3,9 @@
 // como alterado e como o campo vira rótulo humano. Sem React e sem rede, para
 // ser testável sem render — é o alvo do teste `useDraft` da rubrica.
 
+import type { Accent } from '@/components/ui/accentColor'
 import type { AgentConfigWithTools } from '@/services/agentsApi'
+import { sectionById, type SectionId } from './sectionNavCore'
 
 /** Subconjunto rascunhável, igual ao do contrato AS.2 (CONTRATOS.md §AS.2).
  *  Manter em lockstep: um campo fora desta lista nunca entra no `draft` nem é
@@ -50,6 +52,111 @@ const FIELD_LABEL: Record<DraftField, string> = {
  *  seria pior: o contador diria 3 e a lista mostraria 2. */
 export function fieldLabel(field: string): string {
   return isDraftField(field) ? FIELD_LABEL[field] : field
+}
+
+/** Seção do Workspace dona de cada campo rascunhável. Serve para a lista de
+ *  alterações pintar o chip com o MESMO acento da seção onde a pessoa vai
+ *  consertar aquilo — é o que o mockup faz (`p2a-agentes.html:142`: "Regras"
+ *  em rosa, "Capacidades" em verde, exatamente os acentos do `snav`).
+ *
+ *  `channels` e `preferred_model` caem em "Visão geral" porque não têm seção
+ *  própria na nav — é onde eles aparecem hoje, não uma seção inventada. */
+const FIELD_SECTION: Record<DraftField, SectionId> = {
+  system_prompt:                       'prompt',
+  wizard_config:                       'overview',
+  handoff_rules:                       'rules',
+  channels:                            'overview',
+  crm_capabilities:                    'capabilities',
+  preferred_model:                     'overview',
+  decision_criteria_resolved:          'criteria',
+  decision_criteria_stage_transitions: 'criteria',
+  decision_criteria_tags:              'criteria',
+  decision_criteria_handoff:           'criteria',
+}
+
+/** Acento do campo, pela seção dona. Campo desconhecido cai em `brand` — a
+ *  mesma razão do `fieldLabel`: melhor um chip neutro na lista do que um item
+ *  a menos, que faria o contador e a lista discordarem. */
+export function fieldAccent(field: string): Accent {
+  return isDraftField(field) ? sectionById(FIELD_SECTION[field]).accent : 'brand'
+}
+
+// ── resumo do que mudou ─────────────────────────────────────────────────────
+// O card de alterações precisa dizer O QUE mudou, não repetir a mesma frase
+// uma vez por linha — repetir lista, não revela. O mockup traz uma descrição
+// escrita à mão por alteração ("Nova regra cancelar → Retenção"), que ninguém
+// consegue gerar a partir de dois valores. O que dá para afirmar com verdade é
+// a GRANDEZA da mudança, e é só isso que estas funções dizem.
+
+/** Contagem que representa o campo, quando existe uma. `null` quando o campo
+ *  não tem uma grandeza óbvia — aí o resumo cai no genérico em vez de inventar
+ *  um número. */
+const FIELD_COUNT: Partial<Record<DraftField, (v: unknown) => number | null>> = {
+  handoff_rules:    v => arrayLength(prop(v, 'rules')),
+  crm_capabilities: v => arrayLength(prop(v, 'capabilities')),
+  channels:         v => (isRecord(v) ? Object.values(v).filter(Boolean).length : null),
+}
+
+const COUNT_NOUN: Partial<Record<DraftField, [string, string]>> = {
+  handoff_rules:    ['regra', 'regras'],
+  crm_capabilities: ['capacidade', 'capacidades'],
+  channels:         ['canal', 'canais'],
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === 'object' && !Array.isArray(v)
+}
+
+function prop(v: unknown, key: string): unknown {
+  return isRecord(v) ? v[key] : undefined
+}
+
+function arrayLength(v: unknown): number | null {
+  return Array.isArray(v) ? v.length : null
+}
+
+const nf = (n: number) => n.toLocaleString('pt-BR')
+
+/**
+ * Uma linha curta e verdadeira sobre a alteração de um campo. Nunca afirma
+ * mais do que os dois valores sustentam:
+ *   • texto longo (prompt)      → "1.842 → 1.910 caracteres"
+ *   • texto curto (modelo)      → o valor antigo e o novo
+ *   • coleção conhecida         → "3 → 4 regras"
+ *   • qualquer outra coisa      → só diz que mudou
+ */
+export function changeSummary(agent: AgentConfigWithTools, draft: AgentDraft | null, field: DraftField): string {
+  const antes = (agent as unknown as Record<string, unknown>)[field]
+  const depois = draft?.[field]
+
+  const count = FIELD_COUNT[field]
+  if (count) {
+    const a = count(antes)
+    const d = count(depois)
+    if (a !== null && d !== null) {
+      const [sing, plur] = COUNT_NOUN[field] ?? ['item', 'itens']
+      return `${nf(a)} → ${nf(d)} ${d === 1 ? sing : plur}`
+    }
+  }
+
+  // Lado AUSENTE conta como texto vazio, não como "não sei comparar": campo
+  // que o agente ainda não tem e o rascunho passou a ter é alteração comum
+  // (`preferred_model`, por exemplo), e "— → claude-opus-5" diz mais do que o
+  // genérico. Só vale quando o outro lado é texto — objeto contra `undefined`
+  // continua caindo no genérico.
+  const textual = (v: unknown) => typeof v === 'string' || v === null || v === undefined
+  if ((typeof antes === 'string' || typeof depois === 'string') && textual(antes) && textual(depois)) {
+    const a = typeof antes === 'string' ? antes : ''
+    const d = typeof depois === 'string' ? depois : ''
+    // Curto o bastante para caber na linha: mostrar o valor diz mais que
+    // mostrar o tamanho dele.
+    if (a.length <= 40 && d.length <= 40) {
+      return `${a || '—'} → ${d || '—'}`
+    }
+    return `${nf(a.length)} → ${nf(d.length)} caracteres`
+  }
+
+  return 'Editado neste rascunho'
 }
 
 /** Comparação estrutural estável. `system_prompt` é string, mas
