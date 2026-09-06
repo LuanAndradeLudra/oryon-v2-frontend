@@ -42,7 +42,9 @@ export function SegmentedControl<T extends string>({
       role="tablist"
       aria-label={label}
       className={cn(
-        'inline-flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-xl p-1',
+        // `.seg` do mockup pede 12px de raio; `rounded-xl` é 20 nominal neste
+        // projeto, não 12. `rounded-md` é o token que cai em 12.
+        'inline-flex items-center gap-1 bg-surface-800 border border-surface-700 rounded-md p-1',
         className,
       )}
     >

@@ -37,7 +37,9 @@ export function InsightCard({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-surface-700 p-3 flex gap-3 items-start',
+        // `.att` do mockup: raio 16px e padding 12px 14px (assimétrico).
+        // `rounded-2xl` é 24 nominal aqui, e `p-3` achata o horizontal em 12.
+        'rounded-lg border border-surface-700 py-3 px-3.5 flex gap-3 items-start',
         dashed ? 'border-dashed bg-transparent' : 'bg-surface-800',
         className,
       )}

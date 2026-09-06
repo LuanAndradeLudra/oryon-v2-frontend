@@ -68,13 +68,22 @@ export function StackedBar({ segments, height = 10, legend = false, total, class
           {segments.map((s, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1.5 text-surface-300">
+                {/* 2px literal: a escala de raio deste projeto começa em
+                    `sm` = 10 nominal, então não há token que caia em 2. Quem
+                    escreve `rounded-sm` esperando os 2px do Tailwind recebe
+                    10 — a armadilha que originou este card. */}
                 <span
-                  className="w-2 h-2 rounded-sm flex-shrink-0 inline-block"
+                  className="w-2 h-2 rounded-[2px] flex-shrink-0 inline-block"
                   style={{ backgroundColor: segmentColor(s.color), opacity: s.dimmed ? 0.7 : 1 }}
                 />
                 {s.label}
               </span>
-              <b className={cn('font-mono tabular-nums', 'text-surface-100')}>
+              {/* Só o primeiro valor vem destacado; os demais em `s400`. No
+                  mockup (`d6-publico.html`) o primeiro `<b class="mono">` não
+                  tem override e os seguintes trazem `color:var(--s400)`. A
+                  hierarquia é o ponto: o primeiro segmento é o número que a
+                  linha está afirmando, o resto é contexto. */}
+              <b className={cn('font-mono tabular-nums', i === 0 ? 'text-surface-100' : 'text-surface-400')}>
                 {s.value.toLocaleString('pt-BR')}
               </b>
             </div>

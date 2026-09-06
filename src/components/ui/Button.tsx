@@ -39,6 +39,21 @@ const variantStyles = {
   ],
 }
 
+// Os raios 10/11/12 são LITERAIS de propósito, e ficam assim. Não converta
+// para token — a conversão parcial é o defeito, não a solução.
+//
+// A regra do gate prefere token sempre que um token cai no valor nominal.
+// Aqui `sm` = 10 e `md` = 12 existem na escala, mas 11 não existe. Aplicada
+// valor a valor, a preferência converteria dois dos três e o resultado é
+// aritmético: `rounded-sm` e `rounded-md` são `rem` e escalam para 11 e 13,2
+// no desktop (110%), enquanto o literal 11 fica parado. A progressão
+// 10/11/12 viraria **11/11/13,2** — o pequeno colapsa no médio e a escala de
+// três tamanhos vira duas.
+//
+// Daí a regra: quando os valores formam uma PROGRESSÃO ou um CONJUNTO, o
+// conjunto inteiro usa a MESMA unidade. Coerência dentro do conjunto ganha da
+// preferência por token valor a valor, porque o que o design codifica ali é a
+// relação entre eles, não cada número isolado.
 const sizeStyles = {
   sm: 'h-7 px-3 text-xs gap-1.5 rounded-[10px]',
   md: 'h-9 px-4 text-sm gap-2  rounded-[11px]',
