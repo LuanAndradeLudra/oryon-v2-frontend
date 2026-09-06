@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest'
 import { conversaComoHandoff, esperaAoVivo } from './useHandoffQueue'
 import type { HandoffItem } from '@/types/agentsOps'
-import { sla } from './handoffRow'
+import { sla } from './handoffRowCore'
 import type { Conversation } from '@/types'
 
 const AGORA = Date.parse('2026-09-06T14:10:00.000Z')

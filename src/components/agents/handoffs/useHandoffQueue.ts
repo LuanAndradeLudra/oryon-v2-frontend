@@ -6,7 +6,7 @@ import { conversationsApi } from '@/services/api'
 import { listAgents } from '@/services/agentsApi'
 import type { HandoffItem, HandoffStatus, HandoffSummary } from '@/types/agentsOps'
 import type { Conversation } from '@/types'
-import { maskPhone } from './handoffRow'
+import { maskPhone } from './handoffRowCore'
 
 /** Intervalo da fila e do resumo — o mesmo que a A1 usa para live/feed. */
 export const POLL_MS = 20_000

@@ -175,3 +175,25 @@ export function maskPhone(raw?: string | null): string {
   // distingue celular de fixo sem entregar o número.
   return `${prefixo}${ddd} ${corpo.slice(0, 1)}${escondidos}-${fim}`
 }
+
+// ─── Acento do avatar ────────────────────────────────────────────────────────
+
+/**
+ * Acento categórico do avatar, determinístico a partir do nome — é o que o
+ * mockup faz variando `--tc` linha a linha. Devolve **nome** de acento, nunca
+ * hex (Carta de Padrões §7).
+ *
+ * Mora aqui, e não no componente, por duas razões: é puro (logo, testável sem
+ * render) e exportar função de um arquivo de componente quebra o fast refresh.
+ *
+ * Nota de escopo: NÃO uso `ui/Avatar`. Ele é **redondo** e traz paleta própria,
+ * enquanto o `.av.tint` do mockup é um quadrado de raio 12 tingido pelo acento
+ * da linha. Divergência registrada em `evidencias/SCRUM-1017/CSS.md`.
+ */
+const ACENTOS: Accent[] = ['rose', 'violet', 'green', 'amber', 'blue', 'cyan']
+
+export function acentoDoNome(nome: string): Accent {
+  let soma = 0
+  for (let i = 0; i < nome.length; i++) soma = (soma + nome.charCodeAt(i)) % 997
+  return ACENTOS[soma % ACENTOS.length]
+}
