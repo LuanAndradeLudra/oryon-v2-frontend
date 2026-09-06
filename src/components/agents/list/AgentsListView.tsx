@@ -15,7 +15,7 @@
 // O estado "nenhum agente no tenant" NÃO mora aqui: é condição da rota, vale
 // igual para o Deck, e é decidido um nível acima (ver AgentsPage).
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Bot, ChevronRight, ExternalLink, Copy, ToggleRight, Pause, FileText } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -155,9 +155,13 @@ export interface AgentsListViewProps {
   onStatusChange: (id: string, status: AgentConfig['status']) => Promise<AgentConfig | null>
   /** Chamado quando um agente é excluído: a página recarrega a lista. */
   onAgentsChanged: () => void
+  /** Agente recém-criado pelo wizard. A view o adota como seleção — é o que a
+   *  AgentsPage fazia com `setSelectedAgent(agent)` antes deste recorte. Vem
+   *  completo do wizard, então não precisa de `getAgent`. */
+  createdAgent?: AgentConfigWithTools | null
 }
 
-export function AgentsListView({ agents, loading, hub, onStatusChange, onAgentsChanged }: AgentsListViewProps) {
+export function AgentsListView({ agents, loading, hub, createdAgent, onStatusChange, onAgentsChanged }: AgentsListViewProps) {
   const [selectedAgent, setSelectedAgent] = useState<AgentConfigWithTools | null>(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [statusFilter, setStatusFilter] = useState<'all' | AgentConfig['status']>('all')
@@ -169,6 +173,12 @@ export function AgentsListView({ agents, loading, hub, onStatusChange, onAgentsC
     const updated = await onStatusChange(id, status)
     if (updated) setSelectedAgent((prev) => (prev && prev.id === id ? { ...prev, ...updated } : prev))
   }, [onStatusChange])
+
+  // Só reage à identidade do agente criado: uma seleção posterior do usuário
+  // não é desfeita, porque `createdAgent` continua o mesmo objeto.
+  useEffect(() => {
+    if (createdAgent) setSelectedAgent(createdAgent)
+  }, [createdAgent])
 
   const selectAgent = async (id: string) => {
     setLoadingDetail(true)
