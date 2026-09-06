@@ -69,10 +69,11 @@ function StudioStepItem({
   // aconteceu. (Mesma classe de comportamento que sumiu na extração da W0.3 e
   // que dump de DOM não pega: por isso tem teste.)
   useEffect(() => {
-    // `?.()` no metodo tambem: rolagem e enfeite e nao pode derrubar a pagina
-    // pelo error boundary onde `scrollIntoView` nao existe (jsdom, e alguns
-    // navegadores antigos).
-    if (open) ref.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+    // Chamada direta no método, igual ao resto do repo. Eu tinha escrito
+    // `?.scrollIntoView?.()` para o jsdom não estourar — o jsdom agora tem o
+    // stub em `src/test/setup.ts`, e a chamada opcional aqui só serviria para
+    // esconder o sumiço desta linha de qualquer teste (achado do Lince no #139).
+    if (open) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [open])
 
   return (
