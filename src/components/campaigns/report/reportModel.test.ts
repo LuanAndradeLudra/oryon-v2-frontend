@@ -103,6 +103,33 @@ describe('buildKpis', () => {
     expect(kpis.promoterPct).toBe(50)
   })
 
+  it('mede opt-out sobre o mesmo universo do numerador quando a classificação é PARCIAL', () => {
+    // A fixture acima tem as 4 classificadas, então `replies.length` e
+    // `classified.length` coincidem e um denominador errado passa
+    // despercebido. Classificação parcial é o estado NORMAL até a BE.9 rodar,
+    // e é onde os dois universos divergem.
+    const parcial: CampaignReply[] = [
+      { contactId: '1', name: 'A', text: 'x', at: '', score: 10, class: 'promoter' },
+      { contactId: '2', name: 'B', text: 'x', at: '', score: 4, class: 'detractor' },
+      { contactId: '3', name: 'C', text: 'sair', at: '', score: null, class: 'optout' },
+      { contactId: '4', name: 'D', text: 'sair', at: '', score: null, class: 'optout' },
+      // 6 ainda sem classificação — o backend devolve `class: null` por
+      // resposta enquanto a BE.9 não rodou.
+      ...Array.from({ length: 6 }, (_, i) => ({
+        contactId: `n${i}`, name: 'N', text: 'x', at: '', score: null, class: null,
+      })) as CampaignReply[],
+    ]
+
+    const kpis = buildKpis(parcial)
+    expect(kpis.classifiedCount).toBe(4)
+    expect(kpis.optOutCount).toBe(2)
+    // 2 de 4 classificadas = 50%. Dividir pelas 10 respostas daria 20% —
+    // 2,5x para menos, justamente na métrica de risco.
+    expect(kpis.optOutPct).toBe(50)
+    // E o de promotores tem de continuar no mesmo universo: 1 de 4.
+    expect(kpis.promoterPct).toBe(25)
+  })
+
   it('devolve tudo em null antes da BE.9 classificar — "—" na tela, não zero', () => {
     const semClasse: CampaignReply[] = [
       { contactId: '1', name: 'A', text: 'x', at: '', score: null, class: null },

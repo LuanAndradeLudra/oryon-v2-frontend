@@ -169,9 +169,17 @@ export function buildKpis(replies: CampaignReply[]): ReportKpis {
         ? Math.round((promoterCount / classified.length) * 100)
         : null,
     optOutCount,
+    // Denominador é `classified`, o MESMO universo do numerador — não
+    // `replies`. `optOutCount` só conta entre as classificadas, e dividir por
+    // todas as respostas subestima a taxa na proporção do que ainda não foi
+    // classificado. Com 10 respostas, 4 classificadas e 2 opt-outs, a taxa
+    // real é 50% e a errada dava 20%: 2,5x para menos, na métrica de risco, ao
+    // lado de um "% promotores" que já usava `classified`. E classificação
+    // parcial é o estado NORMAL, não uma borda — `class` vem `null` por
+    // resposta até a BE.9 rodar.
     optOutPct:
-      optOutCount != null && replies.length
-        ? Math.round((optOutCount / replies.length) * 1000) / 10
+      optOutCount != null && classified.length
+        ? Math.round((optOutCount / classified.length) * 1000) / 10
         : null,
   }
 }
