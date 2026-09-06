@@ -97,7 +97,7 @@ export function BlockEnvio({
         {bestHour && (
           <div className="flex items-start gap-3 rounded-lg border border-dashed border-surface-700 px-3.5 py-3 mt-2.5">
             <span className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0 bg-brand-cta/14 text-brand-cta">
-              <Gauge className="w-[15px] h-[15px]" aria-hidden />
+              <Gauge className="w-3.75 h-3.75" aria-hidden />
             </span>
             <div>
               <p className="text-[13.2px] font-semibold text-surface-100">{bestHour.title}</p>
@@ -176,7 +176,7 @@ function LineOption({
           selected ? 'bg-brand-cta/14 text-brand-cta' : 'bg-surface-700 text-surface-300',
         )}
       >
-        <MessageCircle className="w-[18px] h-[18px]" aria-hidden />
+        <MessageCircle className="w-4.5 h-4.5" aria-hidden />
       </span>
 
       <span className="flex-1 min-w-0">
