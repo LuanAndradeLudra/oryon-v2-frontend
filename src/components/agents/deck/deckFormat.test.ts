@@ -175,4 +175,36 @@ describe('draftProgress', () => {
   it('WIZARD_STEPS é o total contado, não o número de telas do wizard', () => {
     expect(WIZARD_STEPS).toBe(5)
   })
+
+  // Ressalva do Lince na re-revisão do #126, promovida a bug pelo Maestro: o
+  // `validate()` (case 4) fecha a etapa de negócio pelo Company Context Hub,
+  // e o `draftProgress` não conhecia esse caminho. Um dos 4 agentes reais do
+  // tenant local vive nesse estado e mostrava "4 de 5" para sempre — o
+  // formulário não tem como fechar uma etapa já preenchida pelo hub.
+  describe('etapa de negócio pelo Company Context Hub', () => {
+    const semNegocio = { ...cheio, business: { company_name: '', company_description: '', products_services: '' } }
+
+    it('sem hub, negócio em branco não fecha a etapa', () => {
+      expect(draftProgress(semNegocio, '')?.done).toBe(3)
+    })
+
+    it('com hub preenchido, a etapa de negócio fecha mesmo sem nome/descrição', () => {
+      expect(draftProgress(semNegocio, '', true)?.done).toBe(4)
+    })
+
+    it('o hub não inventa etapa: com negócio já preenchido, o total não passa de 5', () => {
+      expect(draftProgress(cheio, 'Você é a Sofia...', true)).toEqual({ done: 5, total: 5 })
+    })
+
+    it('o hub fecha só a etapa de negócio, não as outras', () => {
+      const vazio = {
+        identity: { name: '', icon: 'bot', sector: '', objective: '' },
+        personality: { persona_name: '', tone: '', language: 'pt-BR', response_style: [] },
+        scope: { can_do: [], cannot_do: [], faqs: [] },
+        business: { company_name: '', company_description: '', products_services: '' },
+        deployment: { channels_whatsapp: true, channels_messenger: false, handoff_rules: [] },
+      }
+      expect(draftProgress(vazio, '', true)).toEqual({ done: 1, total: 5 })
+    })
+  })
 })

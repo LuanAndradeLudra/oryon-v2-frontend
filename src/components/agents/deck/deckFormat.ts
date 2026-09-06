@@ -133,10 +133,17 @@ const preenchido = (v: unknown): boolean =>
  * `wizard_config` real é aninhado em cinco seções, um rascunho recém-criado
  * contava as seções como cinco campos preenchidos e a barra nascia quase
  * cheia — no estado inicial, que é justamente onde o card de rascunho vive.
+ *
+ * `businessHubFilled` reproduz o caminho alternativo que o `validate()` do
+ * `useStudioDraft` aceita na etapa de negócio (case 4): o Company Context Hub
+ * substitui nome e descrição da empresa. Sem ele, quem preencheu o negócio pelo
+ * hub fica parado em "4 de 5" para sempre, porque não há como fechar a etapa
+ * pelo formulário — a barra afirmaria um estado inalcançável.
  */
 export function draftProgress(
   wizardConfig: Record<string, unknown> | undefined,
   systemPrompt?: string | null,
+  businessHubFilled = false,
 ): DraftProgress | null {
   if (!wizardConfig || typeof wizardConfig !== 'object') return null
   const cfg = wizardConfig as WizardConfigShape
@@ -148,7 +155,8 @@ export function draftProgress(
   if (id && preenchido(id.name) && preenchido(id.sector) && preenchido(id.objective)) done++
   if (cfg.personality && preenchido(cfg.personality.tone)) done++
   if (cfg.scope && preenchido(cfg.scope.can_do)) done++
-  if (cfg.business && preenchido(cfg.business.company_name) && preenchido(cfg.business.company_description)) done++
+  if (businessHubFilled
+    || (cfg.business && preenchido(cfg.business.company_name) && preenchido(cfg.business.company_description))) done++
   if (preenchido(systemPrompt)) done++
 
   return { done, total: WIZARD_STEPS }

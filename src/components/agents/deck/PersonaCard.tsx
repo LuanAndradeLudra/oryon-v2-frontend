@@ -8,12 +8,14 @@
 // a faixa ao vivo e o rodapé só aparecem quando os dados chegaram de verdade.
 // Sem eles o card mostra o que sabe com certeza — status e última alteração.
 
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { MessageCircle, Pause, PencilLine } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { accentColor, tint } from '@/components/ui/accentColor'
 import { Button } from '@/components/ui/Button'
+import { readSession } from '@/components/agents/studio/useStudioDraft'
+import { hubHasContent, loadHub } from '@/services/companyContextService'
 import type { AgentConfig } from '@/services/agentsApi'
 import type { AgentLiveInfo, AgentMetrics } from '@/types/agentsOps'
 import {
@@ -209,11 +211,19 @@ export function PersonaCard({ agent, live, metrics, queue, onOpen, onResume }: P
 function DraftCard({ agent, onOpen }: { agent: AgentConfig; onOpen: (id: string) => void }) {
   // O prompt gerado é a 5ª etapa e não vive no `wizard_config` — vem do
   // próprio agente.
-  const progress = draftProgress(agent.wizard_config, agent.system_prompt)
+  //
+  // O hub é por tenant, não por agente: lido uma vez e reaproveitado por todos
+  // os cards de rascunho da grade. É o mesmo critério do `validate()` (case 4),
+  // que aceita o Company Context Hub no lugar de nome/descrição da empresa.
+  const businessHubFilled = useMemo(() => {
+    const { tenantId } = readSession()
+    return tenantId ? hubHasContent(loadHub(tenantId)) : false
+  }, [])
+  const progress = draftProgress(agent.wizard_config, agent.system_prompt, businessHubFilled)
 
   return (
     <div className="rounded-[20px] border border-dashed border-surface-700 bg-transparent flex flex-col items-center justify-center text-center gap-2 p-6">
-      <span className="w-10 h-10 rounded-xl bg-surface-800 text-surface-400 flex items-center justify-center" aria-hidden>
+      <span className="w-10 h-10 rounded-[12px] bg-surface-800 text-surface-400 flex items-center justify-center" aria-hidden>
         <PencilLine className="w-[18px] h-[18px]" />
       </span>
       <div className="font-semibold text-sm text-surface-200 truncate max-w-full">{agent.name || 'Rascunho sem nome'}</div>
