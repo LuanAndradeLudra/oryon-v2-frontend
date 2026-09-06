@@ -64,6 +64,7 @@ export function AgentsPage() {
   const [agents, setAgents] = useState<AgentConfig[]>([])
   const [loadingList, setLoadingList] = useState(true)
   const [showWizard, setShowWizard] = useState(false)
+  const [createdAgent, setCreatedAgent] = useState<AgentConfigWithTools | null>(null)
   const [view, setView] = useState<AgentsView>('deck')
   const banner = useDesktopRecommendedBanner('agents')
   const isMobile = useIsMobile()
@@ -97,9 +98,24 @@ export function AgentsPage() {
 
   useEffect(() => { void load() }, [load])
 
+  // Fim do fluxo de criação. Cada view tem o seu, e as duas precisam levar a
+  // algum lugar: terminar uma criação parado na tela onde se começou é beco
+  // sem saída.
+  //
+  // Lista — regressão do recorte (achado do Lince no #129): a AgentsPage antiga
+  // fazia `setSelectedAgent(agent)` aqui, e o estado mudou de casa para dentro
+  // da AgentsListView sem que nada repusesse a seleção. O agente entrava na
+  // lista e o detalhe ficava em "Selecione um agente". O que se perde numa
+  // extração mecânica não é JSX — é o que não tem representação visual.
+  //
+  // Deck — decisão de produto do Maestro: navega para o workspace do agente
+  // novo. A rota existe desde que a A2 mesclou, e é o mesmo destino que a
+  // Lista alcança ao abrir o detalhe.
   const handleWizardComplete = (agent: AgentConfigWithTools) => {
     setAgents(prev => [agent, ...prev])
     setShowWizard(false)
+    if (view === 'deck') navigate(`/agents/${agent.id}/overview`)
+    else setCreatedAgent(agent)
   }
 
   // Ponto ÚNICO do estado vazio da rota: vale para as duas views, porque
@@ -130,6 +146,7 @@ export function AgentsPage() {
           agents={agents}
           loading={loadingList}
           hub={hub}
+          createdAgent={createdAgent}
           onStatusChange={handleStatusChange}
           onAgentsChanged={() => { void load() }}
         />
