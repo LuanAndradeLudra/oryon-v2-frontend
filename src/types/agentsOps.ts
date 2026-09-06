@@ -131,7 +131,7 @@ export interface AgentMetrics {
    *  D14) — não é uma atribuição real de vendas. Não tratar como número
    *  auditável. */
   assistedSales: number
-  avgResponseSec: number
+  avgTimeToHumanResponseSec: number
   intents: AgentMetricsIntent[]
   deltaPct: number
 }
