@@ -7,7 +7,8 @@
 // components`: um arquivo que exporta componente E função perde o fast
 // refresh. Ficarem juntos também ajuda a manter o tom das quatro frases
 // consistente — elas aparecem empilhadas na mesma tela.
-import type { WhatsAppTemplate, WhatsAppNumber, CampaignVariableMapping } from '@/types'
+import type { WhatsAppTemplate, CampaignVariableMapping } from '@/types'
+import type { ComposerLine } from './BlockEnvio'
 
 /** Vazão do processor de disparo, em mensagens por segundo. O mockup mostra
  *  "~3/s"; é constante do backend, não medida — se virar configurável, vem
@@ -44,7 +45,7 @@ export function variaveisSummary(mappings: CampaignVariableMapping[], complete: 
 }
 
 export function envioSummary(
-  scheduleMode: 'now' | 'later', scheduledAt: string, line: WhatsAppNumber | null,
+  scheduleMode: 'now' | 'later', scheduledAt: string, line: ComposerLine | null,
 ): string {
   if (!line) return 'Quando e por qual linha.'
   const lineName = line.label || line.displayPhoneNumber
