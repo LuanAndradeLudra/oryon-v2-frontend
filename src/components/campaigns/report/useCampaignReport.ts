@@ -18,6 +18,22 @@ interface UseCampaignReport {
   reload: () => void
 }
 
+/** O que a carga entrega. Fica no estado inteiro, não em campo por campo, para
+ *  a tela nunca misturar a campanha de uma carga com o analytics de outra. */
+interface DadosDoRelatorio {
+  campaign: Campaign | null
+  analytics: unknown
+  recipientsAvailable: boolean
+  recipientsTotal: number
+}
+
+/** Desfecho da carga identificada por `chave`. É o que permite derivar
+ *  `loading` em vez de escrevê-lo — ver o comentário do efeito. */
+interface DesfechoDaCarga {
+  chave: string
+  error: string | null
+}
+
 /**
  * Carrega o relatório e decide em qual dos dois mundos estamos.
  *
@@ -35,25 +51,30 @@ interface UseCampaignReport {
  *   enquanto a BE.1 não subir.
  */
 export function useCampaignReport(campaignId: string | undefined): UseCampaignReport {
-  const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const [analytics, setAnalytics] = useState<unknown>(null)
-  const [recipientsAvailable, setRecipientsAvailable] = useState(false)
-  const [recipientsTotal, setRecipientsTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [dados, setDados] = useState<DadosDoRelatorio | null>(null)
+  const [desfecho, setDesfecho] = useState<DesfechoDaCarga | null>(null)
   const [nonce, setNonce] = useState(0)
 
   const reload = useCallback(() => setNonce((n) => n + 1), [])
 
+  // Identifica a carga corrente. `reload()` só incrementa o nonce; é a mudança
+  // da chave que invalida o desfecho anterior.
+  const chave = `${campaignId ?? ''}#${nonce}`
+
+  // `loading` e `error` são DERIVADOS da chave, não escritos no corpo do
+  // efeito. Um `setLoading(true)` síncrono ali dentro custa um render extra e
+  // é o que a regra `react-hooks/set-state-in-effect` aponta; comparar a chave
+  // dá o mesmo resultado no primeiro render, sem o render a mais.
+  const liquidado = desfecho?.chave === chave
+  const loading = Boolean(campaignId) && !liquidado
+  const error = liquidado ? desfecho.error : null
+
   useEffect(() => {
-    // Sem id não há o que carregar; o estado desse caso é derivado no return,
-    // não escrito aqui — `setState` no corpo do efeito para uma condição que
-    // já dá para calcular só produz um render a mais.
+    // Sem id não há o que carregar; esse caso é derivado no return, não
+    // escrito aqui.
     if (!campaignId) return
 
     let cancelado = false
-    setLoading(true)
-    setError(null)
 
     Promise.all([
       campaignReportApi.getCampaign(campaignId),
@@ -68,27 +89,32 @@ export function useCampaignReport(campaignId: string | undefined): UseCampaignRe
     ])
       .then(([campanha, analiticos, destinatarios]) => {
         if (cancelado) return
-        setCampaign(campanha.data)
-        setAnalytics(analiticos.data)
-        setRecipientsAvailable(destinatarios.available)
-        setRecipientsTotal(destinatarios.data.total ?? 0)
+        setDados({
+          campaign: campanha.data,
+          analytics: analiticos.data,
+          recipientsAvailable: destinatarios.available,
+          recipientsTotal: destinatarios.data.total ?? 0,
+        })
+        setDesfecho({ chave, error: null })
       })
       .catch((err: unknown) => {
         if (cancelado) return
         // 401/403/500 e falha de rede chegam aqui — "o backend quebrou" não
-        // pode ser confundido com "a feature ainda não existe".
-        setError(mensagemDeErro(err))
-      })
-      .finally(() => {
-        if (!cancelado) setLoading(false)
+        // pode ser confundido com "a feature ainda não existe". Os dados
+        // anteriores ficam de pé: num reload que falha, a tela continua
+        // mostrando o que já tinha, com o erro por cima.
+        setDesfecho({ chave, error: mensagemDeErro(err) })
       })
 
     return () => {
       cancelado = true
     }
-  }, [campaignId, nonce])
+  }, [campaignId, chave])
 
-  const model = useMemo(() => buildReportModel(campaign, analytics), [campaign, analytics])
+  const model = useMemo(
+    () => buildReportModel(dados?.campaign ?? null, dados?.analytics ?? null),
+    [dados],
+  )
 
   if (!campaignId) {
     return {
@@ -102,7 +128,15 @@ export function useCampaignReport(campaignId: string | undefined): UseCampaignRe
     }
   }
 
-  return { campaign, model, recipientsAvailable, recipientsTotal, loading, error, reload }
+  return {
+    campaign: dados?.campaign ?? null,
+    model,
+    recipientsAvailable: dados?.recipientsAvailable ?? false,
+    recipientsTotal: dados?.recipientsTotal ?? 0,
+    loading,
+    error,
+    reload,
+  }
 }
 
 function mensagemDeErro(err: unknown): string {

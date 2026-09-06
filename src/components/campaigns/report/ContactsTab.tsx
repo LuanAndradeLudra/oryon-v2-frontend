@@ -58,12 +58,17 @@ export function ContactsTab({ campaignId, hasRecipientData, initialFailureCode, 
   const [status, setStatus] = useState<FiltroStatus>(initialStatus ?? (initialFailureCode ? 'failed' : 'todos'))
   const [page, setPage] = useState(1)
   const [resposta, setResposta] = useState<CampaignRecipientsResponse>(VAZIO)
-  const [carregando, setCarregando] = useState(false)
+  // Identifica a página pedida. `carregando` é DERIVADO da comparação com a
+  // última carga liquidada, em vez de escrito no corpo do efeito: um
+  // `setCarregando(true)` síncrono ali custa um render extra e é o que a regra
+  // `react-hooks/set-state-in-effect` aponta.
+  const chave = `${campaignId}#${status}#${page}`
+  const [liquidado, setLiquidado] = useState<string | null>(null)
+  const carregando = hasRecipientData && liquidado !== chave
 
   useEffect(() => {
     if (!hasRecipientData) return
     let cancelado = false
-    setCarregando(true)
 
     withFallback(
       () =>
@@ -77,16 +82,21 @@ export function ContactsTab({ campaignId, hasRecipientData, initialFailureCode, 
       VAZIO,
     )
       .then((r) => {
-        if (!cancelado) setResposta(r.data)
+        if (cancelado) return
+        setResposta(r.data)
+        setLiquidado(chave)
       })
-      .finally(() => {
-        if (!cancelado) setCarregando(false)
+      .catch(() => {
+        // `withFallback` já absorve o 404 de "rota ainda não existe"; o que
+        // chega aqui é falha real. Marcar como liquidada mesmo assim, senão a
+        // lista fica girando para sempre — os dados anteriores continuam de pé.
+        if (!cancelado) setLiquidado(chave)
       })
 
     return () => {
       cancelado = true
     }
-  }, [campaignId, status, page, hasRecipientData])
+  }, [campaignId, status, page, hasRecipientData, chave])
 
   if (!hasRecipientData) {
     return <PendingDataCard what="A lista de contatos deste disparo" />

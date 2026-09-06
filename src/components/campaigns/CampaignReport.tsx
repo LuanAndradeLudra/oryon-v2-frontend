@@ -263,7 +263,8 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   }, [campaign.id])
 
   // Derived metrics
-  const deliveredRate = stats.sent > 0 ? Math.round((stats.delivered / stats.sent) * 100) : 0
+  // `deliveredRate` saiu: a taxa de entrega passou a ser calculada pelo
+  // `reportModel` e exibida pelo `DeliveryFunnel` da tela nova.
   const readRate      = stats.sent > 0 ? Math.round((stats.read / stats.sent) * 100) : 0
   const replyRate     = stats.read > 0 && stats.replied ? Math.round((stats.replied / stats.read) * 100) : 0
   const convRate      = stats.read > 0 && stats.conversions ? Math.round((stats.conversions / stats.read) * 100) : 0
