@@ -20,11 +20,17 @@ interface LiveCountProps {
   estimatedCostCents?: number
 }
 
+/** O KPI do mockup usa o par `.kl`/`.kv` (`p1-head.html:148-149`), NÃO o `.up`
+ *  do rótulo de seção: rótulo em 12px peso 500, valor em Satoshi 700 com
+ *  `letter-spacing:-.02em`. O `padding:10px 12px` é o override que a marcação
+ *  do D6 aplica sobre o `.kpi` padrão. */
 function Kpi({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-surface-700 bg-surface-800 px-3 py-2.5">
-      <div className="text-[10px] uppercase tracking-[0.1em] text-surface-400">{label}</div>
-      <div className="text-xl text-surface-50 mt-0.5 tabular-nums">{value}</div>
+    <div className="flex flex-col gap-1.5 rounded-lg border border-surface-700 bg-surface-800 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-[12px] font-medium text-surface-400">{label}</div>
+      <div className="font-display font-bold text-[20px] leading-[1.1] tracking-[-0.02em] text-surface-50 tabular-nums">
+        {value}
+      </div>
     </div>
   )
 }
@@ -45,7 +51,7 @@ export function LiveCount({ evaluation, loading, error, estimatedCostCents }: Li
   if (!evaluation) {
     return (
       <div>
-        <div className="text-[10px] uppercase tracking-[0.1em] text-surface-400">Vão receber</div>
+        <div className="text-3xs font-bold uppercase tracking-[0.1em] text-surface-400">Vão receber</div>
         <div className="text-surface-500 text-sm mt-2">
           Monte ao menos uma condição para ver o público.
         </div>
@@ -65,7 +71,7 @@ export function LiveCount({ evaluation, loading, error, estimatedCostCents }: Li
   return (
     <>
       <div>
-        <div className="text-[10px] uppercase tracking-[0.1em] text-surface-400">Vão receber</div>
+        <div className="text-3xs font-bold uppercase tracking-[0.1em] text-surface-400">Vão receber</div>
         <div
           className="font-display font-black text-[56px] leading-none tracking-[-0.03em] text-surface-50 tabular-nums mt-1.5"
           aria-live="polite"
@@ -99,9 +105,9 @@ export function LiveCount({ evaluation, loading, error, estimatedCostCents }: Li
           title={`${excluded.recentlyCampaigned.toLocaleString('pt-BR')} já receberam um disparo no período`}
           description={
             <>
-              Tirando a exclusão por disparo recente, o público sobe para{' '}
-              {(eligible + excluded.recentlyCampaigned).toLocaleString('pt-BR')}. Em bases que
-              se sobrepõem, a taxa de descadastro costuma subir junto.
+              Quantos voltariam sem a regra de janela, o motor não sabe dizer: os motivos de
+              exclusão se sobrepõem (Decisão D5), e quem também está sem opt-in continua fora.
+              Em bases que se sobrepõem, a taxa de descadastro costuma subir junto.
             </>
           }
         />

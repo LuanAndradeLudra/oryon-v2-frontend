@@ -121,6 +121,49 @@ describe('AudienceBlock', () => {
     expect(screen.getByRole('button', { name: /Usar 0/ })).toBeDisabled()
   })
 
+  it('não projeta público de volta: os motivos de exclusão se sobrepõem', async () => {
+    // A sonda do revisor: as MESMAS 60 pessoas estão sem opt-in E foram
+    // campanhadas. Somar `eligible + recentlyCampaigned` daria 100, e a
+    // resposta certa é 40 — tirar a regra de 7 dias não devolve ninguém,
+    // porque elas continuam sem opt-in. O número sai; fica só a contagem do
+    // motivo, que é medida e não projetada.
+    evaluate.mockResolvedValue({
+      data: {
+        matched: 100,
+        eligible: 40,
+        excluded: { optOut: 60, recentlyCampaigned: 60, activeAi: 0 },
+        perCondition: [[100]],
+        within24h: 0,
+        sample: [],
+      },
+    })
+
+    render(<AudienceBlock value={draft()} onChange={vi.fn()} />)
+
+    expect(await screen.findByText(/60 já receberam um disparo no período/)).toBeInTheDocument()
+    expect(screen.queryByText(/o público sobe para/)).not.toBeInTheDocument()
+    expect(screen.getByText(/os motivos de exclusão se sobrepõem/)).toBeInTheDocument()
+  })
+
+  it('não mostra −0 no opt-out quando a exclusão está desligada', async () => {
+    // As duas linhas irmãs já tinham porteiro; esta não. `−0` lê como
+    // "não excluiu ninguém" quando a verdade é "não perguntei".
+    evaluate.mockResolvedValue({ data: evaluation })
+    const off: AudienceDraft = {
+      definition: {
+        groups: [createGroup([createCondition('tags', 'includes_any', ['t1'])])],
+        exclude: {},
+      },
+    }
+
+    render(<AudienceBlock value={off} onChange={vi.fn()} />)
+
+    expect(await screen.findByText(/de 323 que atendem/)).toBeInTheDocument()
+    expect(screen.queryByText('−0')).not.toBeInTheDocument()
+    // Ligado, a contagem aparece — o porteiro não pode esconder o que vale.
+    expect(screen.queryByText('−9')).not.toBeInTheDocument()
+  })
+
   it('não chama a API antes de haver alguma condição montada', async () => {
     evaluate.mockResolvedValue({ data: evaluation })
 

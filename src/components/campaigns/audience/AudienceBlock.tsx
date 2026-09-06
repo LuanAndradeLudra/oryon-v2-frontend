@@ -7,7 +7,7 @@
 //
 // Duas colunas, como no mockup: regras à esquerda, número vivo à direita
 // (380px). Sem BE.3 no ar a tela degrada — ver `degraded` abaixo.
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { Bookmark, ArrowRight, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
@@ -80,6 +80,7 @@ export function AudienceBlock({
   const [saved, setSaved] = useState<CampaignSegmentSaved[]>([])
   const [savingName, setSavingName] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const { result, loading, error, unsupported } = useAudienceEvaluate(definition)
 
@@ -120,9 +121,17 @@ export function AudienceBlock({
     return () => { stale = true }
   }, [])
 
+  // A prop fica numa ref porque o consumidor natural passa uma seta inline
+  // (`onResolvedChange={(r) => setPublico(r)}`), que muda de identidade a cada
+  // render do pai. Com ela na lista de dependências, o efeito reexecutaria a
+  // cada render e devolveria o mesmo resultado de novo — no Composer da D2 isso
+  // vira laço de re-render. Só `result` deve disparar o aviso.
+  const onResolvedChangeRef = useRef(onResolvedChange)
+  useEffect(() => { onResolvedChangeRef.current = onResolvedChange }, [onResolvedChange])
+
   useEffect(() => {
-    onResolvedChange?.(result ? { eligible: result.eligible, matched: result.matched } : null)
-  }, [result, onResolvedChange])
+    onResolvedChangeRef.current?.(result ? { eligible: result.eligible, matched: result.matched } : null)
+  }, [result])
 
   // Contagem parcial de cada linha. Só entra no estado local: é exibição, o
   // pai não precisa saber, e `toEvaluateGroups` descarta `count`, então isto
@@ -173,11 +182,22 @@ export function AudienceBlock({
     const name = savingName?.trim()
     if (!name) return
     setSaving(true)
+    setSaveError(null)
     try {
       const created = await segmentsApi.create(name, toSegmentDefinition(definition))
       setSaved((list) => [...list, created.data])
       onChange({ segmentId: created.data.id, definition })
       setSavingName(null)
+    } catch (err) {
+      // Sem isto a promessa rejeita sem dono (o call-site é `void
+      // saveSegment()`), o campo fecha o `saving` e nada aparece: a pessoa
+      // acha que salvou. Nome duplicado é o 409 esperado do BE.3.
+      const status = (err as { response?: { status?: number } })?.response?.status
+      setSaveError(
+        status === 409
+          ? 'Já existe um segmento com esse nome.'
+          : 'Não foi possível salvar o segmento. Tente de novo.',
+      )
     } finally {
       setSaving(false)
     }
@@ -195,7 +215,7 @@ export function AudienceBlock({
   return (
     <div className={cn('grid grid-cols-[1fr_380px] min-h-0 flex-1', className)}>
       {/* ── Coluna de regras ── */}
-      <div className="px-7 py-5 overflow-auto min-w-0">
+      <div className="px-7 py-5.5 overflow-auto min-w-0">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <h2 className="text-[22px] text-surface-50">Quem recebe?</h2>
@@ -278,7 +298,7 @@ export function AudienceBlock({
           isso o `min-width:auto` do grid deixa um nome de contato longo ou o
           texto do insight empurrar a coluna além dos 380 e quebrar o layout,
           justamente quando o público tem alguém de nome comprido. */}
-      <div className="border-l border-surface-800 bg-surface-900 p-5 flex flex-col gap-3.5 overflow-auto min-w-0">
+      <div className="border-l border-surface-800 bg-surface-900 p-5.5 flex flex-col gap-3.5 overflow-auto min-w-0">
         <LiveCount
           evaluation={result}
           loading={loading}
@@ -310,6 +330,10 @@ export function AudienceBlock({
                 Salvar
               </Button>
             </div>
+          )}
+
+          {saveError && (
+            <p role="alert" className="text-xs text-danger-text-dark">{saveError}</p>
           )}
 
           <div className="flex gap-2">

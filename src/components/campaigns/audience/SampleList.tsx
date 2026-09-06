@@ -21,7 +21,7 @@ export function SampleList({ contacts, total, onViewAll, stageLabel }: SampleLis
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] uppercase tracking-[0.1em] text-surface-400">Amostra</span>
+        <span className="text-3xs font-bold uppercase tracking-[0.1em] text-surface-400">Amostra</span>
         {onViewAll && total > contacts.length && (
           <button
             type="button"
