@@ -90,7 +90,12 @@ export function ExclusionGroup({ value, onChange, counts, degraded = false }: Ex
         icon={<ShieldOff />}
         label="Opt-in de marketing"
         operator="é"
-        count={counts?.optOut}
+        // Porteiro, como nas duas linhas irmãs: sem a exclusão ligada não há
+        // o que contar, e `−0` lê como "não excluiu ninguém" quando a verdade
+        // é "não perguntei". No modo degradado o opt-out é imposto, então aí
+        // a contagem vale. (O BE.3 devolve o campo AUSENTE quando o motivo não
+        // foi pedido — o porteiro cobre os dois casos.)
+        count={degraded || value.optOut ? counts?.optOut : undefined}
         control={
           degraded ? (
             <span
