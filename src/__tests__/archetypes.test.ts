@@ -3,7 +3,7 @@
 // pelo Maestro: **o chip tem de bater com o dado**. Número que mente é pior que
 // número ausente.
 import { describe, it, expect } from 'vitest'
-import { ARCHETYPES, chipLabel, type Archetype } from '@/components/agents/archetypes/archetypes'
+import { ARCHETYPES, chipLabel, preset, type Archetype } from '@/components/agents/archetypes/archetypes'
 import { CAN_DO_PRESETS, CANNOT_DO_PRESETS, SECTORS, TONES, RESPONSE_STYLES } from '@/components/agents/studio/steps/constants'
 import { CRM_CAPABILITIES_CATALOG } from '@/components/agents/crmCapabilitiesCatalog'
 import { accentColor } from '@/components/ui/accentColor'
@@ -103,6 +103,48 @@ describe('conteúdo — vem do vocabulário que o produto já usa', () => {
     for (const item of arquetipo.cannot_do) expect(CANNOT_DO_PRESETS).toContain(item)
     expect(arquetipo.can_do.length).toBeGreaterThan(0)
     expect(arquetipo.cannot_do.length).toBeGreaterThan(0)
+  })
+
+  // Achado do Prumo na revisão do #143. O teste acima usa `toContain`, que só
+  // checa PERTINÊNCIA: com os presets referenciados por índice, trocar
+  // `CAN_DO_PRESETS[0]` por `[1]` dava `tsc` limpo e a suíte inteira verde, com
+  // todo arquétipo carregando a frase errada — ainda pertencente à lista, e por
+  // isso invisível. Estes dois travam QUAL frase.
+  it('cada arquétipo carrega exatamente as frases escolhidas, não outras da lista', () => {
+    expect(porId('vendas').can_do).toEqual([
+      'Responder perguntas sobre produtos/serviços',
+      'Qualificar leads e coletar informações',
+      'Enviar links, catálogos e materiais',
+      'Apresentar promoções e ofertas',
+    ])
+    expect(porId('vendas').cannot_do).toEqual([
+      'Processar pagamentos diretamente',
+      'Fazer promessas não autorizadas pela empresa',
+      'Garantir resultados específicos',
+    ])
+    expect(porId('suporte').can_do).toEqual([
+      'Responder perguntas frequentes (FAQ)',
+      'Responder perguntas sobre produtos/serviços',
+      'Registrar reclamações e sugestões',
+      'Verificar status de pedidos',
+    ])
+    expect(porId('posvenda').can_do).toEqual([
+      'Auxiliar no rastreamento de entregas',
+      'Fazer follow-up de conversas',
+      'Coletar dados de contato',
+      'Registrar reclamações e sugestões',
+    ])
+  })
+
+  it('preset() estoura se a frase sumir do constants.tsx, em vez de calar', () => {
+    // A referência por conteúdo torna a reordenação inofensiva — que é o certo,
+    // ordem nunca devia ter importado — e transforma o sumiço de uma frase em
+    // erro alto, no import, em vez de num arquétipo silenciosamente errado.
+    expect(() => preset(CAN_DO_PRESETS, 'Frase que nunca existiu')).toThrow(/preset sumiu/)
+    expect(preset(CAN_DO_PRESETS, CAN_DO_PRESETS[0])).toBe(CAN_DO_PRESETS[0])
+    // Reordenar não muda nada: a busca é por valor.
+    expect(preset([...CAN_DO_PRESETS].reverse(), 'Coletar dados de contato'))
+      .toBe('Coletar dados de contato')
   })
 
   it.each(ARCHETYPES)('$nome — setor, tom e estilos são valores válidos do wizard', (arquetipo) => {

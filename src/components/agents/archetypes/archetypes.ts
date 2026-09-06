@@ -79,28 +79,52 @@ export interface Archetype {
   crm_capabilities: CrmCapabilityId[]
 }
 
-// Índices dos presets, nomeados para o dado abaixo ficar legível e para o
-// typecheck acusar se alguém reordenar `constants.tsx` sem olhar aqui.
+/**
+ * Referência a um preset **por conteúdo**, não por posição.
+ *
+ * Isto aqui era `CAN_DO_PRESETS[0]`, com um comentário meu afirmando que o
+ * typecheck acusaria uma reordenação de `constants.tsx`. **Não acusava**: a
+ * lista é `string[]`, então todo índice tem o mesmo tipo, e o Prumo provou por
+ * mutação — trocar `[0]` com `[1]` dava `tsc` limpo e 53/53 verdes, com todo
+ * arquétipo carregando a frase trocada em silêncio. O teste que existia só
+ * checava pertinência (`toContain`), nunca *qual* frase.
+ *
+ * Agora a frase é a chave e o índice não existe. Reordenar `constants.tsx`
+ * passa a ser inofensivo (é o certo — ordem não devia importar) e **remover ou
+ * reescrever** uma frase estoura no import, alto e na hora, em vez de sair
+ * calado num arquétipo. É o mesmo princípio do chip que não pode mentir,
+ * aplicado à origem do dado.
+ */
+export function preset(lista: readonly string[], frase: string): string {
+  if (!lista.includes(frase)) {
+    throw new Error(
+      `[archetypes] preset sumiu de studio/steps/constants.tsx: "${frase}". `
+      + 'Se a frase mudou de propósito, atualize a referência aqui junto.',
+    )
+  }
+  return frase
+}
+
 const CAN = {
-  produtos:    CAN_DO_PRESETS[0],  // Responder perguntas sobre produtos/serviços
-  qualificar:  CAN_DO_PRESETS[1],  // Qualificar leads e coletar informações
-  pedidos:     CAN_DO_PRESETS[3],  // Verificar status de pedidos
-  materiais:   CAN_DO_PRESETS[4],  // Enviar links, catálogos e materiais
-  contato:     CAN_DO_PRESETS[5],  // Coletar dados de contato
-  faq:         CAN_DO_PRESETS[6],  // Responder perguntas frequentes (FAQ)
-  followUp:    CAN_DO_PRESETS[7],  // Fazer follow-up de conversas
-  reclamacoes: CAN_DO_PRESETS[9],  // Registrar reclamações e sugestões
-  promocoes:   CAN_DO_PRESETS[10], // Apresentar promoções e ofertas
-  entregas:    CAN_DO_PRESETS[11], // Auxiliar no rastreamento de entregas
+  produtos:    preset(CAN_DO_PRESETS, 'Responder perguntas sobre produtos/serviços'),
+  qualificar:  preset(CAN_DO_PRESETS, 'Qualificar leads e coletar informações'),
+  pedidos:     preset(CAN_DO_PRESETS, 'Verificar status de pedidos'),
+  materiais:   preset(CAN_DO_PRESETS, 'Enviar links, catálogos e materiais'),
+  contato:     preset(CAN_DO_PRESETS, 'Coletar dados de contato'),
+  faq:         preset(CAN_DO_PRESETS, 'Responder perguntas frequentes (FAQ)'),
+  followUp:    preset(CAN_DO_PRESETS, 'Fazer follow-up de conversas'),
+  reclamacoes: preset(CAN_DO_PRESETS, 'Registrar reclamações e sugestões'),
+  promocoes:   preset(CAN_DO_PRESETS, 'Apresentar promoções e ofertas'),
+  entregas:    preset(CAN_DO_PRESETS, 'Auxiliar no rastreamento de entregas'),
 } as const
 
 const NAO = {
-  pagamentos:   CANNOT_DO_PRESETS[0], // Processar pagamentos diretamente
-  bancarios:    CANNOT_DO_PRESETS[1], // Acessar dados bancários ou senhas
-  garantir:     CANNOT_DO_PRESETS[3], // Garantir resultados específicos
-  confidencial: CANNOT_DO_PRESETS[4], // Compartilhar informações confidenciais
-  promessas:    CANNOT_DO_PRESETS[5], // Fazer promessas não autorizadas pela empresa
-  emergencias:  CANNOT_DO_PRESETS[7], // Substituir atendimento humano em emergências
+  pagamentos:   preset(CANNOT_DO_PRESETS, 'Processar pagamentos diretamente'),
+  bancarios:    preset(CANNOT_DO_PRESETS, 'Acessar dados bancários ou senhas'),
+  garantir:     preset(CANNOT_DO_PRESETS, 'Garantir resultados específicos'),
+  confidencial: preset(CANNOT_DO_PRESETS, 'Compartilhar informações confidenciais'),
+  promessas:    preset(CANNOT_DO_PRESETS, 'Fazer promessas não autorizadas pela empresa'),
+  emergencias:  preset(CANNOT_DO_PRESETS, 'Substituir atendimento humano em emergências'),
 } as const
 
 const CHIP_CAPACIDADES: ArchetypeChip = {
