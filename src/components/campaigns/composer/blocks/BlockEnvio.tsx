@@ -101,7 +101,7 @@ export function BlockEnvio({
             </span>
             <div>
               <p className="text-[13.2px] font-semibold text-surface-100">{bestHour.title}</p>
-              <p className="text-xs text-surface-400 mt-0.5 leading-[1.45]">{bestHour.detail}</p>
+              <p className="text-[12px] text-surface-400 mt-0.5 leading-[1.45]">{bestHour.detail}</p>
             </div>
           </div>
         )}
@@ -183,7 +183,7 @@ function LineOption({
         <span className="block text-[15.4px] font-semibold text-surface-100 truncate">
           {line.label || line.displayPhoneNumber}
         </span>
-        <span className="block text-xs text-surface-400 mt-0.5">
+        <span className="block text-[12px] text-surface-400 mt-0.5">
           {line.label ? `${line.displayPhoneNumber} · ` : ''}
           {offline ? (
             'desconectada'
