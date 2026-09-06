@@ -115,22 +115,25 @@ describe('AgentsPage · jornada de criação', () => {
     onCreatedRef = null
   })
 
-  it('Lista: o agente recém-criado aparece SELECIONADO no detalhe', async () => {
+  // Na A1 este caso afirmava o oposto: a Lista tinha painel de detalhe ao lado
+  // e concluir o wizard SELECIONAVA o agente ali, sem navegar. A A4 eliminou o
+  // painel — a Lista virou triagem e a configuração foi para o Workspace — e
+  // com ele a seleção que a regressão do #129 tinha derrubado. O que o teste
+  // protege continua sendo o mesmo: concluir uma criação leva a algum lugar.
+  it('Lista: concluir navega para o workspace do agente novo', async () => {
     renderPage()
     await screen.findByText('deck-grade')
 
     fireEvent.click(screen.getByText('Lista'))
-    expect(await screen.findByText('Selecione um agente')).toBeInTheDocument()
-
     fireEvent.click(screen.getByText('Novo agente'))
     fireEvent.click(await screen.findByText('concluir-wizard'))
 
-    // O ponto da regressão: antes disto o detalhe continuava vazio.
-    expect(await screen.findByText('detalhe: Agente Novo')).toBeInTheDocument()
-    expect(screen.queryByText('Selecione um agente')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith('/agents/a-novo/overview')
+    })
   })
 
-  it('Lista: concluir NÃO navega para fora da página', async () => {
+  it('Lista: o agente novo entra na lista, não só na navegação', async () => {
     renderPage()
     await screen.findByText('deck-grade')
 
@@ -138,8 +141,7 @@ describe('AgentsPage · jornada de criação', () => {
     fireEvent.click(screen.getByText('Novo agente'))
     fireEvent.click(await screen.findByText('concluir-wizard'))
 
-    await screen.findByText('detalhe: Agente Novo')
-    expect(navigate).not.toHaveBeenCalled()
+    expect(await screen.findByText('Agente Novo')).toBeInTheDocument()
   })
 
   it('Deck: concluir navega para o workspace do agente novo', async () => {

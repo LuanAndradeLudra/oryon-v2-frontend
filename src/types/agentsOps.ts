@@ -123,17 +123,38 @@ export interface AgentMetricsIntent {
   resolutionPct: number
 }
 
+/** Um ponto por dia da série de volume (Decisão D40). A série é **densa**:
+ *  dia sem movimento vem com `count: 0`, e não ausente — senão a sparkline
+ *  desenha uma reta por cima do buraco e inventa continuidade. */
+export interface AgentMetricsPoint {
+  date: string
+  count: number
+}
+
+/** Variação percentual por KPI (Decisão D29). Um `deltaPct` único não serve:
+ *  a tela mostra quatro cartões e cada um precisa da própria seta — com um
+ *  número só, três dos quatro exibiriam a variação de um KPI que não é o deles.
+ *  `null` quando a base é zero: variação sobre nada é desconhecida, não
+ *  infinita. */
+export interface AgentMetricsDeltas {
+  started: number | null
+  resolvedByAi: number | null
+  transferred: number | null
+  avgTimeToHumanResponseSec: number | null
+}
+
 export interface AgentMetrics {
   started: number
   resolvedByAi: number
   transferred: number
-  /** Aproximação via `conversation_analyses.outcome='converted'` (Decisão
-   *  D14) — não é uma atribuição real de vendas. Não tratar como número
-   *  auditável. */
-  assistedSales: number
+  /** Conversa com desfecho de venda, derivado de `conversation_analyses.outcome`
+   *  (Decisão D14). Não é atribuição de venda — o nome antigo, `assistedSales`,
+   *  afirmava exatamente isso e por isso saiu. Não tratar como número auditável. */
+  conversationsWithSaleOutcome: number
   avgTimeToHumanResponseSec: number
   intents: AgentMetricsIntent[]
-  deltaPct: number
+  deltas: AgentMetricsDeltas
+  series: AgentMetricsPoint[]
 }
 
 export type AgentMetricsRange = '7d' | '30d' | string
