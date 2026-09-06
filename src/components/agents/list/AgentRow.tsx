@@ -68,7 +68,7 @@ export function AgentRow({ agent, expanded, onToggle, live, metrics, queue, chil
   return (
     <div
       className={cn(
-        'rounded-[20px] border bg-surface-800 overflow-hidden transition-shadow',
+        'rounded-xl border bg-surface-800 overflow-hidden transition-shadow',
         expanded ? 'border-transparent' : 'border-surface-700',
         paused && !expanded && 'opacity-75',
       )}
@@ -85,7 +85,7 @@ export function AgentRow({ agent, expanded, onToggle, live, metrics, queue, chil
       <div className="grid grid-cols-[auto_1.4fr_1fr_1fr_auto] gap-4 items-center px-4 py-3.5">
         {/* Avatar — `.av` do mockup: 40px, raio 12px, 16px de fonte */}
         <span
-          className="w-10 h-10 rounded-[12px] flex items-center justify-center font-display font-bold text-base flex-shrink-0"
+          className="w-10 h-10 rounded-md flex items-center justify-center font-display font-bold text-base flex-shrink-0"
           style={{
             backgroundColor: tint(accent, 18),
             color: accentColor(accent),
