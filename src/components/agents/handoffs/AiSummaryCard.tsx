@@ -51,13 +51,23 @@ export function AiSummaryCard({
   const objecoes = daAnalise ? (analise?.objections ?? []) : []
 
   return (
-    <section className="rounded-lg border border-surface-700 bg-surface-800 p-3">
+    // `.summ` é um card TINGIDO de teal (fundo 6%, borda 25% de #2DD4BF =
+    // `--color-brand-400`), não um card neutro como os outros — é o que separa
+    // visualmente "a IA está dizendo isto" do resto do painel. Por token e
+    // `color-mix`, nunca hex (Carta §7).
+    <section
+      className="rounded-[14px] border px-3.5 py-3"
+      style={{
+        background: 'color-mix(in srgb, var(--color-brand-400) 6%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--color-brand-400) 25%, transparent)',
+      }}
+    >
       <header className="flex items-center gap-1.5 text-3xs font-bold uppercase tracking-[0.12em] text-brand-400">
         <Sparkles className="h-3 w-3" aria-hidden />
         {daAnalise ? 'Análise da conversa' : 'Resumo da IA'}
       </header>
 
-      <p className="mt-2 text-xs leading-[1.5] text-surface-300">{resumo}</p>
+      <p className="mt-1.5 text-xs leading-[1.5] text-surface-200">{resumo}</p>
 
       {daAnalise && (sinais.length > 0 || objecoes.length > 0) && (
         <div className="mt-2.5 flex flex-col gap-1.5">

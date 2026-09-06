@@ -44,11 +44,15 @@ export function HandoffRow({
       // a informação, e a fila é lida por quem não distingue âmbar de vermelho.
       aria-label={`${item.contact.name}, ${s.descricao}`}
       className={
-        'grid grid-cols-[auto_1.4fr_1fr_1fr_auto] items-center gap-3 rounded-lg border px-3 py-2.5 '
+        // `.hrow`: gap 14px, padding 12/14, raio 16 e — o que eu tinha errado —
+        // borda e fundo PERMANENTES em toda linha, não só na selecionada.
+        'grid grid-cols-[auto_1.4fr_1fr_1fr_auto] items-center gap-3.5 rounded-lg '
+        + 'border border-surface-700 bg-surface-800 px-3.5 py-3 '
         + 'cursor-pointer transition-colors '
         + (selecionada
-          ? 'border-brand-500/60 bg-surface-800 ring-1 ring-brand-500/40'
-          : 'border-transparent hover:bg-surface-800/60')
+          // `.hrow.sel`: borda teal + anel de 1px, o mesmo par do mockup.
+          ? 'border-brand-400/50 ring-1 ring-brand-400/25'
+          : 'hover:border-surface-600')
       }
     >
       <span
@@ -66,13 +70,13 @@ export function HandoffRow({
         </div>
         {/* Degradação em cascata: o que não se sabe não se diz. Nunca
             "via · regra — → —" — ver `motivo()`. */}
-        <div className="mt-0.5 truncate text-3xs text-surface-500">
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-surface-400">
           {m.vazio ? (
             '—'
           ) : (
             <>
               {m.agente && <>via <span className="text-surface-300">{m.agente}</span></>}
-              {m.regra && <>{m.agente && ' · '}regra <code className="text-surface-300">{m.regra}</code></>}
+              {m.regra && <>{m.agente && ' · '}regra <code className="rounded-xs bg-surface-700 px-1.5 py-px text-2xs text-surface-200">{m.regra}</code></>}
               {m.destino && <> → <span className="text-surface-300">{m.destino}</span></>}
             </>
           )}
@@ -90,7 +94,7 @@ export function HandoffRow({
 
       <div className="min-w-0">
         <div className="text-3xs font-bold uppercase tracking-[0.12em] text-surface-500">Esperando</div>
-        <div className="flex items-baseline gap-1.5 font-mono text-xs tabular-nums"
+        <div className="flex items-baseline gap-1.5 font-mono text-xs font-semibold tabular-nums"
              style={s.acento ? { color: accentColor(s.acento) } : undefined}>
           {s.tempo}
           {s.sufixo && <span className="text-3xs font-medium opacity-80">{s.sufixo}</span>}

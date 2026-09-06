@@ -122,7 +122,7 @@ export function HandoffInboxPage() {
           senão o grid não deixa o conteúdo encolher e a linha estoura. O painel
           some abaixo de `lg` — 420px fixos num celular não sobram. */}
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1fr_420px]">
-      <div className="min-w-0 overflow-y-auto px-6 py-4">
+      <div className="min-w-0 overflow-y-auto px-6 py-5">
         {q.resumo && <HandoffKpis resumo={q.resumo} />}
 
         {(filas.length > 0 || q.total > q.itens.length) && (
