@@ -57,7 +57,7 @@ export function ComposerBar({
         {costAvailable && (
           <>
             <div>
-              <div className="text-3xs uppercase tracking-wider text-surface-500">Custo estimado</div>
+              <div className="text-3xs font-bold uppercase tracking-widest text-surface-500">Custo estimado</div>
               <div className="text-base font-bold text-surface-50">
                 {costLoading && !cost
                   ? <span className="text-sm font-medium text-surface-400">calculando…</span>
@@ -76,7 +76,7 @@ export function ComposerBar({
         )}
 
         <div>
-          <div className="text-3xs uppercase tracking-wider text-surface-500">
+          <div className="text-3xs font-bold uppercase tracking-widest text-surface-500">
             {firstPending ? 'Falta' : 'Pronto'}
           </div>
           <div className={firstPending ? 'text-xs text-status-pending' : 'text-xs text-status-active'}>
