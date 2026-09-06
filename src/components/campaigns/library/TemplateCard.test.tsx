@@ -20,7 +20,10 @@ function tpl(patch: Partial<WhatsAppTemplate> = {}): WhatsAppTemplate {
 }
 
 function renderCard(props: Partial<Parameters<typeof TemplateCard>[0]> = {}) {
-  const handlers = { onEdit: vi.fn(), onUse: vi.fn(), onRewrite: vi.fn() }
+  const handlers = {
+    onEdit: vi.fn(), onUse: vi.fn(), onRewrite: vi.fn(),
+    onDelete: vi.fn(), onAssignWaba: vi.fn(),
+  }
   const view = render(<TemplateCard template={tpl()} canEdit {...handlers} {...props} />)
   return { ...handlers, container: view.container }
 }
@@ -62,6 +65,10 @@ describe('TemplateCard', () => {
     })
     expect(screen.getByText(/linguagem promocional excessiva/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Usar/ })).not.toBeInTheDocument()
+    // O lápis sai (a reescrita abre o mesmo criador), mas EXCLUIR fica: é
+    // capacidade que a aba de hoje tem e a Biblioteca não pode perder.
+    expect(screen.queryByRole('button', { name: 'Editar template' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Excluir template' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /Reescrever com a IA/ }))
     expect(handlers.onRewrite).toHaveBeenCalledOnce()
@@ -86,6 +93,32 @@ describe('TemplateCard', () => {
     renderCard({ template: tpl({ category: 'AUTHENTICATION' }) })
     expect(screen.getByText('Autenticação')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Usar/ })).not.toBeInTheDocument()
+  })
+
+  it('mostra o selo de linha pendente e deixa resolver do próprio card', () => {
+    // Migration #045: é o selo que torna a lacuna visível. Sem ele, uma linha
+    // legada some no meio da grade e ninguém a atribui.
+    const handlers = renderCard({ template: tpl({ needsWabaAssignment: true }) })
+    const badge = screen.getByRole('button', { name: /linha/i })
+    fireEvent.click(badge)
+    expect(handlers.onAssignWaba).toHaveBeenCalledOnce()
+  })
+
+  it('duplicar só aparece quando há outra linha para onde clonar', () => {
+    renderCard()
+    expect(screen.queryByRole('button', { name: /Duplicar/ })).not.toBeInTheDocument()
+
+    renderCard({ onDuplicate: vi.fn() })
+    expect(screen.getAllByRole('button', { name: /Duplicar/ })).toHaveLength(1)
+  })
+
+  it('excluir dispara o callback e desabilita enquanto exclui', () => {
+    const handlers = renderCard()
+    fireEvent.click(screen.getByRole('button', { name: 'Excluir template' }))
+    expect(handlers.onDelete).toHaveBeenCalledOnce()
+
+    renderCard({ deleting: true })
+    expect(screen.getAllByRole('button', { name: 'Excluir template' })[1]).toBeDisabled()
   })
 
   it('a prévia sai na paleta escura do WhatsApp, não na clara do Composer', () => {
