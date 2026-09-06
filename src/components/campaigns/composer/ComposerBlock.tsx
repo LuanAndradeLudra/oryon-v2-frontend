@@ -94,7 +94,9 @@ export function ComposerBlock({
                 : 'bg-surface-700 text-surface-300',
           )}
         >
-          {done ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+          {done
+            ? <Check className="w-[15px] h-[15px]" />
+            : <Icon className="w-[15px] h-[15px]" />}
         </span>
 
         <span className="min-w-0">
@@ -102,7 +104,7 @@ export function ComposerBlock({
           <span className="block text-[12.5px] text-surface-400 mt-px truncate">{summary}</span>
         </span>
 
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-[10px]">
           {badge}
           {open
             ? <ChevronUp className="w-4 h-4 text-surface-500" />

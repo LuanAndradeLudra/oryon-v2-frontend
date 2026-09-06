@@ -8,7 +8,7 @@
 // arquivo cobre dela é apenas que a ausência não quebra o componente. A
 // rolagem de verdade fica para a verificação ao vivo na porta 3014,
 // declarada como tal no PR.
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { useState } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { Calendar } from 'lucide-react'
@@ -40,6 +40,12 @@ function Harness({ initialOpen = false }: { initialOpen?: boolean }) {
     </ComposerBlock>
   )
 }
+
+// N1 do Calibre: os casos de rolagem mexem em `Element.prototype`. Sem
+// devolver o valor original, a ORDEM dos casos passa a importar — qualquer
+// teste acrescentado depois do que faz `delete` rodaria sem `scrollIntoView`.
+const originalScrollIntoView = Element.prototype.scrollIntoView
+afterEach(() => { Element.prototype.scrollIntoView = originalScrollIntoView })
 
 describe('ComposerBlock — acessibilidade da casca', () => {
   it('cabeçalho anuncia o estado e aponta para o corpo', () => {
