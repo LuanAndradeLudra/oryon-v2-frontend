@@ -35,6 +35,26 @@ const pageOne = {
 describe('useAudiencePreview', () => {
   beforeEach(() => vi.clearAllMocks())
 
+  it('não deixa o loading preso quando a definição esvazia com requisição em voo', async () => {
+    // A requisição fica pendente de propósito: é o estado em que o efeito
+    // anterior é cancelado antes de resolver.
+    preview.mockReturnValue(new Promise(() => {}))
+
+    const { result, rerender } = renderHook(
+      ({ def }: { def: AudienceDefinition }) => useAudiencePreview(def, { page: 1, limit: 50 }),
+      { initialProps: { def: definition() } },
+    )
+
+    await waitFor(() => expect(result.current.loading).toBe(true))
+
+    // A pessoa apaga a última condição enquanto a chamada está em voo.
+    rerender({ def: { groups: [createGroup([])], exclude: {} } })
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.total).toBe(0)
+    expect(result.current.error).toBeNull()
+  })
+
   it('pagina pelo endpoint novo quando ele existe', async () => {
     preview.mockResolvedValue({ data: { ...pageOne, page: 2 } })
 

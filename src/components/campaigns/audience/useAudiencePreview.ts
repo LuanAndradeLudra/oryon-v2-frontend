@@ -44,6 +44,12 @@ export function useAudiencePreview(
     if (empty) {
       setResponse({ ...EMPTY, page, limit })
       setError(null)
+      // Sem isto o `loading` fica preso em `true` para sempre quando a
+      // definição esvazia com requisição em voo: a limpeza do efeito anterior
+      // marca `cancelled`, o `finally` dele desiste do `setLoading(false)`, e
+      // este ramo sai antes de ligar qualquer coisa. O modal ficaria girando
+      // sobre uma lista vazia sem nada pendente.
+      setLoading(false)
       return
     }
 
