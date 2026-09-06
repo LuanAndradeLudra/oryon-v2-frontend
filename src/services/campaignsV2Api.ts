@@ -95,6 +95,22 @@ export const campaignLifecycleApi = {
 // ── [D3] analytics estendido + recipients (BE.1) ────────────────────────────
 
 export const campaignReportApi = {
+  /**
+   * `GET /campaigns/:id` existe no backend (`campaigns.controller.ts:55`) mas
+   * não tinha cliente: o relatório antigo era um drawer que recebia a campanha
+   * por prop, e a página de rota não tem quem passe. `services/api.ts` está
+   * congelado, então o cliente entra aqui, no bloco do D3.
+   */
+  getCampaign(id: string) {
+    return api.get<Campaign>(`/campaigns/${id}`)
+  },
+  /**
+   * Atenção: esta rota responde **200 nos dois mundos**. Hoje devolve a forma
+   * antiga (`{ campaignId, campaignName, stats, sentAt }`); com a BE.1 passa a
+   * trazer `funnel`/`readHeatmap`/`failures`/`replies`. A distinção é por
+   * FORMA (`hasExtendedAnalytics`), nunca por status — `withFallback` não
+   * ajuda aqui porque não há 404 a capturar.
+   */
   getAnalyticsV2(id: string) {
     return api.get<CampaignAnalytics & CampaignAnalyticsV2Extra>(`/campaigns/${id}/analytics`)
   },

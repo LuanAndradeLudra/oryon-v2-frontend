@@ -167,6 +167,15 @@ export interface CampaignAnalyticsV2Extra {
   readHeatmap: CampaignReadHeatmapPoint[]
   failures: CampaignFailureReason[]
   replies: CampaignReply[]
+  /**
+   * Decisão D34 — `AVG(readAt - sentAt)` em minutos, sobre os destinatários em
+   * que os dois carimbos existem. `null` quando ninguém leu ainda (`0` leria
+   * como "abriram na hora", o oposto do que aconteceu).
+   *
+   * Opcional porque a BE.1 acrescentou este campo depois do #118: o backend
+   * pode responder a forma estendida sem ele até o merge de #81.
+   */
+  avgTimeToReadMinutes?: number | null
 }
 
 // ── [D1][D1b][D3] recipients (BE.1) ─────────────────────────────────────

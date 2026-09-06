@@ -100,7 +100,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
       const result = await generateCampaignInsights(
         campaign.name,
         campaign.stats as unknown as Record<string, unknown>,
-        analytics.churnBreakdown as unknown as Record<string, unknown>,
+        (analytics.churnBreakdown ?? {}) as unknown as Record<string, unknown>,
       )
       setInsights(result)
       setGenerated(true)
@@ -278,12 +278,21 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
 
   const churnColors = CHURN_COLOR_KEYS.map((k) => C[k])
 
+  // [SCRUM-1022 / D3] Guarda mínima, encostando em árvore vizinha com
+  // autorização do Maestro. `CampaignAnalytics` promete `churnBreakdown`,
+  // `conversionEvents`, `engagementTimeline` e `attributionBreakdown`, mas
+  // `GET /campaigns/:id/analytics` NUNCA devolveu esses campos — responde 200
+  // com `{ campaignId, campaignName, stats, sentAt }`. O `analytics ?` abaixo
+  // só testava o objeto, não o campo, então toda vez que o analytics resolvia
+  // isto lançava TypeError em render e derrubava o drawer. Leitura opcional
+  // aqui e nos vizinhos; nada além disso foi tocado. O arquivo inteiro sai na
+  // Onda 2, no PR de integração do Andaime.
   const churnPieData = analytics ? [
-    { name: CHURN_LABELS.optOut,        value: analytics.churnBreakdown.optOut },
-    { name: CHURN_LABELS.blocked,       value: analytics.churnBreakdown.blocked },
-    { name: CHURN_LABELS.invalidNumber, value: analytics.churnBreakdown.invalidNumber },
-    { name: CHURN_LABELS.undelivered,   value: analytics.churnBreakdown.undelivered },
-    { name: CHURN_LABELS.noInteraction, value: analytics.churnBreakdown.noInteraction },
+    { name: CHURN_LABELS.optOut,        value: analytics.churnBreakdown?.optOut ?? 0 },
+    { name: CHURN_LABELS.blocked,       value: analytics.churnBreakdown?.blocked ?? 0 },
+    { name: CHURN_LABELS.invalidNumber, value: analytics.churnBreakdown?.invalidNumber ?? 0 },
+    { name: CHURN_LABELS.undelivered,   value: analytics.churnBreakdown?.undelivered ?? 0 },
+    { name: CHURN_LABELS.noInteraction, value: analytics.churnBreakdown?.noInteraction ?? 0 },
   ].filter((d) => d.value > 0) : []
 
   const totalChurn = churnPieData.reduce((s, d) => s + d.value, 0)
@@ -415,12 +424,12 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       </div>
 
                       {/* Timeline */}
-                      {analytics && analytics.engagementTimeline.length > 0 && (
+                      {analytics && (analytics.engagementTimeline?.length ?? 0) > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-surface-300 mb-3">Engajamento ao longo do tempo</p>
                           <div className="h-44">
                             <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={analytics.engagementTimeline} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                              <AreaChart data={analytics.engagementTimeline ?? []} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
                                 <defs>
                                   <linearGradient id="gRead" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%"  stopColor={C.away} stopOpacity={0.3} />
@@ -481,7 +490,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                             <BarChart
                               data={Object.entries(CONV_CONFIG).map(([type, cfg]) => ({
                                 name: cfg.label,
-                                value: analytics.conversionEvents.filter((e) => e.type === type).length,
+                                value: (analytics.conversionEvents ?? []).filter((e) => e.type === type).length,
                                 fill: C[cfg.color],
                               }))}
                               margin={{ top: 4, right: 4, bottom: 4, left: -20 }}
@@ -504,7 +513,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-2">Eventos de conversão</p>
                         <div className="space-y-1.5">
-                          {analytics.conversionEvents.map((ev, i) => {
+                          {(analytics.conversionEvents ?? []).map((ev, i) => {
                             const cfg = CONV_CONFIG[ev.type]
                             return (
                               <div key={i} className="flex items-center gap-3 px-3 py-2 bg-surface-800 border border-surface-700 rounded-xl">
@@ -523,7 +532,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                               </div>
                             )
                           })}
-                          {analytics.conversionEvents.length === 0 && (
+                          {(analytics.conversionEvents ?? []).length === 0 && (
                             <p className="text-xs text-surface-500 text-center py-6">Nenhum evento de conversão registrado</p>
                           )}
                         </div>
@@ -809,7 +818,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           <p className="text-3xs text-surface-500 mt-0.5">Taxa de churn</p>
                         </div>
                         <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
-                          <p className="text-xl font-bold text-surface-300">{pct(stats.optedOut ?? analytics.churnBreakdown.optOut + analytics.churnBreakdown.blocked, stats.sent)}</p>
+                          <p className="text-xl font-bold text-surface-300">{pct(stats.optedOut ?? ((analytics.churnBreakdown?.optOut ?? 0) + (analytics.churnBreakdown?.blocked ?? 0)), stats.sent)}</p>
                           <p className="text-3xs text-surface-500 mt-0.5">Descadastraram</p>
                         </div>
                       </div>
@@ -846,27 +855,27 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {/* Interpretation */}
                       <div className="bg-surface-800 border border-surface-700 rounded-xl p-4 space-y-2.5">
                         <p className="text-3xs font-semibold text-surface-400 uppercase tracking-wider">Interpretação dos motivos</p>
-                        {analytics.churnBreakdown.optOut > 0 && (
+                        {(analytics.churnBreakdown?.optOut ?? 0) > 0 && (
                           <div className="flex gap-2">
                             <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[0] }} />
                             <p className="text-2xs text-surface-400 leading-relaxed">
-                              <strong className="text-surface-200">{analytics.churnBreakdown.optOut} opt-outs</strong>: contatos que clicaram em "parar de receber". Revise a relevância do conteúdo e a frequência dos envios para esse segmento.
+                              <strong className="text-surface-200">{analytics.churnBreakdown?.optOut ?? 0} opt-outs</strong>: contatos que clicaram em "parar de receber". Revise a relevância do conteúdo e a frequência dos envios para esse segmento.
                             </p>
                           </div>
                         )}
-                        {analytics.churnBreakdown.blocked > 0 && (
+                        {(analytics.churnBreakdown?.blocked ?? 0) > 0 && (
                           <div className="flex gap-2">
                             <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[1] }} />
                             <p className="text-2xs text-surface-400 leading-relaxed">
-                              <strong className="text-surface-200">{analytics.churnBreakdown.blocked} bloqueios</strong>: contatos que reportaram como spam. Taxa elevada pode impactar o quality score do número WABA.
+                              <strong className="text-surface-200">{analytics.churnBreakdown?.blocked ?? 0} bloqueios</strong>: contatos que reportaram como spam. Taxa elevada pode impactar o quality score do número WABA.
                             </p>
                           </div>
                         )}
-                        {analytics.churnBreakdown.noInteraction > 0 && (
+                        {(analytics.churnBreakdown?.noInteraction ?? 0) > 0 && (
                           <div className="flex gap-2">
                             <div className="w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: churnColors[4] }} />
                             <p className="text-2xs text-surface-400 leading-relaxed">
-                              <strong className="text-surface-200">{analytics.churnBreakdown.noInteraction} sem interação</strong>: entregue mas ignorado. Considere um follow-up ou retirar este segmento das próximas campanhas.
+                              <strong className="text-surface-200">{analytics.churnBreakdown?.noInteraction ?? 0} sem interação</strong>: entregue mas ignorado. Considere um follow-up ou retirar este segmento das próximas campanhas.
                             </p>
                           </div>
                         )}
