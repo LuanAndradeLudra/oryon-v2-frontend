@@ -67,7 +67,7 @@ export function ComposerBlock({
     <section
       aria-labelledby={headerId}
       className={cn(
-        'rounded-[20px] border bg-surface-800 overflow-hidden transition-colors',
+        'rounded-xl border bg-surface-800 overflow-hidden transition-colors',
         open ? 'border-brand-500/45' : 'border-surface-700',
       )}
     >
