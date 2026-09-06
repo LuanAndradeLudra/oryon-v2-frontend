@@ -210,6 +210,31 @@ export interface CampaignRecipientsResponse {
 // só o contrato de API.
 export type CampaignStatusV2 = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled' | 'paused'
 
+// A Agenda (D1) precisa da janela por DATA DE EXECUÇÃO, mas `GET /campaigns`
+// ordena por `createdAt DESC`, pagina em 50 (máx. 100) e não aceita recorte
+// por data — os dois eixos não coincidem, então uma campanha criada há meses
+// e agendada para o mês que vem cai fora da página 1. Decisão do Maestro
+// (coord/D1-decisoes.md, decisão 2): paginar no cliente AGORA, com o limite
+// declarado na tela, e pedir `?from=&to=` + `order=scheduledAt` na Onda 2.
+// Estes dois tipos existem porque `campaignsApi.list()` (services/api.ts,
+// congelado) descarta o `total` ao normalizar para array — e sem `total`
+// não dá para saber quando parar de paginar.
+export interface CampaignsPageParams {
+  page?: number
+  limit?: number
+  status?: string
+}
+
+export interface CampaignsPageResponse {
+  // `import(...)` inline em vez de um import no topo: o cabeçalho do arquivo
+  // é área comum, e este bloco é o único lugar onde eu escrevo. Mesmo padrão
+  // de services/api.ts:1603.
+  data: import('@/types').Campaign[]
+  total: number
+  page: number
+  limit: number
+}
+
 // ── [D2][D1] recorrência (BE.4) + cota/custo (BE.5) ─────────────────────
 
 export type RecurrenceFreq = 'daily' | 'weekly' | 'monthly'
