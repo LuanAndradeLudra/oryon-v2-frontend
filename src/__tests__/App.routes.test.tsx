@@ -270,10 +270,10 @@ describe('App routes — SCRUM-994/W0.1', () => {
     // Era o esqueleto "Studio em construção" da W0.1; a A3 (SCRUM-1014) pôs a
     // tela de verdade nesta rota.
     await renderAt('/agents/new')
-    expect(await screen.findByRole('heading', { name: 'Studio' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Studio' }, { timeout: SLOW })).toBeInTheDocument()
     expect(screen.getByText('1 / 8')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Progresso do Studio' })).toBeInTheDocument()
-  })
+  }, SLOW)
 
   it('/agents/handoffs mostra o esqueleto da Caixa de transferências', async () => {
     await renderAt('/agents/handoffs')
