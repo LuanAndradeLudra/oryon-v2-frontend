@@ -1,383 +1,148 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Sparkles, Users, SlidersHorizontal, Calendar, Check } from 'lucide-react'
-import { appLogger } from '@/services/appLogger'
-import { campaignsApi, contactsApi, templatesApi, tagsApi, whatsappNumbersApi } from '@/services/api'
-import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
-import { useCRMConfig } from '@/contexts/CRMConfigContext'
-import type {
-  Campaign, Contact, ContactIntent, ContactSource, ContactSentiment,
-  WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
-} from '@/types'
+// ─── useComposerDraft ──────────────────────────────────────────────────────
+// Hook do Composer de 4 blocos (D2/SCRUM-1020). Nome reaproveitado: até a
+// W0.4 ele designava o hook do wizard, que agora se chama `useWizardDraft`.
+//
+// Usa o mesmo núcleo do wizard (`useCampaignDraftCore`) e acrescenta só o
+// que é do Composer: o público no modelo novo (`AudienceDraft`), a
+// recorrência do BE.4 e o estado de conclusão POR BLOCO — sem `step` nenhum,
+// porque aqui os 4 blocos são um acordeão, não uma esteira.
+//
+// Zero lógica de segmento: quem resolve, conta e desenha o público é o
+// `AudienceBlock` do Crivo (`campaigns/audience/**`), que conversa com o
+// Composer só por props (coord/D6-plano.md §1, coord/D2-plano.md §9).
+import { useState, useCallback, useMemo } from 'react'
+import { useCampaignDraftCore, type SubmitAudienceFields } from './useCampaignDraftCore'
+import type { Campaign } from '@/types'
+import type { CampaignSegmentDefinition, CampaignRecurrence } from '@/types/campaignsV2'
 
-function readSession() {
-  try {
-    const raw = localStorage.getItem('oryon:session')
-    if (!raw) return { userId: null, tenantId: null, actorName: null }
-    const s = JSON.parse(raw) as { user?: { id?: string; tenantId?: string; firstName?: string; lastName?: string } }
-    return {
-      userId: s.user?.id ?? null, tenantId: s.user?.tenantId ?? null,
-      actorName: s.user ? `${s.user.firstName ?? ''} ${s.user.lastName ?? ''}`.trim() || null : null,
-    }
-  } catch { return { userId: null, tenantId: null, actorName: null } }
+/** O rascunho de público que o `AudienceBlock` mantém.
+ *
+ *  Tipado aqui contra os contratos compartilhados (`types/campaignsV2.ts`,
+ *  W0.6/Buril) em vez de contra `campaigns/audience/segmentBuilder.ts`, que é
+ *  do Crivo e ainda não existe — quando ele publicar, este alias passa a
+ *  apontar para lá sem mudar nenhum consumidor. `segmentId` presente quer
+ *  dizer "veio de um segmento salvo"; ele some no primeiro edit manual, e é
+ *  isso que decide a forma do body no submit (§9.1 do D2-plano). */
+export interface AudienceDraft {
+  segmentId?: string
+  definition: CampaignSegmentDefinition
 }
 
-export type Step = 1 | 2 | 3 | 4 | 5
+/** Resultado mais recente do evaluate, como o `AudienceBlock` o entrega.
+ *  `eligible` é quem de fato recebe (o "Vão receber" do mockup) e é o número
+ *  que o Composer usa em tudo: trava do "Agendar", custo e duração estimada.
+ *  `matched` fica só na coluna do próprio bloco (§9.2 do D2-plano). */
+export interface AudienceResolved {
+  eligible: number
+  matched: number
+}
 
-export const STEP_LABELS = ['Template', 'Segmento', 'Variáveis', 'Agendar', 'Revisão']
+export type BlockId = 'template' | 'publico' | 'variaveis' | 'envio'
 
-// Um acento categórico por etapa — só para orientação visual dentro do
-// wizard (não carrega o mesmo significado do accent-rose em CampaignReport,
-// que marca resultado negativo de campanha).
-export const STEP_ACCENTS: { icon: typeof Sparkles; color: string }[] = [
-  { icon: Sparkles,          color: 'var(--color-accent-blue)' },
-  { icon: Users,             color: 'var(--color-accent-green)' },
-  { icon: SlidersHorizontal, color: 'var(--color-accent-violet)' },
-  { icon: Calendar,          color: 'var(--color-accent-amber)' },
-  { icon: Check,             color: 'var(--color-accent-rose)' },
-]
+export type BlockStatus = 'done' | 'pending'
 
-export function useComposerDraft(
-  open: boolean,
-  onCreated: (campaign: Campaign) => void,
-  initialContactIds?: string[],
-  initialName?: string,
-) {
-  const [step, setStep] = useState<Step>(1)
-  const sessionIdRef = useRef(`wiz-campaign-${Date.now()}`)
-  const completedRef = useRef(false)
+/** Ordem canônica dos blocos — vale para o acordeão e para o "Falta: …" da
+ *  barra fixa, que aponta o primeiro pendente nesta ordem. */
+export const BLOCK_ORDER: BlockId[] = ['template', 'publico', 'variaveis', 'envio']
 
-  // Step 1
-  const [templates, setTemplates]             = useState<WhatsAppTemplate[]>([])
-  const [loadingTemplates, setLoadingTemplates] = useState(false)
-  const [selectedTemplate, setSelectedTemplate] = useState<WhatsAppTemplate | null>(null)
-  const [campaignName, setCampaignName]       = useState('')
+export const BLOCK_LABELS: Record<BlockId, string> = {
+  template:  'Template',
+  publico:   'Público',
+  variaveis: 'Variáveis',
+  envio:     'Envio',
+}
 
-  // Step 2 — base
-  const [segmentType, setSegmentType]         = useState<CampaignSegment['type']>('all')
-  const [selectedTagIds, setSelectedTagIds]   = useState<string[]>([])
-  const [selectedStages, setSelectedStages]   = useState<string[]>([])
-  const [tags, setTags]                       = useState<Tag[]>([])
-  const { stages, fieldDefs } = useCRMConfig()
+export interface ComposerDraftOptions {
+  /** Presente em `/campaigns/:id/edit` — o submit vira PATCH e o envio
+   *  imediato não acontece. */
+  campaignId?: string
+  initialName?: string
+  onSaved?: (campaign: Campaign) => void
+}
 
-  // Step 2 — manual picker
-  const [contacts, setContacts]               = useState<Contact[]>([])
-  const [loadingContacts, setLoadingContacts] = useState(false)
-  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([])
+export function useComposerDraft({ campaignId, initialName, onSaved }: ComposerDraftOptions = {}) {
+  // O Composer é uma página: nasce ativo e não abre/fecha como o modal.
+  const core = useCampaignDraftCore({ active: true, initialName })
 
-  // Step 2 — advanced filter (existing)
-  const [filterStages, setFilterStages]       = useState<string[]>([])
-  const [filterTagIds, setFilterTagIds]       = useState<string[]>([])
-  const [filterIntent, setFilterIntent]       = useState<ContactIntent[]>([])
-  const [filterSource, setFilterSource]       = useState<ContactSource[]>([])
-  const [filterOptIn, setFilterOptIn]         = useState<boolean | undefined>(undefined)
+  const [audience, setAudience]     = useState<AudienceDraft | null>(null)
+  const [resolved, setResolved]     = useState<AudienceResolved | null>(null)
+  const [recurrence, setRecurrence] = useState<CampaignRecurrence | null>(null)
 
-  // Step 2 — extended filter state
-  const [filterSentiment, setFilterSentiment]               = useState<ContactSentiment[]>([])
-  const [filterContactSearch, setFilterContactSearch]       = useState('')
-  const [filterHasConversations, setFilterHasConversations] = useState<boolean | undefined>(undefined)
+  /** Última contagem elegível conhecida. Guardada à parte de propósito: o
+   *  `AudienceBlock` manda `null` durante o debounce do evaluate e no modo
+   *  fallback, e um `null` transitório não pode fazer o bloco Público piscar
+   *  de verde para vermelho na barra fixa (§9.3 do D2-plano). Só uma troca
+   *  real de `definition` invalida a contagem. */
+  const [lastEligible, setLastEligible] = useState<number | null>(null)
 
-  // Step 3
-  const [mappings, setMappings]               = useState<CampaignVariableMapping[]>([])
-
-  // Step 4
-  const [scheduleMode, setScheduleMode]       = useState<'now' | 'later'>('now')
-  const [scheduledAt, setScheduledAt]         = useState('')
-
-  // WhatsApp number — smart default (dept → primary → lone → pick
-  // manually). Operator can still override. Callout below surfaces which
-  // line will be targeted at submit time.
-  const smartDefault = useSmartLineDefault()
-  const [waNumbers, setWaNumbers]             = useState<Array<{ id: string; displayPhoneNumber: string; label?: string }>>([])
-  const [whatsappNumberId, setWhatsappNumberId] = useState('')
-
-  // Submit
-  const [saving, setSaving]                   = useState(false)
-  const [error, setError]                     = useState('')
-
-  // ── Reset & load data when wizard opens ─────────────────────────────────────
-
-  const staleRef = useRef(false)
-
-  useEffect(() => {
-    if (!open) return
-    staleRef.current = false
-    sessionIdRef.current = `wiz-campaign-${Date.now()}`
-    completedRef.current = false
-    const { userId, tenantId } = readSession()
-    appLogger.logWizardEvent({
-      tenant_id: tenantId, user_id: userId,
-      wizard_type: 'campaign', wizard_session_id: sessionIdRef.current,
-      step_number: 1, step_name: STEP_LABELS[0], action: 'started',
+  const onAudienceChange = useCallback((next: AudienceDraft) => {
+    setAudience((prev) => {
+      // Mudou a definição de verdade → a contagem antiga não vale mais.
+      if (!prev || !sameDefinition(prev.definition, next.definition)) {
+        setLastEligible(null)
+      }
+      return next
     })
-
-    // Reset all state synchronously before loading. If the caller seeded
-    // contacts, jump straight to the "manual" segment with them selected.
-    const seed = initialContactIds ?? []
-    setStep(1)
-    setSelectedTemplate(null)
-    setCampaignName(initialName ?? '')
-    setSegmentType(seed.length > 0 ? 'manual' : 'all')
-    setSelectedTagIds([]); setSelectedStages([])
-    setSelectedContactIds(seed)
-    setFilterStages([]); setFilterTagIds([]); setFilterIntent([]); setFilterSource([]); setFilterOptIn(undefined)
-    setFilterSentiment([]); setFilterContactSearch(''); setFilterHasConversations(undefined)
-    setMappings([])
-    setScheduleMode('now'); setScheduledAt('')
-    setWhatsappNumberId('')
-    setError('')
-
-    setLoadingTemplates(true)
-    setLoadingContacts(true)
-    Promise.all([
-      templatesApi.ensureFromMeta().then(() => templatesApi.list('APPROVED')),
-      tagsApi.list(),
-      contactsApi.list({}, 1, 500),
-      whatsappNumbersApi.list(),
-    ]).then(([tplRes, tagRes, ctRes, waRes]) => {
-      if (staleRef.current) return
-      setTemplates(tplRes.data)
-      setTags(tagRes.data)
-      setContacts(ctRes.data.data)
-      const nums = (waRes.data as any[]).map((n: any) => ({ id: n.id, displayPhoneNumber: n.displayPhoneNumber, label: n.label }))
-      setWaNumbers(nums)
-      // Apply the smart default here (single active → auto-pick; else
-      // dept/primary; else blank for explicit choice). Template
-      // selection later may still override this — see effect below.
-      if (!smartDefault.loading && smartDefault.lineId && nums.some((n) => n.id === smartDefault.lineId)) {
-        setWhatsappNumberId(smartDefault.lineId)
-      } else if (nums.length === 1) {
-        setWhatsappNumberId(nums[0].id)
-      }
-    }).finally(() => {
-      if (!staleRef.current) {
-        setLoadingTemplates(false)
-        setLoadingContacts(false)
-      }
-    })
-
-    return () => { staleRef.current = true }
-  }, [open])
-
-  // ── Init variable mappings when template changes ────────────────────────────
-
-  useEffect(() => {
-    if (!selectedTemplate) { setMappings([]); return }
-    // Auto-select the number associated with the template
-    if (selectedTemplate.whatsappNumberId) setWhatsappNumberId(selectedTemplate.whatsappNumberId)
-    const vars = selectedTemplate.bodyVariables ?? []
-    setMappings(vars.map((variableName, i) => ({
-      position: i + 1,
-      variableName,
-      source: 'contact_field',
-      contactField: 'displayName',
-    })))
-  }, [selectedTemplate])
-
-  // ── Estimated reach ─────────────────────────────────────────────────────────
-
-  const estimatedReach = useMemo(() => {
-    if (!contacts.length) return null
-    if (segmentType === 'all') return contacts.length
-    if (segmentType === 'tag')
-      return selectedTagIds.length
-        ? contacts.filter((c) => c.tags?.some((t) => selectedTagIds.includes(t.id))).length
-        : null
-    if (segmentType === 'stage')
-      return selectedStages.length
-        ? contacts.filter((c) => selectedStages.includes(c.stage ?? '')).length
-        : null
-    if (segmentType === 'manual') return selectedContactIds.length || null
-    if (segmentType === 'filter') {
-      const hasFilter = filterStages.length || filterTagIds.length || filterIntent.length ||
-                        filterSource.length || filterOptIn !== undefined ||
-                        filterSentiment.length || filterContactSearch.trim() ||
-                        filterHasConversations !== undefined
-      if (!hasFilter) return null
-      let f = contacts
-      if (filterStages.length)  f = f.filter((c) => filterStages.includes(c.stage ?? ''))
-      if (filterTagIds.length)  f = f.filter((c) => c.tags?.some((t) => filterTagIds.includes(t.id)))
-      if (filterIntent.length)  f = f.filter((c) => filterIntent.includes(c.intent ?? 'unknown'))
-      if (filterSource.length)  f = f.filter((c) => filterSource.includes(c.source ?? 'other'))
-      if (filterOptIn !== undefined) f = f.filter((c) => c.optIn === filterOptIn)
-      if (filterSentiment.length)  f = f.filter((c) => filterSentiment.includes(c.aiSentiment ?? 'unknown'))
-      if (filterContactSearch.trim()) {
-        const q = filterContactSearch.toLowerCase()
-        f = f.filter((c) => c.displayName.toLowerCase().includes(q) || c.waId.includes(q))
-      }
-      if (filterHasConversations !== undefined)
-        f = f.filter((c) => filterHasConversations ? (c.conversationCount ?? 0) > 0 : (c.conversationCount ?? 0) === 0)
-      return f.length
-    }
-    return null
-  }, [contacts, segmentType, selectedTagIds, selectedStages, selectedContactIds,
-      filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
-      filterSentiment, filterContactSearch, filterHasConversations])
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
-  const updateMapping = useCallback((position: number, patch: Partial<CampaignVariableMapping>) => {
-    setMappings((prev) => prev.map((m) => m.position === position ? { ...m, ...patch } : m))
   }, [])
 
-  // Multi-WABA gate — block advance on every step until the line is
-  // picked. The callout at the top of the wizard carries the message;
-  // the button just refuses.
-  const needsExplicitLine = waNumbers.length > 1 && !whatsappNumberId
+  const onAudienceResolved = useCallback((next: AudienceResolved | null) => {
+    setResolved(next)
+    if (next) setLastEligible(next.eligible)
+  }, [])
 
-  const canAdvance = useMemo((): boolean => {
-    if (needsExplicitLine) return false
-    if (step === 1) return !!selectedTemplate && campaignName.trim().length > 0
-    if (step === 2) {
-      if (segmentType === 'tag')    return selectedTagIds.length > 0
-      if (segmentType === 'stage')  return selectedStages.length > 0
-      if (segmentType === 'manual') return selectedContactIds.length > 0
-      if (segmentType === 'filter') return !!(
-        filterStages.length || filterTagIds.length || filterIntent.length ||
-        filterSource.length || filterOptIn !== undefined ||
-        filterSentiment.length || filterContactSearch.trim() ||
-        filterHasConversations !== undefined
-      )
-      return true // 'all'
-    }
-    if (step === 3) return mappings.every((m) => {
-      if (m.source === 'literal')       return (m.literal ?? '').trim().length > 0
-      if (m.source === 'contact_field') return !!m.contactField
-      if (m.source === 'custom_field')  return !!m.customFieldKey
-      return false
-    })
-    if (step === 4) return scheduleMode === 'now' || !!scheduledAt
-    if (step === 5) return true
-    return false
-  }, [needsExplicitLine, step, selectedTemplate, campaignName, segmentType, selectedTagIds, selectedStages,
-      selectedContactIds, filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
-      filterSentiment, filterContactSearch, filterHasConversations,
-      mappings, scheduleMode, scheduledAt])
+  /** Quantas pessoas o disparo atinge, na melhor informação disponível. */
+  const audienceCount = resolved?.eligible ?? lastEligible
 
-  // ── Step navigation (with telemetry) ─────────────────────────────────────────
+  // ── Conclusão por bloco ───────────────────────────────────────────────────
+  const blocks = useMemo((): Record<BlockId, BlockStatus> => ({
+    template:  core.selectedTemplate && core.campaignName.trim().length > 0 ? 'done' : 'pending',
+    publico:   audience && (audienceCount ?? 0) > 0 ? 'done' : 'pending',
+    variaveis: core.mappings.length === 0 || core.mappingsComplete ? 'done' : 'pending',
+    envio:     core.scheduleReady && !core.needsExplicitLine ? 'done' : 'pending',
+  }), [core.selectedTemplate, core.campaignName, core.mappings.length, core.mappingsComplete,
+       core.scheduleReady, core.needsExplicitLine, audience, audienceCount])
 
-  const goBack = useCallback(() => {
-    const { userId, tenantId } = readSession()
-    appLogger.logWizardEvent({
-      tenant_id: tenantId, user_id: userId,
-      wizard_type: 'campaign', wizard_session_id: sessionIdRef.current,
-      step_number: step, step_name: STEP_LABELS[step - 1], action: 'back',
-    })
-    setStep((s) => Math.max(1, s - 1) as Step)
-  }, [step])
+  /** Primeiro bloco pendente na ordem canônica — o que a barra fixa mostra
+   *  em "Falta: …". `null` quando os 4 estão verdes. */
+  const firstPending = BLOCK_ORDER.find((id) => blocks[id] === 'pending') ?? null
 
-  const goNext = useCallback(() => {
-    const { userId, tenantId } = readSession()
-    appLogger.logWizardEvent({
-      tenant_id: tenantId, user_id: userId,
-      wizard_type: 'campaign', wizard_session_id: sessionIdRef.current,
-      step_number: step, step_name: STEP_LABELS[step - 1], action: 'completed',
-    })
-    setStep((s) => (s + 1) as Step)
-  }, [step])
+  const canSchedule = firstPending === null
 
-  const handleSubmit = async () => {
-    if (!selectedTemplate) return
-    setSaving(true); setError('')
-    const { userId, tenantId, actorName } = readSession()
-    appLogger.logWizardEvent({
-      tenant_id: tenantId, user_id: userId,
-      wizard_type: 'campaign', wizard_session_id: sessionIdRef.current,
-      step_number: 5, step_name: STEP_LABELS[4], action: 'started',
-      data: { campaign_name: campaignName, template_id: selectedTemplate.id, segment_type: segmentType, schedule_mode: scheduleMode },
-    })
-    try {
-      const segment: CampaignSegment = {
-        type: segmentType,
-        ...(segmentType === 'tag'    ? { tagIds: selectedTagIds }           : {}),
-        ...(segmentType === 'stage'  ? { stages: selectedStages }           : {}),
-        ...(segmentType === 'manual' ? { contactIds: selectedContactIds }   : {}),
-        ...(segmentType === 'filter' ? {
-          ...(filterStages.length  ? { filterStages }  : {}),
-          ...(filterTagIds.length  ? { filterTagIds }  : {}),
-          ...(filterIntent.length  ? { filterIntent }  : {}),
-          ...(filterSource.length  ? { filterSource }  : {}),
-          ...(filterOptIn !== undefined ? { filterOptIn } : {}),
-          ...(filterSentiment.length ? { filterSentiment } : {}),
-          ...(filterContactSearch.trim() ? { filterContactSearch } : {}),
-          ...(filterHasConversations !== undefined ? { filterHasConversations } : {}),
-        } : {}),
-      }
-      const res = await campaignsApi.create({
-        name: campaignName.trim(),
-        templateId: selectedTemplate.id,
-        segment,
-        variableMappings: mappings,
-        // Converte para ISO UTC antes de enviar. O datetime-local devolve
-        // "YYYY-MM-DDTHH:mm" sem timezone — new Date() no browser interpreta
-        // como hora local do usuário, e .toISOString() converte para UTC.
-        // Isso garante que o servidor (UTC na AWS) dispare no horário certo.
-        scheduledAt: scheduleMode === 'later' ? new Date(scheduledAt).toISOString() : undefined,
-        ...(whatsappNumberId ? { whatsappNumberId } : {}),
-      } as any)
+  // ── Submissão ─────────────────────────────────────────────────────────────
+  const { submitCampaign } = core
 
-      let finalCampaign = res.data
+  const submit = useCallback(async () => {
+    if (!audience) return null
+    // Exatamente uma das três formas (Decisão D25). Segmento salvo e ainda
+    // não editado viaja por id; o resto viaja inline. O `segment` legado
+    // nunca sai do Composer — é só do wizard antigo.
+    const audienceFields: SubmitAudienceFields = audience.segmentId
+      ? { segmentId: audience.segmentId }
+      : { audience: audience.definition }
 
-      // Quando o modo é "agora", disparar imediatamente após criar.
-      if (scheduleMode === 'now') {
-        try {
-          const sendRes = await campaignsApi.send(res.data.id)
-          finalCampaign = sendRes.data
-        } catch (sendErr) {
-          const msg = (sendErr as { response?: { data?: { message?: string | string[] } } })
-            ?.response?.data?.message
-          const text = Array.isArray(msg) ? msg.join('; ') : msg
-          // Campanha foi criada mas o envio falhou — informar sem
-          // desfazer a criação (o usuário pode tentar na lista).
-          setError(text?.trim() || 'Campanha criada, mas o envio automático falhou. Use "Enviar" na lista.')
-        }
-      }
-
-      completedRef.current = true
-      appLogger.logWizardEvent({
-        tenant_id: tenantId, user_id: userId,
-        wizard_type: 'campaign', wizard_session_id: sessionIdRef.current,
-        step_number: 5, step_name: STEP_LABELS[4], action: 'completed',
-        data: { campaign_id: res.data.id, campaign_name: campaignName, template_id: selectedTemplate.id, segment_type: segmentType, schedule_mode: scheduleMode },
-      })
-      appLogger.logActivity({
-        tenant_id: tenantId, actor_id: userId, actor_name: actorName,
-        action: 'campaign_wizard_completed', entity_type: 'campaign',
-        entity_id: res.data.id, entity_name: campaignName,
-        description: `Campanha "${campaignName}" criada via wizard com template "${selectedTemplate.name}"`,
-        details: { segment_type: segmentType, schedule_mode: scheduleMode, template_name: selectedTemplate.name },
-        source: 'ui',
-      })
-      onCreated(finalCampaign)
-    } catch (createErr) {
-      const msg = (createErr as { response?: { data?: { message?: string | string[] } } })
-        ?.response?.data?.message
-      const text = Array.isArray(msg) ? msg.join('; ') : msg
-      appLogger.logWizardEvent({
-        tenant_id: tenantId, user_id: userId,
-        wizard_type: 'campaign', wizard_session_id: sessionIdRef.current,
-        step_number: 5, step_name: STEP_LABELS[4], action: 'error',
-        error_message: text ?? 'Erro ao criar campanha',
-      })
-      setError(text?.trim() || 'Erro ao criar campanha. Verifique os campos e tente novamente.')
-    } finally {
-      setSaving(false)
-    }
-  }
+    const result = await submitCampaign({ audienceFields, campaignId })
+    if (result.ok) onSaved?.(result.campaign)
+    return result
+  }, [audience, campaignId, submitCampaign, onSaved])
 
   return {
-    step, setStep, goBack, goNext,
-    templates, loadingTemplates, selectedTemplate, setSelectedTemplate, campaignName, setCampaignName,
-    segmentType, setSegmentType, selectedTagIds, setSelectedTagIds, selectedStages, setSelectedStages, tags,
-    stages, fieldDefs,
-    contacts, loadingContacts, selectedContactIds, setSelectedContactIds,
-    filterStages, setFilterStages, filterTagIds, setFilterTagIds, filterIntent, setFilterIntent,
-    filterSource, setFilterSource, filterOptIn, setFilterOptIn,
-    filterSentiment, setFilterSentiment, filterContactSearch, setFilterContactSearch,
-    filterHasConversations, setFilterHasConversations,
-    mappings, updateMapping,
-    scheduleMode, setScheduleMode, scheduledAt, setScheduledAt,
-    waNumbers, whatsappNumberId, setWhatsappNumberId,
-    estimatedReach, needsExplicitLine, canAdvance,
-    saving, error, handleSubmit,
+    ...core,
+    // público (modelo novo)
+    audience, setAudience: onAudienceChange, onAudienceResolved,
+    resolved, audienceCount,
+    // recorrência (BE.4) — a opção só é renderizada quando o endpoint
+    // existir; até lá este estado fica em `null` e ninguém o mexe (§8 do
+    // D2-plano: oculta, não desabilitada).
+    recurrence, setRecurrence,
+    // acordeão
+    blocks, firstPending, canSchedule,
+    // submissão
+    campaignId, submit,
   }
+}
+
+/** Comparação estrutural barata das definições de público. Serve só para
+ *  saber se a contagem guardada ainda vale — não é validação de shape. */
+function sameDefinition(a: CampaignSegmentDefinition, b: CampaignSegmentDefinition): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
 }
