@@ -13,10 +13,11 @@
 // Componente de apresentação: quem busca uso, atribuição e permissão é a tela
 // (PR 3). Aqui nada é inventado — dado que não veio não é escrito.
 import type { CSSProperties } from 'react'
-import { Pencil, Send } from 'lucide-react'
+import { Copy, Loader2, Pencil, Send, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { accentColor, type Accent } from '@/components/ui/accentColor'
+import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
 import { CATEGORY_LABELS } from '../constants'
 import { TemplatePreview, WHATSAPP_PALETTE } from '../TemplatePreview'
 import { RejectedActions } from './RejectedActions'
@@ -48,6 +49,13 @@ interface TemplateCardProps {
   onEdit: () => void
   onUse: () => void
   onRewrite: () => void
+  onDelete: () => void
+  /** Só em conta multilinha — sem outra linha não há para onde clonar. */
+  onDuplicate?: () => void
+  /** Linha legada da Migration #045: o selo é o que torna a lacuna visível,
+   *  e some da tela se ninguém o desenhar. */
+  onAssignWaba: () => void
+  deleting?: boolean
 }
 
 function variablesLabel(template: WhatsAppTemplate): string | null {
@@ -64,7 +72,7 @@ function buttonsLabel(template: WhatsAppTemplate): string | null {
 
 export function TemplateCard({
   template, attribution, usageLabel, canEdit, editBlockedReason,
-  onEdit, onUse, onRewrite,
+  onEdit, onUse, onRewrite, onDelete, onDuplicate, onAssignWaba, deleting = false,
 }: TemplateCardProps) {
   const rejected = template.status === 'REJECTED'
   const chrome = STATUS_CHROME[template.status]
@@ -114,7 +122,10 @@ export function TemplateCard({
       {/* Rodapé */}
       <div className="flex flex-col gap-1.5 px-3.5 py-3">
         <div className="flex items-center justify-between gap-3">
-          <span className="font-mono text-[12.5px] font-semibold text-surface-100 truncate">{template.name}</span>
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="font-mono text-[12.5px] font-semibold text-surface-100 truncate">{template.name}</span>
+            {template.needsWabaAssignment && <WabaAssignmentBadge onClick={onAssignWaba} />}
+          </span>
           <span
             className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-2xs font-semibold leading-[1.5]"
             style={{
@@ -130,11 +141,16 @@ export function TemplateCard({
         {rejected ? (
           <RejectedActions reason={template.rejectionReason} onRewrite={onRewrite} />
         ) : (
-          <>
-            <p className="text-2xs text-surface-500">{meta}</p>
-            <div className="mt-1 flex items-center justify-between gap-3">
-              <span className="text-3xs text-surface-500 truncate">{attribution ?? ''}</span>
-              <div className="flex items-center gap-1 shrink-0">
+          <p className="text-2xs text-surface-500">{meta}</p>
+        )}
+
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <span className="text-3xs text-surface-500 truncate">{rejected ? '' : (attribution ?? '')}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* No card recusado o lápis sai: "Reescrever e reenviar" já abre o
+                criador com o mesmo template, e dois botões para o mesmo
+                destino é pior que um. */}
+            {!rejected && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -146,24 +162,50 @@ export function TemplateCard({
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>
-                {/* Autenticação é disparada pelo fluxo de login, não por
-                    campanha — o mockup não oferece "Usar" nesse card. */}
-                {template.category !== 'AUTHENTICATION' && (
-                  <Button
-                    variant={template.status === 'APPROVED' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={onUse}
-                    disabled={template.status !== 'APPROVED'}
-                    title={template.status === 'APPROVED' ? undefined : 'Só templates aprovados pela Meta podem ser disparados'}
-                    leftIcon={<Send className="w-3.5 h-3.5" />}
-                  >
-                    Usar
-                  </Button>
-                )}
-              </div>
-            </div>
-          </>
-        )}
+            )}
+            {/* Duplicar e excluir NÃO estão no mockup, porque a conta dele tem
+                uma linha só e nenhuma dívida legada. Some daqui e a Biblioteca
+                perde duas capacidades que a aba de hoje tem. */}
+            {onDuplicate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onDuplicate}
+                aria-label="Duplicar para outra linha"
+                title="Duplicar para outra linha"
+                className="px-2"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              disabled={deleting}
+              aria-label="Excluir template"
+              title="Excluir"
+              className="px-2 hover:text-danger"
+            >
+              {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            </Button>
+            {/* Autenticação é disparada pelo fluxo de login, não por
+                campanha — o mockup não oferece "Usar" nesse card. Recusado
+                também não tem o que usar. */}
+            {!rejected && template.category !== 'AUTHENTICATION' && (
+              <Button
+                variant={template.status === 'APPROVED' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={onUse}
+                disabled={template.status !== 'APPROVED'}
+                title={template.status === 'APPROVED' ? undefined : 'Só templates aprovados pela Meta podem ser disparados'}
+                leftIcon={<Send className="w-3.5 h-3.5" />}
+              >
+                Usar
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </article>
   )
