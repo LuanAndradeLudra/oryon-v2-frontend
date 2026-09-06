@@ -2,7 +2,7 @@
 // `sla()` é o alvo obrigatório da rubrica da Onda 1. Por ser função pura, testo
 // sem montar nada.
 import { describe, it, expect } from 'vitest'
-import { sla, motivo, maskPhone, formatarEspera, SLA_ESTOURADO, SLA_ATENCAO } from './handoffRow'
+import { sla, motivo, maskPhone, formatarEspera, acentoDoNome, SLA_ESTOURADO, SLA_ATENCAO } from './handoffRowCore'
 import type { HandoffItem } from '@/types/agentsOps'
 
 const item = (over: Partial<HandoffItem> = {}): HandoffItem => ({
@@ -172,5 +172,27 @@ describe('maskPhone — DDD + 2 últimos dígitos', () => {
   it('não quebra com número fora do padrão brasileiro', () => {
     expect(() => maskPhone('12025550123')).not.toThrow()
     expect(maskPhone('12025550123')).toMatch(/\*/)
+  })
+})
+
+describe('acentoDoNome', () => {
+  it('é determinístico — a mesma pessoa não troca de cor a cada render', () => {
+    expect(acentoDoNome('Marina Torres')).toBe(acentoDoNome('Marina Torres'))
+  })
+
+  it('devolve NOME de acento válido, nunca hex', () => {
+    for (const nome of ['Marina Torres', 'Carlos F.', 'João P.', '', 'Ana']) {
+      expect(acentoDoNome(nome)).toMatch(/^(rose|violet|green|amber|blue|cyan)$/)
+      expect(acentoDoNome(nome)).not.toMatch(/#/)
+    }
+  })
+
+  it('distribui nomes diferentes por acentos diferentes', () => {
+    const nomes = ['Marina', 'Carlos', 'João', 'Renata', 'Aline', 'Bruno', 'Clara', 'Diego']
+    expect(new Set(nomes.map(acentoDoNome)).size).toBeGreaterThan(1)
+  })
+
+  it('nome vazio não quebra', () => {
+    expect(() => acentoDoNome('')).not.toThrow()
   })
 })
