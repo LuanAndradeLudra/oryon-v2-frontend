@@ -48,6 +48,10 @@ export function getChartColors() {
     danger:   readVar('--color-danger',        '#EF4444'),
     purple:   readVar('--color-accent-violet', '#8B5CF6'),
     cyan:     readVar('--color-accent-cyan',   '#06B6D4'),
+    // Os dois tokens já existiam em `index.css`; só não estavam expostos aqui,
+    // e por isso o funil do D3 tinha pegado `cyan`/`online` como aproximação.
+    blue:     readVar('--color-accent-blue',   '#3B82F6'),
+    green:    readVar('--color-accent-green',  '#10B981'),
     grid:     readVar('--color-surface-700',   '#243333'),
     axis:     readVar('--color-surface-400',   '#8FA5A5'),
     surface8: readVar('--color-surface-800',   '#161E1E'),
