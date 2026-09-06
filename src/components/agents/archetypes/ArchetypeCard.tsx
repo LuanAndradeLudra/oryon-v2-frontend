@@ -51,7 +51,11 @@ export function ArchetypeCard({
       </div>
 
       <div className="relative">
-        <div className="font-display text-xl font-bold tracking-[-0.02em] text-surface-50">
+        {/* `text-lg`, não `text-xl`: a régua da fonte é o pixel EMITIDO, e com a
+            manopla de 110% do desktop `text-lg` emite 19,8 contra os 20px do
+            mockup (−0,2), enquanto `text-xl` emitiria 22 (+2). Token cujo
+            emitido fica mais perto — nunca literal só para fechar o número. */}
+        <div className="font-display text-lg font-bold tracking-[-0.02em] text-surface-50">
           {arquetipo.nome}
         </div>
         <div className="mt-1 text-xs leading-[1.5] text-surface-400">{arquetipo.descricao}</div>

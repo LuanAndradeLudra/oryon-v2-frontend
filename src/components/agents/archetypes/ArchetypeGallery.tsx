@@ -31,7 +31,19 @@ export function ArchetypeGallery({
       }}
     >
       <div className="mx-auto mt-4 max-w-[880px] text-center">
-        <div className="eyebrow">Comece por um arquétipo</div>
+        {/* O eyebrow da casa (`.eyebrow`) é 0.6875rem, que a manopla de 110%
+            leva a 12,1px — o mockup pede 10. O sistema TEM o valor certo em
+            `--text-3xs: 10px`, e o fato de ser px cravado é justamente o sinal
+            de que o design não quis que esse tamanho escalasse.
+            Não dá para somar `eyebrow text-3xs`: `.eyebrow` mora fora de
+            `@layer` e CSS sem layer vence utilitário em layer, então ela
+            ganharia o `font-size` — conferido na ordem do CSS emitido, não no
+            nome da classe. Por isso o eyebrow é composto por token aqui, com os
+            demais valores da casa (incluindo `.16em` contra o `.1em` do
+            mockup — divergência declarada em `evidencias/SCRUM-1016/CSS.md`). */}
+        <div className="font-sans text-3xs font-bold uppercase tracking-[0.16em] text-brand-400">
+          Comece por um arquétipo
+        </div>
         <h2 className="mt-2 mb-1.5 text-3xl text-surface-50">
           Que tipo de atendimento você quer automatizar?
         </h2>
