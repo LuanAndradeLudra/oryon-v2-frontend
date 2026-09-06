@@ -128,7 +128,11 @@ export function AgentRow({ agent, expanded, onToggle, live, metrics, queue, chil
               </span>
             ) : null}
           </div>
-          {area && <div className="text-[13.2px] text-surface-400 truncate mt-0.5">{area}</div>}
+          {/* Token, não literal: o mockup marca esta linha com a CLASSE `t-xs`,
+              e 13.2px é o valor DERIVADO dela (.75rem × 110%), não um número
+              autoral. Congelar o derivado num arbitrary value desgruda a
+              legenda da escala se ela for retunada. Renderiza igual hoje. */}
+          {area && <div className="text-xs text-surface-400 truncate mt-0.5">{area}</div>}
         </div>
 
         {/* Coluna numérica 1 — volume (ativo) ou fila (pausado).

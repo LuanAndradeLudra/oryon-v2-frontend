@@ -42,7 +42,7 @@ export interface AgentsListViewProps {
   onOpenAgent?: (id: string) => void
 }
 
-export function AgentsListView({ agents, loading, onStatusChange, onOpenAgent }: AgentsListViewProps) {
+export function AgentsListView({ agents, loading, onStatusChange, onAgentsChanged, onOpenAgent }: AgentsListViewProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -51,7 +51,16 @@ export function AgentsListView({ agents, loading, onStatusChange, onOpenAgent }:
   const navigate = useNavigate()
 
   const deck = useDeckData(agents, !loading)
-  const health = useAgentHealth(expandedId)
+  const { health, invalidar: invalidarSaude } = useAgentHealth(expandedId)
+
+  // Testar muda `last_tested_at` no agente e `last_test_at` na saúde. Sem
+  // recarregar a lista E invalidar a saúde da linha, o bloco Saúde continuava
+  // dizendo "Último teste: nunca" depois de um teste — e não se recuperava,
+  // porque a saúde era buscada uma vez só por linha.
+  const registrarTeste = useCallback((id: string) => {
+    invalidarSaude(id)
+    onAgentsChanged()
+  }, [invalidarSaude, onAgentsChanged])
 
   const counts = useMemo(() => ({
     all: agents.length,
@@ -148,7 +157,11 @@ export function AgentsListView({ agents, loading, onStatusChange, onOpenAgent }:
       )}
 
       {testAgent && (
-        <AgentTestModal agent={testAgent} onClose={() => setTestAgent(null)} onTested={() => {}} />
+        <AgentTestModal
+          agent={testAgent}
+          onClose={() => setTestAgent(null)}
+          onTested={() => registrarTeste(testAgent.id)}
+        />
       )}
     </div>
   )

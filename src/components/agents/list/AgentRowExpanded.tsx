@@ -11,7 +11,7 @@
 //   · saúde — cada linha só aparece com o dado correspondente. Sem o AS.2,
 //     sobra o que vem do próprio `AgentConfig`.
 
-import { ExternalLink, FlaskConical, Pause, Play, Copy } from 'lucide-react'
+import { ExternalLink, FileText, FlaskConical, Pause, Play, Copy } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { accentColor, tint } from '@/components/ui/accentColor'
@@ -68,6 +68,9 @@ export function AgentRowExpanded({
   testLoading,
 }: AgentRowExpandedProps) {
   const paused = agent.status === 'paused'
+  const draft = agent.status === 'draft'
+  // Rascunho e pausado compartilham o destino 'active'; só o rótulo difere.
+  const ativavel = paused || draft
   const ultimoTeste = daysSince(health?.last_test_at ?? agent.last_tested_at)
   const tokenAviso = health?.tool_warnings?.[0]
 
@@ -122,14 +125,36 @@ export function AgentRowExpanded({
           >
             Testar no simulador
           </Button>
+          {/* Transição de status, ciente do estado. O toggle binário anterior
+              lia `paused ? active : paused`, e num RASCUNHO `paused` é false —
+              então oferecia "Pausar agente" e produzia um rascunho pausado.
+              Pausar um rascunho não é capacidade que exista (ele nunca rodou),
+              e pela regra de produto capacidade inexistente fica oculta, não
+              desabilitada: o rascunho vê "Ativar agente", que é a transição
+              real que ele tem. */}
           <Button
             size="sm"
             variant="secondary"
-            leftIcon={paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-            onClick={() => onToggleStatus(agent.id, paused ? 'active' : 'paused')}
+            leftIcon={ativavel ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+            onClick={() => onToggleStatus(agent.id, ativavel ? 'active' : 'paused')}
           >
-            {paused ? 'Reativar agente' : 'Pausar agente'}
+            {draft ? 'Ativar agente' : paused ? 'Reativar agente' : 'Pausar agente'}
           </Button>
+          {/* Voltou por decisão do Maestro: o menu de contexto da lista antiga
+              tinha esta transição e a A4 a removeu sem substituto. "Abrir" e
+              "Ativar/Pausar" ganharam porta nova; esta ficou sem nenhuma, e
+              capacidade real sem porta é o que a regra proíbe. Não está no
+              mockup — a ausência de porta pesa mais que a paridade visual. */}
+          {!draft && (
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={<FileText className="w-3.5 h-3.5" />}
+              onClick={() => onToggleStatus(agent.id, 'draft')}
+            >
+              Mover para rascunho
+            </Button>
+          )}
           {AS1_DUPLICATE_DISPONIVEL && onDuplicate && (
             <Button size="sm" variant="secondary" leftIcon={<Copy className="w-3.5 h-3.5" />} onClick={() => onDuplicate(agent.id)}>
               Duplicar

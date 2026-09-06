@@ -134,3 +134,48 @@ describe('AgentRowExpanded · saúde', () => {
     expect(screen.queryByText(/Janela 24h/)).not.toBeInTheDocument()
   })
 })
+
+// Achados 2 e 3 do Lince na A4, mesma família: reimplementação que perde
+// capacidade. O toggle binário era cego a status e o menu de contexto sumiu
+// inteiro levando transições que não ganharam porta nenhuma.
+describe('AgentRowExpanded · ações cientes do status', () => {
+  it('RASCUNHO não oferece pausar — pausar um rascunho não é capacidade que exista', () => {
+    render(<AgentRowExpanded agent={agent({ status: 'draft' })} {...props} />)
+
+    expect(screen.queryByText('Pausar agente')).not.toBeInTheDocument()
+    expect(screen.getByText('Ativar agente')).toBeInTheDocument()
+  })
+
+  it('o rascunho vai para ativo, não para pausado (o bug era produzir rascunho pausado)', () => {
+    const onToggleStatus = vi.fn()
+    render(<AgentRowExpanded agent={agent({ status: 'draft' })} {...props} onToggleStatus={onToggleStatus} />)
+
+    fireEvent.click(screen.getByText('Ativar agente'))
+    expect(onToggleStatus).toHaveBeenCalledWith('a1', 'active')
+    expect(onToggleStatus).not.toHaveBeenCalledWith('a1', 'paused')
+  })
+
+  it('ativo pausa, pausado reativa', () => {
+    const onToggleStatus = vi.fn()
+    const { rerender } = render(<AgentRowExpanded agent={agent()} {...props} onToggleStatus={onToggleStatus} />)
+    fireEvent.click(screen.getByText('Pausar agente'))
+    expect(onToggleStatus).toHaveBeenCalledWith('a1', 'paused')
+
+    rerender(<AgentRowExpanded agent={agent({ status: 'paused' })} {...props} onToggleStatus={onToggleStatus} />)
+    fireEvent.click(screen.getByText('Reativar agente'))
+    expect(onToggleStatus).toHaveBeenCalledWith('a1', 'active')
+  })
+
+  it('"Mover para rascunho" existe — é transição real e ficou sem porta quando o menu sumiu', () => {
+    const onToggleStatus = vi.fn()
+    render(<AgentRowExpanded agent={agent()} {...props} onToggleStatus={onToggleStatus} />)
+
+    fireEvent.click(screen.getByText('Mover para rascunho'))
+    expect(onToggleStatus).toHaveBeenCalledWith('a1', 'draft')
+  })
+
+  it('num rascunho, "Mover para rascunho" some — já é o estado atual', () => {
+    render(<AgentRowExpanded agent={agent({ status: 'draft' })} {...props} />)
+    expect(screen.queryByText('Mover para rascunho')).not.toBeInTheDocument()
+  })
+})
