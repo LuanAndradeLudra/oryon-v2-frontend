@@ -161,9 +161,68 @@ describe('lacunas', () => {
       .toEqual(['sem-conhecimento', 'sem-limites', 'sem-handoff', 'sem-escopo'])
   })
 
-  it('o card mostra a primeira lacuna aberta', () => {
+  it('sem etapa, o card mostra a primeira lacuna aberta', () => {
     expect(lacunaPrincipal(DEFAULT_DATA)?.key).toBe('sem-conhecimento')
     expect(lacunaPrincipal(DEFAULT_DATA)?.texto).toMatch(/etapa 6/)
+  })
+
+  it('cada lacuna aponta para a etapa que o texto dela cita', () => {
+    // `etapa` e texto são dois lugares dizendo a mesma coisa; divergindo, o
+    // card manda a pessoa para a etapa errada.
+    for (const l of lacunas(DEFAULT_DATA)) {
+      expect(l.texto).toMatch(new RegExp(`etapa ${l.etapa}\\b`))
+    }
+  })
+})
+
+// Achado do Lince na revisão do #139: num rascunho novo o card apontava para a
+// etapa 6 — a mais distante — durante a jornada inteira, porque
+// `sem-conhecimento` é a primeira da ordem do mockup. Escopo e limites
+// (etapa 3) ficavam invisíveis até a pessoa chegar lá sozinha.
+describe('lacunaPrincipal — a alcançável mais próxima da etapa atual', () => {
+  it('na etapa 1 aponta para a etapa 3, não para a 6', () => {
+    const l = lacunaPrincipal(DEFAULT_DATA, 1)
+    expect(l?.etapa).toBe(3)
+    expect(l?.key).toBe('sem-limites')   // desempate 3 vs 3 pela ordem do mockup
+    expect(l?.texto).toMatch(/etapa 3/)
+  })
+
+  it('na etapa 6 volta a destacar a lacuna da etapa 6', () => {
+    expect(lacunaPrincipal(DEFAULT_DATA, 6)?.key).toBe('sem-conhecimento')
+  })
+
+  it('na etapa 5 prefere a 5 (já visitada) à 6 (ainda à frente)', () => {
+    expect(lacunaPrincipal(DEFAULT_DATA, 5)?.etapa).toBe(5)
+  })
+
+  it('na etapa 4 prefere a 3 atrás à 5 à frente, com distância igual', () => {
+    // Empate de distância (|3-4| = |5-4| = 1): ganha a que a pessoa já pode
+    // abrir agora — o acordeão só deixa voltar para etapa concluída. Uma
+    // lacuna à frente ela encontra sozinha ao avançar.
+    expect(lacunaPrincipal(DEFAULT_DATA, 4)?.etapa).toBe(3)
+  })
+
+  it('sem nenhuma atrás, mostra a mais próxima à frente', () => {
+    const d = draft({
+      cannot_do: ['x'], can_do: ['y'],   // fecha as duas da etapa 3
+      handoff_rules: [regra()],          // fecha a da etapa 5
+    })                                   // sobra só a da etapa 6
+    expect(lacunaPrincipal(d, 1)?.etapa).toBe(6)
+  })
+
+  it('sem lacuna nenhuma devolve null, com ou sem etapa', () => {
+    const completo = draft({
+      knowledge_docs: [{ id: 'k', name: 'n', content: 'c', source_type: 'file' }],
+      cannot_do: ['x'], can_do: ['y'], handoff_rules: [regra()],
+    })
+    expect(lacunaPrincipal(completo, 1)).toBeNull()
+  })
+
+  it('não reordena a lista — a ordem do mockup continua sendo a da lista', () => {
+    const antes = lacunas(DEFAULT_DATA).map(l => l.key)
+    lacunaPrincipal(DEFAULT_DATA, 4)
+    expect(lacunas(DEFAULT_DATA).map(l => l.key)).toEqual(antes)
+    expect(antes[0]).toBe('sem-conhecimento')
   })
 
   it('cada lacuna some quando o que faltava é preenchido', () => {
