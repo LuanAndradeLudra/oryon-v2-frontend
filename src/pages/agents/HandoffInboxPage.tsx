@@ -8,6 +8,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Spinner } from '@/components/ui/Spinner'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/useToast'
 import { handoffsApi } from '@/services/agentsOpsApi'
 import { conversationsApi } from '@/services/api'
@@ -20,11 +21,21 @@ import {
   esperaAoVivo, useChipsDeFila, useHandoffQueue, useRelogioSla,
 } from '@/components/agents/handoffs/useHandoffQueue'
 
-const SEGMENTOS: Array<{ value: HandoffStatus; label: string }> = [
-  { value: 'waiting', label: 'Aguardando' },
-  { value: 'claimed', label: 'Em atendimento' },
-  { value: 'resolved', label: 'Resolvidas hoje' },
-]
+// O rótulo do terceiro segmento depende da FONTE, não do gosto: com o BE.6 no
+// ar o backend delimita o dia e "hoje" é verdade. No modo degradado a fila sai
+// de `GET /conversations`, cujo único recorte de período filtra por
+// `lastMessageAt` — que não é quando a conversa foi resolvida. Uma resolvida
+// hoje cuja última mensagem foi ontem sumiria, calada, debaixo de um rótulo que
+// promete o dia inteiro. Então lá o rótulo perde o "hoje" em vez de a lista
+// perder linhas: é a mesma regra do `slaSeconds: 0` e do resumo ausente —
+// quando a fonte não sabe, quem cede é a promessa, não o dado.
+function segmentos(disponivel: boolean): Array<{ value: HandoffStatus; label: string }> {
+  return [
+    { value: 'waiting', label: 'Aguardando' },
+    { value: 'claimed', label: 'Em atendimento' },
+    { value: 'resolved', label: disponivel ? 'Resolvidas hoje' : 'Resolvidas' },
+  ]
+}
 
 export function HandoffInboxPage() {
   const [status, setStatus] = useState<HandoffStatus>('waiting')
@@ -33,6 +44,7 @@ export function HandoffInboxPage() {
   const [ocupada, setOcupada] = useState<string | null>(null)
   const [devolvendo, setDevolvendo] = useState<HandoffItem | null>(null)
   const { toast } = useToast()
+  const { user } = useAuth()
   const navigate = useNavigate()
 
   const q = useHandoffQueue(status, fila)
@@ -58,7 +70,7 @@ export function HandoffInboxPage() {
         label="Estado das transferências"
         value={status}
         onChange={(v: HandoffStatus) => { setStatus(v); setSelecionada(null) }}
-        options={SEGMENTOS.map((s) => ({
+        options={segmentos(q.disponivel).map((s) => ({
           value: s.value,
           label: s.label,
           count: contagem(s.value),
@@ -83,7 +95,22 @@ export function HandoffInboxPage() {
         else await handoffsApi.return(item.id)
       } else if (tipo === 'claim') {
         // Modo degradado: o id é `conv:<id>` e a ação vai pela conversa.
-        await conversationsApi.assign(item.conversationId, null)
+        //
+        // `assign(id, null)` NÃO é no-op — é DESATRIBUIR, e está escrito em três
+        // lugares independentes: a assinatura em `services/api.ts`, o
+        // comentário do controller ("ou null para desatribuir") e o service,
+        // que grava `assignedUserId: targetUserId` sem reinterpretar. Com null,
+        // clicar em "Assumir" numa conversa que já tinha atendente REMOVIA esse
+        // atendente, não dava a conversa a ninguém, deixava a linha na fila — e
+        // o toast dizia "Conversa assumida." em verde.
+        //
+        // Assumir precisa de QUEM assume. Sem sessão não há resposta, e a ação
+        // para em vez de mandar um null que o backend obedece.
+        if (!user?.id) {
+          toast('Não foi possível identificar quem está assumindo. Recarregue a página.', 'error')
+          return
+        }
+        await conversationsApi.assign(item.conversationId, user.id)
       } else {
         await conversationsApi.setAiPause(item.conversationId, null)
       }
@@ -101,7 +128,7 @@ export function HandoffInboxPage() {
       setOcupada(null)
       setDevolvendo(null)
     }
-  }, [q, toast])
+  }, [q, toast, user?.id])
 
   return (
     <div className="flex h-full flex-col">
