@@ -5,6 +5,7 @@
 
 import type { AgentConfig, AgentConfigWithTools, AgentTool } from '@/services/agentsApi'
 import type { SectionId } from './sectionNavCore'
+import type { UseAgentDraft } from './useAgentDraft'
 import { CapabilitiesSection } from './sections/CapabilitiesSection'
 import { CatalogSection } from './sections/CatalogSection'
 import { CriteriaSection } from './sections/CriteriaSection'
@@ -21,13 +22,15 @@ interface SectionContentProps {
   agent: AgentConfigWithTools
   onUpdate: (a: AgentConfig) => void
   onToolsChange: (tools: AgentTool[]) => void
+  /** O mesmo rascunho que o TopBar mostra: a "Visão geral" é a outra porta dele. */
+  draft: UseAgentDraft
   /** Versão publicada do prompt (AS.2). Ausente enquanto o endpoint não existe. */
   promptVersion?: number | null
 }
 
-export function SectionContent({ section, agent, onUpdate, onToolsChange, promptVersion }: SectionContentProps) {
+export function SectionContent({ section, agent, onUpdate, onToolsChange, draft, promptVersion }: SectionContentProps) {
   switch (section) {
-    case 'overview':     return <OverviewSection     agent={agent} onUpdate={onUpdate} />
+    case 'overview':     return <OverviewSection     agent={agent} draft={draft} />
     case 'prompt':       return <PromptSection       agent={agent} onUpdate={onUpdate} promptVersion={promptVersion} />
     case 'knowledge':    return <KnowledgeSection    agent={agent} />
     case 'catalog':      return <CatalogSection      agent={agent} />
