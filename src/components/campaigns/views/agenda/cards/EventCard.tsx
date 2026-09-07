@@ -18,7 +18,7 @@ import { CampaignStatusChip } from '@/components/campaigns/shared/CampaignStatus
 import { CardFrame, CodeTag, MetaSeparator, type CardTone } from './cardChrome'
 import { funnelSegments, missingForDraft, sendingProgress, DRAFT_REQUIREMENTS } from '../campaignFacts'
 import type { SendRate } from '../useAgendaCampaigns'
-import type { CampaignLifecycle } from '../useCampaignLifecycle'
+import { PAUSE_SEM_VOLTA, type CampaignLifecycle } from '../useCampaignLifecycle'
 
 const TONE_BY_STATUS: Record<Campaign['status'], CardTone> = {
   draft: 'draft', scheduled: 'default', sending: 'sending', sent: 'default',
@@ -61,7 +61,7 @@ export function EventCard({
     }
     // Cancelar só aparece quando a BE.2 responde. Um item de menu que erra
     // 404 é pior que um item ausente.
-    if (lifecycle.available && CANCELLABLE.has(status)) {
+    if (lifecycle.can('cancel') && CANCELLABLE.has(status)) {
       items.push({ separator: true })
       items.push({
         label: 'Cancelar disparo', icon: XOctagon, danger: true,
@@ -327,11 +327,12 @@ function CardActions({
   if (status === 'sending') {
     return (
       <>
-        {lifecycle.available && (
+        {lifecycle.can('pause') && (
           <Button
             size="sm" variant="secondary" loading={busy}
             leftIcon={<Pause className="w-3.5 h-3.5" />}
             onClick={() => void lifecycle.run('pause', campaign.id)}
+            title={lifecycle.can('resume') ? undefined : PAUSE_SEM_VOLTA}
           >
             Pausar
           </Button>
@@ -344,7 +345,7 @@ function CardActions({
   if (status === 'paused') {
     return (
       <>
-        {lifecycle.available && (
+        {lifecycle.can('resume') && (
           <Button
             size="sm" variant="secondary" loading={busy}
             leftIcon={<Play className="w-3.5 h-3.5" />}

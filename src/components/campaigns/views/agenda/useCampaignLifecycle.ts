@@ -1,20 +1,25 @@
 // ─── Pausar / retomar / cancelar (BE.2) ────────────────────────────────────
-// Os três endpoints ainda não existem em produção. `withFallback` devolve
-// `available:false` no primeiro 404/501, a Agenda ESCONDE os três controles
-// pelo resto da sessão e avisa por que sumiram — não deixa um botão
-// desabilitado sem explicação nem tenta de novo a cada render.
+// UMA BANDEIRA POR AÇÃO, e não uma para as três. O comentário anterior dizia
+// "os três endpoints ainda não existem", e isso deixou de ser verdade quando a
+// BE.2 subiu `cancel` e `pause` e NÃO subiu `resume`. Com uma bandeira só, o
+// 404 de `resume` derrubava as outras duas: quem pausava um disparo (funciona),
+// clicava em "Retomar" (404) e ficava com a campanha PRESA — sem retomar,
+// porque a rota não existe, e sem cancelar, porque o botão sumiu por causa do
+// erro de OUTRA rota. Só um refresh soltava. E o aviso ainda dizia que as três
+// "chegam com a próxima atualização", com duas já no ar.
 //
-// LIMITAÇÃO CONHECIDA, assumida de propósito: os três endpoints da BE.2 são
-// mutações (`POST pause|resume|cancel`), então NÃO existe sondagem sem efeito
-// colateral que descubra a disponibilidade antes do primeiro clique. O
-// resultado é que, enquanto a BE.2 não subir, o primeiro clique em "Pausar"
-// não pausa nada: ele responde 404, o controle some e a pessoa lê o aviso.
-// Isso custa um clique enganoso por sessão, e só para quem tem disparo em
-// envio no momento. A alternativa — esconder até provar que existe — deixaria
-// o botão invisível PARA SEMPRE, inclusive depois de a BE.2 subir, porque a
-// prova só chegaria de um clique que nunca aconteceria. Some com um
-// `GET /campaigns/capabilities` (ou um campo em contrato já existente) — está
-// anotado para a Onda 2.
+// `resume` nasce INDISPONÍVEL, por medição e não por suposição:
+// `campaigns.controller.ts:150` do épico tem só o comentário
+// "POST /campaigns/:id/resume saiu deste PR (achado B2 do Auditor)". A regra 1
+// do épico manda esconder capacidade que não existe, e é isso que a tela faz —
+// sem "em breve", sem botão morto. A rota está despachada (SCRUM-1043, Solda);
+// quando entrar, apagar a entrada de `ROTA_AUSENTE` religa o botão.
+//
+// LIMITAÇÃO QUE PERMANECE: os endpoints são mutações, então não há sondagem sem
+// efeito colateral. Para uma ação que EXISTE no contrato mas caiu, o primeiro
+// clique ainda é o descobridor — ele responde 404, aquele controle some e a
+// pessoa lê o aviso. Custa um clique enganoso por sessão e por ação. Some com
+// um `GET /campaigns/capabilities`; anotado para a Onda 2.
 import { useCallback, useRef, useState } from 'react'
 import { campaignLifecycleApi } from '@/services/campaignsV2Api'
 import { withFallback } from '@/services/withFallback'
@@ -24,8 +29,12 @@ import type { Campaign } from '@/types'
 export type LifecycleAction = 'pause' | 'resume' | 'cancel'
 
 export interface CampaignLifecycle {
-  /** `false` assim que o backend responde 404/501 num dos três. */
-  available: boolean
+  /**
+   * Esta ação pode ser oferecida? `false` quando a rota não existe (medido no
+   * controller) ou quando ela respondeu 404/501 nesta sessão. Por AÇÃO: um
+   * endpoint ausente não pode esconder os que estão no ar.
+   */
+  can: (action: LifecycleAction) => boolean
   /** id da campanha com ação em curso, ou `null`. */
   busy: string | null
   /**
@@ -40,6 +49,36 @@ export interface CampaignLifecycle {
   run: (action: LifecycleAction, id: string) => Promise<Campaign | null>
 }
 
+/**
+ * Rotas que sabidamente NÃO existem no backend do 992. Medido, não suposto:
+ * `cancel` está no `campaigns.controller.ts:136` e `pause` no `:143`; no `:150`
+ * há apenas o comentário dizendo que o `resume` saiu do PR. Apagar a entrada
+ * quando a SCRUM-1043 mesclar.
+ */
+const ROTA_AUSENTE: ReadonlySet<LifecycleAction> = new Set(['resume'])
+
+/**
+ * O preço de pausar enquanto `resume` não existe, dito ANTES do clique.
+ * Pausar não é destrutivo, mas hoje é porta de mão única: o único caminho de
+ * saída de uma pausada é cancelar. A doutrina do épico é que a promessa cede e
+ * o dado não — então a tela diz o que a ação custa em vez de esconder o botão
+ * de uma capacidade que EXISTE (regra 1: oculta-se o inexistente, não o que o
+ * sistema faz).
+ *
+ * Some sozinha: ela só é oferecida quando `can('resume')` é falso, então apagar
+ * a entrada de `ROTA_AUSENTE` quando a SCRUM-1043 mesclar tira a frase junto,
+ * nas duas telas, sem segunda edição.
+ */
+export const PAUSE_SEM_VOLTA =
+  'Retomar chega em breve; por enquanto, um disparo pausado só pode ser cancelado.'
+
+/** O que a tela diz quando a ação some por 404 — uma frase por ação, nunca as três juntas. */
+const GONE_MESSAGE: Record<LifecycleAction, string> = {
+  pause:  'Pausar um disparo chega com a próxima atualização do servidor.',
+  resume: 'Retomar um disparo chega com a próxima atualização do servidor.',
+  cancel: 'Cancelar um disparo chega com a próxima atualização do servidor.',
+}
+
 const FAILURE_MESSAGE: Record<LifecycleAction, string> = {
   pause:  'Não deu para pausar o disparo. Ele continua enviando.',
   resume: 'Não deu para retomar o disparo. Ele continua pausado.',
@@ -47,24 +86,24 @@ const FAILURE_MESSAGE: Record<LifecycleAction, string> = {
 }
 
 export function useCampaignLifecycle(onUpdated: (c: Campaign) => void): CampaignLifecycle {
-  const [available, setAvailable] = useState(true)
+  const [gone, setGone] = useState<ReadonlySet<LifecycleAction>>(ROTA_AUSENTE)
   const [busy, setBusy] = useState<string | null>(null)
   // Espelho síncrono: duas ações disparadas no mesmo tique não podem cada uma
-  // ler o `available` velho do estado.
-  const availableRef = useRef(true)
+  // ler o conjunto velho do estado.
+  const goneRef = useRef<Set<LifecycleAction>>(new Set(ROTA_AUSENTE))
+
+  const can = useCallback((action: LifecycleAction) => !gone.has(action), [gone])
 
   const run = useCallback(async (action: LifecycleAction, id: string) => {
-    if (!availableRef.current) return null
+    if (goneRef.current.has(action)) return null
     setBusy(id)
     try {
       const res = await withFallback(() => campaignLifecycleApi[action](id), null)
       if (!res.available) {
-        availableRef.current = false
-        setAvailable(false)
-        showToast(
-          'Pausar, retomar e cancelar chegam com a próxima atualização do servidor.',
-          'info',
-        )
+        // SÓ esta ação sai do ar. As outras duas continuam onde estavam.
+        goneRef.current.add(action)
+        setGone(new Set(goneRef.current))
+        showToast(GONE_MESSAGE[action], 'info')
         return null
       }
       const updated = res.data?.data ?? null
@@ -81,5 +120,5 @@ export function useCampaignLifecycle(onUpdated: (c: Campaign) => void): Campaign
     }
   }, [onUpdated])
 
-  return { available, busy, run }
+  return { can, busy, run }
 }
