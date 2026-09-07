@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest'
 
 import { wizardConfigToPromptRequest, MOTIVO_SEM_WIZARD, type EstadoVivoDoAgente } from './wizardConfigToPrompt'
-import type { HandoffRule } from '@/services/agentsApi'
+import type { HandoffRule, HandoffRules } from '@/services/agentsApi'
 
 // Shape REAL gravado por `useStudioDraft.publish()`, não inventado — é o
 // mesmo critério que pegou os dois bugs do deckFormat: teste que constrói o
@@ -281,6 +281,49 @@ describe('wizardConfigToPromptRequest · estado vivo sobrepõe o retrato', () =>
     const r = wizardConfigToPromptRequest({}, VIVO)
     expect(r.request).toBeNull()
     expect(r.motivo).toBe(MOTIVO_SEM_WIZARD)
+  })
+
+  // ── `{}` NÃO é "vazio deliberado" ───────────────────────────────────────
+  // Achado da Tecelã ao ligar o Regenerar, medido rodando o mapeador em vez de
+  // relê-lo. `agent.handoff_rules` e `agent.channels` NASCEM `{}` no banco, e
+  // `{}` é truthy — então o vivo VAZIO apagava o retrato inteiro, calado.
+  // É o achado da A6 de cabeça para baixo: lá campo ausente não podia apagar a
+  // FILA, aqui objeto vazio não pode apagar o RETRATO.
+
+  it('`{}` de handoff_rules é "nunca configurei", não "apaguei todas" — o retrato manda', () => {
+    const { request } = wizardConfigToPromptRequest(CFG_COMPLETO, { handoff_rules: {} as HandoffRules })
+    expect(request?.deployment.escalation_department).toBe('Suporte')
+    expect(request?.deployment.escalation_keywords.length).toBeGreaterThan(0)
+  })
+
+  it('`{}` de channels também cai no retrato — mesma armadilha, segundo campo', () => {
+    const { request } = wizardConfigToPromptRequest(CFG_COMPLETO, { channels: {} })
+    expect(request?.deployment.channels).toEqual(['WhatsApp', 'Instagram'])
+  })
+
+  it('e as duas juntas, que é como um agente recém-criado pelo wizard chega', () => {
+    // Este é o caso REAL: criado pelo wizard, nunca tocado no workspace.
+    // Antes do conserto ele regenerava com zero regra e nenhum canal.
+    const recemCriado = wizardConfigToPromptRequest(CFG_COMPLETO, {
+      handoff_rules: {} as HandoffRules,
+      channels: {},
+    })
+    expect(recemCriado.request?.deployment.channels).toEqual(['WhatsApp', 'Instagram'])
+    expect(recemCriado.request?.deployment.escalation_department).toBe('Suporte')
+  })
+
+  it('mas a CHAVE presente continua mandando, mesmo vazia — a guarda do conserto', () => {
+    // A distinção inteira mora aqui: `{ rules: [] }` tem a chave e vence;
+    // `{}` não tem e cede. Sem este caso, "cair no retrato quando não dá para
+    // ler" passaria a valer também para quem apagou tudo de propósito.
+    const apagouTudo = wizardConfigToPromptRequest(CFG_COMPLETO, { handoff_rules: { rules: [] } })
+    expect(apagouTudo.request?.deployment.escalation_keywords).toEqual([])
+    expect(apagouTudo.request?.deployment.escalation_department).toBe('')
+
+    const desligouTudo = wizardConfigToPromptRequest(CFG_COMPLETO, {
+      channels: { whatsapp: { enabled: false }, messenger: { enabled: false }, instagram: { enabled: false } },
+    })
+    expect(desligouTudo.request?.deployment.channels).toEqual([])
   })
 
   it('estado vivo torto não derruba: cai no vazio, não no retrato nem em exceção', () => {

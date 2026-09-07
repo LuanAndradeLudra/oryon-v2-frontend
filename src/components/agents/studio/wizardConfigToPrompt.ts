@@ -56,6 +56,31 @@ function bool(v: unknown): boolean {
   return v === true
 }
 
+/**
+ * O estado vivo MANDA quando traz conteúdo — e "conteúdo" é a CHAVE presente,
+ * não o objeto presente.
+ *
+ * `agent.handoff_rules` e `agent.channels` NASCEM `{}` no banco, em agente que
+ * nunca configurou nem regra nem canal. Como `{}` é truthy, tratar o objeto
+ * como sinal fazia o vivo VAZIO apagar o retrato: um agente criado pelo wizard
+ * com 3 regras e WhatsApp, nunca tocado no workspace, regenerava com zero
+ * regra, zero palavra de escalação, departamento vazio e nenhum canal — em
+ * silêncio. O próprio repo já sabia que o banco guarda `{}`:
+ * `agentsApi.ts:815` lê `fields.handoff_rules.rules?.length ?? 0`.
+ *
+ * São duas coisas truthy que significam o OPOSTO, e a chave as separa:
+ *   • `{ rules: [] }` → "apaguei todas", decisão do usuário, VENCE o retrato;
+ *   • `{}`            → "nunca configurei", que é como nasce, e NÃO apaga nada.
+ *
+ * A chave presente com lixo dentro continua sendo o vivo mandando: a fonte
+ * existe, só não dá para ler — e cair no retrato ali mostraria regra velha
+ * como se fosse a de agora.
+ */
+function temChave(o: object | null | undefined, ...chaves: string[]): boolean {
+  if (!o || typeof o !== 'object') return false
+  return chaves.some((k) => k in o)
+}
+
 /** FAQs só entram quando o par pergunta/resposta existe de verdade. Um item
  *  meio preenchido viraria contexto vazio no prompt, que é ruído, não dado. */
 function listaDeFaqs(v: unknown): Array<{ question: string; answer: string }> {
@@ -131,9 +156,10 @@ function derivarDeployment(
  * precisa viajar COM o mapeador: quem consumir depois (a Onda 2 religa isto)
  * cairia na mesma armadilha se o conserto morasse num call site.
  *
- * Cada campo presente **manda**, inclusive vazio: `{ rules: [] }` significa
- * "o usuário apagou todas as regras", e isso vence o retrato. Campo ausente
- * cai no retrato.
+ * Cada campo com CONTEÚDO **manda**, inclusive vazio: `{ rules: [] }` significa
+ * "o usuário apagou todas as regras", e isso vence o retrato. Campo ausente —
+ * e `{}`, que é como o banco NASCE — cai no retrato. Ver `temChave`: objeto
+ * presente não é sinal, chave presente é.
  */
 export interface EstadoVivoDoAgente {
   handoff_rules?: HandoffRules | null
@@ -194,15 +220,15 @@ export function wizardConfigToPromptRequest(
 
   // O retrato serve o que SÓ existe nele; o que tem fonte viva vem da fonte
   // viva. Presença manda, inclusive vazia — `{ rules: [] }` é "apaguei todas".
-  const regras = estadoVivo?.handoff_rules
-    ? listaDeRegras(estadoVivo.handoff_rules.rules)
+  const regras = temChave(estadoVivo?.handoff_rules, 'rules')
+    ? listaDeRegras(estadoVivo?.handoff_rules?.rules)
     : listaDeRegras(deployment?.handoff_rules)
 
-  const canais = estadoVivo?.channels
+  const canais = temChave(estadoVivo?.channels, 'whatsapp', 'messenger', 'instagram')
     ? {
-        whatsapp: bool(estadoVivo.channels.whatsapp?.enabled),
-        messenger: bool(estadoVivo.channels.messenger?.enabled),
-        instagram: bool(estadoVivo.channels.instagram?.enabled),
+        whatsapp: bool(estadoVivo?.channels?.whatsapp?.enabled),
+        messenger: bool(estadoVivo?.channels?.messenger?.enabled),
+        instagram: bool(estadoVivo?.channels?.instagram?.enabled),
       }
     : {
         whatsapp: bool(deployment?.channels_whatsapp),
