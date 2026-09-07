@@ -25,6 +25,34 @@ export function daysSince(iso: string | null | undefined): number | null {
   return ms === null ? null : Math.floor(ms / DAY)
 }
 
+/**
+ * Dias inteiros ATÉ `iso` — a pergunta oposta, e por isso uma função própria.
+ *
+ * `daysSince` responde "há quanto tempo" e clampa o futuro em zero de
+ * propósito: para `last_tested_at` ou `updated_at`, data futura é relógio
+ * torto e "há -3 dias" não quer dizer nada. Esse clamp está CERTO lá e
+ * continua intocado.
+ *
+ * O que estava errado era perguntar "quanto falta" para quem só sabe responder
+ * "quanto passou": `token_expiring` é, por contrato, sempre futuro em até 7
+ * dias, então o clamp devolvia 0 para TODOS eles — e a tela dizia "token
+ * expira em 0d" tanto para o que vence hoje quanto para o que vence daqui a
+ * uma semana, apagando exatamente a distinção pela qual o aviso existe.
+ *
+ * `Math.ceil` e não `floor`: enquanto a data estiver no futuro o resultado é
+ * pelo menos 1, então "0d" deixa de ser alcançável por engano. Um token com
+ * 1,5 dia diz "2d" — arredonda a favor do prazo, e é o preço de garantir que
+ * zero signifique só uma coisa. Passado devolve valor negativo em vez de
+ * clampar: quem chama decide, e aqui quem chama é o ramo `token_expired`, que
+ * nem consulta este número.
+ */
+export function daysUntil(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  const t = new Date(iso).getTime()
+  if (Number.isNaN(t)) return null
+  return Math.ceil((t - Date.now()) / DAY)
+}
+
 /** "agora" · "há 40s" · "há 3 min" · "há 2h" · "há 5d" — formato do feed e da
  *  linha ao vivo do mockup (`.ft`/`.dim`). */
 export function relativeTime(iso: string | null | undefined): string {

@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { accentColor, tint } from '@/components/ui/accentColor'
 import type { AgentConfig } from '@/services/agentsApi'
 import type { AgentLiveInfo, AgentHealth } from '@/types/agentsOps'
-import { daysSince, personaAccent, personaInitial, relativeTime } from '@/components/agents/deck/deckFormat'
+import { daysSince, daysUntil, personaAccent, personaInitial, relativeTime } from '@/components/agents/deck/deckFormat'
 
 /**
  * O AS.1 (`POST /configs/:id/duplicate`) ainda não existe. `withFallback` só
@@ -179,7 +179,11 @@ export function AgentRowExpanded({
               valor={
                 tokenAviso.kind === 'token_expired'
                   ? 'token expirado'
-                  : `token expira em ${daysSince(tokenAviso.expires_at) !== null ? Math.abs(daysSince(tokenAviso.expires_at) as number) : '?'}d`
+                  // `daysUntil`, não `daysSince`: a pergunta é quanto FALTA.
+                  // O `Math.abs` de antes disfarçava o problema em vez de
+                  // resolver — o valor já vinha zero do clamp, e o módulo de
+                  // zero é zero.
+                  : `token expira em ${daysUntil(tokenAviso.expires_at) ?? '?'}d`
               }
               cor={tokenAviso.kind === 'token_expired' ? 'var(--color-accent-rose)' : 'var(--color-status-pending)'}
             />

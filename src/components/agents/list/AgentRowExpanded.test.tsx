@@ -122,11 +122,29 @@ describe('AgentRowExpanded · saúde', () => {
     const expirando: AgentHealth = { ...health, tool_warnings: [{ tool_id: 't1', kind: 'token_expiring', expires_at: emDias(4) }] }
     const { rerender } = render(<AgentRowExpanded agent={agent()} health={expirando} {...props} />)
     expect(screen.getByText('Ferramentas')).toBeInTheDocument()
-    expect(screen.getByText(/token expira em/)).toBeInTheDocument()
+    // NOMEANDO O NÚMERO. A asserção anterior era `/token expira em/` e passava
+    // com qualquer valor — o Nível cravou 99 e os 97 casos seguiram verdes.
+    // Uma asserção que só confere o prefixo não cobre a única parte da frase
+    // que o operador usa para decidir.
+    expect(screen.getByText('token expira em 4d')).toBeInTheDocument()
 
     const expirado: AgentHealth = { ...health, tool_warnings: [{ tool_id: 't1', kind: 'token_expired', expires_at: ago(1) }] }
     rerender(<AgentRowExpanded agent={agent()} health={expirado} {...props} />)
     expect(screen.getByText('token expirado')).toBeInTheDocument()
+  })
+
+  it('os extremos do contrato (1d e 7d) NÃO podem cair no mesmo número', () => {
+    // O defeito era exatamente este: `+1d`, `+4d` e `+7d` renderizavam `0d`
+    // nos três, e "expira em 0 dias" para quem vence daqui a uma semana é
+    // indistinguível de quem vence hoje.
+    const um: AgentHealth = { ...health, tool_warnings: [{ tool_id: 't1', kind: 'token_expiring', expires_at: emDias(1) }] }
+    const { unmount } = render(<AgentRowExpanded agent={agent()} health={um} {...props} />)
+    expect(screen.getByText('token expira em 1d')).toBeInTheDocument()
+    unmount()
+
+    const sete: AgentHealth = { ...health, tool_warnings: [{ tool_id: 't1', kind: 'token_expiring', expires_at: emDias(7) }] }
+    render(<AgentRowExpanded agent={agent()} health={sete} {...props} />)
+    expect(screen.getByText('token expira em 7d')).toBeInTheDocument()
   })
 
   it('não inventa a linha "Janela 24h": não existe fonte para ela', () => {
