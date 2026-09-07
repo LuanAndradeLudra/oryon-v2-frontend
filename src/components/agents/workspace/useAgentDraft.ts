@@ -97,8 +97,24 @@ export function useAgentDraft(
         // `agent_prompt_versions` — não existe ainda.
         onPublished(await updateAgent(agent.id, draft as Partial<AgentConfig>))
       }
-      setDraft(null)
-      writeStoredDraft(agent.id, null)
+      // NÃO se limpa o rascunho daqui. Estas duas linhas existiam e eram
+      // destrutivas: elas rodam DEPOIS do `await`, a partir do retrato de
+      // rascunho que existia quando o publish começou. Quem continuou
+      // digitando enquanto a rede respondia perdia o que escreveu — da tela E
+      // do `localStorage` —, e `changedFields` voltava vazio, então a tela
+      // afirmava "nada pendente" no instante exato em que acabara de descartar
+      // o que estava pendente. Sem aviso e sem confirmação.
+      //
+      // Desabilitar o "Publicar" durante o voo não resolve: o que se perde não
+      // é um segundo publish, é a digitação no textarea, que não está
+      // desabilitado. `pending` evita CHAMADA duplicada, não evita ESCRITA
+      // perdida.
+      //
+      // Quem limpa é o `useEffect([agent])` acima: `onPublished` troca o agente
+      // publicado, o efeito dispara e o `pruneDraft` tira do rascunho o que
+      // ficou igual ao publicado — mantendo o que ainda difere. No caminho
+      // normal o resultado é idêntico ao das linhas apagadas; no caminho
+      // concorrente é a diferença entre preservar e perder.
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : 'Não foi possível publicar')
     } finally {
