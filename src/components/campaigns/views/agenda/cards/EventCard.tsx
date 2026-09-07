@@ -16,7 +16,7 @@ import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Campaign } from '@/types'
 import { CampaignStatusChip } from '@/components/campaigns/shared/CampaignStatusChip'
 import { CardFrame, CodeTag, MetaSeparator, type CardTone } from './cardChrome'
-import { funnelSegments, missingForDraft, sendingProgress, DRAFT_REQUIREMENTS } from '../campaignFacts'
+import { funnelSegments, missingForDraft, sendingProgress, formatRate, DRAFT_REQUIREMENTS } from '../campaignFacts'
 import type { SendRate } from '../useAgendaCampaigns'
 import type { CampaignLifecycle } from '../useCampaignLifecycle'
 
@@ -277,20 +277,6 @@ function CardMiddle({ campaign, rate }: { campaign: Campaign; rate?: SendRate })
   // `failureReason` + retry ficaram registrados como item de Onda 2
   // (decisão 4 do Maestro).
   return null
-}
-
-/**
- * Abaixo de 0,05 msg/s o `toFixed(1)` devolveria `"0,0"` — e 0 msg/s é
- * exatamente o número que este módulo se recusa a mostrar em três outros
- * lugares (`delta <= 0` some, o primeiro tique some). Uma fila lenta (1 a 29
- * mensagens por minuto, que é quando alguém OLHA a taxa) leria "parou" sobre
- * uma campanha que está enviando. `< 0,1` diz devagar sem dizer zero, e
- * continua distinto da ausência, que é o que a tela usa para "não medi".
- */
-function formatRate(perSecond: number): string {
-  if (perSecond >= 10) return String(Math.round(perSecond))
-  if (perSecond < 0.05) return '< 0,1'
-  return perSecond.toFixed(1).replace('.', ',')
 }
 
 // ── Ações ──────────────────────────────────────────────────────────────────
