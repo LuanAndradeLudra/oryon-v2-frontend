@@ -85,37 +85,56 @@ describe('overviewCore · o que a Visão geral pode afirmar', () => {
   })
 })
 
+/** A janela medida, indexada por nome — que é a chave do backend. */
+const janela = (...rows: ToolMetricRow[]) => indexarMetricas(rows)
+/** Nenhuma medição: 403 de não-admin, ou ainda carregando. */
+const NAO_MEDIU = null
+
 describe('toolsCore · o chip só afirma o que foi medido', () => {
-  it('sem métrica, NÃO existe estado verde — ausência de medição não é sucesso', () => {
-    const status = toolStatus(ferramenta(), undefined)
-    expect(status.kind).toBe('sem-uso')
-    // O `accent: null` é o ponto inteiro: sem cor de estado, o card não afirma
-    // que conferiu. É este campo que impede o "OK" otimista de quem não é
-    // admin e por isso nunca recebeu as métricas.
-    expect(status.accent).toBeNull()
+  it('SEM MEDIÇÃO não há chip nenhum — nem elogio, nem constatação', () => {
+    // O defeito que o Nível pegou: antes isto devolvia "Sem uso na janela",
+    // uma constatação NEGATIVA sobre um período que quem lê nunca pôde olhar,
+    // dita sobre integrações que podem estar perfeitas. Não é "não sei", é
+    // "nada rodou em 7 dias" — e manda investigar problema que não existe.
+    expect(toolStatus(ferramenta(), NAO_MEDIU)).toBeNull()
+  })
+
+  it('mas "Desligada" continua aparecendo sem medição — esse fato não precisa dela', () => {
+    // A guarda contra o conserto exagerado: `enabled` sai de `agent.tools`,
+    // que quem abre a tela já tem na mão. Esconder isto junto seria apagar um
+    // fato conhecido por causa de outro desconhecido.
+    expect(toolStatus(ferramenta({ enabled: false }), NAO_MEDIU)?.kind).toBe('desligada')
+  })
+
+  it('MEDIU e a ferramenta não aparece: aí sim "sem uso", e sem cor de estado', () => {
+    // Este é o outro `undefined` de antes, e é uma afirmação legítima: a
+    // janela foi olhada e esta ferramenta não estava nela.
+    const status = toolStatus(ferramenta(), janela())
+    expect(status?.kind).toBe('sem-uso')
+    expect(status?.accent).toBeNull()
   })
 
   it('janela vazia também não vira verde', () => {
-    expect(toolStatus(ferramenta(), metrica({ total: 0, successes: 0 })).accent).toBeNull()
+    expect(toolStatus(ferramenta(), janela(metrica({ total: 0, successes: 0 })))?.accent).toBeNull()
   })
 
   it('desligada ganha de qualquer execução velha na janela', () => {
-    const status = toolStatus(ferramenta({ enabled: false }), metrica({ total: 50, failures: 50, successes: 0 }))
-    expect(status.kind).toBe('desligada')
+    const status = toolStatus(ferramenta({ enabled: false }), janela(metrica({ total: 50, failures: 50, successes: 0 })))
+    expect(status?.kind).toBe('desligada')
   })
 
   it('separa falhando de instável — perder metade não é o mesmo que perder tudo', () => {
-    expect(toolStatus(ferramenta(), metrica({ total: 5, successes: 0, failures: 5 })).kind).toBe('falhando')
-    const instavel = toolStatus(ferramenta(), metrica({ total: 5, successes: 3, failures: 2 }))
-    expect(instavel.kind).toBe('instavel')
-    expect(instavel.label).toBe('2 falhas')
-    expect(toolStatus(ferramenta(), metrica({ total: 5, successes: 4, failures: 1 })).label).toBe('1 falha')
+    expect(toolStatus(ferramenta(), janela(metrica({ total: 5, successes: 0, failures: 5 })))?.kind).toBe('falhando')
+    const instavel = toolStatus(ferramenta(), janela(metrica({ total: 5, successes: 3, failures: 2 })))
+    expect(instavel?.kind).toBe('instavel')
+    expect(instavel?.label).toBe('2 falhas')
+    expect(toolStatus(ferramenta(), janela(metrica({ total: 5, successes: 4, failures: 1 })))?.label).toBe('1 falha')
   })
 
   it('só é "Respondendo" com execução de verdade e zero falha', () => {
-    const ok = toolStatus(ferramenta(), metrica())
-    expect(ok.kind).toBe('ok')
-    expect(ok.accent).toBe('green')
+    const ok = toolStatus(ferramenta(), janela(metrica()))
+    expect(ok?.kind).toBe('ok')
+    expect(ok?.accent).toBe('green')
   })
 
   it('a métrica é casada pelo NOME, que é a chave do backend', () => {

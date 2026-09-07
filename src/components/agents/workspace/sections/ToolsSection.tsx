@@ -60,7 +60,7 @@ function StatusChip({ status }: { status: ToolStatus }) {
   )
 }
 
-function IntegrationCard({ tool, status }: { tool: AgentTool; status: ToolStatus }) {
+function IntegrationCard({ tool, status }: { tool: AgentTool; status: ToolStatus | null }) {
   return (
     <div
       className={cn(
@@ -85,7 +85,11 @@ function IntegrationCard({ tool, status }: { tool: AgentTool; status: ToolStatus
           </p>
         </div>
       </div>
-      <StatusChip status={status} />
+      {/* Sem medição não há chip. O rodapé da seção explica o porquê UMA vez;
+          um chip por card dizendo "Sem uso na janela" seria cada card
+          afirmando uma constatação negativa sobre um período que quem lê não
+          pôde olhar. */}
+      {status && <StatusChip status={status} />}
     </div>
   )
 }
@@ -116,7 +120,9 @@ export function ToolsSection({
 
   const medindo = medicao?.agentId !== agent.id
   const metricas = medindo ? null : medicao.rows
-  const porNome = indexarMetricas(metricas ?? [])
+  // `null` viaja até o `toolStatus` em vez de virar um Map vazio: Map vazio
+  // seria "medi e não achei nada", que é outra afirmação.
+  const porNome = metricas ? indexarMetricas(metricas) : null
   const ferramentas = ordenarFerramentas(agent.tools)
 
   return (
@@ -135,7 +141,7 @@ export function ToolsSection({
             <IntegrationCard
               key={tool.id}
               tool={tool}
-              status={toolStatus(tool, metricas ? porNome.get(tool.name) : undefined)}
+              status={toolStatus(tool, metricas ? porNome : null)}
             />
           ))}
           {medindo && (
@@ -145,8 +151,10 @@ export function ToolsSection({
             </p>
           )}
           {!medindo && metricas === null && (
-            // Silêncio explicado. Sem isto, cinco cards sem chip pareceriam
-            // cinco integrações paradas.
+            // Silêncio explicado, e é ele que substitui os chips. Sem esta
+            // linha, cinco cards sem chip pareceriam cinco integrações
+            // paradas — que é exatamente o que o "Sem uso na janela" dizia,
+            // só que com a autoridade de um selo por card.
             <p className="px-1 text-2xs text-surface-600">
               Sem estado de execução: as métricas de ferramentas são visíveis só para
               administradores.
