@@ -381,11 +381,17 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(screen.getByRole('progressbar', { name: 'Progresso do Studio' })).toBeInTheDocument()
   }, SLOW)
 
-  it('/agents/handoffs mostra o esqueleto da Caixa de transferências', async () => {
+  it('/agents/handoffs monta a Caixa de transferências (A6/SCRUM-1017)', async () => {
     await renderAt('/agents/handoffs')
-    // Mesmo caso do /campaigns/new: esqueleto, mas paga o import da rota
-    // (330 ms medidos, ociosa). Regra 1 + 2 do bloco do SLOW.
-    expect(await screen.findByText(/Caixa de transferências em construção/i, {}, { timeout: SLOW })).toBeInTheDocument()
+    // Âncora ESTRUTURAL, não o texto novo. A lista é o único nó que renderiza
+    // nos QUATRO estados da tela — carregando, erro, vazia e com linhas —, e
+    // ancorar em texto obriga a escolher UM deles: qual sai depende de a
+    // chamada falhar ou não no ambiente de teste, que é justamente a
+    // fragilidade que o caso de /agents ainda carrega. O timeout vai nos DOIS
+    // relógios: `findBy*` tem janela própria de 1s e ignora o do `it`.
+    expect(
+      await screen.findByRole('listbox', { name: 'Transferências' }, { timeout: SLOW }),
+    ).toBeInTheDocument()
   }, SLOW)
 
   it('/agents/:id redireciona para /agents/:id/overview e monta o Workspace', async () => {
