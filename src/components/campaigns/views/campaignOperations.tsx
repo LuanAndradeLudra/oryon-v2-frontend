@@ -58,8 +58,15 @@ export interface CampaignOperations {
   requestCancel: (c: Campaign) => void
   requestDelete: (c: Campaign) => void
   sendNow: (c: Campaign) => void
-  /** Os dois `ConfirmModal`. A tela renderiza isto onde quiser. */
-  confirmations: ReactNode
+  /**
+   * Os dois `ConfirmModal`, SEPARADOS de propósito. Vinham num nó só, e o
+   * Board renderizava os dois sem ter gatilho para nenhum — dois modais
+   * montados e inalcançáveis. Separando, cada tela monta o que ela realmente
+   * alcança, e "esqueci de ligar o gatilho" vira uma variável não usada em vez
+   * de UI morta que ninguém vê.
+   */
+  cancelConfirmation: ReactNode
+  deleteConfirmation: ReactNode
 }
 
 export function useCampaignOperations(
@@ -150,29 +157,29 @@ export function useCampaignOperations(
     }
   }, [deleteTarget, refresh])
 
-  const confirmations = (
-    <>
-      <ConfirmModal
-        open={cancelTarget !== null}
-        onClose={() => setCancelTarget(null)}
-        onConfirm={confirmCancel}
-        title="Cancelar disparo"
-        description={`"${cancelTarget?.name ?? ''}" para de enviar e não pode ser retomado. Os contatos que ainda não receberam não vão receber.`}
-        confirmLabel="Cancelar disparo"
-        danger
-        loading={lifecycle.busy === cancelTarget?.id}
-      />
+  const cancelConfirmation = (
+    <ConfirmModal
+      open={cancelTarget !== null}
+      onClose={() => setCancelTarget(null)}
+      onConfirm={confirmCancel}
+      title="Cancelar disparo"
+      description={`"${cancelTarget?.name ?? ''}" para de enviar e não pode ser retomado. Os contatos que ainda não receberam não vão receber.`}
+      confirmLabel="Cancelar disparo"
+      danger
+      loading={lifecycle.busy === cancelTarget?.id}
+    />
+  )
 
-      <ConfirmModal
-        open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={confirmDelete}
-        title="Excluir rascunho"
-        description={`"${deleteTarget?.name ?? ''}" será apagado. Não dá para desfazer.`}
-        confirmLabel="Excluir"
-        danger
-      />
-    </>
+  const deleteConfirmation = (
+    <ConfirmModal
+      open={deleteTarget !== null}
+      onClose={() => setDeleteTarget(null)}
+      onConfirm={confirmDelete}
+      title="Excluir rascunho"
+      description={`"${deleteTarget?.name ?? ''}" será apagado. Não dá para desfazer.`}
+      confirmLabel="Excluir"
+      danger
+    />
   )
 
   return {
@@ -183,6 +190,7 @@ export function useCampaignOperations(
     requestCancel: setCancelTarget,
     requestDelete: setDeleteTarget,
     sendNow,
-    confirmations,
+    cancelConfirmation,
+    deleteConfirmation,
   }
 }
