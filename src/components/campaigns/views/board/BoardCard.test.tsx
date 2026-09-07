@@ -31,12 +31,18 @@ function campaign(over: Partial<Campaign> & { id: string }): Campaign {
   } as Campaign
 }
 
-const lifecycle = (available: boolean): CampaignLifecycle => ({
-  available, busy: null, run: vi.fn().mockResolvedValue(null),
+// `can` por AÇÃO: um stub que responde igual para as três não vê QUAL
+// capacidade cada cartão consulta.
+const lifecycle = (
+  disponiveis: boolean | ReadonlyArray<'pause' | 'resume' | 'cancel'>,
+): CampaignLifecycle => ({
+  can: (a) => (typeof disponiveis === 'boolean' ? disponiveis : disponiveis.includes(a)),
+  busy: null,
+  run: vi.fn().mockResolvedValue(null),
 })
 
 function renderCard(c: Campaign, opts: {
-  available?: boolean
+  available?: boolean | ReadonlyArray<'pause' | 'resume' | 'cancel'>
   perSecond?: number
   showChip?: boolean
   authorName?: string
@@ -141,6 +147,32 @@ describe('BoardCard · enviando e pausada', () => {
   it('sem a BE.2, nem Pausar nem Retomar aparecem', () => {
     renderCard(enviando, { available: false })
     expect(screen.queryByRole('button', { name: /Pausar/ })).not.toBeInTheDocument()
+  })
+
+  // No backend do 992, `pause` existe (`campaigns.controller.ts:143`) e
+  // `resume` não (`:150`). Cada cartão pergunta pela SUA capacidade: sem isso,
+  // a ausência de uma rota esconderia o botão da outra, que está no ar.
+  it('sem a rota de retomar, a pausada não oferece Retomar', () => {
+    renderCard(campaign({ id: 'p2', status: 'paused', stats: stats({ total: 100, sent: 40 }) }),
+      { available: ['pause', 'cancel'] })
+    expect(screen.queryByRole('button', { name: /Retomar/ })).not.toBeInTheDocument()
+  })
+
+  it('e a que está enviando continua com Pausar ao lado dela', () => {
+    renderCard(enviando, { available: ['pause', 'cancel'] })
+    expect(screen.getByRole('button', { name: /Pausar/ })).toBeInTheDocument()
+  })
+
+  // O preço, dito antes do clique — mesma frase da Agenda, mesma constante.
+  it('e o Pausar carrega a consequência de não haver volta', () => {
+    renderCard(enviando, { available: ['pause', 'cancel'] })
+    expect(screen.getByRole('button', { name: /Pausar/ }))
+      .toHaveAttribute('title', expect.stringContaining('só pode ser cancelado'))
+  })
+
+  it('com a rota de retomar no ar, o aviso some sozinho', () => {
+    renderCard(enviando, { available: ['pause', 'resume', 'cancel'] })
+    expect(screen.getByRole('button', { name: /Pausar/ })).not.toHaveAttribute('title')
   })
 })
 

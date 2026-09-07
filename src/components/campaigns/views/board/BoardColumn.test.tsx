@@ -11,7 +11,7 @@ import type { Campaign, CampaignStatus } from '@/types'
 
 const agora = new Date(2026, 8, 3, 18, 31)
 
-const lifecycle: CampaignLifecycle = { available: true, busy: null, run: vi.fn().mockResolvedValue(null) }
+const lifecycle: CampaignLifecycle = { can: () => true, busy: null, run: vi.fn().mockResolvedValue(null) }
 
 function campaign(id: string, status: CampaignStatus): Campaign {
   return {

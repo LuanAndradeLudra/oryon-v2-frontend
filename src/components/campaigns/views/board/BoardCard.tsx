@@ -26,7 +26,7 @@ import {
   DRAFT_REQUIREMENTS,
 } from '../agenda/campaignFacts'
 import type { SendRate } from '../agenda/useAgendaCampaigns'
-import type { CampaignLifecycle } from '../agenda/useCampaignLifecycle'
+import { PAUSE_SEM_VOLTA, type CampaignLifecycle } from '../agenda/useCampaignLifecycle'
 import { boardWhen, whenOf } from './boardTime'
 
 /**
@@ -287,14 +287,20 @@ function Action({ campaign, lifecycle, busy, onSendNow, sendingNow, navigate }: 
     )
   }
 
-  // Pausar/Retomar só quando a BE.2 responde: um botão que erra 404 é pior que
-  // um botão ausente.
-  if ((status === 'sending' || status === 'paused') && lifecycle.available) {
+  // Cada cartão pergunta pela SUA capacidade, não por uma bandeira comum: no
+  // backend do 992 `pause` existe (`campaigns.controller.ts:143`) e `resume`
+  // não (`:150`, só o comentário). Um botão que erra 404 é pior que um ausente,
+  // e uma bandeira única faria a ausência de um esconder o outro.
+  if (status === 'sending' || status === 'paused') {
     const retomar = status === 'paused'
+    if (!lifecycle.can(retomar ? 'resume' : 'pause')) return null
     return (
       <CardAction
         onClick={() => void lifecycle.run(retomar ? 'resume' : 'pause', campaign.id)}
         disabled={busy}
+        // Mesma frase da Agenda, da mesma constante: o preço de pausar não pode
+        // ser dito de dois jeitos em duas telas do mesmo dado.
+        title={retomar || lifecycle.can('resume') ? undefined : PAUSE_SEM_VOLTA}
       >
         {retomar
           ? <><Play className="w-3 h-3" aria-hidden="true" /> Retomar</>
@@ -315,17 +321,19 @@ function Action({ campaign, lifecycle, busy, onSendNow, sendingNow, navigate }: 
   return null
 }
 
-function CardAction({ children, onClick, disabled, accent }: {
+function CardAction({ children, onClick, disabled, accent, title }: {
   children: React.ReactNode
   onClick: () => void
   disabled?: boolean
   accent?: boolean
+  title?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={cn(
         'flex items-center gap-1 flex-shrink-0 rounded-[6px] px-1.5 py-0.5 -mr-1.5',
         'transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
