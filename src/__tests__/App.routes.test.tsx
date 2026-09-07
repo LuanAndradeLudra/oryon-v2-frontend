@@ -2,7 +2,7 @@
 // páginas) e o redirect /agents/:id → /agents/:id/overview. Não testa o
 // conteúdo real de AgentDetail/CampaignsTab (fora do escopo desta história —
 // são mockados aqui como stubs).
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
@@ -241,7 +241,47 @@ async function renderAt(path: string) {
 //   3. esqueleto que reusa chunk já importado não leva nada.
 const SLOW = 30_000
 
+/**
+ * Orçamento do aquecimento, e ele NÃO é o `SLOW`.
+ *
+ * O `beforeAll` abaixo paga o `import('@/App')` uma vez. Numa instalação
+ * limpa — que é a condição do CI — esse import transforma o grafo inteiro
+ * pela primeira vez, e foi MEDIDO estourando os 30 s do `SLOW`: quando isso
+ * acontece o vitest aborta o hook e o arquivo reporta "12 skipped", sem
+ * nomear asserção nenhuma.
+ *
+ * Por isso o hook tem constante própria, folgada. O custo de errar para cima
+ * é um travamento genuíno demorar a aparecer; o de errar para baixo é a suíte
+ * inteira do arquivo sumir por lentidão de máquina, que é pior e já aconteceu.
+ * Os 120 s são margem sobre UMA observação de estouro em instalação limpa,
+ * não um valor medido com precisão — se alguém medir melhor, aperte.
+ */
+const WARMUP = 120_000
+
 describe('App routes — SCRUM-994/W0.1', () => {
+  // ── Aquecimento do import ─────────────────────────────────────────────────
+  // `renderAt` faz `await import('@/App')`. Sem isto, quem paga a importação
+  // da árvore de rotas é o PRIMEIRO teste do arquivo, dentro do orçamento da
+  // asserção dele.
+  //
+  // O ganho NÃO é velocidade, é VARIÂNCIA. Medido no tip `9e7dc3a`,
+  // intercalado, 6 pares, com o `/campaigns` como controle interno:
+  //
+  //            mediana do `/agents`      faixa
+  //   sem      6.099 ms                  5.682 – 11.871  (2,1x)
+  //   com        911 ms                    816 –    977  (1,20x)
+  //
+  // 6 pares de 6 a favor. A margem contra o teto do `SLOW` vai de 2,5x para
+  // 31x — e era o teto, não a janela de 1 s do `findBy*`, que derrubava o
+  // `/agents` no `BASELINE-SUITE.md`. Timeout não consertava porque o custo
+  // estava DENTRO do orçamento da asserção.
+  //
+  // CONTRAPARTIDA, declarada: o custo mudou de lugar, não sumiu. Se este hook
+  // estourar, caem os 13 testes em vez de um. Ver o `WARMUP` acima.
+  beforeAll(async () => {
+    await import('@/App')
+  }, WARMUP)
+
   it('mantém /agents alcançável (URL antiga intacta)', async () => {
     await renderAt('/agents')
     // O timeout vai no `findBy*`, não só no `it`: `findBy*` tem janela PRÓPRIA
