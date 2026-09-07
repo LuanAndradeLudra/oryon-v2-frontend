@@ -30,7 +30,7 @@ function agent(over: Partial<AgentConfig> = {}): AgentConfig {
     objective: null,
     status: 'active',
     system_prompt: '',
-    handoff_rules: {} as AgentConfig['handoff_rules'],
+    handoff_rules: {},
     channels: {},
     wizard_config: {},
     test_count: 1,
