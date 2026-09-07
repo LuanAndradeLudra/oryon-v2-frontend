@@ -18,7 +18,7 @@ import { CampaignStatusChip } from '@/components/campaigns/shared/CampaignStatus
 import { CardFrame, CodeTag, MetaSeparator, type CardTone } from './cardChrome'
 import { funnelSegments, missingForDraft, sendingProgress, DRAFT_REQUIREMENTS } from '../campaignFacts'
 import type { SendRate } from '../useAgendaCampaigns'
-import type { CampaignLifecycle } from '../useCampaignLifecycle'
+import { PAUSE_SEM_VOLTA, type CampaignLifecycle } from '../useCampaignLifecycle'
 
 const TONE_BY_STATUS: Record<Campaign['status'], CardTone> = {
   draft: 'draft', scheduled: 'default', sending: 'sending', sent: 'default',
@@ -61,7 +61,7 @@ export function EventCard({
     }
     // Cancelar só aparece quando a BE.2 responde. Um item de menu que erra
     // 404 é pior que um item ausente.
-    if (lifecycle.available && CANCELLABLE.has(status)) {
+    if (lifecycle.can('cancel') && CANCELLABLE.has(status)) {
       items.push({ separator: true })
       items.push({
         label: 'Cancelar disparo', icon: XOctagon, danger: true,
@@ -157,24 +157,58 @@ function CardMiddle({ campaign, rate }: { campaign: Campaign; rate?: SendRate })
     const segments = funnelSegments(campaign)
     if (!segments) return null
     const s = campaign.stats
+    // Quem lidera a linha é a FALHA, não o zero. "0 enviadas" é verdade e
+    // mesmo assim engana: lê como "nada aconteceu" quando houve N tentativas
+    // que falharam. (Decisão do Maestro sobre a A2.)
+    const tudoFalhou = (s.sent ?? 0) === 0 && (s.failed ?? 0) > 0
     return (
       <div>
         <div className="flex justify-between text-[10.5px] mb-1 text-surface-500">
-          <span>{(s.sent ?? 0).toLocaleString('pt-BR')} enviadas</span>
-          <span className="font-mono tabular-nums">
-            {(s.read ?? 0).toLocaleString('pt-BR')} lidas
-            {typeof s.replied === 'number' && ` · ${s.replied.toLocaleString('pt-BR')} resp.`}
-          </span>
+          {tudoFalhou ? (
+            <span className="text-danger">
+              {(s.failed ?? 0).toLocaleString('pt-BR')} falharam · nenhuma enviada
+            </span>
+          ) : (
+            <>
+              <span>{(s.sent ?? 0).toLocaleString('pt-BR')} enviadas</span>
+              <span className="font-mono tabular-nums">
+                {(s.read ?? 0).toLocaleString('pt-BR')} lidas
+                {typeof s.replied === 'number' && ` · ${s.replied.toLocaleString('pt-BR')} resp.`}
+              </span>
+            </>
+          )}
         </div>
         <StackedBar segments={segments} height={6} />
       </div>
     )
   }
 
-  if (status === 'sending' || status === 'paused') {
+  // `failed` entra aqui, e é o achado C1 do Lince. O backend do 992 separa os
+  // dois casos DE PROPÓSITO (`campaigns.processor.ts:430-436`): `markFailed()`
+  // grava `{total: 0, sent: 0}` — ninguém recebeu —, e `haltedByLineOffline`
+  // grava os contadores REAIS. Sem esta linha os dois renderizavam byte por
+  // byte iguais, e a consequência não é estética: quem lê "Falhou" conclui que
+  // não saiu nada, recria a campanha, e as 3.367 pessoas que JÁ receberam
+  // recebem de novo. 8 das 15 campanhas em `failed` do tenant têm envio
+  // parcial real. O `sendingProgress` já discrimina os dois sozinho — ele
+  // devolve `null` justamente quando `total <= 0`, que é o que `markFailed`
+  // grava —, então o pré-voo continua sem miolo e a parcial ganha a barra.
+  //
+  // Isto NÃO reabre a decisão 4: o que faltava não era o MOTIVO da falha, era
+  // o contador que já está no registro, sem backend nenhum a esperar.
+  //
+  // `cancelled` entra junto, e essa metade VOCÊ NÃO PEDIU: o risco é o mesmo,
+  // e o argumento é o seu, do nome da coluna do Board — "uma campanha cancelada
+  // NO MEIO DO ENVIO já entregou parte dos destinatários". Quem lê "Cancelada"
+  // sem contador conclui que não saiu nada e recria, exatamente como no
+  // `failed`. Não briga com a decisão 10: ela diz que a cancelada fica
+  // esmaecida e SEM AÇÕES, e um contador é informação, não ação. Para reverter
+  // é tirar `|| status === 'cancelled'` daqui e do `parou`.
+  if (status === 'sending' || status === 'paused' || status === 'failed' || status === 'cancelled') {
     const progress = sendingProgress(campaign)
     if (!progress) return null
     const parada = status === 'paused'
+    const parou = status === 'failed' || status === 'cancelled'
     return (
       <div>
         <div className="flex justify-between text-[10.5px] mb-1 text-surface-500">
@@ -184,12 +218,13 @@ function CardMiddle({ campaign, rate }: { campaign: Campaign; rate?: SendRate })
           {/* Taxa MEDIDA entre dois polls. Some no primeiro tique e quando a
               fila para. Não há tempo restante: taxa é medida, tempo restante
               seria extrapolação com a mesma tipografia de um dado real. */}
-          {rate && (
+          {rate && !parou && (
             <span className="font-mono tabular-nums">
               {formatRate(rate.perSecond)} msg/s
             </span>
           )}
           {parada && <span className="text-status-paused">fila parada</span>}
+          {parou && <span className="text-danger">parou aqui</span>}
         </div>
         <div className="h-2 rounded-full bg-surface-700 overflow-hidden">
           {/* Barra âmbar e sem transição quando pausada: verde-marca correndo
@@ -198,7 +233,13 @@ function CardMiddle({ campaign, rate }: { campaign: Campaign; rate?: SendRate })
           <div
             className={cn(
               'h-full rounded-full',
-              parada ? 'bg-status-paused' : 'bg-brand-500 transition-[width] duration-500',
+              // A faixa cheia é o que REALMENTE foi entregue, então ela fica
+              // verde-marca também na falhada — pintá-la de vermelho negaria
+              // 601 entregas que aconteceram. O que muda é a transição: só
+              // uma fila em movimento anima.
+              parada ? 'bg-status-paused'
+                : parou ? 'bg-brand-500'
+                : 'bg-brand-500 transition-[width] duration-500',
             )}
             style={{ width: `${progress.pct}%` }}
             role="progressbar"
@@ -229,7 +270,8 @@ function CardMiddle({ campaign, rate }: { campaign: Campaign; rate?: SendRate })
     )
   }
 
-  // `failed` não tem miolo: a campanha não guarda motivo de falha e não há
+  // `failed` de pré-voo (`total: 0`) cai no `return null` lá em cima e não tem
+  // miolo, e é o certo: a campanha não guarda motivo de falha e não há
   // rota de reenvio (CONTRATOS §BE.2 não abre `failed → sending`). Um botão
   // que não sabe por que falhou nem consegue trocar de linha seria teatro —
   // `failureReason` + retry ficaram registrados como item de Onda 2
@@ -285,11 +327,12 @@ function CardActions({
   if (status === 'sending') {
     return (
       <>
-        {lifecycle.available && (
+        {lifecycle.can('pause') && (
           <Button
             size="sm" variant="secondary" loading={busy}
             leftIcon={<Pause className="w-3.5 h-3.5" />}
             onClick={() => void lifecycle.run('pause', campaign.id)}
+            title={lifecycle.can('resume') ? undefined : PAUSE_SEM_VOLTA}
           >
             Pausar
           </Button>
@@ -302,7 +345,7 @@ function CardActions({
   if (status === 'paused') {
     return (
       <>
-        {lifecycle.available && (
+        {lifecycle.can('resume') && (
           <Button
             size="sm" variant="secondary" loading={busy}
             leftIcon={<Play className="w-3.5 h-3.5" />}

@@ -112,6 +112,16 @@ export function useAgendaCampaigns(): AgendaData {
     return () => window.clearInterval(id)
   }, [hasSending, load])
 
+  // A outra metade da convenção da A1 (`useDeckData.ts:298-308`), e o achado B2
+  // do Lince: pular o tique com a aba escondida ECONOMIZA rede, mas sozinho
+  // deixa a tela com dado velho por até 60 s no instante em que a pessoa volta
+  // — numa tela onde pode haver disparo EM CURSO. Quem pula precisa recuperar.
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) void load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [load])
+
   return { campaigns, loading, error, truncated, total, rates, refresh: load }
 }
 

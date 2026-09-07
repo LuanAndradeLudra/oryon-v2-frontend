@@ -5,9 +5,8 @@
 // exigiria BE.3 + BE.1. Decisão 8 do Maestro: fica a metade computável, com o
 // rascunho parado como segunda opção quando não há concentração.
 import { format, isSameDay, differenceInCalendarDays } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import type { Campaign } from '@/types'
-import { executionDate } from './agendaGrouping'
+import { executionDate, weekdayShort } from './agendaGrouping'
 
 export interface AgendaInsight {
   title: string
@@ -58,16 +57,27 @@ function crowdedDayInsight(campaigns: Campaign[], now: Date): AgendaInsight | nu
       while (end + 1 < times.length && withinWindow(first, times[end + 1])) end++
       const last = times[end]
       const count = end - i + 1
-      const dayLabel = isSameDay(first, now)
-        ? 'Hoje'
-        : format(first, 'EEEE', { locale: ptBR })
+      // B3: a forma curta, a mesma do cabeçalho do dia. O `format('EEEE')` cru
+      // escrevia "Terça-feira está carregada" ao lado de um cabeçalho "Terça",
+      // para a mesma data — duas formas do mesmo dia na mesma tela.
+      const dayLabel = isSameDay(first, now) ? 'Hoje' : weekdayShort(first)
       return {
         title: `${capitalize(dayLabel)} está carregada`,
-        description: `${count} disparos entre ${format(first, 'HH')}h e ${format(last, 'HH')}h. Vale escalonar um deles para outro dia.`,
+        description: `${count} disparos ${spanPhrase(first, last)}. Vale escalonar um deles para outro dia.`,
       }
     }
   }
   return null
+}
+
+/**
+ * B4: disparos em lote caem na mesma hora (18:00, 18:10, 18:20) e "entre 18h e
+ * 18h" não é faixa nenhuma. Uma janela de uma hora só pede outra frase.
+ */
+function spanPhrase(first: Date, last: Date): string {
+  const h1 = format(first, 'HH')
+  const h2 = format(last, 'HH')
+  return h1 === h2 ? `por volta das ${h1}h` : `entre ${h1}h e ${h2}h`
 }
 
 /** Rascunho esquecido — a segunda melhor opção quando não há aperto de horário. */
