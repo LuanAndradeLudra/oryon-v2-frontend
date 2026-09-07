@@ -38,7 +38,7 @@ describe('useCampaignLifecycle — a ação nunca falha calada', () => {
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('pausar'), 'error')
     expect(onUpdated).not.toHaveBeenCalled()
     // E o controle continua disponível: um 500 não é "o endpoint não existe".
-    expect(result.current.available).toBe(true)
+    expect(result.current.can('pause')).toBe(true)
     expect(result.current.busy).toBeNull()
   })
 
@@ -50,12 +50,59 @@ describe('useCampaignLifecycle — a ação nunca falha calada', () => {
   })
 
   it('404 continua sendo o caminho de "ainda não existe", não o de erro', async () => {
-    resume.mockRejectedValue(Object.assign(new Error('nope'), { response: { status: 404 } }))
+    cancel.mockRejectedValue(Object.assign(new Error('nope'), { response: { status: 404 } }))
     const { result } = renderHook(() => useCampaignLifecycle(vi.fn()))
-    await act(async () => { await result.current.run('resume', 'c1') })
+    await act(async () => { await result.current.run('cancel', 'c1') })
 
-    expect(result.current.available).toBe(false)
+    expect(result.current.can('cancel')).toBe(false)
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('próxima atualização'), 'info')
+  })
+})
+
+// `POST /campaigns/:id/resume` não existe no backend do 992: o
+// `campaigns.controller.ts:150` tem só o comentário dizendo que ele saiu do PR.
+// `cancel` (:136) e `pause` (:143) existem.
+describe('useCampaignLifecycle — a rota que não existe', () => {
+  beforeEach(() => {
+    pause.mockReset(); resume.mockReset(); cancel.mockReset(); showToast.mockReset()
+  })
+
+  it('não oferece "Retomar" nem tenta a rota, porque a capacidade não existe', async () => {
+    const { result } = renderHook(() => useCampaignLifecycle(vi.fn()))
+    expect(result.current.can('resume')).toBe(false)
+
+    await act(async () => { await result.current.run('resume', 'c1') })
+    expect(resume).not.toHaveBeenCalled()
+    // Nem toast: um botão que não está na tela não tem por que explicar nada.
+    expect(showToast).not.toHaveBeenCalled()
+  })
+
+  it('e as duas que EXISTEM continuam de pé ao lado dela', () => {
+    const { result } = renderHook(() => useCampaignLifecycle(vi.fn()))
+    expect(result.current.can('pause')).toBe(true)
+    expect(result.current.can('cancel')).toBe(true)
+  })
+
+  // O defeito que a bandeira única produzia: pausar funcionava, o clique em
+  // "Retomar" respondia 404, e a campanha ficava PRESA — sem retomar, porque a
+  // rota não existe, e sem cancelar, porque o botão sumia por causa do erro de
+  // OUTRA rota. Só um refresh soltava.
+  it('um 404 numa ação NÃO derruba as outras duas', async () => {
+    pause.mockRejectedValue(Object.assign(new Error('nope'), { response: { status: 404 } }))
+    const { result } = renderHook(() => useCampaignLifecycle(vi.fn()))
+    await act(async () => { await result.current.run('pause', 'c1') })
+
+    expect(result.current.can('pause')).toBe(false)
+    expect(result.current.can('cancel')).toBe(true)
+  })
+
+  it('o aviso nomeia SÓ a ação que saiu do ar', async () => {
+    pause.mockRejectedValue(Object.assign(new Error('nope'), { response: { status: 404 } }))
+    const { result } = renderHook(() => useCampaignLifecycle(vi.fn()))
+    await act(async () => { await result.current.run('pause', 'c1') })
+
+    expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/^Pausar um disparo/), 'info')
+    expect(showToast).not.toHaveBeenCalledWith(expect.stringContaining('cancelar'), 'info')
   })
 
   it('sucesso entrega a campanha atualizada ao chamador', async () => {
