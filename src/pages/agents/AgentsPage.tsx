@@ -10,7 +10,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bot, Sparkles } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -26,35 +25,9 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { CommandDeck } from '@/components/agents/deck/CommandDeck'
 import { DeckToolbar, type AgentsView } from '@/components/agents/deck/DeckToolbar'
 import { AgentsListView } from '@/components/agents/list/AgentsListView'
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
-// Acento violeta — mesmo tom já usado em todo o produto pra sinalizar "isto é
-// IA" (ex.: CHIP.violet em ConversationActivitySection/timelineSources pros
-// eventos do agente), em vez do brand-600 genérico que qualquer CTA usa.
-function NoAgentsState({ onNew }: { onNew: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8">
-      <div
-        className="w-20 h-20 rounded-3xl flex items-center justify-center"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--color-accent-violet) 10%, transparent)', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--color-accent-violet) 20%, transparent)' }}
-      >
-        <Bot className="w-10 h-10" style={{ color: 'color-mix(in srgb, var(--color-accent-violet) 65%, transparent)' }} />
-      </div>
-      <div>
-        <p className="text-base font-semibold text-surface-200">Nenhum agente ainda</p>
-        <p className="text-sm text-surface-500 mt-1">crie o primeiro pra começar a atender no WhatsApp</p>
-      </div>
-      <button
-        onClick={onNew}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-medium transition-colors shadow-lg shadow-brand-900/30"
-      >
-        <Sparkles className="w-4 h-4" />
-        Criar primeiro agente
-      </button>
-    </div>
-  )
-}
+import { ArchetypeGallery } from '@/components/agents/archetypes/ArchetypeGallery'
+import { applyArchetype } from '@/components/agents/archetypes/applyArchetype'
+import type { Archetype } from '@/components/agents/archetypes/archetypes'
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -64,15 +37,32 @@ export function AgentsPage() {
   const [agents, setAgents] = useState<AgentConfig[]>([])
   const [loadingList, setLoadingList] = useState(true)
   const [showWizard, setShowWizard] = useState(false)
+  // Arquétipo escolhido na galeria do estado vazio (A5/SCRUM-1016). É o
+  // rascunho de partida do Studio, e não um modo da página: some assim que o
+  // wizard fecha, para que o próximo "Novo agente" da barra abra em branco.
+  const [arquetipo, setArquetipo] = useState<Archetype | null>(null)
   const [createdAgent, setCreatedAgent] = useState<AgentConfigWithTools | null>(null)
   const [view, setView] = useState<AgentsView>('deck')
   const banner = useDesktopRecommendedBanner('agents')
   const isMobile = useIsMobile()
   const navigate = useNavigate()
 
+  // Entrada ÚNICA do Studio, com ou sem arquétipo. O `?? null` não é defensivo:
+  // é ele que impede o arquétipo de grudar. Abrir sem argumento — o "Novo
+  // agente" da barra — precisa APAGAR a escolha anterior, senão a segunda
+  // criação nasce com o rascunho da primeira. Zerar no fechamento em vez de na
+  // abertura não protegeria: quem decide o rascunho é quem abre.
+  const abrirStudio = useCallback((escolhido?: Archetype) => {
+    setArquetipo(escolhido ?? null)
+    setShowWizard(true)
+  }, [])
+
+  // "Novo agente" na barra abre em branco de propósito (decisão 5 do
+  // `coord/A5-plano.md`): a galeria é o começo guiado de quem ainda não tem
+  // agente nenhum; quem já tem sabe o que quer.
   useRegisterTopBarActions(
-    <DeckToolbar view={view} onViewChange={setView} onNewAgent={() => setShowWizard(true)} />,
-    [view],
+    <DeckToolbar view={view} onViewChange={setView} onNewAgent={() => abrirStudio()} />,
+    [view, abrirStudio],
   )
 
   const handleStatusChange = useCallback(async (id: string, status: AgentConfig['status']) => {
@@ -119,9 +109,8 @@ export function AgentsPage() {
   }
 
   // Ponto ÚNICO do estado vazio da rota: vale para as duas views, porque
-  // "nenhum agente no tenant" é condição da tela, não de uma delas. É aqui que
-  // a A5 (SCRUM-1016) troca o `NoAgentsState` pela galeria de arquétipos —
-  // uma linha, sem mexer em nenhum outro arquivo.
+  // "nenhum agente no tenant" é condição da tela, não de uma delas. Desde a A5
+  // (SCRUM-1016) ele é a galeria de arquétipos, e não mais um vazio com botão.
   const semAgentes = !loadingList && agents.length === 0
 
   return (
@@ -133,7 +122,7 @@ export function AgentsPage() {
       />
 
       {semAgentes ? (
-        <NoAgentsState onNew={() => setShowWizard(true)} />
+        <ArchetypeGallery onEscolher={abrirStudio} />
       ) : view === 'deck' ? (
         <CommandDeck
           agents={agents}
@@ -165,6 +154,7 @@ export function AgentsPage() {
           {showWizard && (
             <AgentBuilderWizard
               key="agent-builder-wizard"
+              inicial={arquetipo ? applyArchetype(arquetipo) : undefined}
               onClose={() => setShowWizard(false)}
               onCreated={handleWizardComplete}
             />

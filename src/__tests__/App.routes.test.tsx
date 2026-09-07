@@ -248,7 +248,7 @@ describe('App routes — SCRUM-994/W0.1', () => {
     // de 1s e ignora o timeout do teste. Com o SLOW só no `it`, esta asserção
     // falhava em ~1s e o teste inteiro morria — e continuava listada no
     // baseline como falha esperada, parecendo consertada.
-    expect(await screen.findByText(/Nenhum agente ainda/i, {}, { timeout: SLOW })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 2, name: /Que tipo de atendimento você quer automatizar/i }, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
   it('mantém /campaigns alcançável, view padrão = list (CampaignsPage → ListView real, SCRUM-997/W0.4)', async () => {
