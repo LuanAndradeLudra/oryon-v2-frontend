@@ -8,16 +8,32 @@
 // timestamp que existe de verdade. Mapeio os 3 e paro por aí — inventar ícone
 // para evento que o backend não emite não deixaria o feed mais completo.
 
-import { MessageCircle, GitBranch, Undo2 } from 'lucide-react'
+import { MessageCircle, GitBranch, Undo2, Circle } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import type { AgentFeedItem, AgentFeedItemKind } from '@/types/agentsOps'
 import { relativeTime } from './deckFormat'
 
-const KIND_STYLE: Record<AgentFeedItemKind, { icon: ReactNode; color: string; label: string }> = {
+interface FeedStyle { icon: ReactNode; color: string; label: string }
+
+const KIND_STYLE: Record<AgentFeedItemKind, FeedStyle> = {
   replied: { icon: <MessageCircle />, color: 'var(--color-accent-blue)', label: 'respondeu' },
   handoff_requested: { icon: <GitBranch />, color: 'var(--color-accent-rose)', label: 'pediu transferência' },
   handoff_returned: { icon: <Undo2 />, color: 'var(--color-accent-green)', label: 'retomou' },
+}
+
+/** Kind que o mapa não conhece cai aqui em vez de derrubar a coluna.
+ *
+ *  O `Record<AgentFeedItemKind, …>` só garante o mapa em tempo de compilação —
+ *  o `kind` chega do BE.7 em runtime, e o dia em que o backend emitir um quarto
+ *  tipo (o mockup desenha 6, o contrato entrega 3) o índice devolveria
+ *  `undefined` e o `style.color` levaria o feed inteiro junto. Um evento novo
+ *  aparecendo sem ícone é degradação; a coluna sumir é falha. O texto do evento
+ *  vem pronto do backend, então a linha continua legível sem o ícone. */
+const KIND_DESCONHECIDO: FeedStyle = {
+  icon: <Circle />,
+  color: 'var(--color-surface-500)',
+  label: 'registrou',
 }
 
 export function LiveFeed({ items }: { items: AgentFeedItem[] }) {
@@ -28,7 +44,7 @@ export function LiveFeed({ items }: { items: AgentFeedItem[] }) {
   return (
     <ul className="flex flex-col">
       {items.map((item, i) => {
-        const style = KIND_STYLE[item.kind]
+        const style = KIND_STYLE[item.kind] ?? KIND_DESCONHECIDO
         return (
           <li
             key={`${item.agentId}-${item.at}-${i}`}
