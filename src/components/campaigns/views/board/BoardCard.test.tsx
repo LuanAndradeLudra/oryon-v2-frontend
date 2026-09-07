@@ -3,7 +3,7 @@
 // envio as porcentagens não viram 0%. O resto do mockup que não tem dado está
 // listado em coord/D1b-plano.md §5.
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { BoardCard } from './BoardCard'
 import type { CampaignLifecycle } from '../agenda/useCampaignLifecycle'
@@ -47,6 +47,7 @@ function renderCard(c: Campaign, opts: {
   showChip?: boolean
   authorName?: string
   lineName?: string
+  onRequestCancel?: (c: Campaign) => void
 } = {}) {
   return render(
     <MemoryRouter>
@@ -59,6 +60,7 @@ function renderCard(c: Campaign, opts: {
         lineName={opts.lineName}
         showChip={opts.showChip}
         onSendNow={vi.fn()}
+        onRequestCancel={opts.onRequestCancel ?? vi.fn()}
       />
     </MemoryRouter>,
   )
@@ -156,6 +158,34 @@ describe('BoardCard · enviando e pausada', () => {
     renderCard(campaign({ id: 'p2', status: 'paused', stats: stats({ total: 100, sent: 40 }) }),
       { available: ['pause', 'cancel'] })
     expect(screen.queryByRole('button', { name: /Retomar/ })).not.toBeInTheDocument()
+  })
+
+  // O beco que o Nível achou: o aviso do Pausar promete que a pausada "só pode
+  // ser cancelada", a pessoa pausa NO QUADRO, e o cartão ficava sem ação
+  // nenhuma. Sem caminho para a frente, a ação vira a SAÍDA.
+  it('e oferece a SAÍDA no lugar: a pausada pode ser cancelada aqui', () => {
+    const pedido = vi.fn()
+    const pausada = campaign({ id: 'p3', status: 'paused', stats: stats({ total: 100, sent: 40 }) })
+    renderCard(pausada, { available: ['pause', 'cancel'], onRequestCancel: pedido })
+
+    const botao = screen.getByRole('button', { name: /Cancelar/ })
+    fireEvent.click(botao)
+    expect(pedido).toHaveBeenCalledWith(pausada)
+  })
+
+  it('com a rota de retomar no ar, a ação volta a ser seguir em frente', () => {
+    renderCard(campaign({ id: 'p4', status: 'paused', stats: stats({ total: 100, sent: 40 }) }),
+      { available: ['pause', 'resume', 'cancel'] })
+    expect(screen.getByRole('button', { name: /Retomar/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Cancelar/ })).not.toBeInTheDocument()
+  })
+
+  // Sem NENHUMA das rotas não há saída a oferecer — e um botão que erra 404 é
+  // pior que um ausente.
+  it('sem BE.2 nenhuma, a pausada não promete saída que não existe', () => {
+    renderCard(campaign({ id: 'p5', status: 'paused', stats: stats({ total: 100, sent: 40 }) }),
+      { available: [] })
+    expect(screen.queryByRole('button', { name: /Cancelar|Retomar/ })).not.toBeInTheDocument()
   })
 
   it('e a que está enviando continua com Pausar ao lado dela', () => {

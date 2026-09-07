@@ -104,6 +104,7 @@ export function BoardShell() {
             authorOf={authorOf}
             lineOf={ops.lineNameOf}
             onSendNow={ops.sendNow}
+            onRequestCancel={ops.requestCancel}
             sendingNowId={ops.sendingNowId}
           />
         ))}
@@ -111,7 +112,9 @@ export function BoardShell() {
 
       <WindowNotice truncated={truncated} shown={campaigns.length} total={total} />
 
-      {ops.confirmations}
+      {/* SO o de cancelar: o quadro nao tem gatilho para excluir rascunho, e
+          modal montado sem alcance e UI morta. */}
+      {ops.cancelConfirmation}
     </div>
   )
 }

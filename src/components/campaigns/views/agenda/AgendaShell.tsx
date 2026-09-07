@@ -147,7 +147,9 @@ export function AgendaShell() {
         />
       )}
 
-      {ops.confirmations}
+      {/* A Agenda alcança os dois: cancelar pelo kebab, excluir no rascunho. */}
+      {ops.cancelConfirmation}
+      {ops.deleteConfirmation}
     </div>
   )
 }

@@ -13,7 +13,7 @@
 // Sem kebab, como no mockup: a linha de rodapé tem UMA ação. Cancelar e
 // excluir continuam na Agenda e na Lista — o quadro é uma das três vistas do
 // mesmo dado, não precisa carregar todas as ações.
-import { ArrowRight, BarChart3, Clock, Pause, Play, Send } from 'lucide-react'
+import { ArrowRight, BarChart3, Clock, Pause, Play, Send, XOctagon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { StackedBar } from '@/components/ui/StackedBar'
@@ -54,6 +54,8 @@ export interface BoardCardProps {
   authorName?: string
   lineName?: string
   onSendNow: (c: Campaign) => void
+  /** A saida do beco: pedir cancelamento abre o `ConfirmModal` do shell. */
+  onRequestCancel: (c: Campaign) => void
   sendingNow?: boolean
   /**
    * O chip de status aparece SÓ nas colunas que juntam mais de um status
@@ -235,7 +237,7 @@ function Body({ campaign, at, now, rate }: BoardCardProps & { at: Date | null })
 
 /** `.bcard .bf` — linha de rodapé: contexto à esquerda, UMA ação à direita. */
 function Footer({
-  campaign, lifecycle, authorName, lineName, onSendNow, sendingNow, at, now,
+  campaign, lifecycle, authorName, lineName, onSendNow, onRequestCancel, sendingNow, at, now,
 }: BoardCardProps & { at: Date | null }) {
   const navigate = useNavigate()
   const { status } = campaign
@@ -252,17 +254,19 @@ function Footer({
       <span className="truncate">{left}</span>
       <Action
         campaign={campaign} lifecycle={lifecycle} busy={busy}
-        onSendNow={onSendNow} sendingNow={sendingNow} navigate={navigate}
+        onSendNow={onSendNow} onRequestCancel={onRequestCancel}
+        sendingNow={sendingNow} navigate={navigate}
       />
     </div>
   )
 }
 
-function Action({ campaign, lifecycle, busy, onSendNow, sendingNow, navigate }: {
+function Action({ campaign, lifecycle, busy, onSendNow, onRequestCancel, sendingNow, navigate }: {
   campaign: Campaign
   lifecycle: CampaignLifecycle
   busy: boolean
   onSendNow: (c: Campaign) => void
+  onRequestCancel: (c: Campaign) => void
   sendingNow?: boolean
   navigate: ReturnType<typeof useNavigate>
 }) {
@@ -293,20 +297,36 @@ function Action({ campaign, lifecycle, busy, onSendNow, sendingNow, navigate }: 
   // e uma bandeira única faria a ausência de um esconder o outro.
   if (status === 'sending' || status === 'paused') {
     const retomar = status === 'paused'
-    if (!lifecycle.can(retomar ? 'resume' : 'pause')) return null
-    return (
-      <CardAction
-        onClick={() => void lifecycle.run(retomar ? 'resume' : 'pause', campaign.id)}
-        disabled={busy}
-        // Mesma frase da Agenda, da mesma constante: o preço de pausar não pode
-        // ser dito de dois jeitos em duas telas do mesmo dado.
-        title={retomar || lifecycle.can('resume') ? undefined : PAUSE_SEM_VOLTA}
-      >
-        {retomar
-          ? <><Play className="w-3 h-3" aria-hidden="true" /> Retomar</>
-          : <><Pause className="w-3 h-3" aria-hidden="true" /> Pausar</>}
-      </CardAction>
-    )
+    // O rodapé tem UMA ação, então ela é a de SEGUIR EM FRENTE: pausar o que
+    // corre, retomar o que parou.
+    if (lifecycle.can(retomar ? 'resume' : 'pause')) {
+      return (
+        <CardAction
+          onClick={() => void lifecycle.run(retomar ? 'resume' : 'pause', campaign.id)}
+          disabled={busy}
+          // Mesma frase da Agenda, da mesma constante: o preço de pausar não
+          // pode ser dito de dois jeitos em duas telas do mesmo dado.
+          title={retomar || lifecycle.can('resume') ? undefined : PAUSE_SEM_VOLTA}
+        >
+          {retomar
+            ? <><Play className="w-3 h-3" aria-hidden="true" /> Retomar</>
+            : <><Pause className="w-3 h-3" aria-hidden="true" /> Pausar</>}
+        </CardAction>
+      )
+    }
+    // Sem caminho para a frente, a ação vira a SAÍDA — e é o beco que o Nível
+    // achou. O aviso do Pausar promete que a pausada "só pode ser cancelada", a
+    // pessoa pausa AQUI, e o cartão ficava sem ação nenhuma: a frase era
+    // verdadeira sobre o sistema e falsa sobre esta tela, dita ANTES do clique
+    // que criava o beco. Uma tela que oferece a ação tem de oferecer a saída.
+    if (lifecycle.can('cancel')) {
+      return (
+        <CardAction onClick={() => onRequestCancel(campaign)} disabled={busy}>
+          <XOctagon className="w-3 h-3" aria-hidden="true" /> Cancelar
+        </CardAction>
+      )
+    }
+    return null
   }
 
   if (status === 'sent' || status === 'failed') {

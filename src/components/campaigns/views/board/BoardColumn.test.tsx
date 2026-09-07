@@ -39,6 +39,7 @@ function renderColumn(cs: Campaign[], id: BoardColumnId, expanded = false) {
         authorOf={() => undefined}
         lineOf={() => undefined}
         onSendNow={vi.fn()}
+        onRequestCancel={vi.fn()}
         sendingNowId={null}
       />
     </MemoryRouter>,
