@@ -5,7 +5,7 @@ import type { AgentConfigWithTools } from '@/services/agentsApi'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { WizardProgress } from '@/components/ui/WizardProgress'
 import { STEP_TEACHINGS } from '@/components/agents/agentBuilderTeachings'
-import { STEP_LABELS } from './types'
+import { STEP_LABELS, type WizardData } from './types'
 import { useStudioDraft } from './useStudioDraft'
 import { Step1Identidade } from './steps/Step1Identidade'
 import { Step2Personalidade } from './steps/Step2Personalidade'
@@ -54,9 +54,21 @@ function BackgroundOrbs() {
 interface AgentBuilderWizardProps {
   onClose: () => void
   onCreated: (agent: AgentConfigWithTools) => void
+  /**
+   * Rascunho de partida (A5/SCRUM-1016): quando a pessoa escolhe um arquétipo
+   * na galeria do estado vazio, o Studio abre com tom, escopo, regras e
+   * capacidades já preenchidos. Ausente = rascunho em branco, que é como o
+   * "Novo agente" da barra sempre abriu.
+   *
+   * Só o PRIMEIRO render conta — `useStudioDraft` usa inicializador preguiçoso
+   * de propósito, senão trocar de arquétipo sobrescreveria o que já foi
+   * digitado. Trocar de arquétipo é remontar o wizard, não mudar esta prop; a
+   * `AgentsPage` remonta porque desmonta o wizard ao fechar.
+   */
+  inicial?: Partial<WizardData>
 }
 
-export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardProps) {
+export function AgentBuilderWizard({ onClose, onCreated, inicial }: AgentBuilderWizardProps) {
   const {
     data, setData,
     step, goNext, goBack, jumpToStep,
@@ -65,7 +77,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
     publishing, publishError,
     publish,
     generating, generateError, generatePrompt,
-  } = useStudioDraft()
+  } = useStudioDraft(inicial)
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
 
   const handleCloseClick = () => {

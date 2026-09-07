@@ -160,8 +160,20 @@ describe('AudienceBlock', () => {
 
     expect(await screen.findByText(/de 323 que atendem/)).toBeInTheDocument()
     expect(screen.queryByText('−0')).not.toBeInTheDocument()
-    // Ligado, a contagem aparece — o porteiro não pode esconder o que vale.
+    // A contagem do fixture também não aparece: com a exclusão desligada não
+    // há o que contar, seja 0 ou 9.
     expect(screen.queryByText('−9')).not.toBeInTheDocument()
+  })
+
+  it('mas MOSTRA a contagem quando a exclusão está ligada', async () => {
+    // O par do teste acima, e o que faltava: sem ele, a correção que exagera
+    // — esconder a contagem SEMPRE — passaria verde nos dois casos. O
+    // porteiro não pode esconder o que vale.
+    evaluate.mockResolvedValue({ data: evaluation })
+
+    render(<AudienceBlock value={draft()} onChange={vi.fn()} />)
+
+    expect(await screen.findByText('−9')).toBeInTheDocument()
   })
 
   it('não chama a API antes de haver alguma condição montada', async () => {
