@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import type { WhatsAppTemplate } from '@/types'
+import type { Contact, WhatsAppTemplate } from '@/types'
 
 const setAudience = vi.fn()
 const setSelectedTemplate = vi.fn()
@@ -64,11 +64,18 @@ const TPL = (over: Partial<WhatsAppTemplate> = {}): WhatsAppTemplate => ({
 
 const TEMPLATES = [TPL(), TPL({ id: 'tpl_2', name: 'lembrete_consulta' })]
 
+// A prévia do telefone renderiza com um contato REAL da base carregada pelo
+// núcleo; o mock precisa entregá-la, senão a página não monta.
+const CONTACTS = [
+  { id: 'c1', displayName: 'Marina Torres', waId: '5511999990001' },
+  { id: 'c2', displayName: 'João Prado',    waId: '5511999990002' },
+] as unknown as Contact[]
+
 beforeEach(() => {
   setAudience.mockReset()
   setSelectedTemplate.mockReset()
   Object.assign(draftState, {
-    templates: TEMPLATES, loadingTemplates: false,
+    templates: TEMPLATES, loadingTemplates: false, contacts: CONTACTS,
     selectedTemplate: null, setSelectedTemplate,
     campaignName: '', setCampaignName: vi.fn(),
     mappings: [], updateMapping: vi.fn(), mappingsComplete: true, fieldDefs: [],

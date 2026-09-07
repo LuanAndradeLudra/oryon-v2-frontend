@@ -15,6 +15,7 @@ import { FileText, Users, SlidersHorizontal, CalendarClock, X } from 'lucide-rea
 import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { ComposerBlock } from '@/components/campaigns/composer/ComposerBlock'
+import { ComposerPhonePreview } from '@/components/campaigns/composer/ComposerPhonePreview'
 import { ComposerBar } from '@/components/campaigns/composer/ComposerBar'
 import { ReadinessChecklist } from '@/components/campaigns/composer/ReadinessChecklist'
 import { BlockTemplate } from '@/components/campaigns/composer/blocks/BlockTemplate'
@@ -52,7 +53,7 @@ export function CampaignComposerPage() {
   const [openBlock, setOpenBlock] = useState<BlockId | null>('template')
 
   const {
-    templates, loadingTemplates, selectedTemplate, setSelectedTemplate,
+    templates, loadingTemplates, selectedTemplate, setSelectedTemplate, contacts,
     campaignName, setCampaignName, mappings, updateMapping, mappingsComplete, fieldDefs,
     scheduleMode, setScheduleMode, scheduledAt, setScheduledAt,
     waNumbers, whatsappNumberId, setWhatsappNumberId,
@@ -158,101 +159,112 @@ export function CampaignComposerPage() {
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-7 pb-6">
-        {error && (
-          <div className="mt-4">
-            <Banner
-              variant="danger"
-              action={
-                <Button variant="ghost" onClick={() => setError('')} aria-label="Dispensar o erro">
-                  <X className="w-4 h-4" />
-                </Button>
-              }
-            >
-              {error}
-            </Banner>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3 mt-4">
-          <ComposerBlock
-            {...blockProps('template')}
-            title="Template"
-            summary={templateSummary(selectedTemplate)}
-          >
-            <BlockTemplate
-              templates={templates}
-              loading={loadingTemplates}
-              selected={selectedTemplate}
-              onSelect={(t) => { setSelectedTemplate(t); setOpenBlock('publico') }}
-            />
-          </ComposerBlock>
-
-          <ComposerBlock
-            {...blockProps('publico')}
-            title="Público"
-            summary={publicoSummary(audienceCount)}
-          >
-            {/* O construtor do Crivo entra pelo slot. `onConfirm` é sinal puro
-                de "terminei" — quem carrega o rascunho é o `onChange` (§9.1),
-                porque só ele traz o `segmentId`. */}
-            <BlockPublico>
-              <AudienceBlock
-                value={editorDraft}
-                onChange={handleAudienceChange}
-                onResolvedChange={onAudienceResolved}
-                onConfirm={() => setOpenBlock('variaveis')}
-                estimatedCostCents={cost.estimate?.totalCents}
-              />
-            </BlockPublico>
-          </ComposerBlock>
-
-          <ComposerBlock
-            {...blockProps('variaveis')}
-            title="Variáveis"
-            summary={variaveisSummary(mappings, mappingsComplete)}
-          >
-            <BlockVariaveis mappings={mappings} onUpdate={updateMapping} fieldDefs={fieldDefs} />
-          </ComposerBlock>
-
-          <ComposerBlock
-            {...blockProps('envio')}
-            title="Envio"
-            summary={envioSummary(scheduleMode, scheduledAt, selectedLine)}
-          >
-            <BlockEnvio
-              scheduleMode={scheduleMode}
-              onScheduleMode={setScheduleMode}
-              scheduledAt={scheduledAt}
-              onScheduledAt={setScheduledAt}
-              lines={waNumbers}
-              whatsappNumberId={whatsappNumberId}
-              onLineChange={setWhatsappNumberId}
-              // BE.5 ainda não implantado: sem uso por linha a cota some, em
-              // vez de virar um "0 / 0 hoje" inventado (§6).
-              usageByLine={null}
-              audienceCount={audienceCount}
-            />
-          </ComposerBlock>
-
-          <ReadinessChecklist items={readiness} />
-        </div>
-
-        <ComposerBar
-          cost={cost.estimate}
-          costLoading={cost.loading}
-          costAvailable={cost.available}
-          firstPending={firstPending}
-          scheduleMode={scheduleMode}
-          onSubmit={() => { void submit() }}
-          submitting={saving}
-          testSend={{
-            send: () => { void testSend.send() },
-            sending: testSend.sending,
-            available: testSend.available,
-            ready: testSend.ready,
-          }}
+      {/* Duas colunas, como o `.comp` do mockup: o telefone à esquerda não
+          rola, os blocos à direita rolam sozinhos. */}
+      <div className="flex-1 grid grid-cols-[420px_1fr] min-h-0">
+        <ComposerPhonePreview
+          template={selectedTemplate}
+          mappings={mappings}
+          contacts={contacts}
+          senderName={selectedLine?.label}
         />
+
+        <div className="overflow-y-auto px-7 py-6">
+          {error && (
+            <div className="mb-3">
+              <Banner
+                variant="danger"
+                action={
+                  <Button variant="ghost" onClick={() => setError('')} aria-label="Dispensar o erro">
+                    <X className="w-4 h-4" />
+                  </Button>
+                }
+              >
+                {error}
+              </Banner>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            <ComposerBlock
+              {...blockProps('template')}
+              title="Template"
+              summary={templateSummary(selectedTemplate)}
+            >
+              <BlockTemplate
+                templates={templates}
+                loading={loadingTemplates}
+                selected={selectedTemplate}
+                onSelect={(t) => { setSelectedTemplate(t); setOpenBlock('publico') }}
+              />
+            </ComposerBlock>
+
+            <ComposerBlock
+              {...blockProps('publico')}
+              title="Público"
+              summary={publicoSummary(audienceCount)}
+            >
+              {/* O construtor do Crivo entra pelo slot. `onConfirm` é sinal puro
+                  de "terminei" — quem carrega o rascunho é o `onChange` (§9.1),
+                  porque só ele traz o `segmentId`. */}
+              <BlockPublico>
+                <AudienceBlock
+                  value={editorDraft}
+                  onChange={handleAudienceChange}
+                  onResolvedChange={onAudienceResolved}
+                  onConfirm={() => setOpenBlock('variaveis')}
+                  estimatedCostCents={cost.estimate?.totalCents}
+                />
+              </BlockPublico>
+            </ComposerBlock>
+
+            <ComposerBlock
+              {...blockProps('variaveis')}
+              title="Variáveis"
+              summary={variaveisSummary(mappings, mappingsComplete)}
+            >
+              <BlockVariaveis mappings={mappings} onUpdate={updateMapping} fieldDefs={fieldDefs} />
+            </ComposerBlock>
+
+            <ComposerBlock
+              {...blockProps('envio')}
+              title="Envio"
+              summary={envioSummary(scheduleMode, scheduledAt, selectedLine)}
+            >
+              <BlockEnvio
+                scheduleMode={scheduleMode}
+                onScheduleMode={setScheduleMode}
+                scheduledAt={scheduledAt}
+                onScheduledAt={setScheduledAt}
+                lines={waNumbers}
+                whatsappNumberId={whatsappNumberId}
+                onLineChange={setWhatsappNumberId}
+                // BE.5 ainda não implantado: sem uso por linha a cota some, em
+                // vez de virar um "0 / 0 hoje" inventado (§6).
+                usageByLine={null}
+                audienceCount={audienceCount}
+              />
+            </ComposerBlock>
+
+            <ReadinessChecklist items={readiness} />
+          </div>
+
+          <ComposerBar
+            cost={cost.estimate}
+            costLoading={cost.loading}
+            costAvailable={cost.available}
+            firstPending={firstPending}
+            scheduleMode={scheduleMode}
+            onSubmit={() => { void submit() }}
+            submitting={saving}
+            testSend={{
+              send: () => { void testSend.send() },
+              sending: testSend.sending,
+              available: testSend.available,
+              ready: testSend.ready,
+            }}
+          />
+        </div>
       </div>
     </div>
   )
