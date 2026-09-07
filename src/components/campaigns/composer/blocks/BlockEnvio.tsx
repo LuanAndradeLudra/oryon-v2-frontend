@@ -16,6 +16,7 @@ import { Calendar, Gauge, MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import type { WhatsAppNumberUsage } from '@/types/campaignsV2'
+import { THROUGHPUT_PER_SECOND, formatDuration } from './summaries'
 
 /** O minimo que o bloco precisa de uma linha. Estrutural de proposito: o
  *  `DraftLineOption` do nucleo tem so' id/telefone/rotulo hoje, e o
@@ -28,7 +29,6 @@ export interface ComposerLine {
   label?: string
   isActive?: boolean
 }
-import { THROUGHPUT_PER_SECOND, formatDuration } from './summaries'
 
 
 export type ScheduleMode = 'now' | 'later'
