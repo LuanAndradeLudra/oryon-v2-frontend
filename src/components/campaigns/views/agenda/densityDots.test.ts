@@ -131,16 +131,40 @@ describe('funnelSegments', () => {
       .toBe(100)
   })
 
-  it('não deixa faixa negativa quando os números vêm inconsistentes', () => {
+  // Achado A1 do Lince: a versão anterior deste teste percorria o resultado
+  // pedindo `>= 0`, e `funnelSegments` termina com `filter(v > 0)` — nenhuma
+  // faixa negativa chegava à asserção, então ela não tinha como falhar. Ele
+  // provou por mutação: tirando o `clamp` do `read`, os 40 testes seguiam
+  // verdes e a barra passava a somar 30 para `sent: 10`, três vezes maior e
+  // calada. A invariante REAL das faixas disjuntas é a SOMA, e é ela que este
+  // teste cobra agora.
+  it('as faixas somam o que saiu, mesmo com números inconsistentes', () => {
     const c = campaign({
       id: 'a', status: 'sent',
       stats: stats({ total: 10, sent: 10, delivered: 20, read: 30, replied: 40, failed: 0 }),
     })
-    for (const s of funnelSegments(c)!) expect(s.value).toBeGreaterThanOrEqual(0)
+    const segments = funnelSegments(c)!
+    for (const s of segments) expect(s.value).toBeGreaterThan(0)
+    expect(segments.reduce((acc, s) => acc + s.value, 0)).toBe(10)
   })
 
-  it('devolve null sem envio — barra vazia não é informação', () => {
+  it('devolve null sem envio NEM falha — barra vazia não é informação', () => {
     expect(funnelSegments(campaign({ id: 'a', status: 'sent', stats: stats({ sent: 0 }) }))).toBeNull()
+  })
+
+  // Achado A2, do dado real: duas campanhas do tenant têm `sent: 0`,
+  // `failed: 5188` e `status: 'sent'`. "Falhou tudo" não pode renderizar
+  // igual a "não há dado".
+  it('a campanha que falhou inteira desenha barra, e ela é toda de falha', () => {
+    const segments = funnelSegments(campaign({
+      id: 'a', status: 'sent',
+      stats: stats({ total: 5188, sent: 0, failed: 5188 }),
+    }))!
+    expect(segments).toHaveLength(1)
+    expect(segments[0].label).toBe('Falhou')
+    expect(segments[0].value).toBe(5188)
+    // Sem faixa de enviado nenhuma: a barra não pode insinuar sucesso.
+    expect(segments.some((s) => s.label !== 'Falhou')).toBe(false)
   })
 })
 

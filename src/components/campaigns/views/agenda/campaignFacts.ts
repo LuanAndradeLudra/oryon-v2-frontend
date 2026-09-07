@@ -39,18 +39,20 @@ function hasAudience(c: Campaign): boolean {
  * barra somaria bem mais que 100%. Aqui cada faixa vira a diferença para a
  * seguinte, que é o que a barra do mockup mostra de fato.
  *
- * `null` quando não houve envio — barra vazia não é informação.
+ * `null` só quando não houve envio NEM falha (A2 do Lince): cortar pelo `sent`
+ * fazia "falhou tudo" ler IDÊNTICO a "não há dado" — duas campanhas reais têm
+ * `sent: 0, failed: 5188, status: 'sent'`. A barra sai toda na cor de falha.
  */
 export function funnelSegments(c: Campaign): StackedBarSegment[] | null {
   const s = c.stats
   if (!s) return null
   const sent = s.sent ?? 0
-  if (sent <= 0) return null
+  const failed = Math.max(0, s.failed ?? 0)
+  if (sent <= 0 && failed <= 0) return null
 
   const delivered = clamp(s.delivered ?? 0, 0, sent)
   const read = clamp(s.read ?? 0, 0, delivered)
   const replied = clamp(s.replied ?? 0, 0, read)
-  const failed = Math.max(0, s.failed ?? 0)
 
   const segments: StackedBarSegment[] = [
     { value: replied,             color: 'blue',   label: 'Respondeu'    },

@@ -81,3 +81,35 @@ describe('buildInsight — rascunho parado', () => {
     expect(buildInsight([recente], NOW)).toBeNull()
   })
 })
+
+// ── Achados B3 e B4 do Lince ──────────────────────────────────────────────
+describe('buildInsight — como a frase sai escrita', () => {
+  // O cabeçalho do dia escreve "Sexta"; o insight escrevia "Sexta-feira".
+  // Mesma data, mesma tela, duas formas.
+  it('usa a mesma forma curta de dia que o cabeçalho', () => {
+    const insight = buildInsight(
+      [agendada(18, 0, 'a'), agendada(19, 0, 'b'), agendada(20, 0, 'c')],
+      NOW,
+    )
+    expect(insight?.title).toBe('Sexta está carregada')
+    expect(insight?.title).not.toContain('-feira')
+  })
+
+  // Lote agendado na mesma hora: "entre 18h e 18h" não é faixa nenhuma.
+  it('uma janela de uma hora só vira "por volta das", não "entre X e X"', () => {
+    const insight = buildInsight(
+      [agendada(18, 0, 'a'), agendada(18, 10, 'b'), agendada(18, 20, 'c')],
+      NOW,
+    )
+    expect(insight?.description).toContain('3 disparos por volta das 18h')
+    expect(insight?.description).not.toContain('entre 18h e 18h')
+  })
+
+  it('e a faixa de verdade continua sendo escrita como faixa', () => {
+    const insight = buildInsight(
+      [agendada(18, 0, 'a'), agendada(19, 0, 'b'), agendada(20, 0, 'c')],
+      NOW,
+    )
+    expect(insight?.description).toContain('entre 18h e 20h')
+  })
+})

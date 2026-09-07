@@ -81,10 +81,84 @@ describe('EventCard — fallback sem BE.2', () => {
 })
 
 describe('EventCard — cartão de falha', () => {
+  // O pré-voo: `markFailed()` grava `{total: 0, sent: 0}` — ninguém recebeu.
+  const preVoo = campaign({ id: 'c', status: 'failed', stats: stats() })
+  // A parcial: `haltedByLineOffline` grava os contadores REAIS. 8 das 15
+  // campanhas em `failed` do tenant estão assim.
+  const parcial = campaign({
+    id: 'p', status: 'failed', stats: stats({ total: 1037, sent: 601 }),
+  })
+
   it('não oferece reenviar: a campanha não guarda por que falhou', () => {
-    renderCard(campaign({ id: 'c', status: 'failed' }))
+    renderCard(preVoo)
     expect(screen.queryByRole('button', { name: /reenviar/i })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ver detalhes' })).toBeInTheDocument()
+  })
+
+  it('a que falhou antes de sair não desenha barra sobre denominador zero', () => {
+    renderCard(preVoo)
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+  })
+
+  // O achado C1, e o motivo dele não ser estético: quem lê "Falhou" e não vê
+  // contador nenhum conclui que não saiu nada, recria a campanha, e as 601
+  // pessoas que JÁ receberam recebem a mesma mensagem duas vezes.
+  it('a que falhou no meio diz quantas pessoas já receberam', () => {
+    renderCard(parcial)
+    expect(screen.getByText('601 / 1.037')).toBeInTheDocument()
+    expect(screen.getByText('parou aqui')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '58')
+  })
+
+  it('e não mostra taxa: uma fila que parou não tem taxa', () => {
+    renderCard(parcial, { perSecond: 3.2 })
+    expect(screen.queryByText(/msg\/s/)).not.toBeInTheDocument()
+  })
+
+  // A asserção que o defeito exigia: os dois casos precisavam PARAR de
+  // renderizar byte por byte iguais.
+  it('os dois casos de falha não renderizam iguais', () => {
+    const { container: a, unmount } = renderCard(preVoo)
+    const preVooHtml = a.innerHTML
+    unmount()
+    const { container: b } = renderCard(parcial)
+    expect(b.innerHTML).not.toBe(preVooHtml)
+  })
+})
+
+describe('EventCard — a enviada em que tudo falhou', () => {
+  // `campaigns.processor.ts` marca `status: 'sent'` ao fim do laço mesmo
+  // quando todo envio falhou. Duas campanhas reais do tenant estão assim.
+  const tudoFalhou = campaign({
+    id: 'z', status: 'sent', stats: stats({ total: 5188, sent: 0, failed: 5188 }),
+  })
+
+  it('a linha é liderada pela falha, não pelo zero', () => {
+    renderCard(tudoFalhou)
+    expect(screen.getByText('5.188 falharam · nenhuma enviada')).toBeInTheDocument()
+    expect(screen.queryByText('0 enviadas')).not.toBeInTheDocument()
+  })
+
+  it('desenha barra em vez de sumir — "falhou tudo" não é "não há dado"', () => {
+    renderCard(tudoFalhou)
+    expect(screen.getByRole('img', { name: /Falhou: 5188/ })).toBeInTheDocument()
+  })
+})
+
+describe('EventCard — a cancelada no meio do envio', () => {
+  // Mesma armadilha do C1, um ramo do `if` ao lado: sem contador, quem cancelou
+  // um disparo já em curso lê "Cancelada", conclui que não saiu nada e recria.
+  it('diz quantas pessoas já receberam antes do cancelamento', () => {
+    renderCard(campaign({
+      id: 'x', status: 'cancelled', stats: stats({ total: 1037, sent: 601 }),
+    }))
+    expect(screen.getByText('601 / 1.037')).toBeInTheDocument()
+    expect(screen.getByText('parou aqui')).toBeInTheDocument()
+  })
+
+  it('a cancelada antes de sair continua sem miolo', () => {
+    renderCard(campaign({ id: 'y', status: 'cancelled', stats: stats() }))
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
   })
 })
 

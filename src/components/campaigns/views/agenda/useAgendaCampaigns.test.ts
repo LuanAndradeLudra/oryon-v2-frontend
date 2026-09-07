@@ -133,3 +133,46 @@ describe('useAgendaCampaigns — o laço de paginação', () => {
     expect(result.current.truncated).toBe(false)
   })
 })
+
+// ── Achado B2 do Lince ─────────────────────────────────────────────────────
+// A convenção de polling da A1 tem duas metades: pular o tique com a aba
+// escondida e RECUPERAR quando ela volta. Só a primeira estava aqui, e sozinha
+// ela deixa dado velho na tela por até 60 s justamente no instante em que a
+// pessoa volta a olhar — numa tela que pode ter disparo em curso.
+describe('useAgendaCampaigns — a aba que volta', () => {
+  beforeEach(() => { get.mockReset() })
+
+  const page = (ids: string[], total: number) => ({
+    data: { data: ids.map((id) => campaign({ id })), total, page: 1, limit: 100 },
+  })
+
+  function esconder(hidden: boolean) {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
+    document.dispatchEvent(new Event('visibilitychange'))
+  }
+
+  it('recarrega assim que a aba volta a aparecer', async () => {
+    get.mockResolvedValue(page(['a'], 1))
+    const { result } = renderHook(() => useAgendaCampaigns())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    const antes = get.mock.calls.length
+
+    esconder(true)
+    esconder(false)
+
+    await waitFor(() => expect(get.mock.calls.length).toBeGreaterThan(antes))
+  })
+
+  it('não recarrega quando a aba vai EMBORA', async () => {
+    get.mockResolvedValue(page(['a'], 1))
+    const { result } = renderHook(() => useAgendaCampaigns())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    const antes = get.mock.calls.length
+
+    esconder(true)
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(get.mock.calls.length).toBe(antes)
+    esconder(false)
+  })
+})

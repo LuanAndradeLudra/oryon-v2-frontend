@@ -73,7 +73,7 @@ function capitalize(s: string): string {
 }
 
 /** "terça-feira" → "terça". O mockup usa a forma curta nos cabeçalhos. */
-function weekdayShort(date: Date): string {
+export function weekdayShort(date: Date): string {
   return format(date, 'EEEE', { locale: ptBR }).replace(/-feira$/, '')
 }
 
