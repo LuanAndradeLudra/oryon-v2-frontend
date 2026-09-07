@@ -33,9 +33,16 @@ export function AgendaSidebar({
 }: AgendaSidebarProps) {
   const insight = useMemo(() => buildInsight(filtered, now), [filtered, now])
   const sevenDayRows = useMemo(() => {
-    const rows: SevenDayRow[] = [
-      { label: 'Disparos agendados', value: String(countScheduledNext7(filtered, now)) },
-    ]
+    const rows: SevenDayRow[] = []
+    // Zero agendadas não vira "Disparos agendados 0". A linha só nasce quando
+    // tem o que contar — e é isso que alimenta o `MIN_SEVEN_DAY_ROWS` abaixo,
+    // que sem esta condição NUNCA era alcançado: `rows` tinha sempre 1 item, o
+    // guard estava escrito e morto, e no tenant real (zero agendadas) este era
+    // o ÚNICO zero impresso da pilha inteira. Achado do Calibre no #138.
+    const agendadas = countScheduledNext7(filtered, now)
+    if (agendadas > 0) {
+      rows.push({ label: 'Disparos agendados', value: String(agendadas) })
+    }
     // Aqui entram, quando a BE.5 existir: "Mensagens previstas", "Custo
     // estimado" e "Limite da linha · pior dia". Nenhuma delas tem fonte hoje.
     return rows
