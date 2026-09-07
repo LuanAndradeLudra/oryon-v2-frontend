@@ -16,12 +16,13 @@
 // serve o que só existe nele; o que tem fonte viva vem da fonte viva — ver
 // `EstadoVivoDoAgente`.
 //
-// A terceira é ESPELHO de `useStudioDraft.generatePrompt()`: mesmo `flatMap`
-// das keywords com o mesmo corte em 20, mesmo `map` das descrições com queda
-// para o nome da regra, mesmo `find` do primeiro departamento, mesma montagem
-// do array de canais na mesma ordem. Partir do `wizard_config` em vez do
-// `WizardData` não muda a regra — se aquela mudar, esta muda junto, e é por
-// isso que o teste compara as duas.
+// A terceira é COMPARTILHADA com `useStudioDraft.generatePrompt()`: os dois
+// chamam a mesma `derivarDeployment` exportada daqui. Antes ela era só
+// "espelho", com a igualdade mantida por disciplina e conferida por um teste
+// que na verdade comparava duas cópias novas entre si — ver o docblock de
+// `derivarDeployment` para como isso passou verde com uma divergência
+// grosseira plantada. Partir do `wizard_config` em vez do `WizardData` não
+// muda a regra, e agora não muda o CÓDIGO.
 //
 // O `wizard_config` é `Record<string, unknown>`: veio do banco e ninguém
 // garante o shape. O estreitamento defensivo aqui é o mesmo que o `deckFormat`
@@ -35,7 +36,15 @@ const MAX_KEYWORDS = 20
 
 /** Regra de handoff reduzida ao que o prompt usa. O resto do `HandoffRule`
  *  (id, prioridade, ação, template…) não participa da derivação. */
-type RegraParaPrompt = Pick<HandoffRule, 'name' | 'description' | 'keywords' | 'department'>
+export type RegraParaPrompt = Pick<HandoffRule, 'name' | 'description' | 'keywords' | 'department'>
+
+/** Canais ligados, no formato que a derivação lê. O wizard tem três booleanos
+ *  soltos; o agente vivo tem `{ enabled }`. Os dois chegam aqui já reduzidos. */
+export interface CanaisLigados {
+  whatsapp: boolean
+  messenger: boolean
+  instagram: boolean
+}
 
 // ── estreitamento ──────────────────────────────────────────────────────────
 
@@ -114,18 +123,24 @@ function listaDeRegras(v: unknown): RegraParaPrompt[] {
 }
 
 /**
- * A derivação de `deployment`, num lugar só. Espelha
- * `useStudioDraft.generatePrompt()` — mesmo `flatMap` com o mesmo corte, mesmo
- * `map` caindo para o nome da regra, mesmo `find` do PRIMEIRO departamento,
- * mesma ordem de canais.
+ * A derivação de `deployment`, num lugar só — **para os três caminhos**, não
+ * só para os dois daqui. O `useStudioDraft.generatePrompt()` importa e chama
+ * esta função; ela não *espelha* aquilo, ela **é** aquilo.
  *
- * Os dois caminhos (retrato e estado vivo) passam por aqui de propósito: um
- * segundo caminho seria uma segunda regra para manter em sincronia, que é
- * exatamente o problema que o teste de espelho existe para impedir.
+ * POR QUE ISTO É EXPORTADO, e vale ler antes de desfazer: até o
+ * `fea894c` existiam TRÊS cópias desta derivação — aqui, no `generatePrompt` e
+ * uma terceira escrita à mão dentro do próprio teste de espelho. O comentário
+ * deste arquivo prometia que o teste comparava a derivação com a do wizard, e
+ * não comparava: comparava as duas cópias NOVAS entre si. O Calibre provou
+ * mudando o `slice(0, 20)` para `slice(0, 3)` **no `generatePrompt`** — uma
+ * divergência grosseira — e a suíte ficou 25/25 verde, typecheck limpo. O
+ * único caminho capaz de produzir o defeito era o único descoberto.
+ *
+ * Promessa em comentário não é acoplamento. Uma função só é.
  */
-function derivarDeployment(
+export function derivarDeployment(
   regras: RegraParaPrompt[],
-  canais: { whatsapp: boolean; messenger: boolean; instagram: boolean },
+  canais: CanaisLigados,
 ): AgentPromptRequest['deployment'] {
   return {
     escalation_keywords: regras.flatMap((r) => r.keywords).slice(0, MAX_KEYWORDS),

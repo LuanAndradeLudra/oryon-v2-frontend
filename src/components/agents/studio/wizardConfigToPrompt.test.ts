@@ -7,15 +7,16 @@
 //     produzir motivo detectável em vez de request pela metade;
 //   · o estreitamento defensivo, porque `wizard_config` vem do banco como
 //     `Record<string, unknown>` e ninguém garante o shape;
-//   · o ESPELHO com `useStudioDraft.generatePrompt()`, que é o teste que
-//     realmente importa a longo prazo: as duas derivações têm de continuar
-//     concordando, senão o prompt do wizard e o do Regenerar divergem em
-//     silêncio.
+//   · a ESPECIFICAÇÃO à mão da derivação: a regra escrita por extenso, para
+//     que reescrever a função por dentro não possa mudar o resultado sem
+//     alguém decidir. Quem impede a divergência entre o wizard e o Regenerar
+//     não é mais este caso e sim a estrutura — os dois chamam a MESMA
+//     `derivarDeployment`, e o par de testes dos dois lados prova isso.
 
 import { describe, it, expect } from 'vitest'
 
 import { wizardConfigToPromptRequest, MOTIVO_SEM_WIZARD, type EstadoVivoDoAgente } from './wizardConfigToPrompt'
-import type { HandoffRule, HandoffRules } from '@/services/agentsApi'
+import type { HandoffRule } from '@/services/agentsApi'
 
 // Shape REAL gravado por `useStudioDraft.publish()`, não inventado — é o
 // mesmo critério que pegou os dois bugs do deckFormat: teste que constrói o
@@ -175,12 +176,25 @@ describe('wizardConfigToPromptRequest · estreitamento defensivo', () => {
   })
 })
 
-// O teste que mais importa a longo prazo. Se alguém mudar a derivação em
-// `useStudioDraft.generatePrompt()` e não mudar aqui, o prompt do wizard e o
-// do "Regenerar" passam a divergir sem que nada falhe. Este caso reproduz a
-// derivação de lá sobre os MESMOS dados e exige igualdade.
-describe('wizardConfigToPromptRequest · espelho do generatePrompt', () => {
-  it('a derivação de deployment bate com a do useStudioDraft', () => {
+// ESTE BLOCO MUDOU DE PAPEL, e o comentário anterior tinha virado mentira.
+//
+// Ele dizia ser o teste que impede o `generatePrompt` de divergir. Não era:
+// reimplementava a derivação numa cópia à mão e comparava essa cópia com a do
+// mapeador — as duas NOVAS, entre si. O `generatePrompt` não era executado, e
+// por isso plantar `slice(0, 3)` lá deixava tudo verde.
+//
+// Quem impede a divergência agora é a estrutura: os dois caminhos chamam a
+// mesma `derivarDeployment`. E quem PROVA é o par de testes que a exercita dos
+// dois lados — este e o `useStudioDraft.generatePrompt.test.tsx`; mutar o
+// corte dentro da função derruba os dois arquivos.
+//
+// O que sobra aqui é honesto e vale manter, com o nome certo: uma
+// ESPECIFICAÇÃO escrita à mão, independente da implementação. Se alguém
+// reescrever `derivarDeployment` por dentro, este caso continua exigindo o
+// resultado combinado — sem espelhar código nenhum, porque não há mais um
+// segundo corpo para espelhar.
+describe('wizardConfigToPromptRequest · a derivação contra uma especificação à mão', () => {
+  it('o deployment derivado bate com a regra escrita por extenso', () => {
     const data = {
       handoff_rules: CFG_COMPLETO.deployment.handoff_rules,
       channels_whatsapp: CFG_COMPLETO.deployment.channels_whatsapp,
@@ -188,8 +202,11 @@ describe('wizardConfigToPromptRequest · espelho do generatePrompt', () => {
       channels_instagram: CFG_COMPLETO.deployment.channels_instagram,
     }
 
-    // Cópia literal do corpo de `generatePrompt()` — se lá mudar, aqui quebra.
-    const comoNoWizard = {
+    // Escrita à mão a partir da REGRA, não copiada de nenhum corpo de função:
+    // as keywords de todas as regras em ordem, cortadas em 20; a descrição de
+    // cada uma caindo para o nome; o departamento do primeiro que tiver um; e
+    // os canais ligados na ordem WhatsApp, Messenger, Instagram.
+    const pelaRegra = {
       escalation_keywords: data.handoff_rules.flatMap((r) => r.keywords).slice(0, 20),
       escalation_conditions: data.handoff_rules
         .map((r) => (r as { description?: string }).description ?? r.name)
@@ -202,7 +219,7 @@ describe('wizardConfigToPromptRequest · espelho do generatePrompt', () => {
       ].filter(Boolean) as string[],
     }
 
-    expect(wizardConfigToPromptRequest(CFG_COMPLETO).request?.deployment).toEqual(comoNoWizard)
+    expect(wizardConfigToPromptRequest(CFG_COMPLETO).request?.deployment).toEqual(pelaRegra)
   })
 })
 
@@ -290,8 +307,11 @@ describe('wizardConfigToPromptRequest · estado vivo sobrepõe o retrato', () =>
   // É o achado da A6 de cabeça para baixo: lá campo ausente não podia apagar a
   // FILA, aqui objeto vazio não pode apagar o RETRATO.
 
+  // Repare que o `{}` abaixo NÃO tem mais `as HandoffRules`. Enquanto `rules`
+  // era obrigatório, descrever a forma que o banco realmente guarda exigia
+  // mentir para o compilador — e o cast some junto com a mentira.
   it('`{}` de handoff_rules é "nunca configurei", não "apaguei todas" — o retrato manda', () => {
-    const { request } = wizardConfigToPromptRequest(CFG_COMPLETO, { handoff_rules: {} as HandoffRules })
+    const { request } = wizardConfigToPromptRequest(CFG_COMPLETO, { handoff_rules: {} })
     expect(request?.deployment.escalation_department).toBe('Suporte')
     expect(request?.deployment.escalation_keywords.length).toBeGreaterThan(0)
   })
@@ -305,7 +325,7 @@ describe('wizardConfigToPromptRequest · estado vivo sobrepõe o retrato', () =>
     // Este é o caso REAL: criado pelo wizard, nunca tocado no workspace.
     // Antes do conserto ele regenerava com zero regra e nenhum canal.
     const recemCriado = wizardConfigToPromptRequest(CFG_COMPLETO, {
-      handoff_rules: {} as HandoffRules,
+      handoff_rules: {},
       channels: {},
     })
     expect(recemCriado.request?.deployment.channels).toEqual(['WhatsApp', 'Instagram'])
