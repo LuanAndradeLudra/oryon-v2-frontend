@@ -69,12 +69,23 @@ export function StackedBar({ segments, height = 10, legend = false, total, class
             <div key={i} className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1.5 text-surface-300">
                 <span
-                  className="w-2 h-2 rounded-sm flex-shrink-0 inline-block"
+                  // `rounded-sm` neste projeto é `--radius-sm: .625rem` = 10
+                  // nominal, CINCO VEZES os 2px que o mockup pede
+                  // (`d6-publico.html`, nas 4 ocorrências do quadradinho). É a
+                  // armadilha que originou o SCRUM-1046: a escala de raio daqui
+                  // não é a do Tailwind. Nenhum token cai em 2, então o literal
+                  // é a única forma de acertar.
+                  className="w-2 h-2 rounded-[2px] flex-shrink-0 inline-block"
                   style={{ backgroundColor: segmentColor(s.color), opacity: s.dimmed ? 0.7 : 1 }}
                 />
                 {s.label}
               </span>
-              <b className={cn('font-mono tabular-nums', 'text-surface-100')}>
+              {/* Só o PRIMEIRO valor vem destacado: no mockup o primeiro
+                  `<b class="mono">` não tem override e os seguintes trazem
+                  `color:var(--s400)`. Pintar todos igual achata a hierarquia —
+                  o primeiro segmento é o número que a linha afirma, o resto é
+                  contexto. */}
+              <b className={cn('font-mono tabular-nums', i === 0 ? 'text-surface-100' : 'text-surface-400')}>
                 {s.value.toLocaleString('pt-BR')}
               </b>
             </div>
