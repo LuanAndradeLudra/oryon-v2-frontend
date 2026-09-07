@@ -30,12 +30,19 @@ function campaign(over: Partial<Campaign> & { id: string }): Campaign {
   } as Campaign
 }
 
-const lifecycle = (available: boolean): CampaignLifecycle => ({
-  available, busy: null, run: vi.fn().mockResolvedValue(null),
+// `can` responde POR AÇÃO: um stub que devolve o mesmo para as três não
+// consegue ver se o cartão pausado pergunta por `resume` ou por outra coisa —
+// foi o que a mutação R4 provou.
+const lifecycle = (
+  disponiveis: boolean | ReadonlyArray<'pause' | 'resume' | 'cancel'>,
+): CampaignLifecycle => ({
+  can: (a) => (typeof disponiveis === 'boolean' ? disponiveis : disponiveis.includes(a)),
+  busy: null,
+  run: vi.fn().mockResolvedValue(null),
 })
 
 function renderCard(c: Campaign, opts: {
-  available?: boolean
+  available?: boolean | ReadonlyArray<'pause' | 'resume' | 'cancel'>
   audienceCount?: number | null
   perSecond?: number
 } = {}) {
@@ -77,6 +84,53 @@ describe('EventCard — fallback sem BE.2', () => {
   it('o progresso continua visível mesmo sem o controle de pausa', () => {
     renderCard(sending, { available: false })
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '52')
+  })
+})
+
+// Cada cartão pergunta pela SUA ação. Sem isto, o cartão pausado podia estar
+// consultando a bandeira de `cancel` e ninguém notaria — e é exatamente o que
+// acontece hoje no backend do 992, onde `pause` e `cancel` existem
+// (`campaigns.controller.ts:136,143`) e `resume` não (`:150`).
+describe('EventCard — cada botão pergunta pela própria capacidade', () => {
+  const enviando = campaign({ id: 'g', status: 'sending', stats: stats({ total: 100, sent: 40 }) })
+  const pausado = campaign({ id: 'p', status: 'paused', stats: stats({ total: 100, sent: 40 }) })
+
+  it('sem a rota de retomar, a pausada não oferece Retomar — mas segue cancelável', () => {
+    renderCard(pausado, { available: ['pause', 'cancel'] })
+    expect(screen.queryByRole('button', { name: /Retomar/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Mais ações/ })).toBeInTheDocument()
+  })
+
+  it('e a que está enviando continua com Pausar, porque essa rota existe', () => {
+    renderCard(enviando, { available: ['pause', 'cancel'] })
+    expect(screen.getByRole('button', { name: /Pausar/ })).toBeInTheDocument()
+  })
+
+  it('o inverso também vale: só `resume` no ar tira o Pausar e deixa o Retomar', () => {
+    renderCard(pausado, { available: ['resume'] })
+    expect(screen.getByRole('button', { name: /Retomar/ })).toBeInTheDocument()
+    renderCard(enviando, { available: ['resume'] })
+    expect(screen.queryByRole('button', { name: /Pausar/ })).not.toBeInTheDocument()
+  })
+})
+
+// Pausar EXISTE e funciona, então continua na tela (regra 1: oculta-se o que
+// não existe, não o que o sistema faz). O que faltava era o PREÇO dito antes do
+// clique: hoje a pausada só sai por cancelamento.
+describe('EventCard — o preço de pausar, dito antes do clique', () => {
+  const enviando = campaign({ id: 'g', status: 'sending', stats: stats({ total: 100, sent: 40 }) })
+
+  it('sem a rota de retomar, o botão Pausar carrega a consequência', () => {
+    renderCard(enviando, { available: ['pause', 'cancel'] })
+    expect(screen.getByRole('button', { name: /Pausar/ }))
+      .toHaveAttribute('title', expect.stringContaining('só pode ser cancelado'))
+  })
+
+  // Quando a SCRUM-1043 entrar, apagar a entrada de ROTA_AUSENTE tira a frase
+  // junto: ela é condicionada à capacidade, não a uma segunda edição.
+  it('com a rota de retomar no ar, o aviso some sozinho', () => {
+    renderCard(enviando, { available: ['pause', 'resume', 'cancel'] })
+    expect(screen.getByRole('button', { name: /Pausar/ })).not.toHaveAttribute('title')
   })
 })
 

@@ -15,7 +15,7 @@ vi.mock('./useAgendaCampaigns', () => ({
 }))
 vi.mock('./useCampaignLifecycle', () => ({
   useCampaignLifecycle: (onUpdated: (c: Campaign) => void) => ({
-    available: true,
+    can: () => true,
     busy: null,
     run: (action: string, id: string) => lifecycleRun(action, id, onUpdated),
   }),
