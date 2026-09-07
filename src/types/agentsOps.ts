@@ -14,9 +14,20 @@ export interface HandoffContact {
   phoneMasked: string
 }
 
+/**
+ * O `name` vem **sempre `null`** do backend (Decisão D36 do `CONTRATOS.md`, que
+ * supera o exemplo original do §BE.6 onde aparecia `"Sofia"`). O nome do agente
+ * mora em `agent_configs`, no banco do agent-server; do lado do backend só
+ * existe `whatsapp_numbers.agentId`. Resolver lá custaria uma chamada HTTP
+ * cruzada por página de lista e acoplaria a caixa à disponibilidade do
+ * agent-server.
+ *
+ * **Quem resolve id→nome é o frontend**, com o rol que estas telas já carregam
+ * (`listAgents()`). O `id` vem sempre — é ele que permite o join no cliente.
+ */
 export interface HandoffAgentRef {
   id: string
-  name: string
+  name: string | null
 }
 
 // `id`/`label` ficam NULL em quase todo evento real hoje — não existe
@@ -41,6 +52,13 @@ export interface HandoffItem {
   rule: HandoffRuleRef
   target: HandoffTarget
   intent: string | null
+  /**
+   * Fila do evento (Decisão D30). `NOT NULL DEFAULT 'geral'` no schema, então
+   * nunca vem `null` — o pior caso é `'geral'`. É o que permite a barra de
+   * chips de fila existir: sem ela o frontend só saberia quais filas existem
+   * depois de o operador filtrar por uma.
+   */
+  queue: string
   summary: string | null
   waitingSeconds: number
   slaSeconds: number
@@ -70,10 +88,27 @@ export interface HandoffTopReason {
 export interface HandoffSummary {
   waiting: number
   claimed: number
-  avgWaitSeconds: number
+  /**
+   * Contagem do dia para o segmento "Resolvidas hoje" (Decisão D31). O corte é
+   * o início do dia em `America/Sao_Paulo`, não em UTC: "hoje" para o operador
+   * é o dia dele — às 21h de Brasília o dia UTC já virou e a contagem zeraria
+   * no meio do expediente.
+   */
+  resolvedToday: number
+  /**
+   * `null`, não `0`, quando a fila está vazia — e a distinção é o ponto
+   * (Decisão D37 e a regra "`null` onde `0` mentiria" do `CONTRATOS.md`):
+   * `0` afirmaria "ninguém está esperando", que é diferente de "não há dado".
+   * O KPI renderiza `—` neste caso.
+   */
+  avgWaitSeconds: number | null
   slaBreached: number
   topReasons7d: HandoffTopReason[]
-  returnedToAiPct: number
+  /**
+   * `null` quando nada foi resolvido em 7 dias — evita afirmar "nenhuma voltou
+   * para a IA" e, de quebra, a divisão por zero no backend.
+   */
+  returnedToAiPct: number | null
 }
 
 /** Resposta de claim/return — CONTRATOS.md só descreve "HandoffEvent
