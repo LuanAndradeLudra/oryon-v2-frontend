@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { X, Search, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { getReadableTextColor } from '@/lib/colorPalette'
 import { CATEGORY_LABELS } from '../../constants'
 import { CONTACT_FIELDS, INTENT_OPTIONS, SOURCE_OPTIONS, SENTIMENT_OPTIONS } from '../constants'
 import { TemplatePreview } from '../../TemplatePreview'
+import { ContactListModal } from '../ContactListModal'
 import { cn } from '@/lib/utils'
 import type {
   Contact, ContactIntent, ContactSource, ContactSentiment,
@@ -44,6 +44,37 @@ export function Step5Revisao({
   campaignName: string
 }) {
   const [showContactsModal, setShowContactsModal] = useState(false)
+
+  // A segmentacao em memoria era feita DENTRO do modal; com o modal recebendo
+  // itens ja' paginados por props (D2-plano §4), ela volta para quem tem os
+  // filtros. O wizard carrega a base inteira, entao aqui ela continua exata —
+  // e o modal recebe "pagina unica com tudo".
+  const segmented = useMemo(() => {
+    if (segmentType === 'all') return contacts
+    if (segmentType === 'tag')
+      return contacts.filter((c) => c.tags?.some((t) => selectedTagIds.includes(t.id)))
+    if (segmentType === 'stage')
+      return contacts.filter((c) => selectedStages.includes(c.stage ?? ''))
+    if (segmentType === 'manual')
+      return contacts.filter((c) => selectedContactIds.includes(c.id))
+    // filter
+    let f = contacts
+    if (filterStages.length)  f = f.filter((c) => filterStages.includes(c.stage ?? ''))
+    if (filterTagIds.length)  f = f.filter((c) => c.tags?.some((t) => filterTagIds.includes(t.id)))
+    if (filterIntent.length)  f = f.filter((c) => filterIntent.includes(c.intent ?? 'unknown'))
+    if (filterSource.length)  f = f.filter((c) => filterSource.includes(c.source ?? 'other'))
+    if (filterOptIn !== undefined) f = f.filter((c) => c.optIn === filterOptIn)
+    if (filterSentiment.length) f = f.filter((c) => filterSentiment.includes(c.aiSentiment ?? 'unknown'))
+    if (filterContactSearch.trim()) {
+      const q = filterContactSearch.toLowerCase()
+      f = f.filter((c) => c.displayName.toLowerCase().includes(q) || c.waId.includes(q))
+    }
+    if (filterHasConversations !== undefined)
+      f = f.filter((c) => filterHasConversations ? (c.conversationCount ?? 0) > 0 : (c.conversationCount ?? 0) === 0)
+    return f
+  }, [contacts, segmentType, selectedContactIds, selectedTagIds, selectedStages,
+      filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
+      filterSentiment, filterContactSearch, filterHasConversations])
 
   const segmentLabels: Record<CampaignSegment['type'], string> = {
     all:    'Toda a base',
@@ -245,176 +276,16 @@ export function Step5Revisao({
       </div>
 
       {/* Contact list modal */}
-      {showContactsModal && (
-        <ContactListModal
-          contacts={contacts}
-          segmentType={segmentType}
-          selectedContactIds={selectedContactIds}
-          selectedTagIds={selectedTagIds}
-          selectedStages={selectedStages}
-          filterStages={filterStages}
-          filterTagIds={filterTagIds}
-          filterIntent={filterIntent}
-          filterSource={filterSource}
-          filterOptIn={filterOptIn}
-          filterSentiment={filterSentiment}
-          filterContactSearch={filterContactSearch}
-          filterHasConversations={filterHasConversations}
-          stages={stages}
-          tags={tags}
-          onClose={() => setShowContactsModal(false)}
-        />
-      )}
-    </div>
-  )
-}
-
-// ─── Contact List Modal ────────────────────────────────────────────────────────
-// Aninhado aqui de propósito: só é consumido por Step5Revisao.
-
-function ContactListModal({
-  contacts, segmentType,
-  selectedContactIds, selectedTagIds, selectedStages,
-  filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
-  filterSentiment, filterContactSearch, filterHasConversations,
-  stages, tags, onClose,
-}: {
-  contacts: Contact[]
-  segmentType: CampaignSegment['type']
-  selectedContactIds: string[]
-  selectedTagIds: string[]
-  selectedStages: string[]
-  filterStages: string[]
-  filterTagIds: string[]
-  filterIntent: ContactIntent[]
-  filterSource: ContactSource[]
-  filterOptIn: boolean | undefined
-  filterSentiment: ContactSentiment[]
-  filterContactSearch: string
-  filterHasConversations: boolean | undefined
-  stages: { key: string; label: string; color: string }[]
-  tags: Tag[]
-  onClose: () => void
-}) {
-  const [search, setSearch] = useState('')
-
-  const segmented = useMemo(() => {
-    if (segmentType === 'all') return contacts
-    if (segmentType === 'tag')
-      return contacts.filter((c) => c.tags?.some((t) => selectedTagIds.includes(t.id)))
-    if (segmentType === 'stage')
-      return contacts.filter((c) => selectedStages.includes(c.stage ?? ''))
-    if (segmentType === 'manual')
-      return contacts.filter((c) => selectedContactIds.includes(c.id))
-    // filter
-    let f = contacts
-    if (filterStages.length)  f = f.filter((c) => filterStages.includes(c.stage ?? ''))
-    if (filterTagIds.length)  f = f.filter((c) => c.tags?.some((t) => filterTagIds.includes(t.id)))
-    if (filterIntent.length)  f = f.filter((c) => filterIntent.includes(c.intent ?? 'unknown'))
-    if (filterSource.length)  f = f.filter((c) => filterSource.includes(c.source ?? 'other'))
-    if (filterOptIn !== undefined) f = f.filter((c) => c.optIn === filterOptIn)
-    if (filterSentiment.length) f = f.filter((c) => filterSentiment.includes(c.aiSentiment ?? 'unknown'))
-    if (filterContactSearch.trim()) {
-      const q = filterContactSearch.toLowerCase()
-      f = f.filter((c) => c.displayName.toLowerCase().includes(q) || c.waId.includes(q))
-    }
-    if (filterHasConversations !== undefined)
-      f = f.filter((c) => filterHasConversations ? (c.conversationCount ?? 0) > 0 : (c.conversationCount ?? 0) === 0)
-    return f
-  }, [contacts, segmentType, selectedContactIds, selectedTagIds, selectedStages,
-      filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
-      filterSentiment, filterContactSearch, filterHasConversations])
-
-  const displayed = search.trim()
-    ? segmented.filter((c) =>
-        c.displayName.toLowerCase().includes(search.toLowerCase()) ||
-        c.waId.includes(search)
-      )
-    : segmented
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 8 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        transition={{ duration: 0.15 }}
-        className="relative bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg flex flex-col max-h-[80vh]"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
-          <div>
-            <h3 className="text-sm font-semibold text-surface-50">Lista de contatos</h3>
-            <p className="text-xs text-surface-500 mt-0.5">{segmented.length} contato{segmented.length === 1 ? '' : 's'} na segmentação</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="px-4 py-3 border-b border-surface-800 flex-shrink-0">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar nesta lista..."
-              className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* List */}
-        <div className="flex-1 overflow-y-auto p-2">
-          {displayed.length === 0 ? (
-            <p className="text-xs text-surface-500 text-center py-8">Nenhum contato encontrado</p>
-          ) : (
-            <div className="space-y-0.5">
-              {displayed.map((c) => {
-                const stageDef = stages.find((s) => s.key === c.stage)
-                return (
-                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-surface-800/50 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-brand-500/15 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
-                      {c.displayName.slice(0, 1).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-surface-100 truncate">{c.displayName}</p>
-                      <p className="text-xs text-surface-500">{c.waId}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {stageDef && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: stageDef.color, color: getReadableTextColor(stageDef.color) }}>
-                          {stageDef.label}
-                        </span>
-                      )}
-                      {c.tags && c.tags.length > 0 && (
-                        <span className="text-[10px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded">
-                          {c.tags[0].name}{c.tags.length > 1 ? ` +${c.tags.length - 1}` : ''}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="w-full py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-medium transition-all"
-          >
-            Fechar e continuar
-          </button>
-        </div>
-      </motion.div>
+      <ContactListModal
+        open={showContactsModal}
+        items={segmented}
+        total={segmented.length}
+        page={1}
+        limit={Math.max(1, segmented.length)}
+        stages={stages}
+        onPageChange={() => {}}
+        onClose={() => setShowContactsModal(false)}
+      />
     </div>
   )
 }

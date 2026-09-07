@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { ComposerBlock } from '@/components/campaigns/composer/ComposerBlock'
 import { ComposerPhonePreview } from '@/components/campaigns/composer/ComposerPhonePreview'
+import { ContactListModal } from '@/components/campaigns/composer/ContactListModal'
 import { ComposerBar } from '@/components/campaigns/composer/ComposerBar'
 import { ReadinessChecklist } from '@/components/campaigns/composer/ReadinessChecklist'
 import { BlockTemplate } from '@/components/campaigns/composer/blocks/BlockTemplate'
@@ -29,10 +30,19 @@ import { useComposerDraft, type BlockId } from '@/components/campaigns/composer/
 import { useCostEstimate } from '@/components/campaigns/composer/useCostEstimate'
 import { useTestSend } from '@/components/campaigns/composer/useTestSend'
 import { AudienceBlock } from '@/components/campaigns/audience/AudienceBlock'
+import { useAudiencePreview } from '@/components/campaigns/audience/useAudiencePreview'
 import {
   createEmptyDefinition, toSegmentDefinition,
+  type AudienceDefinition,
   type AudienceDraft as EditorAudienceDraft,
 } from '@/components/campaigns/audience/segmentBuilder'
+
+/** Definicao estavel para quando o modal esta fechado: sem condicao nenhuma o
+ *  `useAudiencePreview` devolve vazio SEM ir a' rede, entao a lista so' custa
+ *  requisicao quando alguem clica em "ver os N". */
+const SEM_PUBLICO: AudienceDefinition = createEmptyDefinition()
+
+const CONTATOS_POR_PAGINA = 50
 
 const BLOCK_ICON = {
   template:  FileText,
@@ -53,7 +63,7 @@ export function CampaignComposerPage() {
   const [openBlock, setOpenBlock] = useState<BlockId | null>('template')
 
   const {
-    templates, loadingTemplates, selectedTemplate, setSelectedTemplate, contacts,
+    templates, loadingTemplates, selectedTemplate, setSelectedTemplate, contacts, stages,
     campaignName, setCampaignName, mappings, updateMapping, mappingsComplete, fieldDefs,
     scheduleMode, setScheduleMode, scheduledAt, setScheduledAt,
     waNumbers, whatsappNumberId, setWhatsappNumberId,
@@ -103,6 +113,15 @@ export function CampaignComposerPage() {
   useEffect(() => {
     if (selectedTemplate && !campaignName.trim()) setCampaignName(selectedTemplate.name)
   }, [selectedTemplate, campaignName, setCampaignName])
+
+  // ── "ver os N" ──────────────────────────────────────────────────────────
+  // A definicao vem do proprio `onViewAll` do AudienceBlock (contrato D6), e
+  // nao do rascunho: e' o que o operador esta olhando naquele instante.
+  const [listaDe, setListaDe] = useState<AudienceDefinition | null>(null)
+  const [listaPagina, setListaPagina] = useState(1)
+  const lista = useAudiencePreview(listaDe ?? SEM_PUBLICO, {
+    page: listaPagina, limit: CONTATOS_POR_PAGINA,
+  })
 
   const cost = useCostEstimate(audience, selectedTemplate?.id)
   const testSend = useTestSend({
@@ -213,6 +232,7 @@ export function CampaignComposerPage() {
                   onChange={handleAudienceChange}
                   onResolvedChange={onAudienceResolved}
                   onConfirm={() => setOpenBlock('variaveis')}
+                onViewAll={(def) => { setListaPagina(1); setListaDe(def) }}
                   estimatedCostCents={cost.estimate?.totalCents}
                 />
               </BlockPublico>
@@ -266,6 +286,19 @@ export function CampaignComposerPage() {
           />
         </div>
       </div>
+
+      <ContactListModal
+        open={listaDe !== null}
+        items={lista.data}
+        total={lista.total}
+        page={listaPagina}
+        limit={CONTATOS_POR_PAGINA}
+        loading={lista.loading}
+        error={lista.error}
+        stages={stages}
+        onPageChange={setListaPagina}
+        onClose={() => setListaDe(null)}
+      />
     </div>
   )
 }
