@@ -55,6 +55,25 @@ describe('OnboardingChecklist', () => {
     expect(screen.getByRole('button', { name: /Criar template/ })).toBeInTheDocument()
   })
 
+  // Cenário real, e não é o "tudo pronto": a campanha existe e a LINHA CAI
+  // depois. Aí `complete` volta a ser falso, a lista reaparece — e o passo 3
+  // continua `done`. É o único caminho em que um passo feito é renderizado com
+  // a lista visível, e era o que estava sem cobertura.
+  it('passo 3 FEITO não oferece ação nem inventa motivo, mesmo com a linha caída depois', () => {
+    renderChecklist({
+      numbers: [line({ status: 'DISCONNECTED' })],
+      templates: [tpl()],
+      campaignCount: 1,
+    })
+    expect(screen.queryByRole('button', { name: 'Abrir Composer' })).not.toBeInTheDocument()
+    expect(screen.queryByTitle(/Conecte uma linha/)).not.toBeInTheDocument()
+  })
+
+  it('o anel de progresso tem nome acessível', () => {
+    renderChecklist()
+    expect(screen.getByRole('progressbar', { name: 'Progresso' })).toBeInTheDocument()
+  })
+
   it('mostra o chip de análise com contagem e nome, quando há', () => {
     renderChecklist({ numbers: [line()], templates: [tpl({ status: 'PENDING' })] })
     expect(screen.getByText('1 em análise')).toBeInTheDocument()

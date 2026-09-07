@@ -60,11 +60,11 @@ export function OnboardingChecklist({
   return (
     <section
       aria-labelledby="onboarding-title"
-      className="w-[760px] max-w-full rounded-[24px] border border-surface-700 bg-surface-800 overflow-hidden"
+      className="w-[760px] max-w-full rounded-2xl border border-surface-700 bg-surface-800 overflow-hidden"
     >
       {/* `.oh` — o gradiente de 120° do mockup, em azul a 10%. */}
       <div
-        className="flex items-center justify-between gap-[20px] py-[24px] px-[28px] border-b border-surface-700"
+        className="flex items-center justify-between gap-5 py-6 px-7 border-b border-surface-700"
         style={{
           backgroundImage:
             'linear-gradient(120deg, color-mix(in srgb, var(--color-accent-blue) 10%, transparent), transparent 60%)',
@@ -87,12 +87,16 @@ export function OnboardingChecklist({
           </p>
         </div>
 
+        {/* Sem a prop `label`: o RingProgress cai no padrão "Progresso" para o
+            `aria-label`. Passar string vazia dava `aria-label=""` e deixava a
+            progressbar SEM nome acessível — e, como o rótulo visual só
+            renderiza quando `label` é truthy, a string vazia também não
+            desenhava nada. */}
         <RingProgress
           value={state.doneCount}
           max={3}
           size={72}
           color="brand"
-          label=""
         >
           {`${state.doneCount}/3`}
         </RingProgress>
@@ -175,6 +179,13 @@ export function OnboardingChecklist({
         title={STEP_COPY.campaign.title}
         description={STEP_COPY.campaign.description}
         action={
+          // Passo FEITO não tem ação — mesma forma dos passos 1 e 2 acima.
+          // Sem isto o ramo `else` renderiza um botão desabilitado dizendo
+          // "Conecte uma linha e tenha um template aprovado primeiro" sobre um
+          // passo marcado com o check de concluído. O caminho não é teórico: a
+          // campanha existe e a LINHA CAI depois, aí `complete` volta a ser
+          // falso, a lista reaparece e o passo 3 segue `done`.
+          campaign.status === 'done' ? undefined :
           campaign.status === 'current' && composerReady ? (
             <Button variant="secondary" size="sm" onClick={() => navigate('/campaigns/new')}>
               Abrir Composer

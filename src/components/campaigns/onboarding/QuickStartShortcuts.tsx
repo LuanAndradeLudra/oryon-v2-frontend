@@ -37,25 +37,25 @@ export function QuickStartShortcuts({ onPick }: QuickStartShortcutsProps) {
     <section aria-labelledby="quickstart-title">
       <h3
         id="quickstart-title"
-        className="text-3xs font-bold uppercase tracking-[0.1em] text-surface-500 text-center mt-[20px] mb-[10px]"
+        className="text-3xs font-bold uppercase tracking-[0.1em] text-surface-500 text-center mt-5 mb-2.5"
       >
         Enquanto espera a aprovação, deixe um fluxo pronto
       </h3>
 
-      <div className="grid grid-cols-3 gap-[10px]">
+      <div className="grid grid-cols-3 gap-2.5">
         {SHORTCUTS.map(({ id, icon: Icon, title, description, accent }) => (
           <button
             key={id}
             type="button"
             onClick={() => onPick(id)}
-            className="flex items-center gap-[12px] text-left py-[12px] px-[14px] rounded-[16px] border border-surface-700 bg-surface-800 hover:border-surface-600 transition-colors cursor-pointer"
+            className="flex items-center gap-3 text-left py-3 px-3.5 rounded-lg border border-surface-700 bg-surface-800 hover:border-surface-600 transition-colors cursor-pointer"
           >
             <span
               aria-hidden="true"
-              className="w-[36px] h-[36px] rounded-[10px] flex items-center justify-center shrink-0"
+              className="w-9 h-9 rounded-sm flex items-center justify-center shrink-0"
               style={{ backgroundColor: tint(accent, 15), color: accentColor(accent) }}
             >
-              <Icon className="w-[18px] h-[18px]" />
+              <Icon className="w-4.5 h-4.5" />
             </span>
             <span className="min-w-0">
               <span className="block font-semibold text-sm text-surface-100 truncate">{title}</span>

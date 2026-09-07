@@ -47,7 +47,7 @@ export function OnboardingStep({ index, status, title, description, meta, action
   return (
     <div
       className={cn(
-        'grid grid-cols-[40px_1fr_auto] items-center gap-[16px] py-[16px] px-[28px]',
+        'grid grid-cols-[40px_1fr_auto] items-center gap-4 py-4 px-7',
         'border-b border-surface-800 last:border-b-0',
         // `.onb .oi.todo{opacity:.6}` — o passo que ainda não é a vez fica
         // atrás, sem sumir: quem está começando precisa ver o caminho inteiro.
@@ -57,13 +57,13 @@ export function OnboardingStep({ index, status, title, description, meta, action
       <span
         aria-hidden="true"
         className={cn(
-          'w-[40px] h-[40px] rounded-[12px] flex items-center justify-center',
+          'w-10 h-10 rounded-md flex items-center justify-center',
           'font-display font-bold text-[15px]',
           status === 'todo' && 'bg-surface-700 text-surface-500',
         )}
         style={MARKER_STYLE[status]}
       >
-        {done ? <Check className="w-[18px] h-[18px]" /> : index}
+        {done ? <Check className="w-4.5 h-4.5" /> : index}
       </span>
 
       <div className="min-w-0">
