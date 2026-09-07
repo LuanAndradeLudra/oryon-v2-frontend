@@ -5,7 +5,7 @@ import { withFallback } from '@/services/withFallback'
 import { conversationsApi } from '@/services/api'
 import { listAgents } from '@/services/agentsApi'
 import type { HandoffItem, HandoffStatus, HandoffSummary } from '@/types/agentsOps'
-import type { Conversation } from '@/types'
+import type { Conversation, ConversationFilters } from '@/types'
 import { maskPhone } from './handoffRow'
 
 /** Intervalo da fila e do resumo — o mesmo que a A1 usa para live/feed. */
@@ -70,6 +70,57 @@ export function conversaComoHandoff(c: Conversation, agora = Date.now()): Handof
   }
 }
 
+/**
+ * O que cada segmento SIGNIFICA quando o BE.6 não está no ar.
+ *
+ * Sem esta tradução o modo degradado pedia sempre a mesma coisa
+ * (`aiHandling: 'paused'` + `status: 'open'`), e os três segmentos devolviam a
+ * MESMA lista: "Resolvidas hoje" mostrava conversa que ainda esperava humano.
+ * Segmento que não filtra não é um segmento — é um rótulo em cima da mesma
+ * lista, e quem clica acredita nele.
+ *
+ * A fonte é `GET /conversations`, então a tradução é para o vocabulário dela:
+ *   • aguardando   → IA pausada, conversa aberta e SEM responsável;
+ *   • em atendimento → IA pausada, conversa aberta e COM responsável;
+ *   • resolvidas   → IA pausada e conversa resolvida.
+ *
+ * "Em atendimento" não tem filtro de servidor que sirva: `assignedTo` aceita
+ * `me`, `unassigned`, `all` ou um id — não existe "de qualquer um". Então este
+ * caso pede a lista aberta e a peneira sai em `pertenceAoSegmento`.
+ */
+export function filtroDegradado(status: HandoffStatus): ConversationFilters {
+  const base: ConversationFilters = { aiHandling: 'paused' }
+  if (status === 'resolved') return { ...base, status: 'resolved' }
+  if (status === 'waiting') return { ...base, status: 'open', assignedTo: 'unassigned' }
+  return { ...base, status: 'open' }
+}
+
+/**
+ * A MESMA regra, conferida na linha que voltou.
+ *
+ * Não é cinto e suspensório: o filtro do servidor é uma otimização para não
+ * puxar a lista inteira, e quem define o segmento é esta função. Um backend que
+ * ignore um filtro que não conhece devolveria linhas de fora — e sem esta
+ * conferência elas entrariam na tela debaixo do rótulo errado, que é
+ * exatamente o defeito que estamos consertando, só que mais difícil de ver.
+ *
+ * A REGRA É ASSIMÉTRICA DE PROPÓSITO, e a primeira versão desta função errou
+ * justamente aqui — exigia `status === 'open'` também no "aguardando" e
+ * ESVAZIAVA a tela quando a linha vinha sem o campo. Consertar um segmento
+ * apagando os outros não é conserto.
+ *
+ * Quem afirma a MAIS, prova: "resolvidas" e "em atendimento" acrescentam um
+ * fato sobre a conversa (foi resolvida; alguém assumiu) e só entram com esse
+ * fato presente. "Aguardando" é o segmento BASE — o que sobra depois de tirar
+ * o que comprovadamente está noutro lugar. Numa fonte degradada, campo ausente
+ * é ignorância, não negação, e ignorância não pode apagar a fila.
+ */
+export function pertenceAoSegmento(c: Conversation, status: HandoffStatus): boolean {
+  if (status === 'resolved') return c.status === 'resolved'
+  if (status === 'claimed') return c.status !== 'resolved' && !!c.assignedUser
+  return c.status !== 'resolved' && !c.assignedUser
+}
+
 export function useHandoffQueue(status: HandoffStatus, queue?: string): QueueState {
   const [itens, setItens] = useState<HandoffItem[]>([])
   const [total, setTotal] = useState(0)
@@ -120,14 +171,19 @@ export function useHandoffQueue(status: HandoffStatus, queue?: string): QueueSta
           // que é bem mais estreito (só o phantom-confirmation handoff) e que
           // o backend combina com AND, devolvendo uma fatia da fila em vez da
           // fila.
-          const conversas = await conversationsApi.list({ aiHandling: 'paused', status: 'open' }, 1, 20)
+          const conversas = await conversationsApi.list(filtroDegradado(status), 1, 20)
           if (!vivo) return
           const agora = Date.now()
-          const linhas = [...(conversas.data.data ?? [])]
+          const doSegmento = (conversas.data.data ?? []).filter((c) => pertenceAoSegmento(c, status))
+          const linhas = [...doSegmento]
             .sort((a, b) => Date.parse(b.lastMessageAt ?? '') - Date.parse(a.lastMessageAt ?? ''))
             .map((c) => conversaComoHandoff(c, agora))
           setItens(linhas)
-          setTotal(conversas.data.total ?? linhas.length)
+          // O total do servidor conta a resposta INTEIRA; depois da peneira ele
+          // deixa de descrever o que está na tela. Só vale quando nada saiu.
+          setTotal(doSegmento.length === (conversas.data.data ?? []).length
+            ? (conversas.data.total ?? linhas.length)
+            : linhas.length)
           setDisponivel(false)
           // Sem `summary` os KPIs somem inteiros. Derivá-los da página corrente
           // daria um número errado com cara de certo.
