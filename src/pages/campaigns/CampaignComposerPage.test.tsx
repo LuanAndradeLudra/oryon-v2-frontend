@@ -122,6 +122,18 @@ describe('CampaignComposerPage — a tela existe', () => {
   })
 })
 
+describe('CampaignComposerPage — contador de blocos', () => {
+  it('tira o total do proprio estado, e nao de um 4 cravado no texto', async () => {
+    // Numerador dinamico com denominador literal e' frase que passa a mentir
+    // sem quebrar nada no dia em que existir um quinto bloco (N4 do Calibre).
+    draftState.blocks = {
+      template: 'done', publico: 'pending', variaveis: 'pending', envio: 'pending', quinto: 'pending',
+    }
+    await renderAt('/campaigns/new')
+    expect(screen.getByText('1 de 5 blocos prontos')).toBeInTheDocument()
+  })
+})
+
 describe('CampaignComposerPage — ?template= da Biblioteca (D4 §6c)', () => {
   it('pré-seleciona o template que veio no parâmetro', async () => {
     await renderAt('/campaigns/new?template=tpl_2')

@@ -60,7 +60,13 @@ export function ComposerPhonePreview({
     }
   }
 
-  const firstLabel = contacts.length > 0 ? shortName(contacts[0].displayName) : ''
+  // Duas perguntas diferentes, e antes elas estavam na mesma condicao: um
+  // contato com nome em branco escondia o seletor INTEIRO, inclusive o
+  // "aleatorio", que funcionaria (N3 do Calibre). Quem decide se ha' seletor e'
+  // a existencia de contatos; o nome so' decide o ROTULO.
+  const firstLabel = contacts.length > 0
+    ? (shortName(contacts[0].displayName) || '1º da base')
+    : ''
   const clock = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
   return (
@@ -69,10 +75,18 @@ export function ComposerPhonePreview({
       style={WHATSAPP_PALETTE.dark as CSSProperties}
     >
       <div className="w-[320px] flex items-center justify-between gap-3">
+        {/* O mockup escreve "Prévia · como o cliente vê", e essa promessa e'
+            maior do que a fonte sustenta: a amostra sai de `contactsApi.list`,
+            que traz os 500 primeiros contatos do tenant SEM filtro, e nao o
+            publico deste disparo. Dizer "o cliente" faria a tela garantir
+            justamente o que ela nao pode checar — o operador veria a Marina com
+            tudo resolvido e os Leads reais receberiam `{{2}}` no WhatsApp.
+            Quando a fonte nao sabe, quem cede e' a promessa (achado F2 do
+            Calibre; mesma familia da D4 e da D52). */}
         <span className="text-3xs font-bold tracking-widest uppercase text-surface-500">
-          Prévia · como o cliente vê
+          Prévia · exemplo da sua base
         </span>
-        {firstLabel && (
+        {contacts.length > 0 && (
           <SegmentedControl<SampleMode>
             label="Contato da prévia"
             value={mode}
@@ -154,9 +168,10 @@ export function ComposerPhonePreview({
       <p className="text-3xs text-surface-500 text-center max-w-[300px] leading-[1.5]">
         {contact ? (
           <>
-            Variáveis preenchidas com os dados de{' '}
+            Exemplo com{' '}
             <strong className="text-surface-400">{contact.displayName}</strong>, um contato real da
-            sua base. Onde ele não tem o dado, a variável fica à vista como <code>{'{{n}}'}</code>.
+            sua base — não necessariamente do público deste disparo. Onde falta o dado, a variável
+            fica à vista como <code>{'{{n}}'}</code>; outros contatos podem ter outras faltas.
           </>
         ) : (
           'Assim que houver contatos carregados, as variáveis aparecem preenchidas com os dados de um contato real.'

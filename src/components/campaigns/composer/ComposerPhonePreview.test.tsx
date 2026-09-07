@@ -72,4 +72,25 @@ describe('ComposerPhonePreview — o telefone mostra a mensagem com dado real', 
     renderPhone()
     expect(screen.getByText('Sua conta comercial')).toBeInTheDocument()
   })
+
+  it('contato sem nome nao esconde o seletor inteiro, apenas troca o rotulo', () => {
+    // Antes, "ha' contatos?" e "o primeiro tem nome?" moravam na mesma
+    // condicao, entao um nome em branco levava junto o botao "aleatorio", que
+    // funcionaria (N3 do Calibre).
+    renderPhone({ contacts: [{ ...CONTATOS[0], displayName: '  ' }, CONTATOS[1]] as Contact[] })
+    expect(screen.getByRole('tab', { name: '1º da base' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'aleatório' }))
+    expect(screen.getByText(/Oi João Prado/)).toBeInTheDocument()
+  })
+
+  it('nao promete "como o cliente ve": a amostra vem da base, nao do publico', () => {
+    // A fonte e' `contactsApi.list`, os 500 primeiros contatos do tenant SEM
+    // filtro. Prometer "o cliente" faria a tela garantir justamente o que ela
+    // nao pode checar (F2 do Calibre).
+    renderPhone()
+    expect(screen.queryByText(/como o cliente vê/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/exemplo da sua base/i)).toBeInTheDocument()
+    expect(screen.getByText(/não necessariamente do público deste disparo/i)).toBeInTheDocument()
+  })
 })

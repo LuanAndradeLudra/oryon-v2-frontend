@@ -126,6 +126,10 @@ export function CampaignComposerPage() {
     { label: 'Linha e horário definidos', done: blocks.envio === 'done' },
   ]
 
+  // O total sai do proprio `blocks`, e nao de um `4` cravado: o numerador ja' e'
+  // dinamico, e um quinto bloco faria a frase mentir sem quebrar nada (N4 do
+  // Calibre).
+  const totalBlocos = Object.keys(blocks).length
   const pendentes = Object.values(blocks).filter((s) => s !== 'done').length
   const toggle = (id: BlockId) => setOpenBlock((cur) => (cur === id ? null : id))
   const blockProps = (id: BlockId) => ({
@@ -150,8 +154,8 @@ export function CampaignComposerPage() {
           />
           <p className="text-xs text-surface-500 mt-0.5">
             {pendentes === 0
-              ? 'Os 4 blocos estão completos'
-              : `${4 - pendentes} de 4 blocos prontos`}
+              ? `Os ${totalBlocos} blocos estão completos`
+              : `${totalBlocos - pendentes} de ${totalBlocos} blocos prontos`}
           </p>
         </div>
         <Button variant="ghost" onClick={() => navigate('/campaigns')} aria-label="Fechar o Composer">
