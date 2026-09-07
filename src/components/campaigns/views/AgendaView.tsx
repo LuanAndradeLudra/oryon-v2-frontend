@@ -1,16 +1,11 @@
-import { CalendarDays } from 'lucide-react'
-import { EmptyState } from '@/components/ui/EmptyState'
+// Casca da vista Agenda. `CampaignsPage.tsx` renderiza esta vista por `?view=`
+// sem passar props; o conteúdo real (calendário de densidade + fluxo vertical
+// por dia) vive em `agenda/`, que se vira sozinho com os dados.
+//
+// Propriedade transferida da Alavanca (W0.4) para a D1 no merge do #117 —
+// ONDA-1-MAPA §1.2.
+import { AgendaShell } from './agenda/AgendaShell'
 
-// Skeleton (W0.1/SCRUM-994) — stub que o W0.4/SCRUM-997 (Alavanca) substitui;
-// o conteúdo real (mini-calendário + fluxo vertical) chega no D1 (Andaime).
-// Sem props nesta onda.
 export function AgendaView() {
-  return (
-    <EmptyState
-      icon={CalendarDays}
-      title="Agenda em construção"
-      hint="A visão de agenda dos disparos chega em uma próxima leva."
-      className="m-6"
-    />
-  )
+  return <AgendaShell />
 }

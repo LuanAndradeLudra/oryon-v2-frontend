@@ -128,7 +128,27 @@ export interface HandoffRule {
 }
 
 export interface HandoffRules {
-  rules: HandoffRule[]
+  /**
+   * OPCIONAL porque o banco guarda `{}` em agente que nunca configurou regra
+   * nenhuma. Isto não é frouxidão: o tipo antes não PREVENIA o `{}` de existir
+   * — ele impedia o código de RECONHECER que ele existe. Não era guarda, era
+   * negação, e a prova estava espalhada em dois lugares.
+   *
+   * Do lado da LEITURA, ninguém confiava no tipo: as 7 leituras de produção já
+   * eram `agent.handoff_rules?.rules ?? []` (HandoffTab, OverviewTab,
+   * SimulatorPanel ×2, useAgentSimulator) ou `rules?.length ?? 0` (linha 815
+   * deste arquivo). Escritas por gente diferente, todas defensivas.
+   *
+   * Do lado do TESTE, a denúncia era mais forte: existiam 5
+   * `{} as AgentConfig['handoff_rules']` em fixtures. O cast não era
+   * conveniência — era a única forma de expressar o dado real dentro de um
+   * tipo que o nega. Tipo que obriga o teste a mentir não protege nada; empurra
+   * a verdade para fora do alcance do compilador.
+   *
+   * Raio medido antes da troca, com `tsc -b --force` e strict: ZERO
+   * consumidores quebram.
+   */
+  rules?: HandoffRule[]
 }
 
 export interface AgentChannels {

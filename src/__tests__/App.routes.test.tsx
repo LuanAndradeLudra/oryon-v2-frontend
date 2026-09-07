@@ -2,8 +2,8 @@
 // páginas) e o redirect /agents/:id → /agents/:id/overview. Não testa o
 // conteúdo real de AgentDetail/CampaignsTab (fora do escopo desta história —
 // são mockados aqui como stubs).
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
 // ── Mocks compartilhados com smoke.test.tsx (mesmo padrão) ──────────────────
@@ -216,16 +216,92 @@ async function renderAt(path: string) {
 
 // ── Testes ───────────────────────────────────────────────────────────────────
 
-// Timeout maior que o default (5s) — o primeiro import dinâmico de cada
-// página nesta suíte transforma árvores grandes (AgentsPage → AgentDetail
-// etc.), mesmo com os componentes pesados mockados; a máquina compartilhada
-// também tem contenção real de CPU com o squad todo rodando em paralelo.
+// Timeout maior que os defaults — o primeiro import dinâmico de cada página
+// nesta suíte transforma árvores grandes (AgentsPage → AgentDetail etc.),
+// mesmo com os componentes pesados mockados; a máquina compartilhada também
+// tem contenção real de CPU com o squad todo rodando em paralelo.
+//
+// SÃO DOIS RELÓGIOS INDEPENDENTES, e confundi-los é a causa de toda a
+// intermitência já vista neste arquivo:
+//
+//   • o do `it`      → 15 s (`vitest.config.ts`, `testTimeout: 15_000`)
+//   • o do `findBy*` → 1 s  (default do testing-library; o `setup.ts` não
+//                            chama `configure()`), e ele só começa a contar
+//                            DEPOIS do `renderAt` — o `import('@/App')` corre
+//                            fora dele
+//
+// Regra deste arquivo, para todo teste novo:
+//
+//   1. rota que monta árvore real, ou esqueleto que paga import dinâmico:
+//      SLOW no `findBy*`/`waitFor` — é ele que tem a janela curta;
+//   2. sempre que uma asserção leva SLOW, o `it` leva também. O orçamento
+//      efetivo é o MENOR dos dois: com `findBy` em 30 s e `it` em 15 s a
+//      mensagem vira "Test timed out in 15000ms", que não nomeia asserção
+//      nenhuma e manda quem investiga procurar no lugar errado;
+//   3. esqueleto que reusa chunk já importado não leva nada.
 const SLOW = 30_000
 
+/**
+ * Orçamento do aquecimento, e ele NÃO é o `SLOW`.
+ *
+ * O `beforeAll` abaixo paga o `import('@/App')` uma vez. Numa instalação
+ * limpa — que é a condição do CI — esse import transforma o grafo inteiro
+ * pela primeira vez, e foi MEDIDO estourando os 30 s do `SLOW`: quando isso
+ * acontece o vitest aborta o hook e o arquivo reporta TODOS os testes como
+ * "skipped", com `Test Files 1 failed` — o alarme toca, mas não diz onde.
+ *
+ * Por isso o hook tem constante própria, folgada. O custo de errar para cima
+ * é um travamento genuíno demorar a aparecer; o de errar para baixo é a suíte
+ * inteira do arquivo sumir por lentidão de máquina, que é pior e já aconteceu.
+ * Os 120 s são margem sobre UMA observação de estouro em instalação limpa,
+ * não um valor medido com precisão. Uma segunda tentativa de reproduzir o
+ * estouro (cache apagado, os dois lados na mesma condição) **corroborou a
+ * direção e não o número**: 12 s contra 16 s, sem chegar perto do teto. Ou
+ * seja, ninguém conseguiu apertar isto ainda — se você conseguir, aperte.
+ */
+const WARMUP = 120_000
+
 describe('App routes — SCRUM-994/W0.1', () => {
+  // ── Aquecimento do import ─────────────────────────────────────────────────
+  // `renderAt` faz `await import('@/App')`. Sem isto, quem paga a importação
+  // da árvore de rotas é o PRIMEIRO teste do arquivo, dentro do orçamento da
+  // asserção dele.
+  //
+  // O ganho NÃO é velocidade, é VARIÂNCIA. Medido no tip `9e7dc3a`,
+  // intercalado, 6 pares, com o `/campaigns` como controle interno:
+  //
+  //            mediana do `/agents`      faixa
+  //   sem      6.099 ms                  5.682 – 11.871  (2,1x)
+  //   com        911 ms                    816 –    977  (1,20x)
+  //
+  // 6 pares de 6 a favor. A margem contra o teto do `SLOW` vai de 2,5x para
+  // 31x — e era o teto, não a janela de 1 s do `findBy*`, que derrubava o
+  // `/agents` no `BASELINE-SUITE.md`. Timeout não consertava porque o custo
+  // estava DENTRO do orçamento da asserção.
+  //
+  // CONTRAPARTIDA, declarada: o custo mudou de lugar, não sumiu. Se este hook
+  // estourar, TODOS os testes do arquivo são PULADOS em vez de um falhar.
+  //
+  // (Sem contagem de propósito: o número aqui já nasceu velho uma vez. Este
+  // arquivo ganha testes a cada história que muda o que uma rota monta, e um
+  // merge que acrescenta um `it` invalida a contagem sem ninguém tocar neste
+  // comentário.)
+  //
+  // E o risco é mais estreito do que "a suíte some": o vitest reporta
+  // `Test Files 1 failed`, então o alarme TOCA. O que se perde é o
+  // DIAGNÓSTICO — a linha de testes diz "12 skipped", sem nomear asserção
+  // nenhuma, e quem investiga não sabe por onde começar. Ver o `WARMUP`.
+  beforeAll(async () => {
+    await import('@/App')
+  }, WARMUP)
+
   it('mantém /agents alcançável (URL antiga intacta)', async () => {
     await renderAt('/agents')
-    expect(await screen.findByText(/Nenhum agente ainda/i)).toBeInTheDocument()
+    // O timeout vai no `findBy*`, não só no `it`: `findBy*` tem janela PRÓPRIA
+    // de 1s e ignora o timeout do teste. Com o SLOW só no `it`, esta asserção
+    // falhava em ~1s e o teste inteiro morria — e continuava listada no
+    // baseline como falha esperada, parecendo consertada.
+    expect(await screen.findByRole('heading', { level: 2, name: /Que tipo de atendimento você quer automatizar/i }, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
   it('mantém /campaigns alcançável, view padrão = list (CampaignsPage → ListView real, SCRUM-997/W0.4)', async () => {
@@ -241,10 +317,21 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(await screen.findByText(/Nenhuma campanha de disparo encontrada/i, {}, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
-  it('/campaigns?view=agenda mostra o esqueleto da Agenda', async () => {
+  it('/campaigns?view=agenda mostra a Agenda real (D1/SCRUM-1018)', async () => {
     await renderAt('/campaigns?view=agenda')
-    expect(await screen.findByText(/Agenda em construção/i)).toBeInTheDocument()
-  })
+    // A casca deixou de ser esqueleto: com campanhas=[] (axios mockado) a
+    // Agenda renderiza o próprio estado vazio.
+    expect(await screen.findByText(/Nenhum disparo por aqui/i, {}, { timeout: SLOW }))
+      .toBeInTheDocument()
+  }, SLOW)
+
+  it('o seletor de vista dá acesso a Agenda e Board (antes só pela query string)', async () => {
+    await renderAt('/campaigns?view=agenda')
+    const seletor = await screen.findByRole('tablist', { name: 'Vista dos disparos' }, { timeout: SLOW })
+    expect(within(seletor).getByRole('tab', { name: /Agenda/ })).toHaveAttribute('aria-selected', 'true')
+    expect(within(seletor).getByRole('tab', { name: /Board/ })).toBeInTheDocument()
+    expect(within(seletor).getByRole('tab', { name: /Lista/ })).toBeInTheDocument()
+  }, SLOW)
 
   it('/campaigns?view=board mostra o esqueleto do Board', async () => {
     await renderAt('/campaigns?view=board')
@@ -253,18 +340,34 @@ describe('App routes — SCRUM-994/W0.1', () => {
 
   it('/campaigns/new mostra o esqueleto do Composer', async () => {
     await renderAt('/campaigns/new')
-    expect(await screen.findByText(/Composer em construção/i)).toBeInTheDocument()
-  })
+    // Esqueleto barato, mas é a primeira rota a pagar este import dinâmico
+    // (325 ms medidos, ociosa) — cabe na janela de 1 s do `findBy*` só
+    // enquanto a máquina estiver folgada. Regra 1 + 2 do bloco do SLOW.
+    expect(await screen.findByText(/Composer em construção/i, {}, { timeout: SLOW })).toBeInTheDocument()
+  }, SLOW)
 
   it('/campaigns/:id/edit reusa o esqueleto do Composer', async () => {
     await renderAt('/campaigns/abc/edit')
+    // Regra 3: 16 ms porque o chunk já veio no teste acima. A folga aqui é
+    // DERIVADA — medido na mutação: com o `/campaigns/new` falhando cedo,
+    // este teste vira o importador e sobe para 338 ms. Se aquele teste sair
+    // ou mudar de ordem, este passa a pagar o import e precisa da regra 1.
     expect(await screen.findByText(/Composer em construção/i)).toBeInTheDocument()
   })
 
-  it('/campaigns/:id/report mostra o esqueleto do Relatório', async () => {
+  // Atualizado pelo D3 (SCRUM-1022): esta asserção cobria o esqueleto do W0.1
+  // ("Relatório em construção"), que era o placeholder à espera desta
+  // história. Com a página real no lugar, o que a rota tem de provar continua
+  // sendo reachability — só que agora contra o conteúdo de verdade.
+  // Usa o mesmo `SLOW` das outras rotas desta suíte: a página real tem um
+  // grafo de módulos bem maior que o esqueleto e a rota é `lazy`, então com a
+  // suíte inteira em paralelo o `import()` do chunk estoura os 5s padrão e o
+  // teste morre no fallback de Suspense. Isolado, passa em menos de 1s.
+  it('/campaigns/:id/report monta a página de Relatório', async () => {
     await renderAt('/campaigns/abc/report')
-    expect(await screen.findByText(/Relatório em construção/i)).toBeInTheDocument()
-  })
+    // Idem: o SLOW precisa estar AQUI, não só no `it`.
+    expect(await screen.findByText(/Funil de entrega/i, {}, { timeout: SLOW })).toBeInTheDocument()
+  }, SLOW)
 
   it('/agents/new monta o Studio na etapa 1 de 8', async () => {
     // Era o esqueleto "Studio em construção" da W0.1; a A3 (SCRUM-1014) pôs a
@@ -277,8 +380,10 @@ describe('App routes — SCRUM-994/W0.1', () => {
 
   it('/agents/handoffs mostra o esqueleto da Caixa de transferências', async () => {
     await renderAt('/agents/handoffs')
-    expect(await screen.findByText(/Caixa de transferências em construção/i)).toBeInTheDocument()
-  })
+    // Mesmo caso do /campaigns/new: esqueleto, mas paga o import da rota
+    // (330 ms medidos, ociosa). Regra 1 + 2 do bloco do SLOW.
+    expect(await screen.findByText(/Caixa de transferências em construção/i, {}, { timeout: SLOW })).toBeInTheDocument()
+  }, SLOW)
 
   it('/agents/:id redireciona para /agents/:id/overview e monta o Workspace', async () => {
     await renderAt('/agents/agent-1')
@@ -294,12 +399,14 @@ describe('App routes — SCRUM-994/W0.1', () => {
     // intermitente (reproduzido: passa e falha alternando, mesmo codigo).
     expect(await screen.findByRole('navigation', { name: 'Seções do agente' }, { timeout: SLOW })).toBeInTheDocument()
     expect(await screen.findByRole('link', { name: 'Visão geral', current: 'page' }, { timeout: SLOW })).toBeInTheDocument()
-  })
+  }, SLOW)
 
   it('/agents/:id/:section com seção desconhecida redireciona para overview', async () => {
     await renderAt('/agents/agent-1/nao-existe')
-    await waitFor(() => expect(window.location.pathname).toBe('/agents/agent-1/overview'))
-  })
+    // `waitFor` tem a mesma janela própria de 1 s do `findBy*` — o redirect
+    // depende da árvore do Workspace ter montado. Regra 1 + 2.
+    await waitFor(() => expect(window.location.pathname).toBe('/agents/agent-1/overview'), { timeout: SLOW })
+  }, SLOW)
 
   it('/agents/:id/:section com seção válida monta o Workspace direto', async () => {
     await renderAt('/agents/agent-1/rules')
@@ -308,5 +415,5 @@ describe('App routes — SCRUM-994/W0.1', () => {
     // nav — aqui "Regras", não a default.
     expect(await screen.findByRole('link', { name: 'Regras', current: 'page' }, { timeout: SLOW })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Visão geral' })).not.toHaveAttribute('aria-current')
-  })
+  }, SLOW)
 })
