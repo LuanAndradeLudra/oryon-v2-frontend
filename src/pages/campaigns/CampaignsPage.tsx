@@ -1,5 +1,5 @@
 import { Navigate, useSearchParams } from 'react-router-dom'
-import { Send, FileText, Target } from 'lucide-react'
+import { Send, FileText, Target, CalendarDays, KanbanSquare, List } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnimatePresence } from 'framer-motion'
 
@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { TipCard } from '@/components/ui/TipCard'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { TemplatesTab } from '@/components/campaigns/TemplatesTab'
 import { AttributionTab } from '@/components/campaigns/AttributionTab'
 import { ListView } from '@/components/campaigns/views/ListView'
@@ -20,6 +21,21 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
   { id: 'campaigns',  label: 'Disparos',   icon: Send     },
   { id: 'templates',  label: 'Templates',  icon: FileText },
   { id: 'attribution', label: 'Atribuição', icon: Target  },
+]
+
+// Seletor de vista da aba Disparos. Até a D1 (SCRUM-1018) o `?view=` existia
+// na rota mas não tinha porta de entrada nenhuma na interface — Agenda e Board
+// eram inalcançáveis sem digitar a query na barra de endereço.
+//
+// EXCEÇÃO AUTORIZADA AO CONGELAMENTO deste arquivo (ONDA-1-MAPA §2), decidida
+// pelo Maestro em coord/D1-decisoes.md, decisão 9: um seletor só, no arquivo
+// que hospeda as três vistas, escrito por quem consegue verificar a troca de
+// verdade. As alternativas eram três cópias em dois donos (dívida na certa) ou
+// um PR de integração do Andaime, cujo papel proíbe código de produto.
+const VIEW_OPTIONS: { value: ViewMode; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: 'agenda', label: 'Agenda', icon: CalendarDays  },
+  { value: 'board',  label: 'Board',  icon: KanbanSquare  },
+  { value: 'list',   label: 'Lista',  icon: List          },
 ]
 
 export function CampaignsPage() {
@@ -39,6 +55,14 @@ export function CampaignsPage() {
   // chega com D1/D1b).
   const rawView = searchParams.get('view')
   const activeView: ViewMode = rawView === 'agenda' || rawView === 'board' ? rawView : 'list'
+  // A vista acompanha a aba na URL: trocar de vista não pode apagar o `?tab=`
+  // de quem chegou por link direto.
+  const setActiveView = (view: ViewMode) => {
+    const next: Record<string, string> = {}
+    if (activeTab !== 'campaigns') next.tab = activeTab
+    if (view !== 'list') next.view = view
+    setSearchParams(next, { replace: true })
+  }
   const campaignsEnabled = isFeatureVisible('campaigns')
 
   if (!campaignsEnabled) {
@@ -95,6 +119,18 @@ export function CampaignsPage() {
             </TipCard>
           )}
         </AnimatePresence>
+
+        {/* Seletor de vista — só na aba Disparos, que é a única com `?view=` */}
+        {activeTab === 'campaigns' && (
+          <div className="px-6 pt-4 flex-shrink-0">
+            <SegmentedControl
+              label="Vista dos disparos"
+              options={VIEW_OPTIONS}
+              value={activeView}
+              onChange={setActiveView}
+            />
+          </div>
+        )}
 
         {/* Tab content */}
         <div className="flex-1 flex flex-col overflow-hidden">

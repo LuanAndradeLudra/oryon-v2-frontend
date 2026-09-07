@@ -3,7 +3,7 @@
 // conteúdo real de AgentDetail/CampaignsTab (fora do escopo desta história —
 // são mockados aqui como stubs).
 import { describe, it, expect, vi, beforeAll } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
 // ── Mocks compartilhados com smoke.test.tsx (mesmo padrão) ──────────────────
@@ -247,8 +247,8 @@ const SLOW = 30_000
  * O `beforeAll` abaixo paga o `import('@/App')` uma vez. Numa instalação
  * limpa — que é a condição do CI — esse import transforma o grafo inteiro
  * pela primeira vez, e foi MEDIDO estourando os 30 s do `SLOW`: quando isso
- * acontece o vitest aborta o hook e o arquivo reporta "12 skipped" com
- * `Test Files 1 failed` — o alarme toca, mas não diz onde.
+ * acontece o vitest aborta o hook e o arquivo reporta TODOS os testes como
+ * "skipped", com `Test Files 1 failed` — o alarme toca, mas não diz onde.
  *
  * Por isso o hook tem constante própria, folgada. O custo de errar para cima
  * é um travamento genuíno demorar a aparecer; o de errar para baixo é a suíte
@@ -280,7 +280,12 @@ describe('App routes — SCRUM-994/W0.1', () => {
   // estava DENTRO do orçamento da asserção.
   //
   // CONTRAPARTIDA, declarada: o custo mudou de lugar, não sumiu. Se este hook
-  // estourar, os 12 testes são PULADOS em vez de um falhar.
+  // estourar, TODOS os testes do arquivo são PULADOS em vez de um falhar.
+  //
+  // (Sem contagem de propósito: o número aqui já nasceu velho uma vez. Este
+  // arquivo ganha testes a cada história que muda o que uma rota monta, e um
+  // merge que acrescenta um `it` invalida a contagem sem ninguém tocar neste
+  // comentário.)
   //
   // E o risco é mais estreito do que "a suíte some": o vitest reporta
   // `Test Files 1 failed`, então o alarme TOCA. O que se perde é o
@@ -312,10 +317,21 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(await screen.findByText(/Nenhuma campanha de disparo encontrada/i, {}, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
-  it('/campaigns?view=agenda mostra o esqueleto da Agenda', async () => {
+  it('/campaigns?view=agenda mostra a Agenda real (D1/SCRUM-1018)', async () => {
     await renderAt('/campaigns?view=agenda')
-    expect(await screen.findByText(/Agenda em construção/i)).toBeInTheDocument()
-  })
+    // A casca deixou de ser esqueleto: com campanhas=[] (axios mockado) a
+    // Agenda renderiza o próprio estado vazio.
+    expect(await screen.findByText(/Nenhum disparo por aqui/i, {}, { timeout: SLOW }))
+      .toBeInTheDocument()
+  }, SLOW)
+
+  it('o seletor de vista dá acesso a Agenda e Board (antes só pela query string)', async () => {
+    await renderAt('/campaigns?view=agenda')
+    const seletor = await screen.findByRole('tablist', { name: 'Vista dos disparos' }, { timeout: SLOW })
+    expect(within(seletor).getByRole('tab', { name: /Agenda/ })).toHaveAttribute('aria-selected', 'true')
+    expect(within(seletor).getByRole('tab', { name: /Board/ })).toBeInTheDocument()
+    expect(within(seletor).getByRole('tab', { name: /Lista/ })).toBeInTheDocument()
+  }, SLOW)
 
   it('/campaigns?view=board mostra o esqueleto do Board', async () => {
     await renderAt('/campaigns?view=board')
