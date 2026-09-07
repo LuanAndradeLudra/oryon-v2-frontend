@@ -21,12 +21,14 @@ interface SectionContentProps {
   agent: AgentConfigWithTools
   onUpdate: (a: AgentConfig) => void
   onToolsChange: (tools: AgentTool[]) => void
+  /** Versão publicada do prompt (AS.2). Ausente enquanto o endpoint não existe. */
+  promptVersion?: number | null
 }
 
-export function SectionContent({ section, agent, onUpdate, onToolsChange }: SectionContentProps) {
+export function SectionContent({ section, agent, onUpdate, onToolsChange, promptVersion }: SectionContentProps) {
   switch (section) {
     case 'overview':     return <OverviewSection     agent={agent} onUpdate={onUpdate} />
-    case 'prompt':       return <PromptSection       agent={agent} onUpdate={onUpdate} />
+    case 'prompt':       return <PromptSection       agent={agent} onUpdate={onUpdate} promptVersion={promptVersion} />
     case 'knowledge':    return <KnowledgeSection    agent={agent} />
     case 'catalog':      return <CatalogSection      agent={agent} />
     case 'capabilities': return <CapabilitiesSection agent={agent} onUpdate={onUpdate} />
