@@ -164,7 +164,7 @@ export function AgentStudioPage() {
         >
           <BlueprintCard data={data} step={step} />
           <div className="mt-3.5">
-            <StudioInsights data={data} setData={setData} />
+            <StudioInsights data={data} setData={setData} step={step} />
           </div>
 
           {/* Voltar mora aqui embaixo: no TopBar só ficam avançar e publicar,

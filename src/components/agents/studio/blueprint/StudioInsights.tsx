@@ -18,12 +18,14 @@ import { lacunaPrincipal } from './lacunas'
 const DESTAQUES = CRM_CAPABILITIES_CATALOG.slice(0, 3)
 
 export function StudioInsights({
-  data, setData,
+  data, setData, step,
 }: {
   data: WizardData
   setData: React.Dispatch<React.SetStateAction<WizardData>>
+  /** Etapa atual do wizard — decide QUAL lacuna aberta o card âmbar destaca. */
+  step: number
 }) {
-  const lacuna = lacunaPrincipal(data)
+  const lacuna = lacunaPrincipal(data, step)
   const ligadas = countEnabledCrmCapabilities(data)
 
   return (
