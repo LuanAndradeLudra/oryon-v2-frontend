@@ -216,10 +216,29 @@ async function renderAt(path: string) {
 
 // ── Testes ───────────────────────────────────────────────────────────────────
 
-// Timeout maior que o default (5s) — o primeiro import dinâmico de cada
-// página nesta suíte transforma árvores grandes (AgentsPage → AgentDetail
-// etc.), mesmo com os componentes pesados mockados; a máquina compartilhada
-// também tem contenção real de CPU com o squad todo rodando em paralelo.
+// Timeout maior que os defaults — o primeiro import dinâmico de cada página
+// nesta suíte transforma árvores grandes (AgentsPage → AgentDetail etc.),
+// mesmo com os componentes pesados mockados; a máquina compartilhada também
+// tem contenção real de CPU com o squad todo rodando em paralelo.
+//
+// SÃO DOIS RELÓGIOS INDEPENDENTES, e confundi-los é a causa de toda a
+// intermitência já vista neste arquivo:
+//
+//   • o do `it`      → 15 s (`vitest.config.ts`, `testTimeout: 15_000`)
+//   • o do `findBy*` → 1 s  (default do testing-library; o `setup.ts` não
+//                            chama `configure()`), e ele só começa a contar
+//                            DEPOIS do `renderAt` — o `import('@/App')` corre
+//                            fora dele
+//
+// Regra deste arquivo, para todo teste novo:
+//
+//   1. rota que monta árvore real, ou esqueleto que paga import dinâmico:
+//      SLOW no `findBy*`/`waitFor` — é ele que tem a janela curta;
+//   2. sempre que uma asserção leva SLOW, o `it` leva também. O orçamento
+//      efetivo é o MENOR dos dois: com `findBy` em 30 s e `it` em 15 s a
+//      mensagem vira "Test timed out in 15000ms", que não nomeia asserção
+//      nenhuma e manda quem investiga procurar no lugar errado;
+//   3. esqueleto que reusa chunk já importado não leva nada.
 const SLOW = 30_000
 
 describe('App routes — SCRUM-994/W0.1', () => {
@@ -257,11 +276,18 @@ describe('App routes — SCRUM-994/W0.1', () => {
 
   it('/campaigns/new mostra o esqueleto do Composer', async () => {
     await renderAt('/campaigns/new')
-    expect(await screen.findByText(/Composer em construção/i)).toBeInTheDocument()
-  })
+    // Esqueleto barato, mas é a primeira rota a pagar este import dinâmico
+    // (325 ms medidos, ociosa) — cabe na janela de 1 s do `findBy*` só
+    // enquanto a máquina estiver folgada. Regra 1 + 2 do bloco do SLOW.
+    expect(await screen.findByText(/Composer em construção/i, {}, { timeout: SLOW })).toBeInTheDocument()
+  }, SLOW)
 
   it('/campaigns/:id/edit reusa o esqueleto do Composer', async () => {
     await renderAt('/campaigns/abc/edit')
+    // Regra 3: 16 ms porque o chunk já veio no teste acima. A folga aqui é
+    // DERIVADA — medido na mutação: com o `/campaigns/new` falhando cedo,
+    // este teste vira o importador e sobe para 338 ms. Se aquele teste sair
+    // ou mudar de ordem, este passa a pagar o import e precisa da regra 1.
     expect(await screen.findByText(/Composer em construção/i)).toBeInTheDocument()
   })
 
@@ -290,8 +316,10 @@ describe('App routes — SCRUM-994/W0.1', () => {
 
   it('/agents/handoffs mostra o esqueleto da Caixa de transferências', async () => {
     await renderAt('/agents/handoffs')
-    expect(await screen.findByText(/Caixa de transferências em construção/i)).toBeInTheDocument()
-  })
+    // Mesmo caso do /campaigns/new: esqueleto, mas paga o import da rota
+    // (330 ms medidos, ociosa). Regra 1 + 2 do bloco do SLOW.
+    expect(await screen.findByText(/Caixa de transferências em construção/i, {}, { timeout: SLOW })).toBeInTheDocument()
+  }, SLOW)
 
   it('/agents/:id redireciona para /agents/:id/overview e monta o Workspace', async () => {
     await renderAt('/agents/agent-1')
@@ -307,12 +335,14 @@ describe('App routes — SCRUM-994/W0.1', () => {
     // intermitente (reproduzido: passa e falha alternando, mesmo codigo).
     expect(await screen.findByRole('navigation', { name: 'Seções do agente' }, { timeout: SLOW })).toBeInTheDocument()
     expect(await screen.findByRole('link', { name: 'Visão geral', current: 'page' }, { timeout: SLOW })).toBeInTheDocument()
-  })
+  }, SLOW)
 
   it('/agents/:id/:section com seção desconhecida redireciona para overview', async () => {
     await renderAt('/agents/agent-1/nao-existe')
-    await waitFor(() => expect(window.location.pathname).toBe('/agents/agent-1/overview'))
-  })
+    // `waitFor` tem a mesma janela própria de 1 s do `findBy*` — o redirect
+    // depende da árvore do Workspace ter montado. Regra 1 + 2.
+    await waitFor(() => expect(window.location.pathname).toBe('/agents/agent-1/overview'), { timeout: SLOW })
+  }, SLOW)
 
   it('/agents/:id/:section com seção válida monta o Workspace direto', async () => {
     await renderAt('/agents/agent-1/rules')
@@ -321,5 +351,5 @@ describe('App routes — SCRUM-994/W0.1', () => {
     // nav — aqui "Regras", não a default.
     expect(await screen.findByRole('link', { name: 'Regras', current: 'page' }, { timeout: SLOW })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Visão geral' })).not.toHaveAttribute('aria-current')
-  })
+  }, SLOW)
 })
