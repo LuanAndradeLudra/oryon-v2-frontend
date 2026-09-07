@@ -6,6 +6,7 @@ import {
 } from '@/services/companyContextService'
 import { appLogger } from '@/services/appLogger'
 import { DEFAULT_DATA, STEP_LABELS, type WizardData } from './types'
+import { derivarDeployment } from './wizardConfigToPrompt'
 
 export function readSession() {
   try {
@@ -166,16 +167,16 @@ export function useStudioDraft(inicial?: Partial<WizardData>) {
           products_services: data.products_services, faqs: data.faqs,
           extra_context: [data.extra_context, data.brand_links_context].filter(Boolean).join('\n\n'),
         },
-        deployment: {
-          escalation_keywords: data.handoff_rules.flatMap(r => r.keywords).slice(0, 20),
-          escalation_conditions: data.handoff_rules.map(r => r.description ?? r.name).filter(Boolean),
-          escalation_department: data.handoff_rules.find(r => r.department)?.department ?? '',
-          channels: [
-            data.channels_whatsapp && 'WhatsApp',
-            data.channels_messenger && 'Messenger',
-            data.channels_instagram && 'Instagram',
-          ].filter(Boolean) as string[],
-        },
+        // A MESMA função que o "Regenerar" da A2 usa — não uma cópia com a
+        // mesma forma. Enquanto eram duas, o comentário do outro arquivo
+        // prometia espelho e o teste não cobria ESTE lado: plantar
+        // `slice(0, 3)` aqui deixava a suíte inteira verde. Ver o docblock de
+        // `derivarDeployment`.
+        deployment: derivarDeployment(data.handoff_rules, {
+          whatsapp: data.channels_whatsapp,
+          messenger: data.channels_messenger,
+          instagram: data.channels_instagram,
+        }),
       })
       setData(d => ({ ...d, generated_prompt: prompt }))
       return prompt

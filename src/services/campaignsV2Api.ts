@@ -22,6 +22,8 @@ import type {
   CampaignRecipientsParams,
   CampaignRecipientsResponse,
   CampaignRecurrence,
+  CampaignsPageParams,
+  CampaignsPageResponse,
   WhatsAppNumberUsage,
   CampaignCostEstimateRequest,
   CampaignCostEstimate,
@@ -92,9 +94,59 @@ export const campaignLifecycleApi = {
   },
 }
 
+// Leitura paginada de `GET /campaigns` — endpoint que JÁ EXISTE, só não
+// exposto com `page`/`limit` por `campaignsApi.list()` (services/api.ts, que
+// é congelado e normaliza a resposta para array, descartando o `total`).
+// A Agenda precisa do `total` para saber quando parar de paginar, então a
+// leitura crua mora aqui, no meu bloco, em vez de virar PR de integração
+// num arquivo congelado (decisão 2 do Maestro).
+//
+// Não é contrato novo: nenhum campo, nenhuma rota, nenhum backend a esperar.
+export const campaignsPagedApi = {
+  list(params: CampaignsPageParams = {}) {
+    return api
+      .get<CampaignsPageResponse | Campaign[]>('/campaigns', { params })
+      .then((r) => {
+        // O backend responde `{data,total,page,limit}` (campaigns.service.ts),
+        // mas versões mais antigas devolviam o array cru — mesma defesa que
+        // campaignsApi.list() já faz. Qualquer outra forma vira página vazia:
+        // quem consome isso pagina em laço, e um `data` ausente derrubaria a
+        // tela inteira em vez de mostrar uma agenda sem itens.
+        const body = r.data
+        const rows = Array.isArray(body) ? body : (body?.data ?? [])
+        const total = Array.isArray(body) ? body.length : (body?.total ?? rows.length)
+        return {
+          ...r,
+          data: {
+            data: rows,
+            total,
+            page: (Array.isArray(body) ? undefined : body?.page) ?? params.page ?? 1,
+            limit: (Array.isArray(body) ? undefined : body?.limit) ?? params.limit ?? rows.length,
+          } satisfies CampaignsPageResponse,
+        }
+      })
+  },
+}
+
 // ── [D3] analytics estendido + recipients (BE.1) ────────────────────────────
 
 export const campaignReportApi = {
+  /**
+   * `GET /campaigns/:id` existe no backend (`campaigns.controller.ts:55`) mas
+   * não tinha cliente: o relatório antigo era um drawer que recebia a campanha
+   * por prop, e a página de rota não tem quem passe. `services/api.ts` está
+   * congelado, então o cliente entra aqui, no bloco do D3.
+   */
+  getCampaign(id: string) {
+    return api.get<Campaign>(`/campaigns/${id}`)
+  },
+  /**
+   * Atenção: esta rota responde **200 nos dois mundos**. Hoje devolve a forma
+   * antiga (`{ campaignId, campaignName, stats, sentAt }`); com a BE.1 passa a
+   * trazer `funnel`/`readHeatmap`/`failures`/`replies`. A distinção é por
+   * FORMA (`hasExtendedAnalytics`), nunca por status — `withFallback` não
+   * ajuda aqui porque não há 404 a capturar.
+   */
   getAnalyticsV2(id: string) {
     return api.get<CampaignAnalytics & CampaignAnalyticsV2Extra>(`/campaigns/${id}/analytics`)
   },
