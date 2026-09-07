@@ -161,6 +161,7 @@ function LoadedWorkspace({
         agent={agent}
         onUpdate={onUpdate}
         onToolsChange={onToolsChange}
+        draft={draft}
       />
     </WorkspaceLayout>
   )

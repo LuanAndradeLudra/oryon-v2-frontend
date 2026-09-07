@@ -43,7 +43,11 @@ export function ChangesCard({
     <div
       // `.card` do mockup: raio 24 (nominal) e a borda tingida de marca que
       // separa este card dos demais — é a única borda colorida da tela.
-      className="w-80 rounded-2xl border bg-surface-800 p-4 shadow-sm"
+      //
+      // Sem largura própria: quem monta decide. No dropdown do TopBar ele é uma
+      // coluna estreita; na "Visão geral" ocupa o painel inteiro, como no
+      // mockup. Largura é do CONTEXTO, não do card.
+      className="rounded-2xl border bg-surface-800 p-4 shadow-sm"
       style={{ borderColor: tint('brand', 40) }}
     >
       <div className="mb-3.5 flex items-start justify-between gap-3">

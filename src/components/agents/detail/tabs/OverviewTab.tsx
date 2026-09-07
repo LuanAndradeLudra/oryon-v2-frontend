@@ -38,7 +38,13 @@ const DEBOUNCE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: '30', label: '30 segundos' },
 ]
 
-function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate: (a: AgentConfig) => void }) {
+// Exportado a partir da A2 (SCRUM-1013): o Workspace mostra este mesmo card no
+// RODAPE da secao "Regras" (decisao 1 do Maestro), porque pausa de handoff e
+// debounce sao limites de COMPORTAMENTO, e o lugar deles e junto das regras de
+// transferencia — nao na visao geral. O `AgentDetail` da Lista, que ainda e uma
+// superficie viva da /agents, continua mostrando o card aqui: uma capacidade,
+// uma porta em cada superficie, nenhuma superficie sem porta.
+export function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate: (a: AgentConfig) => void }) {
   const toStr = (n: number | null | undefined): string => (n == null ? '' : String(n))
   const initialPause = toStr(agent.ai_handoff_pause_minutes)
   const initialDebounce = toStr(agent.ai_inbound_debounce_seconds)

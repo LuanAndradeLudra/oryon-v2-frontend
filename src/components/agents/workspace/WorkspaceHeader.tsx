@@ -94,15 +94,20 @@ export function WorkspaceHeader({ agent, draft, onUpdate }: WorkspaceHeaderProps
             </Button>
           }
         >
-          <ChangesCard
-            agent={agent}
-            draft={draft.draft}
-            changedFields={draft.changedFields}
-            publishing={draft.publishing}
-            publishError={draft.publishError}
-            onPublish={() => { void draft.publish() }}
-            onDiscard={() => { draft.discard(); setShowChanges(false) }}
-          />
+          {/* A largura é do CONTEXTO: aqui o card é uma coluna estreita de
+              dropdown; na "Visão geral" ele ocupa o painel inteiro. Por isso o
+              `w-80` saiu de dentro do card e ficou aqui. */}
+          <div className="w-80">
+            <ChangesCard
+              agent={agent}
+              draft={draft.draft}
+              changedFields={draft.changedFields}
+              publishing={draft.publishing}
+              publishError={draft.publishError}
+              onPublish={() => { void draft.publish() }}
+              onDiscard={() => { draft.discard(); setShowChanges(false) }}
+            />
+          </div>
         </Dropdown>
       )}
 
