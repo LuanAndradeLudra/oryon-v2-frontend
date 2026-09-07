@@ -190,10 +190,56 @@ describe('agentDraftCore — resumo da alteração', () => {
     expect(changeSummary(agent, { handoff_rules: { rules: [{ id: '1' }] } }, 'handoff_rules')).toBe('2 → 1 regra')
   })
 
+  // O SHAPE REAL, sem `as never`. A versão anterior deste caso usava
+  // `whatsapp: true` — booleano cru —, e o `as never` era a confissão: o
+  // TypeScript recusou o shape e o cast calou a recusa. Com booleano cru o
+  // `filter(Boolean)` de fato conta só os ligados, então o teste passava com o
+  // nome certo e o contrato quebrado. Mock que descreve o comportamento CERTO é
+  // pior que mock frouxo: desliga a suspeita de quem lê a suíte procurando se
+  // canais estão cobertos.
+  //
+  // Aqui o cast não denunciava tipo mentiroso (que foi o caso do `{}` no #156)
+  // — denunciava o oposto: o tipo estava certo e fui eu que insisti.
   it('conta só o canal LIGADO, não a chave presente', () => {
-    const agent = makeAgent({ channels: { whatsapp: true, instagram: false } } as never)
-    expect(changeSummary(agent, { channels: { whatsapp: true, instagram: true } }, 'channels'))
-      .toBe('1 → 2 canais')
+    const agent = makeAgent({
+      channels: { whatsapp: { enabled: true }, instagram: { enabled: false } },
+    })
+    expect(changeSummary(
+      agent,
+      { channels: { whatsapp: { enabled: true }, instagram: { enabled: true } } },
+      'channels',
+    )).toBe('1 → 2 canais')
+  })
+
+  it('desligar o único canal ligado NÃO pode dizer que nada mudou', () => {
+    // O caso que o usuário produz de verdade: agente do wizard grava SEMPRE as
+    // três chaves, então "quantas chaves existem" é constante e a linha
+    // afirmava "3 → 3 canais" para qualquer mexida em canal.
+    const agent = makeAgent({
+      channels: {
+        whatsapp: { enabled: true }, messenger: { enabled: false }, instagram: { enabled: false },
+      },
+    })
+    expect(changeSummary(
+      agent,
+      {
+        channels: {
+          whatsapp: { enabled: false }, messenger: { enabled: false }, instagram: { enabled: false },
+        },
+      },
+      'channels',
+    )).toBe('1 → 0 canais')
+  })
+
+  it('`enabled` que não é o booleano `true` não liga canal', () => {
+    // Mesma razão do `bool()` do mapeador no #156: a string 'true' vinda do
+    // banco não é um canal ligado.
+    const agent = makeAgent({ channels: { whatsapp: { enabled: 'true' } } as never })
+    expect(changeSummary(
+      agent,
+      { channels: { whatsapp: { enabled: true } } },
+      'channels',
+    )).toBe('0 → 1 canal')
   })
 
   it('texto longo vira tamanho, com separador de milhar pt-BR', () => {

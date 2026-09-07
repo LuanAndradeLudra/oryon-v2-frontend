@@ -92,9 +92,26 @@ export function fieldAccent(field: string): Accent {
  *  não tem uma grandeza óbvia — aí o resumo cai no genérico em vez de inventar
  *  um número. */
 const FIELD_COUNT: Partial<Record<DraftField, (v: unknown) => number | null>> = {
+  // `handoff_rules` conta TODAS as regras, inclusive as desligadas, e isso é
+  // deliberado — não é o mesmo critério dos canais logo abaixo. A lista que o
+  // usuário vê tem N itens e a regra desligada continua sendo uma regra na
+  // lista; um canal desligado não é "um canal que o agente tem" em sentido
+  // nenhum para quem lê. A assimetria é do produto, não descuido: quem vier
+  // uniformizar os dois quebra um dos lados.
   handoff_rules:    v => arrayLength(prop(v, 'rules')),
   crm_capabilities: v => arrayLength(prop(v, 'capabilities')),
-  channels:         v => (isRecord(v) ? Object.values(v).filter(Boolean).length : null),
+  // `AgentChannels` é `{ whatsapp?: { enabled? }, … }` — os VALORES são
+  // sub-objetos, e `{ enabled: false }` é truthy. `filter(Boolean)` contava
+  // "quantas chaves existem", não "quantos canais estão ligados". Como o
+  // wizard grava sempre as três chaves, todo agente que existe hoje exibia
+  // "3 → 3 canais" para qualquer mudança de canal: a linha que existe para
+  // dizer O QUE mudou afirmava ativamente que nada mudou.
+  //
+  // `c.enabled === true`, e não `!!c.enabled`, pela mesma razão do `bool()` do
+  // mapeador: a string 'true' vinda do banco não liga canal.
+  channels:         v => (isRecord(v)
+    ? Object.values(v).filter(c => isRecord(c) && c.enabled === true).length
+    : null),
 }
 
 const COUNT_NOUN: Partial<Record<DraftField, [string, string]>> = {
