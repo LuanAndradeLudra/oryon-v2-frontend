@@ -23,6 +23,7 @@ import type {
   WhatsAppTemplate, TemplateHeaderType, TemplateHeaderTypeInput, TemplateButtonType, TemplateCategoryType,
 } from '@/types'
 import type { SubCategory } from './SubcategoryPreview'
+import type { TemplateDraft } from './onboarding/templatePresets'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ButtonRow = { type: TemplateButtonType; text: string; url: string; phoneNumber: string; flowId: string; urlExample: string }
@@ -33,6 +34,20 @@ interface TemplateCreatorProps {
   onCancel: () => void
   onSaved: (tpl: WhatsAppTemplate) => void
   editing?: WhatsAppTemplate | null
+  /** Rascunho inicial para um criador que nasce do zero — os atalhos do
+   *  onboarding (D5/SCRUM-1024) abrem o criador já começado, em vez de
+   *  entregarem um formulário vazio depois de prometer um fluxo pronto.
+   *
+   *  IGNORADO quando há `editing`: editar um template existente nunca pode ser
+   *  sobrescrito por um preset.
+   *
+   *  Não dá para fazer isso passando um `editing` sintético, que seria zero
+   *  linha aqui: o `editing` carrega `id` e `status`, muda o `canEditContent`
+   *  e faz o save virar PATCH em vez de POST — o rascunho viraria uma
+   *  tentativa de atualizar um template que não existe.
+   *
+   *  Contrato em `coord/D5-TemplateCreator-contrato.md`. */
+  initialDraft?: TemplateDraft
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -48,7 +63,7 @@ const sanitizeHeaderText = (s: string): string =>
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorProps) {
+export function TemplateCreator({ onCancel, onSaved, editing, initialDraft }: TemplateCreatorProps) {
   /** Meta não permite alterar conteúdo de templates aprovados ou em análise. */
   const isContentLocked = !!(
     editing
@@ -143,11 +158,24 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
       })))
       setVarExamples(editing.bodyVariables ?? [])
     } else {
-      setName(''); setLanguage('pt_BR'); setCategory('MARKETING'); setSubCategory('standard')
+      // Ramo do criador que nasce vazio. `initialDraft` só alimenta o estado
+      // inicial daqui; sem ele, cada `?? ''` é o mesmo `''` de antes, e
+      // nenhum call-site existente muda de comportamento.
+      setName(initialDraft?.name ?? '')
+      setLanguage('pt_BR')
+      setCategory(initialDraft?.category ?? 'MARKETING')
+      setSubCategory('standard')
       setHeaderType(''); setHeaderText(''); setHeaderMediaUrl('')
-      setBody(''); setFooter(''); setButtons([]); setVarExamples([])
+      setBody(initialDraft?.body ?? '')
+      setFooter(initialDraft?.footer ?? '')
+      setButtons([]); setVarExamples([])
     }
     setError(''); setSaving(false); setShowAddButton(false); setStep(1)
+    // `initialDraft` fica FORA das dependências de propósito: ele é o estado
+    // INICIAL. Se entrasse, um objeto literal no call-site (que é o caso, vem
+    // de um mapa de presets) recriaria a identidade a cada render do pai e
+    // zeraria o formulário enquanto a pessoa digita.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing])
 
   // When category changes, reset sub-category and clear incompatible buttons
