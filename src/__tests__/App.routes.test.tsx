@@ -257,10 +257,13 @@ describe('App routes — SCRUM-994/W0.1', () => {
     expect(within(seletor).getByRole('tab', { name: /Lista/ })).toBeInTheDocument()
   }, SLOW)
 
-  it('/campaigns?view=board mostra o esqueleto do Board', async () => {
+  it('/campaigns?view=board mostra o Board real (D1b/SCRUM-1019)', async () => {
     await renderAt('/campaigns?view=board')
-    expect(await screen.findByText(/Board em construção/i)).toBeInTheDocument()
-  })
+    // A casca deixou de ser esqueleto: com campanhas=[] (axios mockado) o
+    // quadro renderiza o próprio estado vazio, que fala de coluna e estado.
+    expect(await screen.findByText(/aparece neste quadro na coluna do estado/i, {}, { timeout: SLOW }))
+      .toBeInTheDocument()
+  }, SLOW)
 
   it('/campaigns/new mostra o esqueleto do Composer', async () => {
     await renderAt('/campaigns/new')

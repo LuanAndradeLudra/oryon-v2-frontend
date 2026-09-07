@@ -1,16 +1,8 @@
-import { KanbanSquare } from 'lucide-react'
-import { EmptyState } from '@/components/ui/EmptyState'
+import { BoardShell } from './board/BoardShell'
 
-// Skeleton (W0.1/SCRUM-994) — stub que o W0.4/SCRUM-997 (Alavanca) substitui;
-// o conteúdo real (5 colunas por status) chega no D1b (Andaime). Sem props
-// nesta onda.
+// A porta do quadro. O corpo mora em `board/BoardShell` — o esqueleto do
+// W0.1 (EmptyState "Board em construção") sai aqui, e o `CampaignsPage` não
+// muda: `?view=board` já roteava para cá desde o #138.
 export function BoardView() {
-  return (
-    <EmptyState
-      icon={KanbanSquare}
-      title="Board em construção"
-      hint="A visão em colunas por status dos disparos chega em uma próxima leva."
-      className="m-6"
-    />
-  )
+  return <BoardShell />
 }
