@@ -7,6 +7,8 @@ import { WorkspaceLayout } from '@/components/agents/workspace/WorkspaceLayout'
 import { SectionContent } from '@/components/agents/workspace/SectionContent'
 import { SimulatorColumn } from '@/components/agents/workspace/SimulatorColumn'
 import { useAgentDraft } from '@/components/agents/workspace/useAgentDraft'
+import { WorkspaceHeader } from '@/components/agents/workspace/WorkspaceHeader'
+import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { DEFAULT_SECTION, isSectionId, type SectionId } from '@/components/agents/workspace/sectionNavCore'
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -124,6 +126,13 @@ function LoadedWorkspace({
   onToolsChange: (tools: AgentTool[]) => void
 }) {
   const draft = useAgentDraft(agent, onUpdate)
+
+  // Chip de status + switch + "Alterações (N)" + "Publicar" vivem no TopBar:
+  // são ações da tela inteira, não da seção corrente.
+  useRegisterTopBarActions(
+    <WorkspaceHeader agent={agent} draft={draft} onUpdate={onUpdate} />,
+    [agent, draft.isDirty, draft.changedFields.length, draft.publishing],
+  )
 
   // A promessa central da tela: o simulador testa o RASCUNHO, não só o
   // publicado — prompt e regras ainda não publicados já valem na conversa ao

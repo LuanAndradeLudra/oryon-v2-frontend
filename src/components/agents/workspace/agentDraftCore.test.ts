@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import type { AgentConfigWithTools } from '@/services/agentsApi'
 import {
-  DRAFT_FIELDS, changedFields, draftStorageKey, fieldLabel, isDraftField,
-  pruneDraft, readStoredDraft, sameValue, writeStoredDraft,
+  DRAFT_FIELDS, changeSummary, changedFields, draftStorageKey, fieldAccent,
+  fieldLabel, isDraftField, pruneDraft, readStoredDraft, sameValue,
+  writeStoredDraft,
 } from './agentDraftCore'
 
 function makeAgent(over: Partial<AgentConfigWithTools> = {}): AgentConfigWithTools {
@@ -157,5 +158,107 @@ describe('agentDraftCore — persistência local', () => {
   it('objeto só com campos inválidos vira null, não rascunho vazio', () => {
     localStorage.setItem(draftStorageKey('a1'), JSON.stringify({ status: 'active' }))
     expect(readStoredDraft('a1')).toBeNull()
+  })
+})
+
+describe('agentDraftCore — acento por campo', () => {
+  it('usa o acento da seção dona, o mesmo que o snav pinta', () => {
+    // O mockup (`p2a-agentes.html:142`) pinta "Regras" em rosa e "Capacidades"
+    // em verde, que são exatamente os acentos dessas seções na nav.
+    expect(fieldAccent('handoff_rules')).toBe('rose')
+    expect(fieldAccent('crm_capabilities')).toBe('green')
+    expect(fieldAccent('system_prompt')).toBe('violet')
+    expect(fieldAccent('decision_criteria_tags')).toBe('cyan')
+  })
+
+  it('campo desconhecido cai em brand em vez de sumir da lista', () => {
+    // Mesma razão do `fieldLabel`: sumir faria o contador dizer 3 e a lista
+    // mostrar 2.
+    expect(fieldAccent('campo_que_o_backend_inventou')).toBe('brand')
+  })
+})
+
+describe('agentDraftCore — resumo da alteração', () => {
+  it('conta as regras em vez de dizer só que mudou', () => {
+    const agent = makeAgent({ handoff_rules: { rules: [{ id: '1' }, { id: '2' }, { id: '3' }] } } as never)
+    const draft = { handoff_rules: { rules: [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }] } }
+    expect(changeSummary(agent, draft, 'handoff_rules')).toBe('3 → 4 regras')
+  })
+
+  it('usa o singular quando o resultado é um só', () => {
+    const agent = makeAgent({ handoff_rules: { rules: [{ id: '1' }, { id: '2' }] } } as never)
+    expect(changeSummary(agent, { handoff_rules: { rules: [{ id: '1' }] } }, 'handoff_rules')).toBe('2 → 1 regra')
+  })
+
+  // O SHAPE REAL, sem `as never`. A versão anterior deste caso usava
+  // `whatsapp: true` — booleano cru —, e o `as never` era a confissão: o
+  // TypeScript recusou o shape e o cast calou a recusa. Com booleano cru o
+  // `filter(Boolean)` de fato conta só os ligados, então o teste passava com o
+  // nome certo e o contrato quebrado. Mock que descreve o comportamento CERTO é
+  // pior que mock frouxo: desliga a suspeita de quem lê a suíte procurando se
+  // canais estão cobertos.
+  //
+  // Aqui o cast não denunciava tipo mentiroso (que foi o caso do `{}` no #156)
+  // — denunciava o oposto: o tipo estava certo e fui eu que insisti.
+  it('conta só o canal LIGADO, não a chave presente', () => {
+    const agent = makeAgent({
+      channels: { whatsapp: { enabled: true }, instagram: { enabled: false } },
+    })
+    expect(changeSummary(
+      agent,
+      { channels: { whatsapp: { enabled: true }, instagram: { enabled: true } } },
+      'channels',
+    )).toBe('1 → 2 canais')
+  })
+
+  it('desligar o único canal ligado NÃO pode dizer que nada mudou', () => {
+    // O caso que o usuário produz de verdade: agente do wizard grava SEMPRE as
+    // três chaves, então "quantas chaves existem" é constante e a linha
+    // afirmava "3 → 3 canais" para qualquer mexida em canal.
+    const agent = makeAgent({
+      channels: {
+        whatsapp: { enabled: true }, messenger: { enabled: false }, instagram: { enabled: false },
+      },
+    })
+    expect(changeSummary(
+      agent,
+      {
+        channels: {
+          whatsapp: { enabled: false }, messenger: { enabled: false }, instagram: { enabled: false },
+        },
+      },
+      'channels',
+    )).toBe('1 → 0 canais')
+  })
+
+  it('`enabled` que não é o booleano `true` não liga canal', () => {
+    // Mesma razão do `bool()` do mapeador no #156: a string 'true' vinda do
+    // banco não é um canal ligado.
+    const agent = makeAgent({ channels: { whatsapp: { enabled: 'true' } } as never })
+    expect(changeSummary(
+      agent,
+      { channels: { whatsapp: { enabled: true } } },
+      'channels',
+    )).toBe('0 → 1 canal')
+  })
+
+  it('texto longo vira tamanho, com separador de milhar pt-BR', () => {
+    const agent = makeAgent({ system_prompt: 'x'.repeat(1842) })
+    expect(changeSummary(agent, { system_prompt: 'x'.repeat(1910) }, 'system_prompt'))
+      .toBe('1.842 → 1.910 caracteres')
+  })
+
+  it('texto curto mostra o VALOR, que diz mais que o tamanho dele', () => {
+    const agent = makeAgent()
+    expect(changeSummary(agent, { preferred_model: 'claude-opus-5' }, 'preferred_model'))
+      .toBe('— → claude-opus-5')
+  })
+
+  it('não inventa número quando o shape não é o esperado', () => {
+    // `handoff_rules` sem a lista dentro: cai no genérico em vez de afirmar
+    // uma contagem que ninguém consegue verificar.
+    const agent = makeAgent({ handoff_rules: { outra_coisa: 1 } } as never)
+    expect(changeSummary(agent, { handoff_rules: { outra_coisa: 2 } }, 'handoff_rules'))
+      .toBe('Editado neste rascunho')
   })
 })
