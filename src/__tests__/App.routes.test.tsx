@@ -247,14 +247,17 @@ const SLOW = 30_000
  * O `beforeAll` abaixo paga o `import('@/App')` uma vez. Numa instalação
  * limpa — que é a condição do CI — esse import transforma o grafo inteiro
  * pela primeira vez, e foi MEDIDO estourando os 30 s do `SLOW`: quando isso
- * acontece o vitest aborta o hook e o arquivo reporta "12 skipped", sem
- * nomear asserção nenhuma.
+ * acontece o vitest aborta o hook e o arquivo reporta "12 skipped" com
+ * `Test Files 1 failed` — o alarme toca, mas não diz onde.
  *
  * Por isso o hook tem constante própria, folgada. O custo de errar para cima
  * é um travamento genuíno demorar a aparecer; o de errar para baixo é a suíte
  * inteira do arquivo sumir por lentidão de máquina, que é pior e já aconteceu.
  * Os 120 s são margem sobre UMA observação de estouro em instalação limpa,
- * não um valor medido com precisão — se alguém medir melhor, aperte.
+ * não um valor medido com precisão. Uma segunda tentativa de reproduzir o
+ * estouro (cache apagado, os dois lados na mesma condição) **corroborou a
+ * direção e não o número**: 12 s contra 16 s, sem chegar perto do teto. Ou
+ * seja, ninguém conseguiu apertar isto ainda — se você conseguir, aperte.
  */
 const WARMUP = 120_000
 
@@ -277,7 +280,12 @@ describe('App routes — SCRUM-994/W0.1', () => {
   // estava DENTRO do orçamento da asserção.
   //
   // CONTRAPARTIDA, declarada: o custo mudou de lugar, não sumiu. Se este hook
-  // estourar, caem os 13 testes em vez de um. Ver o `WARMUP` acima.
+  // estourar, os 12 testes são PULADOS em vez de um falhar.
+  //
+  // E o risco é mais estreito do que "a suíte some": o vitest reporta
+  // `Test Files 1 failed`, então o alarme TOCA. O que se perde é o
+  // DIAGNÓSTICO — a linha de testes diz "12 skipped", sem nomear asserção
+  // nenhuma, e quem investiga não sabe por onde começar. Ver o `WARMUP`.
   beforeAll(async () => {
     await import('@/App')
   }, WARMUP)
