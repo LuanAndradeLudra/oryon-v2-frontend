@@ -25,6 +25,19 @@ export interface BoardColumnDef {
    * Colunas de futuro sobem, colunas de passado descem.
    */
   order: 'asc' | 'desc'
+  /**
+   * Desempata pelo status ANTES da data. Só faz sentido onde os status
+   * misturados são estados ATIVOS e a diferença entre eles é operacional:
+   * uma fila correndo precisa do olho, uma parada já parou.
+   *
+   * Achado do Nível: isto era inferido de `statuses.length > 1`, e a inferência
+   * alcançava também a coluna "Não concluída" — que o comentário não
+   * justificava e nenhum teste via. Lá os dois status são TERMINAIS: uma falha
+   * de três dias atrás não tem por que passar na frente de um cancelamento de
+   * hoje, e a coluna promete `desc` (mais recente primeiro). A regra passa a
+   * ser declarada por coluna em vez de deduzida da forma do dado.
+   */
+  tiebreakByStatus?: true
 }
 
 /**
@@ -47,7 +60,7 @@ export interface BoardColumnDef {
 export const BOARD_COLUMNS: readonly BoardColumnDef[] = [
   { id: 'draft',      label: 'Rascunho',       statuses: ['draft'],                dot: 'draft',     order: 'desc' },
   { id: 'scheduled',  label: 'Agendada',       statuses: ['scheduled'],            dot: 'scheduled', order: 'asc'  },
-  { id: 'sending',    label: 'Enviando',       statuses: ['sending', 'paused'],    dot: 'sending',   order: 'asc',  accent: 'sending' },
+  { id: 'sending',    label: 'Enviando',       statuses: ['sending', 'paused'],    dot: 'sending',   order: 'asc',  accent: 'sending', tiebreakByStatus: true },
   { id: 'sent',       label: 'Enviada',        statuses: ['sent'],                 dot: 'sent',      order: 'desc' },
   { id: 'unfinished', label: 'Não concluída',  statuses: ['failed', 'cancelled'],  dot: 'failed',    order: 'desc', accent: 'danger' },
 ] as const
@@ -83,9 +96,10 @@ function sortTime(c: Campaign): number | null {
  * faria a próxima coisa a acontecer ser uma que não tem quando.
  */
 function compareIn(def: BoardColumnDef, a: Campaign, b: Campaign): number {
-  // Na coluna Enviando, quem está enviando vem antes de quem está pausada:
-  // uma fila correndo é o que precisa de olho, uma parada já parou.
-  if (def.statuses.length > 1) {
+  // Só onde a coluna DECLARA o desempate: enviando antes de pausada, porque
+  // uma fila correndo é o que precisa de olho. Na coluna do que não concluiu,
+  // os dois status são terminais e quem manda é a data.
+  if (def.tiebreakByStatus) {
     const r = statusRank(a.status) - statusRank(b.status)
     if (r !== 0) return r
   }
