@@ -46,6 +46,9 @@ describe('buildBoard · onde cada status cai', () => {
 
   // Omitir a cancelada faria um disparo cancelado no meio do envio sumir da
   // coluna Enviando sem deixar rastro.
+  // Pertencimento, e SÓ isso: o `.sort()` é deliberado aqui, e a ordem tem
+  // teste próprio logo abaixo. (Achado do Nível: um `.sort()` sem essa divisão
+  // apagava a única prova da regra de desempate.)
   it('cancelada fica na última coluna, junto com a que falhou', () => {
     const cs = [make({ id: 'c', status: 'cancelled' }), make({ id: 'f', status: 'failed' })]
     expect(ids(column(cs, 'unfinished').cards).sort()).toEqual(['c', 'f'])
@@ -77,6 +80,27 @@ describe('buildBoard · ordem dentro da coluna', () => {
       make({ id: 'nova',  status: 'sent', sentAt: '2026-09-06T09:00:00.000Z' }),
     ]
     expect(ids(column(cs, 'sent').cards)).toEqual(['nova', 'velha'])
+  })
+
+  // O desempate por status é DECLARADO por coluna, não deduzido de a coluna ter
+  // mais de um status. Antes ele alcançava a "Não concluída" também, onde os
+  // dois estados são terminais e a data é o que a coluna promete.
+  it('na coluna "Não concluída", quem manda é a data, não o status', () => {
+    const cs = [
+      make({ id: 'falha-velha', status: 'failed',    sentAt: '2026-09-01T10:00:00.000Z' }),
+      make({ id: 'cancel-hoje', status: 'cancelled', sentAt: '2026-09-06T10:00:00.000Z' }),
+    ]
+    // Sem `.sort()`: é exatamente a ordem que está em teste.
+    expect(ids(column(cs, 'unfinished').cards)).toEqual(['cancel-hoje', 'falha-velha'])
+  })
+
+  it('e o desempate por status vale só onde a coluna o declara', () => {
+    const declaram = BOARD_COLUMNS.filter((d) => d.tiebreakByStatus).map((d) => d.id)
+    expect(declaram).toEqual(['sending'])
+    // A coluna que junta status SEM declarar o desempate continua existindo —
+    // é o caso que a inferência antiga pegava por engano.
+    const juntamStatus = BOARD_COLUMNS.filter((d) => d.statuses.length > 1).map((d) => d.id)
+    expect(juntamStatus).toEqual(['sending', 'unfinished'])
   })
 
   it('na coluna Enviando, quem está enviando vem antes de quem está pausada', () => {
