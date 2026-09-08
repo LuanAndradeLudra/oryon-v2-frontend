@@ -1,8 +1,8 @@
-// Achado do relatório consolidado (Conversas é a tela mais usada do
-// produto): a ação mais forte visualmente era o chip âmbar "Intervir" —
-// "Resolver" ficava só como o 3º item de um dropdown, sem 1-clique. Cobre
-// o botão "Resolver" novo (1-clique, mesmo handler do dropdown) e a ordem
-// dos elementos no grupo de ações (Resolver/status antes do HandoffChip).
+// O PR #102 (auditoria de UX) tinha somado um botão "Resolver" de 1 clique
+// ao lado do dropdown de status; ele foi REMOVIDO a pedido do PO — duas
+// affordances para a mesma ação, na tela mais usada do produto. O que ficou
+// daquele PR é a ordem do grupo de ações (status antes do HandoffChip), e é
+// isso que estes testes fixam: resolver é uma coisa só, e vem pelo dropdown.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ChatHeader } from './ChatHeader'
@@ -53,35 +53,29 @@ function baseProps(overrides: Partial<Conversation> = {}) {
 
 beforeEach(() => vi.clearAllMocks())
 
-describe('ChatHeader — Resolver em destaque (achado do relatório)', () => {
-  it('conversa aberta: botão "Resolver" aparece e chama onStatusChange direto (multiPipeline off = sem popover)', () => {
+describe('ChatHeader — resolver é uma affordance só', () => {
+  it('não existe botão "Resolver" ao lado do status — resolver mora no dropdown', () => {
+    render(<ChatHeader {...baseProps()} />)
+    expect(screen.queryByRole('button', { name: 'Resolver' })).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Resolver conversa')).not.toBeInTheDocument()
+  })
+
+  it('resolver pelo dropdown chama onStatusChange (multiPipeline off = sem popover de desfecho)', () => {
     const onStatusChange = vi.fn()
     render(<ChatHeader {...baseProps()} onStatusChange={onStatusChange} />)
 
-    const resolveBtn = screen.getByRole('button', { name: 'Resolver' })
-    expect(resolveBtn).toBeInTheDocument()
-    fireEvent.click(resolveBtn)
+    fireEvent.click(screen.getByTitle('Alterar status'))
+    fireEvent.click(screen.getByText('Resolvidas'))
     expect(onStatusChange).toHaveBeenCalledWith('resolved', undefined)
   })
 
-  it('conversa já resolvida: botão "Resolver" some — nada a resolver', () => {
-    render(<ChatHeader {...baseProps({ status: 'resolved' })} />)
-    expect(screen.queryByRole('button', { name: 'Resolver' })).not.toBeInTheDocument()
-  })
-
-  it('ordem no DOM: Resolver e o status vêm ANTES do HandoffChip (Intervir deixou de ser a 1ª coisa do grupo)', () => {
+  it('ordem no DOM: o status vem ANTES do HandoffChip (o reorder do PR #102 fica)', () => {
     render(<ChatHeader {...baseProps()} />)
-    const resolveBtn = screen.getByRole('button', { name: 'Resolver' })
+    const statusBtn = screen.getByTitle('Alterar status')
     const intervirBtn = screen.getByRole('button', { name: /Intervir agora/ })
     // DOCUMENT_POSITION_FOLLOWING = o nó de comparação (intervirBtn) vem
-    // DEPOIS de resolveBtn na árvore — é a checagem estrutural do reorder.
+    // DEPOIS de statusBtn na árvore — é a checagem estrutural do reorder.
     // eslint-disable-next-line no-bitwise
-    expect(resolveBtn.compareDocumentPosition(intervirBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  })
-
-  it('dropdown de status ainda tem "Resolvidas" como opção (caminho antigo continua existindo)', () => {
-    render(<ChatHeader {...baseProps()} />)
-    fireEvent.click(screen.getByTitle('Alterar status'))
-    expect(screen.getByText('Resolvidas')).toBeInTheDocument()
+    expect(statusBtn.compareDocumentPosition(intervirBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   ChevronDown, Info,
-  Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare, Loader2,
+  Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -243,30 +243,6 @@ export function ChatHeader({
     </div>
   )
 
-  // Achado do relatório consolidado (Conversas é a tela mais usada do
-  // produto): a ação mais forte visualmente era o chip âmbar "Intervir" —
-  // "Resolver" ficava só como o 3º item deste dropdown, sem 1-clique. Botão
-  // direto, mesmo handler que a opção "Resolvida" do dropdown já chamava
-  // (resolve.requestResolve — inclui o popover de desfecho quando há negócio
-  // vinculado); o dropdown continua existindo pras outras transições
-  // (Aberta/Pendente) e pra quem prefere aquele caminho. Some quando já
-  // resolvida — nada a resolver.
-  const resolveButton = status !== 'resolved' && (
-    <button
-      type="button"
-      onClick={() => void resolve.requestResolve()}
-      disabled={resolve.loading}
-      aria-busy={resolve.loading || undefined}
-      title="Resolver conversa"
-      className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-semibold bg-cstatus-resolved/20 hover:bg-cstatus-resolved/32 text-cstatus-resolved border border-cstatus-resolved/30 transition-all disabled:opacity-50 cursor-pointer"
-    >
-      {resolve.loading
-        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        : <Check className="w-3.5 h-3.5" />}
-      Resolver
-    </button>
-  )
-
   // ─── Mobile compact layout ──────────────────────────────────────────────
   if (isMobile) {
     const visibleTags = tags.slice(0, 2)
@@ -338,7 +314,6 @@ export function ChatHeader({
 
         {/* Status + 3-pontos */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {resolveButton}
           {statusDropdown}
 
           <Dropdown
@@ -469,13 +444,13 @@ export function ChatHeader({
         )}
         {addToPipeline.dialogs}
 
-        {/* Achado do relatório consolidado: Resolver era a 3ª opção de um
-            dropdown, Intervir (HandoffChip) era o que catava o olho primeiro
-            (leftmost do grupo). Invertido — Resolver é 1-clique e vem antes;
-            HandoffChip (âmbar/emerald) fica depois do status, antes de
-            Info/Arquivar — continua a 1 clique, só não é mais a 1ª coisa que
-            o operador vê. */}
-        {resolveButton}
+        {/* Ordem do grupo de ações: o status vem antes do HandoffChip
+            (âmbar/emerald), que fica entre ele e Info/Arquivar. Veio do PR
+            #102, que também tinha um botão "Resolver" de 1 clique ao lado
+            deste dropdown — removido a pedido do PO por duplicar a ação que
+            o dropdown já faz. Resolver volta a ser a opção "Resolvidas"
+            daqui, que continua chamando `resolve.requestResolve` e abrindo o
+            popover de desfecho quando a conversa tem negócio vinculado. */}
         {statusDropdown}
 
         <span className="w-px h-5 bg-surface-800" />
