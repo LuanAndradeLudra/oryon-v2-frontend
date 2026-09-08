@@ -15,7 +15,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { wizardConfigToPromptRequest, MOTIVO_SEM_WIZARD, type EstadoVivoDoAgente } from './wizardConfigToPrompt'
+import { wizardConfigToPromptRequest, derivarDeployment, MOTIVO_SEM_WIZARD, type EstadoVivoDoAgente, type RegraParaPrompt } from './wizardConfigToPrompt'
 import type { HandoffRule } from '@/services/agentsApi'
 
 // Shape REAL gravado por `useStudioDraft.publish()`, não inventado — é o
@@ -193,6 +193,80 @@ describe('wizardConfigToPromptRequest · estreitamento defensivo', () => {
 // reescrever `derivarDeployment` por dentro, este caso continua exigindo o
 // resultado combinado — sem espelhar código nenhum, porque não há mais um
 // segundo corpo para espelhar.
+// ─── Regra DESLIGADA não entra no prompt (SCRUM-992) ─────────────────────────
+// Achado da Régua no #156, que na época não tinha consumidor e por isso não
+// bloqueou. A fiação chegou com a SCRUM-1013 e o filtro não veio junto.
+//
+// O `HandoffRuleBuilder` é o MESMO componente no Step 5 do wizard e na seção
+// Regras do workspace, e o toggle dele escreve `enabled: !r.enabled`. Então os
+// TRÊS caminhos que chegam em `derivarDeployment` podiam trazer regra
+// desligada, e o prompt escalava por um critério que a tela mostra apagado.
+describe('derivarDeployment · regra desligada não entra no prompt', () => {
+  const CANAIS = { whatsapp: true, messenger: false, instagram: false }
+  const regra = (over: Partial<RegraParaPrompt>): RegraParaPrompt => ({
+    name: 'R', keywords: [], ...over,
+  })
+
+  it('a desligada some das keywords, das condições e do departamento', () => {
+    const d = derivarDeployment([
+      regra({ name: 'Reembolso', description: 'quer reembolso', keywords: ['reembolso'], department: 'Financeiro' }),
+      regra({ name: 'Cancelamento', description: 'quer cancelar', keywords: ['cancelar'], department: 'Retenção', enabled: false }),
+    ], CANAIS)
+
+    expect(d.escalation_keywords).toEqual(['reembolso'])
+    expect(d.escalation_conditions).toEqual(['quer reembolso'])
+    expect(d.escalation_department).toBe('Financeiro')
+  })
+
+  it('AUSENTE é LIGADA — só o `false` explícito desqualifica', () => {
+    // A guarda contra o conserto exagerado: filtrar por `r.enabled === true`
+    // faria retrato velho, gravado antes de a flag existir, perder TODAS as
+    // regras em silêncio. Mesma regra do `isActive` das linhas nos arquétipos.
+    const d = derivarDeployment([regra({ keywords: ['reembolso'], department: 'Financeiro' })], CANAIS)
+    expect(d.escalation_keywords).toEqual(['reembolso'])
+    expect(d.escalation_department).toBe('Financeiro')
+  })
+
+  it('o departamento é do primeiro LIGADO, não do primeiro da lista', () => {
+    // O caso que o `find` sozinho erraria: a primeira regra tem departamento e
+    // está desligada. Sem o filtro, o prompt escala para "Retenção", que o
+    // operador desligou.
+    const d = derivarDeployment([
+      regra({ name: 'Cancelamento', department: 'Retenção', enabled: false }),
+      regra({ name: 'Reembolso', department: 'Financeiro' }),
+    ], CANAIS)
+    expect(d.escalation_department).toBe('Financeiro')
+  })
+
+  it('todas desligadas: os três campos ficam vazios, e os canais não', () => {
+    const d = derivarDeployment([
+      regra({ keywords: ['a'], description: 'a', department: 'X', enabled: false }),
+    ], CANAIS)
+    expect(d.escalation_keywords).toEqual([])
+    expect(d.escalation_conditions).toEqual([])
+    expect(d.escalation_department).toBe('')
+    // Canal não tem nada a ver com regra — o filtro não pode vazar para cá.
+    expect(d.channels).toEqual(['WhatsApp'])
+  })
+
+  it('e o caminho do RETRATO também filtra: `enabled:false` no wizard_config', () => {
+    // Prova o segundo dos três caminhos, o do `listaDeRegras`.
+    const cfg = {
+      identity: { name: 'Sofia' },
+      deployment: {
+        channels_whatsapp: true,
+        handoff_rules: [
+          { name: 'Reembolso', description: 'quer reembolso', keywords: ['reembolso'], department: 'Financeiro' },
+          { name: 'Cancelamento', keywords: ['cancelar'], department: 'Retenção', enabled: false },
+        ],
+      },
+    }
+    const { request } = wizardConfigToPromptRequest(cfg)
+    expect(request?.deployment.escalation_keywords).toEqual(['reembolso'])
+    expect(request?.deployment.escalation_department).toBe('Financeiro')
+  })
+})
+
 describe('wizardConfigToPromptRequest · a derivação contra uma especificação à mão', () => {
   it('o deployment derivado bate com a regra escrita por extenso', () => {
     const data = {
