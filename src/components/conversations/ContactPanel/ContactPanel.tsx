@@ -325,11 +325,11 @@ export function ContactPanel({
           {tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span key={tag.id} className="color-chip flex items-center gap-1 max-w-full min-w-0 text-xs px-2 py-1 rounded-full font-medium"
+                <span key={tag.id} className="color-chip flex items-center gap-1 whitespace-nowrap flex-shrink-0 text-xs px-2 py-1 rounded-full font-medium"
                   style={{ ['--chip']: tag.color } as React.CSSProperties}
                   title={tag.name}>
                   <span className="w-1.5 h-1.5 rounded-full chip-dot flex-shrink-0" />
-                  <span className="truncate">{tag.name}</span>
+                  <span>{tag.name}</span>
                   <button onClick={() => onRemoveTag(tag.id)} title={`Remover etiqueta ${tag.name}`} aria-label={`Remover etiqueta ${tag.name}`} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
                     <X className="w-2.5 h-2.5" />
                   </button>

@@ -82,7 +82,7 @@ export function TagsCard({ contact, onAddTag, onRemoveTag }: TagsCardProps) {
             {selectedTags.map((tag) => (
               <span
                 key={tag.id}
-                className="color-chip inline-flex items-center gap-1.5 max-w-full min-w-0 text-xs px-2 py-1 rounded-full font-medium border"
+                className="color-chip inline-flex items-center gap-1.5 whitespace-nowrap text-xs px-2 py-1 rounded-full font-medium border"
                 style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
                 <span
