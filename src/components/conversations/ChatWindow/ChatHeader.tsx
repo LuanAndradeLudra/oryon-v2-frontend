@@ -427,6 +427,7 @@ export function ChatHeader({
             contactName={contact.displayName || contact.waId}
             size="sm"
             onPick={(pipeline) => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline, conversationId: conversation.id })}
+            onOpenDetailed={() => addToPipeline.requestAddDetailed({ contactId: contact.id, contactName: contact.displayName || contact.waId, conversationId: conversation.id })}
           />
         )}
         {addToPipeline.dialogs}

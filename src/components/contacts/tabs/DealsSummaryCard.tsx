@@ -71,6 +71,7 @@ export function DealsSummaryCard({ contactId, contactName }: { contactId: string
       openDeals={deals === null ? null : open}
       size="sm"
       onPick={(pipeline) => void addToPipeline.requestAdd({ contactId, contactName, pipeline })}
+      onOpenDetailed={() => addToPipeline.requestAddDetailed({ contactId, contactName })}
     />
   ) : salesPipeline ? (
     <Button

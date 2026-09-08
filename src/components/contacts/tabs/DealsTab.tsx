@@ -58,7 +58,7 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
     closeTarget, setCloseTarget, history,
     pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName, { requireMultiPipeline: false })
-  const { requestAdd, dialogs: addDialogs, reportConflict } = useAddToPipeline()
+  const { requestAdd, requestAddDetailed, dialogs: addDialogs, reportConflict } = useAddToPipeline()
   const moveState = useDealSummaryMove()
   const [modalOpen, setModalOpen] = useState(false)
   // A3 (SCRUM-925): sem o flag de múltiplos funis não há "Adicionar ao funil ▾",
@@ -121,6 +121,7 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
             openDeals={deals === null ? null : open}
             size="sm"
             onPick={(pipeline) => void requestAdd({ contactId, contactName, pipeline })}
+            onOpenDetailed={() => requestAddDetailed({ contactId, contactName })}
           />
         ) : (
           <button
