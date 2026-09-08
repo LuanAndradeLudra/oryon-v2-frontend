@@ -99,7 +99,7 @@ export function ContactPanelDeals({
   const wonCents = salesDeals.filter((d) => d.status === 'won').reduce((s, d) => s + (d.amountCents ?? 0), 0)
 
   return (
-    <div className="px-4 py-3 border-t border-b border-surface-800" data-testid="panel-pipelines">
+    <div className="panel-divider px-4 py-3 border-t border-surface-800" data-testid="panel-pipelines">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
           <KanbanSquare className="w-3 h-3" /> {vocab.deals}
