@@ -1,12 +1,10 @@
-import { KanbanSquare, Handshake } from 'lucide-react'
+import { KanbanSquare } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { DealSummary, useDealSummaryMove } from '@/components/deals/DealSummary'
-import { Button } from '@/components/ui/Button'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useDealPanel } from '@/contexts/DealPanelContext'
-import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
-import { pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
+import { pipelineKindOf } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
@@ -57,14 +55,19 @@ export function ContactPanelDeals({
     pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName)
   const moveState = useDealSummaryMove()
-  const { vocab } = useTenantVocab()
   // A3 (SCRUM-925): o vazio ganha ação. Não e a "segunda porta" que a
   // SCRUM-920 tirou daqui — aquele "Novo" abria o DealModal cru e virava erro
   // no conflito; este passa pelo MESMO fluxo do cabeçalho, com o 409 tratado.
   const addToPipeline = useAddToPipeline({ onCreated: () => reload() })
-  const salesPipeline = defaultSalesPipeline(pipelines)
 
   if (!enabled) return null
+  // A seção só existe quando há o que mostrar. Enquanto carrega e quando o
+  // contato nunca entrou em funil nenhum, ela não ocupa espaço no painel —
+  // criar registro continua a um clique em "Adicionar ao funil ▾", no
+  // cabeçalho, e no menu ⋯ do mobile. Erro é exceção: aparece, senão o
+  // operador não saberia que a leitura falhou.
+  const vazio = deals !== null && open.length === 0 && closed.length === 0
+  if ((deals === null || vazio) && !error) return null
 
   /** O histórico da conversa mostra eventos de registro — recarrega junto. */
   const refreshActivity = () => {
@@ -102,30 +105,14 @@ export function ContactPanelDeals({
     <div className="panel-divider px-4 py-3 border-t border-surface-800" data-testid="panel-pipelines">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
-          <KanbanSquare className="w-3 h-3" /> {vocab.deals}
+          <KanbanSquare className="w-3 h-3" /> Funis
           <span className="text-surface-600 normal-case tracking-normal" data-testid="panel-pipelines-count">
-            · {deals === null ? '…' : `${open.length} ${open.length === 1 ? 'aberto' : 'abertos'}`}
+            · {open.length} em aberto
           </span>
         </p>
       </div>
 
       {error && <p className="text-xs text-danger" role="alert">{error}</p>}
-
-      {deals !== null && open.length === 0 && closed.length === 0 && !error && (
-        <div className="flex flex-col items-start gap-2">
-          <p className="text-xs text-surface-600">Nenhum {vocab.deal.toLowerCase()} ainda.</p>
-          {salesPipeline && (
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={<Handshake className="w-3.5 h-3.5" />}
-              onClick={() => addToPipeline.requestAdd({ contactId, contactName, pipeline: salesPipeline, conversationId })}
-            >
-              Novo {vocab.deal.toLowerCase()}
-            </Button>
-          )}
-        </div>
-      )}
 
       {salesDeals.length > 0 && (
         <div className="grid grid-cols-2 gap-2 mb-2" data-testid="panel-pipelines-money">

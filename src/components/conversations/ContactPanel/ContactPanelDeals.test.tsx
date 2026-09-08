@@ -51,7 +51,7 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
   it('renderiza uma linha por registro aberto, com funil e etapa', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO_ABERTO, VENDA_ABERTA] })
     renderPanel()
-    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('2 abertos'))
+    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('2 em aberto'))
     const suporte = screen.getByTestId('panel-pipeline-p')
     expect(suporte).toHaveTextContent('Suporte')
     expect(screen.getByTestId('panel-pipeline-stage-p')).toHaveTextContent('Em atendimento')
@@ -71,15 +71,25 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
   it('sem nenhum registro de venda, a faixa de dinheiro some (processo não vira zero)', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
     renderPanel()
-    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('1 aberto'))
+    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('1 em aberto'))
     expect(screen.queryByTestId('panel-pipelines-money')).not.toBeInTheDocument()
   })
 
-  it('B4 (SCRUM-930): vazio mostra "Novo negócio" — o componente não distingue mobile/desktop, o menu ⋯ do ChatHeader é quem varia', async () => {
+  // A seção deixou de ter estado vazio: sem NENHUM registro (aberto ou
+  // fechado) ela não se monta. Criar registro continua a um clique em
+  // "Adicionar ao funil ▾", no cabeçalho, e no menu ⋯ do mobile.
+  it('contato sem nenhum registro: a seção não aparece', async () => {
     api.list.mockResolvedValue({ data: [] })
     renderPanel()
-    await waitFor(() => expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('0 abertos'))
-    expect(screen.getByRole('button', { name: /Novo negócio/i })).toBeInTheDocument()
+    await waitFor(() => expect(api.list).toHaveBeenCalled())
+    expect(screen.queryByTestId('panel-pipelines')).not.toBeInTheDocument()
+  })
+
+  it('contato só com registro FECHADO: a seção aparece — o histórico não some', async () => {
+    api.list.mockResolvedValue({ data: [{ ...PROCESSO_ABERTO, id: 'd-fechado', status: 'won', closedAt: '2026-09-01T10:00:00Z' }] })
+    renderPanel()
+    expect(await screen.findByTestId('panel-pipelines')).toBeInTheDocument()
+    expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('0 em aberto')
   })
 
   it('"Mover etapa" chama PATCH /deals/:id/stage; "Abrir" abre a ficha (B2/928)', async () => {
