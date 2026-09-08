@@ -309,7 +309,13 @@ export function ContactPanel({
           </div>
         </div>
 
-        {/* Etiquetas — logo abaixo do header (avatar + telefone) */}
+        {/* Negócios primeiro: numa conversa de venda, o que o atendente
+            precisa ver ao abrir o painel é se este contato já tem negócio
+            aberto e em que etapa — antes de etiquetas ou de quem atende.
+            Ficava depois de "Agente responsável", exigindo rolagem. */}
+        <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
+
+        {/* Etiquetas — logo abaixo dos negócios */}
         <Section
           title="Etiquetas"
           action={
@@ -391,8 +397,6 @@ export function ContactPanel({
               onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
           </Modal>
         </Section>
-
-        <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
 
         {/* Hidden when conversionAnalysisPanel is off — covers both the
             "Analisar conversa com IA" CTA and any previously-rendered
