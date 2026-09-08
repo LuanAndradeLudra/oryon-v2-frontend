@@ -341,39 +341,39 @@ describe('App routes — SCRUM-994/W0.1', () => {
       .toBeInTheDocument()
   }, SLOW)
 
-  // Atualizado pela D2 (SCRUM-1020), como o `coord/APP-ROUTES-INVENTARIO.md`
-  // avisou desde o começo: estas duas asserções cobriam o esqueleto da W0.1
-  // ("Composer em construção"), que era o placeholder à espera desta história.
-  // Com a página real montada, o texto do esqueleto não existe mais em
-  // produção — `grep` fora de `__tests__` só o acha em comentário.
+  // ── Composer DESLIGADO destas duas rotas — decisão do PO, 2026-09-08 ──────
+  // Estas asserções já mudaram duas vezes, e a mudança AGORA é de CONTEÚDO, não
+  // de mecânica: elas cobriam o esqueleto da W0.1, passaram a cobrir a página
+  // real (D2/SCRUM-1020), e agora cobrem o REDIRECIONAMENTO.
   //
-  // ÂNCORA ESTRUTURAL, e não o texto novo: o `<input aria-label="Nome do
-  // disparo">` do TopBar existe com ou sem template escolhido, com ou sem
-  // contatos carregados, e não depende de nenhuma chamada ter voltado.
-  // Trocar um texto por outro herdaria a dependência de estado que o
-  // inventário manda evitar — e que timeout nenhum conserta.
-  it('/campaigns/new monta o Composer', async () => {
+  // O motivo está inteiro no comentário da rota no `App.tsx`, e o resumo é: o
+  // `POST /campaigns` volta 400 medido para as duas formas que o Composer emite
+  // (`audience` e `segmentId`), porque o `ValidationPipe` roda com
+  // `forbidNonWhitelisted: true`. A tela está construída, mesclada e testada —
+  // está desligada, não apagada.
+  //
+  // O que estas rotas têm de provar mudou junto: deixou de ser "monta o
+  // Composer" e passou a ser "leva para a lista E o Composer não fica
+  // alcançável por link salvo". Por isso as duas asserções: a positiva prova o
+  // destino, a negativa prova o desligamento. Só a positiva passaria também se
+  // alguém religasse a rota e o redirecionamento fosse para outro lugar.
+  //
+  // Âncora do destino é o seletor de vista, não o EmptyState da lista: ele
+  // existe com a lista cheia ou vazia, e não depende de chamada ter voltado.
+  it('/campaigns/new redireciona para a lista, com o Composer desligado', async () => {
     await renderAt('/campaigns/new')
-    // A página real tem um grafo de módulos muito maior que o esqueleto que
-    // estava aqui (os 4 blocos, o construtor de público da D6, o
-    // `TemplatePreview`), e a rota é `lazy`: sem o SLOW o teste morre no
-    // fallback de Suspense, com o spinner no DOM — foi assim que ele falhou
-    // antes desta correção. 391 ms medidos AQUI, nesta árvore, já com o
-    // aquecimento do `beforeAll` do #167. Regra 1 + 2 do bloco acima.
-    expect(await screen.findByRole('textbox', { name: 'Nome do disparo' }, { timeout: SLOW })).toBeInTheDocument()
+    expect(await screen.findByRole('tablist', { name: 'Vista dos disparos' }, { timeout: SLOW })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Nome do disparo' })).not.toBeInTheDocument()
   }, SLOW)
 
-  it('/campaigns/:id/edit reusa o Composer', async () => {
+  // O `:id/edit` sai pelo mesmo motivo e por um pior: ele nunca carregou a
+  // campanha (não existe `campaignsApi.get` no Composer), então abria em branco
+  // e salvar sobrescreveria o que estava lá.
+  it('/campaigns/:id/edit redireciona para a lista, e não abre um Composer em branco', async () => {
     await renderAt('/campaigns/abc/edit')
-    // Regra 3, herdada: 119 ms medidos, porque o chunk já veio no teste acima.
-    // A folga aqui é DERIVADA — se aquele teste sair ou mudar de ordem, este
-    // passa a pagar o import (391 ms) e precisa da regra 1.
-    const titulo = await screen.findByRole('textbox', { name: 'Nome do disparo' })
-    // E prova que o `:id` CHEGOU na página, em vez de só provar que a rota
-    // casou: os dois casos procuravam o mesmo texto e não distinguiam um do
-    // outro. O placeholder é o que muda entre criar e editar.
-    expect(titulo).toHaveAttribute('placeholder', 'Editar disparo')
-  })
+    expect(await screen.findByRole('tablist', { name: 'Vista dos disparos' }, { timeout: SLOW })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Nome do disparo' })).not.toBeInTheDocument()
+  }, SLOW)
 
   // Atualizado pelo D3 (SCRUM-1022): esta asserção cobria o esqueleto do W0.1
   // ("Relatório em construção"), que era o placeholder à espera desta

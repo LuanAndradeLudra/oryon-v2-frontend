@@ -70,7 +70,6 @@ const ResetPasswordPage  = lazyRoute(() => import('@/pages/ResetPasswordPage').t
 const ActivateAccountPage = lazyRoute(() => import('@/pages/ActivateAccountPage').then(m => ({ default: m.ActivateAccountPage })))
 const RegisterPage       = lazyRoute(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })))
 const CampaignsPage     = lazyRoute(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
-const CampaignComposerPage = lazyRoute(() => import('@/pages/campaigns/CampaignComposerPage').then(m => ({ default: m.CampaignComposerPage })))
 const CampaignReportPage   = lazyRoute(() => import('@/pages/campaigns/CampaignReportPage').then(m => ({ default: m.CampaignReportPage })))
 const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m => ({ default: m.CopilotPage })))
 const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
@@ -261,14 +260,43 @@ function AnimatedRoutes() {
           <Route path="/campaigns" element={
             <ProtectedRoute><CampaignsPage /></ProtectedRoute>
           } />
-          {/* SCRUM-994/W0.1 — esqueletos do redesign de Disparos; "new" e
-              ":id/edit" antes de outras rotas dinâmicas de /campaigns. */}
-          <Route path="/campaigns/new" element={
-            <ProtectedRoute><CampaignComposerPage /></ProtectedRoute>
-          } />
-          <Route path="/campaigns/:id/edit" element={
-            <ProtectedRoute><CampaignComposerPage /></ProtectedRoute>
-          } />
+          {/* ── Composer DESLIGADO destas duas rotas — decisão do PO, 2026-09-08 ──
+              O `CampaignComposerPage` está CONSTRUÍDO, MESCLADO e coberto por
+              teste (#161, #162). NÃO é código morto e não deve ser apagado: ele
+              está desligado porque o BACKEND ainda não aceita o que ele manda.
+
+              MEDIDO, não suposto: `POST /campaigns` no `:3200` volta **400** nas
+              duas formas que o Composer emite — `["property audience should not
+              exist"]` e `["property segmentId should not exist"]`. O
+              `ValidationPipe` roda com `forbidNonWhitelisted: true` e o
+              `CreateCampaignDto` não tem esses campos. Quem entrasse aqui montava
+              a tela, preenchia e tomava 400 no salvar.
+
+              PARA RELIGAR são DUAS coisas, e fazer só a primeira é pior que não
+              fazer nenhuma — grava a definição e envia por outro critério, em
+              silêncio:
+                1. `audience`/`segmentId` no `CreateCampaignDto`;
+                2. o ramo que RESOLVE `audience` no `campaigns.processor.ts:189`.
+                   Hoje o envio resolve só pelo `segment` legado.
+
+              Traduzir para o legado aqui no frontend foi medido e DESCARTADO: o
+              `toLegacySegment` perde 861 pessoas num caso e inclui 602 a mais
+              noutro — entre elas quem já foi disparado nos últimos 7 dias e quem
+              está em conversa ativa com a IA. Trocaria uma falha visível por
+              envio errado silencioso.
+
+              O `:id/edit` sai junto, e por motivo PIOR que o do `new`: ele nunca
+              carregou a campanha (não existe `campaignsApi.get` no Composer), então
+              abre em branco, e salvar sobrescreveria o que estava lá. O que impede
+              isso hoje é justamente o 400 — ou seja, consertar o backend sem antes
+              hidratar a edição transforma esta rota em PERDA DE DADO. Ver
+              `coord/checkpoint-alavanca.md` §2 e §3.
+
+              Enquanto isso, criar disparo é pelo wizard, que funciona e é montado
+              pelo `ListView`. As duas rotas REDIRECIONAM em vez de sumir, para não
+              quebrar link salvo nem virar 404 silencioso. */}
+          <Route path="/campaigns/new" element={<Navigate to="/campaigns" replace />} />
+          <Route path="/campaigns/:id/edit" element={<Navigate to="/campaigns" replace />} />
           <Route path="/campaigns/:id/report" element={
             <ProtectedRoute><CampaignReportPage /></ProtectedRoute>
           } />
