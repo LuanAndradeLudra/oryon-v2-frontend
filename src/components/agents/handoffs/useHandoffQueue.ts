@@ -121,6 +121,43 @@ export function pertenceAoSegmento(c: Conversation, status: HandoffStatus): bool
   return c.status !== 'resolved' && !c.assignedUser
 }
 
+/**
+ * O resumo só entra no estado quando tem a forma que a tela lê. Caso contrário,
+ * `null` — que a `HandoffInboxPage` já sabe renderizar (`{q.resumo && <Kpis/>}`
+ * e `if (!q.resumo) return undefined` nos contadores dos segmentos).
+ *
+ * POR QUE NA FRONTEIRA, e não nas cinco linhas da view: não eram cinco
+ * defeitos, era UM. O `resumo` entrava no componente sem nunca ter sido
+ * conferido, e as cinco leituras só gastavam a mesma desconfiança ausente de
+ * cinco jeitos — uma delas crashando (`topReasons7d[0]`, que derrubava a tela
+ * no ErrorBoundary) e quatro em silêncio, incluindo um `undefined%` renderizado
+ * na cara do operador. Cinco guardas na view protegem cinco linhas; uma aqui
+ * protege o TIPO, e o próximo campo que a BE.6 acrescentar não nasce
+ * desguardado.
+ *
+ * AS TRÊS GUARDAS QUE EXISTIAM ERAM FALSAS, e é padrão, não coincidência:
+ * `topReasons7d[0] ?? null` guarda o ELEMENTO, não o array — o `[0]` estoura
+ * antes; e `avgWaitSeconds === null ? … :` e `returnedToAiPct === null ? … :`
+ * conferem `null` e deixam `undefined` passar. As três LEEM como guardadas.
+ * Foi por isso que sobreviveram a uma varredura anterior.
+ *
+ * `null` é valor VÁLIDO em `avgWaitSeconds` e `returnedToAiPct`, e a distinção
+ * é o ponto (D37, "`null` onde `0` mentiria"): fila vazia não é média zero. Só
+ * o `undefined` desqualifica.
+ */
+export function resumoValido(v: unknown): HandoffSummary | null {
+  if (v === null || typeof v !== 'object') return null
+  const o = v as Record<string, unknown>
+  const num = (x: unknown) => typeof x === 'number' && Number.isFinite(x)
+  const numOuNulo = (x: unknown) => x === null || num(x)
+
+  if (!num(o.waiting) || !num(o.claimed) || !num(o.resolvedToday) || !num(o.slaBreached)) return null
+  if (!numOuNulo(o.avgWaitSeconds) || !numOuNulo(o.returnedToAiPct)) return null
+  if (!Array.isArray(o.topReasons7d)) return null
+
+  return v as HandoffSummary
+}
+
 export function useHandoffQueue(status: HandoffStatus, queue?: string): QueueState {
   const [itens, setItens] = useState<HandoffItem[]>([])
   const [total, setTotal] = useState(0)
@@ -182,7 +219,7 @@ export function useHandoffQueue(status: HandoffStatus, queue?: string): QueueSta
           setTotal(typeof lista.data?.total === 'number' ? lista.data.total : 0)
           setDisponivel(true)
           const resu = await withFallback(() => handoffsApi.summary().then((r) => r.data), null)
-          if (vivo) setResumo(resu.available ? resu.data : null)
+          if (vivo) setResumo(resu.available ? resumoValido(resu.data) : null)
         } else {
           // Modo degradado. `aiHandling: 'paused'` é a definição de "um humano
           // assumiu ou a conversa foi transferida" — NÃO uso `needsReview`,
