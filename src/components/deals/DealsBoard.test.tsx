@@ -103,7 +103,10 @@ describe('DealsBoard — escopo no card', () => {
 
   it('mostra o escopo quando preenchido', () => {
     render(<DealsBoard stages={STAGES} dealsByStage={{ [STAGES[0].id]: [deal({ description: 'Site institucional + hospedagem' })] }} onMoveStage={vi.fn()} />)
-    expect(screen.getByTestId('card-scope')).toHaveTextContent('Site institucional + hospedagem')
+    const scope = screen.getByTestId('card-scope')
+    expect(scope).toHaveTextContent('Site institucional + hospedagem')
+    // O rótulo é o que diz ao operador o QUE é aquele texto no card.
+    expect(scope).toHaveTextContent('Escopo')
   })
 
   it('sem escopo, nao ocupa espaco no card', () => {

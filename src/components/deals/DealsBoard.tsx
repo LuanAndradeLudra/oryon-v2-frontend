@@ -448,9 +448,15 @@ function CardScope({ description }: { description?: string | null }) {
   const text = (description ?? '').trim()
   if (!text) return null
   return (
-    <p className="mt-1 text-2xs text-surface-400 line-clamp-2 leading-snug" title={text} data-testid="card-scope">
-      {text}
-    </p>
+    // Rótulo em cima, valor embaixo — mesma gramática dos outros valores
+    // rotulados do produto (as faixas "Em aberto"/"Ganho" do painel do
+    // contato). Sem ele o texto ficava solto no card: dava para ler, mas não
+    // para saber o que era — título? observação? Um ícone não resolveria:
+    // símbolo sem legenda não ensina.
+    <div className="mt-1.5" data-testid="card-scope" title={text}>
+      <span className="block text-3xs uppercase tracking-wide text-surface-500 leading-none">Escopo</span>
+      <p className="mt-0.5 text-2xs text-surface-300 line-clamp-2 leading-snug">{text}</p>
+    </div>
   )
 }
 
