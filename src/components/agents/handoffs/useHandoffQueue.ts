@@ -160,8 +160,26 @@ export function useHandoffQueue(status: HandoffStatus, queue?: string): QueueSta
         if (!vivo) return
 
         if (lista.available) {
-          setItens(lista.data.items)
-          setTotal(lista.data.total)
+          // GUARDA no caminho RELIGADO, e ela existia só no degradado — a
+          // assimetria era o defeito: quem confiava no corpo era justamente o
+          // caminho que vai ao ar quando a BE.6 subir.
+          //
+          // O `withFallback` reage a STATUS (404/501), não a corpo. Um 200 sem
+          // `items` passa por ele intacto, `undefined` entra no estado e o
+          // render seguinte morre em `useChipsDeFila` (`itens.filter`),
+          // derrubando a tela no ErrorBoundary. Pior que a armadilha conhecida
+          // do "200 com shape velho": aqui a tela nem chega a degradar — e o
+          // modo reduzido existe, está pronto e é bom.
+          //
+          // `total` não crasha, mas alimenta `total <= itens.length`, e
+          // `undefined` nessa comparação decide em silêncio. Número ausente que
+          // vira decisão errada é a mesma família do chip que mente.
+          //
+          // Guardar NÃO muda `disponivel`: o endpoint respondeu, e cair no
+          // degradado por causa de um corpo torto mentiria sobre a BE.6 estar
+          // no ar.
+          setItens(Array.isArray(lista.data?.items) ? lista.data.items : [])
+          setTotal(typeof lista.data?.total === 'number' ? lista.data.total : 0)
           setDisponivel(true)
           const resu = await withFallback(() => handoffsApi.summary().then((r) => r.data), null)
           if (vivo) setResumo(resu.available ? resu.data : null)
