@@ -122,7 +122,7 @@ export function PipelinePage() {
             tab === 'board' ? 'bg-surface-700 text-surface-100 shadow-sm' : 'text-surface-400 hover:text-surface-200',
           )}
         >
-          <LayoutGrid className="w-3.5 h-3.5" /> Board
+          <LayoutGrid className="w-3.5 h-3.5" /> Quadro
         </button>
         <button
           type="button"

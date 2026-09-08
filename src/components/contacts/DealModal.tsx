@@ -336,10 +336,10 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
             </FormField>
             {/* Etapa do FUNIL — eixo distinto da "Situação do contato" (ciclo
                 de vida). Reativo ao funil escolhido ao lado. */}
-            <FormField label="Estágio do funil" hint="Coluna do board em que o negócio nasce.">
+            <FormField label="Etapa" hint="Coluna do funil em que o negócio nasce.">
               <Select value={pipelineStageId} onChange={(e) => setPipelineStageId(e.target.value)}>
                 {getPipelineStages(pipelines, pipelineId).length === 0 && (
-                  <option value="">Nenhum estágio disponível</option>
+                  <option value="">Nenhuma etapa disponível</option>
                 )}
                 {getPipelineStages(pipelines, pipelineId).map((s) => (
                   <option key={s.id} value={s.id}>{s.label}</option>

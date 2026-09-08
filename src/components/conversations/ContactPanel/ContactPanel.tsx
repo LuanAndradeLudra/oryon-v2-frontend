@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink, ArrowRightLeft,
-  Milestone, MapPin, Phone, Plus, Filter,
+  Milestone, MapPin, Phone, Plus,
   Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -256,11 +256,11 @@ export function ContactPanel({
       {/* Action bar */}
       <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-950">
         <div className="min-w-0 flex items-center gap-1.5">
-          <Filter className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Situação do contato" />
+          <Milestone className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Situação do contato" />
           {localStage ? (
             <StageBadge stage={localStage} stages={stages} />
           ) : (
-            <span className="text-[11px] text-surface-600">Sem estágio</span>
+            <span className="text-[11px] text-surface-600">Sem situação</span>
           )}
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">

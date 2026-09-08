@@ -465,7 +465,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                         (ciclo de vida) — modelo híbrido, os dois não se
                         confundem. Reativo ao funil escolhido acima. */}
                     {multiPipeline && pipelineId && (
-                    <Field label="Estágio do funil">
+                    <Field label="Etapa do funil">
                       <div className="relative">
                         <select
                           value={pipelineStageId}

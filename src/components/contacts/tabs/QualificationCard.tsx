@@ -111,7 +111,7 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
         {editing ? (
           <>
             {!hideStage && (
-              <FormField label="Estágio">
+              <FormField label="Situação">
                 <Select value={form.stage} onChange={(e) => setForm((f) => ({ ...f, stage: e.target.value as ContactStage }))}>
                   {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </Select>
@@ -146,7 +146,7 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {!hideStage && (
-              <ReadField label="Estágio" value={contact.stage ? (stages.find(s => s.key === contact.stage)?.label ?? contact.stage) : '—'} />
+              <ReadField label="Situação" value={contact.stage ? (stages.find(s => s.key === contact.stage)?.label ?? contact.stage) : '—'} />
             )}
             <ReadField label={vocab.leadScore} value={contact.leadScore != null ? String(contact.leadScore) : '—'} />
             {contact.leadScore != null && (

@@ -50,7 +50,7 @@ const CATEGORIES = [
   {
     key: 'stage_transitions' as const,
     field: 'decision_criteria_stage_transitions' as const,
-    title: 'Mover contato entre estágios do funil',
+    title: 'Mover o negócio entre etapas do funil',
     summary: 'Sinais que justificam mover o contato. Mantenha vazio para usar o padrão (apenas evidência observável).',
   },
   {

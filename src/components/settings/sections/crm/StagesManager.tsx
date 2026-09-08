@@ -88,7 +88,7 @@ export function StagesManager() {
   return (
     <SettingsSection
       title="Situação do contato"
-      description="Defina as etapas do ciclo de vida do contato — eixo distinto dos estágios de funil/negócio (aquele fica em Funis)."
+      description="A situação diz em que ponto do ciclo de vida a PESSOA está (lead, cliente, inativo). Não confunda com a etapa, que é a posição de um NEGÓCIO dentro de um funil — essa fica em Funis."
       icon={STAGE_AXIS_ICON}
       accentColor={STAGE_AXIS_COLOR}
     >
@@ -110,7 +110,7 @@ export function StagesManager() {
         {stages.length === 0 ? (
           <EmptyState
             icon={Layers}
-            title="Nenhum estágio configurado"
+            title="Nenhuma situação configurada"
             hint="Crie estágios para organizar as etapas do seu funil."
             className="border-0 rounded-none py-10"
             action={canManageStages ? { label: 'Novo estágio', onClick: () => { setEditStage(null); setModalOpen(true) } } : undefined}
@@ -194,7 +194,7 @@ export function StagesManager() {
         open={!!deleteStage}
         onClose={() => setDeleteStage(null)}
         onConfirm={handleDelete}
-        title="Excluir estágio"
+        title="Excluir situação"
         description={`Tem certeza que deseja excluir o estágio "${deleteStage?.label}"? Contatos neste estágio não serão afetados, mas deixarão de ser agrupados.`}
         confirmLabel="Excluir"
         danger
