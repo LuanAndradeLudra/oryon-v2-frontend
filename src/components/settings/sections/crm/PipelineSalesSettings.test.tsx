@@ -71,12 +71,14 @@ describe('PipelineSalesSettings', () => {
     await waitFor(() => expect(pipelines.update).toHaveBeenCalledWith('p1', { allowMultipleOpen: true }))
   })
 
-  // Follow-up SCRUM-931 (achado 3, revisão do Lince): o toggle ainda não é
-  // consumido em lugar nenhum (C1/SCRUM-932) — o aviso evita passar a
-  // impressão de que ligá-lo já muda o comportamento de criação de negócio.
-  it('avisa que a multiplicidade ainda não afeta a criação de negócios (consumo é da C1)', async () => {
+  // O aviso "ainda não afeta a criação" existia enquanto o toggle não era
+  // consumido em lugar nenhum. Com a C1 (SCRUM-932, trava por funil) e a C2
+  // (SCRUM-933, seletor da conversa e "Criar outro"), ligar isto passou a
+  // mudar o comportamento — o aviso viraria mentira e saiu.
+  it('descreve o efeito real da multiplicidade, sem o aviso de "ainda não afeta"', async () => {
     render(<PipelineSalesSettings pipeline={SALES} onChanged={vi.fn()} />)
     await waitFor(() => expect(users.list).toHaveBeenCalled())
-    expect(screen.getByText(/ainda não afeta a criação de negócios/i)).toBeInTheDocument()
+    expect(screen.queryByText(/ainda não afeta a criação de negócios/i)).toBeNull()
+    expect(screen.getByText(/várias propostas abertas aqui/i)).toBeInTheDocument()
   })
 })

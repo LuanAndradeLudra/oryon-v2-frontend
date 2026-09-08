@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, ArrowRight, X } from 'lucide-react'
+import { Check, ArrowRight, X, Plus } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
@@ -8,7 +8,7 @@ import { pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { timeInStage } from '@/lib/dealCard'
 import type { Deal, Pipeline } from '@/types'
 
-export type ConflictChoice = 'open_existing' | 'move_to_first' | 'close_and_new'
+export type ConflictChoice = 'open_existing' | 'move_to_first' | 'close_and_new' | 'create_another'
 
 interface PipelineConflictModalProps {
   open: boolean
@@ -28,10 +28,19 @@ interface PipelineConflictModalProps {
  *   1. abrir o registro existente (default) — continua de onde parou;
  *   2. mover o existente para a 1ª etapa — reinicia a passagem, histórico preservado;
  *   3. fechar o existente como Cancelado/Perdido e abrir um novo — pede motivo.
+ *
+ * C2 (SCRUM-933) — 4ª saída **"Criar outro"**, só em funil com
+ * `allowMultipleOpen` (C1 · SCRUM-932). Repare que aí não houve 409 nenhum: o
+ * backend teria criado o segundo negócio em silêncio. É justamente por isso
+ * que a tela aparece — com multiplicidade ligada, "adicionar ao funil" um
+ * contato que já tem negócio aberto é ambíguo (outra proposta? ou é a mesma?),
+ * e ambiguidade é do humano, não do funil. Nesse modo "Criar outro" é o
+ * default, porque é o que o operador quis ao clicar.
  */
 export function PipelineConflictModal({ open, onClose, contactName, pipeline, existing, busy = false, onChoose }: PipelineConflictModalProps) {
+  const allowsMultiple = !!pipeline?.allowMultipleOpen
   // Reset por remontagem: o chamador passa `key={openDealId}` (useAddToPipeline).
-  const [choice, setChoice] = useState<ConflictChoice>('open_existing')
+  const [choice, setChoice] = useState<ConflictChoice>(allowsMultiple ? 'create_another' : 'open_existing')
 
   const noun = pipelineNoun(pipeline)
   const labels = terminalLabelsOf(pipeline)
@@ -42,18 +51,23 @@ export function PipelineConflictModal({ open, onClose, contactName, pipeline, ex
   const by = existing?.lastMovedByActorName ?? null
 
   const OPTIONS: Array<{ id: ConflictChoice; icon: typeof Check; title: string; hint: string }> = [
+    ...(allowsMultiple
+      ? [{ id: 'create_another' as const, icon: Plus, title: `Criar outro ${noun}`, hint: `Os dois ficam abertos — este funil permite mais de um ${noun} por contato.` }]
+      : []),
     { id: 'open_existing', icon: Check, title: `Abrir o ${noun} existente`, hint: 'Continua o atendimento de onde parou.' },
     { id: 'move_to_first', icon: ArrowRight, title: `Mover o existente para "${firstStage?.label ?? 'primeira etapa'}"`, hint: 'Reinicia a passagem; histórico preservado.' },
     { id: 'close_and_new', icon: X, title: `Fechar o existente como ${labels.lost} e abrir um novo`, hint: 'Pede um motivo.' },
   ]
 
-  const confirmLabel = choice === 'open_existing' ? `Abrir ${noun}` : choice === 'move_to_first' ? 'Mover' : `Fechar e abrir novo`
+  const confirmLabel = choice === 'create_another'
+    ? `Criar outro ${noun}`
+    : choice === 'open_existing' ? `Abrir ${noun}` : choice === 'move_to_first' ? 'Mover' : `Fechar e abrir novo`
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={`Já existe um ${noun} aberto`}
+      title={allowsMultiple ? `${contactName} já tem um ${noun} aberto aqui` : `Já existe um ${noun} aberto`}
       className="max-w-md"
       footer={
         <div className="flex justify-end gap-2 w-full">
@@ -73,7 +87,10 @@ export function PipelineConflictModal({ open, onClose, contactName, pipeline, ex
             {(since || by) && (
               <span className="text-surface-400"> ({[since, by ? `aberto por ${by}` : null].filter(Boolean).join(', ')})</span>
             )}
-            . O funil permite um {noun} aberto por contato.
+            .{' '}
+            {allowsMultiple
+              ? <>Este funil permite mais de um {noun} aberto por contato.</>
+              : <>O funil permite um {noun} aberto por contato.</>}
           </p>
         ) : (
           <p className="flex items-center gap-2 text-sm text-surface-400"><Spinner className="w-4 h-4" /> Carregando o {noun} existente…</p>

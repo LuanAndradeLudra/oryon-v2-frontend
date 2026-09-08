@@ -10,33 +10,36 @@ export interface PipelineChip {
   color: string
   stageLabel: string | null
   kind: PipelineKind
+  /**
+   * C1 (SCRUM-932): o resumo em lote passou a trazer o id de cada registro
+   * aberto (`openStages`), então o chip finalmente sabe QUAL negócio abrir.
+   * Antes o clique tinha de descobrir isso com um `GET /deals?contactId=` —
+   * era o único ponto do produto sem o id à mão, e com N abertos por funil
+   * aquela busca por `pipelineId` viraria uma escolha arbitrária entre eles.
+   */
+  dealId: string
 }
 
 /**
- * Etapa efetiva de um registro aberto neste funil: prefere `openStages` (C1/SCRUM-932,
- * formato novo — usa o primeiro registro aberto) e cai para o campo singular
- * `stageLabel` quando `openStages` não vier (backend atual do épico, pré-C1).
- * TODO(SCRUM-932): remover o fallback para `stageLabel` quando a C1 mesclar.
+ * Um chip por registro ABERTO. Até a C1 era um por FUNIL (I1 garantia no máx.
+ * 1); com `allowMultipleOpen` um funil pode ter N, e cada um vira seu chip —
+ * dois negócios abertos do mesmo contato no mesmo funil aparecem como dois
+ * chips, não como um só que esconde o outro.
+ *
+ * `kind` vem do cache de funis; sem ele, `sales`.
  */
-export function effectiveOpenStageLabel(p: Pick<ContactDealsPipelineSummary, 'openStages' | 'stageLabel'>): string | null {
-  if (p.openStages && p.openStages.length > 0) return p.openStages[0].stageLabel
-  return p.stageLabel ?? null
-}
-
-/** Um chip por registro ABERTO (I1: no máx. 1 por funil). `kind` vem do cache de funis; sem ele, `sales`. */
 export function openPipelineChips(byPipeline: ReadonlyArray<ContactDealsPipelineSummary>, pipelines: ReadonlyArray<Pipeline>): PipelineChip[] {
-  return byPipeline
-    .filter((p) => p.openCount > 0)
-    .map((p) => {
-      const pipe = pipelines.find((x) => x.id === p.pipelineId)
-      return {
-        pipelineId: p.pipelineId,
-        pipelineName: p.pipelineName,
-        color: pipe?.color ?? p.pipelineColor,
-        stageLabel: effectiveOpenStageLabel(p),
-        kind: pipe ? pipelineKindOf(pipe) : 'sales',
-      }
-    })
+  return byPipeline.flatMap((p) => {
+    const pipe = pipelines.find((x) => x.id === p.pipelineId)
+    return (p.openStages ?? []).map((open) => ({
+      pipelineId: p.pipelineId,
+      pipelineName: p.pipelineName,
+      color: pipe?.color ?? p.pipelineColor,
+      stageLabel: open.stageLabel,
+      kind: pipe ? pipelineKindOf(pipe) : ('sales' as PipelineKind),
+      dealId: open.dealId,
+    }))
+  })
 }
 
 export type StepState = 'done' | 'current' | 'todo' | 'won' | 'lost'

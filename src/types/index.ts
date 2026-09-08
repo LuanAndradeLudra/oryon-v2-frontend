@@ -460,17 +460,14 @@ export interface ContactDealsPipelineSummary {
   openCents: number
   wonCents: number
   /**
-   * F4-848: etapa do(s) registro(s) ABERTO(s) neste funil (chips "Funil ·
-   * Etapa", "já está · etapa").
-   * TODO(SCRUM-932): remover `stageKey`/`stageLabel` singulares quando a C1
-   * mesclar — hoje o backend do épico ainda devolve o formato antigo (só
-   * `openStages` de N devem sobreviver).
+   * F4-848 → C1 (SCRUM-932): os registros ABERTOS neste funil, cada um com seu
+   * id e sua etapa (chips "Funil · Etapa", "já está · etapa").
+   *
+   * Era um par singular `stageKey`/`stageLabel` enquanto a I1 garantia no
+   * máximo 1 aberto por funil; com `allowMultipleOpen` são N, e o singular
+   * passaria a esconder todos menos um. Lista vazia = nenhum aberto
+   * (`openCount` já diz "quantos"; esta lista é o "onde" e o "qual").
    */
-  stageKey?: string | null
-  stageLabel?: string | null
-  /** C1 (SCRUM-932): formato novo — lista dos registros abertos, cada um com
-   *  sua etapa (`allowMultipleOpen` permite N por funil). Ausente/undefined
-   *  no backend atual do épico (pré-C1); ler com fallback para `stageLabel`. */
   openStages?: ReadonlyArray<{ dealId: string; stageKey: string; stageLabel: string }>
 }
 

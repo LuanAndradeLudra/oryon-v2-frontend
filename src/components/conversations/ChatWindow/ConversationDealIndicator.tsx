@@ -6,7 +6,10 @@ import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
-import { pickIndicatorDeals } from '@/lib/dealIndicator'
+import { pickIndicatorDeals, needsDealSelector, selectableDeals, linkedDeal } from '@/lib/dealIndicator'
+import { useToast } from '@/hooks/useToast'
+import { getApiErrorMessage } from '@/lib/utils'
+import { ConversationDealSelector } from './ConversationDealSelector'
 import { cn, hexToRgba } from '@/lib/utils'
 import type { Deal } from '@/types'
 
@@ -45,6 +48,8 @@ export function ConversationDealIndicator({ contactId, conversationId }: { conta
   const multiPipeline = useMultiPipeline()
   const [openDeals, setOpenDeals] = useState<Deal[]>([])
   const { openDeal } = useDealPanel()
+  const { toast } = useToast()
+  const [linking, setLinking] = useState(false)
 
   const load = useCallback(() => {
     // Gate fechado: sem fetch. Os chips já saem vazios no `useMemo` abaixo.
@@ -103,10 +108,43 @@ export function ConversationDealIndicator({ contactId, conversationId }: { conta
     return next
   }, [openDeals, pipelines, conversationId, multiPipeline])
 
+  // C2 (SCRUM-933): com N abertos no MESMO funil não existe "o" negócio desta
+  // conversa até alguém dizer qual — o cabeçalho ganha o seletor. Com um
+  // aberto por funil (todo tenant sem `allowMultipleOpen`) nada muda aqui.
+  const showSelector = useMemo(() => !!conversationId && needsDealSelector(openDeals), [openDeals, conversationId])
+  const options = useMemo(() => (showSelector ? selectableDeals(openDeals, conversationId) : []), [showSelector, openDeals, conversationId])
+  const linkedId = useMemo(() => linkedDeal(openDeals, conversationId)?.id ?? null, [openDeals, conversationId])
+
+  const pickDeal = useCallback(async (dealId: string) => {
+    if (!conversationId) return
+    setLinking(true)
+    try {
+      await dealsApi.linkConversation(dealId, conversationId)
+      load()
+      // As outras superfícies deste contato (painel, ficha, board) leem o
+      // mesmo `originConversationId` — avisa na hora, como o resto do módulo.
+      window.dispatchEvent(new CustomEvent(DEALS_INVALIDATE_EVENT, { detail: { contactId } }))
+    } catch (e: unknown) {
+      toast(getApiErrorMessage(e, 'Não foi possível vincular o negócio a esta conversa.'), 'error')
+    } finally {
+      setLinking(false)
+    }
+  }, [conversationId, contactId, load, toast])
+
   if (chips.length === 0) return null
 
   return (
     <div className="flex items-center gap-1 flex-wrap max-w-full">
+      {showSelector && (
+        <ConversationDealSelector
+          deals={options}
+          pipelines={pipelines}
+          linkedDealId={linkedId}
+          busy={linking}
+          onPick={(id) => void pickDeal(id)}
+          onOpenDeal={openDeal}
+        />
+      )}
       {chips.map((chip) => (
         <button
           key={chip.dealId}

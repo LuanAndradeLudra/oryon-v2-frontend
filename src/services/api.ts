@@ -1430,6 +1430,19 @@ export const dealsApi = {
   history(id: string) {
     return api.get<DealStageHistoryEntry[]>(`/deals/${id}/history`)
   },
+  /**
+   * C2 (SCRUM-933, par da C1/SCRUM-932): o operador diz qual negócio ABERTO
+   * recebe as próximas interações desta conversa. Grava `originConversationId`
+   * — o MESMO campo que o passo (1) da precedência do backend já lê —, então o
+   * vínculo vale imediatamente para a IA e para o "resolver com desfecho",
+   * sem nenhuma mudança na lógica de precedência.
+   *
+   * Só faz sentido com N negócios abertos (funil com `allowMultipleOpen`); com
+   * um só, ele já é o alvo por definição.
+   */
+  linkConversation(dealId: string, conversationId: string) {
+    return api.patch<Deal>(`/deals/${dealId}/conversation-link`, { conversationId })
+  },
   /** `updateAmount` acompanha `lineItems` também na CRIAÇÃO (A2 · SCRUM-924):
    *  é a escolha dos dois botões do "Novo negócio" (A3 · SCRUM-925) — `false`
    *  preserva o valor digitado, `true` usa a soma dos itens. Omitido com itens,

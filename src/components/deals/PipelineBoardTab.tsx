@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Layers } from 'lucide-react'
 import { DealsBoard } from '@/components/deals/DealsBoard'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/useToast'
 import { toastDealClosedWithUndo } from '@/lib/dealClose'
 import { pipelineKindOf, pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { contactsApi } from '@/services/api'
-import { getApiErrorMessage } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, Deal, Pipeline, PipelineStage } from '@/types'
 
 interface PipelineBoardTabProps {
@@ -38,6 +38,33 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged }: Pipeli
   const {
     dealsByStage, loading, error, moveStage, movePipeline, refetch,
   } = useKanbanDeals(pipeline.id)
+  /**
+   * C2 (SCRUM-933): filtro "com mais de um aberto". Só existe em funil com
+   * `allowMultipleOpen` — onde a I1 ainda vale, todo contato tem no máximo um
+   * negócio e o filtro esvaziaria o board sempre. É a lente para a pergunta
+   * que a multiplicidade cria: quais clientes estão com propostas paralelas?
+   */
+  const [multiOpenOnly, setMultiOpenOnly] = useState(false)
+  const canFilterMultiOpen = !!pipeline.allowMultipleOpen
+
+  const { visibleDealsByStage, multiOpenContacts } = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const list of Object.values(dealsByStage)) {
+      for (const d of list ?? []) {
+        if (d.status !== 'open' || !d.contactId) continue
+        counts.set(d.contactId, (counts.get(d.contactId) ?? 0) + 1)
+      }
+    }
+    const repeated = new Set([...counts.entries()].filter(([, n]) => n > 1).map(([id]) => id))
+    if (!multiOpenOnly || !canFilterMultiOpen) {
+      return { visibleDealsByStage: dealsByStage, multiOpenContacts: repeated.size }
+    }
+    const filtered: typeof dealsByStage = {}
+    for (const [stageId, list] of Object.entries(dealsByStage)) {
+      filtered[stageId] = (list ?? []).filter((d) => !!d.contactId && repeated.has(d.contactId))
+    }
+    return { visibleDealsByStage: filtered, multiOpenContacts: repeated.size }
+  }, [dealsByStage, multiOpenOnly, canFilterMultiOpen])
   const sortedStages = [...pipeline.stages].sort((a, b) => a.order - b.order)
   const isProcess = pipelineKindOf(pipeline) === 'process'
 
@@ -116,9 +143,32 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged }: Pipeli
 
   return (
     <>
+      {canFilterMultiOpen && (
+        <div className="flex items-center gap-2 px-1 pb-2">
+          <button
+            type="button"
+            onClick={() => setMultiOpenOnly((v) => !v)}
+            aria-pressed={multiOpenOnly}
+            data-testid="board-filter-multi-open"
+            className={cn(
+              'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border text-[11px] font-medium transition-colors',
+              multiOpenOnly
+                ? 'border-brand-500 bg-brand-500/10 text-brand-300'
+                : 'border-surface-700 bg-surface-800 text-surface-300 hover:text-surface-100',
+            )}
+          >
+            <Layers className="w-3 h-3" />
+            Com mais de um aberto
+            {multiOpenContacts > 0 && <span className="text-surface-500">· {multiOpenContacts}</span>}
+          </button>
+          {multiOpenOnly && multiOpenContacts === 0 && (
+            <span className="text-[11px] text-surface-500">Nenhum contato tem dois negócios abertos aqui.</span>
+          )}
+        </div>
+      )}
       <DealsBoard
         stages={sortedStages}
-        dealsByStage={dealsByStage}
+        dealsByStage={visibleDealsByStage}
         onMoveStage={handleMoveDeal}
         onOpenContact={handleOpenDealContact}
         onOpenDeal={openDeal}

@@ -228,9 +228,11 @@ export function ChatHeader({
         </div>
       )}
       <ResolveOutcomePopover
-        open={!!resolve.target}
+        open={!!resolve.target || !!resolve.candidates}
         mobile={isMobile}
         target={resolve.target}
+        candidates={resolve.candidates}
+        onPickCandidate={(id) => void resolve.pickCandidate(id)}
         contactName={contact.displayName || contact.waId}
         currentAmountCents={resolve.currentAmountCents}
         hasLineItems={resolve.hasLineItems}

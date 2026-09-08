@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 const { api, multi } = vi.hoisted(() => ({
-  api: { conversationTarget: vi.fn(), get: vi.fn(), update: vi.fn() },
+  api: { conversationTarget: vi.fn(), get: vi.fn(), update: vi.fn(), list: vi.fn(), linkConversation: vi.fn() },
   multi: vi.fn(() => true),
 }))
 vi.mock('@/services/api', () => ({ dealsApi: api }))
@@ -38,6 +38,9 @@ beforeEach(() => {
   multi.mockReturnValue(true)
   api.get.mockResolvedValue({ data: { id: 'd1', amountCents: 5000 } })
   api.update.mockResolvedValue({ data: {} })
+  // Sem ambiguidade por padrão: `no_target` significa "não tem negócio".
+  api.list.mockResolvedValue({ data: [] })
+  api.linkConversation.mockResolvedValue({ data: {} })
 })
 
 describe('useResolveWithOutcome (F10)', () => {
@@ -110,5 +113,74 @@ describe('useResolveWithOutcome (F10)', () => {
     fireEvent.click(screen.getByText('so-resolver'))
     await waitFor(() => expect(onResolve).toHaveBeenCalledWith(undefined))
     expect(api.update).not.toHaveBeenCalled()
+  })
+})
+
+// C2 (SCRUM-933) — `no_target` tem duas causas e elas pedem respostas
+// opostas: sem negócio nenhum, resolver calado; com N abertos e nenhum
+// vinculado (multiplicidade da C1), perguntar em qual registrar o desfecho.
+describe('useResolveWithOutcome — ambiguidade de N abertos (C2)', () => {
+  const OPEN = [
+    { id: 'd1', contactId: 'c1', title: 'Site institucional', status: 'open', pipelineId: 'p', stageId: 's', amountCents: 1500000 },
+    { id: 'd2', contactId: 'c1', title: 'Manutenção mensal', status: 'open', pipelineId: 'p', stageId: 's', amountCents: 40000 },
+  ]
+
+  function PickerHarness({ onResolve }: { onResolve: (o?: unknown) => Promise<void> | void }) {
+    const r = useResolveWithOutcome({ conversationId: 'conv-1', contactId: 'c1', onResolve })
+    return (
+      <>
+        <button onClick={() => void r.requestResolve()}>resolver</button>
+        <span data-testid="cands">{r.candidates ? r.candidates.map((c) => c.id).join(',') : 'none'}</span>
+        <span data-testid="target">{r.target ? r.target.pipelineName : 'sem-alvo'}</span>
+        <button onClick={() => void r.pickCandidate('d2')}>escolher-d2</button>
+      </>
+    )
+  }
+
+  it('no_target com 2 abertos e nenhum vinculado: oferece a escolha em vez de resolver', async () => {
+    const onResolve = vi.fn()
+    api.conversationTarget.mockResolvedValue({ data: { target: 'no_target' } })
+    api.list.mockResolvedValue({ data: OPEN })
+    render(<PickerHarness onResolve={onResolve} />)
+    fireEvent.click(screen.getByText('resolver'))
+    await waitFor(() => expect(screen.getByTestId('cands')).toHaveTextContent('d2,d1'))
+    expect(onResolve).not.toHaveBeenCalled()
+  })
+
+  it('no_target sem negócio nenhum: resolve como sempre, sem perguntar nada', async () => {
+    const onResolve = vi.fn()
+    api.conversationTarget.mockResolvedValue({ data: { target: 'no_target' } })
+    api.list.mockResolvedValue({ data: [] })
+    render(<PickerHarness onResolve={onResolve} />)
+    fireEvent.click(screen.getByText('resolver'))
+    await waitFor(() => expect(onResolve).toHaveBeenCalled())
+    expect(screen.getByTestId('cands')).toHaveTextContent('none')
+  })
+
+  it('no_target com UM aberto só: não é ambiguidade — resolve como sempre', async () => {
+    const onResolve = vi.fn()
+    api.conversationTarget.mockResolvedValue({ data: { target: 'no_target' } })
+    api.list.mockResolvedValue({ data: [OPEN[0]] })
+    render(<PickerHarness onResolve={onResolve} />)
+    fireEvent.click(screen.getByText('resolver'))
+    await waitFor(() => expect(onResolve).toHaveBeenCalled())
+    expect(screen.getByTestId('cands')).toHaveTextContent('none')
+  })
+
+  it('escolher grava o vínculo e segue para o desfecho no negócio escolhido', async () => {
+    const onResolve = vi.fn()
+    api.conversationTarget.mockResolvedValueOnce({ data: { target: 'no_target' } })
+    api.list.mockResolvedValue({ data: OPEN })
+    render(<PickerHarness onResolve={onResolve} />)
+    fireEvent.click(screen.getByText('resolver'))
+    await waitFor(() => expect(screen.getByTestId('cands')).toHaveTextContent('d2,d1'))
+
+    api.conversationTarget.mockResolvedValueOnce({ data: { ...TARGET, dealId: 'd2' } })
+    fireEvent.click(screen.getByText('escolher-d2'))
+    await waitFor(() => expect(screen.getByTestId('target')).toHaveTextContent('Vendas'))
+    expect(api.linkConversation).toHaveBeenCalledWith('d2', 'conv-1')
+    // O popover de desfecho assume o alvo — a lista de candidatos sai da tela.
+    expect(screen.getByTestId('cands')).toHaveTextContent('none')
+    expect(onResolve).not.toHaveBeenCalled()
   })
 })
