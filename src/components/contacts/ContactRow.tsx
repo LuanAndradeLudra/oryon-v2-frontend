@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/useToast'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { cn, relativeDate, getActivePipelines, getApiErrorMessage } from '@/lib/utils'
 import { pipelineKindOption, pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
-import { openPipelineChips, effectiveOpenStageLabel } from '@/lib/contactPipelines'
+import { openPipelineChips } from '@/lib/contactPipelines'
 import type { Contact, ContactStage, Pipeline } from '@/types'
 
 const SENTIMENT_ICON = {
@@ -111,13 +111,12 @@ export function DealsSummaryChips({
     <div className={cn('flex gap-1 flex-wrap', className)} onClick={(e) => e.stopPropagation()}>
       {chips.map((c) => (
         <DealSummary
-          key={c.pipelineId}
+          key={c.dealId}
           density="chip"
           pipeline={{ id: c.pipelineId, name: c.pipelineName, color: c.color, kind: c.kind }}
           stageLabel={c.stageLabel}
-          busy={resolvingPipelineId === c.pipelineId}
-          onOpen={() => handleOpen(c.pipelineId)}
-          testId={`pipeline-chip-${c.pipelineId}`}
+          onOpen={() => openDeal(c.dealId)}
+          testId={`pipeline-chip-${c.dealId}`}
         />
       ))}
     </div>
@@ -208,12 +207,15 @@ export function ContactRow({
     // submenu continua abaixo, para processo e para quem já sabe o funil.
     const salesDefault = onAddToPipeline ? defaultSalesPipeline(pipelines) : null
     if (salesDefault) {
-      const jaAberto = contact.dealsSummary?.byPipeline.find((b) => b.pipelineId === salesDefault.id && b.openCount > 0)
+      // C2 (SCRUM-933): num funil com multiplicidade ter um negócio aberto
+      // não impede o próximo — a entrada só desabilita onde a I1 ainda vale.
+      const jaAberto = !salesDefault.allowMultipleOpen
+        && !!contact.dealsSummary?.byPipeline.find((b) => b.pipelineId === salesDefault.id && b.openCount > 0)
       items.push({ separator: true })
       items.push({
         label: 'Novo negócio',
         icon: Handshake,
-        disabled: !!jaAberto,
+        disabled: jaAberto,
         onClick: () => onAddToPipeline!(contact, salesDefault),
       })
     }
@@ -224,17 +226,28 @@ export function ContactRow({
         icon: KanbanSquare,
         children: activePipelines.map((p) => {
           const open = contact.dealsSummary?.byPipeline.find((b) => b.pipelineId === p.id && b.openCount > 0)
-          const openStageLabel = open ? effectiveOpenStageLabel(open) : null
+          const openStages = open?.openStages ?? []
+          // C2 (SCRUM-933): com multiplicidade o funil deixa de ser um destino
+          // ocupado — "já está" vira "+ outro", e a entrada volta a ser
+          // clicável. Sem multiplicidade, segue desabilitada como sempre (I1).
+          const allowsMultiple = !!p.allowMultipleOpen
+          const openLabel = openStages.length > 1
+            ? `${openStages.length} abertos`
+            : openStages[0]?.stageLabel ?? null
           const KindIcon = pipelineKindOption(pipelineKindOf(p)).icon
           return {
-            label: open ? `${p.name} — já está${openStageLabel ? ` · ${openStageLabel}` : ''}` : p.name,
+            label: !open
+              ? p.name
+              : allowsMultiple
+                ? `${p.name} — + outro${openLabel ? ` (${openLabel})` : ''}`
+                : `${p.name} — já está${openLabel ? ` · ${openLabel}` : ''}`,
             icon: () => (
               <span className="inline-flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
                 <KindIcon className="w-3 h-3 opacity-70" />
               </span>
             ),
-            disabled: !!open,
+            disabled: !!open && !allowsMultiple,
             onClick: () => onAddToPipeline!(contact, p),
           }
         }),

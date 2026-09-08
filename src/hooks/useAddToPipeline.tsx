@@ -95,6 +95,27 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
 
   const requestAdd = useCallback(async (target: AddToPipelineTarget) => {
     if (pipelineKindOf(target.pipeline) === 'sales') {
+      // C2 (SCRUM-933): em funil com multiplicidade (C1 · SCRUM-932) o backend
+      // NÃO devolve mais 409 — o segundo negócio nasceria em silêncio. O 409
+      // era o que fazia o operador parar e decidir; sem ele, a pergunta passa
+      // a ser nossa: outro negócio, ou é o mesmo que já está aberto? Só
+      // perguntamos quando existe negócio aberto AQUI — o primeiro de todos
+      // segue em um clique, como sempre foi.
+      if (target.pipeline.allowMultipleOpen) {
+        try {
+          const all = (await dealsApi.list(target.contactId)).data
+          const existing = (Array.isArray(all) ? all : []).find(
+            (d) => d.status === 'open' && d.pipelineId === target.pipeline.id,
+          )
+          if (existing) {
+            setConflict({ target, openDealId: existing.id, existing })
+            return
+          }
+        } catch {
+          // Sem a lista, seguir para o formulário é o comportamento antigo —
+          // pior que perguntar, melhor que travar a criação por um GET.
+        }
+      }
       setSalesTarget(target)
       return
     }
@@ -116,6 +137,24 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     const { target, existing } = conflict
     if (!existing) return
     const stages = target.pipeline.stages.slice().sort((a, b) => a.order - b.order)
+    if (choice === 'create_another') {
+      // O funil permite N abertos: nada a fechar nem mover — segue para a
+      // criação normal. Em venda é o "Novo negócio" de 2 passos (A3), que é
+      // onde o operador dá título e valor ao segundo negócio; sem isso, dois
+      // negócios do mesmo contato nasceriam com o mesmo nome.
+      setConflict(null)
+      if (pipelineKindOf(target.pipeline) === 'sales') { setSalesTarget(target); return }
+      setBusy(true)
+      try {
+        const res = await createRecord(target)
+        announce(res.data, target)
+      } catch (e: unknown) {
+        toast(getApiErrorMessage(e, 'Não foi possível abrir outro registro.'), 'error')
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
     if (choice === 'open_existing') {
       setConflict(null)
       // B2 (SCRUM-928, F-FUNIL-14): abre A FICHA do registro existente, não
@@ -145,7 +184,7 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     if (!lost) { toast('Este funil não tem etapa de cancelamento configurada.', 'error'); return }
     setConflict(null)
     setCloseTarget({ target, existing, stage: lost })
-  }, [conflict, navigate, toast, onCreated, openDeal])
+  }, [conflict, navigate, toast, onCreated, openDeal, createRecord, announce])
 
   const handleCloseAndNew = useCallback(async (input: CloseDealReasonInput) => {
     if (!closeTarget) return

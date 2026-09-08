@@ -3,8 +3,11 @@
 // compartilhado, B3 · SCRUM-929). Lê só o dealsSummary já carregado (sem
 // fetch) para MOSTRAR.
 //
-// B2 (SCRUM-928): clique abre a FICHA do negócio, não mais o board. O resumo
-// em lote não traz `dealId` — resolve via `GET /deals?contactId=` ao clicar.
+// B2 (SCRUM-928): clique abre a FICHA do negócio, não mais o board.
+// C1/C2 (SCRUM-932/933): o resumo em lote passou a trazer `openStages` com o
+// `dealId` de cada aberto — o clique abre direto, sem o `GET /deals?contactId=`
+// que existia só para descobrir qual era o negócio (e que, com N abertos no
+// mesmo funil, escolheria um deles no chute).
 //
 // SCRUM-929 (item 6): sem nenhum aberto, a célula fica vazia — o chip
 // tracejado "nenhum aberto" saiu por não ter ação nenhuma atrás dele.
@@ -38,11 +41,12 @@ const contact = (byPipeline: NonNullable<Contact['dealsSummary']>['byPipeline'])
   dealsSummary: { count: byPipeline.length, openCount: 0, wonCount: 0, totalCents: 0, openCents: 0, wonCents: 0, byPipeline },
 } as unknown as Contact)
 
-const row = (pipelineId: string, pipelineName: string, openCount: number, stageLabel?: string) =>
-  ({ pipelineId, pipelineName, pipelineColor: '#000', count: 1, openCount, wonCount: 0, totalCents: 0, openCents: 0, wonCents: 0, stageLabel })
+const row = (
+  pipelineId: string, pipelineName: string, openCount: number,
+  openStages: Array<{ dealId: string; stageKey: string; stageLabel: string }> = [],
+) => ({ pipelineId, pipelineName, pipelineColor: '#000', count: 1, openCount, wonCount: 0, totalCents: 0, openCents: 0, wonCents: 0, openStages })
 
-const deal = (id: string, pipelineId: string, status: Deal['status'] = 'open'): Deal =>
-  ({ id, contactId: 'c1', title: 'x', status, pipelineId, stageId: 's1', amountCents: 0 })
+const at = (dealId: string, stageLabel: string) => ({ dealId, stageKey: 's1', stageLabel })
 
 beforeEach(() => {
   openDeal.mockReset(); dealsApi.list.mockReset(); toast.mockReset()
@@ -50,36 +54,38 @@ beforeEach(() => {
 
 describe('DealsSummaryChips (F11-884)', () => {
   it('contato em 2 funis → 2 chips "Funil · Etapa" com ícone do tipo', () => {
-    render(<DealsSummaryChips contact={contact([row('p', 'Suporte', 1, 'Em atendimento'), row('v', 'Vendas', 1, 'Proposta')])} />)
-    expect(screen.getByTestId('pipeline-chip-p')).toHaveTextContent('Suporte· Em atendimento')
-    expect(screen.getByTestId('pipeline-chip-v')).toHaveTextContent('Vendas· Proposta')
+    render(<DealsSummaryChips contact={contact([
+      row('p', 'Suporte', 1, [at('d-sup', 'Em atendimento')]),
+      row('v', 'Vendas', 1, [at('d-ven', 'Proposta')]),
+    ])} />)
+    expect(screen.getByTestId('pipeline-chip-d-sup')).toHaveTextContent('Suporte· Em atendimento')
+    expect(screen.getByTestId('pipeline-chip-d-ven')).toHaveTextContent('Vendas· Proposta')
     expect(screen.getByLabelText('Processo')).toBeInTheDocument()
     expect(screen.getByLabelText('Vendas')).toBeInTheDocument()
   })
 
-  it('clique resolve o negócio ABERTO deste (contato, funil) via GET /deals?contactId= e abre a ficha', async () => {
-    dealsApi.list.mockResolvedValue({ data: [deal('d-suporte', 'p'), deal('d-vendas', 'v'), deal('d-vendas-old', 'v', 'won')] })
-    render(<DealsSummaryChips contact={contact([row('v', 'Vendas', 1, 'Proposta')])} />)
-
-    fireEvent.click(screen.getByTestId('pipeline-chip-v'))
-
-    await waitFor(() => expect(openDeal).toHaveBeenCalledWith('d-vendas'))
-    expect(dealsApi.list).toHaveBeenCalledWith('c1')
+  // C2 (SCRUM-933): o caso que a multiplicidade criou — dois abertos no MESMO
+  // funil. Antes o resumo trazia um rótulo só e o segundo negócio sumia.
+  it('dois abertos no mesmo funil → dois chips, um por negócio', () => {
+    render(<DealsSummaryChips contact={contact([
+      row('v', 'Vendas', 2, [at('d1', 'Proposta'), at('d2', 'Negociação')]),
+    ])} />)
+    expect(screen.getByTestId('pipeline-chip-d1')).toHaveTextContent('Vendas· Proposta')
+    expect(screen.getByTestId('pipeline-chip-d2')).toHaveTextContent('Vendas· Negociação')
   })
 
-  it('se o negócio já não estiver mais aberto (corrida), avisa em vez de abrir nada', async () => {
-    dealsApi.list.mockResolvedValue({ data: [deal('d-vendas-old', 'v', 'won')] })
-    render(<DealsSummaryChips contact={contact([row('v', 'Vendas', 1)])} />)
+  it('clique abre a ficha direto pelo dealId do resumo, sem consultar /deals', async () => {
+    render(<DealsSummaryChips contact={contact([row('v', 'Vendas', 1, [at('d-vendas', 'Proposta')])])} />)
 
-    fireEvent.click(screen.getByTestId('pipeline-chip-v'))
+    fireEvent.click(screen.getByTestId('pipeline-chip-d-vendas'))
 
-    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringContaining('não está mais aberto'), 'error'))
-    expect(openDeal).not.toHaveBeenCalled()
+    await waitFor(() => expect(openDeal).toHaveBeenCalledWith('d-vendas'))
+    expect(dealsApi.list).not.toHaveBeenCalled()
   })
 
   it('funil só com registro fechado não vira chip; sem nenhum aberto e sem onAddToPipeline → célula vazia', () => {
     render(<DealsSummaryChips contact={contact([row('v', 'Vendas', 0)])} />)
-    expect(screen.queryByTestId('pipeline-chip-v')).toBeNull()
+    expect(screen.queryByTestId('pipeline-chip-d1')).toBeNull()
     expect(screen.queryByTestId('pipeline-chip-none')).toBeNull()
     expect(screen.queryByTestId('pipeline-chip-add')).toBeNull()
   })

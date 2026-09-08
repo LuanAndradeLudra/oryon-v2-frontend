@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock, UserRound } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -90,6 +90,25 @@ export function DealsBoard({
     document.addEventListener('click', onDocClick)
     return () => document.removeEventListener('click', onDocClick)
   }, [pipelineMenuDealId, stageMenuDealId])
+
+  /**
+   * C2 (SCRUM-933) — quantos negócios ABERTOS cada contato tem NESTE board.
+   * Com `allowMultipleOpen` (C1 · SCRUM-932) o mesmo contato aparece em vários
+   * cards, possivelmente em colunas diferentes: sem marcação, dois cards com o
+   * mesmo avatar e o mesmo nome parecem duplicata ou bug. A contagem é do
+   * board inteiro, não da coluna — é atravessando as colunas que a repetição
+   * confunde.
+   */
+  const openByContact = useMemo(() => {
+    const n = new Map<string, number>()
+    for (const st of stages) {
+      for (const d of dealsByStage[st.id] ?? []) {
+        if (d.status !== 'open' || !d.contactId) continue
+        n.set(d.contactId, (n.get(d.contactId) ?? 0) + 1)
+      }
+    }
+    return n
+  }, [stages, dealsByStage])
 
   const draggingDeal: Deal | null = (() => {
     if (!draggingId) return null
@@ -390,9 +409,9 @@ export function DealsBoard({
                         )}
                       </div>
                       {isProcess ? (
-                        <ProcessCardBody deal={deal} onOpenContact={onOpenContact} />
+                        <ProcessCardBody deal={deal} onOpenContact={onOpenContact} siblings={openByContact.get(deal.contactId ?? '') ?? 1} />
                       ) : (
-                        <SalesCardBody deal={deal} onOpenContact={onOpenContact} users={users} />
+                        <SalesCardBody deal={deal} onOpenContact={onOpenContact} users={users} siblings={openByContact.get(deal.contactId ?? '') ?? 1} />
                       )}
                     </div>
                   ))
@@ -413,7 +432,26 @@ export function DealsBoard({
  * por fim, tempo na etapa e telefone. Tudo vem do próprio `Deal` do board
  * (`GET /deals?pipelineId=`, F8-870) — nenhuma chamada extra por card.
  */
-function ProcessCardBody({ deal, onOpenContact }: { deal: Deal; onOpenContact?: (contactId: string) => void }) {
+/**
+ * C2 (SCRUM-933): selo "1 de N" no card quando o contato tem mais de um
+ * negócio aberto neste board. Não é enfeite — sem ele, dois cards com o mesmo
+ * nome e o mesmo avatar em colunas diferentes leem como duplicata, e o
+ * operador não tem como saber que são propostas distintas do mesmo cliente.
+ */
+function SiblingBadge({ siblings }: { siblings: number }) {
+  if (siblings < 2) return null
+  return (
+    <span
+      className="text-3xs text-surface-400 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap"
+      title={`Este contato tem ${siblings} negócios abertos neste funil`}
+      data-testid="card-sibling-badge"
+    >
+      +{siblings - 1}
+    </span>
+  )
+}
+
+function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; onOpenContact?: (contactId: string) => void; siblings?: number }) {
   const origin = originInfo(deal)
   const OriginIcon = origin.icon
   const by = movedByChip(deal)
@@ -430,6 +468,7 @@ function ProcessCardBody({ deal, onOpenContact }: { deal: Deal; onOpenContact?: 
       >
         {deal.contact && <Avatar name={name} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />}
         <span className="text-sm font-medium text-surface-100 truncate flex-1">{name}</span>
+        <SiblingBadge siblings={siblings} />
         {deal.contact && (
           <span className="flex items-center gap-0.5 text-3xs text-surface-500 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
             ver <ArrowRight className="w-3 h-3" />
@@ -472,7 +511,7 @@ function ProcessCardBody({ deal, onOpenContact }: { deal: Deal; onOpenContact?: 
  * mostrava nada. `movedByChip` já cai pra `createdByKind` quando o backend
  * é anterior à F8 (sem `lastMovedByKind`), então nenhum caso existente muda.
  */
-function SalesCardBody({ deal, onOpenContact, users }: { deal: Deal; onOpenContact?: (contactId: string) => void; users: User[] }) {
+function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Deal; onOpenContact?: (contactId: string) => void; users: User[]; siblings?: number }) {
   const origin = originInfo(deal)
   const OriginIcon = origin.icon
   const by = movedByChip(deal)
@@ -485,7 +524,10 @@ function SalesCardBody({ deal, onOpenContact, users }: { deal: Deal; onOpenConta
 
   return (
     <>
-      <div className="text-sm font-medium text-surface-100 truncate pr-20">{deal.title}</div>
+      <div className="flex items-start gap-1.5 pr-20">
+        <span className="text-sm font-medium text-surface-100 truncate flex-1">{deal.title}</span>
+        <SiblingBadge siblings={siblings} />
+      </div>
       <div className="mt-1 flex items-center justify-between">
         <span className="text-xs text-surface-400">{brl(deal.amountCents ?? 0)}</span>
         <div className="flex items-center gap-1">

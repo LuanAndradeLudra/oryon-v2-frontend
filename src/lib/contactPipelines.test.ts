@@ -1,6 +1,6 @@
 // F11 (SCRUM-884/885/886) — chips por registro aberto, stepper, ordenação e "movido por".
 import { describe, it, expect } from 'vitest'
-import { openPipelineChips, effectiveOpenStageLabel, stepperFor, splitDeals, movedByLabel, moveTargets } from './contactPipelines'
+import { openPipelineChips, stepperFor, splitDeals, movedByLabel, moveTargets } from './contactPipelines'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 const st = (id: string, label: string, order: number, extra: Partial<PipelineStage> = {}): PipelineStage => ({ id, tenantId: 't', pipelineId: 'p', key: id, label, color: `#${id}`, order, isWon: false, isLost: false, ...extra })
@@ -12,38 +12,39 @@ const VENDAS: Pipeline = { ...SUPORTE, id: 'v', name: 'Vendas', kind: undefined 
 const base: Deal = { id: 'd', contactId: 'c', title: 'x', status: 'open', pipelineId: 'p', stageId: 's2', amountCents: 0 }
 
 describe('contactPipelines (F11)', () => {
-  it('openPipelineChips: um chip por funil com registro aberto, com tipo e etapa', () => {
+  it('openPipelineChips: um chip por REGISTRO aberto, com id, tipo e etapa', () => {
     const chips = openPipelineChips([
-      { pipelineId: 'p', pipelineName: 'Suporte', pipelineColor: '#000', count: 2, openCount: 1, wonCount: 1, totalCents: 0, openCents: 0, wonCents: 0, stageLabel: 'Em atendimento' },
-      { pipelineId: 'v', pipelineName: 'Vendas', pipelineColor: '#111', count: 1, openCount: 0, wonCount: 1, totalCents: 0, openCents: 0, wonCents: 0 },
-      { pipelineId: 'zzz', pipelineName: 'Antigo', pipelineColor: '#222', count: 1, openCount: 1, wonCount: 0, totalCents: 0, openCents: 0, wonCents: 0 },
+      { pipelineId: 'p', pipelineName: 'Suporte', pipelineColor: '#000', count: 2, openCount: 1, wonCount: 1, totalCents: 0, openCents: 0, wonCents: 0, openStages: [{ dealId: 'd1', stageKey: 's2', stageLabel: 'Em atendimento' }] },
+      { pipelineId: 'v', pipelineName: 'Vendas', pipelineColor: '#111', count: 1, openCount: 0, wonCount: 1, totalCents: 0, openCents: 0, wonCents: 0, openStages: [] },
+      { pipelineId: 'zzz', pipelineName: 'Antigo', pipelineColor: '#222', count: 1, openCount: 1, wonCount: 0, totalCents: 0, openCents: 0, wonCents: 0, openStages: [{ dealId: 'd9', stageKey: 'x', stageLabel: 'Etapa' }] },
     ], [SUPORTE, VENDAS])
     expect(chips).toEqual([
-      { pipelineId: 'p', pipelineName: 'Suporte', color: '#14b8a6', stageLabel: 'Em atendimento', kind: 'process' },
-      { pipelineId: 'zzz', pipelineName: 'Antigo', color: '#222', stageLabel: null, kind: 'sales' },
+      { pipelineId: 'p', pipelineName: 'Suporte', color: '#14b8a6', stageLabel: 'Em atendimento', kind: 'process', dealId: 'd1' },
+      { pipelineId: 'zzz', pipelineName: 'Antigo', color: '#222', stageLabel: 'Etapa', kind: 'sales', dealId: 'd9' },
     ])
   })
 
-  // C1/SCRUM-932 (achado do Lince): backend do épico ainda devolve o formato
-  // ANTIGO (`stageKey`/`stageLabel` singulares) — a C1 não mesclou ainda. Leitura
-  // híbrida: usa `openStages` quando vier (formato novo), cai pro singular
-  // quando não vier. TODO(SCRUM-932): remover o teste do formato antigo quando
-  // a C1 mesclar e o fallback for removido.
-  it('effectiveOpenStageLabel: formato novo (openStages) tem prioridade sobre o singular', () => {
-    expect(effectiveOpenStageLabel({ openStages: [{ dealId: 'd1', stageKey: 'proposta', stageLabel: 'Proposta enviada' }], stageLabel: 'ignorado (antigo)' })).toBe('Proposta enviada')
-  })
-
-  it('effectiveOpenStageLabel: sem openStages (backend atual do épico, pré-C1) cai pro singular', () => {
-    expect(effectiveOpenStageLabel({ stageLabel: 'Em atendimento' })).toBe('Em atendimento')
-    expect(effectiveOpenStageLabel({ openStages: [], stageLabel: 'Em atendimento' })).toBe('Em atendimento')
-    expect(effectiveOpenStageLabel({})).toBeNull()
-  })
-
-  it('openPipelineChips: lê openStages (formato novo, pós-C1) quando presente, ignorando o singular', () => {
+  // C2 (SCRUM-933) — o caso que a multiplicidade da C1 criou: dois negócios
+  // abertos no MESMO funil. Antes o resumo trazia um `stageLabel` singular e
+  // um dos dois simplesmente não existia na tela.
+  it('openPipelineChips: N abertos no mesmo funil viram N chips, um por negócio', () => {
     const chips = openPipelineChips([
-      { pipelineId: 'p', pipelineName: 'Suporte', pipelineColor: '#000', count: 1, openCount: 1, wonCount: 0, totalCents: 0, openCents: 0, wonCents: 0, stageLabel: 'formato antigo', openStages: [{ dealId: 'd1', stageKey: 's2', stageLabel: 'Em atendimento' }] },
+      {
+        pipelineId: 'v', pipelineName: 'Vendas', pipelineColor: '#111', count: 2, openCount: 2, wonCount: 0, totalCents: 0, openCents: 0, wonCents: 0,
+        openStages: [
+          { dealId: 'd1', stageKey: 's1', stageLabel: 'Novo' },
+          { dealId: 'd2', stageKey: 's2', stageLabel: 'Em atendimento' },
+        ],
+      },
     ], [SUPORTE, VENDAS])
-    expect(chips).toEqual([{ pipelineId: 'p', pipelineName: 'Suporte', color: '#14b8a6', stageLabel: 'Em atendimento', kind: 'process' }])
+    expect(chips.map((c) => [c.dealId, c.stageLabel])).toEqual([['d1', 'Novo'], ['d2', 'Em atendimento']])
+  })
+
+  it('openPipelineChips: funil sem nenhum aberto não vira chip', () => {
+    const chips = openPipelineChips([
+      { pipelineId: 'v', pipelineName: 'Vendas', pipelineColor: '#111', count: 3, openCount: 0, wonCount: 3, totalCents: 0, openCents: 0, wonCents: 0, openStages: [] },
+    ], [SUPORTE, VENDAS])
+    expect(chips).toEqual([])
   })
 
   it('stepperFor: aberto → feitas/atual/a fazer só nas normais; fechado → todas feitas + terminal', () => {

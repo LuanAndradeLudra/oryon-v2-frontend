@@ -89,11 +89,13 @@ export function PipelineSalesSettings({ pipeline, onChanged }: PipelineSalesSett
           <p className="text-xs text-surface-500 mt-0.5">
             Desligado (padrão): cada contato tem no máximo 1 negócio aberto neste funil.
           </p>
-          {/* Follow-up SCRUM-931 (achado 3, revisão do Lince): o consumo desta
-              flag é da C1/SCRUM-932, ainda não implementada — sem o aviso, o
-              toggle passa a impressão de já mudar o comportamento de criação. */}
-          <p className="text-[11px] text-warning mt-1">
-            Ainda não afeta a criação de negócios — a checagem chega numa história futura (C1).
+          {/* O aviso "ainda não afeta a criação" saiu com a C1 (SCRUM-932,
+              trava por funil no backend) e a C2 (SCRUM-933, seletor de negócio
+              da conversa e "Criar outro" no conflito): ligar isto passou a
+              mudar o comportamento de verdade. */}
+          <p className="text-[11px] text-surface-500 mt-1">
+            Ligado: o mesmo contato pode ter várias propostas abertas aqui, e a conversa passa a pedir
+            a qual delas ela se refere.
           </p>
         </div>
         <Switch
