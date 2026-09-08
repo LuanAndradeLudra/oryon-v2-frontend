@@ -415,14 +415,15 @@ export function ChatHeader({
 
       {/* ── Right: actions ────────────────────────────────────── */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        {/* A3 (SCRUM-925): ação PRIMÁRIA da superfície. O "Adicionar ao funil ▾"
-            continua ao lado — para funil de processo e como atalho de quem já
-            sabe o funil —, mas criar negócio deixa de estar escondido dentro
-            de um menu (P2: uma ação primária visível por superfície). */}
+        {/* A3 (SCRUM-925): criar negócio não fica escondido dentro de um menu —
+            o botão continua aqui, direto. Em `secondary` e não `primary`: o
+            cabeçalho já tem "Adicionar ao funil ▾" ao lado e o grupo de ações
+            à direita, e um botão de marca com sombra colorida no meio disso
+            competia por atenção com a conversa, que é o conteúdo da tela. */}
         {!isMobile && salesPipeline && (
           <Button
             size="sm"
-            variant="primary"
+            variant="secondary"
             leftIcon={<Handshake className="w-3.5 h-3.5" />}
             onClick={() => addToPipeline.requestAdd({
               contactId: contact.id,
