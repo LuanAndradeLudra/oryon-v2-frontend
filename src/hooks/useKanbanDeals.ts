@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
+import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
 import type { ContactFilters, Deal } from '@/types'
 
 type BoardFilters = Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'source' | 'tagId' | 'optIn'>
@@ -54,18 +55,26 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
 
   // Realtime: qualquer mudança de negócio no tenant recarrega o board (mesmo
   // padrão de deal:changed usado no Kanban de contatos e na ficha do contato).
+  // SCRUM-929 (item 5): o socket sozinho deixava o board um passo atrás de
+  // quem acabou de mover um negócio noutra superfície (tabela/ficha/painel)
+  // até o round-trip voltar — agora também ouve o evento local, que chega na
+  // hora (o board não filtra por contactId: qualquer mudança recarrega).
   useEffect(() => {
     if (!pipelineId) return
-    const socket = connectSocket()
     const onChanged = () => void load()
+    window.addEventListener(DEALS_INVALIDATE_EVENT, onChanged)
+    const socket = connectSocket()
     socket.on('deal:changed', onChanged)
     return () => {
+      window.removeEventListener(DEALS_INVALIDATE_EVENT, onChanged)
       socket.off('deal:changed', onChanged)
     }
   }, [pipelineId, load])
 
-  /** Move um deal para outro estágio, otimista, com rollback em erro. */
-  const moveStage = useCallback(async (deal: Deal, toStageId: string) => {
+  /** Move um deal para outro estágio, otimista, com rollback em erro.
+   *  `close` (motivo do catálogo) é obrigatório quando o destino é terminal —
+   *  quem chama já passou pelo modal de motivo (A4 · SCRUM-926). */
+  const moveStage = useCallback(async (deal: Deal, toStageId: string, close?: { closeReason: string; closeNote?: string }) => {
     if (deal.stageId === toStageId) return
     const fromStageId = deal.stageId
 
@@ -77,7 +86,7 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
     })
 
     try {
-      const res = await dealsApi.moveStage(deal.id, toStageId)
+      const res = await dealsApi.moveStage(deal.id, toStageId, close)
       // Reconcilia com o servidor (status/closedAt podem ter mudado ao entrar
       // num estágio terminal).
       setDealsByStage((prev) => {

@@ -41,7 +41,9 @@ function genToastId(): string {
   return `toast-${Date.now()}-${_toastCounter}`
 }
 
-export function showToast(message: string, type: ToastType = 'success', action?: ToastAction): string {
+/** `durationMs` fecha o toast noutro tempo — o "Desfazer" do fechamento de
+ *  negócio (A4 · SCRUM-926) vale por 5 s exatos, que é a janela combinada. */
+export function showToast(message: string, type: ToastType = 'success', action?: ToastAction, durationMs?: number): string {
   const id = genToastId()
   _toasts = [..._toasts, { id, type, message, ...(action ? { action } : {}) }]
   emit()
@@ -49,7 +51,7 @@ export function showToast(message: string, type: ToastType = 'success', action?:
   setTimeout(() => {
     _toasts = _toasts.filter((t) => t.id !== id)
     emit()
-  }, action ? 6000 : 3500)
+  }, durationMs ?? (action ? 6000 : 3500))
   return id
 }
 

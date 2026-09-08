@@ -13,6 +13,7 @@ import { templateVariableSlots, variablesComplete, variablesToArray } from '@/li
 import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
+import { useToast } from '@/hooks/useToast'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
 
@@ -147,6 +148,7 @@ function QuickReplyPicker({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function MessageInput({ onSend, contactId, sending, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
+  const { toast } = useToast()
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
   const [allResponses, setAllResponses] = useState<CannedResponse[]>([])
@@ -479,9 +481,15 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
     const oversize = files.filter((f) => f.size > MAX_FILE_SIZE)
     const valid = files.filter((f) => f.size <= MAX_FILE_SIZE)
     if (oversize.length > 0) {
-      alert(
-        `Arquivo${oversize.length > 1 ? 's' : ''} muito grande${oversize.length > 1 ? 's' : ''} (máx 16MB):\n` +
-        oversize.map((f) => `• ${f.name}`).join('\n'),
+      // P6: alert() nativo travava a aba até o operador clicar OK — vira
+      // toast (mesmo singleton do resto do app, sem risco de duplicar).
+      const names = oversize.slice(0, 2).map((f) => f.name).join(', ')
+      const rest = oversize.length > 2 ? ` e mais ${oversize.length - 2}` : ''
+      toast(
+        oversize.length > 1
+          ? `${names}${rest} passam de 16MB — reduza o tamanho ou envie em partes.`
+          : `"${names}" passa de 16MB (limite do WhatsApp) — reduza o tamanho ou envie em partes.`,
+        'error',
       )
     }
     if (valid.length === 0) return

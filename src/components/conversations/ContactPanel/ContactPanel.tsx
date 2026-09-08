@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink, ArrowRightLeft,
-  KanbanSquare, MapPin, Phone, Plus, Filter,
+  Milestone, MapPin, Phone, Plus,
   Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -123,6 +123,8 @@ function NotasSection() {
         <button
           type="button"
           onClick={() => setAdding(true)}
+          title="Adicionar nota"
+          aria-label="Adicionar nota"
           className="w-6 h-6 rounded-md flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -254,23 +256,26 @@ export function ContactPanel({
       {/* Action bar */}
       <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-950">
         <div className="min-w-0 flex items-center gap-1.5">
-          <Filter className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Estágio do funil" />
+          <Milestone className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Situação do contato" />
           {localStage ? (
             <StageBadge stage={localStage} stages={stages} />
           ) : (
-            <span className="text-[11px] text-surface-600">Sem estágio</span>
+            <span className="text-[11px] text-surface-600">Sem situação</span>
           )}
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          <button onClick={() => setStageOpen(true)} title="Mover para estágio"
+          {/* SCRUM-929 (F-FICHA-08): "Mudar situação" — ícone e verbo distintos
+              de "Mover etapa" (DealSummary, ícone KanbanSquare) — etapa é do
+              FUNIL do negócio, situação é o ciclo de vida do CONTATO. */}
+          <button onClick={() => setStageOpen(true)} title="Mudar situação" aria-label="Mudar situação"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
-            <KanbanSquare className="w-4 h-4" />
+            <Milestone className="w-4 h-4" />
           </button>
-          <button onClick={() => navigate(`/contacts?contact=${contact.id}`)} title="Ver no CRM"
+          <button onClick={() => navigate(`/contacts?contact=${contact.id}`)} title="Ver no CRM" aria-label="Ver no CRM"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <ExternalLink className="w-4 h-4" />
           </button>
-          <button onClick={onClose} title="Fechar"
+          <button onClick={onClose} title="Fechar" aria-label="Fechar"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <X className="w-4 h-4" />
           </button>
@@ -304,7 +309,15 @@ export function ContactPanel({
           </div>
         </div>
 
-        {/* Etiquetas — logo abaixo do header (avatar + telefone) */}
+        {/* Negócios primeiro: numa conversa de venda, o que o atendente
+            precisa ver ao abrir o painel é se este contato já tem negócio
+            aberto e em que etapa — antes de etiquetas ou de quem atende.
+            Ficava depois de "Agente responsável", exigindo rolagem. */}
+        {isFeatureVisible('contactPanelDeals') && (
+          <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
+        )}
+
+        {/* Etiquetas — logo abaixo dos negócios */}
         <Section
           title="Etiquetas"
           action={
@@ -320,11 +333,12 @@ export function ContactPanel({
           {tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span key={tag.id} className="color-chip flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium"
-                  style={{ ['--chip']: tag.color } as React.CSSProperties}>
-                  <span className="w-1.5 h-1.5 rounded-full chip-dot" />
-                  {tag.name}
-                  <button onClick={() => onRemoveTag(tag.id)} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
+                <span key={tag.id} className="color-chip flex items-center gap-1 whitespace-nowrap flex-shrink-0 text-xs px-2 py-1 rounded-full font-medium"
+                  style={{ ['--chip']: tag.color } as React.CSSProperties}
+                  title={tag.name}>
+                  <span className="w-1.5 h-1.5 rounded-full chip-dot flex-shrink-0" />
+                  <span>{tag.name}</span>
+                  <button onClick={() => onRemoveTag(tag.id)} title={`Remover etiqueta ${tag.name}`} aria-label={`Remover etiqueta ${tag.name}`} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </span>
@@ -385,10 +399,6 @@ export function ContactPanel({
               onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
           </Modal>
         </Section>
-
-        {isFeatureVisible('contactPanelDeals') && (
-          <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
-        )}
 
         {/* Hidden when conversionAnalysisPanel is off — covers both the
             "Analisar conversa com IA" CTA and any previously-rendered

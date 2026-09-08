@@ -9,12 +9,13 @@
 // the source.
 
 import { useState } from 'react'
-import { X, Phone, Star, Loader2, Copy } from 'lucide-react'
+import { X, Phone, Star, Copy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { templatesApi } from '@/services/api'
 import type { WhatsAppTemplate } from '@/types'
 import { formatPhone } from '@/lib/phone'
+import { Button } from '@/components/ui/Button'
 
 
 export function DuplicateTemplateModal({
@@ -156,32 +157,19 @@ export function DuplicateTemplateModal({
         </div>
 
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-surface-800/60 bg-surface-950/30">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors disabled:opacity-40"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={saving}>
             Cancelar
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleSubmit}
             disabled={!pickedLineId || saving || otherLines.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            loading={saving}
+            leftIcon={!saving ? <Copy className="w-3.5 h-3.5" /> : undefined}
           >
-            {saving ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Duplicando...
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                Duplicar
-              </>
-            )}
-          </button>
+            {saving ? 'Duplicando...' : 'Duplicar'}
+          </Button>
         </div>
       </div>
     </div>

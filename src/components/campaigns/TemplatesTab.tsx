@@ -250,6 +250,7 @@ export function TemplatesTab() {
               <h3 className="text-sm font-semibold text-surface-100">{previewTemplate.name}</h3>
               <button
                 onClick={() => setPreviewTemplate(null)}
+                aria-label="Fechar"
                 className="p-1 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
               >
                 ×
@@ -379,6 +380,7 @@ function TemplateCard({
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
         <button
           onClick={onPreview}
+          aria-label="Preview"
           className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
           title="Preview"
         >
@@ -387,6 +389,7 @@ function TemplateCard({
         {canEdit && (
           <button
             onClick={onEdit}
+            aria-label="Editar"
             className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
             title="Editar"
           >
@@ -396,6 +399,7 @@ function TemplateCard({
         {onDuplicate && (
           <button
             onClick={onDuplicate}
+            aria-label="Duplicar para outra linha"
             className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
             title="Duplicar para outra linha"
           >
@@ -405,6 +409,7 @@ function TemplateCard({
         <button
           onClick={onDelete}
           disabled={deleting}
+          aria-label="Excluir"
           className="p-1.5 rounded-lg text-surface-500 hover:text-danger hover:bg-danger/10 transition-all"
           title="Excluir"
         >

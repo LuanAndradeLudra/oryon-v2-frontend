@@ -37,6 +37,7 @@ import type {
   PipelineKind,
   PipelineTemplate,
   CloseReason,
+  PipelineCloseReason,
   CreatePipelineStageInput,
   PipelineChannelRouting,
   ContactDealsSummary,
@@ -52,6 +53,7 @@ import type {
   DealOutcomeInput,
   DealStageHistoryEntry,
 } from '@/types'
+import type { PipelineOverview, PipelineSummaryItem } from '@/types/pipelineAnalytics'
 
 import { apiBaseUrl, isNativePlatform } from '@/config/env'
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth-storage'
@@ -1313,11 +1315,26 @@ export const pipelinesApi = {
   templates(kind?: PipelineKind) {
     return api.get<PipelineTemplate[]>('/settings/pipelines/templates', { params: kind ? { kind } : undefined })
   },
-  /** Catálogo de motivos de desfecho por tipo (F1-827). */
+  /** Catálogo de motivos de desfecho ATIVOS do tenant por tipo (F1-827, B5). */
   closeReasons(kind?: PipelineKind) {
     return api.get<CloseReason[] | Record<PipelineKind, CloseReason[]>>('/settings/pipelines/close-reasons', { params: kind ? { kind } : undefined })
   },
-  update(id: string, dto: { name?: string; description?: string; color?: string; isArchived?: boolean }) {
+  /** Um funil do tenant, com estágios/acesso/motivos embutidos (B5). */
+  getOne(id: string) {
+    return api.get<Pipeline>(`/settings/pipelines/${id}`)
+  },
+  update(id: string, dto: {
+    name?: string
+    description?: string
+    color?: string
+    isArchived?: boolean
+    /** B5 (D0-9/12): 'creator' | 'none' | 'user:<id>'. */
+    defaultOwnerRule?: string
+    /** B5 (D0-1): só editável em funil kind='sales'. */
+    allowMultipleOpen?: boolean
+    /** B5 (D0-8): interruptor do motivo livre no fechamento. */
+    allowFreeCloseReason?: boolean
+  }) {
     return api.patch<Pipeline>(`/settings/pipelines/${id}`, dto)
   },
   remove(id: string) {
@@ -1326,13 +1343,13 @@ export const pipelinesApi = {
   setDefault(id: string) {
     return api.patch<Pipeline>(`/settings/pipelines/${id}/default`)
   },
-  createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+  createStage(pipelineId: string, dto: { label: string; key?: string; color?: string; isWon?: boolean; isLost?: boolean; probability?: number | null }) {
     return api.post<PipelineStage>(`/settings/pipelines/${pipelineId}/stages`, dto)
   },
   listStages(pipelineId: string) {
     return api.get<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages`)
   },
-  updateStage(pipelineId: string, id: string, dto: { label?: string; color?: string; isWon?: boolean; isLost?: boolean }) {
+  updateStage(pipelineId: string, id: string, dto: { label?: string; color?: string; isWon?: boolean; isLost?: boolean; probability?: number | null }) {
     return api.patch<PipelineStage>(`/settings/pipelines/${pipelineId}/stages/${id}`, dto)
   },
   removeStage(pipelineId: string, id: string) {
@@ -1340,6 +1357,28 @@ export const pipelinesApi = {
   },
   reorderStages(pipelineId: string, ids: string[]) {
     return api.patch<PipelineStage[]>(`/settings/pipelines/${pipelineId}/stages/reorder`, { ids })
+  },
+  // ── Acesso por setor (B0/SCRUM-940) ─────────────────────────────────────────
+  getAccess(id: string) {
+    return api.get<{ pipelineId: string; implicitAll: boolean; departmentIds: string[] }>(`/settings/pipelines/${id}/access`)
+  },
+  /** SUBSTITUI o conjunto de setores — manda tudo o que o admin vê marcado, nunca faz merge. */
+  updateAccess(id: string, departmentIds: string[]) {
+    return api.put<{ pipelineId: string; implicitAll: boolean; departmentIds: string[] }>(`/settings/pipelines/${id}/access`, { departmentIds })
+  },
+  // ── Motivos de fechamento editáveis por tenant (B5/D0-8) ────────────────────
+  /** Motivos ativos + inativos do tenant/kind, para a tela de configuração. */
+  manageCloseReasons(kind: PipelineKind) {
+    return api.get<PipelineCloseReason[]>('/settings/pipelines/close-reasons/manage', { params: { kind } })
+  },
+  createCloseReason(dto: { kind: PipelineKind; label: string; outcome: 'won' | 'lost' | 'any'; key?: string }) {
+    return api.post<PipelineCloseReason>('/settings/pipelines/close-reasons', dto)
+  },
+  updateCloseReason(id: string, dto: { label?: string; outcome?: 'won' | 'lost' | 'any'; active?: boolean }) {
+    return api.patch<PipelineCloseReason>(`/settings/pipelines/close-reasons/${id}`, dto)
+  },
+  reorderCloseReasons(kind: PipelineKind, ids: string[]) {
+    return api.patch<PipelineCloseReason[]>('/settings/pipelines/close-reasons/reorder', { kind, ids })
   },
 }
 
@@ -1367,9 +1406,11 @@ export const dealsApi = {
   board(pipelineId: string, filters?: Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'source' | 'tagId' | 'optIn'>) {
     return api.get<Deal[]>('/deals', { params: { pipelineId, ...filters } })
   },
-  /** Move o negócio para um estágio do seu pipeline (deriva status no backend). */
-  moveStage(id: string, stageId: string) {
-    return api.patch<Deal>(`/deals/${id}/stage`, { stageId })
+  /** Move o negócio para um estágio do seu pipeline (deriva status no backend).
+   *  Etapa TERMINAL é fechamento: `close` é obrigatório (A4 · SCRUM-926 — sem
+   *  motivo o backend responde 400 `close_reason_required`). */
+  moveStage(id: string, stageId: string, close?: { closeReason: string; closeNote?: string }) {
+    return api.patch<Deal>(`/deals/${id}/stage`, { stageId, ...close })
   },
   /** Move o negócio ABERTO pra outro funil — nasce lá no 1º estágio não-terminal.
    *  409 se o contato já tem um negócio aberto no funil de destino. */
@@ -1389,14 +1430,37 @@ export const dealsApi = {
   history(id: string) {
     return api.get<DealStageHistoryEntry[]>(`/deals/${id}/history`)
   },
-  create(dto: Partial<Deal>) {
+  /**
+   * C2 (SCRUM-933, par da C1/SCRUM-932): o operador diz qual negócio ABERTO
+   * recebe as próximas interações desta conversa. Grava `originConversationId`
+   * — o MESMO campo que o passo (1) da precedência do backend já lê —, então o
+   * vínculo vale imediatamente para a IA e para o "resolver com desfecho",
+   * sem nenhuma mudança na lógica de precedência.
+   *
+   * Só faz sentido com N negócios abertos (funil com `allowMultipleOpen`); com
+   * um só, ele já é o alvo por definição.
+   */
+  linkConversation(dealId: string, conversationId: string) {
+    return api.patch<Deal>(`/deals/${dealId}/conversation-link`, { conversationId })
+  },
+  /** `updateAmount` acompanha `lineItems` também na CRIAÇÃO (A2 · SCRUM-924):
+   *  é a escolha dos dois botões do "Novo negócio" (A3 · SCRUM-925) — `false`
+   *  preserva o valor digitado, `true` usa a soma dos itens. Omitido com itens,
+   *  o backend recalcula (compat). Sem `lineItems` no corpo, não tem efeito. */
+  create(dto: Partial<Deal> & { updateAmount?: boolean }) {
     return api.post<Deal>('/deals', dto)
   },
-  update(id: string, patch: Partial<Deal>) {
+  /** `updateAmount: true` manda o backend recalcular `amountCents = Σ itens` ao
+   *  reescrever `lineItems` (A2 · SCRUM-924, D4) — sem ele, um PATCH com itens
+   *  zeraria o valor digitado à mão. Só faz sentido acompanhado de `lineItems`. */
+  update(id: string, patch: Partial<Deal> & { updateAmount?: boolean }) {
     return api.patch<Deal>(`/deals/${id}`, patch)
   },
-  /** `closeReason`/`closeNote` (F2, I5): motivo do catálogo ao fechar; sem eles o backend usa o compat `outro`. */
-  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string; closeReason?: string; closeNote?: string }) {
+  /** `closeReason`/`closeNote` (F2, I5): motivo do catálogo ao fechar —
+   *  OBRIGATÓRIO desde a A4 (SCRUM-926); sem ele, 400 `close_reason_required`.
+   *  `stageId` só vale ao REABRIR (`status: 'open'`): devolve o registro à
+   *  etapa de onde ele saiu, que é o "Desfazer" do toast. */
+  setStatus(id: string, body: { status: DealStatus; moveContactToStageKey?: string; closeReason?: string; closeNote?: string; stageId?: string }) {
     return api.patch<Deal>(`/deals/${id}/status`, body)
   },
   /** Agregados por contato (batch), p/ o card do Kanban. Só retorna contatos que têm negócios. */
@@ -1404,6 +1468,25 @@ export const dealsApi = {
     return api.get<(ContactDealsSummary & { contactId: string })[]>('/deals/summary', {
       params: { contactIds: contactIds.join(',') },
     })
+  },
+  /**
+   * A1 (SCRUM-153, decisão D0-3): promove um item PERSONALIZADO do negócio a
+   * produto do catálogo. É o ato explícito que o expõe à IA — enquanto o item é
+   * `custom` ele vive só no negócio, com preço negociado, e não entra no
+   * catálogo que o agent-server lê nem no portão de preço.
+   *
+   * `category` é obrigatória (o cadastro de produtos a exige); `name` permite
+   * corrigir o texto sem reescrever o snapshot histórico do negócio.
+   */
+  promoteLineItem(
+    dealId: string,
+    lineItemId: string,
+    body: { category: string; name?: string; variationLabel?: string; sku?: string; active?: boolean },
+  ) {
+    return api.post<{ deal: Deal; product: Product }>(
+      `/deals/${dealId}/line-items/${lineItemId}/promote`,
+      body,
+    )
   },
   remove(id: string) {
     return api.delete(`/deals/${id}`)
@@ -1741,6 +1824,20 @@ export const cannedResponsesApi = {
       page++
     }
     return all
+  },
+}
+
+/**
+ * Relatórios de funil (D1 · SCRUM-934, já mesclado — D2/SCRUM-935 só consome).
+ * `GET /analytics/pipelines/...` — Modelo B §4.7: agregados de funil (por
+ * etapa, ganho/perdido por motivo, conversão, ciclo, por dono).
+ */
+export const pipelineAnalyticsApi = {
+  overview(pipelineId: string, params: { from?: string; to?: string; ownerUserId?: string } = {}) {
+    return api.get<PipelineOverview>(`/analytics/pipelines/${pipelineId}/overview`, { params })
+  },
+  summary() {
+    return api.get<PipelineSummaryItem[]>('/analytics/pipelines/summary')
   },
 }
 

@@ -15,6 +15,7 @@ import {
   LogOut,
   User as UserIcon,
   Bell,
+  Handshake,
   type LucideIcon,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -22,6 +23,7 @@ import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { cn } from '@/lib/utils'
 
 interface Item {
@@ -30,6 +32,8 @@ interface Item {
   description?: string
   Icon: LucideIcon
   superAdminOnly?: boolean
+  /** D2 (SCRUM-935): item só existe com o gate de múltiplos funis ligado (SCRUM-498). */
+  requiresMultiPipeline?: boolean
 }
 
 interface Section {
@@ -41,6 +45,7 @@ const SECTIONS: Section[] = [
   {
     label: 'Trabalho',
     items: [
+      { href: '/pipelines', label: 'Funis', description: 'Board e relatorios de negocios', Icon: Handshake, requiresMultiPipeline: true },
       { href: '/team', label: 'Nexus', description: 'Chat interno da equipe', Icon: MessagesSquare },
       { href: '/dashboard', label: 'Dashboard', description: 'KPIs e relatorios', Icon: BarChart3 },
       { href: '/campaigns', label: 'Disparos', description: 'Campanhas em massa', Icon: Send },
@@ -92,6 +97,7 @@ export function MorePage() {
   const navigate = useNavigate()
   const isSuperAdmin = isOryonStaff(user?.role)
   const { isRouteVisible } = useFeatureVisibility()
+  const multiPipeline = useMultiPipeline()
 
   const handleLogout = () => {
     logout()
@@ -103,6 +109,7 @@ export function MorePage() {
       ...section,
       items: section.items.filter((item) => {
         if (item.superAdminOnly && !isSuperAdmin) return false
+        if (item.requiresMultiPipeline && !multiPipeline) return false
         return isRouteVisible(item.href)
       }),
     }))

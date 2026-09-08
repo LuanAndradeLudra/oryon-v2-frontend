@@ -50,7 +50,7 @@ function InsightRow({ insight }: { insight: DashboardInsight }) {
     >
       <div className="flex items-center gap-1.5">
         <span
-          className="color-chip inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border"
+          className="color-chip inline-flex items-center gap-1 text-3xs font-semibold px-1.5 py-0.5 rounded-full border"
           style={{ ['--chip']: cfg.chip } as React.CSSProperties}
         >
           {cfg.icon}
@@ -59,11 +59,11 @@ function InsightRow({ insight }: { insight: DashboardInsight }) {
         <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', PRIORITY_DOT[insight.priority])} />
       </div>
       <p className="text-xs font-semibold text-surface-100 leading-snug">{insight.title}</p>
-      <p className="text-[11px] text-surface-400 leading-relaxed">{insight.body}</p>
+      <p className="text-2xs text-surface-400 leading-relaxed">{insight.body}</p>
       {isFeatureVisible('aiInsightsAskButton') && (
         <button
           onClick={() => open(insight.question)}
-          className="flex items-center gap-1 text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors self-start mt-0.5"
+          className="flex items-center gap-1 text-2xs font-medium text-brand-400 hover:text-brand-300 transition-colors self-start mt-0.5"
         >
           Perguntar à IA
           <ArrowRight className="w-2.5 h-2.5" />
@@ -106,14 +106,14 @@ function TotalCard({ contacts, total }: { contacts: Contact[]; total: number }) 
         <div className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 border border-surface-700">
           <Users className="w-3 h-3 text-brand-400" />
         </div>
-        <p className="text-[11px] text-surface-500">Total de contatos</p>
+        <p className="text-2xs text-surface-500">Total de contatos</p>
       </div>
 
       <div className="flex items-end justify-between gap-3">
         <p className="text-xl font-bold text-surface-100 leading-none">{total.toLocaleString('pt-BR')}</p>
         <div className="flex flex-col items-end gap-0.5 pb-0.5">
-          <span className="text-[10px] text-status-active">+{newThisWeek} esta semana</span>
-          <span className="text-[10px] text-surface-500">{withOptIn} opt-in · {withTags} c/ etiquetas</span>
+          <span className="text-3xs text-status-active">+{newThisWeek} esta semana</span>
+          <span className="text-3xs text-surface-500">{withOptIn} opt-in · {withTags} c/ etiquetas</span>
         </div>
       </div>
 
@@ -121,7 +121,7 @@ function TotalCard({ contacts, total }: { contacts: Contact[]; total: number }) 
         <div className="flex flex-col gap-1 pt-0.5 border-t border-surface-700/50">
           {topSources.map(([src, count]) => (
             <div key={src} className="flex items-center justify-between gap-2">
-              <span className="text-[10px] text-surface-500 truncate">{SOURCE_LABEL[src] ?? src}</span>
+              <span className="text-3xs text-surface-500 truncate">{SOURCE_LABEL[src] ?? src}</span>
               <div className="flex items-center gap-1.5">
                 <div className="w-16 h-1 rounded-full bg-surface-700 overflow-hidden">
                   <div
@@ -129,7 +129,7 @@ function TotalCard({ contacts, total }: { contacts: Contact[]; total: number }) 
                     style={{ width: `${Math.round((count / total) * 100)}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-medium text-surface-400 w-4 text-right">{count}</span>
+                <span className="text-3xs font-medium text-surface-400 w-4 text-right">{count}</span>
               </div>
             </div>
           ))}
@@ -164,21 +164,21 @@ function StageCard({
         <div className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 border border-surface-700">
           <TrendingUp className="w-3 h-3 text-brand-400" />
         </div>
-        <p className="text-[11px] text-surface-500">Situação predominante</p>
+        <p className="text-2xs text-surface-500">Situação predominante</p>
       </div>
 
       <div className="flex items-end justify-between gap-3">
         <p className="text-xl font-bold text-surface-100 leading-none">
           {top ? top[0].charAt(0).toUpperCase() + top[0].slice(1) : '—'}
         </p>
-        {top && <span className="text-[10px] text-surface-500 pb-0.5">{top[1]} contatos</span>}
+        {top && <span className="text-3xs text-surface-500 pb-0.5">{top[1]} contatos</span>}
       </div>
 
       {sorted.length > 0 && (
         <div className="flex flex-col gap-1 pt-0.5 border-t border-surface-700/50">
           {sorted.slice(0, 3).map(([stage, count]) => (
             <div key={stage} className="flex items-center justify-between gap-2">
-              <span className="text-[10px] text-surface-500 truncate capitalize">{stage}</span>
+              <span className="text-3xs text-surface-500 truncate capitalize">{stage}</span>
               <div className="flex items-center gap-1.5">
                 <div className="w-16 h-1 rounded-full bg-surface-700 overflow-hidden">
                   <div
@@ -186,7 +186,7 @@ function StageCard({
                     style={{ width: `${Math.round((count / maxCount) * 100)}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-medium text-surface-400 w-4 text-right">{count}</span>
+                <span className="text-3xs font-medium text-surface-400 w-4 text-right">{count}</span>
               </div>
             </div>
           ))}
@@ -289,7 +289,7 @@ export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStats
           <span className="text-surface-600"> · predominante </span>
           <span className="font-semibold text-surface-100">{topStageLabel}{topStage ? ` (${topStage[1].toLocaleString('pt-BR')})` : ''}</span>
         </p>
-        <span className="ml-auto flex items-center gap-1 text-[11px] text-surface-500 flex-shrink-0">
+        <span className="ml-auto flex items-center gap-1 text-2xs text-surface-500 flex-shrink-0">
           {collapsed ? 'Ver resumo' : 'Ocultar'}
           <ChevronDown className={cn('w-4 h-4 transition-transform', !collapsed && 'rotate-180')} />
         </span>
@@ -318,12 +318,12 @@ export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStats
                       <div className="w-5 h-5 rounded-md bg-white flex items-center justify-center flex-shrink-0">
                         <Sparkles className="w-3 h-3 text-black" />
                       </div>
-                      <p className="text-[11px] font-semibold text-brand-400/70 uppercase tracking-widest">Insights da IA</p>
+                      <p className="text-2xs font-semibold text-brand-400/70 uppercase tracking-widest">Insights da IA</p>
                     </div>
                     {!loading && (
                       <button
                         onClick={fetchInsights}
-                        className="flex items-center gap-1 text-[11px] text-brand-400/60 hover:text-brand-300 transition-colors"
+                        className="flex items-center gap-1 text-2xs text-brand-400/60 hover:text-brand-300 transition-colors"
                       >
                         <RefreshCw className="w-3 h-3" />
                         Atualizar

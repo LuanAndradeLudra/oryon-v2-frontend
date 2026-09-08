@@ -212,10 +212,20 @@ export interface Practitioner {
 // ─── Negócios / Propostas (Deals) ────────────────────────────────────────────
 export type DealStatus = 'open' | 'won' | 'lost'
 
+/**
+ * Origem do item — A1 (SCRUM-153), decisão D0-3. `catalog` referencia um produto
+ * do catálogo (preço com lastro, o que a IA lê); `custom` é proposta sob medida:
+ * nome e preço digitados no negócio, preço NEGOCIADO, fora do catálogo. Ausente
+ * = `catalog` (todo o histórico anterior a esta história).
+ */
+export type DealLineItemKind = 'catalog' | 'custom'
+
 export interface DealLineItem {
   id?: string
-  productId: string
-  productName?: string          // snapshot (vem do backend)
+  kind?: DealLineItemKind
+  /** `null` em item personalizado — não há produto para apontar. */
+  productId?: string | null
+  productName?: string          // snapshot do catálogo, ou o nome digitado (custom)
   variationLabel?: string | null
   unitPriceCents: number        // centavos
   quantity?: number
@@ -253,7 +263,18 @@ export interface Deal {
   amountCents: number           // total em centavos
   currency?: string
   note?: string | null
+  /** B1 (SCRUM-927): escopo do negócio — o que está sendo proposto. Distinto de
+   *  `note` (observação operacional) e `closeNote` (observação do desfecho). */
+  description?: string | null
   ownerUserId?: string | null
+  /** B1 (SCRUM-927): previsão de fechamento (ISO). O "Novo negócio" (A3) grava;
+   *  a ficha (B2) e os relatórios (D1) leem. `null` = sem previsão. */
+  expectedCloseAt?: string | null
+  /** B1 (D0-7): OVERRIDE de probabilidade deste negócio, 0-100. `null` = sem
+   *  override — a EFETIVA cai na da etapa (`PipelineStage.probability`).
+   *  Resolvida na leitura por `src/lib/dealProbability.ts`, nunca persistida
+   *  calculada — só este campo cru é gravado. */
+  probability?: number | null
   closedAt?: string | null
   lineItems?: DealLineItem[]
   createdAt?: string
@@ -280,6 +301,15 @@ export interface CloseReason {
   outcome: 'won' | 'lost' | 'any'
 }
 
+/** Motivo de desfecho editável do tenant (B5/SCRUM-931) — `GET .../close-reasons/manage`,
+ *  usado só pela tela de configuração. `active=false` tira o motivo dos modais sem apagar
+ *  o histórico de negócios já fechados com ele. */
+export interface PipelineCloseReason extends CloseReason {
+  id: string
+  order: number
+  active: boolean
+}
+
 /** F10 (SCRUM-882): desfecho ao resolver a conversa (`PATCH /conversations/:id/status`). */
 export interface DealOutcomeInput {
   outcome: 'won' | 'lost'
@@ -303,6 +333,8 @@ export interface AiDealTargetView {
   /** Só etapas não-terminais. */
   stages: Array<{ id: string; key: string; label: string; order: number }>
   closeReasons?: { won: Array<{ key: string; label: string }>; lost: Array<{ key: string; label: string }> }
+  /** Espelha `Pipeline.allowFreeCloseReason` para o funil do alvo (D0-8). */
+  allowFreeCloseReason?: boolean
 }
 
 /** F11 (SCRUM-886): uma passagem do histórico do registro (`GET /deals/:id/history`), já com rótulos. */
@@ -335,6 +367,16 @@ export interface Pipeline {
   access?: string[]
   /** F1 (SCRUM-827): catálogo de motivos de fechamento do tipo. */
   closeReasons?: CloseReason[]
+  /** D0-8 (SCRUM-923): interruptor do admin — com ele ligado, o modal de motivo
+   *  mostra um campo livre ao lado da lista (o livre grava como `outro` + nota).
+   *  A CONFIGURAÇÃO é da B5 (SCRUM-931); a A4 só consome: ausente = desligado. */
+  allowFreeCloseReason?: boolean
+  /** B5 (D0-9/12): dono padrão dos negócios criados neste funil — `'creator'` (default),
+   *  `'none'` (nasce sem dono) ou `'user:<id>'` (usuário fixo). */
+  defaultOwnerRule?: string
+  /** B5 (D0-1): permite mais de um negócio aberto por contato neste funil. Só é
+   *  editável (e só é consumida, pela C1/SCRUM-932) em `kind='sales'`. */
+  allowMultipleOpen?: boolean
   stages: PipelineStage[]
   /** Contagem de negócios abertos — badge do segmented control da aba Leads. */
   openDealsCount: number
@@ -381,6 +423,9 @@ export interface PipelineStage {
   order: number
   isWon: boolean
   isLost: boolean
+  /** B1/B5 (D0-7): probabilidade default dos negócios nesta etapa, 0-100. `null`/ausente =
+   *  não configurada. Terminais são 100/0 fixos na leitura — a tela nem oferece o campo neles. */
+  probability?: number | null
   createdAt?: string
   updatedAt?: string
 }
@@ -414,9 +459,16 @@ export interface ContactDealsPipelineSummary {
   totalCents: number
   openCents: number
   wonCents: number
-  /** F4-848: etapa do registro ABERTO neste funil (chips "Funil · Etapa", "já está · etapa"). */
-  stageKey?: string | null
-  stageLabel?: string | null
+  /**
+   * F4-848 → C1 (SCRUM-932): os registros ABERTOS neste funil, cada um com seu
+   * id e sua etapa (chips "Funil · Etapa", "já está · etapa").
+   *
+   * Era um par singular `stageKey`/`stageLabel` enquanto a I1 garantia no
+   * máximo 1 aberto por funil; com `allowMultipleOpen` são N, e o singular
+   * passaria a esconder todos menos um. Lista vazia = nenhum aberto
+   * (`openCount` já diz "quantos"; esta lista é o "onde" e o "qual").
+   */
+  openStages?: ReadonlyArray<{ dealId: string; stageKey: string; stageLabel: string }>
 }
 
 export interface ContactDealsSummary {

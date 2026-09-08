@@ -131,7 +131,7 @@ export const SETTINGS_NAV: NavDomain[] = [
           // F13-903: a situação do contato ganha seção própria — o wizard apontava
           // para uma tela que não existia. Vale para todo tenant (não é do funil).
           { section: 'stages',            label: 'Situação do contato',   adminOnly: true },
-          { section: 'pipeline-stages',   label: 'Estágios do funil',     adminOnly: true, multiPipelineOnly: true },
+          { section: 'pipeline-stages',   label: 'Funis',                 adminOnly: true, multiPipelineOnly: true },
           // F11-888: roteamento congelado (Modelo B) — sai do menu; rota mantida oculta até a remoção física.
           { section: 'pipeline-routing',  label: 'Roteamento por canal',  adminOnly: true, multiPipelineOnly: true, hidden: true },
         ],

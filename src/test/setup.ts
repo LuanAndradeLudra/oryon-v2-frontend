@@ -30,11 +30,16 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 // ── Mock ResizeObserver ──────────────────────────────────────────────────────
-;(globalThis as any).ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}))
+// D2 (SCRUM-935): uma CLASSE real, não `vi.fn().mockImplementation(...)` — no
+// Vitest 4 o retorno de mockImplementation não é `new`-ável, e libs que
+// instanciam com `new ResizeObserver(...)` (ex.: recharts ResponsiveContainer)
+// quebravam com "is not a constructor" ao serem testadas diretamente.
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+;(globalThis as any).ResizeObserver = ResizeObserverMock
 
 // ── Mock IntersectionObserver ────────────────────────────────────────────────
 ;(globalThis as any).IntersectionObserver = vi.fn().mockImplementation(() => ({

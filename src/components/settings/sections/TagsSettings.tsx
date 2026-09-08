@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonList } from '@/components/ui/Skeleton'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -97,7 +96,7 @@ function TagCard({ tag, usageCount, onEdit, onDelete, canManage }: TagCardProps)
 }
 
 export function TagsSettings() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   // Mirror the backend's @Roles(ADMIN, BUSINESS_ADMIN) on POST/PATCH/DELETE
   // /tags. Read-only access (GET /tags) is open, so non-admins still see
@@ -306,7 +305,6 @@ export function TagsSettings() {
         confirmLabel="Excluir"
         danger
       />
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

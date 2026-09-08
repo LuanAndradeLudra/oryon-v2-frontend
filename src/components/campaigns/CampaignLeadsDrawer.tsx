@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { X, Users, ExternalLink, Search, ChevronRight, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { attributionApi } from '@/services/api'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { CampaignLeadSummary } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -137,10 +138,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
               Carregando leads...
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-surface-500">
-              <Users className="w-8 h-8" />
-              <p className="text-xs">Nenhum lead encontrado</p>
-            </div>
+            <EmptyState icon={Users} title="Nenhum lead encontrado" className="h-full justify-center" />
           ) : (
             <div className="divide-y divide-surface-800/60">
               {filtered.map((lead) => {

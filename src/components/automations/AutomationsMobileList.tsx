@@ -4,8 +4,9 @@
 // atividade, linha) num card tocável; edição/criação continua bloqueada
 // atrás do MobileFeatureGate (builder de passos não cabe no celular).
 
-import { AlertTriangle, ChevronRight, Sparkles, Zap } from 'lucide-react'
+import { AlertTriangle, ChevronRight, Sparkles, Workflow, Zap } from 'lucide-react'
 import { CardListView } from '@/components/common/CardListView'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { Switch } from '@/components/ui/Switch'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
 import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
@@ -125,10 +126,11 @@ export function AutomationsMobileList({ automations, loading, multiLine, onOpenD
         isLoading={loading}
         className="gap-2 p-3"
         emptyState={
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <p className="text-sm font-medium text-surface-300 mb-1">Nenhuma automação encontrada</p>
-            <p className="text-xs text-surface-500">Ajuste os filtros ou crie uma nova automação.</p>
-          </div>
+          <EmptyState
+            icon={Workflow}
+            title="Nenhuma automação encontrada"
+            hint="Ajuste os filtros ou crie uma nova automação."
+          />
         }
         renderCard={(automation) => (
           <AutomationCard

@@ -187,7 +187,7 @@ function SummaryStat({
 
   return (
     <div title={tooltip}>
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-surface-400">
+      <div className="flex items-center gap-2 text-3xs uppercase tracking-wide text-surface-400">
         <Icon className="w-3 h-3" />
         {label}
       </div>
@@ -224,33 +224,33 @@ function LineHealthRow({
               {line.label || formatPhone(line.displayPhoneNumber)}
             </span>
             {line.isPrimary && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-cta/10 text-brand-cta border border-brand-cta/30">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-semibold bg-brand-cta/10 text-brand-cta border border-brand-cta/30">
                 <Star className="w-2.5 h-2.5" /> Primária
               </span>
             )}
             {!line.isActive && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-700 text-surface-400 border border-surface-600">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-semibold bg-surface-700 text-surface-400 border border-surface-600">
                 Inativa
               </span>
             )}
             {line.hasSystemUserToken ? (
-              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border" style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties} title="Token de system user presente">
+              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-medium border" style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties} title="Token de system user presente">
                 <ShieldCheck className="w-2.5 h-2.5" />
                 Token OK
               </span>
             ) : (
-              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border" style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties} title="Sem token — mensagens falharão">
+              <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-medium border" style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties} title="Sem token — mensagens falharão">
                 <ShieldOff className="w-2.5 h-2.5" />
                 Sem token
               </span>
             )}
             {line.agentId ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface-700 text-surface-300 border border-surface-600">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-medium bg-surface-700 text-surface-300 border border-surface-600">
                 <Bot className="w-2.5 h-2.5" />
                 IA atribuída
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface-800 text-surface-500 border border-surface-700">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-medium bg-surface-800 text-surface-500 border border-surface-700">
                 Sem IA
               </span>
             )}
@@ -259,7 +259,7 @@ function LineHealthRow({
             <p className="text-xs text-surface-500 mt-0.5">{formatPhone(line.displayPhoneNumber)}</p>
           )}
           {line.wabaName && (
-            <p className="text-[11px] text-surface-500 mt-0.5">WABA: {line.wabaName}</p>
+            <p className="text-2xs text-surface-500 mt-0.5">WABA: {line.wabaName}</p>
           )}
         </div>
 
@@ -268,7 +268,7 @@ function LineHealthRow({
             type="button"
             onClick={onPromote}
             disabled={disabled || promoting}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-surface-800 border border-surface-700/60 text-surface-200 hover:border-brand-500/40 hover:text-brand-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-2xs font-medium bg-surface-800 border border-surface-700/60 text-surface-200 hover:border-brand-500/40 hover:text-brand-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
           >
             {promoting ? (
               <>
@@ -322,14 +322,14 @@ function LineHealthRow({
       {/* Departments + summary */}
       <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase tracking-wide text-surface-500">Setores</span>
+          <span className="text-3xs uppercase tracking-wide text-surface-500">Setores</span>
           {line.departments.length === 0 ? (
-            <span className="text-[11px] text-surface-500">Nenhum setor atribuído</span>
+            <span className="text-2xs text-surface-500">Nenhum setor atribuído</span>
           ) : (
             line.departments.map((d) => (
               <span
                 key={d.id}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-surface-800 text-surface-300 border border-surface-700/60"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-3xs font-medium bg-surface-800 text-surface-300 border border-surface-700/60"
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: d.color }} />
                 {d.name}
@@ -338,7 +338,7 @@ function LineHealthRow({
           )}
         </div>
         {needsAttention > 0 && (
-          <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+          <span className="color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-3xs font-semibold border" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
             <AlertTriangle className="w-3 h-3" />
             {needsAttention} sem linha
           </span>
@@ -368,19 +368,19 @@ function CountBlock({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wide text-surface-500">{label}</span>
+        <span className="text-3xs uppercase tracking-wide text-surface-500">{label}</span>
         <span className="text-sm font-semibold text-surface-100">{total}</span>
       </div>
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
         {chips.map((c) => (
-          <span key={c.label} className="text-[10px]">
+          <span key={c.label} className="text-3xs">
             <span className={cn('font-semibold', toneClass(c.tone))}>{c.count}</span>
             <span className="text-surface-500 ml-1">{c.label}</span>
           </span>
         ))}
       </div>
       {needs > 0 && (
-        <div className="mt-2 flex items-center gap-1 text-[10px] text-status-pending">
+        <div className="mt-2 flex items-center gap-1 text-3xs text-status-pending">
           <Check className="w-2.5 h-2.5 opacity-0" /> {/* alignment spacer */}
           <AlertTriangle className="w-2.5 h-2.5" />
           <span>{needs} sem linha atribuída</span>

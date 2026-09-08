@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom'
-import { Loader2, Bell, Check } from 'lucide-react'
+import { Bell, Check } from 'lucide-react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Spinner } from '@/components/ui/Spinner'
 import { useNotifications, type AppNotification } from '@/hooks/useNotifications'
 import { formatRelativeTime, cn } from '@/lib/utils'
 
@@ -73,7 +74,7 @@ export function NotificationsPage() {
       <div className="flex-1 overflow-y-auto">
         {loading && notifications.length === 0 ? (
           <div className="flex items-center justify-center py-10 gap-2">
-            <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+            <Spinner className="w-5 h-5 text-brand-400" />
             <span className="text-xs text-surface-500">Carregando...</span>
           </div>
         ) : notifications.length === 0 ? (

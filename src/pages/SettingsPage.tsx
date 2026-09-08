@@ -31,7 +31,7 @@ import { AuditTrail }          from '@/components/settings/sections/AuditTrail'
 import { ProductsManager }     from '@/components/settings/sections/crm/ProductsManager'
 import { PractitionersManager } from '@/components/settings/sections/crm/PractitionersManager'
 import { PipelineRoutingSettings } from '@/components/settings/sections/crm/PipelineRoutingSettings'
-import { PipelineStagesSettings } from '@/components/settings/sections/crm/PipelineStagesSettings'
+import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSettings'
 import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
@@ -92,7 +92,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   'crm-products':   ProductsManager,
   'crm-practitioners': PractitionersManager,
   stages:           ContactStagesSettings,
-  'pipeline-stages': PipelineStagesSettings,
+  'pipeline-stages': FunnelsSettings,
   'pipeline-routing': PipelineRoutingSettings,
 }
 

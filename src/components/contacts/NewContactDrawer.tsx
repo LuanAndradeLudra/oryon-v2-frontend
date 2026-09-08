@@ -332,6 +332,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
               </div>
               <button
                 onClick={onClose}
+                aria-label="Fechar"
                 className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
               >
                 <X className="w-4 h-4" />
@@ -464,7 +465,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                         (ciclo de vida) — modelo híbrido, os dois não se
                         confundem. Reativo ao funil escolhido acima. */}
                     {multiPipeline && pipelineId && (
-                    <Field label="Estágio do funil">
+                    <Field label="Etapa do funil">
                       <div className="relative">
                         <select
                           value={pipelineStageId}

@@ -19,9 +19,16 @@ interface Props {
   action?: Action
   /** Override outer padding when a tighter empty area is needed. */
   className?: string
+  /** Override the icon's default `text-surface-600` — e.g. a categorical
+   *  accent token (`{ color: 'var(--color-accent-violet)' }`) when the empty
+   *  state is about a specific themed feature (agentes IA, funil de
+   *  processo…). Inline style, not a class, to match how accent tokens are
+   *  used elsewhere in the app (chips, MiniBar) — Tailwind isn't configured
+   *  for `var(--color-accent-*)` as a class name here. */
+  iconStyle?: React.CSSProperties
 }
 
-export function EmptyState({ icon: Icon, title, hint, action, className }: Props) {
+export function EmptyState({ icon: Icon, title, hint, action, className, iconStyle }: Props) {
   return (
     <div
       className={cn(
@@ -30,7 +37,7 @@ export function EmptyState({ icon: Icon, title, hint, action, className }: Props
         className,
       )}
     >
-      <Icon className="w-10 h-10 text-surface-600 mb-3" strokeWidth={1.5} />
+      <Icon className="w-10 h-10 text-surface-600 mb-3" style={iconStyle} strokeWidth={1.5} />
       <p className="text-surface-300 font-medium mb-1">{title}</p>
       {hint && <p className="text-sm text-surface-500 max-w-md">{hint}</p>}
       {action && (

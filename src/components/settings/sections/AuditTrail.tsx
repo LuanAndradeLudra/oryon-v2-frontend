@@ -4,11 +4,12 @@
 // tenantId from the JWT — no cross-tenant leakage possible.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, Search, AlertCircle, Filter, X } from 'lucide-react'
+import { Search, AlertCircle, Filter, X } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonTable } from '@/components/ui/Skeleton'
+import { Spinner } from '@/components/ui/Spinner'
 import { ActorChip } from '@/components/ui/ActorChip'
 import { formatActivity } from '@/components/dashboard/activityFormatter'
 import {
@@ -140,7 +141,7 @@ export function AuditTrail() {
             disabled={loading}
             className="px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-100 text-sm disabled:opacity-50"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
+            {loading ? <Spinner className="w-4 h-4 inline mr-2" /> : null}
             Carregar mais
           </button>
         </div>

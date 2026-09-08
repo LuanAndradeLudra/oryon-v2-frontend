@@ -64,3 +64,81 @@ describe('CloseDealReasonModal (F8)', () => {
     expect(options()).toEqual(['', 'outro'])
   })
 })
+
+// ── A4 (SCRUM-926) ──────────────────────────────────────────────────────────
+// Motivo único já escolhido, nota em Textarea, campo livre do D0-8 e o valor
+// final em funil de venda.
+const SALES: Pipeline = {
+  ...PIPE, id: 'pv', name: 'Vendas', kind: 'sales', terminalLabels: { won: 'Ganho', lost: 'Perdido' },
+  closeReasons: [
+    { key: 'fechou', label: 'Fechou', outcome: 'won' },
+    { key: 'preco', label: 'Preço', outcome: 'lost' },
+    { key: 'outro', label: 'Outro', outcome: 'any' },
+  ],
+}
+const SALES_WON = stage('sw', 'Ganho', { isWon: true })
+const SALES_DEAL: Deal = { ...DEAL, pipelineId: 'pv', amountCents: 150000 }
+
+describe('CloseDealReasonModal (A4 · SCRUM-926)', () => {
+  it('catálogo com um único motivo já vem escolhido — confirmar habilitado de saída', () => {
+    render(<CloseDealReasonModal open onClose={vi.fn()} deal={DEAL} stage={WON} pipeline={{ ...PIPE, closeReasons: undefined }} onConfirm={vi.fn(async () => {})} />)
+    expect(screen.getByRole('combobox', { name: 'Motivo do desfecho' })).toHaveValue('outro')
+    expect(screen.getByTestId('close-deal-confirm')).toBeEnabled()
+  })
+
+  it('a nota é um Textarea (2000 chars), não um Input de uma linha', () => {
+    render(<CloseDealReasonModal open onClose={vi.fn()} deal={DEAL} stage={WON} pipeline={PIPE} onConfirm={vi.fn(async () => {})} />)
+    const note = screen.getByLabelText('Observação do desfecho')
+    expect(note.tagName).toBe('TEXTAREA')
+    expect(note).toHaveAttribute('maxlength', '2000')
+  })
+
+  it('sem allowFreeCloseReason não há campo livre (lista fechada)', () => {
+    render(<CloseDealReasonModal open onClose={vi.fn()} deal={SALES_DEAL} stage={SALES_WON} pipeline={SALES} onConfirm={vi.fn(async () => {})} />)
+    expect(screen.queryByTestId('close-reason-free')).toBeNull()
+  })
+
+  it('com o interruptor ligado, o motivo livre vira "outro" + nota estruturada (D0-8)', async () => {
+    const onConfirm = vi.fn(async () => {})
+    render(
+      <CloseDealReasonModal
+        open onClose={vi.fn()} deal={SALES_DEAL} stage={SALES_WON}
+        pipeline={{ ...SALES, allowFreeCloseReason: true }} onConfirm={onConfirm}
+      />,
+    )
+    fireEvent.change(screen.getByTestId('close-reason-free'), { target: { value: 'Trocou de CNPJ' } })
+    fireEvent.change(screen.getByLabelText('Observação do desfecho'), { target: { value: 'ver e-mail' } })
+    fireEvent.click(screen.getByTestId('close-deal-confirm'))
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'won', reason: 'outro', note: 'Trocou de CNPJ — ver e-mail' }),
+    ))
+  })
+
+  it('venda: valor final pré-preenchido; alterado, viaja no fechamento', async () => {
+    const onConfirm = vi.fn(async () => {})
+    render(<CloseDealReasonModal open onClose={vi.fn()} deal={SALES_DEAL} stage={SALES_WON} pipeline={SALES} onConfirm={onConfirm} />)
+    const amount = screen.getByDisplayValue('1.500,00')
+    fireEvent.change(amount, { target: { value: '120000' } })
+    fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'fechou' } })
+    fireEvent.click(screen.getByTestId('close-deal-confirm'))
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'fechou', amountCents: 120000 }),
+    ))
+  })
+
+  it('venda com itens: o valor é a soma deles — mostrado, não editável (D4)', () => {
+    const withItems: Deal = {
+      ...SALES_DEAL,
+      lineItems: [{ id: 'li', productId: 'p1', variationLabel: null, unitPriceCents: 150000, quantity: 1, discountCents: 0, order: 0 }],
+    }
+    render(<CloseDealReasonModal open onClose={vi.fn()} deal={withItems} stage={SALES_WON} pipeline={SALES} onConfirm={vi.fn(async () => {})} />)
+    expect(screen.getByTestId('close-deal-amount-readonly')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('1.500,00')).toBeNull()
+  })
+
+  it('funil de processo não fala em dinheiro', () => {
+    render(<CloseDealReasonModal open onClose={vi.fn()} deal={DEAL} stage={WON} pipeline={PIPE} onConfirm={vi.fn(async () => {})} />)
+    expect(screen.queryByTestId('close-deal-amount-readonly')).toBeNull()
+    expect(screen.queryByLabelText(/Valor final/i)).toBeNull()
+  })
+})

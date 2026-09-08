@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { contactsApi, dealsApi } from '@/services/api'
+import { connectSocket } from '@/services/socket'
+import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
 import { withRetry } from '@/lib/utils'
 import type { Contact, ContactFilters, Tag } from '@/types'
 
@@ -88,6 +90,28 @@ export function useContacts(initialFilters: ContactFilters = {}, opts: UseContac
   }, [filters, enabled, applyDealsSummary, commercial])
 
   useEffect(() => { fetch() }, [fetch])
+
+  // SCRUM-929 (item 5): a tabela não ouvia nada — mover um negócio noutra
+  // superfície (ficha, painel, board) deixava o chip "Funil · Etapa" da
+  // linha desatualizado até um F5. Reaplica só o resumo do CONTATO afetado
+  // (1 id, não a página inteira) — o evento local chega na hora da ação; o
+  // socket cobre o que muda em outro lugar (IA, automação, outro operador).
+  useEffect(() => {
+    if (!enabled || !withDealsSummary) return
+    const onInvalidated = (contactId: string | undefined) => {
+      if (!contactId) return
+      applyDealsSummary([contactId], generationRef.current)
+    }
+    const onLocal = (e: Event) => onInvalidated((e as CustomEvent<{ contactId?: string }>).detail?.contactId)
+    window.addEventListener(DEALS_INVALIDATE_EVENT, onLocal)
+    const socket = connectSocket()
+    const onDealChanged = (p: { contactId?: string }) => onInvalidated(p?.contactId)
+    socket.on('deal:changed', onDealChanged)
+    return () => {
+      window.removeEventListener(DEALS_INVALIDATE_EVENT, onLocal)
+      socket.off('deal:changed', onDealChanged)
+    }
+  }, [enabled, withDealsSummary, applyDealsSummary])
 
   /** Anexa a próxima página à lista (scroll infinito da tabela/lista mobile
    *  — antes só o Kanban aposentado tinha paginação; a tabela ficava presa

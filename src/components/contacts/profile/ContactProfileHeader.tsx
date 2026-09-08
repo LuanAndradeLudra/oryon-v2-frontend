@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import {
   ArrowLeft, Copy, Check, MessageSquare, StickyNote, CalendarClock,
-  MoreHorizontal, Send, Trash2, UserCheck, MessageCircle,
+  MoreHorizontal, Send, Trash2, UserCheck, MessageCircle, Handshake,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { StageBadge } from '@/components/contacts/StageBadge'
+import { MoveStageModal } from '@/components/contacts/MoveStageModal'
 import { LeadScorePill } from '@/components/contacts/LeadScorePill'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { relativeDate, cn } from '@/lib/utils'
 import { computeWhatsAppWindow, type WhatsAppWindowState } from '@/lib/whatsappWindow'
@@ -37,6 +40,13 @@ interface ContactProfileHeaderProps {
   onDelete: () => Promise<void> | void
   /** Compacto (mobile): esconde ações secundárias e tags. */
   compact?: boolean
+  /** PROPOSTA do Auditor (protótipo reversível — ver PR): o badge de situação
+   *  do contato vira clicável aqui no cabeçalho (N1) em vez de morar num card
+   *  de largura inteira no corpo da ficha, que competia visualmente com os
+   *  Funis reais e usava "funil" pra nomear o ciclo de vida do contato (achado
+   *  de colisão de vocabulário). Opcional: sem isto, o badge fica só leitura
+   *  (comportamento anterior). */
+  onStageChanged?: (next: string) => void
 }
 
 const MAX_TAGS = 3
@@ -56,14 +66,17 @@ const WINDOW_CHIP: Record<WhatsAppWindowState, string> = {
  */
 export function ContactProfileHeader({
   contact, lastActivityAt, lastMessagePreview, lastMessageSenderKind, assignedTo,
-  onBack, onOpenChat, onSendTemplate, onAddNote, onAddTask, onDelete, compact = false,
+  onBack, onOpenChat, onSendTemplate, onAddNote, onAddTask, onDelete, onStageChanged, compact = false,
 }: ContactProfileHeaderProps) {
   const addToPipeline = useAddToPipeline()
-  const { stages } = useCRMConfig()
+  const { stages, pipelines } = useCRMConfig()
+  const { vocab } = useTenantVocab()
+  const salesPipeline = defaultSalesPipeline(pipelines)
   const { user } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [stageModalOpen, setStageModalOpen] = useState(false)
   const canDelete = isAdminTier(user?.role)
 
   const handleCopyWa = () => {
@@ -96,7 +109,27 @@ export function ContactProfileHeader({
             <h1 className={cn('font-display font-semibold text-surface-50 truncate', compact ? 'text-base' : 'text-xl')}>
               {contact.displayName || contact.waId}
             </h1>
-            {contact.stage && <StageBadge stage={contact.stage} stages={stages} size={compact ? 'sm' : 'md'} />}
+            {onStageChanged ? (
+              <button
+                type="button"
+                onClick={() => setStageModalOpen(true)}
+                title="Mudar situação do contato"
+                className="rounded-full transition-opacity hover:opacity-80 cursor-pointer"
+              >
+                {contact.stage
+                  ? <StageBadge stage={contact.stage} stages={stages} size={compact ? 'sm' : 'md'} />
+                  : (
+                    <span className={cn(
+                      'inline-flex items-center font-medium border rounded-full border-dashed border-surface-600 text-surface-500',
+                      compact ? 'text-[11px] px-2 py-0.5' : 'text-xs px-2.5 py-1',
+                    )}>
+                      Definir situação
+                    </span>
+                  )}
+              </button>
+            ) : (
+              contact.stage && <StageBadge stage={contact.stage} stages={stages} size={compact ? 'sm' : 'md'} />
+            )}
             {typeof contact.leadScore === 'number' && contact.leadScore > 0 && (
               <LeadScorePill score={contact.leadScore} />
             )}
@@ -168,15 +201,37 @@ export function ContactProfileHeader({
               {window24h.label}
             </span>
           )}
-          <Button size="sm" variant="primary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={onOpenChat}>
+          {/* SCRUM-965 tinha deixado "Novo negócio" como único primary da ficha.
+              O acento de marca com sombra colorida pesava demais para uma ação
+              que convive com "Conversar" e com o menu de funis: as três agora
+              são sóbrias, e a hierarquia fica na ordem, não na cor. */}
+          <Button size="sm" variant="secondary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={onOpenChat}>
             Conversar
           </Button>
+          {/* A3 (SCRUM-925): ação primária da ficha — criar negócio deixa de
+              depender de abrir o menu de funis (P2). O menu continua ao lado,
+              para funil de processo e como atalho. */}
+          {salesPipeline && (
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={<Handshake className="w-3.5 h-3.5" />}
+              onClick={() => addToPipeline.requestAdd({
+                contactId: contact.id,
+                contactName: contact.displayName || contact.waId,
+                pipeline: salesPipeline,
+              })}
+            >
+              Novo {vocab.deal.toLowerCase()}
+            </Button>
+          )}
           {/* F9 (SCRUM-875): mesma ação da conversa, aqui sem conversa de origem. */}
           <AddToPipelineMenu
             contactId={contact.id}
             contactName={contact.displayName || contact.waId}
             size="sm"
             onPick={(pipeline) => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline })}
+            onOpenDetailed={() => addToPipeline.requestAddDetailed({ contactId: contact.id, contactName: contact.displayName || contact.waId })}
           />
           {addToPipeline.dialogs}
           {!compact && (
@@ -236,6 +291,17 @@ export function ContactProfileHeader({
         confirmLabel="Excluir contato"
         danger
       />
+
+      {onStageChanged && (
+        <MoveStageModal
+          open={stageModalOpen}
+          onClose={() => setStageModalOpen(false)}
+          contactId={contact.id}
+          contactName={contact.displayName}
+          currentStage={contact.stage}
+          onStageChanged={(next) => { setStageModalOpen(false); onStageChanged(next) }}
+        />
+      )}
     </div>
   )
 }

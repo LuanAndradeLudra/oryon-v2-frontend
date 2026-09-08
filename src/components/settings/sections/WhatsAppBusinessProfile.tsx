@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
 import { Avatar } from '@/components/ui/Avatar'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { api } from '@/services/api'
@@ -69,7 +68,7 @@ const EMPTY_FORM: ProfileForm = {
 }
 
 export function WhatsAppBusinessProfile() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { numbers, loading: loadingNumbers } = useWorkspaceNumber()
   const [selectedId, setSelectedId] = useState<string>('')
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM)
@@ -311,7 +310,6 @@ export function WhatsAppBusinessProfile() {
         </>
       )}
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

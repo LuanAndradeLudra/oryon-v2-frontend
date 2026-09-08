@@ -39,9 +39,9 @@ function Stat({ icon, label, value, sub }: { icon: React.ReactNode; label: strin
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-[11px] text-surface-500">{label}</p>
+        <p className="text-2xs text-surface-500">{label}</p>
         <p className="text-sm font-semibold text-surface-200 tabular-nums">{value}</p>
-        {sub && <p className="text-[10px] text-surface-500">{sub}</p>}
+        {sub && <p className="text-3xs text-surface-500">{sub}</p>}
       </div>
     </div>
   )
@@ -54,7 +54,7 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
       <div className="flex-1 h-1.5 bg-surface-800 rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[10px] text-surface-500 tabular-nums w-6 text-right">{value}</span>
+      <span className="text-3xs text-surface-500 tabular-nums w-6 text-right">{value}</span>
     </div>
   )
 }
@@ -112,7 +112,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
             <BarChart3 className="w-4 h-4 text-surface-400" /> Engajamento
           </h3>
         )}
-        <span className="text-[11px] text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">
+        <span className="text-2xs text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">
           {totalMsgs} mensagens · {conversations.total} conversas
         </span>
       </div>
@@ -135,11 +135,11 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
         {/* Direction bars */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-surface-400 w-16">Recebidas</span>
+            <span className="text-2xs text-surface-400 w-16">Recebidas</span>
             <MiniBar value={messages.totalInbound} max={maxDir} color="var(--color-accent-blue)" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-surface-400 w-16">Enviadas</span>
+            <span className="text-2xs text-surface-400 w-16">Enviadas</span>
             <MiniBar value={messages.totalOutbound} max={maxDir} color="var(--color-accent-green)" />
           </div>
         </div>
@@ -150,13 +150,13 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
             {messages.readCount > 0 && (
               <div className="flex items-center gap-1.5">
                 <CheckCheck className="w-3 h-3 text-blue-400" />
-                <span className="text-[11px] text-surface-400">{messages.readCount} lidas</span>
+                <span className="text-2xs text-surface-400">{messages.readCount} lidas</span>
               </div>
             )}
             {messages.failedCount > 0 && (
               <div className="flex items-center gap-1.5">
                 <XCircle className="w-3 h-3 text-red-400" />
-                <span className="text-[11px] text-surface-400">{messages.failedCount} falhas</span>
+                <span className="text-2xs text-surface-400">{messages.failedCount} falhas</span>
               </div>
             )}
           </div>
@@ -165,10 +165,10 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
         {/* Message types */}
         {Object.keys(messages.byType).length > 1 && (
           <div className="pt-1 border-t border-surface-800">
-            <p className="text-[10px] text-surface-500 uppercase tracking-wide mb-2">Tipos de mensagem</p>
+            <p className="text-3xs text-surface-500 uppercase tracking-wide mb-2">Tipos de mensagem</p>
             <div className="flex flex-wrap gap-2">
               {Object.entries(messages.byType).map(([type, count]) => (
-                <div key={type} className="flex items-center gap-1.5 text-[11px] text-surface-400 bg-surface-800 px-2 py-1 rounded-lg">
+                <div key={type} className="flex items-center gap-1.5 text-2xs text-surface-400 bg-surface-800 px-2 py-1 rounded-lg">
                   {TYPE_ICONS[type] ?? <MessageSquare className="w-3 h-3" />}
                   <span className="capitalize">{type}</span>
                   <span className="text-surface-500 font-medium">{count}</span>
@@ -197,7 +197,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
         {/* Conversation status breakdown */}
         {conversations.total > 0 && (
           <div className="pt-1 border-t border-surface-800">
-            <p className="text-[10px] text-surface-500 uppercase tracking-wide mb-2">Conversas por status</p>
+            <p className="text-3xs text-surface-500 uppercase tracking-wide mb-2">Conversas por status</p>
             <div className="flex gap-2">
               {Object.entries(conversations.byStatus).map(([status, count]) => {
                 const chips: Record<string, string> = {
@@ -210,7 +210,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
                 return (
                   <span
                     key={status}
-                    className="color-chip text-[11px] font-medium px-2.5 py-1 rounded-full border"
+                    className="color-chip text-2xs font-medium px-2.5 py-1 rounded-full border"
                     style={{ ['--chip']: chips[status] ?? chips.abandoned } as React.CSSProperties}
                   >
                     {labels[status] ?? status} {count}
@@ -224,7 +224,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
         {/* Last analysis */}
         {lastAnalysis && (
           <div className="pt-1 border-t border-surface-800">
-            <p className="text-[10px] text-surface-500 uppercase tracking-wide mb-2">Última análise de conversa</p>
+            <p className="text-3xs text-surface-500 uppercase tracking-wide mb-2">Última análise de conversa</p>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <Target className="w-3 h-3 text-surface-400" />
@@ -244,7 +244,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
               )}
               {lastAnalysis.status === 'confirmed' && (
                 <span
-                  className="color-chip text-[10px] font-medium px-2 py-0.5 rounded-full border"
+                  className="color-chip text-3xs font-medium px-2 py-0.5 rounded-full border"
                   style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
                 >
                   Confirmada
@@ -254,7 +254,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
             {lastAnalysis.keyTopics.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {lastAnalysis.keyTopics.map((topic, i) => (
-                  <span key={i} className="text-[10px] text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">{topic}</span>
+                  <span key={i} className="text-3xs text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">{topic}</span>
                 ))}
               </div>
             )}

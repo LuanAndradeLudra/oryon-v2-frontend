@@ -22,7 +22,7 @@ export interface CrmCapabilityCatalogEntry {
   description: string
   icon: React.ReactNode
   /** Which constraint pickers this capability supports. */
-  supports: Array<'users' | 'statuses' | 'tags' | 'stages'>
+  supports: Array<'users' | 'statuses' | 'tags' | 'stages' | 'dealFlags' | 'pipelines'>
   /**
    * Conservative defaults applied the first time the user enables this
    * capability. Mirrors the agent-server's defaultConstraints.
@@ -86,12 +86,10 @@ export const CRM_CAPABILITIES_CATALOG: CrmCapabilityCatalogEntry[] = [
   {
     id: 'manage_deal_pipeline',
     category: 'pipeline',
-    label: 'Mover negócio no funil de vendas',
-    description: 'O agente move o negócio (deal) do contato entre estágios não-terminais do funil de vendas vinculado à conversa. Nunca fecha ganho/perdido — o backend recusa essa mudança.',
+    label: 'Mover negócio ou registro no funil',
+    description: 'O agente move o registro-alvo da conversa entre estágios não-terminais. Fechar (ganho/perdido), colocar em outro funil e retroceder etapa são opt-in abaixo — por padrão, nenhum dos três é permitido. Fechar venda nunca é permitido, mesmo com o opt-in: o backend recusa.',
     icon: <Briefcase className="w-4 h-4" />,
-    // Sem allowlist de estágios: a única barreira é estrutural (nunca terminal),
-    // não configurável pelo admin — por isso não entra em `supports`.
-    supports: [],
+    supports: ['dealFlags', 'pipelines'],
   },
 ]
 

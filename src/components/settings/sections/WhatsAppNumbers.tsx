@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import { listAgents, type AgentConfig } from '@/services/agentsApi'
@@ -44,7 +43,7 @@ const QUALITY_CONFIG: Record<string, { label: string; cls: string }> = {
 const DEFAULT_QUALITY = { label: 'N/D', cls: 'bg-surface-600' }
 
 export function WhatsAppNumbers() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { refresh: refreshWorkspace } = useWorkspaceNumber()
   const [numbers, setNumbers] = useState<WhatsAppNumberDetailed[]>([])
   const [agents, setAgents] = useState<AgentConfig[]>([])
@@ -378,7 +377,6 @@ export function WhatsAppNumbers() {
         confirmLabel="Desconectar"
         danger
       />
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

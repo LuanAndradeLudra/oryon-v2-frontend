@@ -1,20 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { FormField } from '@/components/ui/FormField'
-import { Select } from '@/components/ui/Select'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { CloseReasonFields, emptyCloseReasonValue, type CloseReasonValue } from '@/components/deals/CloseReasonFields'
+import { useDealPanel } from '@/contexts/DealPanelContext'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { pipelineKindOf } from '@/lib/pipelineKinds'
+import { composeCloseReason } from '@/lib/closeReason'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import {
   decisionOptions, reasonsFor, amountApplies, confirmLabel, formatCentsBRL, buildResolvePayload,
   type ResolveDecision, type ResolvePayload,
 } from '@/lib/resolveOutcome'
-import type { AiDealTargetView } from '@/types'
+import type { AiDealTargetView, Deal } from '@/types'
 
 interface PanelProps {
   target: AiDealTargetView
   contactName: string
   currentAmountCents: number | null
+  /** B4 (SCRUM-930): negócio com itens de linha → valor vira somente leitura
+   *  aqui (editar valor com itens é exclusivo da ficha, que soma os itens). */
+  hasLineItems: boolean
   busy: boolean
   onConfirm: (payload: ResolvePayload) => Promise<void>
   onCancel: () => void
@@ -28,19 +35,31 @@ interface PanelProps {
  * conversa tem registro-alvo (o hook decide); por isso nunca muda o caminho de
  * quem resolve uma conversa sem funil.
  */
-export function ResolveOutcomePanel({ target, contactName, currentAmountCents, busy, onConfirm, onCancel }: PanelProps) {
+export function ResolveOutcomePanel({ target, contactName, currentAmountCents, hasLineItems, busy, onConfirm, onCancel }: PanelProps) {
+  const { openDeal } = useDealPanel()
   const options = useMemo(() => decisionOptions(target), [target])
   const [decision, setDecisionState] = useState<ResolveDecision>('won')
   const reasons = useMemo(() => reasonsFor(target, decision), [target, decision])
-  const [pickedReason, setPickedReason] = useState('')
-  // Catálogo com um único motivo → já vem escolhido (menos um clique no caso comum).
-  const reason = pickedReason || (reasons.length === 1 ? reasons[0].key : '')
-  const [note, setNote] = useState('')
+  // Motivo, campo livre (D0-8) e observação vêm do MESMO componente que o modal
+  // do board/ficha/painel usa (A4 · SCRUM-926) — era aqui que a pré-seleção do
+  // motivo único existia e lá que ela faltava.
+  const [fields, setFields] = useState<CloseReasonValue>(() => emptyCloseReasonValue(reasons))
   const [amountRaw, setAmountRaw] = useState(() => (currentAmountCents ? (currentAmountCents / 100).toFixed(2).replace('.', ',') : ''))
   const [error, setError] = useState('')
   const firstRadioRef = useRef<HTMLInputElement>(null)
 
-  const setDecision = (d: ResolveDecision) => { setDecisionState(d); setPickedReason(''); setError('') }
+  // B4 (SCRUM-930): negócio com itens de linha → "ajustar itens" fecha o
+  // popover e abre a ficha em painel, onde o valor é a soma dos itens.
+  const adjustItems = () => {
+    if (target.dealId) openDeal(target.dealId)
+    onCancel()
+  }
+
+  const setDecision = (d: ResolveDecision) => {
+    setDecisionState(d)
+    setFields(emptyCloseReasonValue(reasonsFor(target, d)))
+    setError('')
+  }
 
   // Teclado: foco na primeira opção ao abrir; setas navegam os radios nativos; Esc fecha.
   useEffect(() => {
@@ -50,7 +69,13 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, b
 
   const submit = async (forcedDecision?: ResolveDecision) => {
     const d = forcedDecision ?? decision
-    const built = buildResolvePayload({ target, decision: d, reason, note, amountRaw, currentAmountCents })
+    const composed = d === 'none'
+      ? { value: { reason: '', note: undefined } }
+      : composeCloseReason({ picked: fields.picked, free: fields.free, note: fields.note, allowFree: target.allowFreeCloseReason })
+    if ('error' in composed) { setError(composed.error); return }
+    const built = buildResolvePayload({
+      target, decision: d, reason: composed.value.reason, note: composed.value.note ?? '', amountRaw, currentAmountCents,
+    })
     if ('error' in built) { setError(built.error); return }
     setError('')
     try {
@@ -107,35 +132,47 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, b
       </div>
 
       {decision !== 'none' && (
-        <FormField label="Motivo" required error={error && !error.startsWith('Valor') ? error : undefined}>
-          <Select
-            aria-label="Motivo do desfecho"
-            value={reason}
-            onChange={(e) => { setPickedReason(e.target.value); setError('') }}
-            data-testid="resolve-reason"
-          >
-            <option value="">— escolher —</option>
-            {reasons.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
-          </Select>
-        </FormField>
+        <CloseReasonFields
+          reasons={reasons}
+          value={fields}
+          onChange={(next) => { setFields(next); setError('') }}
+          allowFree={target.allowFreeCloseReason}
+          error={error && !error.startsWith('Valor') ? error : undefined}
+          disabled={busy}
+          notePlaceholder="Ex: adesão ao plano Família"
+          testIdPrefix="resolve-reason"
+        />
       )}
 
       {showAmount && (
-        <FormField label="Valor (opcional)" error={error.startsWith('Valor') ? error : undefined}>
-          <Input
-            inputMode="decimal"
-            placeholder={currentAmountCents ? formatCentsBRL(currentAmountCents) : 'R$ 0,00'}
-            value={amountRaw}
-            onChange={(e) => { setAmountRaw(e.target.value); setError('') }}
-            aria-label="Valor do negócio"
-            data-testid="resolve-amount"
-          />
-        </FormField>
-      )}
-
-      {decision !== 'none' && (
-        <FormField label="Observação (opcional)">
-          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex: adesão ao plano Família" maxLength={2000} aria-label="Observação do desfecho" />
+        <FormField label="Confirmar valor" error={error.startsWith('Valor') ? error : undefined}>
+          {hasLineItems ? (
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={currentAmountCents != null ? formatCentsBRL(currentAmountCents) : 'R$ 0,00'}
+                aria-label="Confirmar valor"
+                data-testid="resolve-amount"
+              />
+              <button
+                type="button"
+                onClick={adjustItems}
+                className="text-xs text-brand-300 hover:text-brand-200 whitespace-nowrap flex-shrink-0"
+                data-testid="resolve-adjust-items"
+              >
+                ajustar itens
+              </button>
+            </div>
+          ) : (
+            <Input
+              inputMode="decimal"
+              placeholder={currentAmountCents ? formatCentsBRL(currentAmountCents) : 'R$ 0,00'}
+              value={amountRaw}
+              onChange={(e) => { setAmountRaw(e.target.value); setError('') }}
+              aria-label="Confirmar valor"
+              data-testid="resolve-amount"
+            />
+          )}
         </FormField>
       )}
 
@@ -164,19 +201,94 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, b
   )
 }
 
+interface PickerProps {
+  candidates: ReadonlyArray<Deal>
+  contactName: string
+  busy: boolean
+  onPick: (dealId: string) => void
+  onCancel: () => void
+}
+
+/**
+ * C2 (SCRUM-933) — passo ZERO do "resolver com desfecho" quando o contato tem
+ * N negócios abertos e nenhum vinculado a esta conversa (`no_target` por
+ * ambiguidade, possível desde a multiplicidade da C1/SCRUM-932).
+ *
+ * Escolher aqui grava o MESMO vínculo do seletor do cabeçalho (`PATCH
+ * /deals/:id/conversation-link`) — não é uma seleção efêmera de tela: a partir
+ * daí a IA também passa a agir neste negócio, que é o comportamento que o
+ * operador espera depois de dizer "a conversa é sobre este".
+ */
+function ResolveDealPicker({ candidates, contactName, busy, onPick, onCancel }: PickerProps) {
+  const { pipelines } = useCRMConfig()
+  return (
+    <div className="flex flex-col gap-3" data-testid="resolve-deal-picker">
+      <div>
+        <h3 className="text-sm font-semibold text-surface-50">Qual negócio?</h3>
+        <p className="text-xs text-surface-400 mt-0.5">
+          <span className="text-surface-200 font-medium">{contactName}</span> tem {candidates.length} negócios abertos e
+          nenhum está ligado a esta conversa. Escolha para registrar o desfecho no certo.
+        </p>
+      </div>
+      <div className="flex flex-col gap-1" role="radiogroup" aria-label="Negócio desta conversa">
+        {candidates.map((deal) => {
+          const pipe = pipelines.find((p) => p.id === deal.pipelineId) ?? null
+          const stage = pipe?.stages.find((s) => s.id === deal.stageId) ?? null
+          const isSales = pipe ? pipelineKindOf(pipe) === 'sales' : true
+          const where = [pipe?.name, stage?.label].filter(Boolean).join(' · ')
+          return (
+            <button
+              key={deal.id}
+              type="button"
+              role="radio"
+              aria-checked={false}
+              disabled={busy}
+              onClick={() => onPick(deal.id)}
+              data-testid={`resolve-pick-${deal.id}`}
+              className="flex flex-col items-start gap-0.5 px-2.5 py-2 rounded-lg border border-surface-700 hover:bg-surface-800 text-left transition-colors disabled:opacity-50"
+            >
+              <span className="text-sm font-medium text-surface-200 truncate max-w-full">{deal.title}</span>
+              <span className="text-[11px] text-surface-500 truncate max-w-full">
+                {[where, isSales ? formatCentsBRL(deal.amountCents ?? 0) : null].filter(Boolean).join(' · ')}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <div className="flex items-center justify-end gap-2 pt-1">
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={busy}>Cancelar</Button>
+      </div>
+    </div>
+  )
+}
+
 interface PopoverProps extends Omit<PanelProps, 'target'> {
   open: boolean
   /** Mobile → BottomSheet; desktop → painel ancorado sob o status (SCRUM-883). */
   mobile: boolean
   target: AiDealTargetView | null
+  /** C2: N abertos sem vínculo — pergunta antes do desfecho. */
+  candidates?: ReadonlyArray<Deal> | null
+  onPickCandidate?: (dealId: string) => void
 }
 
-export function ResolveOutcomePopover({ open, mobile, target, onCancel, ...panel }: PopoverProps) {
-  if (!open || !target) return null
+export function ResolveOutcomePopover({ open, mobile, target, candidates, onPickCandidate, onCancel, ...panel }: PopoverProps) {
+  if (!open || (!target && !(candidates && candidates.length > 0))) return null
+  const body = target
+    ? <ResolveOutcomePanel target={target} onCancel={onCancel} {...panel} />
+    : (
+      <ResolveDealPicker
+        candidates={candidates ?? []}
+        contactName={panel.contactName}
+        busy={panel.busy}
+        onPick={(id) => onPickCandidate?.(id)}
+        onCancel={onCancel}
+      />
+    )
   if (mobile) {
     return (
       <BottomSheet open onClose={onCancel} size="tall" ariaLabel="Resolver com desfecho">
-        <ResolveOutcomePanel target={target} onCancel={onCancel} {...panel} />
+        {body}
       </BottomSheet>
     )
   }
@@ -189,7 +301,7 @@ export function ResolveOutcomePopover({ open, mobile, target, onCancel, ...panel
         aria-label="Resolver com desfecho"
         className="absolute right-0 top-full mt-1 w-[22rem] max-w-[calc(100vw-1rem)] p-4 overlay-surface border rounded-xl z-50"
       >
-        <ResolveOutcomePanel target={target} onCancel={onCancel} {...panel} />
+        {body}
       </div>
     </>
   )

@@ -15,8 +15,9 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Link2, AlertCircle, Loader2, CheckCircle2, ShieldAlert, X } from 'lucide-react'
+import { ArrowLeft, Link2, AlertCircle, CheckCircle2, ShieldAlert, X } from 'lucide-react'
 import { Select } from '@/components/ui/Select'
+import { Spinner } from '@/components/ui/Spinner'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { listAdminOrganizations, type AdminOrganization } from '@/services/adminApi'
@@ -511,7 +512,7 @@ export function AssignSkillPage() {
                 )}
               >
                 {submitting
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Atribuindo…</>
+                  ? <><Spinner className="w-4 h-4" /> Atribuindo…</>
                   : <>
                       <CheckCircle2 className="w-4 h-4" />
                       {agentIds.length > 1
@@ -690,7 +691,7 @@ function Step({
 function Loading({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-2 text-sm text-surface-400">
-      <Loader2 className="w-4 h-4 animate-spin" />
+      <Spinner className="w-4 h-4" />
       <span>{text}</span>
     </div>
   )

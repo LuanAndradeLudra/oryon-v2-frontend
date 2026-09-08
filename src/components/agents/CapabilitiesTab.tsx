@@ -26,8 +26,9 @@ import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/Switch'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { tagsApi, usersApi, stagesApi } from '@/services/api'
+import { tagsApi, usersApi, stagesApi, pipelinesApi } from '@/services/api'
 import { updateAgent } from '@/services/agentsApi'
+import { pipelineKindOption } from '@/lib/pipelineKinds'
 import type {
   AgentConfig,
   AgentCrmCapabilities,
@@ -37,7 +38,7 @@ import type {
   CrmCapabilityConstraints,
   CrmCapabilityId,
 } from '@/services/agentsApi'
-import type { Tag, TenantStage, User } from '@/types'
+import type { Tag, TenantStage, User, Pipeline } from '@/types'
 import {
   CRM_CAPABILITIES_CATALOG,
   CRM_CATEGORY_META,
@@ -347,6 +348,17 @@ function ConstraintsModal({
         {entry.supports.includes('stages') && (
           <StagesPicker value={draft.allowedStageKeys ?? []} onChange={(v) => setDraft((d) => ({ ...d, allowedStageKeys: v }))} />
         )}
+        {entry.supports.includes('dealFlags') && (
+          <DealFlagsPicker
+            canClose={draft.canClose ?? false}
+            canEnter={draft.canEnter ?? false}
+            allowBackward={draft.allowBackward ?? false}
+            onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+          />
+        )}
+        {entry.supports.includes('pipelines') && (
+          <PipelinesPicker value={draft.allowedPipelineIds ?? []} onChange={(v) => setDraft((d) => ({ ...d, allowedPipelineIds: v }))} />
+        )}
       </div>
     </Modal>
   )
@@ -477,6 +489,89 @@ function StagesPicker({ value, onChange }: { value: string[]; onChange: (v: stri
   )
 }
 
+function DealFlagsPicker({
+  canClose, canEnter, allowBackward, onChange,
+}: {
+  canClose: boolean
+  canEnter: boolean
+  allowBackward: boolean
+  onChange: (patch: Partial<Pick<CrmCapabilityConstraints, 'canClose' | 'canEnter' | 'allowBackward'>>) => void
+}) {
+  const rows: Array<{ key: 'canClose' | 'canEnter' | 'allowBackward'; checked: boolean; label: string; hint: string }> = [
+    {
+      key: 'canClose', checked: canClose,
+      label: 'Fechar registro',
+      hint: 'Só funil de PROCESSO (Concluído/Cancelado). Ganho/perdido de venda é sempre decisão humana — o backend recusa mesmo com este opt-in ligado.',
+    },
+    {
+      key: 'canEnter', checked: canEnter,
+      label: 'Colocar em outro funil',
+      hint: 'O agente pode colocar o contato num funil onde ele ainda não está (só funis com critério de entrada configurado).',
+    },
+    {
+      key: 'allowBackward', checked: allowBackward,
+      label: 'Retroceder etapa',
+      hint: 'Sem isto, o agente só avança etapas — nunca volta o registro pra trás.',
+    },
+  ]
+  return (
+    <PickerSection title="Fechar, entrar em funil e retroceder" hint="Cada um destes é opt-in — desligado por padrão.">
+      <div className="space-y-1">
+        {rows.map((r) => (
+          <label
+            key={r.key}
+            className={cn(
+              'flex items-start gap-2.5 px-2.5 py-2 rounded-md cursor-pointer hover:bg-surface-900/60',
+              r.checked && 'bg-surface-900/40',
+            )}
+          >
+            <input
+              type="checkbox"
+              checked={r.checked}
+              onChange={() => onChange({ [r.key]: !r.checked })}
+              className="mt-0.5"
+            />
+            <div className="text-xs">
+              <div className="text-surface-200 font-medium">{r.label}</div>
+              <div className="text-surface-500">{r.hint}</div>
+            </div>
+          </label>
+        ))}
+      </div>
+    </PickerSection>
+  )
+}
+
+function PipelinesPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [pipelines, setPipelines] = useState<Pipeline[]>([])
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    let alive = true
+    pipelinesApi.list()
+      .then((r) => alive && setPipelines(r.data ?? []))
+      .catch(() => alive && setPipelines([]))
+      .finally(() => alive && setLoading(false))
+    return () => { alive = false }
+  }, [])
+  return (
+    <PickerSection title="Funis permitidos" hint="Escopo de enter_pipeline/mover para outro funil. Vazio = todos os funis que o setor do agente enxerga.">
+      {loading ? (
+        <div className="text-xs text-surface-500 px-2 py-1.5">Carregando…</div>
+      ) : (
+        <CheckboxList
+          items={pipelines.filter((p) => !p.isArchived).map((p) => ({
+            id: p.id,
+            label: p.name,
+            sub: pipelineKindOption(p.kind).label,
+          }))}
+          value={value}
+          onChange={onChange}
+        />
+      )}
+    </PickerSection>
+  )
+}
+
 function PickerSection({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
   return (
     <div>
@@ -545,6 +640,14 @@ function describeConstraints(entry: CatalogEntry, c: CrmCapabilityConstraints | 
   if (entry.supports.includes('stages')) {
     if (c.allowedStageKeys && c.allowedStageKeys.length > 0) parts.push(`${c.allowedStageKeys.length} estágio(s)`)
   }
+  if (entry.supports.includes('dealFlags')) {
+    if (c.canClose) parts.push('fecha')
+    if (c.canEnter) parts.push('entra em funil')
+    if (c.allowBackward) parts.push('retrocede')
+  }
+  if (entry.supports.includes('pipelines')) {
+    if (c.allowedPipelineIds && c.allowedPipelineIds.length > 0) parts.push(`${c.allowedPipelineIds.length} funil(is)`)
+  }
   return parts.length === 0 ? 'Sem limites' : parts.join(' · ')
 }
 
@@ -555,5 +658,9 @@ function normalize(c: CrmCapabilityConstraints): CrmCapabilityConstraints {
   if (c.allowedUserIds && c.allowedUserIds.length > 0) out.allowedUserIds = c.allowedUserIds
   if (c.allowedTagIds && c.allowedTagIds.length > 0) out.allowedTagIds = c.allowedTagIds
   if (c.allowedStageKeys && c.allowedStageKeys.length > 0) out.allowedStageKeys = c.allowedStageKeys
+  if (c.canClose) out.canClose = true
+  if (c.canEnter) out.canEnter = true
+  if (c.allowBackward) out.allowBackward = true
+  if (c.allowedPipelineIds && c.allowedPipelineIds.length > 0) out.allowedPipelineIds = c.allowedPipelineIds
   return out
 }

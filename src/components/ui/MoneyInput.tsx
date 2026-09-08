@@ -1,3 +1,4 @@
+import type { FocusEvent } from 'react'
 import { Input } from '@/components/ui/Input'
 import { formatCents } from '@/utils/money'
 
@@ -12,6 +13,23 @@ interface MoneyInputProps {
   placeholder?: string
   autoFocus?: boolean
   className?: string
+  /**
+   * Identificação e estado do campo. Fora de um `FormField` (vários por linha,
+   * como no editor de itens do negócio) o rótulo é um `<label htmlFor>` próprio
+   * e o nome acessível precisa vir daqui — sem isto o leitor de tela anunciava
+   * quatro campos "R$" sem nome na mesma linha.
+   */
+  id?: string
+  'aria-label'?: string
+  disabled?: boolean
+  /**
+   * Repassados ao input. O editor de itens do negócio usa o foco como ÂNCORA da
+   * reaplicação de desconto: como `onChange` dispara por tecla com valores
+   * intermediários (2 → 20 → 200…), o item capturado no foco é a única base
+   * honesta para preservar a proporção. A seleção total no foco continua.
+   */
+  onFocus?: (e: FocusEvent<HTMLInputElement>) => void
+  onBlur?: (e: FocusEvent<HTMLInputElement>) => void
 }
 
 /**
@@ -22,7 +40,18 @@ interface MoneyInputProps {
  * Ao focar, o texto é todo selecionado, então editar um valor existente reescreve
  * limpo (evita o erro de digitar no meio e gerar um valor 10x errado).
  */
-export function MoneyInput({ value, onChange, placeholder, autoFocus, className }: MoneyInputProps) {
+export function MoneyInput({
+  value,
+  onChange,
+  placeholder,
+  autoFocus,
+  className,
+  id,
+  'aria-label': ariaLabel,
+  disabled,
+  onFocus,
+  onBlur,
+}: MoneyInputProps) {
   const handleChange = (raw: string) => {
     const digits = raw.replace(/\D/g, '')
     const cents = digits ? parseInt(digits, 10) : 0
@@ -35,9 +64,16 @@ export function MoneyInput({ value, onChange, placeholder, autoFocus, className 
         R$
       </span>
       <Input
+        id={id}
+        aria-label={ariaLabel}
+        disabled={disabled}
         value={formatCents(value)}
         onChange={(e) => handleChange(e.target.value)}
-        onFocus={(e) => e.target.select()}
+        onFocus={(e) => {
+          e.target.select()
+          onFocus?.(e)
+        }}
+        onBlur={onBlur}
         placeholder={placeholder ?? '0,00'}
         autoFocus={autoFocus}
         inputMode="numeric"
