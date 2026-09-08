@@ -453,7 +453,7 @@ function CardScope({ description }: { description?: string | null }) {
     // contato). Sem ele o texto ficava solto no card: dava para ler, mas não
     // para saber o que era — título? observação? Um ícone não resolveria:
     // símbolo sem legenda não ensina.
-    <div className="mt-1.5" data-testid="card-scope" title={text}>
+    <div className="mt-3 mb-2.5" data-testid="card-scope" title={text}>
       <span className="block text-3xs uppercase tracking-wide text-surface-500 leading-none">Escopo</span>
       <p className="mt-0.5 text-2xs text-surface-300 line-clamp-2 leading-snug">{text}</p>
     </div>
