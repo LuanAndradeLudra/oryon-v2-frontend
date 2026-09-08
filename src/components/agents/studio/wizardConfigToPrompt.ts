@@ -36,7 +36,12 @@ const MAX_KEYWORDS = 20
 
 /** Regra de handoff reduzida ao que o prompt usa. O resto do `HandoffRule`
  *  (id, prioridade, ação, template…) não participa da derivação. */
-export type RegraParaPrompt = Pick<HandoffRule, 'name' | 'description' | 'keywords' | 'department'>
+export type RegraParaPrompt = Pick<HandoffRule, 'name' | 'description' | 'keywords' | 'department'> & {
+  /** Ausente = LIGADA. Só o `false` explícito desqualifica — mesma regra do
+   *  `isActive` das linhas nos arquétipos. Retrato velho, gravado antes de a
+   *  flag existir, não pode perder todas as regras em silêncio. */
+  enabled?: boolean
+}
 
 /** Canais ligados, no formato que a derivação lê. O wizard tem três booleanos
  *  soltos; o agente vivo tem `{ enabled }`. Os dois chegam aqui já reduzidos. */
@@ -117,6 +122,7 @@ function listaDeRegras(v: unknown): RegraParaPrompt[] {
       description: typeof o.description === 'string' ? o.description : undefined,
       keywords: listaDeTexto(o.keywords),
       department: typeof o.department === 'string' ? o.department : undefined,
+      enabled: o.enabled === false ? false : true,
     })
   }
   return out
@@ -142,10 +148,25 @@ export function derivarDeployment(
   regras: RegraParaPrompt[],
   canais: CanaisLigados,
 ): AgentPromptRequest['deployment'] {
+  // REGRA DESLIGADA NÃO ENTRA NO PROMPT, e o filtro mora aqui — na função
+  // compartilhada — porque o defeito não era de um caminho só. O
+  // `HandoffRuleBuilder` (o mesmo componente no Step 5 do wizard e na seção
+  // Regras do workspace) escreve `enabled: !r.enabled` no toggle, então os
+  // TRÊS caminhos que chegam nesta função podiam trazer regra desligada:
+  // o wizard, o retrato do `wizard_config` e o estado vivo do agente.
+  //
+  // O que a tela prometia era falso nos três: as keywords e o departamento de
+  // uma regra que o operador DESLIGOU iam para o prompt, então o agente
+  // escalava por um critério que a tela mostra apagado. É a tela afirmando um
+  // comportamento que o agente não tem.
+  //
+  // Ausente = ligada: só o `false` explícito desqualifica. Retrato gravado
+  // antes de a flag existir não pode perder todas as regras em silêncio.
+  const ligadas = regras.filter((r) => r.enabled !== false)
   return {
-    escalation_keywords: regras.flatMap((r) => r.keywords).slice(0, MAX_KEYWORDS),
-    escalation_conditions: regras.map((r) => r.description ?? r.name).filter(Boolean),
-    escalation_department: regras.find((r) => r.department)?.department ?? '',
+    escalation_keywords: ligadas.flatMap((r) => r.keywords).slice(0, MAX_KEYWORDS),
+    escalation_conditions: ligadas.map((r) => r.description ?? r.name).filter(Boolean),
+    escalation_department: ligadas.find((r) => r.department)?.department ?? '',
     channels: [
       canais.whatsapp && 'WhatsApp',
       canais.messenger && 'Messenger',
