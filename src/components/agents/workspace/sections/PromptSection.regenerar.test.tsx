@@ -78,6 +78,42 @@ async function editar(texto: string) {
   fireEvent.change(textarea(), { target: { value: texto } })
 }
 
+/**
+ * Clicar em Regenerar com o rascunho LIMPO, afirmando a pré-condição no
+ * caminho.
+ *
+ * Existe por causa da mutação do caso 6: quando "confirmar sempre" entra, este
+ * clique passa a abrir modal e SEIS casos caem, dos quais só o 6 é sobre isso —
+ * os outros cinco morrem esperando um texto que nunca chega, com erro de
+ * timeout que não diz nada. A mensagem na asserção faz cada um deles anunciar
+ * que caiu por PRÉ-CONDIÇÃO, e manda o leitor para o caso 6 em vez de para o
+ * próprio assunto.
+ */
+/**
+ * Espera o texto gerado chegar ao editor, nomeando a pré-condição.
+ *
+ * Mesma razão do `regenerarLimpo`: se o Regenerar deixar de entrar em modo de
+ * edição (a mutação do caso 2), QUATRO casos caem, e três deles só porque o
+ * textarea não existe para ser lido. A mensagem manda o leitor ao caso 2.
+ */
+async function esperarGerado(texto = '# GERADO') {
+  await waitFor(() => {
+    expect(
+      screen.queryByRole('textbox', { name: 'Prompt do agente' }),
+      'pré-condição (é o caso 2): Regenerar entra em modo de edição',
+    ).toBeInTheDocument()
+  })
+  expect(textarea().value).toBe(texto)
+}
+
+function regenerarLimpo() {
+  fireEvent.click(btnRegenerar())
+  expect(
+    screen.queryByText(/Regenerar o prompt\?/i),
+    'pré-condição (é o caso 6): com o rascunho limpo, Regenerar NÃO abre confirmação',
+  ).not.toBeInTheDocument()
+}
+
 describe('PromptSection · Regenerar', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -100,30 +136,35 @@ describe('PromptSection · Regenerar', () => {
   // 2 — mutação: não chamar setEditing após gerar.
   it('clicar gera e PREENCHE o editor, entrando em modo de edição', async () => {
     montar()
-    fireEvent.click(btnRegenerar())
-    await waitFor(() => expect(textarea()).toBeInTheDocument())
-    expect(textarea().value).toBe('# GERADO')
+    regenerarLimpo()
+    await esperarGerado()
   })
 
   // 3 — mutação: persistir "para não perder".
   it('o gerado NÃO persiste: nada é salvo sem o Salvar', async () => {
     montar()
-    fireEvent.click(btnRegenerar())
-    await waitFor(() => expect(textarea().value).toBe('# GERADO'))
+    regenerarLimpo()
+    await esperarGerado()
     expect(updateAgent).not.toHaveBeenCalled()
   })
 
   // 4 — mutação: manter o gerado no Cancelar.
   it('Cancelar depois de regenerar devolve o PUBLICADO', async () => {
     montar()
-    fireEvent.click(btnRegenerar())
-    await waitFor(() => expect(textarea().value).toBe('# GERADO'))
+    regenerarLimpo()
+    await esperarGerado()
 
     fireEvent.click(screen.getByRole('button', { name: /Cancelar/i }))
-    // Voltou ao modo leitura com o texto publicado — é o que torna o Regenerar
-    // reversível, e é por isso que ele não pede confirmação no caso limpo.
     expect(screen.queryByRole('textbox', { name: 'Prompt do agente' })).not.toBeInTheDocument()
-    expect(screen.getByText(/PROMPT PUBLICADO/)).toBeInTheDocument()
+
+    // E AQUI ESTÁ O CASO, que a primeira versão deste teste NÃO pegava: em modo
+    // leitura o `PromptDoc` mostra `agent.system_prompt` de qualquer jeito, então
+    // afirmar "aparece o publicado" passa mesmo com o rascunho sujo por baixo —
+    // a mutação que tirava o `setDraft(agent.system_prompt)` do Cancelar deixava
+    // 9/9 verde. O rascunho velho só aparece ao REABRIR o editor, e é lá que a
+    // reversibilidade se prova.
+    fireEvent.click(screen.getByRole('button', { name: /Editar/i }))
+    expect(textarea().value).toBe(PUBLICADO)
   })
 
   // 5 — mutação: pular o modal quando há edição local.
@@ -162,7 +203,7 @@ describe('PromptSection · Regenerar', () => {
       },
     } as unknown as Partial<AgentConfigWithTools>))
 
-    fireEvent.click(btnRegenerar())
+    regenerarLimpo()
     await waitFor(() => expect(generateAgentPromptWithSource).toHaveBeenCalled())
 
     const req = generateAgentPromptWithSource.mock.calls.at(-1)![0] as AgentPromptRequest
@@ -180,7 +221,7 @@ describe('PromptSection · Regenerar', () => {
     generateAgentPromptWithSource.mockReturnValue(new Promise((r) => { resolver = r }))
 
     const { rerender } = montar(agente({ id: 'a1' }))
-    fireEvent.click(btnRegenerar())
+    regenerarLimpo()
     await waitFor(() => expect(generateAgentPromptWithSource).toHaveBeenCalled())
 
     // Trocou de agente com a geração em voo.
@@ -195,7 +236,7 @@ describe('PromptSection · Regenerar', () => {
   it('avisa a ORIGEM quando veio do template, e fica CALADO quando veio da IA', async () => {
     generateAgentPromptWithSource.mockResolvedValue({ prompt: '# GERADO', source: 'local_fallback' })
     const { unmount } = montar()
-    fireEvent.click(btnRegenerar())
+    regenerarLimpo()
     await waitFor(() => expect(screen.getByText(/sem IA/i)).toBeInTheDocument())
     unmount()
 
@@ -204,8 +245,8 @@ describe('PromptSection · Regenerar', () => {
     vi.resetAllMocks()
     generateAgentPromptWithSource.mockResolvedValue({ prompt: '# GERADO', source: 'ai' })
     montar()
-    fireEvent.click(btnRegenerar())
-    await waitFor(() => expect(textarea().value).toBe('# GERADO'))
+    regenerarLimpo()
+    await esperarGerado()
     expect(screen.queryByText(/sem IA/i)).not.toBeInTheDocument()
   })
 })
