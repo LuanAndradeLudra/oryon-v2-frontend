@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, type ReactNode } from 'react'
-import { Search, User as UserIcon, Wallet } from 'lucide-react'
+import { Search, User as UserIcon, Wallet, HelpCircle } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { FormField } from '@/components/ui/FormField'
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { MoneyInput } from '@/components/ui/MoneyInput'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { Textarea } from '@/components/ui/Textarea'
 import { Stepper } from '@/components/ui/Stepper'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -67,6 +68,23 @@ export interface NewDealDialogProps {
 
 type Step = 'quem' | 'quanto'
 
+/**
+ * Rótulo com dica. Título, Escopo e Observação são três campos de texto
+ * seguidos, e o nome sozinho não diz qual é qual — nem onde cada um aparece
+ * depois. O `hint` do FormField resolve o caso curto; a dica cobre o resto
+ * sem encher o formulário de texto.
+ */
+function LabelComDica({ texto, dica }: { texto: string; dica: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {texto}
+      <Tooltip content={dica} side="top" wide>
+        <HelpCircle className="w-3 h-3 text-surface-500 hover:text-surface-300 transition-colors" aria-label={dica} />
+      </Tooltip>
+    </span>
+  )
+}
+
 export function NewDealDialog({
   open,
   onClose,
@@ -98,6 +116,7 @@ export function NewDealDialog({
   const [ownerUserId, setOwnerUserId] = useState<string | null | undefined>(undefined)
   const [users, setUsers] = useState<User[]>([])
 
+  const [description, setDescription] = useState('')
   const [amountCents, setAmountCents] = useState(0)
   // O valor só viaja no POST quando foi DIGITADO. Sem esta marca, um campo
   // intocado (0) viraria `amountCents: 0` e apagaria a soma dos itens.
@@ -239,6 +258,7 @@ export function NewDealDialog({
         ...(pipelineId ? { pipelineId } : {}),
         ...(stageId ? { stageId } : {}),
         ...(originConversationId ? { originConversationId } : {}),
+        ...(description.trim() ? { description: description.trim() } : {}),
         ...(amountTouched ? { amountCents } : {}),
         ...(hasItems
           ? {
@@ -269,7 +289,7 @@ export function NewDealDialog({
     } finally {
       setSaving(false)
     }
-  }, [contact?.id, items, title, pipelineId, stageId, originConversationId, amountTouched, amountCents, hasItems, expectedCloseAt, note, ownerUserId, onCreated, onConflict])
+  }, [contact?.id, items, title, pipelineId, stageId, originConversationId, amountTouched, amountCents, hasItems, description, expectedCloseAt, note, ownerUserId, onCreated, onConflict])
 
   // ─── Passo 1 · Quem e onde ────────────────────────────────────────────────
   const stepQuem = (
@@ -343,11 +363,36 @@ export function NewDealDialog({
       </div>
       )}
 
-      <FormField label="Título" required error={error === 'O título é obrigatório.' ? error : undefined}>
+      {/* Título e Escopo respondem à mesma pergunta — "o que é isto?" — em
+          duas escalas. Viviam separados por um passo chamado "Quanto", que
+          promete dinheiro e não escopo; era por isso que o diálogo de venda
+          parecia não ter onde descrever o negócio. */}
+      <FormField
+        label={<LabelComDica texto="Título" dica={`Nome curto, do jeito que você quer ver na lista e no card do quadro. Ex: "${vocab.deal} · Plano Anual".`} />}
+        required
+        error={error === 'O título é obrigatório.' ? error : undefined}
+      >
         <Input
           value={title}
           onChange={(e) => { setTitle(e.target.value); setError('') }}
           placeholder={`Ex: ${vocab.deal} · Plano Anual`}
+        />
+      </FormField>
+
+      <FormField
+        label={<LabelComDica
+          texto="Escopo (opcional)"
+          dica={isProcess
+            ? 'O que está sendo tratado neste registro — aparece no card do quadro, abaixo do título.'
+            : 'O que está sendo proposto ao cliente — aparece no card do quadro, abaixo do título.'}
+        />}
+        hint={isProcess ? 'O que está sendo tratado.' : 'O que está sendo proposto.'}
+      >
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          placeholder={isProcess ? 'Ex: consulta de retorno, ajuste de plano' : 'Ex: site institucional + hospedagem dedicada'}
         />
       </FormField>
 
@@ -368,6 +413,25 @@ export function NewDealDialog({
         </Select>
       </FormField>
     </div>
+  )
+
+  // Campos que valem para os DOIS tipos de funil. Ficavam presos ao passo
+  // "Quanto"; com o passo sumindo em processo, sumiam junto — e "Adicionar com
+  // detalhes…" num funil de processo não tinha detalhe nenhum a oferecer.
+  const detalhes = (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FormField label={isProcess ? 'Previsão de conclusão (opcional)' : 'Previsão de fechamento (opcional)'}>
+          <Input type="date" value={expectedCloseAt} onChange={(e) => setExpectedCloseAt(e.target.value)} />
+        </FormField>
+      </div>
+      <FormField
+        label={<LabelComDica texto="Observação (opcional)" dica="Recado operacional para a equipe — combinados, restrições, o que lembrar no próximo contato. NÃO aparece no card do quadro." />}
+        hint="Recado interno para a equipe."
+      >
+        <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Ex: cliente só atende depois das 18h" />
+      </FormField>
+    </>
   )
 
   // ─── Passo 2 · Quanto ─────────────────────────────────────────────────────
@@ -418,14 +482,7 @@ export function NewDealDialog({
         </button>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FormField label="Previsão de fechamento (opcional)">
-          <Input type="date" value={expectedCloseAt} onChange={(e) => setExpectedCloseAt(e.target.value)} />
-        </FormField>
-      </div>
-      <FormField label="Observação (opcional)">
-        <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Detalhes da proposta" />
-      </FormField>
+      {detalhes}
     </div>
   )
 
@@ -484,6 +541,9 @@ export function NewDealDialog({
         />
       )}
       {isProcess || step === 'quem' ? stepQuem : stepQuanto}
+      {/* Em processo não há passo 2: os campos comuns entram aqui, senão
+          "Adicionar com detalhes…" abriria um formulário sem detalhes. */}
+      {isProcess && detalhes}
       {footer}
     </div>
   )

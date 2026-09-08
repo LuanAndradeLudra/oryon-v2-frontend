@@ -6,6 +6,7 @@ import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
 import { pipelineKindOf } from '@/lib/pipelineKinds'
+import { getActivePipelines } from '@/lib/utils'
 import { PipelineConflictModal, type ConflictChoice } from '@/components/deals/PipelineConflictModal'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
@@ -92,6 +93,22 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
       setConflict((prev) => (prev && prev.openDealId === openDealId ? { ...prev, existing: { id: openDealId } as Deal } : prev))
     }
   }, [])
+
+  /**
+   * Segunda porta do "Adicionar ao funil ▾": abre o diálogo em vez de criar.
+   *
+   * O clique num funil continua criando em UM clique — numa clínica que põe
+   * dezenas de pessoas por dia em "Confirmação de consulta", trocar isso por
+   * um formulário seria piora. Mas quem precisa de título próprio, escopo,
+   * dono ou previsão não tinha onde preencher: em processo o registro nascia
+   * com o nome do contato como título e nada mais. Esta porta dá o formulário
+   * a quem quer, sem tirar a velocidade de quem não quer.
+   */
+  const requestAddDetailed = useCallback((target: Omit<AddToPipelineTarget, 'pipeline'> & { pipeline?: Pipeline }) => {
+    const fallback = target.pipeline ?? getActivePipelines(pipelines)[0]
+    if (!fallback) { toast('Nenhum funil disponível.', 'error'); return }
+    setSalesTarget({ ...target, pipeline: fallback })
+  }, [pipelines, toast])
 
   const requestAdd = useCallback(async (target: AddToPipelineTarget) => {
     if (pipelineKindOf(target.pipeline) === 'sales') {
@@ -260,5 +277,5 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     [openConflict],
   )
 
-  return { requestAdd, dialogs, busy, reportConflict }
+  return { requestAdd, requestAddDetailed, dialogs, busy, reportConflict }
 }

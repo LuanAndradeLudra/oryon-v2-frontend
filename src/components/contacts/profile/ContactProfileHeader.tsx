@@ -231,6 +231,7 @@ export function ContactProfileHeader({
             contactName={contact.displayName || contact.waId}
             size="sm"
             onPick={(pipeline) => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline })}
+            onOpenDetailed={() => addToPipeline.requestAddDetailed({ contactId: contact.id, contactName: contact.displayName || contact.waId })}
           />
           {addToPipeline.dialogs}
           {!compact && (

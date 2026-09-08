@@ -90,3 +90,27 @@ describe('DealsBoard — gatilho "Novo negócio" (A3/925)', () => {
     expect(onAddContact).toHaveBeenCalledTimes(1)
   })
 })
+
+// O escopo existia no banco e na ficha, mas o card nunca o mostrava — num
+// board de processo, onde o titulo e o nome do contato, isso deixava os cards
+// indistinguiveis entre si.
+
+describe('DealsBoard — escopo no card', () => {
+  const deal = (over: Record<string, unknown> = {}) => ({
+    id: 'd1', contactId: 'c1', title: 'Proposta', status: 'open',
+    pipelineId: 'p', stageId: STAGES[0].id, amountCents: 0, ...over,
+  }) as never
+
+  it('mostra o escopo quando preenchido', () => {
+    render(<DealsBoard stages={STAGES} dealsByStage={{ [STAGES[0].id]: [deal({ description: 'Site institucional + hospedagem' })] }} onMoveStage={vi.fn()} />)
+    const scope = screen.getByTestId('card-scope')
+    expect(scope).toHaveTextContent('Site institucional + hospedagem')
+    // O rótulo é o que diz ao operador o QUE é aquele texto no card.
+    expect(scope).toHaveTextContent('Escopo')
+  })
+
+  it('sem escopo, nao ocupa espaco no card', () => {
+    render(<DealsBoard stages={STAGES} dealsByStage={{ [STAGES[0].id]: [deal({ description: null })] }} onMoveStage={vi.fn()} />)
+    expect(screen.queryByTestId('card-scope')).toBeNull()
+  })
+})

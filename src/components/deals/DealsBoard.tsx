@@ -438,6 +438,28 @@ export function DealsBoard({
  * nome e o mesmo avatar em colunas diferentes leem como duplicata, e o
  * operador não tem como saber que são propostas distintas do mesmo cliente.
  */
+/**
+ * Escopo no card (`description`, B1/SCRUM-927). O campo existia no banco e na
+ * ficha, mas o card nunca o mostrava — num board de processo, onde o título é
+ * o nome do contato, isso deixava os cards indistinguíveis entre si. Duas
+ * linhas no máximo; o texto inteiro fica no `title`.
+ */
+function CardScope({ description }: { description?: string | null }) {
+  const text = (description ?? '').trim()
+  if (!text) return null
+  return (
+    // Rótulo em cima, valor embaixo — mesma gramática dos outros valores
+    // rotulados do produto (as faixas "Em aberto"/"Ganho" do painel do
+    // contato). Sem ele o texto ficava solto no card: dava para ler, mas não
+    // para saber o que era — título? observação? Um ícone não resolveria:
+    // símbolo sem legenda não ensina.
+    <div className="mt-3 mb-2.5" data-testid="card-scope" title={text}>
+      <span className="block text-3xs uppercase tracking-wide text-surface-500 leading-none">Escopo</span>
+      <p className="mt-0.5 text-2xs text-surface-300 line-clamp-2 leading-snug">{text}</p>
+    </div>
+  )
+}
+
 function SiblingBadge({ siblings }: { siblings: number }) {
   if (siblings < 2) return null
   return (
@@ -475,6 +497,7 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
           </span>
         )}
       </button>
+      <CardScope description={deal.description} />
       <div className="mt-1.5 flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1 text-2xs text-surface-400 truncate" title={origin.label} data-testid="process-card-origin">
           <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
@@ -528,6 +551,7 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
         <span className="text-sm font-medium text-surface-100 truncate flex-1">{deal.title}</span>
         <SiblingBadge siblings={siblings} />
       </div>
+      <CardScope description={deal.description} />
       <div className="mt-1 flex items-center justify-between">
         <span className="text-xs text-surface-400">{brl(deal.amountCents ?? 0)}</span>
         <div className="flex items-center gap-1">

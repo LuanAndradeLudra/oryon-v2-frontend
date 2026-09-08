@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { KanbanSquare, ChevronDown, ArrowRight } from 'lucide-react'
+import { KanbanSquare, ChevronDown, ArrowRight, SlidersHorizontal } from 'lucide-react'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { dealsApi } from '@/services/api'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
@@ -13,6 +13,8 @@ interface AddToPipelineMenuProps {
   contactName: string
   /** Escolha de um funil onde o contato ainda não está. */
   onPick: (pipeline: Pipeline) => void
+  /** Segunda porta: abre o diálogo com os campos, em vez de criar em 1 clique. */
+  onOpenDetailed?: () => void
   /** Registros abertos já conhecidos pelo chamador — evita o fetch ao abrir. */
   openDeals?: Deal[] | null
   size?: 'sm' | 'md'
@@ -28,7 +30,7 @@ interface AddToPipelineMenuProps {
  * por abertura, ou nenhuma quando o chamador já os passa). Só existe com o
  * flag de múltiplos funis — sem ele o componente não renderiza nada.
  */
-export function AddToPipelineMenu({ contactId, contactName, onPick, openDeals: openDealsProp, size = 'md', className, align = 'right' }: AddToPipelineMenuProps) {
+export function AddToPipelineMenu({ contactId, contactName, onPick, onOpenDetailed, openDeals: openDealsProp, size = 'md', className, align = 'right' }: AddToPipelineMenuProps) {
   const multiPipeline = useMultiPipeline()
   const { pipelines } = useCRMConfig()
   const [open, setOpen] = useState(false)
@@ -135,6 +137,21 @@ export function AddToPipelineMenu({ contactId, contactName, onPick, openDeals: o
         })}
         {loading && <p className="px-3 py-1.5 text-[11px] text-surface-500">Conferindo onde {firstName} já está…</p>}
       </div>
+      {/* Segunda porta: o clique num funil acima cria em 1 clique (que é o
+          gesto do dia a dia); quem precisa de título próprio, escopo, dono ou
+          previsão abre o formulário por aqui. */}
+      {onOpenDetailed && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => { close(); onOpenDetailed() }}
+          data-testid="add-to-pipeline-detailed"
+          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left text-surface-300 hover:bg-surface-700 border-t border-surface-700 transition-colors"
+        >
+          <SlidersHorizontal className="w-3 h-3 flex-shrink-0 opacity-80" />
+          <span className="flex-1">Adicionar com detalhes…</span>
+        </button>
+      )}
       <div className="px-3 py-2 border-t border-surface-700 text-[11px] text-surface-500 leading-relaxed">
         {(() => {
           const proc = rows.find((r) => !r.blocked && pipelineKindOf(r.pipeline) === 'process')

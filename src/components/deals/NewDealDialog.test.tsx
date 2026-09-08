@@ -264,6 +264,33 @@ describe('NewDealDialog — regressões da revisão', () => {
 
   // Só funil de PROCESSO deixou de ser um beco sem saída: o diálogo o aceita,
   // vira um passo só (processo não tem valor nem itens) e cria "registro".
+  // O Escopo vivia no passo "Quanto" — um passo que promete dinheiro, não
+  // escopo —, e por isso o diálogo de VENDA parecia não ter onde descrever o
+  // negócio. Agora fica ao lado do Título, no passo 1, nos dois tipos.
+  it('venda: Escopo está no passo 1, junto do Título', () => {
+    renderDialog()
+    expect(screen.getByLabelText(/Título/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Escopo/)).toBeInTheDocument()
+  })
+
+  // O escopo (`description`) é o "o que está sendo tratado" — existe para os
+  // dois tipos e ficava preso ao passo 2, que some em processo.
+  it('escopo é enviado como `description` e existe também em processo', async () => {
+    renderDialog({ pipelines: [PROCESSO] })
+    fireEvent.change(screen.getByLabelText(/Escopo/), { target: { value: 'Consulta de retorno' } })
+    fireEvent.click(screen.getByRole('button', { name: /Criar registro/i }))
+    await waitFor(() => expect(deals.create).toHaveBeenCalledWith(
+      expect.objectContaining({ description: 'Consulta de retorno' }),
+    ))
+  })
+
+  it('escopo em branco não vai no payload', async () => {
+    renderDialog({ pipelines: [PROCESSO] })
+    fireEvent.click(screen.getByRole('button', { name: /Criar registro/i }))
+    await waitFor(() => expect(deals.create).toHaveBeenCalled())
+    expect(deals.create.mock.calls[0][0]).not.toHaveProperty('description')
+  })
+
   it('só com funil de processo: cria em um passo, com o substantivo do tipo', async () => {
     renderDialog({ pipelines: [PROCESSO] })
     expect(screen.getByRole('button', { name: /Criar registro/i })).toBeInTheDocument()
