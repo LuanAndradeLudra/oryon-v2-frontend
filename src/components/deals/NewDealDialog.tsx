@@ -98,6 +98,7 @@ export function NewDealDialog({
   const [ownerUserId, setOwnerUserId] = useState<string | null | undefined>(undefined)
   const [users, setUsers] = useState<User[]>([])
 
+  const [description, setDescription] = useState('')
   const [amountCents, setAmountCents] = useState(0)
   // O valor só viaja no POST quando foi DIGITADO. Sem esta marca, um campo
   // intocado (0) viraria `amountCents: 0` e apagaria a soma dos itens.
@@ -239,6 +240,7 @@ export function NewDealDialog({
         ...(pipelineId ? { pipelineId } : {}),
         ...(stageId ? { stageId } : {}),
         ...(originConversationId ? { originConversationId } : {}),
+        ...(description.trim() ? { description: description.trim() } : {}),
         ...(amountTouched ? { amountCents } : {}),
         ...(hasItems
           ? {
@@ -269,7 +271,7 @@ export function NewDealDialog({
     } finally {
       setSaving(false)
     }
-  }, [contact?.id, items, title, pipelineId, stageId, originConversationId, amountTouched, amountCents, hasItems, expectedCloseAt, note, ownerUserId, onCreated, onConflict])
+  }, [contact?.id, items, title, pipelineId, stageId, originConversationId, amountTouched, amountCents, hasItems, description, expectedCloseAt, note, ownerUserId, onCreated, onConflict])
 
   // ─── Passo 1 · Quem e onde ────────────────────────────────────────────────
   const stepQuem = (
@@ -370,6 +372,33 @@ export function NewDealDialog({
     </div>
   )
 
+  // Campos que valem para os DOIS tipos de funil. Ficavam presos ao passo
+  // "Quanto"; com o passo sumindo em processo, sumiam junto — e "Adicionar com
+  // detalhes…" num funil de processo não tinha detalhe nenhum a oferecer.
+  const detalhes = (
+    <>
+      <FormField
+        label="Escopo (opcional)"
+        hint={isProcess ? 'O que está sendo tratado neste registro.' : 'O que está sendo proposto.'}
+      >
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          placeholder={isProcess ? 'Ex: consulta de retorno, ajuste de plano' : 'Ex: site institucional + hospedagem'}
+        />
+      </FormField>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FormField label={isProcess ? 'Previsão de conclusão (opcional)' : 'Previsão de fechamento (opcional)'}>
+          <Input type="date" value={expectedCloseAt} onChange={(e) => setExpectedCloseAt(e.target.value)} />
+        </FormField>
+      </div>
+      <FormField label="Observação (opcional)">
+        <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Detalhes operacionais" />
+      </FormField>
+    </>
+  )
+
   // ─── Passo 2 · Quanto ─────────────────────────────────────────────────────
   const stepQuanto = (
     <div className="flex flex-col gap-4">
@@ -418,14 +447,7 @@ export function NewDealDialog({
         </button>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FormField label="Previsão de fechamento (opcional)">
-          <Input type="date" value={expectedCloseAt} onChange={(e) => setExpectedCloseAt(e.target.value)} />
-        </FormField>
-      </div>
-      <FormField label="Observação (opcional)">
-        <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Detalhes da proposta" />
-      </FormField>
+      {detalhes}
     </div>
   )
 
@@ -484,6 +506,9 @@ export function NewDealDialog({
         />
       )}
       {isProcess || step === 'quem' ? stepQuem : stepQuanto}
+      {/* Em processo não há passo 2: os campos comuns entram aqui, senão
+          "Adicionar com detalhes…" abriria um formulário sem detalhes. */}
+      {isProcess && detalhes}
       {footer}
     </div>
   )
