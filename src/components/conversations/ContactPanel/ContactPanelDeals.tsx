@@ -117,7 +117,7 @@ export function ContactPanelDeals({
           {salesPipeline && (
             <Button
               size="sm"
-              variant="primary"
+              variant="secondary"
               leftIcon={<Handshake className="w-3.5 h-3.5" />}
               onClick={() => addToPipeline.requestAdd({ contactId, contactName, pipeline: salesPipeline, conversationId })}
             >

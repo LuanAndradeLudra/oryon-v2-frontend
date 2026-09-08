@@ -4,7 +4,6 @@ import {
   Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
-import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
@@ -415,26 +414,13 @@ export function ChatHeader({
 
       {/* ── Right: actions ────────────────────────────────────── */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        {/* A3 (SCRUM-925): criar negócio não fica escondido dentro de um menu —
-            o botão continua aqui, direto. Em `secondary` e não `primary`: o
-            cabeçalho já tem "Adicionar ao funil ▾" ao lado e o grupo de ações
-            à direita, e um botão de marca com sombra colorida no meio disso
-            competia por atenção com a conversa, que é o conteúdo da tela. */}
-        {!isMobile && salesPipeline && (
-          <Button
-            size="sm"
-            variant="secondary"
-            leftIcon={<Handshake className="w-3.5 h-3.5" />}
-            onClick={() => addToPipeline.requestAdd({
-              contactId: contact.id,
-              contactName: contact.displayName || contact.waId,
-              pipeline: salesPipeline,
-              conversationId: conversation.id,
-            })}
-          >
-            Novo {vocab.deal.toLowerCase()}
-          </Button>
-        )}
+        {/* "Novo negócio" NÃO mora mais aqui. A A3 (SCRUM-925) o trouxe para o
+            cabeçalho quando criar negócio só existia escondido dentro do menu
+            de funis; desde então o painel da direita ganhou a mesma ação, com
+            a lista de negócios do contato do lado — que é o lugar onde ela faz
+            sentido. Dois botões idênticos na mesma tela é ruído, não atalho.
+            Continua a um clique em: painel do contato (à direita) e
+            "Adicionar ao funil ▾" (aqui ao lado). */}
         {!isMobile && (
           <AddToPipelineMenu
             contactId={contact.id}
