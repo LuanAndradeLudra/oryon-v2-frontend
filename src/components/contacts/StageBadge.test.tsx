@@ -18,7 +18,7 @@ describe('StageBadge — situação não se confunde com etiqueta', () => {
     const badge = container.firstElementChild!
     expect(badge.className).not.toContain('color-chip')
     expect(badge.className).not.toContain('rounded-full')
-    expect(badge.className).toContain('rounded-md')
+    expect(badge.className).toContain('rounded-none')
   })
 
   it('fundo neutro — a cor da situação vive só no ponto', () => {
@@ -39,7 +39,7 @@ describe('StageBadge — situação não se confunde com etiqueta', () => {
   it('chave órfã (situação removida das Configurações): mesma forma, sem ponto', () => {
     const { container } = render(<StageBadge stage="fantasma" stages={STAGES} />)
     const badge = container.firstElementChild!
-    expect(badge.className).toContain('rounded-md')
+    expect(badge.className).toContain('rounded-none')
     expect(badge.querySelector('span[style]')).toBeNull()
     expect(screen.getByText('fantasma')).toBeInTheDocument()
   })

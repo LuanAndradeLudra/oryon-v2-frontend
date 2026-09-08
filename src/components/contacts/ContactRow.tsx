@@ -354,8 +354,9 @@ export function ContactRow({
           {(contact.tags ?? []).slice(0, 2).map((tag) => (
             <span
               key={tag.id}
-              className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+              className="color-chip inline-block max-w-[120px] truncate align-middle text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
               style={{ ['--chip']: tag.color } as React.CSSProperties}
+              title={tag.name}
             >
               {tag.name}
             </span>

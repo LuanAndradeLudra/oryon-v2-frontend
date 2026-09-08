@@ -21,7 +21,7 @@ interface StageBadgeProps {
  * A diferença agora está na FORMA, não em mais cor (que é o recurso já
  * saturado nessas telas):
  *
- *   situação   [ ◈ Proposta enviada ]   cantos retos · fundo neutro · ponto colorido
+ *   situação   [ ◈ Proposta enviada ]   cantos QUADRADOS · fundo neutro · ponto colorido
  *   etiqueta   ( ● Black Friday )       pílula cheia — inalterada
  *
  * Forma distingue melhor que cor: sobrevive a daltonismo, ao tema claro e à
@@ -33,7 +33,7 @@ export function StageBadge({ stage, stages, size = 'sm', className }: StageBadge
   const def = stages.find((s) => s.key === stage)
 
   const shell = cn(
-    'inline-flex items-center gap-1.5 font-medium rounded-md border',
+    'inline-flex items-center gap-1.5 font-medium rounded-none border',
     'bg-surface-800 border-surface-700',
     size === 'sm' ? 'text-[11px] px-2 py-0.5' : 'text-xs px-2.5 py-1',
     className,
