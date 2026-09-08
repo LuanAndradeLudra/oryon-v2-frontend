@@ -341,21 +341,38 @@ describe('App routes — SCRUM-994/W0.1', () => {
       .toBeInTheDocument()
   }, SLOW)
 
-  it('/campaigns/new mostra o esqueleto do Composer', async () => {
+  // Atualizado pela D2 (SCRUM-1020), como o `coord/APP-ROUTES-INVENTARIO.md`
+  // avisou desde o começo: estas duas asserções cobriam o esqueleto da W0.1
+  // ("Composer em construção"), que era o placeholder à espera desta história.
+  // Com a página real montada, o texto do esqueleto não existe mais em
+  // produção — `grep` fora de `__tests__` só o acha em comentário.
+  //
+  // ÂNCORA ESTRUTURAL, e não o texto novo: o `<input aria-label="Nome do
+  // disparo">` do TopBar existe com ou sem template escolhido, com ou sem
+  // contatos carregados, e não depende de nenhuma chamada ter voltado.
+  // Trocar um texto por outro herdaria a dependência de estado que o
+  // inventário manda evitar — e que timeout nenhum conserta.
+  it('/campaigns/new monta o Composer', async () => {
     await renderAt('/campaigns/new')
-    // Esqueleto barato, mas é a primeira rota a pagar este import dinâmico
-    // (325 ms medidos, ociosa) — cabe na janela de 1 s do `findBy*` só
-    // enquanto a máquina estiver folgada. Regra 1 + 2 do bloco do SLOW.
-    expect(await screen.findByText(/Composer em construção/i, {}, { timeout: SLOW })).toBeInTheDocument()
+    // A página real tem um grafo de módulos muito maior que o esqueleto que
+    // estava aqui (os 4 blocos, o construtor de público da D6, o
+    // `TemplatePreview`), e a rota é `lazy`: sem o SLOW o teste morre no
+    // fallback de Suspense, com o spinner no DOM — foi assim que ele falhou
+    // antes desta correção. 391 ms medidos AQUI, nesta árvore, já com o
+    // aquecimento do `beforeAll` do #167. Regra 1 + 2 do bloco acima.
+    expect(await screen.findByRole('textbox', { name: 'Nome do disparo' }, { timeout: SLOW })).toBeInTheDocument()
   }, SLOW)
 
-  it('/campaigns/:id/edit reusa o esqueleto do Composer', async () => {
+  it('/campaigns/:id/edit reusa o Composer', async () => {
     await renderAt('/campaigns/abc/edit')
-    // Regra 3: 16 ms porque o chunk já veio no teste acima. A folga aqui é
-    // DERIVADA — medido na mutação: com o `/campaigns/new` falhando cedo,
-    // este teste vira o importador e sobe para 338 ms. Se aquele teste sair
-    // ou mudar de ordem, este passa a pagar o import e precisa da regra 1.
-    expect(await screen.findByText(/Composer em construção/i)).toBeInTheDocument()
+    // Regra 3, herdada: 119 ms medidos, porque o chunk já veio no teste acima.
+    // A folga aqui é DERIVADA — se aquele teste sair ou mudar de ordem, este
+    // passa a pagar o import (391 ms) e precisa da regra 1.
+    const titulo = await screen.findByRole('textbox', { name: 'Nome do disparo' })
+    // E prova que o `:id` CHEGOU na página, em vez de só provar que a rota
+    // casou: os dois casos procuravam o mesmo texto e não distinguiam um do
+    // outro. O placeholder é o que muda entre criar e editar.
+    expect(titulo).toHaveAttribute('placeholder', 'Editar disparo')
   })
 
   // Atualizado pelo D3 (SCRUM-1022): esta asserção cobria o esqueleto do W0.1

@@ -15,9 +15,20 @@
 import { Calendar, Gauge, MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import type { WhatsAppNumber } from '@/types'
 import type { WhatsAppNumberUsage } from '@/types/campaignsV2'
 import { THROUGHPUT_PER_SECOND, formatDuration } from './summaries'
+
+/** O minimo que o bloco precisa de uma linha. Estrutural de proposito: o
+ *  `DraftLineOption` do nucleo tem so' id/telefone/rotulo hoje, e o
+ *  `WhatsAppNumber` completo tambem serve. `isActive` opcional porque o
+ *  nucleo ainda nao o carrega — ausente vale como "nao sei", e nao como
+ *  desconectada. No dia em que ele carregar, a linha offline apaga sozinha. */
+export interface ComposerLine {
+  id: string
+  displayPhoneNumber: string
+  label?: string
+  isActive?: boolean
+}
 
 
 export type ScheduleMode = 'now' | 'later'
@@ -40,7 +51,7 @@ interface BlockEnvioProps {
   onScheduleMode: (m: ScheduleMode) => void
   scheduledAt: string
   onScheduledAt: (v: string) => void
-  lines: WhatsAppNumber[]
+  lines: ComposerLine[]
   whatsappNumberId: string | null
   onLineChange: (id: string) => void
   /** Uso/qualidade por linha (BE.5). `null` = endpoint não implantado: some a
@@ -145,7 +156,7 @@ export function BlockEnvio({
 function LineOption({
   line, usage, selected, onSelect,
 }: {
-  line: WhatsAppNumber
+  line: ComposerLine
   usage: WhatsAppNumberUsage | null
   selected: boolean
   onSelect: () => void
