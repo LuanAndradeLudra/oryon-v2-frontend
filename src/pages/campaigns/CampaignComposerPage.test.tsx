@@ -13,7 +13,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { hasAnyCondition } from '@/components/campaigns/audience/segmentBuilder'
 import type { Contact, WhatsAppTemplate } from '@/types'
+
+type DefinicaoDeTeste = Parameters<typeof hasAnyCondition>[0]
+
+const DEFINICAO: DefinicaoDeTeste = {
+  groups: [{
+    id: 'grp_1',                       // ← id de UI, não pode viajar
+    op: 'and',
+    // Forma REAL de uma condicao do construtor (`value`, no singular): com
+    // `values` a linha conta como vazia para o `isConditionFilled`, e o mock
+    // deixaria de espelhar o driver que ele imita.
+    conditions: [{ id: 'cond_1', field: 'tags', operator: 'includes_any', value: ['vip'] }],
+  }],
+  exclude: { optOut: true },
+}
 
 const setAudience = vi.fn()
 const setSelectedTemplate = vi.fn()
@@ -35,25 +50,35 @@ vi.mock('@/components/campaigns/composer/useTestSend', () => ({
   useTestSend: () => ({ send: vi.fn(), sending: false, available: false, ready: false }),
 }))
 
+// A lista paginada e' do Crivo e fala com o servidor; aqui interessa o que a
+// pagina PEDE a ela — sobretudo enquanto o modal esta fechado.
+const pedidosDeLista: { definition: DefinicaoDeTeste; page: number }[] = []
+vi.mock('@/components/campaigns/audience/useAudiencePreview', () => ({
+  useAudiencePreview: (definition: DefinicaoDeTeste, opts: { page: number }) => {
+    pedidosDeLista.push({ definition, page: opts.page })
+    return {
+      data: [{ id: 'c1', displayName: 'Contato 1', waId: '5511999990001', stage: null }],
+      total: 130, page: opts.page, limit: 50,
+      loading: false, error: null, available: true,
+    }
+  },
+}))
+
 // O `AudienceBlock` real é do Crivo e tem rede própria; aqui interessa só o
 // que a página faz com o que ele devolve.
 vi.mock('@/components/campaigns/audience/AudienceBlock', () => ({
-  AudienceBlock: ({ onChange }: { onChange: (d: unknown) => void }) => (
-    <button
-      type="button"
-      onClick={() => onChange({
-        definition: {
-          groups: [{
-            id: 'grp_1',                       // ← id de UI, não pode viajar
-            op: 'and',
-            conditions: [{ id: 'cond_1', field: 'tag', operator: 'in', values: ['vip'] }],
-          }],
-          exclude: { optOut: true },
-        },
-      })}
-    >
-      simular edição de público
-    </button>
+  AudienceBlock: ({ onChange, onViewAll }: {
+    onChange: (d: unknown) => void
+    onViewAll: (d: unknown) => void
+  }) => (
+    <>
+      <button type="button" onClick={() => onChange({ definition: DEFINICAO })}>
+        simular edição de público
+      </button>
+      <button type="button" onClick={() => onViewAll(DEFINICAO)}>
+        simular ver os N
+      </button>
+    </>
   ),
 }))
 
@@ -182,5 +207,47 @@ describe('CampaignComposerPage — fronteira do público', () => {
     // …e o que importa sobreviveu à conversão.
     expect(enviado.definition.groups[0].op).toBe('and')
     expect(enviado.definition.exclude).toEqual({ optOut: true })
+  })
+})
+
+describe('CampaignComposerPage — "ver os N" abre a lista paginada', () => {
+  beforeEach(() => { pedidosDeLista.length = 0 })
+
+  it('com o modal fechado, a lista nunca e' + '́' + ' pedida ao servidor', async () => {
+    await renderAt('/campaigns/new')
+    // `hasAnyCondition` e' o MESMO criterio que o `useAudiencePreview` usa para
+    // desistir da rede: linha em branco nao conta como condicao. Afirmar isso e'
+    // afirmar que a pagina nao dispara consulta a cada tecla no construtor.
+    expect(hasAnyCondition(pedidosDeLista.at(-1)!.definition)).toBe(false)
+    expect(screen.queryByText('Contato 1')).not.toBeInTheDocument()
+  })
+
+  it('o `onViewAll` do AudienceBlock abre o modal com a definicao daquele instante', async () => {
+    await renderAt('/campaigns/new')
+    fireEvent.click(screen.getByRole('button', { name: /Público/ }))
+    fireEvent.click(screen.getByRole('button', { name: /simular ver os N/ }))
+
+    expect(await screen.findByText('Contato 1')).toBeInTheDocument()
+    expect(screen.getByText('130 contatos nesta lista')).toBeInTheDocument()
+    expect(hasAnyCondition(pedidosDeLista.at(-1)!.definition)).toBe(true)
+  })
+
+  it('fechar o modal volta a nao pedir lista', async () => {
+    await renderAt('/campaigns/new')
+    fireEvent.click(screen.getByRole('button', { name: /Público/ }))
+    fireEvent.click(screen.getByRole('button', { name: /simular ver os N/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar e continuar' }))
+
+    await waitFor(() => expect(screen.queryByText('Contato 1')).not.toBeInTheDocument())
+    expect(hasAnyCondition(pedidosDeLista.at(-1)!.definition)).toBe(false)
+  })
+
+  it('a paginacao do modal chega ao hook', async () => {
+    await renderAt('/campaigns/new')
+    fireEvent.click(screen.getByRole('button', { name: /Público/ }))
+    fireEvent.click(screen.getByRole('button', { name: /simular ver os N/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Próxima página' }))
+
+    await waitFor(() => expect(pedidosDeLista.at(-1)?.page).toBe(2))
   })
 })
