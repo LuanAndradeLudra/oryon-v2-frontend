@@ -93,12 +93,16 @@ beforeEach(() => {
 })
 
 describe('NewDealDialog — 2 passos', () => {
-  it('só mostra funis de VENDA (processo continua no "Adicionar ao funil" de 1 clique)', () => {
+  // Antes o diálogo escondia os funis de processo sem dizer por quê — metade
+  // dos funis do tenant sumia do seletor. Agora lista os dois, com o tipo no
+  // rótulo; o caminho de 1 clique pelo "Adicionar ao funil ▾" continua existindo.
+  it('lista os DOIS tipos de funil, com o tipo no rótulo', () => {
     renderDialog()
     const funil = screen.getByLabelText(/Funil/) as HTMLSelectElement
-    const nomes = Array.from(funil.options).map((o) => o.textContent)
-    expect(nomes.join(' ')).toContain('Vendas')
-    expect(nomes.join(' ')).not.toContain('Pós-venda')
+    const nomes = Array.from(funil.options).map((o) => o.textContent).join(' ')
+    expect(nomes).toContain('Vendas')
+    expect(nomes).toContain('Pós-venda')
+    expect(nomes).toContain('Processo ·')
   })
 
   it('não avança sem título e mostra o erro no campo', () => {
@@ -258,10 +262,13 @@ describe('NewDealDialog — regressões da revisão', () => {
     expect('stageId' in body).toBe(false)
   })
 
-  it('com funis, mas nenhum de venda, continua barrando (não há onde criar)', () => {
+  // Só funil de PROCESSO deixou de ser um beco sem saída: o diálogo o aceita,
+  // vira um passo só (processo não tem valor nem itens) e cria "registro".
+  it('só com funil de processo: cria em um passo, com o substantivo do tipo', async () => {
     renderDialog({ pipelines: [PROCESSO] })
-    avancar()
-    expect(screen.getByText('Selecione um funil.')).toBeInTheDocument()
-    expect(deals.create).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /Criar registro/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Continuar' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Criar registro/i }))
+    await waitFor(() => expect(deals.create).toHaveBeenCalled())
   })
 })
