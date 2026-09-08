@@ -311,7 +311,30 @@ export interface AgentPromptRequest {
   }
 }
 
-export async function generateAgentPrompt(request: AgentPromptRequest): Promise<string> {
+/**
+ * De onde veio o prompt. O backend pode falhar e o caminho local assume — os
+ * dois devolvem texto bom, mas NÃO são a mesma promessa.
+ */
+export type PromptSource = 'ai' | 'local_fallback'
+
+/**
+ * Igual ao `generateAgentPrompt`, mas DIZENDO de onde veio o texto.
+ *
+ * Existe porque "Regenerar" promete IA, e com a chave da Anthropic vencida
+ * (SCRUM-1028) o caminho de hoje é o fallback local — que monta o prompt a
+ * partir da configuração do wizard, sem modelo nenhum. Devolver a mesma string
+ * nos dois casos faz o botão AFIRMAR o que não aconteceu, e quem clica troca um
+ * prompt que está no ar acreditando que uma IA o reescreveu. É a mesma família
+ * do chip que afirma o que não mediu.
+ *
+ * É função NOVA em vez de trocar o retorno da antiga de propósito: o
+ * `generateAgentPrompt` é mockado com `mockResolvedValue('')` em suíte de
+ * outro dono (`src/__tests__/App.routes.test.tsx`), e mudar o tipo quebraria
+ * aquele arquivo por uma razão que não é dele. Casca não mexe em mock nenhum.
+ */
+export async function generateAgentPromptWithSource(
+  request: AgentPromptRequest,
+): Promise<{ prompt: string; source: PromptSource }> {
   const { userId, tenantId, actorName } = readSession()
   const t0 = Date.now()
   try {
@@ -356,7 +379,7 @@ export async function generateAgentPrompt(request: AgentPromptRequest): Promise<
       details: { prompt_length: result.prompt.length, sector: request.identity.sector },
       source: 'ui',
     })
-    return result.prompt
+    return { prompt: result.prompt, source: 'ai' }
   } catch (err) {
     console.error('[generate-prompt] backend call failed — using local fallback. Reason:', err instanceof Error ? err.message : err)
     // Local fallback: generate a baseline prompt from the wizard data
@@ -391,8 +414,13 @@ export async function generateAgentPrompt(request: AgentPromptRequest): Promise<
       details: { prompt_length: prompt.length, source: 'local_fallback', sector: request.identity.sector },
       source: 'ui',
     })
-    return prompt
+    return { prompt, source: 'local_fallback' }
   }
+}
+
+/** Só o texto, que é tudo o que o wizard precisa. Comportamento inalterado. */
+export async function generateAgentPrompt(request: AgentPromptRequest): Promise<string> {
+  return (await generateAgentPromptWithSource(request)).prompt
 }
 
 // ─── Local prompt generator (fallback when backend unreachable) ───────────────
