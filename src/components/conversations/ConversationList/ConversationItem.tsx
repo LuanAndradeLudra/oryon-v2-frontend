@@ -189,7 +189,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             {tags?.slice(0, 2).map((tag) => (
               <span
                 key={tag.id}
-                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                className="color-chip inline-flex items-center gap-1 whitespace-nowrap text-[10px] px-1.5 py-0.5 rounded-full font-medium"
                 style={{ ['--chip']: tag.color } as React.CSSProperties}
               >
                 <span className="w-1.5 h-1.5 rounded-full chip-dot" />
@@ -207,7 +207,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 é genérico de propósito (ver GUARD_LIST_BADGE_TITLE). */}
             {hasRecentAnomaly && (
               <span
-                className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium border"
+                className="color-chip inline-flex items-center gap-1 whitespace-nowrap text-[10px] px-1.5 py-0.5 rounded-full font-medium border"
                 style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
                 title={GUARD_LIST_BADGE_TITLE}
               >

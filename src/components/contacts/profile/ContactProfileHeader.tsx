@@ -201,8 +201,10 @@ export function ContactProfileHeader({
               {window24h.label}
             </span>
           )}
-          {/* P2/A3 (SCRUM-965): "Novo negócio" é o único primary da ficha —
-              "Conversar" virou secondary, como nas outras superfícies. */}
+          {/* SCRUM-965 tinha deixado "Novo negócio" como único primary da ficha.
+              O acento de marca com sombra colorida pesava demais para uma ação
+              que convive com "Conversar" e com o menu de funis: as três agora
+              são sóbrias, e a hierarquia fica na ordem, não na cor. */}
           <Button size="sm" variant="secondary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={onOpenChat}>
             Conversar
           </Button>
@@ -212,7 +214,7 @@ export function ContactProfileHeader({
           {salesPipeline && (
             <Button
               size="sm"
-              variant="primary"
+              variant="secondary"
               leftIcon={<Handshake className="w-3.5 h-3.5" />}
               onClick={() => addToPipeline.requestAdd({
                 contactId: contact.id,

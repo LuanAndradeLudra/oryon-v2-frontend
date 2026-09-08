@@ -4,7 +4,6 @@ import {
   Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
-import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
@@ -415,25 +414,13 @@ export function ChatHeader({
 
       {/* ── Right: actions ────────────────────────────────────── */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        {/* A3 (SCRUM-925): ação PRIMÁRIA da superfície. O "Adicionar ao funil ▾"
-            continua ao lado — para funil de processo e como atalho de quem já
-            sabe o funil —, mas criar negócio deixa de estar escondido dentro
-            de um menu (P2: uma ação primária visível por superfície). */}
-        {!isMobile && salesPipeline && (
-          <Button
-            size="sm"
-            variant="primary"
-            leftIcon={<Handshake className="w-3.5 h-3.5" />}
-            onClick={() => addToPipeline.requestAdd({
-              contactId: contact.id,
-              contactName: contact.displayName || contact.waId,
-              pipeline: salesPipeline,
-              conversationId: conversation.id,
-            })}
-          >
-            Novo {vocab.deal.toLowerCase()}
-          </Button>
-        )}
+        {/* "Novo negócio" NÃO mora mais aqui. A A3 (SCRUM-925) o trouxe para o
+            cabeçalho quando criar negócio só existia escondido dentro do menu
+            de funis; desde então o painel da direita ganhou a mesma ação, com
+            a lista de negócios do contato do lado — que é o lugar onde ela faz
+            sentido. Dois botões idênticos na mesma tela é ruído, não atalho.
+            Continua a um clique em: painel do contato (à direita) e
+            "Adicionar ao funil ▾" (aqui ao lado). */}
         {!isMobile && (
           <AddToPipelineMenu
             contactId={contact.id}

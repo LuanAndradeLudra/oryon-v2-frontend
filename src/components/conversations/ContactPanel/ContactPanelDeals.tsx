@@ -99,10 +99,10 @@ export function ContactPanelDeals({
   const wonCents = salesDeals.filter((d) => d.status === 'won').reduce((s, d) => s + (d.amountCents ?? 0), 0)
 
   return (
-    <div className="px-4 py-3 border-b border-surface-800" data-testid="panel-pipelines">
+    <div className="px-4 py-3 border-t border-b border-surface-800" data-testid="panel-pipelines">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
-          <KanbanSquare className="w-3 h-3" /> Funis
+          <KanbanSquare className="w-3 h-3" /> {vocab.deals}
           <span className="text-surface-600 normal-case tracking-normal" data-testid="panel-pipelines-count">
             · {deals === null ? '…' : `${open.length} ${open.length === 1 ? 'aberto' : 'abertos'}`}
           </span>
@@ -113,11 +113,11 @@ export function ContactPanelDeals({
 
       {deals !== null && open.length === 0 && closed.length === 0 && !error && (
         <div className="flex flex-col items-start gap-2">
-          <p className="text-xs text-surface-600">Nenhum registro ainda.</p>
+          <p className="text-xs text-surface-600">Nenhum {vocab.deal.toLowerCase()} ainda.</p>
           {salesPipeline && (
             <Button
               size="sm"
-              variant="primary"
+              variant="secondary"
               leftIcon={<Handshake className="w-3.5 h-3.5" />}
               onClick={() => addToPipeline.requestAdd({ contactId, contactName, pipeline: salesPipeline, conversationId })}
             >
