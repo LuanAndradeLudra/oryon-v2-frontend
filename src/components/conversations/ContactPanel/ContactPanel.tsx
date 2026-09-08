@@ -313,7 +313,9 @@ export function ContactPanel({
             precisa ver ao abrir o painel é se este contato já tem negócio
             aberto e em que etapa — antes de etiquetas ou de quem atende.
             Ficava depois de "Agente responsável", exigindo rolagem. */}
-        <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
+        {isFeatureVisible('contactPanelDeals') && (
+          <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
+        )}
 
         {/* Etiquetas — logo abaixo dos negócios */}
         <Section
