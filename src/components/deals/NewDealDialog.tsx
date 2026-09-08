@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { dealsApi, contactsApi, usersApi } from '@/services/api'
 import { getPipelineStages, getActivePipelines, getApiErrorMessage, cn } from '@/lib/utils'
-import { pipelineKindOf } from '@/lib/pipelineKinds'
+import { pipelineKindOf, pipelineKindOption, pipelineNoun } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
 import { DealItemsEditor } from './DealItemsEditor'
 import { itemsTotalCents, toLineItemPayload, validateItems, type DealItemDraft } from './dealItems'
@@ -109,10 +109,23 @@ export function NewDealDialog({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Antes só funis de VENDA entravam aqui, sem dizer por quê — metade dos
+  // funis do tenant simplesmente não aparecia. Agora lista os dois tipos, com
+  // o tipo no rótulo; escolher um de processo adapta o diálogo (sem passo de
+  // valor, substantivo próprio). O caminho de 1 clique pelo "Adicionar ao
+  // funil ▾" continua existindo — este modal passa a ser TAMBÉM capaz.
   const salesPipelines = useMemo(
-    () => getActivePipelines(pipelines).filter((p) => pipelineKindOf(p) === 'sales'),
+    () => getActivePipelines(pipelines),
     [pipelines],
   )
+  const selectedPipeline = useMemo(
+    () => pipelines.find((p) => p.id === pipelineId) ?? null,
+    [pipelines, pipelineId],
+  )
+  // Funil de processo não tem valor nem itens (§4 do Modelo B): o passo 2
+  // deixa de existir, e o substantivo do diálogo passa a ser o do tipo.
+  const isProcess = !!selectedPipeline && pipelineKindOf(selectedPipeline) === 'process'
+  const noun = selectedPipeline ? pipelineNoun(selectedPipeline) : vocab.deal.toLowerCase()
   const contact = contactId ? { id: contactId, name: contactName ?? '' } : pickedContact
   const stages = getPipelineStages(pipelines, pipelineId)
   // Tenant SEM o `FF_MULTI_PIPELINE`: o `CRMConfigContext` entrega `pipelines:
@@ -311,13 +324,15 @@ export function NewDealDialog({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
           <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
-            {salesPipelines.length === 0 && <option value="">Nenhum funil de venda disponível</option>}
+            {salesPipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
             {salesPipelines.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (padrão)' : ''}</option>
+              <option key={p.id} value={p.id}>
+                {pipelineKindOption(pipelineKindOf(p)).label} · {p.name}{p.isDefault ? ' (padrão)' : ''}
+              </option>
             ))}
           </Select>
         </FormField>
-        <FormField label="Etapa" hint="Coluna em que o negócio nasce.">
+        <FormField label="Etapa" hint={`Coluna em que o ${noun} nasce.`}>
           <Select value={stageId} onChange={(e) => setStageId(e.target.value)}>
             {stages.length === 0 && <option value="">Nenhuma etapa disponível</option>}
             {stages.map((s) => (
@@ -420,7 +435,14 @@ export function NewDealDialog({
         <p role="alert" className="text-xs text-danger">{error}</p>
       )}
       <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'justify-end')}>
-        {step === 'quem' ? (
+        {isProcess ? (
+          <>
+            <Button variant="ghost" onClick={onClose} className={cn(isMobile && 'min-h-11')}>Cancelar</Button>
+            <Button variant="primary" loading={saving} onClick={() => submit()} className={cn(isMobile && 'min-h-11')}>
+              Criar {noun}
+            </Button>
+          </>
+        ) : step === 'quem' ? (
           <>
             <Button variant="ghost" onClick={onClose} className={cn(isMobile && 'min-h-11')}>Cancelar</Button>
             <Button variant="primary" onClick={goToQuanto} className={cn(isMobile && 'min-h-11')}>Continuar</Button>
@@ -440,7 +462,7 @@ export function NewDealDialog({
           <>
             <Button variant="ghost" onClick={() => setStep('quem')} className={cn(isMobile && 'min-h-11')}>Voltar</Button>
             <Button variant="primary" loading={saving} onClick={() => submit()} className={cn(isMobile && 'min-h-11')}>
-              Criar {vocab.deal.toLowerCase()}
+              Criar {noun}
             </Button>
           </>
         )}
@@ -450,20 +472,23 @@ export function NewDealDialog({
 
   const body: ReactNode = (
     <div className="flex flex-col gap-4">
-      <Stepper
-        sections={[
-          { id: 'quem', label: 'Quem e onde', complete: step1Complete },
-          { id: 'quanto', label: 'Quanto', complete: step === 'quanto' && (amountTouched || hasItems) },
-        ]}
-        active={step}
-        onJump={(id) => { if (id === 'quem') setStep('quem'); else goToQuanto() }}
-      />
-      {step === 'quem' ? stepQuem : stepQuanto}
+      {/* Processo não tem valor nem itens: um só passo, sem stepper. */}
+      {!isProcess && (
+        <Stepper
+          sections={[
+            { id: 'quem', label: 'Quem e onde', complete: step1Complete },
+            { id: 'quanto', label: 'Quanto', complete: step === 'quanto' && (amountTouched || hasItems) },
+          ]}
+          active={step}
+          onJump={(id) => { if (id === 'quem') setStep('quem'); else goToQuanto() }}
+        />
+      )}
+      {isProcess || step === 'quem' ? stepQuem : stepQuanto}
       {footer}
     </div>
   )
 
-  const heading = `Novo ${vocab.deal.toLowerCase()}`
+  const heading = `Novo ${noun}`
 
   if (isMobile) {
     return (

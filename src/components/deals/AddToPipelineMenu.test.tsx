@@ -38,7 +38,7 @@ describe('AddToPipelineMenu (F9)', () => {
     expect(screen.getByTestId('add-to-pipeline-vendas')).toBeInTheDocument()
     expect(screen.getByTestId('add-to-pipeline-suporte')).toBeInTheDocument()
     expect(screen.queryByTestId('add-to-pipeline-arq')).toBeNull()
-    expect(screen.getByLabelText('Processo')).toBeInTheDocument()
+    expect(screen.getByText('Processo')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByTestId('add-to-pipeline-suporte')).toBeEnabled())
     fireEvent.click(screen.getByTestId('add-to-pipeline-suporte'))
     expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: 'suporte' }))

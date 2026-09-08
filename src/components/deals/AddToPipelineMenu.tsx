@@ -114,8 +114,13 @@ export function AddToPipelineMenu({ contactId, contactName, onPick, openDeals: o
               )}
             >
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-              <KindIcon className="w-3 h-3 flex-shrink-0 opacity-80" aria-label={pipelineKindOption(pipelineKindOf(p)).label} />
+              <KindIcon className="w-3 h-3 flex-shrink-0 opacity-80" aria-hidden />
               <span className="flex-1 truncate">{p.name}</span>
+              {/* O ícone sozinho não ensina: quem nunca viu não sabe que
+                  alvo = venda e ciclo = processo. A legenda diz. */}
+              <span className="text-[10px] text-surface-500 flex-shrink-0">
+                {pipelineKindOption(pipelineKindOf(p)).label}
+              </span>
               {disabled ? (
                 <span className="text-[10px] whitespace-nowrap">já está{stageLabel ? ` · ${stageLabel}` : ''}</span>
               ) : existing ? (
