@@ -780,6 +780,29 @@ code, pre, kbd, samp {
 }
 /* Light: contact-panel section dividers use surface-800 (= #FFFFFF in light, so
    invisible). Remap them to surface-700 (#D9DCE5). Dark keeps surface-800. */
+/* Ambiente do funil: brilho radial no topo da página, derivado da COR DO
+   FUNIL (`--pipeline-tint`, injetada inline). Identidade por funil — trocar de
+   "Propostas 2026" para "Vendas B2B" é perceptível, não só trocar de tipo.
+   A intensidade é menor no tema claro: a mesma mistura que fica discreta sobre
+   fundo escuro vira mancha sobre fundo quase branco. */
+.pipeline-ambient {
+  background-image: radial-gradient(
+    140% 340px at 50% 0%,
+    color-mix(in srgb, var(--pipeline-tint) 22%, transparent) 0%,
+    color-mix(in srgb, var(--pipeline-tint) 8%, transparent) 45%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+}
+[data-theme="light"] .pipeline-ambient {
+  background-image: radial-gradient(
+    140% 340px at 50% 0%,
+    color-mix(in srgb, var(--pipeline-tint) 14%, transparent) 0%,
+    color-mix(in srgb, var(--pipeline-tint) 5%, transparent) 45%,
+    transparent 100%
+  );
+}
+
 [data-theme="light"] .panel-divider {
   border-color: var(--color-surface-700);
 }

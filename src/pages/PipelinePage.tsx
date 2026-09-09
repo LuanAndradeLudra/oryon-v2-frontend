@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams, Navigate } from 'react-router-dom'
 import { ArrowLeft, AlertTriangle, LayoutGrid, BarChart3 } from 'lucide-react'
 import { pipelinesApi } from '@/services/api'
-import { getDefaultPipeline, getActivePipelines, cn, hexToRgba } from '@/lib/utils'
+import { getDefaultPipeline, getActivePipelines, cn } from '@/lib/utils'
 import { pipelineKindOf, pipelineKindOption } from '@/lib/pipelineKinds'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
@@ -150,11 +150,8 @@ export function PipelinePage() {
 
   return (
     <div
-      className="flex flex-col h-full bg-surface-950"
-      style={{
-        backgroundImage: `radial-gradient(120% 220px at 50% 0%, ${hexToRgba(pipeline.color, 0.06)} 0%, transparent 100%)`,
-        backgroundRepeat: 'no-repeat',
-      }}
+      className="pipeline-ambient flex flex-col h-full bg-surface-950"
+      style={{ ['--pipeline-tint' as string]: pipeline.color } as React.CSSProperties}
     >
       {isMobile && <MobilePageHeader title={pipeline.name} />}
       {header}
