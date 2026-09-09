@@ -146,10 +146,15 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                 próprio, aresta na cor da etapa e respiro em volta. Tirado o
                 marcador textual, é a superfície que precisa dizer "é aqui" —
                 peso de fonte sozinho não sustenta isso numa lista de quatro. */}
+            {/* Duas camadas de propósito: a de FORA espaça, a de DENTRO pinta.
+                Antes eram a mesma, e o `pb-3` que separa um passo do outro
+                ficava DENTRO da caixa pintada — o bloco da etapa atual descia
+                12 px a mais e encostava no título de baixo. Espaçamento em
+                padding só funciona quando nada é pintado por cima dele. */}
+            <span className={cn('flex-1 min-w-0', !ultimo && 'pb-3')}>
             <span
               className={cn(
-                'flex items-baseline justify-between gap-3 flex-1 min-w-0',
-                !ultimo && 'pb-3',
+                'flex items-baseline justify-between gap-3 min-w-0',
                 // `-my-1 py-1` se anulam: o bloco engorda para os lados e para
                 // dentro, mas NÃO empurra a linha — o título fica exatamente
                 // onde estaria sem ele, alinhado ao ponto da trilha.
@@ -194,6 +199,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                       ? formatRelativeTime(quando)
                       : '—'}
               </span>
+            </span>
             </span>
           </li>
         )
