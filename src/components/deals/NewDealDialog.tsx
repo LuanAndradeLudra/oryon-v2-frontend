@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Search, Plus, CalendarDays, Wallet } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { BottomSheet } from '@/components/ui/BottomSheet'
@@ -103,6 +104,7 @@ export function NewDealDialog({
   onConflict,
 }: NewDealDialogProps) {
   const isMobile = useIsMobile()
+  const semMovimento = useReducedMotion()
   const { user } = useAuth()
   const { vocab } = useTenantVocab()
 
@@ -559,7 +561,11 @@ export function NewDealDialog({
   // Modelo B): o bloco simplesmente não é oferecido.
   const blocoValor = !isProcess && (
     valorAberto ? (
-      <div className="flex flex-col gap-3 rounded-xl border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))]">
+      <motion.div
+        initial={semMovimento ? false : { height: 0, opacity: 0 }}
+        animate={{ height: 'auto', opacity: 1 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col gap-3 rounded-xl border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))] overflow-hidden">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-end justify-between gap-3">
             <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">
@@ -595,16 +601,22 @@ export function NewDealDialog({
           />
         </div>
 
-        {diverges && (
-          <button
-            type="button"
-            onClick={() => { setAmountCents(itemsTotal); setAmountTouched(true) }}
-            className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 min-h-11 sm:min-h-0 cursor-pointer"
-          >
-            Usar a soma dos itens ({formatBRL(itemsTotal)})
-          </button>
-        )}
-      </div>
+        <AnimatePresence initial={false}>
+          {diverges && (
+            <motion.button
+              type="button"
+              initial={semMovimento ? false : { opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => { setAmountCents(itemsTotal); setAmountTouched(true) }}
+              className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 min-h-11 sm:min-h-0 cursor-pointer"
+            >
+              Usar a soma dos itens ({formatBRL(itemsTotal)})
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </motion.div>
     ) : (
       <button
         type="button"

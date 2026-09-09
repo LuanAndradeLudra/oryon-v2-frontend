@@ -284,3 +284,69 @@ describe('DealItemsEditor — desconto espelhado R$ ↔ % (padrão Moskit)', () 
     expect(dump()[0]).toMatchObject({ productId: null, unitPriceCents: 0, discountCents: 0 })
   })
 })
+
+// ─── Acordeão (09/09) ───────────────────────────────────────────────────────
+// Cada item aberto é um cartão com sete controles; três empilhados passavam de
+// 500 px e o diálogo virava uma coluna de rolagem. Fechado, o item vira a linha
+// que se confere depois de preencher.
+describe('DealItemsEditor — acordeão', () => {
+  const seedCatalogo = (uid: string): DealItemDraft => ({
+    _uid: uid,
+    kind: 'catalog',
+    productId: 'prod-1',
+    productName: 'Plano Essencial',
+    variationLabel: 'Particular',
+    unitPriceCents: 10000,
+    quantity: 1,
+    discountCents: 0,
+  })
+
+  it('item único fica aberto — não há o que comparar', () => {
+    render(<Harness initial={[seedCatalogo('u1')]} />)
+    expect(screen.getByLabelText('Preço unitário')).toBeInTheDocument()
+  })
+
+  it('com dois itens, só o aberto mostra os campos', () => {
+    render(<Harness initial={[seedCatalogo('u1'), seedCatalogo('u2')]} />)
+    // Nenhum aberto por padrão: os dois são linhas compactas.
+    expect(screen.queryByLabelText('Preço unitário')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Editar Plano Essencial/ })).toHaveLength(2)
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Editar Plano Essencial/ })[0])
+    expect(screen.getAllByLabelText('Preço unitário')).toHaveLength(1)
+  })
+
+  it('adicionar um item fecha o anterior e abre o novo', () => {
+    render(<Harness initial={[seedCatalogo('u1')]} />)
+    expect(screen.getByLabelText('Preço unitário')).toBeInTheDocument()
+    addCustom()
+    // O novo nasce aberto (é personalizado, ainda sem nome) e o anterior fecha.
+    expect(screen.getByLabelText('Nome do item personalizado')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Editar Plano Essencial/ })).toBeInTheDocument()
+  })
+
+  it('a linha fechada mostra o que se confere: nome, quantidade e subtotal', () => {
+    render(<Harness initial={[{ ...seedCatalogo('u1'), quantity: 3 }, seedCatalogo('u2')]} />)
+    const linha = screen.getAllByRole('button', { name: /Editar Plano Essencial/ })[0]
+    expect(linha).toHaveTextContent('Plano Essencial')
+    expect(linha).toHaveTextContent('Particular')
+    expect(linha).toHaveTextContent('3 ×')
+    expect(linha).toHaveTextContent('R$ 300,00')
+  })
+
+  // Esconder um item pela metade é pior que a altura: sem identidade a linha
+  // compacta não teria o que mostrar.
+  it('item sem identidade não fecha, nem com outro aberto', () => {
+    render(<Harness initial={[seedCatalogo('u1')]} />)
+    addCatalog()
+    // O novo é do catálogo e ainda não tem produto — segue aberto.
+    expect(screen.getByRole('combobox', { name: 'Produto do catálogo' })).toBeInTheDocument()
+  })
+
+  it('remover funciona direto da linha fechada', () => {
+    render(<Harness initial={[seedCatalogo('u1'), seedCatalogo('u2')]} />)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remover item' })[0])
+    expect(dump()).toHaveLength(1)
+  })
+})
+

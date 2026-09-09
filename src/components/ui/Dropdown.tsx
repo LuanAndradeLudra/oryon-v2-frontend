@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { motion, useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 interface DropdownProps {
@@ -45,6 +46,7 @@ function useDropdownPosition(open: boolean, align: 'left' | 'right', anchorRef: 
 }
 
 export function Dropdown({ open, onClose, anchor, children, align = 'left', className }: DropdownProps) {
+  const semMovimento = useReducedMotion()
   const wrapRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const pos = useDropdownPosition(open, align, wrapRef)
@@ -103,11 +105,18 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
     open && (
       <>
         <div className="overlay-scrim z-40" aria-hidden />
-        <div
+        <motion.div
           ref={menuRef}
           role="menu"
           aria-orientation="vertical"
           onKeyDown={handleMenuKeyDown}
+          // Entrada curta e vinda de cima: o menu nasce ancorado ao gatilho em
+          // vez de aparecer inteiro. `scale` fica de fora de propósito —
+          // o menu é posicionado por `fixed` com `top` calculado, e escalar
+          // desloca o conteúdo em relação à âncora.
+          initial={semMovimento ? false : { opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.13, ease: 'easeOut' }}
           style={{
             position: 'fixed',
             top: pos.top,
@@ -122,7 +131,7 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
           )}
         >
           {children}
-        </div>
+        </motion.div>
       </>
     )
 

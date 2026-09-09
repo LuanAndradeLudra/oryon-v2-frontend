@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { cn } from '@/lib/utils'
@@ -53,6 +54,10 @@ const isTerminal = (s: PipelineStage) => s.isWon || s.isLost
 
 export function PipelineTrail({ stages, activeId, onSelect, compact, className }: PipelineTrailProps) {
   const [listaAberta, setListaAberta] = useState(false)
+  const semMovimento = useReducedMotion()
+  // `layoutId` precisa ser único por instância: duas trilhas na mesma página
+  // (diálogo + painel, por exemplo) fariam o anel voar de uma para a outra.
+  const anelId = useId()
 
   const ordenadas = useMemo(
     () => stages.slice().sort((a, b) => a.order - b.order),
@@ -176,6 +181,8 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
               etapa={item.etapa}
               ativa={item.etapa.id === activeId}
               onSelect={onSelect}
+              anelId={anelId}
+              semMovimento={!!semMovimento}
             />
           )}
         </div>
@@ -197,10 +204,14 @@ function Passo({
   etapa,
   ativa,
   onSelect,
+  anelId,
+  semMovimento,
 }: {
   etapa: PipelineStage
   ativa: boolean
   onSelect: (id: string) => void
+  anelId: string
+  semMovimento: boolean
 }) {
   const terminal = isTerminal(etapa)
 
@@ -216,14 +227,24 @@ function Passo({
         terminal ? 'cursor-default' : 'cursor-pointer hover:bg-surface-900',
       )}
     >
-      <i
-        className={cn(
-          'w-1.5 h-1.5 rounded-full shrink-0',
-          ativa ? 'bg-brand-400 ring-[3px] ring-brand-400/20'
-            : terminal ? 'bg-surface-600' : 'bg-surface-700',
+      <span className="relative flex items-center justify-center w-1.5 h-1.5 shrink-0" aria-hidden>
+        {/* O anel é um elemento SÓ, compartilhado por todos os pontos: com
+            `layoutId` o Framer o anima de uma etapa para a outra, e a troca
+            de etapa vira um movimento em vez de um pisca-pisca. */}
+        {ativa && (
+          <motion.i
+            layoutId={anelId}
+            className="absolute inset-0 rounded-full bg-brand-400 ring-[3px] ring-brand-400/20"
+            transition={semMovimento ? { duration: 0 } : { type: 'spring', stiffness: 460, damping: 34 }}
+          />
         )}
-        aria-hidden
-      />
+        <i
+          className={cn(
+            'w-1.5 h-1.5 rounded-full transition-colors',
+            ativa ? 'bg-transparent' : terminal ? 'bg-surface-600' : 'bg-surface-700',
+          )}
+        />
+      </span>
       <span
         className={cn(
           'text-[11.5px] truncate',

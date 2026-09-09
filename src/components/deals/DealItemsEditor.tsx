@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
-import { X, Package, PenLine } from 'lucide-react'
+import { X, Package, PenLine, ChevronRight } from 'lucide-react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { cn } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
 import {
   applyProduct,
@@ -107,6 +109,33 @@ function PercentInput({ value, onCommit, id, disabled }: PercentInputProps) {
  */
 export function DealItemsEditor({ value, onChange, error, disabled, showTotal = true }: DealItemsEditorProps) {
   const { products } = useCRMConfig()
+  const semMovimento = useReducedMotion()
+
+  /**
+   * Acordeão de um item só.
+   *
+   * Cada item aberto é um cartão de edição com sete controles — dois seletores,
+   * preço, quantidade, os dois campos de desconto e o subtotal. Três itens
+   * empilhados passavam de 500 px, e o diálogo virava uma coluna de rolagem com
+   * a coluna de propriedades vazia ao lado.
+   *
+   * Fechado, o item vira uma linha: nome, variação, quantidade e subtotal — que
+   * é exatamente o que se confere depois de preencher. Só um fica aberto por
+   * vez: adicionar um novo fecha o anterior, porque é para o novo que o olho
+   * vai.
+   *
+   * Item sem identidade (catálogo sem produto, personalizado sem nome) NUNCA
+   * fecha: a linha compacta não teria o que mostrar, e esconder um item pela
+   * metade é pior que a altura.
+   */
+  const [abertoUid, setAbertoUid] = useState<string | null>(null)
+  const temIdentidade = (it: DealItemDraft) =>
+    it.kind === 'custom' ? !!it.productName.trim() : !!it.productId
+
+  const adicionar = (novo: DealItemDraft) => {
+    setAbertoUid(novo._uid)
+    onChange([...value, novo])
+  }
 
   /**
    * Âncora da reaplicação de desconto: o `MoneyInput` dispara `onChange` POR
@@ -155,6 +184,11 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
         const hasVariations = (product?.priceVariations?.length ?? 0) > 0
         const isCustom = it.kind === 'custom'
         const percent = discountPercentOf(it)
+        // Item único fica sempre aberto: fechar o que não tem com o que
+        // comparar esconde tudo e economiza uma linha. O acordeão passa a
+        // valer do SEGUNDO item em diante, que é onde a altura vira problema.
+        const aberto = value.length === 1 || abertoUid === it._uid || !temIdentidade(it)
+        const nome = isCustom ? it.productName : (product?.name ?? '')
 
         return (
           <div
@@ -162,8 +196,59 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
             // O índice entra no testid: dois itens do mesmo tipo na lista são
             // linhas distintas também para os testes.
             data-testid={`deal-item-${it.kind}-${i}`}
-            className="border border-surface-800 rounded-lg p-2.5 flex flex-col gap-2"
+            className={cn(
+              'border rounded-lg overflow-hidden transition-colors',
+              aberto ? 'border-surface-700 bg-surface-800/25' : 'border-surface-800 hover:border-surface-700',
+            )}
           >
+            {!aberto && (
+              <div className="flex items-center gap-1 p-1.5">
+                <button
+                  type="button"
+                  onClick={() => setAbertoUid(it._uid)}
+                  aria-expanded={false}
+                  aria-label={`Editar ${nome}`}
+                  className="flex-1 flex items-center gap-2 min-w-0 rounded-md px-1.5 py-1.5 text-left cursor-pointer transition-colors hover:bg-surface-800/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 shrink-0 text-surface-500" aria-hidden />
+                  <span className="text-sm text-surface-100 truncate">{nome}</span>
+                  {!isCustom && it.variationLabel && (
+                    <span className="text-xs text-surface-500 truncate shrink-0">· {it.variationLabel}</span>
+                  )}
+                  {isCustom && (
+                    <span className="text-3xs font-semibold uppercase tracking-wider text-amber-400/90 shrink-0">
+                      Negociado
+                    </span>
+                  )}
+                  <span className="ml-auto text-xs text-surface-500 tabular-nums shrink-0">{it.quantity} ×</span>
+                  <span className="text-sm font-semibold text-surface-100 tabular-nums shrink-0">
+                    {formatBRL(lineTotalCents(it))}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  disabled={disabled}
+                  className="p-1.5 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-900/20 transition-all shrink-0 disabled:opacity-50 cursor-pointer"
+                  aria-label="Remover item"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Só a ABERTURA anima. O fechamento é imediato de propósito: com
+                `exit` o Framer mantém a subárvore montada durante a saída, e um
+                cartão de sete controles continuaria no DOM — invisível, mas
+                alcançável por leitor de tela e por consulta de teste. */}
+            {aberto && (
+            <motion.div
+              initial={semMovimento ? false : { height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+            <div className="p-2.5 flex flex-col gap-2">
             <div className="flex gap-2 items-start">
               <div className="flex-1">
                 {isCustom ? (
@@ -300,6 +385,20 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
               )}
               Subtotal: <span className="tabular-nums">{formatBRL(lineTotalCents(it))}</span>
             </p>
+
+            {/* Fechar só aparece quando há o que mostrar fechado. */}
+            {temIdentidade(it) && (
+              <button
+                type="button"
+                onClick={() => setAbertoUid(null)}
+                className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 rounded"
+              >
+                Pronto
+              </button>
+            )}
+            </div>
+            </motion.div>
+            )}
           </div>
         )
       })}
@@ -313,7 +412,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => onChange([...value, emptyCatalogItem()])}
+          onClick={() => adicionar(emptyCatalogItem())}
           disabled={disabled}
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 transition-all disabled:opacity-50"
         >
@@ -321,7 +420,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
         </button>
         <button
           type="button"
-          onClick={() => onChange([...value, emptyCustomItem()])}
+          onClick={() => adicionar(emptyCustomItem())}
           disabled={disabled}
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-800 hover:bg-surface-700 text-surface-200 border border-surface-700 transition-all disabled:opacity-50"
         >

@@ -200,13 +200,33 @@ describe('DealModal — editor de itens fora do FormField (#3 da revisão)', () 
     renderModal({ editDeal: doisItens })
     // O rótulo "Itens" continua na tela (agora manual, sem FormField).
     expect(screen.getByText('Itens')).toBeInTheDocument()
-    // Uma Qtd nomeada por linha — antes o contexto do FormField dava o MESMO
-    // id a todos os campos e o htmlFor de cada rótulo quebrava.
-    expect(screen.getAllByLabelText('Qtd')).toHaveLength(2)
-    const ids = Array.from(document.querySelectorAll('input, select'))
-      .map((el) => el.id)
-      .filter(Boolean)
-    expect(new Set(ids).size).toBe(ids.length)
+
+    // Desde o acordeão (09/09) só uma linha fica aberta por vez, então os ids
+    // são conferidos uma linha de cada vez — e o que importa é que a segunda
+    // linha traga ids DIFERENTES da primeira. Era esse o defeito original: o
+    // contexto do FormField dava o MESMO id a todos os campos, e o htmlFor de
+    // cada rótulo apontava para o campo errado.
+    // Só os ids DA LINHA (`item-*`): o resto do formulário — título, valor —
+    // é o mesmo nas duas aberturas e não diz nada sobre colisão entre linhas.
+    const idsVisiveis = () =>
+      Array.from(document.querySelectorAll('input, select'))
+        .map((el) => el.id)
+        .filter((id) => id.startsWith('item-'))
+
+    const linhas = screen.getAllByRole('button', { name: /^Editar / })
+    expect(linhas).toHaveLength(2)
+
+    fireEvent.click(linhas[0])
+    expect(screen.getAllByLabelText('Qtd')).toHaveLength(1)
+    const idsPrimeira = idsVisiveis()
+    expect(new Set(idsPrimeira).size).toBe(idsPrimeira.length)
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^Editar / })[0])
+    expect(screen.getAllByLabelText('Qtd')).toHaveLength(1)
+    const idsSegunda = idsVisiveis()
+    expect(new Set(idsSegunda).size).toBe(idsSegunda.length)
+    // Nenhum id se repete entre as duas linhas.
+    expect(idsPrimeira.filter((id) => idsSegunda.includes(id))).toHaveLength(0)
   })
 })
 
