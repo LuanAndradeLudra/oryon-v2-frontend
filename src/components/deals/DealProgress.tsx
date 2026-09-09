@@ -164,9 +164,9 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                 </span>
               ) : (
                 <span
-                  className="w-2 h-2 rounded-full"
+                  className={cn('rounded-full', atual ? 'w-3 h-3' : 'w-2 h-2')}
                   style={atual
-                    ? { backgroundColor: cor, boxShadow: `0 0 0 3px ${hexToRgba(cor, 0.2)}` }
+                    ? { backgroundColor: cor, boxShadow: `0 0 0 4px ${hexToRgba(cor, 0.22)}` }
                     : { backgroundColor: cor, opacity: feito ? 0.55 : 0.3 }}
                   aria-hidden
                 />
@@ -174,7 +174,20 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
               {!ultimo && <span className="w-px flex-1 min-h-[20px] my-1 bg-surface-800" aria-hidden />}
             </span>
 
-            <span className={cn('flex items-baseline justify-between gap-3 flex-1 min-w-0', !ultimo && 'pb-3')}>
+            {/* A etapa atual é um BLOCO, não uma linha mais escura: fundo
+                próprio, aresta na cor da etapa e respiro em volta. Tirado o
+                marcador textual, é a superfície que precisa dizer "é aqui" —
+                peso de fonte sozinho não sustenta isso numa lista de quatro. */}
+            <span
+              className={cn(
+                'flex items-baseline justify-between gap-3 flex-1 min-w-0',
+                !ultimo && 'pb-3',
+                atual && 'rounded-r-lg -my-0.5 py-1.5 pl-2.5 pr-2 border-l-2',
+              )}
+              style={atual
+                ? { borderLeftColor: cor, backgroundColor: hexToRgba(cor, 0.09) }
+                : undefined}
+            >
               <span className="flex items-baseline gap-2 min-w-0">
                 <button
                   type="button"
@@ -189,7 +202,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                     // A atual sobe de corpo e leva a cor da própria etapa; as
                     // outras ficam neutras. Sem isso, quatro linhas de peso
                     // parecido obrigam a procurar o ponto aceso.
-                    atual ? 'text-sm font-bold' : 'text-xs',
+                    atual ? 'text-[15px] font-bold' : 'text-xs',
                     !atual && (feito ? 'text-surface-400' : 'text-surface-600'),
                     clicavel ? 'cursor-pointer hover:text-surface-200' : 'cursor-default',
                   )}
@@ -197,14 +210,6 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                 >
                   {p.label}
                 </button>
-                {atual && (
-                  <span
-                    className="text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap shrink-0"
-                    style={{ color: cor }}
-                  >
-                    aqui
-                  </span>
-                )}
               </span>
               <span className={cn(
                 'text-[10.5px] whitespace-nowrap tabular-nums shrink-0',

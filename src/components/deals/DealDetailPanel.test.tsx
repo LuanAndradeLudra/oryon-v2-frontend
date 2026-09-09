@@ -257,12 +257,16 @@ describe('DealDetailPanel — a etapa atual se encontra sozinha', () => {
     expect(within(funil).getByRole('button', { current: 'step' })).toHaveTextContent('Novo')
   })
 
-  it('vale também na linha do tempo do processo', async () => {
+  // Na linha do tempo o marcador textual saiu a pedido do PO: quem diz "é
+  // aqui" é a superfície — bloco com fundo próprio e aresta na cor da etapa.
+  it('a linha do tempo marca a etapa atual sem palavra nenhuma', async () => {
     dealsApi.get.mockResolvedValue({ data: { ...DEAL, pipelineId: 'p2' } })
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
     const tl = screen.getByTestId('deal-progress-timeline')
-    expect(within(tl).getAllByText(/aqui/i)).toHaveLength(1)
+    expect(within(tl).queryByText(/aqui/i)).not.toBeInTheDocument()
+    // A etapa atual continua identificável por semântica, não só por pintura.
+    expect(within(tl).getByRole('button', { current: 'step' })).toHaveTextContent('Novo')
   })
 
   it('registro FECHADO não anuncia etapa atual', async () => {
