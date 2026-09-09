@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History, RotateCcw, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { ChevronDown, KanbanSquare, ExternalLink, CheckCircle2, XCircle, History, RotateCcw, Pencil, Trash2, Loader2 } from 'lucide-react'
 import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
 import { formatRelativeTime, cn } from '@/lib/utils'
 import { pipelineKindOption, pipelineKindOf, terminalLabelsOf } from '@/lib/pipelineKinds'
@@ -55,6 +55,20 @@ interface OpenDealProps {
   onToggleMove: () => void
   onMove: (stage: PipelineStage) => void
   onOpen: () => void
+  /**
+   * Leva ao QUADRO do funil, com a ficha do registro aberta em cima.
+   *
+   * Existe separado do `onOpen` porque as duas perguntas são diferentes: "o que
+   * é este negócio" (ficha, sem sair da tela) e "onde ele está no meu funil"
+   * (quadro, com as colunas vizinhas à vista). A B2 (SCRUM-928) trocou uma
+   * pela outra por um bom motivo — navegar abandonava a conversa e o rascunho
+   * da mensagem (F-CONV-29) —, mas a resposta foi perder a segunda pergunta.
+   * Agora as duas existem, e sair da tela é escolha explícita.
+   *
+   * Sem a prop o botão não aparece: superfícies que não têm para onde navegar
+   * (o próprio quadro, por exemplo) não o mostram.
+   */
+  onOpenBoard?: () => void
   /** Card apenas — omitido esconde a ação (a ficha não edita/exclui). */
   onEdit?: () => void
   onDelete?: () => void
@@ -141,6 +155,8 @@ function ChipDensity({ pipeline, stageLabel, busy, onOpen, testId }: ChipProps) 
 
 function OpenDensity(props: OpenDealProps) {
   const { density, deal, pipeline, contactName, busy, moveOpen, onToggleMove, onMove, onOpen, onEdit, onDelete, testIdPrefix, testIdKey, showStepper, showMeta = true } = props
+  // `onOpenBoard` só existe nas densidades com barra de ações (row/card).
+  const onOpenBoard = 'onOpenBoard' in props ? props.onOpenBoard : undefined
   if (density === 'row' && !pipeline) return null
   const kind = pipelineKindOption(pipelineKindOf(pipeline))
   const KindIcon = kind.icon
@@ -217,6 +233,17 @@ function OpenDensity(props: OpenDealProps) {
           >
             <KanbanSquare className="w-3 h-3" /> Abrir
           </button>
+          {onOpenBoard && (
+            <button
+              type="button"
+              onClick={onOpenBoard}
+              title="Abrir o quadro deste funil com a ficha em cima — sai desta tela"
+              className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+              data-testid={`${testIdPrefix}-goboard-${testIdKey}`}
+            >
+              <ExternalLink className="w-3 h-3" /> No funil
+            </button>
+          )}
         </div>
       </article>
     )

@@ -5,7 +5,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-const { api, openDeal, multi, socket } = vi.hoisted(() => ({
+const { api, openDeal, multi, socket, navigate } = vi.hoisted(() => ({
+  navigate: vi.fn(),
   api: { list: vi.fn(), moveStage: vi.fn(), setStatus: vi.fn(), history: vi.fn() },
   openDeal: vi.fn(),
   multi: vi.fn(() => true),
@@ -13,7 +14,7 @@ const { api, openDeal, multi, socket } = vi.hoisted(() => ({
 }))
 vi.mock('@/services/api', () => ({ dealsApi: api }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
+vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }))
 vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => multi() }))
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
@@ -41,7 +42,7 @@ const VENDA_GANHA: Deal = { ...base, id: 'd3', pipelineId: 'v', stageId: 'v3', s
 
 beforeEach(() => {
   Object.values(api).forEach((m) => m.mockReset())
-  openDeal.mockReset(); multi.mockReturnValue(true)
+  openDeal.mockReset(); navigate.mockReset(); multi.mockReturnValue(true)
   api.moveStage.mockResolvedValue({ data: {} })
 })
 
@@ -101,5 +102,29 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
     await waitFor(() => expect(api.moveStage).toHaveBeenCalledWith('d1', 's1'))
     fireEvent.click(screen.getByTestId('panel-pipeline-board-p'))
     expect(openDeal).toHaveBeenCalledWith('d1')
+  })
+})
+
+// ─── "No funil" (09/09) ─────────────────────────────────────────────────────
+// A B2 (SCRUM-928) trocou "ver no board" pela ficha em painel, com um bom
+// motivo: navegar abandonava a conversa e o rascunho (F-CONV-29). O efeito
+// colateral foi perder a pergunta "ONDE ele está no meu funil" — que a ficha
+// sozinha não responde. As duas voltam a existir, e sair da tela é escolha.
+describe('ContactPanelDeals — ir ao quadro', () => {
+  it('leva ao funil do registro com a ficha pedida na URL', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByTestId('panel-pipeline-goboard-p')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('panel-pipeline-goboard-p'))
+    expect(navigate).toHaveBeenCalledWith('/pipelines/p?deal=d1')
+  })
+
+  it('"Abrir" continua abrindo a ficha sem sair da conversa', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByTestId('panel-pipeline-board-p')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('panel-pipeline-board-p'))
+    expect(openDeal).toHaveBeenCalledWith('d1')
+    expect(navigate).not.toHaveBeenCalled()
   })
 })

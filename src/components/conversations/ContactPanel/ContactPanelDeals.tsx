@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { KanbanSquare } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { ConversationDealSelector } from '@/components/conversations/ChatWindow/ConversationDealSelector'
@@ -67,6 +68,23 @@ export function ContactPanelDeals({
 }) {
   const { openDeal } = useDealPanel()
   const { toast } = useToast()
+  const navigate = useNavigate()
+
+  /**
+   * "No funil" — leva ao quadro do funil do registro, com a ficha aberta em
+   * cima (`?deal=`, consumido uma vez pela PipelinePage).
+   *
+   * Sai da conversa, e isso tem custo conhecido: o rascunho da mensagem se
+   * perde (F-CONV-29). Por isso ele é a AÇÃO SECUNDÁRIA — "Abrir" continua
+   * respondendo "o que é este negócio" sem tirar ninguém do lugar, e este
+   * responde "onde ele está", que é a pergunta que a ficha sozinha não
+   * respondia desde a B2 (SCRUM-928).
+   */
+  const irAoQuadro = (deal: Deal) => {
+    const pipeline = pipelineOf(deal)
+    if (!pipeline) return
+    navigate(`/pipelines/${pipeline.id}?deal=${deal.id}`)
+  }
   const {
     enabled, deals, open, closed, error, busyId, pipelines,
     closeTarget, setCloseTarget, history,
@@ -195,6 +213,7 @@ export function ContactPanelDeals({
               onToggleMove={() => moveState.toggle(deal.id)}
               onMove={(stage) => void handleMove(deal, stage, pipeline)}
               onOpen={() => openDeal(deal.id)}
+              onOpenBoard={() => irAoQuadro(deal)}
               testIdPrefix="panel-pipeline"
               testIdKey={pipeline.id}
             />

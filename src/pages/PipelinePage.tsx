@@ -8,6 +8,7 @@ import { pipelinesApi } from '@/services/api'
 import { getDefaultPipeline, getActivePipelines, cn } from '@/lib/utils'
 import { pipelineKindOf, pipelineKindOption } from '@/lib/pipelineKinds'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { PipelineBoardTab } from '@/components/deals/PipelineBoardTab'
 import { PipelineReportsTab } from '@/components/deals/reports/PipelineReportsTab'
@@ -21,6 +22,28 @@ export function PipelinePage() {
   const isMobile = useIsMobile()
   const [searchParams, setSearchParams] = useSearchParams()
   const tab: Tab = searchParams.get('tab') === 'reports' ? 'reports' : 'board'
+
+  /**
+   * `?deal=<id>` — chegou de outra tela pedindo "mostre onde ele está".
+   *
+   * Quem manda é o painel do contato na conversa: a ficha responde "o que é
+   * este negócio", e o quadro responde "onde ele está no funil". Abrir a ficha
+   * POR CIMA do quadro dá as duas de uma vez.
+   *
+   * O parâmetro é consumido uma única vez e some da URL: sem isso, recarregar
+   * ou voltar no histórico reabriria a ficha que o operador já fechou.
+   */
+  const { openDeal } = useDealPanel()
+  const dealParam = searchParams.get('deal')
+  useEffect(() => {
+    if (!dealParam) return
+    openDeal(dealParam)
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      params.delete('deal')
+      return params
+    }, { replace: true })
+  }, [dealParam, openDeal, setSearchParams])
 
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [loading, setLoading] = useState(true)

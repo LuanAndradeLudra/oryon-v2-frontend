@@ -13,6 +13,10 @@ vi.mock('@/services/api', () => ({
   pipelinesApi: { list: vi.fn() },
 }))
 
+// A página passou a abrir a ficha do negócio quando chega com `?deal=` — o
+// painel é um portal global, então aqui basta o espião.
+const { openDeal } = vi.hoisted(() => ({ openDeal: vi.fn() }))
+vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/components/deals/PipelineBoardTab', () => ({
   PipelineBoardTab: ({ pipeline }: { pipeline: Pipeline }) => <div data-testid="board-tab">board de {pipeline.name}</div>,
 }))
@@ -37,7 +41,7 @@ function renderAt(path: string, pipelines: Pipeline[]) {
   )
 }
 
-beforeEach(() => { vi.mocked(pipelinesApi.list).mockReset() })
+beforeEach(() => { vi.mocked(pipelinesApi.list).mockReset(); openDeal.mockReset() })
 
 describe('PipelinePage — navegação (D2/SCRUM-935)', () => {
   it('carrega o funil pelo :id e mostra o Board por padrão', async () => {
@@ -85,5 +89,24 @@ describe('PipelinePage — tipo do funil no cabecalho', () => {
   it('funil de PROCESSO: selo diz "Processo"', async () => {
     renderAt('/pipelines/p1', [pipeline({ id: 'p1', name: 'Confirmação', kind: 'process' })])
     expect(await screen.findByTestId('pipeline-kind-badge')).toHaveTextContent(/processo/i)
+  })
+})
+
+// ─── `?deal=` (09/09) ───────────────────────────────────────────────────────
+// O painel do contato, na conversa, manda para cá quando o operador pergunta
+// "onde este negócio está no meu funil". A ficha abre POR CIMA do quadro: as
+// duas respostas de uma vez.
+describe('PipelinePage — chegada com ?deal=', () => {
+  it('abre a ficha do negócio pedida na URL', async () => {
+    renderAt('/pipelines/p1?deal=d9', [pipeline({})])
+    await waitFor(() => expect(openDeal).toHaveBeenCalledWith('d9'))
+    // O quadro continua sendo o que a página mostra — a ficha vem por cima.
+    await waitFor(() => expect(screen.getByTestId('board-tab')).toBeInTheDocument())
+  })
+
+  it('sem o parâmetro, nada é aberto', async () => {
+    renderAt('/pipelines/p1', [pipeline({})])
+    await waitFor(() => expect(screen.getByTestId('board-tab')).toBeInTheDocument())
+    expect(openDeal).not.toHaveBeenCalled()
   })
 })
