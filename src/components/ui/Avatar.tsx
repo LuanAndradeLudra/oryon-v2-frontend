@@ -22,15 +22,6 @@ const dotSizes = {
   lg: 'w-3 h-3',
 }
 
-// Deterministic color from name
-function colorFromName(name: string) {
-  const colors = [
-    'bg-violet-500', 'bg-indigo-500', 'bg-blue-500', 'bg-cyan-500',
-    'bg-teal-500', 'bg-emerald-500', 'bg-rose-500', 'bg-orange-500',
-  ]
-  const idx = name.charCodeAt(0) % colors.length
-  return colors[idx]
-}
 
 export function Avatar({ name, imageUrl, size = 'md', online, className }: AvatarProps) {
   return (
@@ -42,11 +33,27 @@ export function Avatar({ name, imageUrl, size = 'md', online, className }: Avata
           className={cn('rounded-full object-cover', sizes[size])}
         />
       ) : (
+        /**
+         * Fallback MONOCROMÁTICO.
+         *
+         * Aqui havia oito cores sorteadas por `name.charCodeAt(0) % 8` — o
+         * PRIMEIRO caractere, e só ele. Todo "A" saía índigo, todo "M"
+         * esmeralda, e "Zeca" colidia com "Bruno" (90 % 8 = 66 % 8). Numa
+         * lista ordenada por nome isso produzia faixas da mesma cor, e a cor
+         * duplicava exatamente a informação que as iniciais já mostram.
+         *
+         * Ou seja: era a maior mancha de cor da tela (círculo de 40 px, vinte
+         * vezes na lista de conversas) gastando o recurso mais escasso da
+         * interface com zero informação. Cor é para ESTADO — a urgência, o
+         * não lido, o alerta. Identidade se resolve com forma e texto.
+         *
+         * Foto continua sendo foto: quando existe `imageUrl`, nada disto vale.
+         */
         <div
           className={cn(
-            'rounded-full flex items-center justify-center font-semibold text-white',
+            'rounded-full flex items-center justify-center font-semibold',
+            'bg-surface-700 text-surface-300',
             sizes[size],
-            colorFromName(name)
           )}
         >
           {getInitials(name)}
