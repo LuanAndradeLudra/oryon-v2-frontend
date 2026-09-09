@@ -1,7 +1,8 @@
 # Débito — 72 botões teal fora do componente `Button`
 
-> Card para abrir no Jira (o MCP do Atlassian não conectou na sessão de 09/09/2026).
-> Épico sugerido: SCRUM-104 (Design System). Estimativa: 5 pontos.
+> **Card: [SCRUM-1060](https://oryonsolutions-team.atlassian.net/browse/SCRUM-1060)** —
+> História sob o épico SCRUM-104 (Design System), 5 pontos.
+> Este arquivo é o anexo do card: o inventário completo e o comando que reproduz a medição.
 
 ## Resumo
 
