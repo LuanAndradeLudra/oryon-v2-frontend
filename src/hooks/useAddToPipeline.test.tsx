@@ -76,6 +76,18 @@ function Harness({ target, onCreated }: { target: AddToPipelineTarget; onCreated
   )
 }
 
+/** A segunda porta do menu ("Adicionar com detalhes…"), que abre o dialogo
+ *  mesmo num funil ja dispensado — e por isso e o caminho de volta. */
+function HarnessDetalhes({ target }: { target: AddToPipelineTarget }) {
+  const { requestAddDetailed, dialogs } = useAddToPipeline()
+  return (
+    <>
+      <button onClick={() => requestAddDetailed(target)}>detalhes</button>
+      {dialogs}
+    </>
+  )
+}
+
 /** Dispensa a confirmacao naquele funil — devolve o 1 clique de antes. */
 const dispensarFunil = (id: string) =>
   localStorage.setItem('oryon.pipeline.skip-confirm', JSON.stringify([id]))
@@ -187,24 +199,24 @@ describe('useAddToPipeline (F9)', () => {
   it('a confirmação de processo oferece a dispensa; a de venda não', async () => {
     const { unmount } = render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
     fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByLabelText('Não perguntar de novo em Suporte')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByLabelText('Não confirmar ao adicionar a Suporte')).toBeInTheDocument())
     unmount()
 
     // Em venda o formulário nunca foi atalho de nada — não há 1 clique a devolver.
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: VENDAS }} />)
     fireEvent.click(screen.getByText('add'))
     await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
-    expect(screen.queryByLabelText(/Não perguntar de novo/)).toBeNull()
+    expect(screen.queryByLabelText(/Não confirmar ao adicionar/)).toBeNull()
   })
 
   // O acidente acontece no funil que se usa pouco; a repetição, no que se usa
   // todo dia. A dispensa por funil separa os dois casos.
-  it('"não perguntar de novo" devolve o 1 clique NAQUELE funil', async () => {
+  it('a caixa devolve o 1 clique NAQUELE funil', async () => {
     api.create.mockResolvedValue({ data: { ...EXISTING, id: 'd-new', stageId: 's1' } })
     const { unmount } = render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
     fireEvent.click(screen.getByText('add'))
     await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
-    fireEvent.click(screen.getByLabelText('Não perguntar de novo em Suporte'))
+    fireEvent.click(screen.getByLabelText('Não confirmar ao adicionar a Suporte'))
     fireEvent.click(screen.getByText('stub-criar'))
     unmount()
 
@@ -221,9 +233,32 @@ describe('useAddToPipeline (F9)', () => {
     const { unmount } = render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
     fireEvent.click(screen.getByText('add'))
     await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
-    fireEvent.click(screen.getByLabelText('Não perguntar de novo em Suporte'))
+    fireEvent.click(screen.getByLabelText('Não confirmar ao adicionar a Suporte'))
     unmount()
 
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
+    expect(api.create).not.toHaveBeenCalled()
+  })
+
+  // Sem caminho de volta a caixa vira armadilha: o diálogo não aparece mais
+  // naquele funil, e não haveria onde desfazer. O "Adicionar com detalhes…"
+  // continua abrindo o diálogo — lá a caixa aparece MARCADA, e desmarcar
+  // restaura a confirmação.
+  it('num funil já dispensado a caixa vem marcada, e desmarcar restaura a confirmação', async () => {
+    dispensarFunil('p')
+    api.create.mockResolvedValue({ data: { ...EXISTING, id: 'd-new', stageId: 's1' } })
+    const { unmount } = render(<HarnessDetalhes target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
+    fireEvent.click(screen.getByText('detalhes'))
+    const caixa = await screen.findByLabelText('Não confirmar ao adicionar a Suporte')
+    expect(caixa).toBeChecked()
+    fireEvent.click(caixa)
+    fireEvent.click(screen.getByText('stub-criar'))
+    unmount()
+
+    // Voltou a confirmar: o clique no funil abre o diálogo em vez de postar
+    // direto. (Quem faz o POST é o diálogo de verdade — aqui ele é stub.)
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
     fireEvent.click(screen.getByText('add'))
     await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())

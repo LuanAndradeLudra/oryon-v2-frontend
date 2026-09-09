@@ -33,12 +33,10 @@ function lerDispensados(): string[] {
   }
 }
 
-function dispensar(pipelineId: string) {
+function gravarDispensa(pipelineId: string, dispensar: boolean) {
   try {
-    const atual = lerDispensados()
-    if (!atual.includes(pipelineId)) {
-      localStorage.setItem(SKIP_KEY, JSON.stringify([...atual, pipelineId]))
-    }
+    const atual = lerDispensados().filter((id) => id !== pipelineId)
+    localStorage.setItem(SKIP_KEY, JSON.stringify(dispensar ? [...atual, pipelineId] : atual))
   } catch { /* modo privado / quota — a confirmação só continua aparecendo */ }
 }
 
@@ -93,9 +91,10 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
   const [closeTarget, setCloseTarget] = useState<{ target: AddToPipelineTarget; existing: Deal; stage: PipelineStage } | null>(null)
   const [dialogTarget, setDialogTarget] = useState<AddToPipelineTarget | null>(null)
   const [dispensados, setDispensados] = useState<string[]>(lerDispensados)
-  // Caixa "não perguntar de novo" do diálogo, quando ele está servindo de
-  // confirmação. Mora aqui porque a preferência é do GESTO, não do formulário.
-  const [naoPerguntarMais, setNaoPerguntarMais] = useState(false)
+  // Caixa "não confirmar neste funil" do diálogo. Mora aqui porque a
+  // preferência é do GESTO, não do formulário. `null` = o operador não mexeu
+  // nela nesta abertura; aí vale o que já estava gravado para o funil.
+  const [dispensaMarcada, setDispensaMarcada] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
   const { onCreated } = opts
 
@@ -203,7 +202,6 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     //
     // Quem dispensou a pergunta neste funil segue no 1-clique de sempre.
     if (dispensados.includes(target.pipeline.id)) { await criarProcesso(target); return }
-    setNaoPerguntarMais(false)
     setDialogTarget(target)
   }, [dispensados, criarProcesso])
 
@@ -311,21 +309,31 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
           dontAskAgain={
             pipelineKindOf(dialogTarget.pipeline) === 'process'
               ? {
-                  label: `Não perguntar de novo em ${dialogTarget.pipeline.name}`,
-                  checked: naoPerguntarMais,
-                  onChange: setNaoPerguntarMais,
+                  label: `Não confirmar ao adicionar a ${dialogTarget.pipeline.name}`,
+                  // Sem esta linha "não perguntar de novo" não diz o alcance —
+                  // e a primeira pergunta do PO foi exatamente essa: vale para
+                  // este contato, ou para o funil inteiro?
+                  hint: 'Vale para qualquer contato neste funil, só neste navegador. Para voltar a confirmar, desmarque aqui.',
+                  // Reflete o que está GRAVADO quando o operador ainda não
+                  // mexeu na caixa. É o que dá caminho de volta: num funil já
+                  // dispensado, "Adicionar com detalhes…" abre o diálogo com a
+                  // caixa marcada, e desmarcar restaura a confirmação.
+                  checked: dispensaMarcada ?? dispensados.includes(dialogTarget.pipeline.id),
+                  onChange: setDispensaMarcada,
                 }
               : undefined
           }
-          onClose={() => setDialogTarget(null)}
+          onClose={() => { setDialogTarget(null); setDispensaMarcada(null) }}
           onCreated={(deal) => {
             const t = dialogTarget
-            // A dispensa só vale quando o registro foi mesmo criado: marcar a
-            // caixa e fechar no X não pode devolver o 1-clique em silêncio.
-            if (naoPerguntarMais && pipelineKindOf(t.pipeline) === 'process') {
-              dispensar(t.pipeline.id)
+            // A preferência só é gravada quando o registro foi mesmo criado:
+            // marcar a caixa e fechar no X não pode mudar o comportamento em
+            // silêncio. Grava nos dois sentidos — desmarcar restaura.
+            if (dispensaMarcada !== null && pipelineKindOf(t.pipeline) === 'process') {
+              gravarDispensa(t.pipeline.id, dispensaMarcada)
               setDispensados(lerDispensados())
             }
+            setDispensaMarcada(null)
             setDialogTarget(null)
             // O negócio criado volta INTEIRO do POST — o chamador recebe o
             // registro real (antes ia um esqueleto com `id: ''`, que impedia
@@ -334,6 +342,9 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
           }}
           onConflict={(info) => {
             const t = dialogTarget
+            // Nada foi criado — a preferência não muda. Só o rascunho da caixa
+            // é descartado, junto com o diálogo.
+            setDispensaMarcada(null)
             setDialogTarget(null)
             void openConflict(t, info.openDealId)
           }}

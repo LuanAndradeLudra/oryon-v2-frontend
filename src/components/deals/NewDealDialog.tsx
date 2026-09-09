@@ -83,6 +83,9 @@ export interface NewDealDialogProps {
    */
   dontAskAgain?: {
     label: string
+    /** Uma linha dizendo o ALCANCE da preferência — sem ela, "não perguntar de
+     *  novo" não diz se vale para este contato, para este funil ou para tudo. */
+    hint?: string
     checked: boolean
     onChange: (checked: boolean) => void
   }
@@ -382,28 +385,40 @@ export function NewDealDialog({
   )
 
   // ─── Identidade ───────────────────────────────────────────────────────────
-  // O título é o herói: sem moldura, em corpo grande, focado e com a sugestão
-  // já selecionada. Não leva rótulo porque nada mais na tela pode ser
-  // confundido com ele — o placeholder e o foco dizem o que é.
+  // Título e escopo são TEXTO LIVRE, e texto livre precisa de afordância de
+  // campo — é a mesma regra que manda o atributo escolhido de uma lista virar
+  // ficha. Aprendida duas vezes: primeiro o escopo virou um texto sem moldura e
+  // o PO disse que o campo tinha sumido; depois o título, que continuava sem
+  // moldura, "só aparecia o nome do contato" sem indicar que dava para editar.
   //
-  // O escopo é OUTRA coisa e voltou a ser campo com rótulo. Na primeira versão
-  // ele era um segundo texto sem moldura logo abaixo do título, e lia como
-  // legenda: o PO abriu a tela e disse que o campo tinha sumido. Texto livre
-  // precisa de afordância de campo — é a mesma regra que manda o atributo
-  // escolhido de uma lista virar ficha.
+  // O título continua sendo o primeiro e o maior — a hierarquia vem do corpo do
+  // texto (display, 18 px) e da ordem, não da ausência de moldura.
   const identidade = (
     <div className="flex flex-col gap-3.5">
-      <textarea
-        ref={(el) => { tituloRef.current = el; cresce(el) }}
-        value={title}
-        onChange={(e) => { setTitle(e.target.value); cresce(e.currentTarget); setError('') }}
-        rows={1}
-        aria-label="Título"
-        aria-required
-        aria-invalid={error === 'O título é obrigatório.' || undefined}
-        placeholder={`Nome do ${noun}`}
-        className="w-full resize-none overflow-hidden bg-transparent border-0 p-0 font-display text-xl font-semibold leading-snug text-surface-50 placeholder:text-surface-600 focus:outline-none"
-      />
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="novo-negocio-titulo" className="text-xs font-medium text-surface-400">
+          Título
+        </label>
+        <textarea
+          id="novo-negocio-titulo"
+          ref={(el) => { tituloRef.current = el; cresce(el) }}
+          value={title}
+          onChange={(e) => { setTitle(e.target.value); cresce(e.currentTarget); setError('') }}
+          rows={1}
+          aria-required
+          aria-invalid={error === 'O título é obrigatório.' || undefined}
+          placeholder={`Nome do ${noun}`}
+          className={cn(
+            'w-full resize-none overflow-hidden rounded-lg border bg-surface-800 px-3 py-2',
+            'font-display text-lg font-semibold leading-snug text-surface-50',
+            'placeholder:font-sans placeholder:text-base placeholder:font-normal placeholder:text-surface-500',
+            'transition-colors hover:border-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-400/20',
+            error === 'O título é obrigatório.'
+              ? 'border-danger focus:border-danger'
+              : 'border-surface-700 focus:border-brand-400/60',
+          )}
+        />
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="novo-negocio-escopo" className="text-xs font-medium text-surface-400">
@@ -618,14 +633,19 @@ export function NewDealDialog({
         <p role="alert" className="text-xs text-danger">{error}</p>
       )}
       {dontAskAgain && (
-        <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
+        <label className="flex items-start gap-2.5 cursor-pointer select-none py-1">
           <input
             type="checkbox"
             checked={dontAskAgain.checked}
             onChange={(e) => dontAskAgain.onChange(e.target.checked)}
-            className="w-4 h-4 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+            className="mt-0.5 w-4 h-4 shrink-0 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
           />
-          <span className="text-xs text-surface-400">{dontAskAgain.label}</span>
+          <span className="flex flex-col gap-0.5">
+            <span className="text-xs text-surface-300">{dontAskAgain.label}</span>
+            {dontAskAgain.hint && (
+              <span className="text-[11px] leading-snug text-surface-500">{dontAskAgain.hint}</span>
+            )}
+          </span>
         </label>
       )}
       <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center justify-between')}>
