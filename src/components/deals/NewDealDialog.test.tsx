@@ -99,9 +99,15 @@ const escolherNaFicha = (ficha: RegExp, opcao: RegExp) => {
   fireEvent.click(screen.getByRole('menuitem', { name: opcao }))
 }
 
-/** Digita no campo monetário (acumulador: só dígitos contam). */
-const digitarValor = (reais: string) =>
+/**
+ * Digita no campo monetário. O campo é OPT-IN desde 09/09: o bloco recém-aberto
+ * mostra os botões de item, e quem quer valor livre pede o campo.
+ */
+const digitarValor = (reais: string) => {
+  const pedir = screen.queryByRole('button', { name: /Informar (valor sem itens|outro valor)/ })
+  if (pedir) fireEvent.click(pedir)
   fireEvent.change(screen.getByLabelText('Valor do negócio'), { target: { value: reais } })
+}
 
 const addItemPersonalizado = (nome: string, precoDigitos: string) => {
   fireEvent.click(screen.getByRole('button', { name: /Adicionar personalizado/ }))
@@ -147,9 +153,27 @@ describe('NewDealDialog — uma tela', () => {
   // o negócio nasce sem valor. Agora o bloco só ocupa a tela quando é pedido.
   it('o bloco de valor só existe depois de ser pedido', () => {
     renderDialog()
-    expect(screen.queryByLabelText('Valor do negócio')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Adicionar do catálogo/ })).not.toBeInTheDocument()
     abrirValor()
-    expect(screen.getByLabelText('Valor do negócio')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Adicionar do catálogo/ })).toBeInTheDocument()
+  })
+
+  // O campo em branco no topo fazia o operador preencher na mão antes de
+  // descobrir o catálogo. O caminho normal é lançar itens e ver a soma.
+  it('o bloco abre nos ITENS, sem campo de valor para preencher na mão', () => {
+    renderDialog()
+    abrirValor()
+    expect(screen.queryByLabelText('Valor do negócio')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Informar valor sem itens/ })).toBeInTheDocument()
+  })
+
+  it('com itens lançados o total aparece somado, sem virar campo', async () => {
+    renderDialog()
+    abrirValor()
+    addItemPersonalizado('Instalação', '20000')
+    expect(await screen.findByTestId('valor-total')).toHaveTextContent('R$ 200,00')
+    expect(screen.queryByLabelText('Valor do negócio')).not.toBeInTheDocument()
+    expect(screen.getByText(/= soma de/)).toBeInTheDocument()
   })
 })
 

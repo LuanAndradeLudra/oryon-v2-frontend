@@ -111,6 +111,10 @@ export function NewDealDialog({
   // O bloco de valor cresce na própria tela quando a ficha "Valor" é ligada —
   // no lugar do passo 2 que existia antes.
   const [valorAberto, setValorAberto] = useState(false)
+  // O campo de digitar valor é OPT-IN. Abrir o bloco não deve oferecer uma
+  // caixa vazia para preencher na mão: o caminho normal é lançar itens e ver a
+  // soma. Quem tem negócio de valor livre — sem composição — pede o campo.
+  const [valorManual, setValorManual] = useState(false)
   const tituloRef = useRef<HTMLTextAreaElement>(null)
   // Contato: `contactId` da prop manda; sem ele, o operador busca (board).
   const [pickedContact, setPickedContact] = useState<{ id: string; name: string } | null>(null)
@@ -169,11 +173,15 @@ export function NewDealDialog({
   // único caso em que a escolha dos dois botões tem consequência.
   const diverges = hasItems && amountTouched && amountCents !== itemsTotal
   const shownTotal = hasItems && !amountTouched ? itemsTotal : amountCents
+  // O campo aparece quando foi pedido, ou quando já existe valor digitado —
+  // reabrir o bloco não pode esconder o que o operador escreveu.
+  const mostraCampoValor = valorManual || amountTouched
 
   // ─── Abertura: reseta tudo (o diálogo não desmonta entre aberturas) ───────
   useEffect(() => {
     if (!open) return
     setValorAberto(false)
+    setValorManual(false)
     setPickedContact(null)
     setSearch('')
     setResults([])
@@ -566,27 +574,44 @@ export function NewDealDialog({
         animate={{ height: 'auto', opacity: 1 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
         className="flex flex-col gap-3 rounded-xl border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))] overflow-hidden">
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-end justify-between gap-3">
-            <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">
-              Valor do {noun}
-            </span>
-            <span className="text-[11px] leading-snug text-right text-surface-500">
-              {hasItems && !amountTouched
-                ? <>= soma de <b className="font-semibold text-brand-400">{items.length} {items.length === 1 ? 'item' : 'itens'}</b></>
-                : hasItems && diverges
-                  ? <>digitado<br /><b className="font-semibold text-brand-400">difere dos itens</b></>
-                  : 'digitado'}
-            </span>
+        {/* O número só existe quando há o que mostrar: itens lançados ou um
+            valor digitado. Bloco recém-aberto e vazio mostra os botões de
+            adicionar, e mais nada — era o campo em branco no topo que fazia o
+            operador preencher na mão antes de descobrir o catálogo. */}
+        {(hasItems || mostraCampoValor) && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-end justify-between gap-3">
+              <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">
+                Valor do {noun}
+              </span>
+              <span className="text-[11px] leading-snug text-right text-surface-500">
+                {hasItems && !amountTouched
+                  ? <>= soma de <b className="font-semibold text-brand-400">{items.length} {items.length === 1 ? 'item' : 'itens'}</b></>
+                  : hasItems && diverges
+                    ? <>digitado<br /><b className="font-semibold text-brand-400">difere dos itens</b></>
+                    : 'digitado'}
+              </span>
+            </div>
+            {mostraCampoValor ? (
+              <MoneyInput
+                value={shownTotal}
+                onChange={(cents) => { setAmountCents(cents); setAmountTouched(true); setError('') }}
+                aria-label={`Valor do ${noun}`}
+                autoFocus
+                className="h-12 !text-xl font-display font-bold text-surface-50"
+              />
+            ) : (
+              // Somando: o total é LEITURA. Editá-lo é o gesto de exceção logo
+              // abaixo, não o campo que se encontra primeiro.
+              <p
+                data-testid="valor-total"
+                className="font-display text-2xl font-bold text-surface-50 tabular-nums tracking-tight"
+              >
+                {formatBRL(shownTotal)}
+              </p>
+            )}
           </div>
-          <MoneyInput
-            value={shownTotal}
-            onChange={(cents) => { setAmountCents(cents); setAmountTouched(true); setError('') }}
-            aria-label={`Valor do ${noun}`}
-            autoFocus
-            className="h-12 !text-xl font-display font-bold text-surface-50"
-          />
-        </div>
+        )}
 
         <div className="flex flex-col gap-1.5">
           {/* Sem `FormField` em volta: o contexto dele injeta o mesmo id em todos
@@ -600,6 +625,16 @@ export function NewDealDialog({
             showTotal={false}
           />
         </div>
+
+        {!mostraCampoValor && (
+          <button
+            type="button"
+            onClick={() => setValorManual(true)}
+            className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 rounded"
+          >
+            {hasItems ? 'Informar outro valor' : 'Informar valor sem itens'}
+          </button>
+        )}
 
         <AnimatePresence initial={false}>
           {diverges && (

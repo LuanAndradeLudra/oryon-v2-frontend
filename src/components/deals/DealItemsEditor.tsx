@@ -128,9 +128,15 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
    * fecha: a linha compacta não teria o que mostrar, e esconder um item pela
    * metade é pior que a altura.
    */
-  const [abertoUid, setAbertoUid] = useState<string | null>(null)
+  // `undefined` = o operador ainda não mexeu, vale o padrão; `null` = fechou
+  // tudo de propósito; string = esta linha está aberta. Sem os três estados o
+  // padrão "item único aberto" impediria fechar o item único na mão.
+  const [abertoUid, setAbertoUid] = useState<string | null | undefined>(undefined)
   const temIdentidade = (it: DealItemDraft) =>
     it.kind === 'custom' ? !!it.productName.trim() : !!it.productId
+
+  const padrao = value.length === 1 ? value[0]?._uid : undefined
+  const uidAberto = abertoUid === undefined ? padrao : abertoUid
 
   const adicionar = (novo: DealItemDraft) => {
     setAbertoUid(novo._uid)
@@ -184,10 +190,10 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
         const hasVariations = (product?.priceVariations?.length ?? 0) > 0
         const isCustom = it.kind === 'custom'
         const percent = discountPercentOf(it)
-        // Item único fica sempre aberto: fechar o que não tem com o que
-        // comparar esconde tudo e economiza uma linha. O acordeão passa a
-        // valer do SEGUNDO item em diante, que é onde a altura vira problema.
-        const aberto = value.length === 1 || abertoUid === it._uid || !temIdentidade(it)
+        // Item sem identidade não fecha — a linha compacta não teria o que
+        // mostrar. Fora isso, quem manda é o operador.
+        const travadoAberto = !temIdentidade(it)
+        const aberto = it._uid === uidAberto || travadoAberto
         const nome = isCustom ? it.productName : (product?.name ?? '')
 
         return (
@@ -201,41 +207,61 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
               aberto ? 'border-surface-700 bg-surface-800/25' : 'border-surface-800 hover:border-surface-700',
             )}
           >
-            {!aberto && (
-              <div className="flex items-center gap-1 p-1.5">
-                <button
-                  type="button"
-                  onClick={() => setAbertoUid(it._uid)}
-                  aria-expanded={false}
-                  aria-label={`Editar ${nome}`}
-                  className="flex-1 flex items-center gap-2 min-w-0 rounded-md px-1.5 py-1.5 text-left cursor-pointer transition-colors hover:bg-surface-800/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 shrink-0 text-surface-500" aria-hidden />
-                  <span className="text-sm text-surface-100 truncate">{nome}</span>
-                  {!isCustom && it.variationLabel && (
-                    <span className="text-xs text-surface-500 truncate shrink-0">· {it.variationLabel}</span>
+            {/* Cabeçalho SEMPRE presente: é ele o interruptor. Antes o fechar
+                era um "Pronto" no pé de um cartão alto — quem abria a linha não
+                encontrava o caminho de volta. Aberto ou fechado, o gesto de
+                abrir e o de fechar são o mesmo lugar. */}
+            <div className="flex items-center gap-1 p-1.5">
+              <button
+                type="button"
+                onClick={() => setAbertoUid(aberto ? null : it._uid)}
+                disabled={travadoAberto}
+                aria-expanded={aberto}
+                aria-label={aberto ? `Recolher ${nome || 'item'}` : `Editar ${nome || 'item'}`}
+                className={cn(
+                  'flex-1 flex items-center gap-2 min-w-0 rounded-md px-1.5 py-1.5 text-left transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
+                  travadoAberto ? 'cursor-default' : 'cursor-pointer hover:bg-surface-800/60',
+                )}
+              >
+                <ChevronRight
+                  className={cn(
+                    'w-3.5 h-3.5 shrink-0 text-surface-500 transition-transform duration-150',
+                    aberto && 'rotate-90',
+                    travadoAberto && 'opacity-0',
                   )}
-                  {isCustom && (
-                    <span className="text-3xs font-semibold uppercase tracking-wider text-amber-400/90 shrink-0">
-                      Negociado
-                    </span>
-                  )}
-                  <span className="ml-auto text-xs text-surface-500 tabular-nums shrink-0">{it.quantity} ×</span>
-                  <span className="text-sm font-semibold text-surface-100 tabular-nums shrink-0">
-                    {formatBRL(lineTotalCents(it))}
+                  aria-hidden
+                />
+                <span className={cn('text-sm truncate', nome ? 'text-surface-100' : 'text-surface-500')}>
+                  {nome || (isCustom ? 'Novo item personalizado' : 'Novo item do catálogo')}
+                </span>
+                {!aberto && !isCustom && it.variationLabel && (
+                  <span className="text-xs text-surface-500 truncate shrink-0">· {it.variationLabel}</span>
+                )}
+                {!aberto && isCustom && (
+                  <span className="text-3xs font-semibold uppercase tracking-wider text-amber-400/90 shrink-0">
+                    Negociado
                   </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => remove(i)}
-                  disabled={disabled}
-                  className="p-1.5 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-900/20 transition-all shrink-0 disabled:opacity-50 cursor-pointer"
-                  aria-label="Remover item"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
+                )}
+                {!aberto && (
+                  <>
+                    <span className="ml-auto text-xs text-surface-500 tabular-nums shrink-0">{it.quantity} ×</span>
+                    <span className="text-sm font-semibold text-surface-100 tabular-nums shrink-0">
+                      {formatBRL(lineTotalCents(it))}
+                    </span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                disabled={disabled}
+                className="p-1.5 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-900/20 transition-all shrink-0 disabled:opacity-50 cursor-pointer"
+                aria-label="Remover item"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
             {/* Só a ABERTURA anima. O fechamento é imediato de propósito: com
                 `exit` o Framer mantém a subárvore montada durante a saída, e um
@@ -248,7 +274,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               className="overflow-hidden"
             >
-            <div className="p-2.5 flex flex-col gap-2">
+            <div className="px-2.5 pb-2.5 pt-1 flex flex-col gap-2">
             <div className="flex gap-2 items-start">
               <div className="flex-1">
                 {isCustom ? (
@@ -299,15 +325,6 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                   </Select>
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => remove(i)}
-                disabled={disabled}
-                className="p-2 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all flex-shrink-0 disabled:opacity-50"
-                aria-label="Remover item"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
             <div className="grid grid-cols-4 gap-2 items-end">
@@ -385,17 +402,6 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
               )}
               Subtotal: <span className="tabular-nums">{formatBRL(lineTotalCents(it))}</span>
             </p>
-
-            {/* Fechar só aparece quando há o que mostrar fechado. */}
-            {temIdentidade(it) && (
-              <button
-                type="button"
-                onClick={() => setAbertoUid(null)}
-                className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 rounded"
-              >
-                Pronto
-              </button>
-            )}
             </div>
             </motion.div>
             )}
