@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink, ArrowRightLeft,
-  Milestone, MapPin, Phone, Plus,
+  Milestone, MapPin, Phone,
   Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -99,70 +99,6 @@ function InfoTable({ rows }: { rows: { label: string; value: React.ReactNode }[]
         </div>
       ))}
     </div>
-  )
-}
-
-// ─── Notas section ────────────────────────────────────────────────────────────
-
-function NotasSection() {
-  const [notes, setNotes] = useState<string[]>([])
-  const [adding, setAdding] = useState(false)
-  const [draft, setDraft] = useState('')
-
-  const handleSave = () => {
-    const trimmed = draft.trim()
-    if (trimmed) setNotes(prev => [...prev, trimmed])
-    setDraft('')
-    setAdding(false)
-  }
-
-  return (
-    <Section
-      title="Notas"
-      action={
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          title="Adicionar nota"
-          aria-label="Adicionar nota"
-          className="w-6 h-6 rounded-md flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      }
-    >
-      {notes.length === 0 && !adding && (
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="w-full text-left text-xs text-surface-500 hover:text-surface-300 transition-colors"
-        >
-          Adicionar uma nota…
-        </button>
-      )}
-      {notes.map((note, i) => (
-        <div key={i} className="text-xs text-surface-300 bg-surface-800/50 rounded-lg px-3 py-2 mb-2 last:mb-0">
-          {note}
-        </div>
-      ))}
-      {adding && (
-        <div className="mt-1">
-          <textarea
-            autoFocus
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave() } if (e.key === 'Escape') { setAdding(false); setDraft('') } }}
-            placeholder="Escreva uma nota…"
-            rows={3}
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-xs text-surface-200 placeholder:text-surface-500 resize-none outline-none focus:border-brand-500 transition-colors"
-          />
-          <div className="flex gap-2 mt-1.5">
-            <button type="button" onClick={handleSave} className="text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors">Salvar</button>
-            <button type="button" onClick={() => { setAdding(false); setDraft('') }} className="text-[11px] text-surface-500 hover:text-surface-300 transition-colors">Cancelar</button>
-          </div>
-        </div>
-      )}
-    </Section>
   )
 }
 
@@ -416,8 +352,6 @@ export function ContactPanel({
         {/* Timeline */}
         <ConversationActivitySection conversationId={conversation.id} />
 
-        {/* Notas */}
-        <NotasSection />
       </div>
 
       {/* Transfer modal */}

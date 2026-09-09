@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams, Navigate } from 'react-router-dom'
 import { ArrowLeft, AlertTriangle, LayoutGrid, BarChart3 } from 'lucide-react'
 import { pipelinesApi } from '@/services/api'
-import { getDefaultPipeline, getActivePipelines, cn } from '@/lib/utils'
+import { getDefaultPipeline, getActivePipelines, cn, hexToRgba } from '@/lib/utils'
 import { pipelineKindOf, pipelineKindOption } from '@/lib/pipelineKinds'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
@@ -94,8 +94,18 @@ export function PipelinePage() {
         </button>
       )}
       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />
-      <KindIcon className="w-4 h-4 text-surface-400 flex-shrink-0" aria-hidden />
       <h1 className="text-sm font-semibold text-surface-100 truncate">{pipeline.name}</h1>
+      {/* O ícone sozinho não ensina qual é qual — alvo e ciclo só dizem algo a
+          quem já sabe. A legenda é o que diferencia venda de processo de
+          relance; a COR fica por conta do funil (ponto ao lado e gradiente do
+          fundo), para os dois eixos não brigarem pelo mesmo recurso. */}
+      <span
+        className="inline-flex items-center gap-1 flex-shrink-0 rounded-md border border-surface-700 bg-surface-800 px-1.5 py-0.5 text-3xs uppercase tracking-wide text-surface-400"
+        data-testid="pipeline-kind-badge"
+      >
+        <KindIcon className="w-3 h-3" aria-hidden />
+        {kindOption.label}
+      </span>
 
       {/* Trocar de funil rápido — só quando há mais de um. */}
       {getActivePipelines(pipelines).length > 1 && (
@@ -139,7 +149,13 @@ export function PipelinePage() {
   )
 
   return (
-    <div className="flex flex-col h-full bg-surface-950">
+    <div
+      className="flex flex-col h-full bg-surface-950"
+      style={{
+        backgroundImage: `radial-gradient(120% 220px at 50% 0%, ${hexToRgba(pipeline.color, 0.06)} 0%, transparent 100%)`,
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       {isMobile && <MobilePageHeader title={pipeline.name} />}
       {header}
       <div className="flex-1 min-h-0 flex flex-col">

@@ -72,3 +72,18 @@ describe('PipelinePage — navegação (D2/SCRUM-935)', () => {
     await waitFor(() => expect(screen.getByTestId('home-page')).toBeInTheDocument())
   })
 })
+
+// O tipo do funil so aparecia como icone mudo no cabecalho: alvo e ciclo nao
+// ensinam nada a quem nunca viu. A legenda diferencia venda de processo; a COR
+// fica por conta do funil (ponto + gradiente), para os eixos nao competirem.
+describe('PipelinePage — tipo do funil no cabecalho', () => {
+  it('funil de VENDA: selo diz "Vendas"', async () => {
+    renderAt('/pipelines/p1', [pipeline({ id: 'p1', name: 'Propostas', kind: 'sales' })])
+    expect(await screen.findByTestId('pipeline-kind-badge')).toHaveTextContent(/vendas/i)
+  })
+
+  it('funil de PROCESSO: selo diz "Processo"', async () => {
+    renderAt('/pipelines/p1', [pipeline({ id: 'p1', name: 'Confirmação', kind: 'process' })])
+    expect(await screen.findByTestId('pipeline-kind-badge')).toHaveTextContent(/processo/i)
+  })
+})
