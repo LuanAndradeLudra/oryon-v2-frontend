@@ -8,6 +8,7 @@ import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { Banner } from '@/components/ui/Banner'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
 import { templateVariableSlots, variablesComplete, variablesToArray } from '@/lib/templateVariables'
 import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
@@ -582,14 +583,19 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
               </p>
             </div>
             {!templateSent && (
-              <button
+              /* Mesma variante do CTA do diálogo de funil: ação principal sem
+                 cor de marca. Aqui o teal competia com o próprio aviso de 24 h,
+                 que já é teal — o botão sumia dentro do card em vez de ser a
+                 saída dele. */
+              <Button
+                variant="neutral"
+                size="sm"
                 onClick={toggleTemplatePicker}
-                style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
-                className="color-chip flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border hover:brightness-110 transition"
+                className="flex-shrink-0"
+                rightIcon={<ChevronDown className={cn('w-3 h-3', templatePickerOpen && 'rotate-180')} />}
               >
                 Escolher template
-                <ChevronDown className={cn('w-3 h-3', templatePickerOpen && 'rotate-180')} />
-              </button>
+              </Button>
             )}
           </div>
 
