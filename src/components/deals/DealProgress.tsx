@@ -1,3 +1,5 @@
+import { useId } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 import { cn, hexToRgba, formatRelativeTime } from '@/lib/utils'
 import { pipelineKindOf } from '@/lib/pipelineKinds'
@@ -104,6 +106,10 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
   const passos = stepperFor(pipeline, deal)
   const porId = new Map(pipeline.stages.map((s) => [s.id, s]))
   const entradas = entradasPorEtapa(history)
+  const semMovimento = useReducedMotion()
+  // Único por instância: duas fichas abertas fariam o bloco voar de uma para
+  // a outra.
+  const blocoId = useId()
 
   return (
     <ol className="flex flex-col" aria-label="Andamento do registro" data-testid="deal-progress-timeline">
@@ -168,22 +174,41 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                 ficava DENTRO da caixa pintada — o bloco da etapa atual descia
                 12 px a mais e encostava no título de baixo. Espaçamento em
                 padding só funciona quando nada é pintado por cima dele. */}
+            {/* Três camadas, cada uma com um trabalho: a de FORA espaça
+                (`pb-3`), a do MEIO abraça só o conteúdo e serve de âncora para
+                a pintura, a de DENTRO é o texto. */}
             <span className={cn('flex-1 min-w-0', !ultimo && 'pb-3')}>
+            <span className="relative block">
+              {/* O bloco da etapa atual é UMA superfície só, compartilhada por
+                  todas as linhas via `layoutId`: quando a etapa muda, o Framer
+                  a anima da linha antiga para a nova, em vez de apagá-la aqui e
+                  acendê-la ali. É a mesma técnica do anel da trilha.
+                  Absoluta e ATRÁS do conteúdo, então a troca move a superfície
+                  sem tocar no texto. `-inset-y-1` reproduz o respiro que o
+                  `-my-1 py-1` dava antes. */}
+              {atual && (
+                <motion.span
+                  layoutId={blocoId}
+                  className="absolute -inset-y-1 inset-x-0 rounded-r-md border-l-2 pointer-events-none"
+                  style={{ borderLeftColor: cor, backgroundColor: hexToRgba(cor, 0.09) }}
+                  transition={semMovimento
+                    ? { duration: 0 }
+                    : { type: 'spring', stiffness: 380, damping: 34 }}
+                  aria-hidden
+                />
+              )}
             <span
               className={cn(
                 // `items-center`, não `items-baseline`: o título tem 15 px e o
                 // tempo 10,5 px, e alinhar pela BASE joga o menor para baixo do
                 // centro óptico — foi assim que "agora nesta etapa" apareceu
                 // afundado em relação ao nome da etapa.
-                'flex items-center justify-between gap-3 min-w-0',
-                // `-my-1 py-1` se anulam: o bloco engorda para os lados e para
-                // dentro, mas NÃO empurra a linha — o título fica exatamente
-                // onde estaria sem ele, alinhado ao ponto da trilha.
-                atual && 'rounded-r-md -my-1 py-1 pl-2 pr-1.5 border-l-2',
+                // O recuo lateral vale para TODAS as linhas, não só para a
+                // atual: se ele aparecesse junto com o bloco, o texto pularia
+                // 8 px a cada troca de etapa — e o que precisa se mover é a
+                // superfície, não a palavra.
+                'relative flex items-center justify-between gap-3 min-w-0 pl-2 pr-1.5',
               )}
-              style={atual
-                ? { borderLeftColor: cor, backgroundColor: hexToRgba(cor, 0.09) }
-                : undefined}
             >
               <span className="flex items-center gap-2 min-w-0">
                 <button
@@ -220,6 +245,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                       ? formatRelativeTime(quando)
                       : '—'}
               </span>
+            </span>
             </span>
             </span>
           </li>

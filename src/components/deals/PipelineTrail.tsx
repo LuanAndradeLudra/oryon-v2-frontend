@@ -322,7 +322,11 @@ function Passo({
           />
         )}
         <i
-          className="w-1.5 h-1.5 rounded-full transition-opacity"
+          // Cor E opacidade no mesmo tempo do anel: quando a etapa deixa de
+          // ser a atual, o fundo do ponto volta enquanto o anel desliza para a
+          // etapa nova. Animar só a opacidade fazia a cor reaparecer de estalo
+          // no meio do movimento.
+          className="w-1.5 h-1.5 rounded-full transition-[background-color,opacity] duration-200 ease-out"
           // Inativa fica na PRÓPRIA cor, esmaecida: é o que faz a faixa ler
           // como as colunas do quadro, e não como um stepper qualquer.
           style={ativa ? undefined : { backgroundColor: cor, opacity: 0.5 }}
@@ -330,7 +334,7 @@ function Passo({
       </span>
       )}
       <span
-        className={cn('text-[11.5px] truncate transition-colors', ativa && 'font-semibold')}
+        className={cn('text-[11.5px] truncate transition-colors duration-200 ease-out', ativa && 'font-semibold')}
         style={ativa
           ? { color: cor }
           : terminal
