@@ -6,7 +6,7 @@ import type { Deal, Pipeline, PipelineStage, User, DealStageHistoryEntry } from 
 
 const { dealsApi, usersApi, conversationsApi, socket } = vi.hoisted(() => ({
   dealsApi: {
-    get: vi.fn(), history: vi.fn(), update: vi.fn(), setStatus: vi.fn(),
+    get: vi.fn(), history: vi.fn(), update: vi.fn(), setStatus: vi.fn(), moveStage: vi.fn(),
     movePipeline: vi.fn(), remove: vi.fn(),
   },
   usersApi: { list: vi.fn() },
@@ -118,12 +118,29 @@ describe('DealDetailPanel — carregado', () => {
     await waitFor(() => expect(conversationsApi.list).toHaveBeenCalledWith({ contactId: 'c1' }, 1, 50))
   })
 
-  it('stepper: clicar numa etapa normal move via setStatus(status=open, stageId)', async () => {
-    dealsApi.setStatus.mockResolvedValue({ data: { ...DEAL, stageId: 's2' } })
+  // O endpoint depende do STATUS ATUAL. `PATCH /status` com `status: 'open'` é
+  // o comando de REABRIR, e o backend rejeita com `not_closed` (400) quando o
+  // registro já está aberto — este painel usava esse caminho para toda troca
+  // de etapa desde a B2 (SCRUM-928), e o teste antigo fixava justamente o
+  // comportamento quebrado.
+  it('registro ABERTO: etapa normal move via PATCH /stage', async () => {
+    dealsApi.moveStage.mockResolvedValue({ data: { ...DEAL, stageId: 's2' } })
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
     fireEvent.click(screen.getByTestId('deal-stepper-stage-s2'))
-    await waitFor(() => expect(dealsApi.setStatus).toHaveBeenCalledWith('d1', { status: 'open', stageId: 's2' }))
+    await waitFor(() => expect(dealsApi.moveStage).toHaveBeenCalledWith('d1', 's2'))
+    expect(dealsApi.setStatus).not.toHaveBeenCalled()
+  })
+
+  // Registro fechado nem chega aqui: o stepper e o menu "Mover" só existem com
+  // `status === 'open'` (DealDetailHeader). Fixar isso evita que o endpoint de
+  // reabrir volte a ser usado como se fosse o de mover.
+  it('registro FECHADO não oferece o stepper', async () => {
+    dealsApi.get.mockResolvedValue({ data: { ...DEAL, status: 'won', stageId: 's3' } })
+    render(<DealDetailPanel dealId="d1" />)
+    await screen.findByTestId('deal-title')
+    expect(screen.queryByTestId('deal-stepper')).not.toBeInTheDocument()
+    expect(screen.getByTestId('deal-move-button')).toBeDisabled()
   })
 
   it('"Marcar ganho" abre o modal de motivo (A4) em vez de mover direto', async () => {

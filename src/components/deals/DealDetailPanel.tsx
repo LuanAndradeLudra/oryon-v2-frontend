@@ -123,8 +123,22 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
       return
     }
     const previousStageId = deal.stageId
-    setDeal({ ...deal, stageId: stage.id, status: 'open' })
-    dealsApi.setStatus(deal.id, { status: 'open', stageId: stage.id })
+    setDeal({ ...deal, stageId: stage.id })
+    /**
+     * `PATCH /deals/:id/stage` — mover é mover.
+     *
+     * Aqui ia `PATCH /deals/:id/status` com `status: 'open'`, desde a B2
+     * (SCRUM-928). Esse endpoint é o comando de REABRIR, e o backend o rejeita
+     * com `not_closed` quando o registro já está aberto
+     * (`pipeline-items.service.ts`). Como os dois gestos que chegam aqui — o
+     * stepper e o menu "Mover" — só existem com `status === 'open'`, a troca
+     * de etapa devolvia 400 SEMPRE. É o mesmo endpoint que o painel do contato
+     * já usava (`useContactPipelines.moveTo`).
+     *
+     * Etapa terminal não passa por aqui: sai antes, para o modal de motivo —
+     * o backend exige `closeReason` e devolveria 400 `close_reason_required`.
+     */
+    dealsApi.moveStage(deal.id, stage.id)
       .then((res) => setDeal(res.data))
       .catch((err: unknown) => {
         setDeal((d) => (d ? { ...d, stageId: previousStageId } : d))
