@@ -1,5 +1,5 @@
-// A3 (SCRUM-925) — o "Novo negócio" em 2 passos. O que estes testes protegem:
-//   * o passo 2 é o ÚNICO lugar do produto onde valor digitado e itens
+// A3 (SCRUM-925) — o "Novo negócio". O que estes testes protegem:
+//   * o valor é o ÚNICO lugar do produto onde valor digitado e itens
 //     coexistem — a escolha dos dois botões (D0-2) só aparece quando há
 //     divergência de fato, e é ela que decide o `updateAmount` do POST;
 //   * `amountCents` só viaja quando foi DIGITADO (um campo intocado não pode
@@ -7,6 +7,11 @@
 //   * dono é opcional (D0-9): pré-preenchido com quem cria — e aí OMITIDO, para
 //     o backend aplicar o default humano — ou `null` explícito ao ser removido;
 //   * `409 open_exists` nunca vira erro cru na tela (I1).
+//
+// A tela passou de dois passos para uma só (09/09): funil, etapa, dono,
+// previsão e valor viram FICHAS, e o bloco de dinheiro cresce na própria tela
+// quando a ficha "Valor" é ligada. Os testes dirigem as fichas; os invariantes
+// acima são os mesmos.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { Deal, Pipeline, PipelineStage, Product, User } from '@/types'
@@ -71,8 +76,14 @@ const renderDialog = (props: Partial<React.ComponentProps<typeof NewDealDialog>>
     />,
   )
 
-/** Passo 1 → passo 2 com os defaults (contato pronto, funil de venda). */
-const avancar = () => fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+/** Liga a ficha "Valor": o bloco de dinheiro cresce na própria tela. */
+const abrirValor = () => fireEvent.click(screen.getByRole('button', { name: 'Definir valor' }))
+
+/** Abre uma ficha e escolhe uma opção do popover. */
+const escolherNaFicha = (ficha: RegExp, opcao: RegExp) => {
+  fireEvent.click(screen.getByRole('button', { name: ficha }))
+  fireEvent.click(screen.getByRole('menuitem', { name: opcao }))
+}
 
 /** Digita no campo monetário (acumulador: só dígitos contam). */
 const digitarValor = (reais: string) =>
@@ -92,31 +103,38 @@ beforeEach(() => {
   contacts.list.mockResolvedValue({ data: { data: [] } })
 })
 
-describe('NewDealDialog — 2 passos', () => {
+describe('NewDealDialog — uma tela', () => {
   // Antes o diálogo escondia os funis de processo sem dizer por quê — metade
   // dos funis do tenant sumia do seletor. Agora lista os dois, com o tipo no
   // rótulo; o caminho de 1 clique pelo "Adicionar ao funil ▾" continua existindo.
   it('lista os DOIS tipos de funil, com o tipo no rótulo', () => {
     renderDialog()
-    const funil = screen.getByLabelText(/Funil/) as HTMLSelectElement
-    const nomes = Array.from(funil.options).map((o) => o.textContent).join(' ')
+    fireEvent.click(screen.getByRole('button', { name: /^Funil:/ }))
+    const nomes = screen.getAllByRole('menuitem').map((o) => o.textContent).join(' ')
     expect(nomes).toContain('Vendas')
     expect(nomes).toContain('Pós-venda')
     expect(nomes).toContain('Processo ·')
   })
 
-  it('não avança sem título e mostra o erro no campo', () => {
+  it('não cria sem título e mostra o erro', () => {
     renderDialog({ contactName: null })
     fireEvent.change(screen.getByLabelText(/Título/), { target: { value: '   ' } })
-    avancar()
+    fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     expect(screen.getByText('O título é obrigatório.')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Valor do negócio')).not.toBeInTheDocument()
+    expect(deals.create).not.toHaveBeenCalled()
   })
 
-  it('pré-preenche o título com o nome do contato e avança para "Quanto"', () => {
+  it('pré-preenche o título com o nome do contato', () => {
     renderDialog()
-    expect((screen.getByLabelText(/Título/) as HTMLInputElement).value).toBe('Negócio · Mariana')
-    avancar()
+    expect((screen.getByLabelText(/Título/) as HTMLTextAreaElement).value).toBe('Negócio · Mariana')
+  })
+
+  // O passo "Quanto" prometia dinheiro que quase nunca existe: criado do chat,
+  // o negócio nasce sem valor. Agora o bloco só ocupa a tela quando é pedido.
+  it('o bloco de valor só existe depois que a ficha é ligada', () => {
+    renderDialog()
+    expect(screen.queryByLabelText('Valor do negócio')).not.toBeInTheDocument()
+    abrirValor()
     expect(screen.getByLabelText('Valor do negócio')).toBeInTheDocument()
   })
 })
@@ -124,7 +142,7 @@ describe('NewDealDialog — 2 passos', () => {
 describe('NewDealDialog — valor × itens (D0-2)', () => {
   it('valor digitado sem itens: POST com amountCents e sem lineItems', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     digitarValor('150000')
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
@@ -136,7 +154,7 @@ describe('NewDealDialog — valor × itens (D0-2)', () => {
 
   it('campo de valor intocado não viaja no POST (não pode zerar a soma dos itens)', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     addItemPersonalizado('Instalação', '20000')
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
@@ -149,7 +167,7 @@ describe('NewDealDialog — valor × itens (D0-2)', () => {
 
   it('valor divergente da soma: aparecem os dois botões, e "Vincular" preserva o valor', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     digitarValor('150000')
     addItemPersonalizado('Instalação', '20000')
     expect(screen.queryByRole('button', { name: /Criar negócio/i })).not.toBeInTheDocument()
@@ -162,7 +180,7 @@ describe('NewDealDialog — valor × itens (D0-2)', () => {
 
   it('"Vincular e atualizar valor" manda updateAmount: true', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     digitarValor('150000')
     addItemPersonalizado('Instalação', '20000')
     fireEvent.click(screen.getByRole('button', { name: 'Vincular e atualizar valor' }))
@@ -172,7 +190,7 @@ describe('NewDealDialog — valor × itens (D0-2)', () => {
 
   it('atalho "usar a soma" alinha o valor aos itens e a escolha some', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     digitarValor('150000')
     addItemPersonalizado('Instalação', '20000')
     fireEvent.click(screen.getByRole('button', { name: /Usar a soma dos itens/ }))
@@ -187,17 +205,18 @@ describe('NewDealDialog — dono opcional (D0-9)', () => {
   it('dono pré-preenchido com quem cria é OMITIDO (o default humano é do backend)', async () => {
     renderDialog()
     await waitFor(() => expect(users.list).toHaveBeenCalled())
-    avancar()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
     expect(deals.create.mock.calls[0][0]).not.toHaveProperty('ownerUserId')
   })
 
+  // "Sem dono" é destino legítimo, com fila própria — por isso a ficha fica
+  // PREENCHIDA com o texto, e não vazia como se o campo tivesse sido esquecido.
   it('remover o dono manda ownerUserId: null (fila "sem dono")', async () => {
     renderDialog()
     await waitFor(() => expect(users.list).toHaveBeenCalled())
-    fireEvent.change(screen.getByLabelText(/Dono/), { target: { value: '' } })
-    avancar()
+    escolherNaFicha(/^Dono:/, /Sem dono/)
+    expect(screen.getByRole('button', { name: 'Dono: Sem dono' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
     expect(deals.create.mock.calls[0][0].ownerUserId).toBeNull()
@@ -211,7 +230,6 @@ describe('NewDealDialog — conflito I1', () => {
     })
     const onConflict = vi.fn()
     renderDialog({ onConflict })
-    avancar()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(onConflict).toHaveBeenCalledWith({
       openDealId: 'd-aberto', pipelineId: 'v', contactId: 'c1', contactName: 'Mariana',
@@ -234,16 +252,15 @@ describe('NewDealDialog — regressões da revisão', () => {
 
   it('o "+" de uma coluna cria NAQUELA etapa — não na primeira', async () => {
     renderDialog({ pipelines: [VENDAS_3], initialPipelineId: 'v', initialStageId: 'v3' })
-    expect((screen.getByLabelText(/Etapa/) as HTMLSelectElement).value).toBe('v3')
-    avancar()
+    expect(screen.getByRole('button', { name: 'Etapa: Proposta' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
     expect(deals.create.mock.calls[0][0].stageId).toBe('v3')
   })
 
-  it('etapa que não pertence ao funil escolhido cai na 1ª não-terminal', async () => {
+  it('etapa que não pertence ao funil escolhido cai na 1ª não-terminal', () => {
     renderDialog({ pipelines: [VENDAS_3], initialPipelineId: 'v', initialStageId: 'de-outro-funil' })
-    expect((screen.getByLabelText(/Etapa/) as HTMLSelectElement).value).toBe('v1')
+    expect(screen.getByRole('button', { name: 'Etapa: Novo' })).toBeInTheDocument()
   })
 
   // Tenant sem `FF_MULTI_PIPELINE`: o contexto entrega `pipelines: []`, e a aba
@@ -252,29 +269,25 @@ describe('NewDealDialog — regressões da revisão', () => {
   // backend resolve o funil default, como o `DealModal` fazia antes da A3.
   it('sem nenhum funil conhecido, cria mesmo assim e não pede funil', async () => {
     renderDialog({ pipelines: [] })
-    expect(screen.queryByLabelText(/Funil/)).not.toBeInTheDocument()
-    avancar()
-    expect(screen.queryByText('Selecione um funil.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Funil/ })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
+    expect(screen.queryByText('Selecione um funil.')).not.toBeInTheDocument()
     const body = deals.create.mock.calls[0][0]
     expect('pipelineId' in body).toBe(false)
     expect('stageId' in body).toBe(false)
   })
 
-  // Só funil de PROCESSO deixou de ser um beco sem saída: o diálogo o aceita,
-  // vira um passo só (processo não tem valor nem itens) e cria "registro".
-  // O Escopo vivia no passo "Quanto" — um passo que promete dinheiro, não
-  // escopo —, e por isso o diálogo de VENDA parecia não ter onde descrever o
-  // negócio. Agora fica ao lado do Título, no passo 1, nos dois tipos.
-  it('venda: Escopo está no passo 1, junto do Título', () => {
+  // Título e escopo respondem à mesma pergunta — "o que é isto?" — em duas
+  // escalas, e agora abrem a tela juntos, sem moldura.
+  it('título e escopo abrem a tela, juntos', () => {
     renderDialog()
     expect(screen.getByLabelText(/Título/)).toBeInTheDocument()
     expect(screen.getByLabelText(/Escopo/)).toBeInTheDocument()
   })
 
   // O escopo (`description`) é o "o que está sendo tratado" — existe para os
-  // dois tipos e ficava preso ao passo 2, que some em processo.
+  // dois tipos e ficava preso ao passo 2, que sumia em processo.
   it('escopo é enviado como `description` e existe também em processo', async () => {
     renderDialog({ pipelines: [PROCESSO] })
     fireEvent.change(screen.getByLabelText(/Escopo/), { target: { value: 'Consulta de retorno' } })
@@ -291,11 +304,20 @@ describe('NewDealDialog — regressões da revisão', () => {
     expect(deals.create.mock.calls[0][0]).not.toHaveProperty('description')
   })
 
-  it('só com funil de processo: cria em um passo, com o substantivo do tipo', async () => {
+  // Processo não tem valor nem itens (§4 do Modelo B): a ficha "Valor" nem é
+  // oferecida — antes isso era resolvido sumindo com um passo inteiro.
+  it('funil de processo: sem ficha de valor, e o substantivo é o do tipo', async () => {
     renderDialog({ pipelines: [PROCESSO] })
     expect(screen.getByRole('button', { name: /Criar registro/i })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Continuar' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Definir valor' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Criar registro/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
+  })
+
+  // A "Observação" saiu da criação (decisão do PO, 09/09): recado operacional
+  // para a equipe vive na ficha do negócio, não no diálogo que o cria.
+  it('a observação não existe mais na criação', () => {
+    renderDialog()
+    expect(screen.queryByLabelText(/Observação/)).not.toBeInTheDocument()
   })
 })

@@ -71,7 +71,14 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
       onClose()
     }
     const keyHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onClose(); returnFocusToTrigger() }
+      if (e.key !== 'Escape') return
+      // `stopPropagation` porque o Esc pertence ao menu ABERTO, não ao que
+      // está atrás dele: o Modal escuta em `window` e o menu em `document`,
+      // que dispara antes. Sem isto, fechar um seletor dentro de um diálogo
+      // fechava o diálogo junto — e o operador perdia o que tinha digitado.
+      e.stopPropagation()
+      onClose()
+      returnFocusToTrigger()
     }
     document.addEventListener('mousedown', handler)
     document.addEventListener('keydown', keyHandler)

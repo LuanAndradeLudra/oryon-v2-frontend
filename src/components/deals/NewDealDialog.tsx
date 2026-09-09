@@ -1,15 +1,12 @@
-import { useState, useEffect, useMemo, useCallback, type ReactNode } from 'react'
-import { Search, User as UserIcon, Wallet, HelpCircle } from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
+import { Search, ArrowRight, CalendarDays, Wallet } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { MoneyInput } from '@/components/ui/MoneyInput'
-import { Tooltip } from '@/components/ui/Tooltip'
-import { Textarea } from '@/components/ui/Textarea'
-import { Stepper } from '@/components/ui/Stepper'
+import { AttributeChip, ChipOption, ToggleChip } from './AttributeChip'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
@@ -27,9 +24,20 @@ import type { Contact, Deal, Pipeline, User } from '@/types'
  * tabela). Funil de PROCESSO continua no "Adicionar ao funil" de 1 clique:
  * registro de processo não tem valor nem composição (F8-873).
  *
- * Os dois passos existem para separar perguntas de natureza diferente —
- * "quem e onde" (identidade do negócio) e "quanto" (dinheiro) — e para que a
- * criação mínima (contato + funil) caiba numa tela de celular sem rolagem.
+ * **Uma tela, título primeiro, contexto em fichas.** O formulário era uma
+ * pilha de nove blocos rotulados em dois passos — 863 px para uma tarefa cujo
+ * caminho feliz é "Continuar → Criar", com os dois únicos campos obrigatórios
+ * já preenchidos. Agora a identidade (título e escopo) abre a tela em corpo
+ * grande, e funil, etapa, dono, previsão e valor viram fichas: mostram o valor
+ * resolvido e abrem o seletor no clique.
+ *
+ * O passo "Quanto" saiu porque prometia dinheiro que quase nunca existe —
+ * criado do chat, o negócio nasce sem valor. Quem precisa dele abre a ficha
+ * "Valor" e o bloco cresce na própria tela, sem trocar de passo.
+ *
+ * A "Observação" saiu da criação (decisão do PO, 09/09): é recado operacional
+ * para a equipe, não ajuda a criar — vive na ficha do negócio, que é onde a
+ * equipe volta.
  *
  * Decisões de produto que este componente materializa:
  *   * **D0-2** — valor digitado e itens COEXISTEM. Não há modo persistente: a
@@ -66,41 +74,19 @@ export interface NewDealDialogProps {
   onConflict?: (info: { openDealId: string; pipelineId: string; contactId: string; contactName: string }) => void
 }
 
-type Step = 'quem' | 'quanto'
 
-/**
- * Rótulo com dica. Título, Escopo e Observação são três campos de texto
- * seguidos, e o nome sozinho não diz qual é qual — nem onde cada um aparece
- * depois. O `hint` do FormField resolve o caso curto; a dica cobre o resto
- * sem encher o formulário de texto.
- */
-/**
- * Cabeçalho de seção do formulário. O corpo era uma pilha plana de campos —
- * legível, mas sem hierarquia: tudo pesava igual e o olho não encontrava onde
- * começar. Agrupar em blocos nomeados ("Onde", "O que", "Responsável") dá a
- * leitura em dois níveis que todo formulário sério tem.
- */
-function SecaoForm({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <span className="text-3xs font-semibold uppercase tracking-wider text-surface-500 whitespace-nowrap">{titulo}</span>
-        <span className="h-px flex-1 bg-surface-800" aria-hidden />
-      </div>
-      {children}
-    </section>
-  )
+/** Iniciais para o avatar do dono na ficha. */
+function iniciais(nome: string) {
+  const partes = nome.trim().split(/\s+/).filter(Boolean)
+  if (partes.length === 0) return '?'
+  return (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase()
 }
 
-function LabelComDica({ texto, dica }: { texto: string; dica: string }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      {texto}
-      <Tooltip content={dica} side="top" wide>
-        <HelpCircle className="w-3 h-3 text-surface-500 hover:text-surface-300 transition-colors" aria-label={dica} />
-      </Tooltip>
-    </span>
-  )
+/** "2026-09-30" → "30 set" (o que cabe numa ficha). */
+function dataCurta(iso: string) {
+  const d = new Date(`${iso}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace(' de ', ' ').replace('.', '')
 }
 
 export function NewDealDialog({
@@ -119,7 +105,10 @@ export function NewDealDialog({
   const { user } = useAuth()
   const { vocab } = useTenantVocab()
 
-  const [step, setStep] = useState<Step>('quem')
+  // O bloco de valor cresce na própria tela quando a ficha "Valor" é ligada —
+  // no lugar do passo 2 que existia antes.
+  const [valorAberto, setValorAberto] = useState(false)
+  const tituloRef = useRef<HTMLTextAreaElement>(null)
   // Contato: `contactId` da prop manda; sem ele, o operador busca (board).
   const [pickedContact, setPickedContact] = useState<{ id: string; name: string } | null>(null)
   const [search, setSearch] = useState('')
@@ -141,7 +130,6 @@ export function NewDealDialog({
   const [amountTouched, setAmountTouched] = useState(false)
   const [items, setItems] = useState<DealItemDraft[]>([])
   const [expectedCloseAt, setExpectedCloseAt] = useState('')
-  const [note, setNote] = useState('')
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -182,7 +170,7 @@ export function NewDealDialog({
   // ─── Abertura: reseta tudo (o diálogo não desmonta entre aberturas) ───────
   useEffect(() => {
     if (!open) return
-    setStep('quem')
+    setValorAberto(false)
     setPickedContact(null)
     setSearch('')
     setResults([])
@@ -198,7 +186,6 @@ export function NewDealDialog({
     setAmountTouched(false)
     setItems([])
     setExpectedCloseAt('')
-    setNote('')
     setError('')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -248,15 +235,18 @@ export function NewDealDialog({
     return () => { cancelled = true; clearTimeout(t) }
   }, [open, contactId, search])
 
-  const step1Complete = Boolean(contact?.id && (pipelineId || semFunis) && title.trim())
-
-  const goToQuanto = () => {
-    if (!contact?.id) { setError('Escolha o contato do negócio.'); return }
-    if (!pipelineId && !semFunis) { setError('Selecione um funil.'); return }
-    if (!title.trim()) { setError('O título é obrigatório.'); return }
+  /**
+   * Numa tela só, a validação deixa de ser porteira de passo e vira porteira
+   * do POST. O foco vai para o que falta: o título é o herói da tela, então
+   * errar nele sem levar o cursor até lá deixaria o operador procurando.
+   */
+  const validar = useCallback(() => {
+    if (!contact?.id) { setError('Escolha o contato do negócio.'); return false }
+    if (!pipelineId && !semFunis) { setError('Selecione um funil.'); return false }
+    if (!title.trim()) { setError('O título é obrigatório.'); tituloRef.current?.focus(); return false }
     setError('')
-    setStep('quanto')
-  }
+    return true
+  }, [contact?.id, pipelineId, semFunis, title])
 
   /**
    * `updateAmount` só é enviado junto de `lineItems` — é o contrato da A2. Nos
@@ -264,7 +254,7 @@ export function NewDealDialog({
    * valor digitado, o backend já faz `amountCents = Σ itens`.
    */
   const submit = useCallback(async (updateAmount?: boolean) => {
-    if (!contact?.id) return
+    if (!validar() || !contact?.id) return
     const itemsError = validateItems(items)
     if (itemsError) { setError(itemsError); return }
     setSaving(true)
@@ -285,7 +275,6 @@ export function NewDealDialog({
             }
           : {}),
         ...(expectedCloseAt ? { expectedCloseAt: new Date(expectedCloseAt).toISOString() } : {}),
-        ...(note.trim() ? { note: note.trim() } : {}),
         // Omitido = o backend usa quem criou (default humano da B1). `null`
         // explícito é a remoção deliberada — "sem dono" (D0-9).
         ...(ownerUserId === undefined ? {} : { ownerUserId }),
@@ -307,174 +296,229 @@ export function NewDealDialog({
     } finally {
       setSaving(false)
     }
-  }, [contact?.id, items, title, pipelineId, stageId, originConversationId, amountTouched, amountCents, hasItems, description, expectedCloseAt, note, ownerUserId, onCreated, onConflict])
+  }, [validar, contact?.id, items, title, pipelineId, stageId, originConversationId, amountTouched, amountCents, hasItems, description, expectedCloseAt, ownerUserId, onCreated, onConflict])
 
-  // ─── Passo 1 · Quem e onde ────────────────────────────────────────────────
-  const stepQuem = (
-    <div className="flex flex-col gap-5">
-      {contactId ? (
-        <FormField label="Contato">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100">
-            <UserIcon className="w-4 h-4 text-surface-400 shrink-0" />
-            <span className="truncate">{contactName || 'Contato selecionado'}</span>
-          </div>
-        </FormField>
-      ) : (
-        <FormField label="Contato" required error={error === 'Escolha o contato do negócio.' ? error : undefined}>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
-            <Input
-              value={pickedContact ? pickedContact.name : search}
-              onChange={(e) => { setPickedContact(null); setSearch(e.target.value); setError('') }}
-              placeholder="Buscar contato por nome, e-mail ou telefone"
-              className="pl-9"
-              autoFocus
-            />
-          </div>
-          {!pickedContact && search.trim().length >= 2 && (
-            <ul className="mt-1 max-h-48 overflow-y-auto rounded-lg border border-surface-700 bg-surface-800 divide-y divide-surface-700">
-              {searching && <li className="px-3 py-2 text-xs text-surface-400">Buscando…</li>}
-              {!searching && results.length === 0 && (
-                <li className="px-3 py-2 text-xs text-surface-400">Nenhum contato encontrado.</li>
-              )}
-              {results.map((c) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onClick={() => { setPickedContact({ id: c.id, name: c.displayName }); setResults([]); setError('') }}
-                    className="w-full min-h-11 px-3 py-2 text-left text-sm text-surface-100 hover:bg-surface-700 transition-colors"
-                  >
-                    {c.displayName}
-                    {(c.email || c.waId) && (
-                      <span className="ml-2 text-xs text-surface-400">{c.email || c.waId}</span>
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </FormField>
-      )}
+  // ─── Corpo · uma tela ─────────────────────────────────────────────────────
 
-      {/* Sem funis conhecidos (tenant sem o flag) não há o que escolher: o
-          backend resolve o funil default. */}
-      {!semFunis && (
-      <SecaoForm titulo="Onde">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
-          <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
-            {salesPipelines.length === 0 && <option value="">Nenhum funil disponível</option>}
-            {salesPipelines.map((p) => (
-              <option key={p.id} value={p.id}>
-                {pipelineKindOption(pipelineKindOf(p)).label} · {p.name}{p.isDefault ? ' (padrão)' : ''}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-        <FormField label="Etapa" hint={`Coluna em que o ${noun} nasce.`}>
-          <Select value={stageId} onChange={(e) => setStageId(e.target.value)}>
-            {stages.length === 0 && <option value="">Nenhuma etapa disponível</option>}
-            {stages.map((s) => (
-              <option key={s.id} value={s.id}>{s.label}</option>
-            ))}
-          </Select>
-        </FormField>
-      </div>
-      </SecaoForm>
-      )}
+  /** Cresce o campo de texto sem moldura conforme o conteúdo quebra linha. */
+  const cresce = (el: HTMLTextAreaElement | null) => {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
 
-      {/* Título e Escopo respondem à mesma pergunta — "o que é isto?" — em
-          duas escalas. Viviam separados por um passo chamado "Quanto", que
-          promete dinheiro e não escopo; era por isso que o diálogo de venda
-          parecia não ter onde descrever o negócio. */}
-      <SecaoForm titulo="O que">
-      <FormField
-        label={<LabelComDica texto="Título" dica={`Nome curto, do jeito que você quer ver na lista e no card do quadro. Ex: "${vocab.deal} · Plano Anual".`} />}
-        required
-        error={error === 'O título é obrigatório.' ? error : undefined}
-      >
+  // O título nasce sugerido ("Negócio · Fulano") e SELECIONADO: digitar
+  // substitui, e quem aceita a sugestão sai daqui em dois gestos. Só quando o
+  // contato já é conhecido — no caminho do board o cursor pertence à busca.
+  useEffect(() => {
+    if (!open || !contactId) return
+    const t = requestAnimationFrame(() => {
+      const el = tituloRef.current
+      if (!el) return
+      el.focus()
+      el.select()
+    })
+    return () => cancelAnimationFrame(t)
+  }, [open, contactId])
+
+  // Contato desconhecido (board): a busca continua sendo CAMPO. Ficha serve a
+  // valor escolhido de um conjunto curto — não a texto digitado.
+  const buscaContato = !contactId && (
+    <FormField label="Contato" required error={error === 'Escolha o contato do negócio.' ? error : undefined}>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
         <Input
-          value={title}
-          onChange={(e) => { setTitle(e.target.value); setError('') }}
-          placeholder={`Ex: ${vocab.deal} · Plano Anual`}
+          value={pickedContact ? pickedContact.name : search}
+          onChange={(e) => { setPickedContact(null); setSearch(e.target.value); setError('') }}
+          placeholder="Buscar contato por nome, e-mail ou telefone"
+          className="pl-9"
+          autoFocus
         />
-      </FormField>
-
-      <FormField
-        label={<LabelComDica
-          texto="Escopo (opcional)"
-          dica={isProcess
-            ? 'O que está sendo tratado neste registro — aparece no card do quadro, abaixo do título.'
-            : 'O que está sendo proposto ao cliente — aparece no card do quadro, abaixo do título.'}
-        />}
-        hint={isProcess ? 'O que está sendo tratado.' : 'O que está sendo proposto.'}
-      >
-        <Textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          placeholder={isProcess ? 'Ex: consulta de retorno, ajuste de plano' : 'Ex: site institucional + hospedagem dedicada'}
-        />
-      </FormField>
-      </SecaoForm>
-
-      {/* D0-9: dono opcional, pré-preenchido com quem cria e removível. A fila
-          "sem dono" é destino legítimo — não é um campo obrigatório disfarçado. */}
-      <SecaoForm titulo="Responsável">
-      <FormField label="Dono" hint="Você pode deixar sem dono — o negócio entra na fila.">
-        <Select
-          value={ownerUserId === undefined ? (user?.id ?? '') : (ownerUserId ?? '')}
-          onChange={(e) => setOwnerUserId(e.target.value === '' ? null : e.target.value)}
-        >
-          <option value="">— sem dono —</option>
-          {(users.length > 0 ? users : (user ? [user] : [])).map((u) => (
-            <option key={u.id} value={u.id}>
-              {`${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email}
-              {u.id === user?.id ? ' (eu)' : ''}
-            </option>
+      </div>
+      {!pickedContact && search.trim().length >= 2 && (
+        <ul className="mt-1 max-h-48 overflow-y-auto rounded-lg border border-surface-700 bg-surface-800 divide-y divide-surface-700">
+          {searching && <li className="px-3 py-2 text-xs text-surface-400">Buscando…</li>}
+          {!searching && results.length === 0 && (
+            <li className="px-3 py-2 text-xs text-surface-400">Nenhum contato encontrado.</li>
+          )}
+          {results.map((c) => (
+            <li key={c.id}>
+              <button
+                type="button"
+                onClick={() => { setPickedContact({ id: c.id, name: c.displayName }); setResults([]); setError('') }}
+                className="w-full min-h-11 px-3 py-2 text-left text-sm text-surface-100 hover:bg-surface-700 transition-colors"
+              >
+                {c.displayName}
+                {(c.email || c.waId) && (
+                  <span className="ml-2 text-xs text-surface-400">{c.email || c.waId}</span>
+                )}
+              </button>
+            </li>
           ))}
-        </Select>
-      </FormField>
-      </SecaoForm>
+        </ul>
+      )}
+    </FormField>
+  )
+
+  // ─── Identidade ───────────────────────────────────────────────────────────
+  // Título e escopo respondem à mesma pergunta — "o que é isto?" — em duas
+  // escalas. Sem moldura e em corpo grande: é o que o operador lê primeiro e
+  // onde o cursor já está. Textarea em vez de input para o título longo
+  // quebrar linha em vez de sumir para dentro do campo.
+  const identidade = (
+    <div className="flex flex-col gap-1.5">
+      <textarea
+        ref={(el) => { tituloRef.current = el; cresce(el) }}
+        value={title}
+        onChange={(e) => { setTitle(e.target.value); cresce(e.currentTarget); setError('') }}
+        rows={1}
+        aria-label="Título"
+        aria-required
+        aria-invalid={error === 'O título é obrigatório.' || undefined}
+        placeholder={`Nome do ${noun}`}
+        className="w-full resize-none overflow-hidden bg-transparent border-0 p-0 font-display text-xl font-semibold leading-snug text-surface-50 placeholder:text-surface-600 focus:outline-none"
+      />
+      <textarea
+        ref={cresce}
+        value={description}
+        onChange={(e) => { setDescription(e.target.value); cresce(e.currentTarget) }}
+        rows={1}
+        aria-label="Escopo"
+        placeholder={isProcess ? 'O que está sendo tratado?' : 'O que está sendo proposto?'}
+        className="w-full resize-none overflow-hidden bg-transparent border-0 p-0 text-sm leading-relaxed text-surface-300 placeholder:text-surface-500 focus:outline-none"
+      />
     </div>
   )
 
-  // Campos que valem para os DOIS tipos de funil. Ficavam presos ao passo
-  // "Quanto"; com o passo sumindo em processo, sumiam junto — e "Adicionar com
-  // detalhes…" num funil de processo não tinha detalhe nenhum a oferecer.
-  const detalhes = (
-    <SecaoForm titulo="Detalhes">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FormField label={isProcess ? 'Previsão de conclusão (opcional)' : 'Previsão de fechamento (opcional)'}>
-          <Input type="date" value={expectedCloseAt} onChange={(e) => setExpectedCloseAt(e.target.value)} />
-        </FormField>
-      </div>
-      <FormField
-        label={<LabelComDica texto="Observação (opcional)" dica="Recado operacional para a equipe — combinados, restrições, o que lembrar no próximo contato. NÃO aparece no card do quadro." />}
-        hint="Recado interno para a equipe."
-      >
-        <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Ex: cliente só atende depois das 18h" />
-      </FormField>
-    </SecaoForm>
+  // ─── Fichas ───────────────────────────────────────────────────────────────
+  const etapaAtual = stages.find((s) => s.id === stageId)
+  const equipe = users.length > 0 ? users : (user ? [user] : [])
+  const donoId = ownerUserId === undefined ? (user?.id ?? '') : (ownerUserId ?? '')
+  const donoUser = equipe.find((u) => u.id === donoId)
+  const nomeDe = (u: User) => `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email
+  // "Sem dono" é escolha legítima (D0-9) — por isso a ficha fica PREENCHIDA
+  // com o texto, e não vazia como se o campo tivesse sido esquecido.
+  const donoValor = ownerUserId === null ? 'Sem dono' : (donoUser ? nomeDe(donoUser) : null)
+  const FunilIcon = selectedPipeline ? pipelineKindOption(pipelineKindOf(selectedPipeline)).icon : Wallet
+
+  const avatarDono = (
+    <span className="w-4 h-4 rounded-full bg-surface-700 text-surface-200 text-[8px] font-semibold grid place-items-center shrink-0" aria-hidden>
+      {ownerUserId === null ? '–' : (donoUser ? iniciais(nomeDe(donoUser)) : '?')}
+    </span>
   )
 
-  // ─── Passo 2 · Quanto ─────────────────────────────────────────────────────
-  const stepQuanto = (
-    <div className="flex flex-col gap-5">
-      <SecaoForm titulo="Valor">
-      <FormField label="Valor" hint="Pode divergir da soma dos itens — nem tudo é comprado agora.">
-        <MoneyInput
-          value={amountCents}
-          onChange={(cents) => { setAmountCents(cents); setAmountTouched(true); setError('') }}
-          aria-label="Valor do negócio"
-          autoFocus
+  const fichas = (
+    <div className="flex flex-wrap gap-1.5">
+      {!semFunis && (
+        <AttributeChip label="Funil" value={selectedPipeline?.name} icon={FunilIcon}>
+          {(fechar) => (
+            salesPipelines.length === 0
+              ? <p className="px-3 py-2 text-xs text-surface-400">Nenhum funil disponível</p>
+              : <>{salesPipelines.map((p) => (
+                  <ChipOption
+                    key={p.id}
+                    selected={p.id === pipelineId}
+                    onSelect={() => { setPipelineId(p.id); setError(''); fechar() }}
+                  >
+                    {pipelineKindOption(pipelineKindOf(p)).label} · {p.name}{p.isDefault ? ' (padrão)' : ''}
+                  </ChipOption>
+                ))}</>
+          )}
+        </AttributeChip>
+      )}
+
+      {!semFunis && (
+        <AttributeChip label="Etapa" value={etapaAtual?.label} icon={ArrowRight} disabled={stages.length === 0}>
+          {(fechar) => (
+            <>{stages.map((s) => (
+              <ChipOption key={s.id} selected={s.id === stageId} onSelect={() => { setStageId(s.id); fechar() }}>
+                {s.label}
+              </ChipOption>
+            ))}</>
+          )}
+        </AttributeChip>
+      )}
+
+      <AttributeChip label="Dono" value={donoValor} leading={avatarDono}>
+        {(fechar) => (
+          <>
+            <ChipOption selected={ownerUserId === null} onSelect={() => { setOwnerUserId(null); fechar() }}>
+              Sem dono — entra na fila
+            </ChipOption>
+            {equipe.map((u) => (
+              <ChipOption key={u.id} selected={u.id === donoId && ownerUserId !== null} onSelect={() => { setOwnerUserId(u.id); fechar() }}>
+                {nomeDe(u)}{u.id === user?.id ? ' (eu)' : ''}
+              </ChipOption>
+            ))}
+          </>
+        )}
+      </AttributeChip>
+
+      <AttributeChip
+        label="Previsão"
+        value={expectedCloseAt ? dataCurta(expectedCloseAt) : null}
+        icon={CalendarDays}
+      >
+        {(fechar) => (
+          // Sem `role="menuitem"` aqui de propósito: o Dropdown foca o primeiro
+          // item que encontra na abertura, e o que deve receber o foco é a data.
+          <div className="flex flex-col gap-2 p-2 min-w-[14rem]">
+            <input
+              type="date"
+              autoFocus
+              value={expectedCloseAt}
+              onChange={(e) => setExpectedCloseAt(e.target.value)}
+              aria-label={isProcess ? 'Previsão de conclusão' : 'Previsão de fechamento'}
+              className="w-full rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/60"
+            />
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => { setExpectedCloseAt(''); fechar() }}
+                className="text-xs text-surface-400 hover:text-surface-200 transition-colors cursor-pointer"
+              >
+                Limpar
+              </button>
+              <button
+                type="button"
+                onClick={fechar}
+                className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer"
+              >
+                Pronto
+              </button>
+            </div>
+          </div>
+        )}
+      </AttributeChip>
+
+      {/* Funil de processo não tem valor nem itens (§4 do Modelo B): a ficha
+          simplesmente não é oferecida. */}
+      {!isProcess && (
+        <ToggleChip
+          label="Valor"
+          icon={Wallet}
+          active={valorAberto}
+          value={amountTouched || hasItems ? formatBRL(shownTotal) : null}
+          onClick={() => setValorAberto((v) => !v)}
         />
-      </FormField>
+      )}
+    </div>
+  )
+
+  // ─── Valor · cresce na própria tela, no lugar do passo 2 ──────────────────
+  const blocoValor = !isProcess && valorAberto && (
+    <div className="flex flex-col gap-3 rounded-xl border border-surface-700 bg-surface-800/50 p-3">
+      <MoneyInput
+        value={amountCents}
+        onChange={(cents) => { setAmountCents(cents); setAmountTouched(true); setError('') }}
+        aria-label="Valor do negócio"
+        autoFocus
+      />
 
       <div className="flex flex-col gap-1.5">
         {/* Sem `FormField` em volta: o contexto dele injeta o mesmo id em todos
             os campos descendentes e quebra os rótulos das linhas (A1/153). */}
-        <span className="text-xs font-semibold text-surface-300 uppercase tracking-wider">Itens</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-surface-500">Itens</span>
         <DealItemsEditor
           value={items}
           onChange={(next) => { setItems(next); setError('') }}
@@ -484,9 +528,9 @@ export function NewDealDialog({
         />
       </div>
 
-      {/* Total sempre visível, com a ORIGEM explícita — é o que evita o
-          operador achar que o valor "sumiu" quando ele diverge dos itens. */}
-      <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-surface-800 border border-surface-700">
+      {/* Total com a ORIGEM explícita — é o que evita o operador achar que o
+          valor "sumiu" quando ele diverge dos itens. */}
+      <div className="flex items-center justify-between gap-3 border-t border-surface-800 pt-2.5">
         <span className="flex items-center gap-2 text-xs text-surface-400">
           <Wallet className="w-4 h-4" />
           {hasItems && !amountTouched
@@ -497,79 +541,74 @@ export function NewDealDialog({
         </span>
         <span className="text-sm font-semibold text-surface-100 tabular-nums">{formatBRL(shownTotal)}</span>
       </div>
+
       {diverges && (
         <button
           type="button"
           onClick={() => { setAmountCents(itemsTotal); setAmountTouched(true) }}
-          className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 min-h-11 sm:min-h-0"
+          className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 min-h-11 sm:min-h-0 cursor-pointer"
         >
           Usar a soma dos itens ({formatBRL(itemsTotal)})
         </button>
       )}
-      </SecaoForm>
-
-      {detalhes}
     </div>
   )
 
   const footer = (
-    <div className="flex flex-col gap-2">
-      {error && !['Escolha o contato do negócio.', 'Selecione um funil.', 'O título é obrigatório.'].includes(error) && (
+    <div className="flex flex-col gap-2 border-t border-surface-800 pt-3">
+      {error && error !== 'Escolha o contato do negócio.' && (
         <p role="alert" className="text-xs text-danger">{error}</p>
       )}
-      <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center justify-end')}>
-        {isProcess ? (
-          <>
-            <Button variant="ghost" onClick={onClose} className={cn(isMobile && 'min-h-11')}>Cancelar</Button>
-            <Button variant="primary" loading={saving} onClick={() => submit()} className={cn(isMobile && 'min-h-11')}>
-              Criar {noun}
-            </Button>
-          </>
-        ) : step === 'quem' ? (
-          <>
-            <Button variant="ghost" onClick={onClose} className={cn(isMobile && 'min-h-11')}>Cancelar</Button>
-            <Button variant="primary" onClick={goToQuanto} className={cn(isMobile && 'min-h-11')}>Continuar</Button>
-          </>
-        ) : diverges ? (
-          // D0-2 · os dois botões: a escolha vive no gesto, não num modo.
-          <>
-            <Button variant="ghost" onClick={() => setStep('quem')} className={cn(isMobile && 'min-h-11')}>Voltar</Button>
-            <Button variant="secondary" loading={saving} onClick={() => submit(false)} className={cn(isMobile && 'min-h-11')}>
-              Vincular
-            </Button>
-            <Button variant="primary" loading={saving} onClick={() => submit(true)} className={cn(isMobile && 'min-h-11')}>
-              Vincular e atualizar valor
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="ghost" onClick={() => setStep('quem')} className={cn(isMobile && 'min-h-11')}>Voltar</Button>
-            <Button variant="primary" loading={saving} onClick={() => submit()} className={cn(isMobile && 'min-h-11')}>
-              Criar {noun}
-            </Button>
-          </>
+      <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center justify-between')}>
+        {!isMobile && (
+          <span className="text-[11px] text-surface-500">
+            <kbd className="rounded border border-surface-700 px-1 py-0.5 font-mono text-[10px]">⌘</kbd>
+            {' '}
+            <kbd className="rounded border border-surface-700 px-1 py-0.5 font-mono text-[10px]">↵</kbd>
+            {' '}cria
+          </span>
         )}
+        <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center')}>
+          {diverges ? (
+            // D0-2 · os dois botões: a escolha vive no gesto, não num modo.
+            <>
+              <Button variant="ghost" onClick={onClose} className={cn(isMobile && 'min-h-11')}>Cancelar</Button>
+              <Button variant="secondary" loading={saving} onClick={() => submit(false)} className={cn(isMobile && 'min-h-11')}>
+                Vincular
+              </Button>
+              <Button variant="primary" loading={saving} onClick={() => submit(true)} className={cn(isMobile && 'min-h-11')}>
+                Vincular e atualizar valor
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={onClose} className={cn(isMobile && 'min-h-11')}>Cancelar</Button>
+              <Button variant="primary" loading={saving} onClick={() => submit()} className={cn(isMobile && 'min-h-11')}>
+                Criar {noun}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
 
+  // ⌘/Ctrl + Enter cria sem tirar a mão do teclado. Na divergência de valor
+  // não: ali a escolha entre os dois botões é justamente o que não pode ser
+  // resolvido por um atalho só (D0-2).
+  const atalhoCriar = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !saving && !diverges) {
+      e.preventDefault()
+      submit()
+    }
+  }
+
   const body: ReactNode = (
-    <div className="flex flex-col gap-4">
-      {/* Processo não tem valor nem itens: um só passo, sem stepper. */}
-      {!isProcess && (
-        <Stepper
-          sections={[
-            { id: 'quem', label: 'Quem e onde', complete: step1Complete },
-            { id: 'quanto', label: 'Quanto', complete: step === 'quanto' && (amountTouched || hasItems) },
-          ]}
-          active={step}
-          onJump={(id) => { if (id === 'quem') setStep('quem'); else goToQuanto() }}
-        />
-      )}
-      {isProcess || step === 'quem' ? stepQuem : stepQuanto}
-      {/* Em processo não há passo 2: os campos comuns entram aqui, senão
-          "Adicionar com detalhes…" abriria um formulário sem detalhes. */}
-      {isProcess && detalhes}
+    <div className="flex flex-col gap-4" onKeyDown={atalhoCriar}>
+      {buscaContato}
+      {identidade}
+      {fichas}
+      {blocoValor}
       {footer}
     </div>
   )
