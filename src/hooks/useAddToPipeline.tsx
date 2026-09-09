@@ -9,7 +9,6 @@ import { pipelineKindOf } from '@/lib/pipelineKinds'
 import { getActivePipelines } from '@/lib/utils'
 import { PipelineConflictModal, type ConflictChoice } from '@/components/deals/PipelineConflictModal'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
-import { ConfirmAddToPipelineModal } from '@/components/deals/ConfirmAddToPipelineModal'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
@@ -70,9 +69,13 @@ function readConflict(e: unknown): { openDealId: string; pipelineId?: string } |
 /**
  * Fluxo "Adicionar ao funil" (F9 · SCRUM-874/875/877/879, pranchetas 3–4),
  * compartilhado pelas três superfícies. Regras:
- *   * funil de **processo** → cria o registro na hora (`POST /deals` com
- *     `originConversationId` quando vem da conversa) — sem "Novo negócio";
- *   * funil de **venda** → abre o `DealModal` (valor/itens opcionais);
+ *   * **os dois tipos** abrem o `NewDealDialog` pré-preenchido — uma superfície
+ *     de criação só. Em processo ele é a CONFIRMAÇÃO do gesto: até 09/09 o
+ *     clique num funil criava o registro na hora e o operador só via o
+ *     resultado no toast, depois do fato — e não há desfazer, porque a API de
+ *     negócios não tem `delete`;
+ *   * quem marca "não perguntar de novo" naquele funil volta ao 1 clique
+ *     (`POST /deals` direto, com `originConversationId` quando vem da conversa);
  *   * `409 open_exists` (I1) → modal de conflito com três saídas: abrir o
  *     existente · mover para a 1ª etapa · fechar como Cancelado/Perdido com
  *     motivo e abrir um novo. Nada acontece em silêncio.
@@ -88,10 +91,11 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
   const { openDeal } = useDealPanel()
   const [conflict, setConflict] = useState<ConflictState | null>(null)
   const [closeTarget, setCloseTarget] = useState<{ target: AddToPipelineTarget; existing: Deal; stage: PipelineStage } | null>(null)
-  const [salesTarget, setSalesTarget] = useState<AddToPipelineTarget | null>(null)
-  // Processo com confirmação pendente — o registro ainda NÃO foi criado.
-  const [confirmTarget, setConfirmTarget] = useState<AddToPipelineTarget | null>(null)
+  const [dialogTarget, setDialogTarget] = useState<AddToPipelineTarget | null>(null)
   const [dispensados, setDispensados] = useState<string[]>(lerDispensados)
+  // Caixa "não perguntar de novo" do diálogo, quando ele está servindo de
+  // confirmação. Mora aqui porque a preferência é do GESTO, não do formulário.
+  const [naoPerguntarMais, setNaoPerguntarMais] = useState(false)
   const [busy, setBusy] = useState(false)
   const { onCreated } = opts
 
@@ -144,31 +148,19 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     }
   }, [createRecord, announce, openConflict, toast])
 
-  const confirmarProcesso = useCallback(async ({ naoPerguntarMais }: { naoPerguntarMais: boolean }) => {
-    const target = confirmTarget
-    if (!target) return
-    if (naoPerguntarMais) {
-      dispensar(target.pipeline.id)
-      setDispensados(lerDispensados())
-    }
-    setConfirmTarget(null)
-    await criarProcesso(target)
-  }, [confirmTarget, criarProcesso])
-
   /**
-   * Segunda porta do "Adicionar ao funil ▾": abre o diálogo em vez de criar.
+   * Segunda porta do "Adicionar ao funil ▾": abre o diálogo SEM funil escolhido
+   * de antemão — o operador decide lá dentro, na ficha do funil.
    *
-   * O clique num funil continua criando em UM clique — numa clínica que põe
-   * dezenas de pessoas por dia em "Confirmação de consulta", trocar isso por
-   * um formulário seria piora. Mas quem precisa de título próprio, escopo,
-   * dono ou previsão não tinha onde preencher: em processo o registro nascia
-   * com o nome do contato como título e nada mais. Esta porta dá o formulário
-   * a quem quer, sem tirar a velocidade de quem não quer.
+   * Desde 09/09 o clique num funil também abre o diálogo, então esta porta
+   * deixou de ser a única forma de preencher título, escopo, dono ou previsão.
+   * O que ela ainda faz de diferente é não exigir a escolha do funil no menu:
+   * serve a quem abre o menu sem saber ainda onde o registro vai entrar.
    */
   const requestAddDetailed = useCallback((target: Omit<AddToPipelineTarget, 'pipeline'> & { pipeline?: Pipeline }) => {
     const fallback = target.pipeline ?? getActivePipelines(pipelines)[0]
     if (!fallback) { toast('Nenhum funil disponível.', 'error'); return }
-    setSalesTarget({ ...target, pipeline: fallback })
+    setDialogTarget({ ...target, pipeline: fallback })
   }, [pipelines, toast])
 
   const requestAdd = useCallback(async (target: AddToPipelineTarget) => {
@@ -194,7 +186,7 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
           // pior que perguntar, melhor que travar a criação por um GET.
         }
       }
-      setSalesTarget(target)
+      setDialogTarget(target)
       return
     }
     // Processo: CONFIRMA antes de criar. Até aqui o clique num item do menu
@@ -203,9 +195,16 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     // é irreversível pela interface: a única saída é fechar o registro numa
     // etapa terminal, com motivo, deixando um cancelado no funil.
     //
+    // A confirmação é o PRÓPRIO "Novo negócio" — a mesma superfície de criação
+    // do resto do produto, pré-preenchida com funil, etapa e título. Um modal
+    // de confirmação separado existiu por um dia e foi descartado: quem clicava
+    // em "Preencher detalhes…" caía neste diálogo, então eram duas telas para
+    // o mesmo gesto.
+    //
     // Quem dispensou a pergunta neste funil segue no 1-clique de sempre.
     if (dispensados.includes(target.pipeline.id)) { await criarProcesso(target); return }
-    setConfirmTarget(target)
+    setNaoPerguntarMais(false)
+    setDialogTarget(target)
   }, [dispensados, criarProcesso])
 
   const handleChoice = useCallback(async (choice: ConflictChoice) => {
@@ -219,7 +218,7 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
       // onde o operador dá título e valor ao segundo negócio; sem isso, dois
       // negócios do mesmo contato nasceriam com o mesmo nome.
       setConflict(null)
-      if (pipelineKindOf(target.pipeline) === 'sales') { setSalesTarget(target); return }
+      if (pipelineKindOf(target.pipeline) === 'sales') { setDialogTarget(target); return }
       setBusy(true)
       try {
         const res = await createRecord(target)
@@ -277,27 +276,6 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
 
   const dialogs: ReactNode = (
     <>
-      {/* Confirmação do funil de PROCESSO. Vive aqui, no hook, e não na página
-          de Conversas: as três superfícies ("Adicionar ao funil" do chat, da
-          ficha e do menu da linha na tabela) passam por este mesmo fluxo, e o
-          clique errado é ainda mais fácil no menu da linha. */}
-      <ConfirmAddToPipelineModal
-        open={!!confirmTarget}
-        onClose={() => setConfirmTarget(null)}
-        contactName={confirmTarget?.contactName ?? ''}
-        pipeline={confirmTarget?.pipeline ?? null}
-        fromConversation={!!confirmTarget?.conversationId}
-        busy={busy}
-        onConfirm={confirmarProcesso}
-        onDetails={() => {
-          // Escape para o formulário completo sem cancelar e recomeçar pelo
-          // outro item do menu. O `NewDealDialog` aceita os dois tipos de
-          // funil desde a passada de 08/09.
-          const t = confirmTarget
-          setConfirmTarget(null)
-          if (t) setSalesTarget(t)
-        }}
-      />
       <PipelineConflictModal
         key={conflict?.openDealId ?? 'none'}
         open={!!conflict}
@@ -316,29 +294,47 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
         pipeline={closeTarget?.target.pipeline ?? null}
         onConfirm={handleCloseAndNew}
       />
-      {/* A3 (SCRUM-925): em funil de VENDA o gesto abre o "Novo negócio" de 2
-          passos — mesma superfície de criação em todo o produto. Antes era o
-          `DealModal`, que é o formulário de EDIÇÃO e não tem campo de valor. */}
-      {salesTarget && (
+      {/* A3 (SCRUM-925): o gesto abre o "Novo negócio" — a MESMA superfície de
+          criação em todo o produto. Antes era o `DealModal`, que é o formulário
+          de EDIÇÃO e não tem campo de valor.
+          09/09: passou a servir também o funil de PROCESSO, como confirmação do
+          "Adicionar ao funil" — pré-preenchido, é o formulário e a conferência
+          na mesma tela, em vez de um modal de confirmação à parte. */}
+      {dialogTarget && (
         <NewDealDialog
           open
-          contactId={salesTarget.contactId}
-          contactName={salesTarget.contactName}
-          pipelines={pipelines.length > 0 ? pipelines : [salesTarget.pipeline]}
-          initialPipelineId={salesTarget.pipeline.id}
-          originConversationId={salesTarget.conversationId ?? null}
-          onClose={() => setSalesTarget(null)}
+          contactId={dialogTarget.contactId}
+          contactName={dialogTarget.contactName}
+          pipelines={pipelines.length > 0 ? pipelines : [dialogTarget.pipeline]}
+          initialPipelineId={dialogTarget.pipeline.id}
+          originConversationId={dialogTarget.conversationId ?? null}
+          dontAskAgain={
+            pipelineKindOf(dialogTarget.pipeline) === 'process'
+              ? {
+                  label: `Não perguntar de novo em ${dialogTarget.pipeline.name}`,
+                  checked: naoPerguntarMais,
+                  onChange: setNaoPerguntarMais,
+                }
+              : undefined
+          }
+          onClose={() => setDialogTarget(null)}
           onCreated={(deal) => {
-            const t = salesTarget
-            setSalesTarget(null)
+            const t = dialogTarget
+            // A dispensa só vale quando o registro foi mesmo criado: marcar a
+            // caixa e fechar no X não pode devolver o 1-clique em silêncio.
+            if (naoPerguntarMais && pipelineKindOf(t.pipeline) === 'process') {
+              dispensar(t.pipeline.id)
+              setDispensados(lerDispensados())
+            }
+            setDialogTarget(null)
             // O negócio criado volta INTEIRO do POST — o chamador recebe o
             // registro real (antes ia um esqueleto com `id: ''`, que impedia
             // qualquer leitura otimista de valor/etapa).
             announce(deal, t)
           }}
           onConflict={(info) => {
-            const t = salesTarget
-            setSalesTarget(null)
+            const t = dialogTarget
+            setDialogTarget(null)
             void openConflict(t, info.openDealId)
           }}
         />

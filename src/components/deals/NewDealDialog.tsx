@@ -72,6 +72,20 @@ export interface NewDealDialogProps {
    * conflito precisa do nome para dizer o que já existe.
    */
   onConflict?: (info: { openDealId: string; pipelineId: string; contactId: string; contactName: string }) => void
+  /**
+   * Caixa "não perguntar de novo", no rodapé.
+   *
+   * Só aparece quando o diálogo está servindo de CONFIRMAÇÃO — o
+   * "Adicionar ao funil" num funil de processo, onde antes o registro nascia
+   * em um clique. Marcar devolve o 1 clique naquele funil; quem controla o
+   * estado e a persistência é o chamador (`useAddToPipeline`), porque a
+   * preferência não é do diálogo, é do gesto que o abriu.
+   */
+  dontAskAgain?: {
+    label: string
+    checked: boolean
+    onChange: (checked: boolean) => void
+  }
 }
 
 
@@ -100,6 +114,7 @@ export function NewDealDialog({
   originConversationId,
   onCreated,
   onConflict,
+  dontAskAgain,
 }: NewDealDialogProps) {
   const isMobile = useIsMobile()
   const { user } = useAuth()
@@ -180,7 +195,13 @@ export function NewDealDialog({
         : salesPipelines[0]?.id ?? '',
     )
     setStageId(initialStageId ?? '')
-    setTitle(contactName ? `${vocab.deal} · ${contactName}` : '')
+    // Em funil de PROCESSO o título default é só o nome do contato — é o que o
+    // "Adicionar ao funil" de 1 clique sempre gravou, e é o que os cards do
+    // quadro mostram hoje. Prefixar com o substantivo aqui faria os dois
+    // caminhos (confirmação e 1 clique) criarem registros com nomes diferentes.
+    const inicial = pipelines.find((p) => p.id === initialPipelineId) ?? null
+    const processoInicial = !!inicial && pipelineKindOf(inicial) === 'process'
+    setTitle(contactName ? (processoInicial ? contactName : `${vocab.deal} · ${contactName}`) : '')
     setOwnerUserId(undefined)
     setAmountCents(0)
     setAmountTouched(false)
@@ -595,6 +616,17 @@ export function NewDealDialog({
     <div className="flex flex-col gap-2 border-t border-surface-800 pt-3">
       {error && error !== 'Escolha o contato do negócio.' && (
         <p role="alert" className="text-xs text-danger">{error}</p>
+      )}
+      {dontAskAgain && (
+        <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
+          <input
+            type="checkbox"
+            checked={dontAskAgain.checked}
+            onChange={(e) => dontAskAgain.onChange(e.target.checked)}
+            className="w-4 h-4 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+          />
+          <span className="text-xs text-surface-400">{dontAskAgain.label}</span>
+        </label>
       )}
       <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center justify-between')}>
         {!isMobile && (
