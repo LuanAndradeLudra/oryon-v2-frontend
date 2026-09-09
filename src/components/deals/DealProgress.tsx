@@ -144,7 +144,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                       style={{ backgroundColor: hexToRgba(cor, 0.35) }}
                     />
                     <span
-                      className="relative w-3 h-3 rounded-full"
+                      className="pulso-ponto relative w-3 h-3 rounded-full"
                       style={{ backgroundColor: cor, boxShadow: `0 0 0 4px ${hexToRgba(cor, 0.22)}` }}
                     />
                   </span>
@@ -196,6 +196,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                   className={cn(
                     'text-left truncate rounded transition-colors min-w-0',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
+                    atual && 'pulso-titulo',
                     // A atual sobe de corpo e leva a cor da própria etapa; as
                     // outras ficam neutras. Sem isso, quatro linhas de peso
                     // parecido obrigam a procurar o ponto aceso.

@@ -515,11 +515,39 @@ code, pre, kbd, samp {
   0%        { transform: scale(1);   opacity: .5 }
   70%, 100% { transform: scale(1.9); opacity: 0 }
 }
+/* O ponto e o título respiram JUNTO com o halo, no mesmo compasso de 2,4 s —
+ * é o que faz os três lerem como um batimento só, e não como três animações
+ * disputando a mesma linha.
+ *
+ * As amplitudes são deliberadamente pequenas e diferentes: o ponto é forma
+ * (12 px, aguenta 12%), o título é TEXTO e não aguenta o mesmo. Escala em
+ * texto corrida borra a renderização e cansa a leitura; 3% com origem à
+ * esquerda dá a sensação de pulsar sem tirar a palavra do lugar nem obrigar o
+ * olho a reacomodar. Por isso é `transform`, e não `font-size`: font-size
+ * relayoutaria a linha inteira a cada quadro. */
+@keyframes pulso-ponto {
+  0%, 100% { transform: scale(1) }
+  35%      { transform: scale(1.12) }
+}
+@keyframes pulso-titulo {
+  0%, 100% { transform: scale(1) }
+  35%      { transform: scale(1.03) }
+}
 .pulso-etapa {
   animation: pulso-etapa 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+.pulso-ponto {
+  animation: pulso-ponto 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.pulso-titulo {
+  animation: pulso-titulo 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: left center;
+  will-change: transform;
+}
 @media (prefers-reduced-motion: reduce) {
   .pulso-etapa { display: none }
+  .pulso-ponto,
+  .pulso-titulo { animation: none }
 }
 
 @keyframes msg-slide-in-left {
