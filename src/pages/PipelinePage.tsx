@@ -149,10 +149,7 @@ export function PipelinePage() {
   )
 
   return (
-    <div
-      className="pipeline-ambient flex flex-col h-full bg-surface-950"
-      style={{ ['--pipeline-tint' as string]: pipeline.color } as React.CSSProperties}
-    >
+    <div className="flex flex-col h-full bg-surface-950">
       {isMobile && <MobilePageHeader title={pipeline.name} />}
       {header}
       <div className="flex-1 min-h-0 flex flex-col">
