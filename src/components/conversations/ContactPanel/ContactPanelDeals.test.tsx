@@ -119,12 +119,31 @@ describe('ContactPanelDeals — ir ao quadro', () => {
     expect(navigate).toHaveBeenCalledWith('/pipelines/p?deal=d1')
   })
 
-  it('"Abrir" continua abrindo a ficha sem sair da conversa', async () => {
+  // O botão "Abrir" saiu (09/09): o bloco INTEIRO é o alvo. O alvo esticado
+  // fica ATRÁS dos controles, então "Mover etapa" e "No funil" continuam
+  // recebendo o próprio clique.
+  it('clicar no bloco abre a ficha, sem sair da conversa', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
     renderPanel()
     await waitFor(() => expect(screen.getByTestId('panel-pipeline-board-p')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Abrir' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByTestId('panel-pipeline-board-p'))
     expect(openDeal).toHaveBeenCalledWith('d1')
     expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it('o alvo do bloco tem nome acessível com funil e etapa', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByTestId('panel-pipeline-board-p')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Abrir Suporte · Em atendimento' })).toBeInTheDocument()
+  })
+
+  it('clicar em "Mover etapa" NÃO abre a ficha', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByTestId('panel-pipeline-move-p')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('panel-pipeline-move-p'))
+    expect(openDeal).not.toHaveBeenCalled()
   })
 })

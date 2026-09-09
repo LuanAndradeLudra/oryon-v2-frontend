@@ -175,8 +175,25 @@ function OpenDensity(props: OpenDealProps) {
 
   if (density === 'row') {
     return (
-      <article key={deal.id} className="flex flex-col gap-1" data-testid={`${testIdPrefix}-${testIdKey}`}>
-        <div className="flex items-center gap-1.5 min-w-0">
+      <article
+        key={deal.id}
+        className="relative flex flex-col gap-1 -mx-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-surface-800/40 focus-within:bg-surface-800/40"
+        data-testid={`${testIdPrefix}-${testIdKey}`}
+      >
+        {/* Alvo esticado: um botão de verdade cobrindo o bloco, ATRÁS dos
+            controles. Envolver a linha inteira num <button> aninharia botões
+            (HTML inválido, e o leitor de tela anuncia um alvo só); um <div
+            role="button"> exigiria reimplementar teclado. Assim o clique em
+            qualquer lugar vazio abre a ficha, e "Mover etapa" e "No funil"
+            continuam sendo eles mesmos. */}
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={`Abrir ${pipeline!.name}${stage ? ` · ${stage.label}` : ''}`}
+          className="absolute inset-0 z-0 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+          data-testid={`${testIdPrefix}-board-${testIdKey}`}
+        />
+        <div className="relative z-10 flex items-center gap-1.5 min-w-0 pointer-events-none">
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline!.color }} />
           <span className="text-xs text-surface-200 truncate">{pipeline!.name}</span>
           <KindIcon className="w-3 h-3 text-surface-500 flex-shrink-0" aria-label={kind.label} />
@@ -186,8 +203,8 @@ function OpenDensity(props: OpenDealProps) {
             </span>
           )}
         </div>
-        {meta && <p className="text-[10px] text-surface-600 truncate pl-3.5">{meta}</p>}
-        <div className="flex items-center gap-1 pl-3.5">
+        {meta && <p className="relative z-10 text-[10px] text-surface-600 truncate pl-3.5 pointer-events-none">{meta}</p>}
+        <div className="relative z-10 flex items-center gap-1 pl-3.5 w-fit">
           {targets && (
             <Dropdown
               open={moveOpen}
@@ -225,14 +242,6 @@ function OpenDensity(props: OpenDealProps) {
               </div>
             </Dropdown>
           )}
-          <button
-            type="button"
-            onClick={onOpen}
-            className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
-            data-testid={`${testIdPrefix}-board-${testIdKey}`}
-          >
-            <KanbanSquare className="w-3 h-3" /> Abrir
-          </button>
           {onOpenBoard && (
             <button
               type="button"
