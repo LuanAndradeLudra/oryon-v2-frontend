@@ -196,7 +196,6 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                   className={cn(
                     'text-left truncate rounded transition-colors min-w-0',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
-                    atual && 'pulso-titulo',
                     // A atual sobe de corpo e leva a cor da própria etapa; as
                     // outras ficam neutras. Sem isso, quatro linhas de peso
                     // parecido obrigam a procurar o ponto aceso.
