@@ -1,13 +1,18 @@
 // F9 (SCRUM-874/877/879) — o fluxo compartilhado "Adicionar ao funil", com a
 // API mockada. Cobre os critérios de aceite da SCRUM-818:
-//   * processo pela conversa → POST /deals com originConversationId, toast
-//     com "Ver no board"
-//   * 2ª tentativa no mesmo funil → 409 open_exists → modal de conflito;
-//     cada saída produz o efeito esperado (abrir a FICHA/B2-928 · mover p/ 1ª
-//     etapa · fechar com motivo + abrir novo)
-//   * venda → abre o "Novo negócio" de 2 passos (mockado) com o funil
-//     pré-selecionado. Era o DealModal até a A3 (SCRUM-925) — que é o
-//     formulário de EDIÇÃO e não tem campo de valor.
+//   * o registro nasce ligado à conversa (`originConversationId`) e o sucesso
+//     avisa com toast + "Ver no board";
+//   * `409 open_exists` → modal de conflito; cada saída produz o efeito
+//     esperado (abrir a FICHA/B2-928 · mover p/ 1ª etapa · fechar com motivo e
+//     abrir novo);
+//   * os dois tipos de funil abrem o "Novo negócio" (mockado) pré-preenchido.
+//
+// 09/09: o funil de PROCESSO deixou de criar em um clique. O gesto abre o mesmo
+// diálogo de criação, que passa a ser a CONFIRMAÇÃO — não há desfazer (a API
+// não tem `delete`), então nada pode ser criado antes de o operador ver onde.
+// Por isso o POST do caminho normal é do DIÁLOGO, não do hook: aqui o stub o
+// simula pelo `onCreated`. O hook só posta sozinho ao reabrir depois de um
+// conflito ("fechar e abrir novo" / "abrir outro").
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
@@ -24,30 +29,22 @@ vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast }) }))
 vi.mock('@/contexts/CRMConfigContext', () => ({ useCRMConfig: () => ({ pipelines: [] }) }))
 // B2 (SCRUM-928): "abrir o existente" passa a abrir a ficha (painel), não mais navegar ao board.
 vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
-// O stub expoe os callbacks: desde 09/09 o dialogo serve TAMBEM o funil de
-// processo (e a confirmacao do "Adicionar ao funil"), entao os testes precisam
-// simular criacao, conflito e a caixa "nao perguntar de novo".
+// O stub expõe os dois desfechos do diálogo — criou, ou bateu no 409 —, que é
+// por onde o fluxo continua desde que a criação saiu do hook.
 vi.mock('@/components/deals/NewDealDialog', () => ({
   NewDealDialog: (p: {
     initialPipelineId?: string | null
     originConversationId?: string | null
     contactName?: string | null
-    dontAskAgain?: { label: string; checked: boolean; onChange: (v: boolean) => void }
     onCreated: (d: unknown) => void
+    onConflict?: (i: { openDealId: string; pipelineId: string; contactId: string; contactName: string }) => void
   }) => (
     <div data-testid="new-deal-dialog">
       {p.initialPipelineId} · {p.originConversationId ?? '-'} · {p.contactName}
-      {p.dontAskAgain && (
-        <label>
-          <input
-            type="checkbox"
-            checked={p.dontAskAgain.checked}
-            onChange={(e) => p.dontAskAgain?.onChange(e.target.checked)}
-          />
-          {p.dontAskAgain.label}
-        </label>
-      )}
       <button onClick={() => p.onCreated({ id: 'd-new', stageId: 's1' })}>stub-criar</button>
+      <button onClick={() => p.onConflict?.({ openDealId: 'd-old', pipelineId: 'p', contactId: 'c1', contactName: 'Mariana' })}>
+        stub-conflito
+      </button>
     </div>
   ),
 }))
@@ -64,7 +61,6 @@ const SUPORTE: Pipeline = {
 }
 const VENDAS: Pipeline = { ...SUPORTE, id: 'v', name: 'Vendas', kind: 'sales', terminalLabels: { won: 'Ganho', lost: 'Perdido' } }
 const EXISTING: Deal = { id: 'd-old', contactId: 'c1', title: 'x', status: 'open', pipelineId: 'p', stageId: 's2', amountCents: 0 }
-const conflict409 = { response: { status: 409, data: { message: 'Já existe um negócio aberto para este contato neste funil.', code: 'open_exists', openDealId: 'd-old', pipelineId: 'p' } } }
 
 function Harness({ target, onCreated }: { target: AddToPipelineTarget; onCreated?: (d: Deal) => void }) {
   const { requestAdd, dialogs } = useAddToPipeline({ onCreated })
@@ -76,39 +72,49 @@ function Harness({ target, onCreated }: { target: AddToPipelineTarget; onCreated
   )
 }
 
-/** A segunda porta do menu ("Adicionar com detalhes…"), que abre o dialogo
- *  mesmo num funil ja dispensado — e por isso e o caminho de volta. */
-function HarnessDetalhes({ target }: { target: AddToPipelineTarget }) {
-  const { requestAddDetailed, dialogs } = useAddToPipeline()
-  return (
-    <>
-      <button onClick={() => requestAddDetailed(target)}>detalhes</button>
-      {dialogs}
-    </>
-  )
+/** Chega ao modal de conflito pelo 409 que o diálogo devolve. */
+const irAoConflito = async () => {
+  fireEvent.click(screen.getByText('add'))
+  await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
+  fireEvent.click(screen.getByText('stub-conflito'))
+  await waitFor(() => expect(screen.getByTestId('conflict-summary')).toBeInTheDocument())
 }
-
-/** Dispensa a confirmacao naquele funil — devolve o 1 clique de antes. */
-const dispensarFunil = (id: string) =>
-  localStorage.setItem('oryon.pipeline.skip-confirm', JSON.stringify([id]))
 
 beforeEach(() => {
   Object.values(api).forEach((m) => m.mockReset())
   navigate.mockReset(); toast.mockReset(); openDeal.mockReset()
   api.get.mockResolvedValue({ data: EXISTING })
-  // A dispensa ("nao perguntar de novo") mora no localStorage: sem limpar, um
-  // teste que marca a caixa dispensaria a confirmacao nos seguintes.
-  localStorage.clear()
 })
 
-describe('useAddToPipeline (F9)', () => {
-  it('processo pela conversa: cria o registro ligado à conversa e avisa com "Ver no board"', async () => {
-    api.create.mockResolvedValue({ data: { id: 'd-new', contactId: 'c1', title: 'Mariana', status: 'open', pipelineId: 'p', stageId: 's1', amountCents: 0 } })
+describe('useAddToPipeline — nada nasce sem confirmação', () => {
+  // O clique num funil de processo criava o registro na hora, e o operador só
+  // via o resultado no toast — depois do fato, e sem desfazer.
+  it('processo abre o diálogo pré-preenchido e NÃO cria nada antes', async () => {
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE, conversationId: 'conv-1' }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toHaveTextContent('p · conv-1 · Mariana'))
+    expect(api.create).not.toHaveBeenCalled()
+  })
+
+  it('venda também abre o diálogo, com o funil e a conversa de origem', async () => {
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: VENDAS, conversationId: 'conv-1' }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toHaveTextContent('v · conv-1 · Mariana'))
+    expect(api.create).not.toHaveBeenCalled()
+  })
+
+  it('ficha/tabela (sem conversa): o diálogo abre sem origem', async () => {
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toHaveTextContent('p · - · Mariana'))
+  })
+
+  it('criado: fecha o diálogo, avisa com "Ver no board" e devolve o registro', async () => {
     const onCreated = vi.fn()
-    dispensarFunil('p')
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE, conversationId: 'conv-1' }} onCreated={onCreated} />)
     fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(api.create).toHaveBeenCalledWith({ contactId: 'c1', title: 'Mariana', pipelineId: 'p', originConversationId: 'conv-1' }))
+    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
+    fireEvent.click(screen.getByText('stub-criar'))
     await waitFor(() => expect(toast).toHaveBeenCalled())
     const [msg, type, action] = toast.mock.calls[0]
     expect(msg).toBe('Mariana entrou em Suporte · Novo chamado.')
@@ -117,25 +123,17 @@ describe('useAddToPipeline (F9)', () => {
     action.onClick()
     expect(navigate).toHaveBeenCalledWith('/pipelines/p')
     expect(onCreated).toHaveBeenCalled()
-    expect(screen.queryByTestId('deal-modal')).toBeNull()
+    expect(screen.queryByTestId('new-deal-dialog')).toBeNull()
   })
+})
 
-  it('ficha/tabela (sem conversa): POST sem originConversationId', async () => {
-    api.create.mockResolvedValue({ data: { ...EXISTING, id: 'd-new', stageId: 's1' } })
-    dispensarFunil('p')
-    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(api.create).toHaveBeenCalledWith({ contactId: 'c1', title: 'Mariana', pipelineId: 'p' }))
-  })
-
+describe('useAddToPipeline — conflito I1', () => {
   it('409 open_exists → modal de conflito com o registro existente; "abrir o existente" abre a FICHA (B2/928)', async () => {
-    api.create.mockRejectedValue(conflict409)
-    dispensarFunil('p')
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
+    await irAoConflito()
     await waitFor(() => expect(screen.getByText('Já existe um registro aberto')).toBeInTheDocument())
     await waitFor(() => expect(api.get).toHaveBeenCalledWith('d-old'))
-    await waitFor(() => expect(screen.getByTestId('conflict-summary')).toHaveTextContent('na etapa Aguardando cliente'))
+    expect(screen.getByTestId('conflict-summary')).toHaveTextContent('na etapa Aguardando cliente')
     fireEvent.click(screen.getByTestId('conflict-confirm'))
     await waitFor(() => expect(openDeal).toHaveBeenCalledWith('d-old'))
     expect(navigate).not.toHaveBeenCalled()
@@ -143,28 +141,26 @@ describe('useAddToPipeline (F9)', () => {
   })
 
   it('"mover o existente para a 1ª etapa" chama PATCH /deals/:id/stage com a 1ª etapa normal', async () => {
-    api.create.mockRejectedValue(conflict409)
     api.moveStage.mockResolvedValue({ data: { ...EXISTING, stageId: 's1' } })
     const onCreated = vi.fn()
-    dispensarFunil('p')
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} onCreated={onCreated} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('conflict-summary')).toBeInTheDocument())
+    await irAoConflito()
     fireEvent.click(screen.getByTestId('conflict-move_to_first'))
     fireEvent.click(screen.getByTestId('conflict-confirm'))
     await waitFor(() => expect(api.moveStage).toHaveBeenCalledWith('d-old', 's1'))
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Mariana voltou para Novo chamado em Suporte.', 'success', expect.anything()))
     expect(onCreated).toHaveBeenCalled()
-    expect(api.create).toHaveBeenCalledTimes(1)
+    // Mover não cria nada: o registro é o que já existia.
+    expect(api.create).not.toHaveBeenCalled()
   })
 
+  // Aqui o hook posta sozinho — é a única criação que não passa pelo diálogo,
+  // porque o operador já decidiu (fechar o anterior e abrir outro).
   it('"fechar e abrir novo" pede o motivo, fecha o existente (setStatus lost + motivo) e cria o novo', async () => {
-    api.create.mockRejectedValueOnce(conflict409).mockResolvedValueOnce({ data: { ...EXISTING, id: 'd-new', stageId: 's1' } })
+    api.create.mockResolvedValue({ data: { ...EXISTING, id: 'd-new', stageId: 's1' } })
     api.setStatus.mockResolvedValue({ data: { ...EXISTING, status: 'lost' } })
-    dispensarFunil('p')
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE, conversationId: 'conv-1' }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('conflict-summary')).toBeInTheDocument())
+    await irAoConflito()
     fireEvent.click(screen.getByTestId('conflict-close_and_new'))
     fireEvent.click(screen.getByTestId('conflict-confirm'))
     // modal de motivo (catálogo do funil, só motivos de perda)
@@ -172,113 +168,22 @@ describe('useAddToPipeline (F9)', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'cancelado_pelo_cliente' } })
     fireEvent.click(screen.getByTestId('close-deal-confirm'))
     await waitFor(() => expect(api.setStatus).toHaveBeenCalledWith('d-old', { status: 'lost', closeReason: 'cancelado_pelo_cliente', closeNote: undefined }))
-    await waitFor(() => expect(api.create).toHaveBeenCalledTimes(2))
-    expect(api.create).toHaveBeenLastCalledWith({ contactId: 'c1', title: 'Mariana', pipelineId: 'p', originConversationId: 'conv-1' })
+    await waitFor(() => expect(api.create).toHaveBeenCalledWith({ contactId: 'c1', title: 'Mariana', pipelineId: 'p', originConversationId: 'conv-1' }))
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Mariana entrou em Suporte · Novo chamado.', 'success', expect.anything()))
   })
 
-  it('funil de venda abre o "Novo negócio" com o funil pré-selecionado e a conversa de origem (sem POST direto)', async () => {
-    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: VENDAS, conversationId: 'conv-1' }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toHaveTextContent('v · conv-1 · Mariana'))
-    expect(api.create).not.toHaveBeenCalled()
-  })
-
-  // ─── Confirmação antes de criar em PROCESSO (09/09) ──────────────────────
-  // O clique num item do menu criava o registro na hora, e o operador só via o
-  // resultado no toast — depois do fato. Como a API não tem `delete`, o clique
-  // errado é irreversível pela interface. A confirmação é o PRÓPRIO diálogo de
-  // criação, pré-preenchido: uma superfície só para o mesmo gesto.
-  it('processo abre o diálogo pré-preenchido e NÃO cria nada antes', async () => {
-    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE, conversationId: 'conv-1' }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toHaveTextContent('p · conv-1 · Mariana'))
-    expect(api.create).not.toHaveBeenCalled()
-  })
-
-  it('a confirmação de processo oferece a dispensa; a de venda não', async () => {
-    const { unmount } = render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByLabelText('Não confirmar ao adicionar a Suporte')).toBeInTheDocument())
-    unmount()
-
-    // Em venda o formulário nunca foi atalho de nada — não há 1 clique a devolver.
-    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: VENDAS }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
-    expect(screen.queryByLabelText(/Não confirmar ao adicionar/)).toBeNull()
-  })
-
-  // O acidente acontece no funil que se usa pouco; a repetição, no que se usa
-  // todo dia. A dispensa por funil separa os dois casos.
-  it('a caixa devolve o 1 clique NAQUELE funil', async () => {
-    api.create.mockResolvedValue({ data: { ...EXISTING, id: 'd-new', stageId: 's1' } })
-    const { unmount } = render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
-    fireEvent.click(screen.getByLabelText('Não confirmar ao adicionar a Suporte'))
-    fireEvent.click(screen.getByText('stub-criar'))
-    unmount()
-
-    // Segunda vez, no MESMO funil: cria direto, sem passar pelo diálogo.
-    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(api.create).toHaveBeenCalledWith({ contactId: 'c1', title: 'Mariana', pipelineId: 'p' }))
-    expect(screen.queryByTestId('new-deal-dialog')).toBeNull()
-  })
-
-  // Marcar a caixa e fechar no X não pode devolver o 1 clique em silêncio: a
-  // dispensa vale para o gesto que foi ATÉ O FIM.
-  it('marcar a caixa e fechar sem criar NÃO dispensa nada', async () => {
-    const { unmount } = render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
-    fireEvent.click(screen.getByLabelText('Não confirmar ao adicionar a Suporte'))
-    unmount()
-
-    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
-    expect(api.create).not.toHaveBeenCalled()
-  })
-
-  // Sem caminho de volta a caixa vira armadilha: o diálogo não aparece mais
-  // naquele funil, e não haveria onde desfazer. O "Adicionar com detalhes…"
-  // continua abrindo o diálogo — lá a caixa aparece MARCADA, e desmarcar
-  // restaura a confirmação.
-  it('num funil já dispensado a caixa vem marcada, e desmarcar restaura a confirmação', async () => {
-    dispensarFunil('p')
-    api.create.mockResolvedValue({ data: { ...EXISTING, id: 'd-new', stageId: 's1' } })
-    const { unmount } = render(<HarnessDetalhes target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('detalhes'))
-    const caixa = await screen.findByLabelText('Não confirmar ao adicionar a Suporte')
-    expect(caixa).toBeChecked()
-    fireEvent.click(caixa)
-    fireEvent.click(screen.getByText('stub-criar'))
-    unmount()
-
-    // Voltou a confirmar: o clique no funil abre o diálogo em vez de postar
-    // direto. (Quem faz o POST é o diálogo de verdade — aqui ele é stub.)
-    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
-    expect(api.create).not.toHaveBeenCalled()
-  })
-
-  it('a dispensa vale só para o funil dispensado', async () => {
-    dispensarFunil('outro-funil')
-    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
-    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
-    expect(api.create).not.toHaveBeenCalled()
-  })
-
-  it('erro que não é conflito vira toast de erro', async () => {
+  it('erro que não é conflito, ao fechar e abrir novo, vira toast de erro', async () => {
+    api.setStatus.mockResolvedValue({ data: { ...EXISTING, status: 'lost' } })
     api.create.mockRejectedValue({ response: { status: 400, data: { message: 'Funil arquivado.' } } })
-    dispensarFunil('p')
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
-    fireEvent.click(screen.getByText('add'))
+    await irAoConflito()
+    fireEvent.click(screen.getByTestId('conflict-close_and_new'))
+    fireEvent.click(screen.getByTestId('conflict-confirm'))
+    await waitFor(() => expect(screen.getByText('Cancelado — motivo')).toBeInTheDocument())
+    fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'cancelado_pelo_cliente' } })
+    fireEvent.click(screen.getByTestId('close-deal-confirm'))
+    // A mensagem do servidor ganha do texto genérico do hook — `getApiErrorMessage`
+    // só cai no fallback quando o backend não diz nada.
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Funil arquivado.', 'error'))
-    expect(screen.queryByText('Já existe um registro aberto')).toBeNull()
   })
 })

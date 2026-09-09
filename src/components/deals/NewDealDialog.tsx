@@ -72,23 +72,6 @@ export interface NewDealDialogProps {
    * conflito precisa do nome para dizer o que já existe.
    */
   onConflict?: (info: { openDealId: string; pipelineId: string; contactId: string; contactName: string }) => void
-  /**
-   * Caixa "não perguntar de novo", no rodapé.
-   *
-   * Só aparece quando o diálogo está servindo de CONFIRMAÇÃO — o
-   * "Adicionar ao funil" num funil de processo, onde antes o registro nascia
-   * em um clique. Marcar devolve o 1 clique naquele funil; quem controla o
-   * estado e a persistência é o chamador (`useAddToPipeline`), porque a
-   * preferência não é do diálogo, é do gesto que o abriu.
-   */
-  dontAskAgain?: {
-    label: string
-    /** Uma linha dizendo o ALCANCE da preferência — sem ela, "não perguntar de
-     *  novo" não diz se vale para este contato, para este funil ou para tudo. */
-    hint?: string
-    checked: boolean
-    onChange: (checked: boolean) => void
-  }
 }
 
 
@@ -117,7 +100,6 @@ export function NewDealDialog({
   originConversationId,
   onCreated,
   onConflict,
-  dontAskAgain,
 }: NewDealDialogProps) {
   const isMobile = useIsMobile()
   const { user } = useAuth()
@@ -408,14 +390,19 @@ export function NewDealDialog({
           aria-required
           aria-invalid={error === 'O título é obrigatório.' || undefined}
           placeholder={`Nome do ${noun}`}
+          // Sem moldura: o título volta a ser texto livre, como o PO pediu.
+          // A afordância de campo fica no RÓTULO acima (que é o que faltava
+          // quando ele era só um texto solto) e num fio que acende no hover e
+          // no foco — em repouso a tela fica limpa, e o campo se anuncia
+          // quando o olho ou o cursor chega nele.
           className={cn(
-            'w-full resize-none overflow-hidden rounded-lg border bg-surface-800 px-3 py-2',
+            'w-full resize-none overflow-hidden bg-transparent px-0 py-1',
             'font-display text-lg font-semibold leading-snug text-surface-50',
-            'placeholder:font-sans placeholder:text-base placeholder:font-normal placeholder:text-surface-500',
-            'transition-colors hover:border-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-400/20',
+            'placeholder:font-sans placeholder:text-base placeholder:font-normal placeholder:text-surface-600',
+            'border-0 border-b transition-colors focus:outline-none',
             error === 'O título é obrigatório.'
-              ? 'border-danger focus:border-danger'
-              : 'border-surface-700 focus:border-brand-400/60',
+              ? 'border-danger'
+              : 'border-transparent hover:border-surface-700 focus:border-brand-400/60',
           )}
         />
       </div>
@@ -631,22 +618,6 @@ export function NewDealDialog({
     <div className="flex flex-col gap-2 border-t border-surface-800 pt-3">
       {error && error !== 'Escolha o contato do negócio.' && (
         <p role="alert" className="text-xs text-danger">{error}</p>
-      )}
-      {dontAskAgain && (
-        <label className="flex items-start gap-2.5 cursor-pointer select-none py-1">
-          <input
-            type="checkbox"
-            checked={dontAskAgain.checked}
-            onChange={(e) => dontAskAgain.onChange(e.target.checked)}
-            className="mt-0.5 w-4 h-4 shrink-0 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
-          />
-          <span className="flex flex-col gap-0.5">
-            <span className="text-xs text-surface-300">{dontAskAgain.label}</span>
-            {dontAskAgain.hint && (
-              <span className="text-[11px] leading-snug text-surface-500">{dontAskAgain.hint}</span>
-            )}
-          </span>
-        </label>
       )}
       <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center justify-between')}>
         {!isMobile && (

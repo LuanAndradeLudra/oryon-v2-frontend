@@ -12,34 +12,6 @@ import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/de
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
-/**
- * Funis em que o operador dispensou a confirmação ("não perguntar de novo").
- *
- * Fica no navegador de propósito: é preferência de gesto, não dado de negócio,
- * e não vale um endpoint. A chave é o id do funil, que já é único por tenant —
- * então não há vazamento entre tenants. Dois usuários no MESMO navegador e no
- * mesmo tenant compartilhariam a dispensa; se isso incomodar, o passo seguinte
- * é guardar por usuário no backend, sem mudar mais nada aqui.
- */
-const SKIP_KEY = 'oryon.pipeline.skip-confirm'
-
-function lerDispensados(): string[] {
-  try {
-    const raw = localStorage.getItem(SKIP_KEY)
-    const val: unknown = raw ? JSON.parse(raw) : []
-    return Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string') : []
-  } catch {
-    return []
-  }
-}
-
-function gravarDispensa(pipelineId: string, dispensar: boolean) {
-  try {
-    const atual = lerDispensados().filter((id) => id !== pipelineId)
-    localStorage.setItem(SKIP_KEY, JSON.stringify(dispensar ? [...atual, pipelineId] : atual))
-  } catch { /* modo privado / quota — a confirmação só continua aparecendo */ }
-}
-
 /** O que "Adicionar ao funil" precisa saber, de qualquer superfície (conversa · ficha · tabela). */
 export interface AddToPipelineTarget {
   contactId: string
@@ -68,12 +40,11 @@ function readConflict(e: unknown): { openDealId: string; pipelineId?: string } |
  * Fluxo "Adicionar ao funil" (F9 · SCRUM-874/875/877/879, pranchetas 3–4),
  * compartilhado pelas três superfícies. Regras:
  *   * **os dois tipos** abrem o `NewDealDialog` pré-preenchido — uma superfície
- *     de criação só. Em processo ele é a CONFIRMAÇÃO do gesto: até 09/09 o
- *     clique num funil criava o registro na hora e o operador só via o
- *     resultado no toast, depois do fato — e não há desfazer, porque a API de
- *     negócios não tem `delete`;
- *   * quem marca "não perguntar de novo" naquele funil volta ao 1 clique
- *     (`POST /deals` direto, com `originConversationId` quando vem da conversa);
+ *     de criação só, e nenhum atalho que a contorne. Em processo ele é a
+ *     CONFIRMAÇÃO do gesto: até 09/09 o clique num funil criava o registro na
+ *     hora e o operador só via o resultado no toast, depois do fato — e não há
+ *     desfazer, porque a API de negócios não tem `delete`. O diálogo já vem
+ *     preenchido e `⌘↵` cria, então confirmar custa uma tecla;
  *   * `409 open_exists` (I1) → modal de conflito com três saídas: abrir o
  *     existente · mover para a 1ª etapa · fechar como Cancelado/Perdido com
  *     motivo e abrir um novo. Nada acontece em silêncio.
@@ -90,11 +61,6 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
   const [conflict, setConflict] = useState<ConflictState | null>(null)
   const [closeTarget, setCloseTarget] = useState<{ target: AddToPipelineTarget; existing: Deal; stage: PipelineStage } | null>(null)
   const [dialogTarget, setDialogTarget] = useState<AddToPipelineTarget | null>(null)
-  const [dispensados, setDispensados] = useState<string[]>(lerDispensados)
-  // Caixa "não confirmar neste funil" do diálogo. Mora aqui porque a
-  // preferência é do GESTO, não do formulário. `null` = o operador não mexeu
-  // nela nesta abertura; aí vale o que já estava gravado para o funil.
-  const [dispensaMarcada, setDispensaMarcada] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
   const { onCreated } = opts
 
@@ -130,22 +96,6 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
       setConflict((prev) => (prev && prev.openDealId === openDealId ? { ...prev, existing: { id: openDealId } as Deal } : prev))
     }
   }, [])
-
-  /** Cria o registro de processo de fato — usado tanto pela confirmação
-   *  quanto pelo caminho de quem dispensou a pergunta neste funil. */
-  const criarProcesso = useCallback(async (target: AddToPipelineTarget) => {
-    setBusy(true)
-    try {
-      const res = await createRecord(target)
-      announce(res.data, target)
-    } catch (e: unknown) {
-      const c = readConflict(e)
-      if (c) await openConflict(target, c.openDealId)
-      else toast(getApiErrorMessage(e, `Não foi possível adicionar ao funil.`), 'error')
-    } finally {
-      setBusy(false)
-    }
-  }, [createRecord, announce, openConflict, toast])
 
   /**
    * Segunda porta do "Adicionar ao funil ▾": abre o diálogo SEM funil escolhido
@@ -200,10 +150,8 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     // em "Preencher detalhes…" caía neste diálogo, então eram duas telas para
     // o mesmo gesto.
     //
-    // Quem dispensou a pergunta neste funil segue no 1-clique de sempre.
-    if (dispensados.includes(target.pipeline.id)) { await criarProcesso(target); return }
     setDialogTarget(target)
-  }, [dispensados, criarProcesso])
+  }, [])
 
   const handleChoice = useCallback(async (choice: ConflictChoice) => {
     if (!conflict) return
@@ -306,34 +254,9 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
           pipelines={pipelines.length > 0 ? pipelines : [dialogTarget.pipeline]}
           initialPipelineId={dialogTarget.pipeline.id}
           originConversationId={dialogTarget.conversationId ?? null}
-          dontAskAgain={
-            pipelineKindOf(dialogTarget.pipeline) === 'process'
-              ? {
-                  label: `Não confirmar ao adicionar a ${dialogTarget.pipeline.name}`,
-                  // Sem esta linha "não perguntar de novo" não diz o alcance —
-                  // e a primeira pergunta do PO foi exatamente essa: vale para
-                  // este contato, ou para o funil inteiro?
-                  hint: 'Vale para qualquer contato neste funil, só neste navegador. Para voltar a confirmar, desmarque aqui.',
-                  // Reflete o que está GRAVADO quando o operador ainda não
-                  // mexeu na caixa. É o que dá caminho de volta: num funil já
-                  // dispensado, "Adicionar com detalhes…" abre o diálogo com a
-                  // caixa marcada, e desmarcar restaura a confirmação.
-                  checked: dispensaMarcada ?? dispensados.includes(dialogTarget.pipeline.id),
-                  onChange: setDispensaMarcada,
-                }
-              : undefined
-          }
-          onClose={() => { setDialogTarget(null); setDispensaMarcada(null) }}
+          onClose={() => setDialogTarget(null)}
           onCreated={(deal) => {
             const t = dialogTarget
-            // A preferência só é gravada quando o registro foi mesmo criado:
-            // marcar a caixa e fechar no X não pode mudar o comportamento em
-            // silêncio. Grava nos dois sentidos — desmarcar restaura.
-            if (dispensaMarcada !== null && pipelineKindOf(t.pipeline) === 'process') {
-              gravarDispensa(t.pipeline.id, dispensaMarcada)
-              setDispensados(lerDispensados())
-            }
-            setDispensaMarcada(null)
             setDialogTarget(null)
             // O negócio criado volta INTEIRO do POST — o chamador recebe o
             // registro real (antes ia um esqueleto com `id: ''`, que impedia
@@ -342,9 +265,6 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
           }}
           onConflict={(info) => {
             const t = dialogTarget
-            // Nada foi criado — a preferência não muda. Só o rascunho da caixa
-            // é descartado, junto com o diálogo.
-            setDispensaMarcada(null)
             setDialogTarget(null)
             void openConflict(t, info.openDealId)
           }}
