@@ -132,7 +132,8 @@ describe('DealDetailPanel — carregado', () => {
     dealsApi.moveStage.mockResolvedValue({ data: { ...DEAL, stageId: 's2' } })
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
-    fireEvent.click(screen.getByTestId('deal-stepper-stage-s2'))
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    fireEvent.click(within(trilha).getByRole('button', { name: /Negociação/ }))
     await waitFor(() => expect(dealsApi.moveStage).toHaveBeenCalledWith('d1', 's2'))
     expect(dealsApi.setStatus).not.toHaveBeenCalled()
   })
@@ -208,11 +209,13 @@ describe('DealDetailPanel — modo painel vs. página', () => {
 // layout, mesma ordem, diferença por AUSÊNCIA. Agora a diferença é positiva —
 // a métrica-herói e a forma do progresso mudam com o tipo do funil.
 describe('DealDetailPanel — negócio × processo', () => {
-  it('negócio: valor é o herói e o progresso afunila', async () => {
+  it('negócio: valor é o herói e o percurso é a trilha, com contador', async () => {
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
     expect(screen.getByTestId('deal-hero')).toHaveTextContent('Valor do negócio')
-    expect(screen.getByTestId('deal-progress-funnel')).toBeInTheDocument()
+    // A MESMA trilha do diálogo de criação — criar e consultar falam igual.
+    expect(screen.getByRole('navigation', { name: 'Etapa de entrada' })).toBeInTheDocument()
+    expect(screen.getByTestId('deal-stage-position')).toHaveTextContent('1 de 2')
     expect(screen.queryByTestId('deal-progress-timeline')).not.toBeInTheDocument()
   })
 
@@ -224,7 +227,7 @@ describe('DealDetailPanel — negócio × processo', () => {
     expect(heroi).toHaveTextContent('Aberto há')
     expect(heroi).not.toHaveTextContent('Valor do')
     expect(screen.getByTestId('deal-progress-timeline')).toBeInTheDocument()
-    expect(screen.queryByTestId('deal-progress-funnel')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('deal-stage-position')).not.toBeInTheDocument()
   })
 
   // 21 literais diziam "negócio" — inclusive num funil de processo, onde o
@@ -248,13 +251,12 @@ describe('DealDetailPanel — a etapa atual se encontra sozinha', () => {
     expect(screen.getByTestId('deal-current-stage')).toHaveTextContent('Novo')
   })
 
-  it('o marcador "aqui" aparece uma vez só, na etapa atual', async () => {
+  it('a trilha marca a etapa atual, e só ela', async () => {
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
-    const funil = screen.getByTestId('deal-progress-funnel')
-    expect(within(funil).getAllByText(/aqui/i)).toHaveLength(1)
-    // E ele está na linha da etapa atual, não em outra.
-    expect(within(funil).getByRole('button', { current: 'step' })).toHaveTextContent('Novo')
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    expect(within(trilha).getAllByRole('button', { current: 'step' })).toHaveLength(1)
+    expect(within(trilha).getByRole('button', { current: 'step' })).toHaveTextContent('Novo')
   })
 
   // Na linha do tempo o marcador textual saiu a pedido do PO: quem diz "é

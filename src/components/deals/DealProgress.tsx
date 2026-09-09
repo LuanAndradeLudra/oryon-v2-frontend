@@ -2,6 +2,7 @@ import { Check, X } from 'lucide-react'
 import { cn, hexToRgba, formatRelativeTime } from '@/lib/utils'
 import { pipelineKindOf } from '@/lib/pipelineKinds'
 import { stepperFor } from '@/lib/contactPipelines'
+import { PipelineTrail } from './PipelineTrail'
 import type { Deal, DealStageHistoryEntry, Pipeline, PipelineStage } from '@/types'
 
 /**
@@ -12,8 +13,8 @@ import type { Deal, DealStageHistoryEntry, Pipeline, PipelineStage } from '@/typ
  * acontecia por ausência (o processo era "um negócio sem as coisas de
  * dinheiro"). Aqui a diferença passa a ser positiva, e é a FORMA que carrega:
  *
- *   * **Venda → funil.** Barras de largura decrescente. A forma diz "isto
- *     afunila" antes de qualquer texto, e é a mesma metáfora do quadro.
+ *   * **Venda → trilha.** A mesma faixa horizontal do diálogo de criação, com
+ *     o contador do caminho ("3 de 4"). Criar e consultar falam a mesma língua.
  *   * **Processo → linha do tempo.** Passos empilhados com o carimbo de quando
  *     o registro entrou em cada etapa e quanto durou. Lê como histórico, que é
  *     o que um processo é.
@@ -39,7 +40,7 @@ const corDa = (hex: string | undefined) =>
 export function DealProgress({ pipeline, deal, history, onMoveToStage, disabled, tempoNaEtapa }: DealProgressProps) {
   return pipelineKindOf(pipeline) === 'process'
     ? <LinhaDoTempo pipeline={pipeline} deal={deal} history={history} onMoveToStage={onMoveToStage} disabled={disabled} tempoNaEtapa={tempoNaEtapa} />
-    : <Funil pipeline={pipeline} deal={deal} onMoveToStage={onMoveToStage} disabled={disabled} tempoNaEtapa={tempoNaEtapa} />
+    : <TrilhaDoFunil pipeline={pipeline} deal={deal} onMoveToStage={onMoveToStage} disabled={disabled} tempoNaEtapa={tempoNaEtapa} />
 }
 
 /** Quando o registro ENTROU em cada etapa, pelo histórico de passagens. */
@@ -55,78 +56,45 @@ function entradasPorEtapa(history?: DealStageHistoryEntry[] | null) {
 
 // ─── Venda ───────────────────────────────────────────────────────────────────
 
-function Funil({ pipeline, deal, onMoveToStage, disabled, tempoNaEtapa }: Omit<DealProgressProps, 'history'>) {
-  const passos = stepperFor(pipeline, deal)
-  const porId = new Map(pipeline.stages.map((s) => [s.id, s]))
-  // A largura decresce do topo ao fim: é a forma que diz "funil". O piso de
-  // 34% existe para o terminal continuar clicável e legível.
-  const larguraDe = (i: number) => `${Math.max(34, 100 - i * (66 / Math.max(1, passos.length - 1)))}%`
+/**
+ * A trilha do funil — a MESMA do diálogo de criação.
+ *
+ * Aqui havia barras de largura decrescente, imitando um gráfico de funil. A
+ * forma mentia: num funil de verdade a largura codifica VOLUME (quantos
+ * negócios chegam a cada etapa), e ali ela era derivada do índice da linha —
+ * ornamento com cara de dado. E volume é propriedade do funil inteiro, que é
+ * assunto do quadro; a ficha fala de UM negócio.
+ *
+ * A faixa horizontal não finge ser gráfico, cabe em uma linha em vez de cinco,
+ * e é o componente que o operador acabou de ver ao criar o registro — criar e
+ * consultar passam a falar a mesma língua.
+ */
+function TrilhaDoFunil({ pipeline, deal, onMoveToStage, disabled, tempoNaEtapa }: Omit<DealProgressProps, 'history'>) {
+  // O contador conta o CAMINHO — só as etapas não-terminais. Incluir Ganho e
+  // Perdido no denominador diria "3 de 6" num funil de quatro passos.
+  const caminho = pipeline.stages
+    .filter((s) => !s.isWon && !s.isLost)
+    .sort((a, b) => a.order - b.order)
+  const posicao = caminho.findIndex((s) => s.id === deal.stageId) + 1
 
   return (
-    <ol className="flex flex-col gap-1" aria-label="Funil do negócio" data-testid="deal-progress-funnel">
-      {passos.map((p, i) => {
-        const stage = porId.get(p.id)
-        const atual = p.state === 'current'
-        const terminal = p.state === 'won' || p.state === 'lost'
-        const feito = p.state === 'done'
-        const cor = corDa(stage?.color)
-        const clicavel = !disabled && !atual && !!stage && !terminal
-        return (
-          <li key={p.id} className="flex items-center gap-2.5">
-            <button
-              type="button"
-              disabled={!clicavel}
-              onClick={() => stage && onMoveToStage(stage)}
-              aria-current={atual ? 'step' : undefined}
-              title={clicavel ? `Mover para "${p.label}"` : p.label}
-              data-testid={`deal-stepper-stage-${p.id}`}
-              style={{
-                width: larguraDe(i),
-                // SÓ a atual leva a cor da etapa. A primeira versão pintava
-                // todas — concluída em 8%, atual em 16% — e a diferença entre
-                // "já passei" e "estou aqui" virava um degrau de opacidade que
-                // ninguém enxerga. Com tudo colorido, nada fica em destaque.
-                ...(atual
-                  ? {
-                      color: cor,
-                      borderColor: cor,
-                      backgroundColor: hexToRgba(cor, 0.18),
-                      boxShadow: `0 0 0 3px ${hexToRgba(cor, 0.16)}`,
-                    }
-                  : {}),
-              }}
-              className={cn(
-                'relative rounded-md border px-2.5 text-[11px] text-left truncate transition-all',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
-                // A atual é mais alta, além de mais forte: dois canais dizendo
-                // a mesma coisa, e nenhum deles é só cor.
-                atual ? 'h-[30px] font-bold' : 'h-[26px] font-medium',
-                feito && !atual && 'border-surface-700 bg-surface-800/50 text-surface-400',
-                !atual && !feito && !terminal && 'border-surface-800 text-surface-600',
-                terminal && !atual && 'border-dashed border-surface-800 text-surface-600',
-                clicavel ? 'cursor-pointer hover:border-surface-600 hover:text-surface-200' : 'cursor-default',
-              )}
-            >
-              {feito && !atual && <Check className="inline w-3 h-3 mr-1 -mt-0.5 opacity-70" strokeWidth={3} />}
-              {terminal && !atual && (p.state === 'won'
-                ? <Check className="inline w-3 h-3 mr-1 -mt-0.5" strokeWidth={3} />
-                : <X className="inline w-3 h-3 mr-1 -mt-0.5" strokeWidth={3} />)}
-              {p.label}
-            </button>
-            {/* Marcador textual: a etapa atual não depende de comparar
-                preenchimentos para ser encontrada. */}
-            {atual && (
-              <span
-                className="text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap"
-                style={{ color: cor }}
-              >
-                aqui{tempoNaEtapa ? <span className="text-surface-500 font-normal normal-case tracking-normal"> · {tempoNaEtapa}</span> : null}
-              </span>
-            )}
-          </li>
-        )
-      })}
-    </ol>
+    <div className="flex items-center gap-3 min-w-0">
+      <PipelineTrail
+        stages={pipeline.stages}
+        activeId={deal.stageId}
+        onSelect={(stageId) => {
+          const alvo = pipeline.stages.find((s) => s.id === stageId)
+          if (alvo && !disabled) onMoveToStage(alvo)
+        }}
+        // A faixa vive dentro do cabeçalho da ficha, não como banda própria:
+        // sem fundo, sem borda inferior e sem recuo lateral.
+        className="flex-1 min-w-0 bg-transparent border-b-0 px-0 py-0"
+      />
+      <span className="text-[10.5px] text-surface-500 whitespace-nowrap shrink-0 tabular-nums" data-testid="deal-stage-position">
+        {posicao > 0 ? `${posicao} de ${caminho.length}` : `${caminho.length} etapas`}
+        {tempoNaEtapa && <span className="text-surface-600"> · {tempoNaEtapa}</span>}
+      </span>
+    </div>
   )
 }
 
