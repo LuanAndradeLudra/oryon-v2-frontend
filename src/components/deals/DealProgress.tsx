@@ -150,7 +150,10 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
               className={cn(
                 'flex items-baseline justify-between gap-3 flex-1 min-w-0',
                 !ultimo && 'pb-3',
-                atual && 'rounded-r-lg -my-0.5 py-1.5 pl-2.5 pr-2 border-l-2',
+                // `-my-1 py-1` se anulam: o bloco engorda para os lados e para
+                // dentro, mas NÃO empurra a linha — o título fica exatamente
+                // onde estaria sem ele, alinhado ao ponto da trilha.
+                atual && 'rounded-r-md -my-1 py-1 pl-2 pr-1.5 border-l-2',
               )}
               style={atual
                 ? { borderLeftColor: cor, backgroundColor: hexToRgba(cor, 0.09) }
