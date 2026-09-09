@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { cn } from '@/lib/utils'
+import { cn, hexToRgba } from '@/lib/utils'
 import { ChipOption } from './AttributeChip'
 import type { PipelineStage } from '@/types'
 
@@ -15,11 +15,17 @@ import type { PipelineStage } from '@/types'
  * depois, espelhando o quadro que o operador já usa — as colunas do Kanban
  * correm da esquerda para a direita, e a trilha repete esse mapeamento.
  *
+ * O espelho vai até a COR: cada etapa tem a sua (`stage.color`), e o quadro já
+ * a usa no ponto e no rótulo da coluna. Aqui é a mesma convenção — é o que faz
+ * a faixa ser reconhecida como "as colunas do meu funil" e não como um stepper
+ * genérico. O rótulo "ETAPAS" à esquerda diz de que eixo a faixa fala, já que
+ * o cabeçalho ali em cima nomeia o funil.
+ *
  * ─── Os quatro degraus ───────────────────────────────────────────────────
- * O orçamento é apertado: 640 px úteis, 14 px fixos por etapa e 28 px por
- * conector. Sobram ~91 px por rótulo com 5 etapas (~15 caracteres) e só ~41 px
- * com 8 (~7 caracteres, inutilizável). Por isso a faixa NUNCA colapsa — ela
- * desce um degrau:
+ * O orçamento é apertado: 640 px úteis menos ~62 px do rótulo "ETAPAS", 14 px
+ * fixos por etapa e 28 px por conector. Sobram ~79 px por rótulo com 5 etapas
+ * (~13 caracteres) e ~35 px com 8 (inutilizável). Por isso a faixa NUNCA
+ * colapsa — ela desce um degrau:
  *
  *   1. **Completa** — até 6 etapas com rótulos que cabem. É o caso de 100% dos
  *      funis existentes hoje (todos com 5 etapas, rótulo máximo de 18 chars).
@@ -51,6 +57,16 @@ export interface PipelineTrailProps {
 const MAX_VISIVEIS = 6
 
 const isTerminal = (s: PipelineStage) => s.isWon || s.isLost
+
+/**
+ * Cor da etapa, com piso.
+ *
+ * `hexToRgba` fatia a string na mão e devolveria `rgba(NaN,NaN,NaN,…)` para
+ * qualquer coisa que não seja `#rrggbb` — e a coluna aceita texto livre. Aqui
+ * o que não for hexadecimal de 6 dígitos cai no cinza da escala.
+ */
+const corDa = (s: PipelineStage) =>
+  /^#[0-9a-f]{6}$/i.test(s.color ?? '') ? s.color : '#6B8080'
 
 export function PipelineTrail({ stages, activeId, onSelect, compact, className }: PipelineTrailProps) {
   const [listaAberta, setListaAberta] = useState(false)
@@ -109,20 +125,26 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
             className="flex items-center gap-3 min-w-0 rounded-lg px-1 py-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
           >
             <span className="flex items-center gap-1.5 shrink-0" aria-hidden>
-              {ordenadas.map((s) => (
-                <i
-                  key={s.id}
-                  className={cn(
-                    'w-1.5 h-1.5 rounded-full',
-                    s.id === activeId
-                      ? 'bg-brand-400 ring-[3px] ring-brand-400/20'
-                      : isTerminal(s) ? 'bg-surface-600' : 'bg-surface-700',
-                  )}
-                />
-              ))}
+              {ordenadas.map((s) => {
+                const c = corDa(s)
+                return (
+                  <i
+                    key={s.id}
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={s.id === activeId
+                      ? { backgroundColor: c, boxShadow: `0 0 0 3px ${hexToRgba(c, 0.22)}` }
+                      : { backgroundColor: c, opacity: isTerminal(s) ? 0.35 : 0.5 }}
+                  />
+                )
+              })}
             </span>
             <span className="flex items-baseline gap-2 min-w-0">
-              <span className="text-xs font-semibold text-surface-100 truncate">{ativa?.label}</span>
+              <span
+                className="text-xs font-semibold truncate"
+                style={{ color: ativa ? corDa(ativa) : '#ECF1F1' }}
+              >
+                {ativa?.label}
+              </span>
               <span className="text-[10.5px] text-surface-500 shrink-0">
                 {idxAtivo + 1} de {ordenadas.length}
               </span>
@@ -153,7 +175,14 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
           selected={s.id === activeId}
           onSelect={() => { onSelect(s.id); setListaAberta(false) }}
         >
-          {s.label}{isTerminal(s) ? ' · encerramento' : ''}
+          <span className="inline-flex items-center gap-2">
+            <i
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: corDa(s), opacity: isTerminal(s) ? 0.5 : 1 }}
+              aria-hidden
+            />
+            {s.label}{isTerminal(s) ? ' · encerramento' : ''}
+          </span>
         </ChipOption>
       ))}
     </Dropdown>
@@ -162,7 +191,9 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
   // ─── Degrau 4 ────────────────────────────────────────────────────────────
   if (compact) {
     return (
-      <nav aria-label="Etapa de entrada" className={cn('px-4 py-2.5 bg-surface-950 border-b border-surface-800', className)}>
+      <nav aria-label="Etapa de entrada" className={cn('flex items-center gap-2.5 px-4 py-2.5 bg-surface-950 border-b border-surface-800', className)}>
+        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500 shrink-0">Etapas</span>
+        <span className="w-px h-3 bg-surface-800 shrink-0" aria-hidden />
         {listaCompleta}
       </nav>
     )
@@ -171,6 +202,12 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
   // ─── Degraus 1 a 3 ───────────────────────────────────────────────────────
   return (
     <nav aria-label="Etapa de entrada" className={cn('flex items-center px-4 py-3 bg-surface-950 border-b border-surface-800', className)}>
+      {/* Diz de que eixo a faixa fala. O cabeçalho logo acima nomeia o funil,
+          então aqui basta o substantivo. */}
+      <span className="flex items-center gap-2.5 shrink-0 mr-2.5">
+        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Etapas</span>
+        <span className="w-px h-3 bg-surface-800" aria-hidden />
+      </span>
       {itens.map((item, i) => (
         <div key={item.tipo === 'etapa' ? item.etapa.id : `grupo-${i}`} className="contents">
           {i > 0 && <span className="flex-1 h-px bg-surface-800 mx-2.5 min-w-[10px]" aria-hidden />}
@@ -214,6 +251,9 @@ function Passo({
   semMovimento: boolean
 }) {
   const terminal = isTerminal(etapa)
+  // O quadro usa `stage.color` no ponto e no rótulo da coluna; a faixa repete.
+  // `#6B8080` é o cinza de fallback para etapa sem cor gravada.
+  const cor = corDa(etapa)
 
   const corpo = (
     <button
@@ -230,26 +270,28 @@ function Passo({
       <span className="relative flex items-center justify-center w-1.5 h-1.5 shrink-0" aria-hidden>
         {/* O anel é um elemento SÓ, compartilhado por todos os pontos: com
             `layoutId` o Framer o anima de uma etapa para a outra, e a troca
-            de etapa vira um movimento em vez de um pisca-pisca. */}
+            de etapa vira um movimento em vez de um pisca-pisca. A cor viaja
+            junto, então o anel também troca de tom no caminho. */}
         {ativa && (
           <motion.i
             layoutId={anelId}
-            className="absolute inset-0 rounded-full bg-brand-400 ring-[3px] ring-brand-400/20"
+            className="absolute inset-0 rounded-full"
+            style={{ backgroundColor: cor, boxShadow: `0 0 0 3px ${hexToRgba(cor, 0.22)}` }}
             transition={semMovimento ? { duration: 0 } : { type: 'spring', stiffness: 460, damping: 34 }}
           />
         )}
         <i
-          className={cn(
-            'w-1.5 h-1.5 rounded-full transition-colors',
-            ativa ? 'bg-transparent' : terminal ? 'bg-surface-600' : 'bg-surface-700',
-          )}
+          className="w-1.5 h-1.5 rounded-full transition-opacity"
+          // Inativa fica na PRÓPRIA cor, esmaecida: é o que faz a faixa ler
+          // como as colunas do quadro, e não como um stepper qualquer.
+          style={ativa ? undefined : { backgroundColor: cor, opacity: terminal ? 0.35 : 0.5 }}
         />
       </span>
       <span
-        className={cn(
-          'text-[11.5px] truncate',
-          ativa ? 'font-semibold text-surface-100' : terminal ? 'text-surface-600' : 'text-surface-500',
-        )}
+        className={cn('text-[11.5px] truncate transition-colors', ativa && 'font-semibold')}
+        style={ativa
+          ? { color: cor }
+          : { color: terminal ? 'var(--color-surface-600)' : 'var(--color-surface-500)' }}
       >
         {etapa.label}
       </span>

@@ -46,7 +46,9 @@ vi.mock('@/contexts/CRMConfigContext', () => ({
 }))
 
 const st = (id: string, label: string, order: number, extra: Partial<PipelineStage> = {}): PipelineStage => ({
-  id, tenantId: 't', pipelineId: 'v', key: id, label, color: '#111', order, isWon: false, isLost: false, ...extra,
+  // Cores reais do produto (`pipeline_stages.color`): índigo nas iniciais,
+  // verde no ganho. A trilha espelha o quadro, então a cor importa aqui.
+  id, tenantId: 't', pipelineId: 'v', key: id, label, color: '#6366f1', order, isWon: false, isLost: false, ...extra,
 })
 const VENDAS: Pipeline = {
   id: 'v', tenantId: 't', name: 'Vendas', color: '#14b8a6', order: 0, isDefault: true, isArchived: false,
@@ -380,6 +382,22 @@ describe('NewDealDialog — o nome de cada coisa', () => {
 
   // A trilha substituiu a ficha "Etapa": mostra o caminho inteiro, marca onde o
   // registro nasce e não deixa nascer numa etapa terminal.
+  // O quadro pinta o ponto e o rótulo da coluna com `stage.color`. A faixa
+  // repete a convenção — é o que a faz ler como "as colunas do meu funil" em
+  // vez de um stepper genérico.
+  it('a trilha usa a cor de cada etapa e se anuncia como as etapas do funil', () => {
+    renderDialog({ pipelines: [{ ...VENDAS_3, stages: [
+      st('v1', 'Novo', 1, { color: '#6366f1' }),
+      st('v2', 'Proposta', 2, { color: '#f59e0b' }),
+      st('vw', 'Ganho', 3, { isWon: true, color: '#10b981' }),
+    ] }] })
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    // O eixo é declarado: sem isso a faixa é só uma fileira de pontos.
+    expect(within(trilha).getByText('Etapas')).toBeInTheDocument()
+    // A etapa ativa leva a própria cor no rótulo, como no quadro.
+    expect(within(trilha).getByText('Novo')).toHaveStyle({ color: '#6366f1' })
+  })
+
   it('a trilha mostra o funil inteiro e não deixa nascer em etapa terminal', () => {
     renderDialog()
     const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
