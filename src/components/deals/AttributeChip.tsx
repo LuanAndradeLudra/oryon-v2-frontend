@@ -21,10 +21,15 @@ import { cn } from '@/lib/utils'
  * Etiquetas do contato são os candidatos), sobe para `ui/` sem mudar nada.
  */
 export interface AttributeChipProps {
-  /** Nome do atributo. Vira o texto da ficha vazia e o rótulo acessível. */
+  /** Nome do atributo. Aparece SEMPRE na ficha, antes do valor. */
   label: string
   /** Valor atual. Ausente/vazio = ficha vazia. */
   value?: string | null
+  /**
+   * Uma linha dizendo o que se está escolhendo. Aparece no cabeçalho do
+   * popover — no momento da escolha, e não ocupando o formulário para sempre.
+   */
+  hint?: string
   /** Ícone à esquerda quando há valor. */
   icon?: LucideIcon
   /** Substitui o ícone (ex: avatar do dono). */
@@ -38,6 +43,7 @@ export interface AttributeChipProps {
 export function AttributeChip({
   label,
   value,
+  hint,
   icon: Icon,
   leading,
   disabled,
@@ -76,13 +82,38 @@ export function AttributeChip({
           {leading ?? (preenchida
             ? Icon && <Icon className="w-3.5 h-3.5 text-surface-400 shrink-0" aria-hidden />
             : <Plus className="w-3.5 h-3.5 shrink-0" aria-hidden />)}
+          {/* O nome do atributo fica SEMPRE visível. Uma ficha que mostra só
+              "Novo" é legível para quem já conhece o modelo e muda de etapa
+              todo dia — não para quem abre o diálogo pela terceira vez. O
+              valor continua dominante pelo contraste, não pela ausência do
+              rótulo. */}
+          {preenchida && <span className="text-surface-500 shrink-0">{label}</span>}
           <span className="truncate max-w-[13rem]">{preenchida ? value : label}</span>
           {preenchida && <ChevronDown className="w-3 h-3 text-surface-500 shrink-0" aria-hidden />}
         </button>
       }
     >
+      <ChipHeader label={label} hint={hint} />
       {children(() => setOpen(false))}
     </Dropdown>
+  )
+}
+
+/**
+ * Cabeçalho do popover: diz o que está sendo escolhido e, quando o atributo
+ * não é óbvio, o que ele significa.
+ *
+ * É aqui que voltou a didática que o formulário antigo carregava em três
+ * linhas de ajuda permanentes ("Coluna em que o negócio nasce", "Você pode
+ * deixar sem dono…"). O texto é o mesmo; o que mudou é a hora em que ele
+ * aparece — no momento da escolha, e não ocupando altura para sempre.
+ */
+function ChipHeader({ label, hint }: { label: string; hint?: string }) {
+  return (
+    <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-800">
+      <p className="text-xs font-semibold text-surface-200">{label}</p>
+      {hint && <p className="mt-0.5 text-[11px] leading-snug text-surface-500">{hint}</p>}
+    </div>
   )
 }
 
@@ -155,6 +186,7 @@ export function ToggleChip({
       {preenchida
         ? Icon && <Icon className="w-3.5 h-3.5 text-surface-400 shrink-0" aria-hidden />
         : <Plus className="w-3.5 h-3.5 shrink-0" aria-hidden />}
+      {value && <span className="text-surface-500 shrink-0">{label}</span>}
       <span className="truncate max-w-[13rem]">{value || label}</span>
     </button>
   )

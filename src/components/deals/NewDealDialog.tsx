@@ -361,12 +361,17 @@ export function NewDealDialog({
   )
 
   // ─── Identidade ───────────────────────────────────────────────────────────
-  // Título e escopo respondem à mesma pergunta — "o que é isto?" — em duas
-  // escalas. Sem moldura e em corpo grande: é o que o operador lê primeiro e
-  // onde o cursor já está. Textarea em vez de input para o título longo
-  // quebrar linha em vez de sumir para dentro do campo.
+  // O título é o herói: sem moldura, em corpo grande, focado e com a sugestão
+  // já selecionada. Não leva rótulo porque nada mais na tela pode ser
+  // confundido com ele — o placeholder e o foco dizem o que é.
+  //
+  // O escopo é OUTRA coisa e voltou a ser campo com rótulo. Na primeira versão
+  // ele era um segundo texto sem moldura logo abaixo do título, e lia como
+  // legenda: o PO abriu a tela e disse que o campo tinha sumido. Texto livre
+  // precisa de afordância de campo — é a mesma regra que manda o atributo
+  // escolhido de uma lista virar ficha.
   const identidade = (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-3.5">
       <textarea
         ref={(el) => { tituloRef.current = el; cresce(el) }}
         value={title}
@@ -378,15 +383,28 @@ export function NewDealDialog({
         placeholder={`Nome do ${noun}`}
         className="w-full resize-none overflow-hidden bg-transparent border-0 p-0 font-display text-xl font-semibold leading-snug text-surface-50 placeholder:text-surface-600 focus:outline-none"
       />
-      <textarea
-        ref={cresce}
-        value={description}
-        onChange={(e) => { setDescription(e.target.value); cresce(e.currentTarget) }}
-        rows={1}
-        aria-label="Escopo"
-        placeholder={isProcess ? 'O que está sendo tratado?' : 'O que está sendo proposto?'}
-        className="w-full resize-none overflow-hidden bg-transparent border-0 p-0 text-sm leading-relaxed text-surface-300 placeholder:text-surface-500 focus:outline-none"
-      />
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="novo-negocio-escopo" className="text-xs font-medium text-surface-400">
+          Escopo <span className="text-surface-500">(opcional)</span>
+        </label>
+        <textarea
+          id="novo-negocio-escopo"
+          ref={cresce}
+          value={description}
+          onChange={(e) => { setDescription(e.target.value); cresce(e.currentTarget) }}
+          rows={2}
+          placeholder={isProcess
+            ? 'Ex: consulta de retorno, ajuste de plano'
+            : 'Ex: site institucional + hospedagem dedicada'}
+          className="w-full min-h-[56px] resize-none overflow-hidden rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm leading-relaxed text-surface-100 placeholder:text-surface-500 transition-colors hover:border-surface-600 focus:border-brand-400/60 focus:outline-none focus:ring-2 focus:ring-brand-400/20"
+        />
+        <span className="text-[11px] text-surface-500">
+          {isProcess
+            ? 'O que está sendo tratado — aparece no card do quadro, abaixo do título.'
+            : 'O que está sendo proposto ao cliente — aparece no card do quadro, abaixo do título.'}
+        </span>
+      </div>
     </div>
   )
 
@@ -410,7 +428,12 @@ export function NewDealDialog({
   const fichas = (
     <div className="flex flex-wrap gap-1.5">
       {!semFunis && (
-        <AttributeChip label="Funil" value={selectedPipeline?.name} icon={FunilIcon}>
+        <AttributeChip
+          label="Funil"
+          value={selectedPipeline?.name}
+          icon={FunilIcon}
+          hint={`Onde este ${noun} vai viver. O tipo do funil — venda ou processo — vem antes do nome.`}
+        >
           {(fechar) => (
             salesPipelines.length === 0
               ? <p className="px-3 py-2 text-xs text-surface-400">Nenhum funil disponível</p>
@@ -428,7 +451,13 @@ export function NewDealDialog({
       )}
 
       {!semFunis && (
-        <AttributeChip label="Etapa" value={etapaAtual?.label} icon={ArrowRight} disabled={stages.length === 0}>
+        <AttributeChip
+          label="Etapa"
+          value={etapaAtual?.label}
+          icon={ArrowRight}
+          disabled={stages.length === 0}
+          hint={`Coluna do quadro em que o ${noun} nasce.`}
+        >
           {(fechar) => (
             <>{stages.map((s) => (
               <ChipOption key={s.id} selected={s.id === stageId} onSelect={() => { setStageId(s.id); fechar() }}>
@@ -439,7 +468,12 @@ export function NewDealDialog({
         </AttributeChip>
       )}
 
-      <AttributeChip label="Dono" value={donoValor} leading={avatarDono}>
+      <AttributeChip
+        label="Dono"
+        value={donoValor}
+        leading={avatarDono}
+        hint={`Quem responde por este ${noun}. Pode ficar sem dono — aí ele entra na fila da equipe.`}
+      >
         {(fechar) => (
           <>
             <ChipOption selected={ownerUserId === null} onSelect={() => { setOwnerUserId(null); fechar() }}>
@@ -458,6 +492,9 @@ export function NewDealDialog({
         label="Previsão"
         value={expectedCloseAt ? dataCurta(expectedCloseAt) : null}
         icon={CalendarDays}
+        hint={isProcess
+          ? 'Quando você espera concluir este registro.'
+          : 'Quando você espera fechar este negócio. Serve ao funil e à previsão da equipe.'}
       >
         {(fechar) => (
           // Sem `role="menuitem"` aqui de propósito: o Dropdown foca o primeiro

@@ -321,3 +321,31 @@ describe('NewDealDialog — regressões da revisão', () => {
     expect(screen.queryByLabelText(/Observação/)).not.toBeInTheDocument()
   })
 })
+
+// ─── A didática que a primeira versão tinha perdido ────────────────────────
+// A passada de 09/09 tirou os rótulos junto com as molduras: o escopo virou um
+// texto sem borda que lia como legenda ("sumiu", nas palavras do PO) e a ficha
+// mostrava só o valor — "Novo" sem dizer que aquilo era a Etapa.
+describe('NewDealDialog — o nome de cada coisa', () => {
+  it('escopo é campo com rótulo visível, não legenda do título', () => {
+    renderDialog()
+    const escopo = screen.getByLabelText(/Escopo/) as HTMLTextAreaElement
+    expect(escopo.tagName).toBe('TEXTAREA')
+    // O rótulo é do próprio campo — clicar nele foca o campo.
+    expect(escopo.id).toBeTruthy()
+    expect(document.querySelector(`label[for="${escopo.id}"]`)).toBeInTheDocument()
+  })
+
+  it('a ficha mostra o NOME do atributo junto do valor', () => {
+    renderDialog()
+    const etapa = screen.getByRole('button', { name: 'Etapa: Novo' })
+    expect(etapa).toHaveTextContent('Etapa')
+    expect(etapa).toHaveTextContent('Novo')
+  })
+
+  it('o popover diz o que está sendo escolhido e o que aquilo significa', () => {
+    renderDialog()
+    fireEvent.click(screen.getByRole('button', { name: /^Etapa:/ }))
+    expect(screen.getByText('Coluna do quadro em que o negócio nasce.')).toBeInTheDocument()
+  })
+})
