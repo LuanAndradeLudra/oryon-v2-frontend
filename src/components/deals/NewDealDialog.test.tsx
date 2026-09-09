@@ -407,6 +407,24 @@ describe('NewDealDialog — o nome de cada coisa', () => {
     expect(ganho).toBeDisabled()
   })
 
+  // Opacidade sozinha dizia só "apagado" — tanto podia ser encerramento quanto
+  // "ainda não chegou". O terminal ganhou forma própria e o fio antes dele
+  // vira tracejado: é ali que o funil deixa de ser percurso.
+  it('etapa terminal se distingue por forma, não só por tom', () => {
+    renderDialog({ pipelines: [{ ...VENDAS_3, stages: [
+      st('v1', 'Novo', 1),
+      st('vw', 'Ganho', 2, { isWon: true, color: '#10b981' }),
+      st('vl', 'Perdido', 3, { isLost: true, color: '#ef4444' }),
+    ] }] })
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    // O ganho leva ✓ e a perda leva ×; a etapa de percurso não leva ícone.
+    expect(within(trilha).getByRole('button', { name: /Ganho/ }).querySelector('svg')).toBeTruthy()
+    expect(within(trilha).getByRole('button', { name: /Perdido/ }).querySelector('svg')).toBeTruthy()
+    expect(within(trilha).getByRole('button', { name: /Novo/ }).querySelector('svg')).toBeNull()
+    // O fio que antecede o primeiro terminal é tracejado.
+    expect(trilha.querySelectorAll('.border-dashed')).toHaveLength(1)
+  })
+
   it('clicar numa etapa da trilha muda onde o negócio nasce', async () => {
     renderDialog({ pipelines: [VENDAS_3] })
     const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })

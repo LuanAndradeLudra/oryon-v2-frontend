@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { Check, X } from 'lucide-react'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { cn, hexToRgba } from '@/lib/utils'
@@ -68,6 +69,18 @@ const isTerminal = (s: PipelineStage) => s.isWon || s.isLost
 const corDa = (s: PipelineStage) =>
   /^#[0-9a-f]{6}$/i.test(s.color ?? '') ? s.color : '#6B8080'
 
+type ItemTrilha =
+  | { tipo: 'etapa'; etapa: PipelineStage }
+  | { tipo: 'grupo'; quantidade: number }
+
+/** O conector `i` separa percurso de desfecho? (primeiro terminal da faixa) */
+function fronteiraDesfecho(itens: ItemTrilha[], i: number) {
+  const atual = itens[i]
+  const anterior = itens[i - 1]
+  if (atual?.tipo !== 'etapa' || !isTerminal(atual.etapa)) return false
+  return anterior?.tipo !== 'etapa' || !isTerminal(anterior.etapa)
+}
+
 export function PipelineTrail({ stages, activeId, onSelect, compact, className }: PipelineTrailProps) {
   const [listaAberta, setListaAberta] = useState(false)
   const semMovimento = useReducedMotion()
@@ -92,7 +105,7 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
       return ordenadas.map((s) => ({ tipo: 'etapa' as const, etapa: s }))
     }
     const manter = new Set([0, idxAtivo - 1, idxAtivo, idxAtivo + 1, ordenadas.length - 1])
-    const saida: ({ tipo: 'etapa'; etapa: PipelineStage } | { tipo: 'grupo'; quantidade: number })[] = []
+    const saida: ItemTrilha[] = []
     let escondidas = 0
     ordenadas.forEach((etapa, i) => {
       if (manter.has(i)) {
@@ -210,7 +223,20 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
       </span>
       {itens.map((item, i) => (
         <div key={item.tipo === 'etapa' ? item.etapa.id : `grupo-${i}`} className="contents">
-          {i > 0 && <span className="flex-1 h-px bg-surface-800 mx-2.5 min-w-[10px]" aria-hidden />}
+          {i > 0 && (
+            // O fio vira tracejado onde o funil deixa de ser percurso e vira
+            // desfecho. É a única fronteira real da faixa: antes dela o
+            // negócio anda, depois dela ele acaba.
+            <span
+              className={cn(
+                'flex-1 mx-2.5 min-w-[10px]',
+                fronteiraDesfecho(itens, i)
+                  ? 'h-0 border-t border-dashed border-surface-700'
+                  : 'h-px bg-surface-800',
+              )}
+              aria-hidden
+            />
+          )}
           {item.tipo === 'grupo' ? (
             <span className="shrink-0">{listaCompleta}</span>
           ) : (
@@ -267,6 +293,21 @@ function Passo({
         terminal ? 'cursor-default' : 'cursor-pointer hover:bg-surface-900',
       )}
     >
+      {terminal ? (
+        // Terminal não é um passo do caminho — é o desfecho. Ponto maior, com
+        // o sinal do que ele significa: ✓ para o ganho, × para a perda. A
+        // opacidade sozinha dizia só "apagado", que tanto podia ser
+        // "encerramento" quanto "ainda não chegou".
+        <span
+          className="flex items-center justify-center w-3.5 h-3.5 rounded-full shrink-0 border"
+          style={{ borderColor: hexToRgba(cor, 0.55), color: hexToRgba(cor, 0.9) }}
+          aria-hidden
+        >
+          {etapa.isWon
+            ? <Check className="w-2 h-2" strokeWidth={3.5} />
+            : <X className="w-2 h-2" strokeWidth={3.5} />}
+        </span>
+      ) : (
       <span className="relative flex items-center justify-center w-1.5 h-1.5 shrink-0" aria-hidden>
         {/* O anel é um elemento SÓ, compartilhado por todos os pontos: com
             `layoutId` o Framer o anima de uma etapa para a outra, e a troca
@@ -284,14 +325,17 @@ function Passo({
           className="w-1.5 h-1.5 rounded-full transition-opacity"
           // Inativa fica na PRÓPRIA cor, esmaecida: é o que faz a faixa ler
           // como as colunas do quadro, e não como um stepper qualquer.
-          style={ativa ? undefined : { backgroundColor: cor, opacity: terminal ? 0.35 : 0.5 }}
+          style={ativa ? undefined : { backgroundColor: cor, opacity: 0.5 }}
         />
       </span>
+      )}
       <span
         className={cn('text-[11.5px] truncate transition-colors', ativa && 'font-semibold')}
         style={ativa
           ? { color: cor }
-          : { color: terminal ? 'var(--color-surface-600)' : 'var(--color-surface-500)' }}
+          : terminal
+            ? { color: hexToRgba(cor, 0.62) }
+            : { color: 'var(--color-surface-500)' }}
       >
         {etapa.label}
       </span>
@@ -300,7 +344,19 @@ function Passo({
 
   return (
     <span className={cn('flex items-center min-w-0', ativa ? 'shrink-0' : 'shrink')}>
-      {ativa ? corpo : <Tooltip content={etapa.label} side="bottom">{corpo}</Tooltip>}
+      {ativa
+        ? corpo
+        : (
+          <Tooltip
+            content={terminal
+              ? `${etapa.label} — encerramento do funil. O ${etapa.isWon ? 'ganho' : 'encerramento'} não é etapa de entrada.`
+              : etapa.label}
+            side="bottom"
+            wide={terminal}
+          >
+            {corpo}
+          </Tooltip>
+        )}
     </span>
   )
 }
