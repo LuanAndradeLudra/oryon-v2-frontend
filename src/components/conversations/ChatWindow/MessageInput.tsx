@@ -583,12 +583,14 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
               </p>
             </div>
             {!templateSent && (
-              /* Mesma variante do CTA do diálogo de funil: ação principal sem
-                 cor de marca. Aqui o teal competia com o próprio aviso de 24 h,
-                 que já é teal — o botão sumia dentro do card em vez de ser a
-                 saída dele. */
+              /* Mesmo padrão dos controles do cabeçalho do contato — o
+                 "Adicionar ao funil ▾" e o seletor de status. Os dois são
+                 superfície neutra com borda (`bg-surface-800` +
+                 `border-surface-700`), que é o que o DS chama de `secondary`.
+                 Antes era um color-chip teal sobre um card que JÁ é teal, e o
+                 botão se dissolvia dentro do próprio aviso. */
               <Button
-                variant="neutral"
+                variant="secondary"
                 size="sm"
                 onClick={toggleTemplatePicker}
                 className="flex-shrink-0"
