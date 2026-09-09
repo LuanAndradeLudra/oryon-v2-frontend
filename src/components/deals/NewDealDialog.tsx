@@ -613,14 +613,14 @@ export function NewDealDialog({
               <Button variant="secondary" loading={saving} onClick={() => submit(false)} className={cn(isMobile && 'min-h-11')}>
                 Vincular
               </Button>
-              <Button variant="primary" loading={saving} onClick={() => submit(true)} className={cn(isMobile && 'min-h-11')}>
+              <Button variant="neutral" loading={saving} onClick={() => submit(true)} className={cn(isMobile && 'min-h-11')}>
                 Vincular e atualizar valor
               </Button>
             </>
           ) : (
             <>
               <Button variant="ghost" onClick={onClose} className={cn(isMobile && 'min-h-11')}>Cancelar</Button>
-              <Button variant="primary" loading={saving} onClick={() => submit()} className={cn(isMobile && 'min-h-11')}>
+              <Button variant="neutral" loading={saving} onClick={() => submit()} className={cn(isMobile && 'min-h-11')}>
                 Criar {noun}
               </Button>
             </>
