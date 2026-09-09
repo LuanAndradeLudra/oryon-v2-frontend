@@ -107,17 +107,21 @@
   /* O CHÃO da aplicação — body, topbar e as superfícies "um passo abaixo do
      painel". Era #0A0F0F, a 4 pontos por canal do #0E1414 dos cards de página:
      perto demais para o card descolar do fundo — 1.037:1 de contraste, que é
-     quase nada. Desceu para #040A08, que DOBRA o degrau (1.073:1) e puxa um
-     pouco de verde (G>B), acompanhando o teal da marca em vez de neutralizar
-     para cinza.
+     quase nada. Desceu para #060909, que DOBRA o degrau (1.074:1).
 
-     O teto aqui é baixo por natureza: nem preto puro passa de 1.129:1 contra
-     o #0E1414, porque o card também é quase preto. Se precisar de mais
+     A MATIZ NÃO MUDA, e isso é a metade importante: 6:9:9 mantém G=B, como no
+     #0A0F0F original, e a mesma proporção R/G de 0.667. Uma tentativa anterior
+     desceu para #040A08 — mesma escuridão, mas com G>B — e o verde ficou
+     visivelmente mais forte. Escurecer e trocar de matiz são duas mudanças;
+     aqui só a primeira é desejada.
+
+     O teto é baixo por natureza: nem preto puro passa de 1.129:1 contra o
+     #0E1414, porque o card também é quase preto. Se precisar de mais
      separação, a alavanca que resta é CLAREAR o card (o 900), não escurecer
      mais o chão.
      Só o 950 muda: o 900 continua sendo o card, e é a distância entre os dois
      que faz o card existir. */
-  --color-surface-950: #040A08;
+  --color-surface-950: #060909;
   --color-surface-900: #0E1414;
   --color-surface-800: #161E1E;
   --color-surface-700: #243333;
@@ -142,7 +146,7 @@
   --color-surface-100-light: #1A1F2E;
   --color-surface-50-light:  #0F1422;
 
-  --color-surface-950-dark: #040A08;
+  --color-surface-950-dark: #060909;
   --color-surface-900-dark: #0E1414;
   --color-surface-800-dark: #161E1E;
   --color-surface-700-dark: #243333;
@@ -876,8 +880,9 @@ code, pre, kbd, samp {
  * tokens: os valores abaixo valem em qualquer tema. */
 .nav-sidebar {
   /* Acompanha o chão novo: a sidebar é a moldura do workspace e ficaria mais
-     clara que o canvas se mantivesse o #0A0F0F antigo. */
-  --color-surface-950: #040A08;
+     clara que o canvas se mantivesse o #0A0F0F antigo. Mesma matiz do resto
+     da escala — G=B. */
+  --color-surface-950: #060909;
   --color-surface-900: #0E1414;
   --color-surface-800: #161E1E;
   --color-surface-700: #243333;
