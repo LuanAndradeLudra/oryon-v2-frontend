@@ -15,7 +15,6 @@ import { useToast } from '@/hooks/useToast'
 import { dealsApi } from '@/services/api'
 import { cn, hexToRgba, getApiErrorMessage } from '@/lib/utils'
 import { HandoffChip } from './AiHandoffBanner'
-import { ConversationDealIndicator } from './ConversationDealIndicator'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
@@ -72,9 +71,10 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const isMobile = useIsMobile()
   const { contact, status, whatsappNumber, assignedUser, tags = [] } = conversation
+  // `tags` continua sendo lida — não para desenhar pílulas no cabeçalho, e sim
+  // para o marcador do botão de Informações saber que há o que ver lá dentro.
   // F9 (SCRUM-874): "Adicionar ao funil" a partir da conversa — o registro
-  // nasce ligado a ela (`originConversationId`). O chip do cabeçalho
-  // (`ConversationDealIndicator`) atualiza pelo socket `deal:changed`.
+  // nasce ligado a ela (`originConversationId`).
   const addToPipeline = useAddToPipeline()
   const { pipelines } = useCRMConfig()
   const { vocab } = useTenantVocab()
@@ -268,36 +268,15 @@ export function ChatHeader({
           <p className="text-sm font-semibold text-surface-50 truncate">
             {contact.displayName}
           </p>
-          {/* B4 (SCRUM-930): o chip do negócio entra NESTA linha (telefone),
-              não numa linha própria — o cabeçalho mobile já empilha até 5
-              linhas (nome/telefone/tags/handoff) e não pode crescer mais
-              (F-CONV-24). `flex-wrap` deixa o chip cair pra baixo do telefone
-              só se não couber, sem abrir uma nova linha estrutural fixa. */}
+          {/* Só identidade. Negócios e etiquetas saíram daqui (09/09): são
+              atributos do CONTATO, e o cabeçalho carrega o que muda a próxima
+              mensagem — situação da conversa e estado da IA. Os dois já têm
+              seção própria no painel da direita, e mantê-los aqui era a mesma
+              informação em dois lugares, disputando a mesma tela. */}
           <div className="flex items-center gap-1 text-[11px] text-surface-400 flex-wrap">
             <WhatsAppIcon size={10} />
             <span className="truncate">{contact.waId}</span>
-            <ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} conversationId={conversation.id} />
           </div>
-          {tags.length > 0 && (
-            <div className="flex items-center flex-wrap gap-1 mt-0.5">
-              {visibleTags.map((t) => (
-                <span
-                  key={t.id}
-                  className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap"
-                  style={{
-                    backgroundColor: hexToRgba(t.color, 0.18),
-                    color: t.color,
-                  }}
-                >
-                  <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} />
-                  {t.name}
-                </span>
-              ))}
-              {extraTags > 0 && (
-                <span className="text-[10px] text-surface-500 font-medium">+{extraTags}</span>
-              )}
-            </div>
-          )}
           {/* Handoff chip — wraps below the phone/tags row so the right-side
               buttons (status / more) stay reachable even on narrow phones. */}
           <div className="mt-1">
@@ -408,7 +387,6 @@ export function ChatHeader({
               </>
             )}
           </div>
-          <div className="mt-1"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} conversationId={conversation.id} /></div>
         </div>
       </div>
 
@@ -462,7 +440,9 @@ export function ChatHeader({
           >
             <div className="relative">
               <Info className="w-4 h-4" />
-              {(contact.metaAdsReferral || contact.googleAdsAttribution) && !infoOpen && (
+              {/* Com as etiquetas fora do cabeçalho, o marcador é o que avisa
+                  que há algo do contato para ver — o painel nasce fechado. */}
+              {(contact.metaAdsReferral || contact.googleAdsAttribution || tags.length > 0) && !infoOpen && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-surface-400 border border-surface-900" />
               )}
             </div>
