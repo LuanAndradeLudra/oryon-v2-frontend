@@ -218,7 +218,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
         <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
         <Button
           type="button"
-          variant="primary"
+          variant="neutral"
           onClick={handleSave}
           loading={saving}
           disabled={saving || loadingTemplates || !!blocker}

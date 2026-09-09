@@ -253,7 +253,7 @@ export function ProductModal({ open, onClose, onSave, editProduct }: ProductModa
           <Button variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
-          <Button variant="primary" onClick={handleSave} disabled={saving || hasLimitError}>
+          <Button variant="neutral" onClick={handleSave} disabled={saving || hasLimitError}>
             {saving ? 'Salvando...' : editProduct ? 'Salvar alterações' : 'Criar produto'}
           </Button>
         </div>

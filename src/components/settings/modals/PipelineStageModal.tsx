@@ -141,7 +141,7 @@ export function PipelineStageModal({ open, onClose, onSave, editStage, terminalL
           <Button variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
-          <Button variant="primary" onClick={handleSave} disabled={saving}>
+          <Button variant="neutral" onClick={handleSave} disabled={saving}>
             {saving ? 'Salvando...' : editStage ? 'Salvar alterações' : 'Criar estágio'}
           </Button>
         </div>

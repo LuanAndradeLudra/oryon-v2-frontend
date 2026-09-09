@@ -479,7 +479,7 @@ export function ContactProfilePage() {
             <MockBadge />
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => setTaskModalOpen(false)}>Cancelar</Button>
-              <Button variant="primary" size="sm" onClick={handleCreateTask} disabled={!taskTitle.trim()}>
+              <Button variant="neutral" size="sm" onClick={handleCreateTask} disabled={!taskTitle.trim()}>
                 Criar tarefa
               </Button>
             </div>
