@@ -131,13 +131,30 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                     : <X className="w-1.5 h-1.5" strokeWidth={4} />}
                 </span>
               ) : (
-                <span
-                  className={cn('rounded-full', atual ? 'w-3 h-3' : 'w-2 h-2')}
-                  style={atual
-                    ? { backgroundColor: cor, boxShadow: `0 0 0 4px ${hexToRgba(cor, 0.22)}` }
-                    : { backgroundColor: cor, opacity: feito ? 0.55 : 0.3 }}
-                  aria-hidden
-                />
+                atual ? (
+                  /* O pulso só existe AQUI, na linha do tempo do processo —
+                     não na trilha do diálogo de criação. Lá a etapa ativa é uma
+                     ESCOLHA (o operador está decidindo onde o registro nasce);
+                     aqui ela é um ESTADO VIVO: o registro está parado neste
+                     ponto agora. Pulsar uma escolha seria ruído; pulsar um
+                     estado é o que um indicador de "ao vivo" faz. */
+                  <span className="relative flex items-center justify-center w-3 h-3 shrink-0" aria-hidden>
+                    <span
+                      className="pulso-etapa absolute inset-0 rounded-full"
+                      style={{ backgroundColor: hexToRgba(cor, 0.35) }}
+                    />
+                    <span
+                      className="relative w-3 h-3 rounded-full"
+                      style={{ backgroundColor: cor, boxShadow: `0 0 0 4px ${hexToRgba(cor, 0.22)}` }}
+                    />
+                  </span>
+                ) : (
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: cor, opacity: feito ? 0.55 : 0.3 }}
+                    aria-hidden
+                  />
+                )
               )}
               {!ultimo && <span className="w-px flex-1 min-h-[20px] my-1 bg-surface-800" aria-hidden />}
             </span>
@@ -154,7 +171,11 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
             <span className={cn('flex-1 min-w-0', !ultimo && 'pb-3')}>
             <span
               className={cn(
-                'flex items-baseline justify-between gap-3 min-w-0',
+                // `items-center`, não `items-baseline`: o título tem 15 px e o
+                // tempo 10,5 px, e alinhar pela BASE joga o menor para baixo do
+                // centro óptico — foi assim que "agora nesta etapa" apareceu
+                // afundado em relação ao nome da etapa.
+                'flex items-center justify-between gap-3 min-w-0',
                 // `-my-1 py-1` se anulam: o bloco engorda para os lados e para
                 // dentro, mas NÃO empurra a linha — o título fica exatamente
                 // onde estaria sem ele, alinhado ao ponto da trilha.
@@ -164,7 +185,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                 ? { borderLeftColor: cor, backgroundColor: hexToRgba(cor, 0.09) }
                 : undefined}
             >
-              <span className="flex items-baseline gap-2 min-w-0">
+              <span className="flex items-center gap-2 min-w-0">
                 <button
                   type="button"
                   disabled={!clicavel}

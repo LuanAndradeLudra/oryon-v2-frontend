@@ -500,6 +500,28 @@ code, pre, kbd, samp {
 
 
 /* ── Chat animations ─────────────────────────────────────────────────────── */
+/* ── Pulso da etapa atual (linha do tempo do processo) ──────────────────────
+ * Indicador de ESTADO VIVO: o registro está parado neste ponto agora. Só a
+ * ficha de processo usa — na trilha do diálogo de criação a etapa ativa é uma
+ * ESCOLHA, e pulsar uma escolha é ruído.
+ *
+ * `animate-ping` do Tailwind faria o trabalho, mas roda em 1 s e chega a
+ * `scale(2)`: num ponto de 12 px dentro de uma lista, isso lê como alerta
+ * piscando. 2,4 s e amplitude de 1.9 dão batimento, não estrobo.
+ *
+ * A cor vem por `background-color` inline (é a cor da etapa); aqui só a
+ * geometria e o tempo. */
+@keyframes pulso-etapa {
+  0%        { transform: scale(1);   opacity: .5 }
+  70%, 100% { transform: scale(1.9); opacity: 0 }
+}
+.pulso-etapa {
+  animation: pulso-etapa 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulso-etapa { display: none }
+}
+
 @keyframes msg-slide-in-left {
   from { opacity: 0; transform: translateX(-12px) scale(0.97); }
   to   { opacity: 1; transform: translateX(0) scale(1); }
