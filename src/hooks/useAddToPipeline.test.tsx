@@ -54,10 +54,19 @@ function Harness({ target, onCreated }: { target: AddToPipelineTarget; onCreated
   )
 }
 
+/** Funil de PROCESSO passa pela confirmacao antes de criar (09/09). */
+const confirmar = async () => {
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Adicionar' })).toBeInTheDocument())
+  fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }))
+}
+
 beforeEach(() => {
   Object.values(api).forEach((m) => m.mockReset())
   navigate.mockReset(); toast.mockReset(); openDeal.mockReset()
   api.get.mockResolvedValue({ data: EXISTING })
+  // A dispensa ("nao perguntar de novo") mora no localStorage: sem limpar, um
+  // teste que marca a caixa dispensaria a confirmacao nos seguintes.
+  localStorage.clear()
 })
 
 describe('useAddToPipeline (F9)', () => {
@@ -66,6 +75,7 @@ describe('useAddToPipeline (F9)', () => {
     const onCreated = vi.fn()
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE, conversationId: 'conv-1' }} onCreated={onCreated} />)
     fireEvent.click(screen.getByText('add'))
+    await confirmar()
     await waitFor(() => expect(api.create).toHaveBeenCalledWith({ contactId: 'c1', title: 'Mariana', pipelineId: 'p', originConversationId: 'conv-1' }))
     await waitFor(() => expect(toast).toHaveBeenCalled())
     const [msg, type, action] = toast.mock.calls[0]
@@ -82,6 +92,7 @@ describe('useAddToPipeline (F9)', () => {
     api.create.mockResolvedValue({ data: { ...EXISTING, id: 'd-new', stageId: 's1' } })
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
     fireEvent.click(screen.getByText('add'))
+    await confirmar()
     await waitFor(() => expect(api.create).toHaveBeenCalledWith({ contactId: 'c1', title: 'Mariana', pipelineId: 'p' }))
   })
 
@@ -89,6 +100,7 @@ describe('useAddToPipeline (F9)', () => {
     api.create.mockRejectedValue(conflict409)
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
     fireEvent.click(screen.getByText('add'))
+    await confirmar()
     await waitFor(() => expect(screen.getByText('Já existe um registro aberto')).toBeInTheDocument())
     await waitFor(() => expect(api.get).toHaveBeenCalledWith('d-old'))
     await waitFor(() => expect(screen.getByTestId('conflict-summary')).toHaveTextContent('na etapa Aguardando cliente'))
@@ -104,6 +116,7 @@ describe('useAddToPipeline (F9)', () => {
     const onCreated = vi.fn()
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} onCreated={onCreated} />)
     fireEvent.click(screen.getByText('add'))
+    await confirmar()
     await waitFor(() => expect(screen.getByTestId('conflict-summary')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('conflict-move_to_first'))
     fireEvent.click(screen.getByTestId('conflict-confirm'))
@@ -118,6 +131,7 @@ describe('useAddToPipeline (F9)', () => {
     api.setStatus.mockResolvedValue({ data: { ...EXISTING, status: 'lost' } })
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE, conversationId: 'conv-1' }} />)
     fireEvent.click(screen.getByText('add'))
+    await confirmar()
     await waitFor(() => expect(screen.getByTestId('conflict-summary')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('conflict-close_and_new'))
     fireEvent.click(screen.getByTestId('conflict-confirm'))
@@ -138,10 +152,79 @@ describe('useAddToPipeline (F9)', () => {
     expect(api.create).not.toHaveBeenCalled()
   })
 
+  // ─── Confirmação antes de criar em PROCESSO (09/09) ──────────────────────
+  // O clique num item do menu criava o registro na hora, e o operador só via o
+  // resultado no toast — depois do fato. Como a API não tem `delete`, o clique
+  // errado é irreversível pela interface.
+  it('processo NÃO cria nada antes da confirmação', async () => {
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE, conversationId: 'conv-1' }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByText('Adicionar ao funil?')).toBeInTheDocument())
+    expect(api.create).not.toHaveBeenCalled()
+    // A confirmação diz o que vai acontecer: funil, etapa em que nasce e origem.
+    expect(screen.getByText('Novo chamado')).toBeInTheDocument()
+    expect(screen.getByText(/Esta conversa/)).toBeInTheDocument()
+  })
+
+  it('cancelar a confirmação não cria registro nenhum', async () => {
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByText('Adicionar ao funil?')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => expect(screen.queryByText('Adicionar ao funil?')).toBeNull())
+    expect(api.create).not.toHaveBeenCalled()
+    expect(toast).not.toHaveBeenCalled()
+  })
+
+  // O acidente acontece no funil que se usa pouco; a repetição, no que se usa
+  // todo dia. A dispensa por funil separa os dois casos.
+  it('"não perguntar de novo" devolve o 1-clique NAQUELE funil', async () => {
+    api.create.mockResolvedValue({ data: { ...EXISTING, id: 'd-new', stageId: 's1' } })
+    const { unmount } = render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByText('Adicionar ao funil?')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('checkbox'))
+    await confirmar()
+    await waitFor(() => expect(api.create).toHaveBeenCalledTimes(1))
+    unmount()
+
+    // Segunda vez, no MESMO funil: cria direto, sem confirmação.
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(api.create).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText('Adicionar ao funil?')).toBeNull()
+  })
+
+  it('a dispensa vale só para o funil dispensado', async () => {
+    localStorage.setItem('oryon.pipeline.skip-confirm', JSON.stringify(['outro-funil']))
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByText('Adicionar ao funil?')).toBeInTheDocument())
+    expect(api.create).not.toHaveBeenCalled()
+  })
+
+  it('"Preencher detalhes…" troca a confirmação pelo formulário completo', async () => {
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE, conversationId: 'conv-1' }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByText('Adicionar ao funil?')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /Preencher detalhes/ }))
+    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toHaveTextContent('p · conv-1 · Mariana'))
+    expect(screen.queryByText('Adicionar ao funil?')).toBeNull()
+    expect(api.create).not.toHaveBeenCalled()
+  })
+
+  it('funil de VENDA não ganha confirmação — o formulário já é a confirmação', async () => {
+    render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: VENDAS }} />)
+    fireEvent.click(screen.getByText('add'))
+    await waitFor(() => expect(screen.getByTestId('new-deal-dialog')).toBeInTheDocument())
+    expect(screen.queryByText('Adicionar ao funil?')).toBeNull()
+  })
+
   it('erro que não é conflito vira toast de erro', async () => {
     api.create.mockRejectedValue({ response: { status: 400, data: { message: 'Funil arquivado.' } } })
     render(<Harness target={{ contactId: 'c1', contactName: 'Mariana', pipeline: SUPORTE }} />)
     fireEvent.click(screen.getByText('add'))
+    await confirmar()
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Funil arquivado.', 'error'))
     expect(screen.queryByText('Já existe um registro aberto')).toBeNull()
   })

@@ -9,8 +9,39 @@ import { pipelineKindOf } from '@/lib/pipelineKinds'
 import { getActivePipelines } from '@/lib/utils'
 import { PipelineConflictModal, type ConflictChoice } from '@/components/deals/PipelineConflictModal'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
+import { ConfirmAddToPipelineModal } from '@/components/deals/ConfirmAddToPipelineModal'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
+
+/**
+ * Funis em que o operador dispensou a confirmação ("não perguntar de novo").
+ *
+ * Fica no navegador de propósito: é preferência de gesto, não dado de negócio,
+ * e não vale um endpoint. A chave é o id do funil, que já é único por tenant —
+ * então não há vazamento entre tenants. Dois usuários no MESMO navegador e no
+ * mesmo tenant compartilhariam a dispensa; se isso incomodar, o passo seguinte
+ * é guardar por usuário no backend, sem mudar mais nada aqui.
+ */
+const SKIP_KEY = 'oryon.pipeline.skip-confirm'
+
+function lerDispensados(): string[] {
+  try {
+    const raw = localStorage.getItem(SKIP_KEY)
+    const val: unknown = raw ? JSON.parse(raw) : []
+    return Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function dispensar(pipelineId: string) {
+  try {
+    const atual = lerDispensados()
+    if (!atual.includes(pipelineId)) {
+      localStorage.setItem(SKIP_KEY, JSON.stringify([...atual, pipelineId]))
+    }
+  } catch { /* modo privado / quota — a confirmação só continua aparecendo */ }
+}
 
 /** O que "Adicionar ao funil" precisa saber, de qualquer superfície (conversa · ficha · tabela). */
 export interface AddToPipelineTarget {
@@ -58,6 +89,9 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
   const [conflict, setConflict] = useState<ConflictState | null>(null)
   const [closeTarget, setCloseTarget] = useState<{ target: AddToPipelineTarget; existing: Deal; stage: PipelineStage } | null>(null)
   const [salesTarget, setSalesTarget] = useState<AddToPipelineTarget | null>(null)
+  // Processo com confirmação pendente — o registro ainda NÃO foi criado.
+  const [confirmTarget, setConfirmTarget] = useState<AddToPipelineTarget | null>(null)
+  const [dispensados, setDispensados] = useState<string[]>(lerDispensados)
   const [busy, setBusy] = useState(false)
   const { onCreated } = opts
 
@@ -93,6 +127,33 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
       setConflict((prev) => (prev && prev.openDealId === openDealId ? { ...prev, existing: { id: openDealId } as Deal } : prev))
     }
   }, [])
+
+  /** Cria o registro de processo de fato — usado tanto pela confirmação
+   *  quanto pelo caminho de quem dispensou a pergunta neste funil. */
+  const criarProcesso = useCallback(async (target: AddToPipelineTarget) => {
+    setBusy(true)
+    try {
+      const res = await createRecord(target)
+      announce(res.data, target)
+    } catch (e: unknown) {
+      const c = readConflict(e)
+      if (c) await openConflict(target, c.openDealId)
+      else toast(getApiErrorMessage(e, `Não foi possível adicionar ao funil.`), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }, [createRecord, announce, openConflict, toast])
+
+  const confirmarProcesso = useCallback(async ({ naoPerguntarMais }: { naoPerguntarMais: boolean }) => {
+    const target = confirmTarget
+    if (!target) return
+    if (naoPerguntarMais) {
+      dispensar(target.pipeline.id)
+      setDispensados(lerDispensados())
+    }
+    setConfirmTarget(null)
+    await criarProcesso(target)
+  }, [confirmTarget, criarProcesso])
 
   /**
    * Segunda porta do "Adicionar ao funil ▾": abre o diálogo em vez de criar.
@@ -136,18 +197,16 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
       setSalesTarget(target)
       return
     }
-    setBusy(true)
-    try {
-      const res = await createRecord(target)
-      announce(res.data, target)
-    } catch (e: unknown) {
-      const c = readConflict(e)
-      if (c) await openConflict(target, c.openDealId)
-      else toast(getApiErrorMessage(e, `Não foi possível adicionar ao funil.`), 'error')
-    } finally {
-      setBusy(false)
-    }
-  }, [createRecord, announce, openConflict, toast])
+    // Processo: CONFIRMA antes de criar. Até aqui o clique num item do menu
+    // criava o registro na hora, e o operador só via o resultado no toast —
+    // depois do fato. Como a API de negócios não tem `delete`, o clique errado
+    // é irreversível pela interface: a única saída é fechar o registro numa
+    // etapa terminal, com motivo, deixando um cancelado no funil.
+    //
+    // Quem dispensou a pergunta neste funil segue no 1-clique de sempre.
+    if (dispensados.includes(target.pipeline.id)) { await criarProcesso(target); return }
+    setConfirmTarget(target)
+  }, [dispensados, criarProcesso])
 
   const handleChoice = useCallback(async (choice: ConflictChoice) => {
     if (!conflict) return
@@ -218,6 +277,27 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
 
   const dialogs: ReactNode = (
     <>
+      {/* Confirmação do funil de PROCESSO. Vive aqui, no hook, e não na página
+          de Conversas: as três superfícies ("Adicionar ao funil" do chat, da
+          ficha e do menu da linha na tabela) passam por este mesmo fluxo, e o
+          clique errado é ainda mais fácil no menu da linha. */}
+      <ConfirmAddToPipelineModal
+        open={!!confirmTarget}
+        onClose={() => setConfirmTarget(null)}
+        contactName={confirmTarget?.contactName ?? ''}
+        pipeline={confirmTarget?.pipeline ?? null}
+        fromConversation={!!confirmTarget?.conversationId}
+        busy={busy}
+        onConfirm={confirmarProcesso}
+        onDetails={() => {
+          // Escape para o formulário completo sem cancelar e recomeçar pelo
+          // outro item do menu. O `NewDealDialog` aceita os dois tipos de
+          // funil desde a passada de 08/09.
+          const t = confirmTarget
+          setConfirmTarget(null)
+          if (t) setSalesTarget(t)
+        }}
+      />
       <PipelineConflictModal
         key={conflict?.openDealId ?? 'none'}
         open={!!conflict}
