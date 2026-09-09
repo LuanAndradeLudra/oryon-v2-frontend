@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
-import { Search, ArrowRight, CalendarDays, Wallet } from 'lucide-react'
+import { Search, Plus, CalendarDays, Wallet } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { MoneyInput } from '@/components/ui/MoneyInput'
-import { AttributeChip, ChipOption, ToggleChip } from './AttributeChip'
+import { AttributeChip, ChipOption } from './AttributeChip'
+import { PipelineTrail } from './PipelineTrail'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
@@ -431,7 +432,10 @@ export function NewDealDialog({
     </div>
   )
 
-  // ─── Fichas ───────────────────────────────────────────────────────────────
+  // ─── Coluna direita · o que se escolhe de uma lista ───────────────────────
+  // A regra da coluna: só entra aqui o atributo que é ESCOLHA NUMA LISTA. O
+  // valor saiu porque é conteúdo, e a etapa saiu porque virou trilha. Sem isso
+  // a coluna era uma sobra; com isso, tem critério.
   const etapaAtual = stages.find((s) => s.id === stageId)
   const equipe = users.length > 0 ? users : (user ? [user] : [])
   const donoId = ownerUserId === undefined ? (user?.id ?? '') : (ownerUserId ?? '')
@@ -448,174 +452,173 @@ export function NewDealDialog({
     </span>
   )
 
-  const fichas = (
-    <div className="flex flex-wrap gap-1.5">
+  const propriedades = (
+    <div className="flex flex-col gap-3">
       {!semFunis && (
-        <AttributeChip
-          label="Funil"
-          value={selectedPipeline?.name}
-          icon={FunilIcon}
-          hint={`Onde este ${noun} vai viver. O tipo do funil — venda ou processo — vem antes do nome.`}
-        >
-          {(fechar) => (
-            salesPipelines.length === 0
-              ? <p className="px-3 py-2 text-xs text-surface-400">Nenhum funil disponível</p>
-              : <>{salesPipelines.map((p) => (
-                  <ChipOption
-                    key={p.id}
-                    selected={p.id === pipelineId}
-                    onSelect={() => { setPipelineId(p.id); setError(''); fechar() }}
-                  >
-                    {pipelineKindOption(pipelineKindOf(p)).label} · {p.name}{p.isDefault ? ' (padrão)' : ''}
-                  </ChipOption>
-                ))}</>
-          )}
-        </AttributeChip>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Funil</span>
+          <AttributeChip
+            label="Funil"
+            value={selectedPipeline?.name}
+            icon={FunilIcon}
+            full
+            hint={`Onde este ${noun} vai viver. O tipo do funil — venda ou processo — vem antes do nome.`}
+          >
+            {(fechar) => (
+              salesPipelines.length === 0
+                ? <p className="px-3 py-2 text-xs text-surface-400">Nenhum funil disponível</p>
+                : <>{salesPipelines.map((p) => (
+                    <ChipOption
+                      key={p.id}
+                      selected={p.id === pipelineId}
+                      onSelect={() => { setPipelineId(p.id); setError(''); fechar() }}
+                    >
+                      {pipelineKindOption(pipelineKindOf(p)).label} · {p.name}{p.isDefault ? ' (padrão)' : ''}
+                    </ChipOption>
+                  ))}</>
+            )}
+          </AttributeChip>
+        </div>
       )}
 
-      {!semFunis && (
+      <div className="flex flex-col gap-1.5">
+        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Dono</span>
         <AttributeChip
-          label="Etapa"
-          value={etapaAtual?.label}
-          icon={ArrowRight}
-          disabled={stages.length === 0}
-          hint={`Coluna do quadro em que o ${noun} nasce.`}
+          label="Dono"
+          value={donoValor}
+          leading={avatarDono}
+          full
+          hint={`Quem responde por este ${noun}. Pode ficar sem dono — aí ele entra na fila da equipe.`}
         >
           {(fechar) => (
-            <>{stages.map((s) => (
-              <ChipOption key={s.id} selected={s.id === stageId} onSelect={() => { setStageId(s.id); fechar() }}>
-                {s.label}
+            <>
+              <ChipOption selected={ownerUserId === null} onSelect={() => { setOwnerUserId(null); fechar() }}>
+                Sem dono — entra na fila
               </ChipOption>
-            ))}</>
+              {equipe.map((u) => (
+                <ChipOption key={u.id} selected={u.id === donoId && ownerUserId !== null} onSelect={() => { setOwnerUserId(u.id); fechar() }}>
+                  {nomeDe(u)}{u.id === user?.id ? ' (eu)' : ''}
+                </ChipOption>
+              ))}
+            </>
           )}
         </AttributeChip>
-      )}
+      </div>
 
-      <AttributeChip
-        label="Dono"
-        value={donoValor}
-        leading={avatarDono}
-        hint={`Quem responde por este ${noun}. Pode ficar sem dono — aí ele entra na fila da equipe.`}
-      >
-        {(fechar) => (
-          <>
-            <ChipOption selected={ownerUserId === null} onSelect={() => { setOwnerUserId(null); fechar() }}>
-              Sem dono — entra na fila
-            </ChipOption>
-            {equipe.map((u) => (
-              <ChipOption key={u.id} selected={u.id === donoId && ownerUserId !== null} onSelect={() => { setOwnerUserId(u.id); fechar() }}>
-                {nomeDe(u)}{u.id === user?.id ? ' (eu)' : ''}
-              </ChipOption>
-            ))}
-          </>
-        )}
-      </AttributeChip>
-
-      <AttributeChip
-        label="Previsão"
-        value={expectedCloseAt ? dataCurta(expectedCloseAt) : null}
-        icon={CalendarDays}
-        hint={isProcess
-          ? 'Quando você espera concluir este registro.'
-          : 'Quando você espera fechar este negócio. Serve ao funil e à previsão da equipe.'}
-      >
-        {(fechar) => (
-          // Sem `role="menuitem"` aqui de propósito: o Dropdown foca o primeiro
-          // item que encontra na abertura, e o que deve receber o foco é a data.
-          <div className="flex flex-col gap-2 p-2 min-w-[14rem]">
-            <input
-              type="date"
-              autoFocus
-              value={expectedCloseAt}
-              onChange={(e) => setExpectedCloseAt(e.target.value)}
-              aria-label={isProcess ? 'Previsão de conclusão' : 'Previsão de fechamento'}
-              className="w-full rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/60"
-            />
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => { setExpectedCloseAt(''); fechar() }}
-                className="text-xs text-surface-400 hover:text-surface-200 transition-colors cursor-pointer"
-              >
-                Limpar
-              </button>
-              <button
-                type="button"
-                onClick={fechar}
-                className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer"
-              >
-                Pronto
-              </button>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Previsão</span>
+        <AttributeChip
+          label="Previsão"
+          value={expectedCloseAt ? dataCurta(expectedCloseAt) : null}
+          icon={CalendarDays}
+          full
+          align="right"
+          hint={isProcess
+            ? 'Quando você espera concluir este registro.'
+            : 'Quando você espera fechar este negócio. Serve ao funil e à previsão da equipe.'}
+        >
+          {(fechar) => (
+            // Sem `role="menuitem"` aqui de propósito: o Dropdown foca o primeiro
+            // item que encontra na abertura, e o que deve receber o foco é a data.
+            <div className="flex flex-col gap-2 p-2 min-w-[14rem]">
+              <input
+                type="date"
+                autoFocus
+                value={expectedCloseAt}
+                onChange={(e) => setExpectedCloseAt(e.target.value)}
+                aria-label={isProcess ? 'Previsão de conclusão' : 'Previsão de fechamento'}
+                className="w-full rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/60"
+              />
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => { setExpectedCloseAt(''); fechar() }}
+                  className="text-xs text-surface-400 hover:text-surface-200 transition-colors cursor-pointer"
+                >
+                  Limpar
+                </button>
+                <button
+                  type="button"
+                  onClick={fechar}
+                  className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer"
+                >
+                  Pronto
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </AttributeChip>
-
-      {/* Funil de processo não tem valor nem itens (§4 do Modelo B): a ficha
-          simplesmente não é oferecida. */}
-      {!isProcess && (
-        <ToggleChip
-          label="Valor"
-          icon={Wallet}
-          active={valorAberto}
-          value={amountTouched || hasItems ? formatBRL(shownTotal) : null}
-          onClick={() => setValorAberto((v) => !v)}
-        />
-      )}
+          )}
+        </AttributeChip>
+      </div>
     </div>
   )
 
-  // ─── Valor · cresce na própria tela, no lugar do passo 2 ──────────────────
-  const blocoValor = !isProcess && valorAberto && (
-    <div className="flex flex-col gap-3 rounded-xl border border-surface-700 bg-surface-800/50 p-3">
-      <MoneyInput
-        value={amountCents}
-        onChange={(cents) => { setAmountCents(cents); setAmountTouched(true); setError('') }}
-        aria-label="Valor do negócio"
-        autoFocus
-      />
+  // ─── Valor · o segundo herói da tela ──────────────────────────────────────
+  // Vazio, é um convite de largura inteira em vez de uma ficha de 80 px que
+  // ninguém via. Aberto, o número é a primeira coisa que o olho encontra
+  // depois do título. Funil de processo não tem valor nem itens (§4 do
+  // Modelo B): o bloco simplesmente não é oferecido.
+  const blocoValor = !isProcess && (
+    valorAberto ? (
+      <div className="flex flex-col gap-3 rounded-xl border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))]">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-end justify-between gap-3">
+            <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">
+              Valor do {noun}
+            </span>
+            <span className="text-[11px] leading-snug text-right text-surface-500">
+              {hasItems && !amountTouched
+                ? <>= soma de <b className="font-semibold text-brand-400">{items.length} {items.length === 1 ? 'item' : 'itens'}</b></>
+                : hasItems && diverges
+                  ? <>digitado<br /><b className="font-semibold text-brand-400">difere dos itens</b></>
+                  : 'digitado'}
+            </span>
+          </div>
+          <MoneyInput
+            value={shownTotal}
+            onChange={(cents) => { setAmountCents(cents); setAmountTouched(true); setError('') }}
+            aria-label={`Valor do ${noun}`}
+            autoFocus
+            className="h-12 !text-xl font-display font-bold text-surface-50"
+          />
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        {/* Sem `FormField` em volta: o contexto dele injeta o mesmo id em todos
-            os campos descendentes e quebra os rótulos das linhas (A1/153). */}
-        <span className="text-xs font-semibold uppercase tracking-wider text-surface-500">Itens</span>
-        <DealItemsEditor
-          value={items}
-          onChange={(next) => { setItems(next); setError('') }}
-          error={validateItems(items) === error && error ? error : undefined}
-          disabled={saving}
-          showTotal={false}
-        />
+        <div className="flex flex-col gap-1.5">
+          {/* Sem `FormField` em volta: o contexto dele injeta o mesmo id em todos
+              os campos descendentes e quebra os rótulos das linhas (A1/153). */}
+          <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Itens</span>
+          <DealItemsEditor
+            value={items}
+            onChange={(next) => { setItems(next); setError('') }}
+            error={validateItems(items) === error && error ? error : undefined}
+            disabled={saving}
+            showTotal={false}
+          />
+        </div>
+
+        {diverges && (
+          <button
+            type="button"
+            onClick={() => { setAmountCents(itemsTotal); setAmountTouched(true) }}
+            className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 min-h-11 sm:min-h-0 cursor-pointer"
+          >
+            Usar a soma dos itens ({formatBRL(itemsTotal)})
+          </button>
+        )}
       </div>
-
-      {/* Total com a ORIGEM explícita — é o que evita o operador achar que o
-          valor "sumiu" quando ele diverge dos itens. */}
-      <div className="flex items-center justify-between gap-3 border-t border-surface-800 pt-2.5">
-        <span className="flex items-center gap-2 text-xs text-surface-400">
-          <Wallet className="w-4 h-4" />
-          {hasItems && !amountTouched
-            ? '= soma dos itens'
-            : hasItems && diverges
-              ? 'valor definido · difere da soma dos itens'
-              : 'valor definido'}
-        </span>
-        <span className="text-sm font-semibold text-surface-100 tabular-nums">{formatBRL(shownTotal)}</span>
-      </div>
-
-      {diverges && (
-        <button
-          type="button"
-          onClick={() => { setAmountCents(itemsTotal); setAmountTouched(true) }}
-          className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 min-h-11 sm:min-h-0 cursor-pointer"
-        >
-          Usar a soma dos itens ({formatBRL(itemsTotal)})
-        </button>
-      )}
-    </div>
+    ) : (
+      <button
+        type="button"
+        onClick={() => setValorAberto(true)}
+        className="flex items-center gap-2 rounded-xl border border-dashed border-surface-700 px-3.5 py-4 text-sm text-surface-500 hover:text-surface-300 hover:border-surface-600 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+      >
+        <Plus className="w-4 h-4" aria-hidden />
+        Adicionar valor ou itens
+      </button>
+    )
   )
 
   const footer = (
-    <div className="flex flex-col gap-2 border-t border-surface-800 pt-3">
+    <div className="flex flex-col gap-2 border-t border-surface-800 bg-surface-950 px-4 py-3.5">
       {error && error !== 'Escolha o contato do negócio.' && (
         <p role="alert" className="text-xs text-danger">{error}</p>
       )}
@@ -625,7 +628,7 @@ export function NewDealDialog({
             <kbd className="rounded border border-surface-700 px-1 py-0.5 font-mono text-[10px]">⌘</kbd>
             {' '}
             <kbd className="rounded border border-surface-700 px-1 py-0.5 font-mono text-[10px]">↵</kbd>
-            {' '}cria
+            {' '}{diverges ? 'não decide' : 'cria'}
           </span>
         )}
         <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center')}>
@@ -664,11 +667,36 @@ export function NewDealDialog({
   }
 
   const body: ReactNode = (
-    <div className="flex flex-col gap-4" onKeyDown={atalhoCriar}>
-      {buscaContato}
-      {identidade}
-      {fichas}
-      {blocoValor}
+    <div className="flex flex-col" onKeyDown={atalhoCriar}>
+      {/* A trilha é o seletor de etapa — a ficha "Etapa" deixou de existir.
+          Espelha o quadro que o operador já usa: as colunas correm da esquerda
+          para a direita, e a faixa repete esse mapeamento. */}
+      {!semFunis && stages.length > 0 && (
+        <PipelineTrail
+          // Lista COMPLETA, não a de `getPipelineStages` — ela filtra as
+          // terminais, e a trilha existe justamente para mostrar o funil
+          // inteiro, com o fim à vista. Nascer numa terminal continua
+          // impossível: a própria trilha desabilita esses pontos.
+          stages={selectedPipeline?.stages ?? stages}
+          activeId={stageId}
+          onSelect={setStageId}
+          compact={isMobile}
+        />
+      )}
+
+      {/* Esquerda o que se ESCREVE, direita o que se ESCOLHE. No celular a
+          coluna vira uma faixa embaixo, com borda no topo em vez de na lateral. */}
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_13rem]">
+        <div className="flex flex-col gap-4 p-4 min-w-0">
+          {buscaContato}
+          {identidade}
+          {blocoValor}
+        </div>
+        <div className="flex flex-col gap-3 p-4 bg-surface-950 border-t sm:border-t-0 sm:border-l border-surface-800">
+          {propriedades}
+        </div>
+      </div>
+
       {footer}
     </div>
   )
@@ -696,8 +724,8 @@ export function NewDealDialog({
   if (isMobile) {
     return (
       <BottomSheet open={open} onClose={onClose} size="tall" ariaLabel={headingText}>
-        <div className="px-4 pb-4 overflow-y-auto">
-          <div className="mb-3">{heading}</div>
+        <div className="overflow-y-auto">
+          <div className="mb-3 px-4">{heading}</div>
           {body}
         </div>
       </BottomSheet>
@@ -705,7 +733,7 @@ export function NewDealDialog({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={heading} className="max-w-2xl">
+    <Modal open={open} onClose={onClose} title={heading} className="max-w-2xl" bodyClassName="p-0">
       {body}
     </Modal>
   )

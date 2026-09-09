@@ -36,6 +36,12 @@ export interface AttributeChipProps {
   leading?: ReactNode
   disabled?: boolean
   align?: 'left' | 'right'
+  /**
+   * Ocupa a largura do contêiner, com o valor à esquerda e o chevron colado à
+   * direita. É a forma que a ficha assume numa COLUNA de propriedades, onde
+   * larguras diferentes por conteúdo viram serrilha.
+   */
+  full?: boolean
   /** Conteúdo do popover. Recebe `fechar` para encerrar após a escolha. */
   children: (fechar: () => void) => ReactNode
 }
@@ -48,6 +54,7 @@ export function AttributeChip({
   leading,
   disabled,
   align = 'left',
+  full,
   children,
 }: AttributeChipProps) {
   const [open, setOpen] = useState(false)
@@ -74,6 +81,7 @@ export function AttributeChip({
             'min-h-9 sm:min-h-0 transition-colors cursor-pointer',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
             'disabled:cursor-not-allowed disabled:opacity-50',
+            full && 'w-full text-left text-[13px]',
             preenchida
               ? 'bg-surface-800 border border-surface-700 text-surface-200 hover:border-surface-600'
               : 'border border-dashed border-surface-700 text-surface-500 hover:text-surface-300 hover:border-surface-600',
@@ -82,14 +90,14 @@ export function AttributeChip({
           {leading ?? (preenchida
             ? Icon && <Icon className="w-3.5 h-3.5 text-surface-400 shrink-0" aria-hidden />
             : <Plus className="w-3.5 h-3.5 shrink-0" aria-hidden />)}
-          {/* O nome do atributo fica SEMPRE visível. Uma ficha que mostra só
-              "Novo" é legível para quem já conhece o modelo e muda de etapa
-              todo dia — não para quem abre o diálogo pela terceira vez. O
-              valor continua dominante pelo contraste, não pela ausência do
-              rótulo. */}
-          {preenchida && <span className="text-surface-500 shrink-0">{label}</span>}
-          <span className="truncate max-w-[13rem]">{preenchida ? value : label}</span>
-          {preenchida && <ChevronDown className="w-3 h-3 text-surface-500 shrink-0" aria-hidden />}
+          {/* Na coluna o nome do atributo já está no rótulo acima — repeti-lo
+              dentro da ficha seria a mesma redundância que derrubou as seções
+              nomeadas do formulário antigo. Na fila horizontal ele continua,
+              porque lá não há rótulo nenhum: "Novo" sozinho não diz de que
+              eixo é. */}
+          {preenchida && !full && <span className="text-surface-500 shrink-0">{label}</span>}
+          <span className={cn('truncate', full ? 'min-w-0' : 'max-w-[13rem]')}>{preenchida ? value : label}</span>
+          {preenchida && <ChevronDown className={cn('w-3 h-3 text-surface-500 shrink-0', full && 'ml-auto')} aria-hidden />}
         </button>
       }
     >

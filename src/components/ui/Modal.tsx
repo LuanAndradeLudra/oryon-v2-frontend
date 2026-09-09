@@ -30,6 +30,13 @@ interface ModalProps {
    */
   fillHeight?: boolean
   className?: string
+  /**
+   * Substitui o recuo padrão do corpo. Use `p-0` quando o conteúdo precisar
+   * encostar nas bordas — uma faixa de largura inteira sob o cabeçalho, uma
+   * coluna com fundo próprio. Aí o consumidor passa a ser o dono de todo o
+   * espaçamento interno.
+   */
+  bodyClassName?: string
 }
 
 /**
@@ -46,7 +53,7 @@ interface ModalProps {
  *    independently. Large content (e.g. the 6k-char system prompt review)
  *    used to push the footer off-screen, hiding the action buttons.
  */
-export function Modal({ open, onClose, title, children, footer, fillHeight, className }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, fillHeight, className, bodyClassName }: ModalProps) {
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -124,6 +131,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
               fillHeight
                 ? 'flex flex-col flex-1 min-h-0 overflow-hidden'
                 : 'overflow-y-auto flex-1 min-h-0',
+              bodyClassName,
             )}>
               {children}
             </div>

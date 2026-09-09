@@ -13,7 +13,7 @@
 // quando a ficha "Valor" é ligada. Os testes dirigem as fichas; os invariantes
 // acima são os mesmos.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import type { Deal, Pipeline, PipelineStage, Product, User } from '@/types'
 
 const PRODUTO: Product = {
@@ -59,6 +59,17 @@ const PROCESSO: Pipeline = {
   stages: [st('p1', 'Novo', 1)],
 }
 
+/** Funil com quatro etapas — usado pela trilha e pelas regressões da etapa. */
+const VENDAS_3: Pipeline = {
+  ...VENDAS,
+  stages: [
+    st('v1', 'Novo', 1),
+    st('v2', 'Negociando', 2),
+    st('v3', 'Proposta', 3),
+    st('vw', 'Ganho', 4, { isWon: true }),
+  ],
+}
+
 const CRIADO = { data: { id: 'd9' } as Deal }
 
 import { NewDealDialog } from './NewDealDialog'
@@ -76,8 +87,11 @@ const renderDialog = (props: Partial<React.ComponentProps<typeof NewDealDialog>>
     />,
   )
 
-/** Liga a ficha "Valor": o bloco de dinheiro cresce na própria tela. */
-const abrirValor = () => fireEvent.click(screen.getByRole('button', { name: 'Definir valor' }))
+/** Abre o bloco de valor — o convite de largura inteira na coluna esquerda. */
+const abrirValor = () => fireEvent.click(screen.getByRole('button', { name: /Adicionar valor ou itens/ }))
+
+/** A etapa passou a ser escolhida na TRILHA, não numa ficha. */
+const etapaAtiva = () => screen.getByRole('button', { current: 'step' })
 
 /** Abre uma ficha e escolhe uma opção do popover. */
 const escolherNaFicha = (ficha: RegExp, opcao: RegExp) => {
@@ -131,7 +145,7 @@ describe('NewDealDialog — uma tela', () => {
 
   // O passo "Quanto" prometia dinheiro que quase nunca existe: criado do chat,
   // o negócio nasce sem valor. Agora o bloco só ocupa a tela quando é pedido.
-  it('o bloco de valor só existe depois que a ficha é ligada', () => {
+  it('o bloco de valor só existe depois de ser pedido', () => {
     renderDialog()
     expect(screen.queryByLabelText('Valor do negócio')).not.toBeInTheDocument()
     abrirValor()
@@ -240,19 +254,9 @@ describe('NewDealDialog — conflito I1', () => {
 
 // ─── Revisão da A3: a etapa da COLUNA e o tenant sem múltiplos funis ────────
 describe('NewDealDialog — regressões da revisão', () => {
-  const VENDAS_3: Pipeline = {
-    ...VENDAS,
-    stages: [
-      st('v1', 'Novo', 1),
-      st('v2', 'Negociando', 2),
-      st('v3', 'Proposta', 3),
-      st('vw', 'Ganho', 4, { isWon: true }),
-    ],
-  }
-
   it('o "+" de uma coluna cria NAQUELA etapa — não na primeira', async () => {
     renderDialog({ pipelines: [VENDAS_3], initialPipelineId: 'v', initialStageId: 'v3' })
-    expect(screen.getByRole('button', { name: 'Etapa: Proposta' })).toBeInTheDocument()
+    expect(etapaAtiva()).toHaveTextContent('Proposta')
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
     expect(deals.create.mock.calls[0][0].stageId).toBe('v3')
@@ -260,7 +264,7 @@ describe('NewDealDialog — regressões da revisão', () => {
 
   it('etapa que não pertence ao funil escolhido cai na 1ª não-terminal', () => {
     renderDialog({ pipelines: [VENDAS_3], initialPipelineId: 'v', initialStageId: 'de-outro-funil' })
-    expect(screen.getByRole('button', { name: 'Etapa: Novo' })).toBeInTheDocument()
+    expect(etapaAtiva()).toHaveTextContent('Novo')
   })
 
   // Tenant sem `FF_MULTI_PIPELINE`: o contexto entrega `pipelines: []`, e a aba
@@ -336,16 +340,38 @@ describe('NewDealDialog — o nome de cada coisa', () => {
     expect(document.querySelector(`label[for="${escopo.id}"]`)).toBeInTheDocument()
   })
 
-  it('a ficha mostra o NOME do atributo junto do valor', () => {
+  it('cada propriedade da coluna tem nome visível e valor', () => {
     renderDialog()
-    const etapa = screen.getByRole('button', { name: 'Etapa: Novo' })
-    expect(etapa).toHaveTextContent('Etapa')
-    expect(etapa).toHaveTextContent('Novo')
+    // Na coluna o nome vive no rótulo acima; a ficha carrega só o valor, senão
+    // seria a mesma redundância das seções nomeadas do formulário antigo.
+    expect(screen.getByText('Dono')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dono: Ana Souza' })).toBeInTheDocument()
   })
 
   it('o popover diz o que está sendo escolhido e o que aquilo significa', () => {
     renderDialog()
-    fireEvent.click(screen.getByRole('button', { name: /^Etapa:/ }))
-    expect(screen.getByText('Coluna do quadro em que o negócio nasce.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^Funil:/ }))
+    expect(screen.getByText(/Onde este negócio vai viver/)).toBeInTheDocument()
+  })
+
+  // A trilha substituiu a ficha "Etapa": mostra o caminho inteiro, marca onde o
+  // registro nasce e não deixa nascer numa etapa terminal.
+  it('a trilha mostra o funil inteiro e não deixa nascer em etapa terminal', () => {
+    renderDialog()
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    expect(trilha).toHaveTextContent('Novo')
+    expect(trilha).toHaveTextContent('Ganho')
+    const ganho = within(trilha).getByRole('button', { name: /Ganho/ })
+    expect(ganho).toBeDisabled()
+  })
+
+  it('clicar numa etapa da trilha muda onde o negócio nasce', async () => {
+    renderDialog({ pipelines: [VENDAS_3] })
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    fireEvent.click(within(trilha).getByRole('button', { name: /Proposta/ }))
+    expect(etapaAtiva()).toHaveTextContent('Proposta')
+    fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
+    await waitFor(() => expect(deals.create).toHaveBeenCalled())
+    expect(deals.create.mock.calls[0][0].stageId).toBe('v3')
   })
 })
