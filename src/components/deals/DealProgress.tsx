@@ -29,15 +29,17 @@ export interface DealProgressProps {
   history?: DealStageHistoryEntry[] | null
   onMoveToStage: (stage: PipelineStage) => void
   disabled?: boolean
+  /** "2 dias nesta etapa" — o cabeçalho já calcula; aqui vira o rótulo do "aqui". */
+  tempoNaEtapa?: string | null
 }
 
 const corDa = (hex: string | undefined) =>
   /^#[0-9a-f]{6}$/i.test(hex ?? '') ? (hex as string) : '#6B8080'
 
-export function DealProgress({ pipeline, deal, history, onMoveToStage, disabled }: DealProgressProps) {
+export function DealProgress({ pipeline, deal, history, onMoveToStage, disabled, tempoNaEtapa }: DealProgressProps) {
   return pipelineKindOf(pipeline) === 'process'
-    ? <LinhaDoTempo pipeline={pipeline} deal={deal} history={history} onMoveToStage={onMoveToStage} disabled={disabled} />
-    : <Funil pipeline={pipeline} deal={deal} onMoveToStage={onMoveToStage} disabled={disabled} />
+    ? <LinhaDoTempo pipeline={pipeline} deal={deal} history={history} onMoveToStage={onMoveToStage} disabled={disabled} tempoNaEtapa={tempoNaEtapa} />
+    : <Funil pipeline={pipeline} deal={deal} onMoveToStage={onMoveToStage} disabled={disabled} tempoNaEtapa={tempoNaEtapa} />
 }
 
 /** Quando o registro ENTROU em cada etapa, pelo histórico de passagens. */
@@ -53,7 +55,7 @@ function entradasPorEtapa(history?: DealStageHistoryEntry[] | null) {
 
 // ─── Venda ───────────────────────────────────────────────────────────────────
 
-function Funil({ pipeline, deal, onMoveToStage, disabled }: Omit<DealProgressProps, 'history'>) {
+function Funil({ pipeline, deal, onMoveToStage, disabled, tempoNaEtapa }: Omit<DealProgressProps, 'history'>) {
   const passos = stepperFor(pipeline, deal)
   const porId = new Map(pipeline.stages.map((s) => [s.id, s]))
   // A largura decresce do topo ao fim: é a forma que diz "funil". O piso de
@@ -80,23 +82,47 @@ function Funil({ pipeline, deal, onMoveToStage, disabled }: Omit<DealProgressPro
               data-testid={`deal-stepper-stage-${p.id}`}
               style={{
                 width: larguraDe(i),
-                color: atual || feito || terminal ? cor : undefined,
-                borderColor: atual ? hexToRgba(cor, 0.55) : terminal ? hexToRgba(cor, 0.4) : undefined,
-                backgroundColor: atual ? hexToRgba(cor, 0.16) : feito ? hexToRgba(cor, 0.08) : undefined,
+                // SÓ a atual leva a cor da etapa. A primeira versão pintava
+                // todas — concluída em 8%, atual em 16% — e a diferença entre
+                // "já passei" e "estou aqui" virava um degrau de opacidade que
+                // ninguém enxerga. Com tudo colorido, nada fica em destaque.
+                ...(atual
+                  ? {
+                      color: cor,
+                      borderColor: cor,
+                      backgroundColor: hexToRgba(cor, 0.18),
+                      boxShadow: `0 0 0 3px ${hexToRgba(cor, 0.16)}`,
+                    }
+                  : {}),
               }}
               className={cn(
-                'h-[26px] rounded-md border px-2.5 text-[11px] font-semibold text-left truncate transition-all',
+                'relative rounded-md border px-2.5 text-[11px] text-left truncate transition-all',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
-                !atual && !feito && !terminal && 'border-surface-700 text-surface-500',
-                terminal && 'border-dashed',
-                clicavel ? 'cursor-pointer hover:brightness-125' : 'cursor-default',
+                // A atual é mais alta, além de mais forte: dois canais dizendo
+                // a mesma coisa, e nenhum deles é só cor.
+                atual ? 'h-[30px] font-bold' : 'h-[26px] font-medium',
+                feito && !atual && 'border-surface-700 bg-surface-800/50 text-surface-400',
+                !atual && !feito && !terminal && 'border-surface-800 text-surface-600',
+                terminal && !atual && 'border-dashed border-surface-800 text-surface-600',
+                clicavel ? 'cursor-pointer hover:border-surface-600 hover:text-surface-200' : 'cursor-default',
               )}
             >
-              {terminal && (p.state === 'won'
+              {feito && !atual && <Check className="inline w-3 h-3 mr-1 -mt-0.5 opacity-70" strokeWidth={3} />}
+              {terminal && !atual && (p.state === 'won'
                 ? <Check className="inline w-3 h-3 mr-1 -mt-0.5" strokeWidth={3} />
                 : <X className="inline w-3 h-3 mr-1 -mt-0.5" strokeWidth={3} />)}
               {p.label}
             </button>
+            {/* Marcador textual: a etapa atual não depende de comparar
+                preenchimentos para ser encontrada. */}
+            {atual && (
+              <span
+                className="text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap"
+                style={{ color: cor }}
+              >
+                aqui{tempoNaEtapa ? <span className="text-surface-500 font-normal normal-case tracking-normal"> · {tempoNaEtapa}</span> : null}
+              </span>
+            )}
           </li>
         )
       })}
@@ -106,7 +132,7 @@ function Funil({ pipeline, deal, onMoveToStage, disabled }: Omit<DealProgressPro
 
 // ─── Processo ────────────────────────────────────────────────────────────────
 
-function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled }: DealProgressProps) {
+function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoNaEtapa }: DealProgressProps) {
   const passos = stepperFor(pipeline, deal)
   const porId = new Map(pipeline.stages.map((s) => [s.id, s]))
   const entradas = entradasPorEtapa(history)
@@ -149,30 +175,48 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled }: Deal
             </span>
 
             <span className={cn('flex items-baseline justify-between gap-3 flex-1 min-w-0', !ultimo && 'pb-3')}>
-              <button
-                type="button"
-                disabled={!clicavel}
-                onClick={() => stage && onMoveToStage(stage)}
-                aria-current={atual ? 'step' : undefined}
-                title={clicavel ? `Mover para "${p.label}"` : p.label}
-                data-testid={`deal-stepper-stage-${p.id}`}
-                className={cn(
-                  'text-left text-xs truncate rounded transition-colors min-w-0',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
-                  atual ? 'font-semibold text-surface-50' : feito ? 'text-surface-400' : 'text-surface-600',
-                  terminal && 'text-surface-500',
-                  clicavel ? 'cursor-pointer hover:text-surface-200' : 'cursor-default',
+              <span className="flex items-baseline gap-2 min-w-0">
+                <button
+                  type="button"
+                  disabled={!clicavel}
+                  onClick={() => stage && onMoveToStage(stage)}
+                  aria-current={atual ? 'step' : undefined}
+                  title={clicavel ? `Mover para "${p.label}"` : p.label}
+                  data-testid={`deal-stepper-stage-${p.id}`}
+                  className={cn(
+                    'text-left truncate rounded transition-colors min-w-0',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
+                    // A atual sobe de corpo e leva a cor da própria etapa; as
+                    // outras ficam neutras. Sem isso, quatro linhas de peso
+                    // parecido obrigam a procurar o ponto aceso.
+                    atual ? 'text-sm font-bold' : 'text-xs',
+                    !atual && (feito ? 'text-surface-400' : 'text-surface-600'),
+                    clicavel ? 'cursor-pointer hover:text-surface-200' : 'cursor-default',
+                  )}
+                  style={atual ? { color: cor } : terminal ? { color: hexToRgba(cor, 0.55) } : undefined}
+                >
+                  {p.label}
+                </button>
+                {atual && (
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap shrink-0"
+                    style={{ color: cor }}
+                  >
+                    aqui
+                  </span>
                 )}
-                style={terminal ? { color: hexToRgba(cor, 0.62) } : undefined}
-              >
-                {p.label}
-              </button>
-              <span className="text-[10.5px] text-surface-500 whitespace-nowrap tabular-nums">
-                {terminal && !quando
-                  ? 'encerramento'
-                  : quando
-                    ? formatRelativeTime(quando)
-                    : '—'}
+              </span>
+              <span className={cn(
+                'text-[10.5px] whitespace-nowrap tabular-nums shrink-0',
+                atual ? 'text-surface-300' : 'text-surface-500',
+              )}>
+                {atual && tempoNaEtapa
+                  ? tempoNaEtapa
+                  : terminal && !quando
+                    ? 'encerramento'
+                    : quando
+                      ? formatRelativeTime(quando)
+                      : '—'}
               </span>
             </span>
           </li>

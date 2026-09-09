@@ -15,7 +15,7 @@ import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { formatBRL } from '@/utils/money'
-import { cn, formatRelativeTime } from '@/lib/utils'
+import { cn, formatRelativeTime, hexToRgba } from '@/lib/utils'
 import { pipelineKindOption, pipelineKindOf, pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { originInfo, humanDuration, timeInStage } from '@/lib/dealCard'
 import { moveTargets } from '@/lib/contactPipelines'
@@ -153,6 +153,26 @@ export function DealDetailHeader({
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />
               <KindIcon className="w-3 h-3" /> {pipeline.name}
             </span>
+            {/* A ETAPA, em texto, ao lado do funil.
+                A forma do progresso (funil ou linha do tempo) mostra onde o
+                registro está, mas exige decodificar: comparar preenchimentos
+                para achar a barra acesa. Dizer o nome resolve em uma leitura, e
+                é a mesma dupla que o quadro e a tabela já mostram — funil e
+                etapa, lado a lado. */}
+            {stage && deal.status === 'open' && (
+              <span
+                className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                style={{
+                  color: stage.color,
+                  borderColor: hexToRgba(stage.color, 0.4),
+                  backgroundColor: hexToRgba(stage.color, 0.12),
+                }}
+                data-testid="deal-current-stage"
+                title={`Etapa atual${tempoNaEtapa ? ` — ${tempoNaEtapa}` : ''}`}
+              >
+                {stage.label}
+              </span>
+            )}
             {deal.status !== 'open' && (
               <span className={cn(
                 'inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
@@ -284,7 +304,7 @@ export function DealDetailHeader({
 
       {/* Linha 3 — progresso (etapas normais, clicável) */}
       {deal.status === 'open' && (
-        <DealProgress pipeline={pipeline} deal={deal} history={history} onMoveToStage={onMoveToStage} />
+        <DealProgress pipeline={pipeline} deal={deal} history={history} onMoveToStage={onMoveToStage} tempoNaEtapa={tempoNaEtapa} />
       )}
 
       {/* Linha 4 — dono e prazo. Ficam aqui porque qualificam, não definem:

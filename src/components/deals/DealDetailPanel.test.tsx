@@ -1,7 +1,7 @@
 // B2 (SCRUM-928) — a ficha do negócio: renderização por modo (carregando ·
 // 404 · sem acesso · ok), stepper clicável, abas, e o realtime `deal:changed`.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import type { Deal, Pipeline, PipelineStage, User, DealStageHistoryEntry } from '@/types'
 
 const { dealsApi, usersApi, conversationsApi, socket } = vi.hoisted(() => ({
@@ -234,5 +234,41 @@ describe('DealDetailPanel — negócio × processo', () => {
     render(<DealDetailPanel dealId="d1" />)
     // Sem funil carregado o fallback é "negócio" — é o default do tenant.
     expect(await screen.findByText(/não encontrado/)).toBeInTheDocument()
+  })
+})
+
+// ─── Onde o registro ESTÁ (09/09) ───────────────────────────────────────────
+// A primeira versão do funil pintava todas as barras com a cor da própria
+// etapa — concluída em 8%, atual em 16%. Com tudo colorido, nada ficava em
+// destaque, e achar a etapa atual virava comparar preenchimentos.
+describe('DealDetailPanel — a etapa atual se encontra sozinha', () => {
+  it('o cabeçalho diz a etapa em TEXTO, ao lado do funil', async () => {
+    render(<DealDetailPanel dealId="d1" />)
+    await screen.findByTestId('deal-title')
+    expect(screen.getByTestId('deal-current-stage')).toHaveTextContent('Novo')
+  })
+
+  it('o marcador "aqui" aparece uma vez só, na etapa atual', async () => {
+    render(<DealDetailPanel dealId="d1" />)
+    await screen.findByTestId('deal-title')
+    const funil = screen.getByTestId('deal-progress-funnel')
+    expect(within(funil).getAllByText(/aqui/i)).toHaveLength(1)
+    // E ele está na linha da etapa atual, não em outra.
+    expect(within(funil).getByRole('button', { current: 'step' })).toHaveTextContent('Novo')
+  })
+
+  it('vale também na linha do tempo do processo', async () => {
+    dealsApi.get.mockResolvedValue({ data: { ...DEAL, pipelineId: 'p2' } })
+    render(<DealDetailPanel dealId="d1" />)
+    await screen.findByTestId('deal-title')
+    const tl = screen.getByTestId('deal-progress-timeline')
+    expect(within(tl).getAllByText(/aqui/i)).toHaveLength(1)
+  })
+
+  it('registro FECHADO não anuncia etapa atual', async () => {
+    dealsApi.get.mockResolvedValue({ data: { ...DEAL, status: 'won' } })
+    render(<DealDetailPanel dealId="d1" />)
+    await screen.findByTestId('deal-title')
+    expect(screen.queryByTestId('deal-current-stage')).not.toBeInTheDocument()
   })
 })
