@@ -74,6 +74,24 @@ type Step = 'quem' | 'quanto'
  * depois. O `hint` do FormField resolve o caso curto; a dica cobre o resto
  * sem encher o formulário de texto.
  */
+/**
+ * Cabeçalho de seção do formulário. O corpo era uma pilha plana de campos —
+ * legível, mas sem hierarquia: tudo pesava igual e o olho não encontrava onde
+ * começar. Agrupar em blocos nomeados ("Onde", "O que", "Responsável") dá a
+ * leitura em dois níveis que todo formulário sério tem.
+ */
+function SecaoForm({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <span className="text-3xs font-semibold uppercase tracking-wider text-surface-500 whitespace-nowrap">{titulo}</span>
+        <span className="h-px flex-1 bg-surface-800" aria-hidden />
+      </div>
+      {children}
+    </section>
+  )
+}
+
 function LabelComDica({ texto, dica }: { texto: string; dica: string }) {
   return (
     <span className="inline-flex items-center gap-1">
@@ -293,7 +311,7 @@ export function NewDealDialog({
 
   // ─── Passo 1 · Quem e onde ────────────────────────────────────────────────
   const stepQuem = (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {contactId ? (
         <FormField label="Contato">
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100">
@@ -341,6 +359,7 @@ export function NewDealDialog({
       {/* Sem funis conhecidos (tenant sem o flag) não há o que escolher: o
           backend resolve o funil default. */}
       {!semFunis && (
+      <SecaoForm titulo="Onde">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FormField label="Funil" required error={error === 'Selecione um funil.' ? error : undefined}>
           <Select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setError('') }}>
@@ -361,12 +380,14 @@ export function NewDealDialog({
           </Select>
         </FormField>
       </div>
+      </SecaoForm>
       )}
 
       {/* Título e Escopo respondem à mesma pergunta — "o que é isto?" — em
           duas escalas. Viviam separados por um passo chamado "Quanto", que
           promete dinheiro e não escopo; era por isso que o diálogo de venda
           parecia não ter onde descrever o negócio. */}
+      <SecaoForm titulo="O que">
       <FormField
         label={<LabelComDica texto="Título" dica={`Nome curto, do jeito que você quer ver na lista e no card do quadro. Ex: "${vocab.deal} · Plano Anual".`} />}
         required
@@ -395,9 +416,11 @@ export function NewDealDialog({
           placeholder={isProcess ? 'Ex: consulta de retorno, ajuste de plano' : 'Ex: site institucional + hospedagem dedicada'}
         />
       </FormField>
+      </SecaoForm>
 
       {/* D0-9: dono opcional, pré-preenchido com quem cria e removível. A fila
           "sem dono" é destino legítimo — não é um campo obrigatório disfarçado. */}
+      <SecaoForm titulo="Responsável">
       <FormField label="Dono" hint="Você pode deixar sem dono — o negócio entra na fila.">
         <Select
           value={ownerUserId === undefined ? (user?.id ?? '') : (ownerUserId ?? '')}
@@ -412,6 +435,7 @@ export function NewDealDialog({
           ))}
         </Select>
       </FormField>
+      </SecaoForm>
     </div>
   )
 
@@ -419,7 +443,7 @@ export function NewDealDialog({
   // "Quanto"; com o passo sumindo em processo, sumiam junto — e "Adicionar com
   // detalhes…" num funil de processo não tinha detalhe nenhum a oferecer.
   const detalhes = (
-    <>
+    <SecaoForm titulo="Detalhes">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FormField label={isProcess ? 'Previsão de conclusão (opcional)' : 'Previsão de fechamento (opcional)'}>
           <Input type="date" value={expectedCloseAt} onChange={(e) => setExpectedCloseAt(e.target.value)} />
@@ -431,12 +455,13 @@ export function NewDealDialog({
       >
         <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Ex: cliente só atende depois das 18h" />
       </FormField>
-    </>
+    </SecaoForm>
   )
 
   // ─── Passo 2 · Quanto ─────────────────────────────────────────────────────
   const stepQuanto = (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
+      <SecaoForm titulo="Valor">
       <FormField label="Valor" hint="Pode divergir da soma dos itens — nem tudo é comprado agora.">
         <MoneyInput
           value={amountCents}
@@ -481,6 +506,7 @@ export function NewDealDialog({
           Usar a soma dos itens ({formatBRL(itemsTotal)})
         </button>
       )}
+      </SecaoForm>
 
       {detalhes}
     </div>
@@ -491,7 +517,7 @@ export function NewDealDialog({
       {error && !['Escolha o contato do negócio.', 'Selecione um funil.', 'O título é obrigatório.'].includes(error) && (
         <p role="alert" className="text-xs text-danger">{error}</p>
       )}
-      <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'justify-end')}>
+      <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center justify-end')}>
         {isProcess ? (
           <>
             <Button variant="ghost" onClick={onClose} className={cn(isMobile && 'min-h-11')}>Cancelar</Button>
@@ -548,13 +574,31 @@ export function NewDealDialog({
     </div>
   )
 
-  const heading = `Novo ${noun}`
+  // O cabeçalho dizia só "Novo negócio". Com ícone do tipo e a linha de
+  // contexto (contato · funil), o operador confirma de relance ONDE está
+  // criando — informação que antes ele só encontrava descendo até os campos.
+  const headingText = `Novo ${noun}`
+  const contextoLinha = [contact?.name || contactName, selectedPipeline?.name].filter(Boolean).join(' · ')
+  const HeadIcon = selectedPipeline ? pipelineKindOption(pipelineKindOf(selectedPipeline)).icon : Wallet
+  const heading = (
+    <div className="flex items-center gap-3 min-w-0">
+      <span className="w-9 h-9 rounded-xl bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0">
+        <HeadIcon className="w-4 h-4 text-surface-300" aria-hidden />
+      </span>
+      <span className="flex flex-col min-w-0">
+        <span className="text-base font-display font-semibold text-surface-50 leading-tight">{headingText}</span>
+        {contextoLinha && (
+          <span className="text-xs text-surface-400 truncate leading-tight mt-0.5">{contextoLinha}</span>
+        )}
+      </span>
+    </div>
+  )
 
   if (isMobile) {
     return (
-      <BottomSheet open={open} onClose={onClose} size="tall" ariaLabel={heading}>
+      <BottomSheet open={open} onClose={onClose} size="tall" ariaLabel={headingText}>
         <div className="px-4 pb-4 overflow-y-auto">
-          <h2 className="text-base font-semibold text-surface-100 mb-3">{heading}</h2>
+          <div className="mb-3">{heading}</div>
           {body}
         </div>
       </BottomSheet>

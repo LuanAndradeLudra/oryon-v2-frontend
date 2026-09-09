@@ -9,7 +9,9 @@ import { Banner, type BannerVariant } from './Banner'
 interface ModalProps {
   open: boolean
   onClose: () => void
-  title: string
+  /** Título. Aceita nós para cabeçalhos com ícone e linha de contexto.
+   *  Quando vem string, o Modal aplica a tipografia padrão. */
+  title: ReactNode
   children: ReactNode
   /**
    * Optional footer rendered as a sticky bar below the scrollable body. When
@@ -96,8 +98,10 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
             transition={{ duration: 0.18, ease: 'easeOut' }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
-              <h2 className="text-base font-display font-semibold text-surface-50">{title}</h2>
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
+              {typeof title === 'string'
+                ? <h2 className="text-base font-display font-semibold text-surface-50">{title}</h2>
+                : title}
               <button
                 onClick={onClose}
                 aria-label="Fechar"
