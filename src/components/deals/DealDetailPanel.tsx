@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/useToast'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { getApiErrorMessage } from '@/lib/utils'
 import { movedByLabel } from '@/lib/contactPipelines'
+import { pipelineNoun } from '@/lib/pipelineKinds'
 import { DealDetailHeader } from './DealDetailHeader'
 import { DealSummaryTab } from './tabs/DealSummaryTab'
 import { DealActivityTab } from './tabs/DealActivityTab'
@@ -102,6 +103,17 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
   }, [deal, loadDeal, loadHistory])
 
   const pipeline = deal ? pipelines.find((p) => p.id === deal.pipelineId) ?? null : null
+  /**
+   * O substantivo do tipo, em toda mensagem que o operador lê.
+   *
+   * A ficha dizia "negócio" em 21 lugares — toast, `aria-label`, estado de
+   * erro —, inclusive num funil de PROCESSO, onde o objeto se chama registro.
+   * `pipelineNoun` já existia e resolvia isso desde o Modelo B (§4.2); esta
+   * tela simplesmente não o usava. Sem funil carregado o fallback é "negócio",
+   * que é o default do tenant.
+   */
+  const noun = pipelineNoun(pipeline)
+  const Noun = noun.charAt(0).toUpperCase() + noun.slice(1)
 
   const handlePatch = useCallback(async (patch: Partial<Deal> & { updateAmount?: boolean }) => {
     if (!deal) return
@@ -142,9 +154,9 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
       .then((res) => setDeal(res.data))
       .catch((err: unknown) => {
         setDeal((d) => (d ? { ...d, stageId: previousStageId } : d))
-        toast(getApiErrorMessage(err, 'Não foi possível mover o negócio.'), 'error')
+        toast(getApiErrorMessage(err, `Não foi possível mover o ${noun}.`), 'error')
       })
-  }, [deal, toast])
+  }, [deal, toast, noun])
 
   const handleCloseWithReason = useCallback(async (input: CloseDealReasonInput) => {
     if (!closeTarget) return
@@ -156,21 +168,21 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
     setDeal(res.data)
     setCloseTarget(null)
     loadHistory()
-    toast(`Negócio marcado como ${stage.label}.`, 'success')
-  }, [closeTarget, loadHistory, toast])
+    toast(`${Noun} marcado como ${stage.label}.`, 'success')
+  }, [closeTarget, loadHistory, toast, Noun])
 
   const handleTransferPipeline = useCallback((pipelineId: string) => {
     if (!deal) return
     dealsApi.movePipeline(deal.id, pipelineId)
-      .then((res) => { setDeal(res.data); toast('Negócio transferido de funil.', 'success') })
-      .catch((err: unknown) => toast(getApiErrorMessage(err, 'Não foi possível transferir o negócio.'), 'error'))
+      .then((res) => { setDeal(res.data); toast(`${Noun} transferido de funil.`, 'success') })
+      .catch((err: unknown) => toast(getApiErrorMessage(err, `Não foi possível transferir o ${noun}.`), 'error'))
   }, [deal, toast])
 
   const handleDelete = useCallback(() => {
     if (!deal) return
     dealsApi.remove(deal.id)
-      .then(() => { toast('Negócio excluído.', 'success'); onClose?.() })
-      .catch((err: unknown) => toast(getApiErrorMessage(err, 'Não foi possível excluir o negócio.'), 'error'))
+      .then(() => { toast(`${Noun} excluído.`, 'success'); onClose?.() })
+      .catch((err: unknown) => toast(getApiErrorMessage(err, `Não foi possível excluir o ${noun}.`), 'error'))
   }, [deal, toast, onClose])
 
   const lastEntry = Array.isArray(history) ? history[history.length - 1] : null
@@ -190,8 +202,8 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
     return (
       <EmptyState
         icon={AlertTriangle}
-        title="Negócio não encontrado"
-        description="Este negócio não existe, foi excluído, ou está fora do seu setor."
+        title={`${Noun} não encontrado`}
+        description={`Este ${noun} não existe, foi excluído, ou está fora do seu setor.`}
         onClose={onClose}
       />
     )
@@ -202,7 +214,7 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
       <EmptyState
         icon={Lock}
         title="Sem acesso"
-        description="Você não tem acesso a este negócio — fale com um admin se acha que deveria ter."
+        description={`Você não tem acesso a este ${noun} — fale com um admin se acha que deveria ter.`}
         onClose={onClose}
       />
     )
@@ -213,7 +225,7 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
       <EmptyState
         icon={AlertTriangle}
         title="Erro ao carregar"
-        description="Não foi possível carregar este negócio. Tente novamente."
+        description={`Não foi possível carregar este ${noun}. Tente novamente.`}
         onClose={onClose}
       />
     )
@@ -244,6 +256,7 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
         pipelines={pipelines}
         users={users}
         lastMovedLabel={lastMovedLabel}
+        history={Array.isArray(history) ? history : null}
         onPatch={handlePatch}
         onMoveToStage={handleMoveToStage}
         onTransferPipeline={handleTransferPipeline}

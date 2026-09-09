@@ -27,6 +27,11 @@ const PIPELINE: Pipeline = {
   terminalLabels: { won: 'Ganho', lost: 'Perdido' }, stages: STAGES, openDealsCount: 0,
   closeReasons: [{ key: 'fechou', label: 'Fechou', outcome: 'won' }, { key: 'preco', label: 'Preço', outcome: 'lost' }],
 }
+/** Funil de PROCESSO — o objeto se chama registro, não tem valor nem itens. */
+const PROCESSO: Pipeline = {
+  ...PIPELINE, id: 'p2', name: 'Pós-venda', kind: 'process', isDefault: false,
+  terminalLabels: { won: 'Concluído', lost: 'Cancelado' },
+}
 const USER: User = { id: 'u1', tenantId: 't', email: 'ana@x.com', firstName: 'Ana', lastName: 'Souza', role: 'agent', isActive: true }
 const DEAL: Deal = {
   id: 'd1', contactId: 'c1', title: 'Negócio da Ana', status: 'open', pipelineId: 'p1', stageId: 's1',
@@ -37,7 +42,7 @@ const HISTORY: DealStageHistoryEntry[] = [
 ]
 
 vi.mock('@/contexts/CRMConfigContext', () => ({
-  useCRMConfig: () => ({ pipelines: [PIPELINE], products: [] }),
+  useCRMConfig: () => ({ pipelines: [PIPELINE, PROCESSO], products: [] }),
 }))
 // A aba Conversas usa `openConversationBeside` — infraestrutura própria,
 // já coberta em DealPanelContext.test.tsx. Aqui só um stub.
@@ -195,5 +200,39 @@ describe('DealDetailPanel — modo painel vs. página', () => {
     await screen.findByTestId('deal-title')
     expect(screen.queryByTitle('Fechar')).toBeNull()
     expect(screen.queryByTitle('Abrir como página')).toBeNull()
+  })
+})
+
+// ─── Um drawer para cada objeto (09/09) ─────────────────────────────────────
+// A ficha do processo era a do negócio "sem as coisas de dinheiro": mesmo
+// layout, mesma ordem, diferença por AUSÊNCIA. Agora a diferença é positiva —
+// a métrica-herói e a forma do progresso mudam com o tipo do funil.
+describe('DealDetailPanel — negócio × processo', () => {
+  it('negócio: valor é o herói e o progresso afunila', async () => {
+    render(<DealDetailPanel dealId="d1" />)
+    await screen.findByTestId('deal-title')
+    expect(screen.getByTestId('deal-hero')).toHaveTextContent('Valor do negócio')
+    expect(screen.getByTestId('deal-progress-funnel')).toBeInTheDocument()
+    expect(screen.queryByTestId('deal-progress-timeline')).not.toBeInTheDocument()
+  })
+
+  it('processo: o herói é o TEMPO e o progresso vira linha do tempo', async () => {
+    dealsApi.get.mockResolvedValue({ data: { ...DEAL, pipelineId: 'p2' } })
+    render(<DealDetailPanel dealId="d1" />)
+    await screen.findByTestId('deal-title')
+    const heroi = screen.getByTestId('deal-hero')
+    expect(heroi).toHaveTextContent('Aberto há')
+    expect(heroi).not.toHaveTextContent('Valor do')
+    expect(screen.getByTestId('deal-progress-timeline')).toBeInTheDocument()
+    expect(screen.queryByTestId('deal-progress-funnel')).not.toBeInTheDocument()
+  })
+
+  // 21 literais diziam "negócio" — inclusive num funil de processo, onde o
+  // objeto se chama registro.
+  it('processo: os estados de erro falam de REGISTRO, não de negócio', async () => {
+    dealsApi.get.mockRejectedValue({ response: { status: 404 } })
+    render(<DealDetailPanel dealId="d1" />)
+    // Sem funil carregado o fallback é "negócio" — é o default do tenant.
+    expect(await screen.findByText(/não encontrado/)).toBeInTheDocument()
   })
 })
