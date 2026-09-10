@@ -8,6 +8,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 
+// A flag `processPipelines` sai `false` no produto (a criação de funil de
+// processo está fechada). Aqui ela é ligada de propósito: este arquivo cobre o
+// CONTRATO do Modelo B, que precisa continuar valendo no dia em que a flag
+// voltar. O comportamento com ela desligada é o assunto do arquivo irmão
+// `CreatePipelineModal.processOff.test.tsx`.
+vi.mock('@/config/featureFlags', async () => {
+  const actual = await vi.importActual<typeof import('@/config/featureFlags')>('@/config/featureFlags')
+  return { ...actual, FEATURE_FLAGS: { ...actual.FEATURE_FLAGS, processPipelines: true } }
+})
+
 const mockTemplates = vi.fn()
 vi.mock('@/services/api', () => ({
   pipelinesApi: { templates: (...args: unknown[]) => mockTemplates(...args) },

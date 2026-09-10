@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink, ArrowRightLeft,
-  Milestone, MapPin, Phone, Plus,
+  Milestone, MapPin, Phone,
   Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -59,7 +59,7 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
           const isSelected = user.id === selectedUserId
           return (
             <button key={user.id} onClick={() => onSelect(user)} className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all', isSelected ? 'bg-brand-600/10' : 'hover:bg-surface-700')}>
-              <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" className="flex-shrink-0" />
+              <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" className="flex-shrink-0" />
               <div className="min-w-0 flex-1 text-left">
                 <p className={cn('text-sm font-medium', isSelected ? 'text-brand-300' : 'text-surface-200')}>{user.firstName} {user.lastName}</p>
                 <p className="text-[11px] text-surface-500 truncate">{roleLabel(user.role)} · {user.email}</p>
@@ -99,70 +99,6 @@ function InfoTable({ rows }: { rows: { label: string; value: React.ReactNode }[]
         </div>
       ))}
     </div>
-  )
-}
-
-// ─── Notas section ────────────────────────────────────────────────────────────
-
-function NotasSection() {
-  const [notes, setNotes] = useState<string[]>([])
-  const [adding, setAdding] = useState(false)
-  const [draft, setDraft] = useState('')
-
-  const handleSave = () => {
-    const trimmed = draft.trim()
-    if (trimmed) setNotes(prev => [...prev, trimmed])
-    setDraft('')
-    setAdding(false)
-  }
-
-  return (
-    <Section
-      title="Notas"
-      action={
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          title="Adicionar nota"
-          aria-label="Adicionar nota"
-          className="w-6 h-6 rounded-md flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      }
-    >
-      {notes.length === 0 && !adding && (
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="w-full text-left text-xs text-surface-500 hover:text-surface-300 transition-colors"
-        >
-          Adicionar uma nota…
-        </button>
-      )}
-      {notes.map((note, i) => (
-        <div key={i} className="text-xs text-surface-300 bg-surface-800/50 rounded-lg px-3 py-2 mb-2 last:mb-0">
-          {note}
-        </div>
-      ))}
-      {adding && (
-        <div className="mt-1">
-          <textarea
-            autoFocus
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave() } if (e.key === 'Escape') { setAdding(false); setDraft('') } }}
-            placeholder="Escreva uma nota…"
-            rows={3}
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-xs text-surface-200 placeholder:text-surface-500 resize-none outline-none focus:border-brand-500 transition-colors"
-          />
-          <div className="flex gap-2 mt-1.5">
-            <button type="button" onClick={handleSave} className="text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors">Salvar</button>
-            <button type="button" onClick={() => { setAdding(false); setDraft('') }} className="text-[11px] text-surface-500 hover:text-surface-300 transition-colors">Cancelar</button>
-          </div>
-        </div>
-      )}
-    </Section>
   )
 }
 
@@ -382,7 +318,7 @@ export function ContactPanel({
                 'bg-brand-600/10 text-brand-300 hover:bg-brand-600/20',
               )}
             >
-              <Avatar name={`${assignedUser.firstName} ${assignedUser.lastName}`} size="xs" />
+              <Avatar name={`${assignedUser.firstName} ${assignedUser.lastName}`} size="xs" kind="operator" />
               <span className="truncate">{assignedUser.firstName} {assignedUser.lastName}</span>
             </button>
           ) : (
@@ -416,8 +352,6 @@ export function ContactPanel({
         {/* Timeline */}
         <ConversationActivitySection conversationId={conversation.id} />
 
-        {/* Notas */}
-        <NotasSection />
       </div>
 
       {/* Transfer modal */}
@@ -433,7 +367,7 @@ export function ContactPanel({
                 onClick={() => { onTransfer(user); setXferModal(false) }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all mb-1 hover:bg-surface-800"
               >
-                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
+                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" />
                 <div className="flex-1 text-left min-w-0">
                   <p className="text-sm font-medium text-surface-200">
                     {user.firstName} {user.lastName}

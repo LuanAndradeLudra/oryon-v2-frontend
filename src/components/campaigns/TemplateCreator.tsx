@@ -526,7 +526,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
             </Button>
           ) : (
             <Button
-              variant="primary"
+              variant="neutral"
               onClick={handleSave}
               loading={saving}
               disabled={!canSave || isContentLocked}

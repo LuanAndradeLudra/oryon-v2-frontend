@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
-import { X, Package, PenLine } from 'lucide-react'
+import { X, Package, PenLine, ChevronRight } from 'lucide-react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { CampoSeletor } from '@/components/deals/CampoSeletor'
 import { MoneyInput } from '@/components/ui/MoneyInput'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { cn } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
 import {
   applyProduct,
@@ -107,6 +109,46 @@ function PercentInput({ value, onCommit, id, disabled }: PercentInputProps) {
  */
 export function DealItemsEditor({ value, onChange, error, disabled, showTotal = true }: DealItemsEditorProps) {
   const { products } = useCRMConfig()
+  const semMovimento = useReducedMotion()
+
+  /**
+   * Acordeão de um item só.
+   *
+   * Cada item aberto é um cartão de edição com sete controles — dois seletores,
+   * preço, quantidade, os dois campos de desconto e o subtotal. Três itens
+   * empilhados passavam de 500 px, e o diálogo virava uma coluna de rolagem com
+   * a coluna de propriedades vazia ao lado.
+   *
+   * Fechado, o item vira uma linha: nome, variação, quantidade e subtotal — que
+   * é exatamente o que se confere depois de preencher. Só um fica aberto por
+   * vez: adicionar um novo fecha o anterior, porque é para o novo que o olho
+   * vai.
+   *
+   * Item sem identidade (catálogo sem produto, personalizado sem nome) NUNCA
+   * fecha: a linha compacta não teria o que mostrar, e esconder um item pela
+   * metade é pior que a altura.
+   */
+  // `null` = nenhuma linha aberta; string = esta linha está aberta. Eram TRÊS
+  // estados enquanto existia um padrão implícito ("item único abre sozinho") —
+  // o `undefined` separava "ainda não mexi" de "fechei tudo", senão não dava
+  // para fechar o item único na mão. Sem o padrão, os dois viraram a mesma
+  // coisa e o terceiro estado saiu junto.
+  const [abertoUid, setAbertoUid] = useState<string | null>(null)
+  const temIdentidade = (it: DealItemDraft) =>
+    it.kind === 'custom' ? !!it.productName.trim() : !!it.productId
+
+  // NENHUM item nasce aberto — a ficha abre com a composição em linhas
+  // compactas, que é o que se confere. Havia uma exceção para o item único
+  // ("não há o que comparar"), e ela custava caro no lugar mais comum: a
+  // maioria dos negócios tem UM item, então a ficha abria justamente com o
+  // cartão de sete controles esticado. Comparar não é o único motivo para
+  // fechar; ler a ficha inteira de uma vez é o outro.
+  const uidAberto = abertoUid
+
+  const adicionar = (novo: DealItemDraft) => {
+    setAbertoUid(novo._uid)
+    onChange([...value, novo])
+  }
 
   /**
    * Âncora da reaplicação de desconto: o `MoneyInput` dispara `onChange` POR
@@ -155,6 +197,11 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
         const hasVariations = (product?.priceVariations?.length ?? 0) > 0
         const isCustom = it.kind === 'custom'
         const percent = discountPercentOf(it)
+        // Item sem identidade não fecha — a linha compacta não teria o que
+        // mostrar. Fora isso, quem manda é o operador.
+        const travadoAberto = !temIdentidade(it)
+        const aberto = it._uid === uidAberto || travadoAberto
+        const nome = isCustom ? it.productName : (product?.name ?? '')
 
         return (
           <div
@@ -162,8 +209,99 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
             // O índice entra no testid: dois itens do mesmo tipo na lista são
             // linhas distintas também para os testes.
             data-testid={`deal-item-${it.kind}-${i}`}
-            className="border border-surface-800 rounded-lg p-2.5 flex flex-col gap-2"
+            /* O item FECHADO ganhou preenchimento (10/09): era transparente, e
+               no drawer invertido (fundo branco no tema claro) ele sumia — a
+               borda `surface-800` vira a cor do próprio bloco. Preenchido, a
+               linha lê como bloco em qualquer um dos dois arranjos.
+
+               Sem alpha: no drawer invertido o token JÁ é o cinza claro, e
+               diluí-lo a 60% sobre o branco devolvia ~#F6F7FA — cinza nenhum.
+
+               A BORDA é quem faz o bloco existir, não o preenchimento. O
+               fechado usava `border-surface-800`, a MESMA cor do próprio fundo
+               dentro do drawer invertido — ou seja, não tinha borda nenhuma, e
+               sobrava um cinza de 1,1:1 contra o branco para se virar sozinho.
+               Subir o cinza resolveria pela força bruta e traria o efeito de
+               "campo desabilitado"; a aresta resolve com elegância.
+
+               E é a borda que diz qual está ABERTO (`surface-600`, um degrau
+               mais forte), o que funciona nos dois temas — diferente de
+               "mais claro", que se inverte de um tema para o outro. */
+            className={cn(
+              'border rounded-lg overflow-hidden transition-all',
+              aberto
+                ? 'border-surface-600 bg-surface-800/25 bloco-drawer-ativo'
+                : 'border-surface-700 bg-surface-800 hover:border-surface-600 bloco-drawer',
+            )}
           >
+            {/* Cabeçalho SEMPRE presente: é ele o interruptor. Antes o fechar
+                era um "Pronto" no pé de um cartão alto — quem abria a linha não
+                encontrava o caminho de volta. Aberto ou fechado, o gesto de
+                abrir e o de fechar são o mesmo lugar. */}
+            <div className="flex items-center gap-1 p-1.5">
+              <button
+                type="button"
+                onClick={() => setAbertoUid(aberto ? null : it._uid)}
+                disabled={travadoAberto}
+                aria-expanded={aberto}
+                aria-label={aberto ? `Recolher ${nome || 'item'}` : `Editar ${nome || 'item'}`}
+                className={cn(
+                  'flex-1 flex items-center gap-2 min-w-0 rounded-md px-1.5 py-1.5 text-left transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
+                  travadoAberto ? 'cursor-default' : 'cursor-pointer hover:bg-surface-800/60',
+                )}
+              >
+                <ChevronRight
+                  className={cn(
+                    'w-3.5 h-3.5 shrink-0 text-surface-500 transition-transform duration-150',
+                    aberto && 'rotate-90',
+                    travadoAberto && 'opacity-0',
+                  )}
+                  aria-hidden
+                />
+                <span className={cn('text-sm truncate', nome ? 'text-surface-100' : 'text-surface-500')}>
+                  {nome || (isCustom ? 'Novo item personalizado' : 'Novo item do catálogo')}
+                </span>
+                {!aberto && !isCustom && it.variationLabel && (
+                  <span className="text-xs text-surface-500 truncate shrink-0">· {it.variationLabel}</span>
+                )}
+                {!aberto && isCustom && (
+                  <span className="text-3xs font-semibold uppercase tracking-wider text-amber-400/90 shrink-0">
+                    Negociado
+                  </span>
+                )}
+                {!aberto && (
+                  <>
+                    <span className="ml-auto text-xs text-surface-500 tabular-nums shrink-0">{it.quantity} ×</span>
+                    <span className="text-sm font-semibold text-surface-100 tabular-nums shrink-0">
+                      {formatBRL(lineTotalCents(it))}
+                    </span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                disabled={disabled}
+                className="p-1.5 rounded-lg text-surface-500 hover:text-red-400 hover:bg-red-900/20 transition-all shrink-0 disabled:opacity-50 cursor-pointer"
+                aria-label="Remover item"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Só a ABERTURA anima. O fechamento é imediato de propósito: com
+                `exit` o Framer mantém a subárvore montada durante a saída, e um
+                cartão de sete controles continuaria no DOM — invisível, mas
+                alcançável por leitor de tela e por consulta de teste. */}
+            {aberto && (
+            <motion.div
+              initial={semMovimento ? false : { height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+            <div className="px-2.5 pb-2.5 pt-1 flex flex-col gap-2">
             <div className="flex gap-2 items-start">
               <div className="flex-1">
                 {isCustom ? (
@@ -178,51 +316,44 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                     disabled={disabled}
                   />
                 ) : (
-                  <Select
+                  <CampoSeletor
                     value={it.productId ?? ''}
                     // Trocar o PRODUTO troca a base: rebaseia o desconto na
                     // proporção (como a troca de variação), senão os R$ do
                     // produto antigo ficam pendurados num preço que não existe
                     // mais (R$ 1000 de desconto num produto de R$ 50 = 2000%).
-                    onChange={(e) => patchWithDiscount(i, applyProduct(it, products.find((p) => p.id === e.target.value)))}
-                    aria-label="Produto do catálogo"
+                    onChange={(id) => patchWithDiscount(i, applyProduct(it, products.find((p) => p.id === id)))}
+                    ariaLabel="Produto do catálogo"
+                    placeholder="— produto —"
                     disabled={disabled}
-                  >
-                    <option value="">— produto —</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                        {!p.active ? ' (inativo)' : ''}
-                      </option>
-                    ))}
-                  </Select>
+                    options={[
+                      { value: '', label: '— produto —' },
+                      ...products.map((p) => ({
+                        value: p.id,
+                        label: p.name,
+                        // "(inativo)" sai do meio do rótulo e vira coluna
+                        // própria — no `<option>` não havia onde pôr.
+                        detalhe: p.active ? undefined : 'inativo',
+                      })),
+                    ]}
+                  />
                 )}
               </div>
               {!isCustom && hasVariations && (
                 <div className="w-40 flex-shrink-0">
-                  <Select
+                  <CampoSeletor
                     value={it.variationLabel ?? ''}
-                    onChange={(e) => patchWithDiscount(i, applyVariation(it, product, e.target.value))}
-                    aria-label="Variação de preço"
+                    onChange={(label) => patchWithDiscount(i, applyVariation(it, product, label))}
+                    ariaLabel="Variação de preço"
                     disabled={disabled}
-                  >
-                    {product!.priceVariations.map((pv) => (
-                      <option key={pv.id ?? pv.label} value={pv.label}>
-                        {pv.label}
-                      </option>
-                    ))}
-                  </Select>
+                    options={product!.priceVariations.map((pv) => ({
+                      value: pv.label,
+                      label: pv.label,
+                      detalhe: formatBRL(pv.amountCents),
+                    }))}
+                  />
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => remove(i)}
-                disabled={disabled}
-                className="p-2 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all flex-shrink-0 disabled:opacity-50"
-                aria-label="Remover item"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
             <div className="grid grid-cols-4 gap-2 items-end">
@@ -300,6 +431,9 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
               )}
               Subtotal: <span className="tabular-nums">{formatBRL(lineTotalCents(it))}</span>
             </p>
+            </div>
+            </motion.div>
+            )}
           </div>
         )
       })}
@@ -310,20 +444,25 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
         </p>
       )}
 
+      {/* Os dois "adicionar" são AÇÕES PARES — dois caminhos para a mesma coisa,
+          e nenhum é secundário do outro. Vinham com dois tratamentos diferentes
+          (um cinza cheio, outro com borda), o que sugeria uma hierarquia que não
+          existe. Passam a usar o mesmo `neutral` dos botões de criação do resto
+          do produto — "Novo negócio", "Nova campanha", "Novo template". */}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => onChange([...value, emptyCatalogItem()])}
+          onClick={() => adicionar(emptyCatalogItem())}
           disabled={disabled}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 transition-all disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all disabled:bg-surface-700 disabled:text-surface-500"
         >
           <Package className="w-3.5 h-3.5" /> Adicionar do catálogo
         </button>
         <button
           type="button"
-          onClick={() => onChange([...value, emptyCustomItem()])}
+          onClick={() => adicionar(emptyCustomItem())}
           disabled={disabled}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-800 hover:bg-surface-700 text-surface-200 border border-surface-700 transition-all disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all disabled:bg-surface-700 disabled:text-surface-500"
         >
           <PenLine className="w-3.5 h-3.5" /> Adicionar personalizado
         </button>

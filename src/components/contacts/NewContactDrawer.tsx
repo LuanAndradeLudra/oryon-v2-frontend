@@ -638,7 +638,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
                   'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
                   saved
                     ? 'bg-status-active-bg text-status-active border border-status-active-border'
-                    : 'bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60',
+                    : 'bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60',
                 )}
               >
                 {saving ? (

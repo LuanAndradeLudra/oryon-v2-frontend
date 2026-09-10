@@ -161,7 +161,7 @@ export function DuplicateTemplateModal({
             Cancelar
           </Button>
           <Button
-            variant="primary"
+            variant="neutral"
             size="sm"
             onClick={handleSubmit}
             disabled={!pickedLineId || saving || otherLines.length === 0}

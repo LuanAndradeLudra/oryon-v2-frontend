@@ -18,11 +18,12 @@ vi.mock('react-router-dom', async () => {
 // que O CONTEXTO renderiza o painel com o dealId certo, não repetir a
 // cobertura de conteúdo.
 vi.mock('@/components/deals/DealDetailPanel', () => ({
-  DealDetailPanel: ({ dealId, onClose, onExpand }: { dealId: string; onClose?: () => void; onExpand?: (id: string) => void }) => (
+  DealDetailPanel: ({ dealId, onClose, onOpenBoard, rotaAtual }: { dealId: string; onClose?: () => void; onOpenBoard?: (deal: { id: string; pipelineId: string }) => void; rotaAtual?: string }) => (
     <div data-testid="deal-detail-panel-stub">
       dealId={dealId}
       <button onClick={onClose}>fechar</button>
-      <button onClick={() => onExpand?.(dealId)}>expandir</button>
+      <span data-testid="rota-recebida">{rotaAtual ?? ''}</span>
+      <button onClick={() => onOpenBoard?.({ id: dealId, pipelineId: 'p1' })}>no funil</button>
     </div>
   ),
 }))
@@ -63,7 +64,11 @@ describe('DealPanelProvider', () => {
     await waitFor(() => expect(screen.queryByTestId('deal-detail-panel-stub')).toBeNull())
   })
 
-  it('"Expandir" fecha o painel e navega para /deals/:id', async () => {
+  // "Expandir" saiu (10/09) e deu lugar a "No funil": o expandir levava à MESMA
+  // ficha, só maior. O novo leva ao QUADRO do funil do negócio, com a ficha
+  // pedida na URL — e NÃO fecha o painel: quem clica quer ver o card no lugar
+  // dele, com o contexto ainda aberto por cima.
+  it('"No funil" navega para o quadro do funil do negócio, sem fechar a ficha', async () => {
     renderWithRouter(
       <DealPanelProvider>
         <OpenButton />
@@ -71,9 +76,22 @@ describe('DealPanelProvider', () => {
     )
     fireEvent.click(screen.getByText('abrir negócio'))
     await waitFor(() => screen.getByTestId('deal-detail-panel-stub'))
-    fireEvent.click(screen.getByText('expandir'))
-    expect(navigate).toHaveBeenCalledWith('/deals/deal-1')
-    await waitFor(() => expect(screen.queryByTestId('deal-detail-panel-stub')).toBeNull())
+    fireEvent.click(screen.getByText('no funil'))
+    expect(navigate).toHaveBeenCalledWith('/pipelines/p1?deal=deal-1')
+    expect(screen.getByTestId('deal-detail-panel-stub')).toBeInTheDocument()
+  })
+
+  // O painel recebe a rota atual para poder ESCONDER o "No funil" quando já
+  // está aberto sobre o quadro daquele funil.
+  it('repassa ao painel a rota em que ele está aberto', async () => {
+    renderWithRouter(
+      <DealPanelProvider>
+        <OpenButton />
+      </DealPanelProvider>,
+    )
+    fireEvent.click(screen.getByText('abrir negócio'))
+    await waitFor(() => screen.getByTestId('deal-detail-panel-stub'))
+    expect(screen.getByTestId('rota-recebida').textContent).toBeTruthy()
   })
 
   it('deep link ?deal=<id> abre o painel sozinho e limpa o param da URL', async () => {

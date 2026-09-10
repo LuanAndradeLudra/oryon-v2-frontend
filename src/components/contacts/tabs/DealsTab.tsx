@@ -126,7 +126,7 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
         ) : (
           <button
             onClick={() => setNewDealOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5" /> Novo {dealWord}
           </button>

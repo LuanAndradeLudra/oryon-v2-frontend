@@ -79,3 +79,29 @@ describe('ChatHeader — resolver é uma affordance só', () => {
     expect(statusBtn.compareDocumentPosition(intervirBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })
+
+// ─── O cabeçalho devolveu o contato ao painel (09/09) ───────────────────────
+// Ele acumulava cinco categorias em quatro linhas: identidade, atributos do
+// contato (etiquetas), estado do CRM (chips de funil·etapa), estado da IA e
+// situação da conversa. O critério que ficou: o cabeçalho carrega o que muda a
+// PRÓXIMA MENSAGEM; o painel carrega o que descreve o contato.
+describe('ChatHeader — identidade e estado, nada de atributos', () => {
+  it('não desenha as etiquetas do contato', () => {
+    render(<ChatHeader {...baseProps({ tags: [{ id: 't1', name: 'VIP', color: '#f59e0b' }] })} />)
+    expect(screen.queryByText('VIP')).not.toBeInTheDocument()
+  })
+
+  // O painel nasce fechado, então sumir com as etiquetas sem avisar seria
+  // esconder. O marcador do botão diz que há algo lá dentro.
+  it('o botão de Informações marca que há algo do contato para ver', () => {
+    render(<ChatHeader {...baseProps({ tags: [{ id: 't1', name: 'VIP', color: '#f59e0b' }] })} />)
+    const botao = screen.getByLabelText('Informações do contato')
+    expect(botao.querySelector('span.rounded-full')).toBeTruthy()
+  })
+
+  it('sem etiquetas e sem atribuição, o botão fica limpo', () => {
+    render(<ChatHeader {...baseProps({ tags: [] })} />)
+    const botao = screen.getByLabelText('Informações do contato')
+    expect(botao.querySelector('span.rounded-full')).toBeNull()
+  })
+})

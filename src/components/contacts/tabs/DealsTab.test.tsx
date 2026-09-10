@@ -154,15 +154,16 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
 // Antes: "Nenhum registro ainda — use 'Adicionar ao funil'". Texto mandando o
 // operador procurar outro botão é o padrão que o roteiro da A3 derrubou.
 describe('DealsTab — vazio com ação (A3/925)', () => {
-  it('sem nenhum negócio, oferece o botão "Novo negócio" e abre o diálogo de 2 passos', async () => {
+  it('sem nenhum negócio, oferece o botão "Novo negócio" e abre o diálogo de criação', async () => {
     api.list.mockResolvedValue({ data: [] })
     renderTab()
     const btns = await screen.findAllByRole('button', { name: /Novo negócio/ })
     // Um no cabeçalho (menu "Adicionar ao funil" convive) e um no vazio.
     expect(btns.length).toBeGreaterThanOrEqual(1)
     fireEvent.click(btns[btns.length - 1])
-    // O diálogo do fluxo compartilhado abre — nada de POST direto.
-    await waitFor(() => expect(screen.getByText('Quem e onde')).toBeInTheDocument())
+    // O diálogo do fluxo compartilhado abre — nada de POST direto. O título é
+    // o herói da tela desde 09/09; o stepper "Quem e onde" não existe mais.
+    await waitFor(() => expect(screen.getByLabelText(/Título/)).toBeInTheDocument())
     expect(api.create).not.toHaveBeenCalled()
   })
 })

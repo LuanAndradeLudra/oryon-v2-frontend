@@ -135,7 +135,7 @@ export function MyAccount() {
       >
         <div className="flex items-center gap-5 mb-6">
           <div className="relative group cursor-pointer">
-            <Avatar name={`${user.firstName} ${user.lastName}`} size="lg" />
+            <Avatar name={`${user.firstName} ${user.lastName}`} size="lg" kind="operator" />
             <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <Camera className="w-4 h-4 text-white" />
             </div>

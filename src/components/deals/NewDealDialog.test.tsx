@@ -1,5 +1,5 @@
-// A3 (SCRUM-925) — o "Novo negócio" em 2 passos. O que estes testes protegem:
-//   * o passo 2 é o ÚNICO lugar do produto onde valor digitado e itens
+// A3 (SCRUM-925) — o "Novo negócio". O que estes testes protegem:
+//   * o valor é o ÚNICO lugar do produto onde valor digitado e itens
 //     coexistem — a escolha dos dois botões (D0-2) só aparece quando há
 //     divergência de fato, e é ela que decide o `updateAmount` do POST;
 //   * `amountCents` só viaja quando foi DIGITADO (um campo intocado não pode
@@ -7,8 +7,13 @@
 //   * dono é opcional (D0-9): pré-preenchido com quem cria — e aí OMITIDO, para
 //     o backend aplicar o default humano — ou `null` explícito ao ser removido;
 //   * `409 open_exists` nunca vira erro cru na tela (I1).
+//
+// A tela passou de dois passos para uma só (09/09): funil, etapa, dono,
+// previsão e valor viram FICHAS, e o bloco de dinheiro cresce na própria tela
+// quando a ficha "Valor" é ligada. Os testes dirigem as fichas; os invariantes
+// acima são os mesmos.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import type { Deal, Pipeline, PipelineStage, Product, User } from '@/types'
 
 const PRODUTO: Product = {
@@ -41,7 +46,9 @@ vi.mock('@/contexts/CRMConfigContext', () => ({
 }))
 
 const st = (id: string, label: string, order: number, extra: Partial<PipelineStage> = {}): PipelineStage => ({
-  id, tenantId: 't', pipelineId: 'v', key: id, label, color: '#111', order, isWon: false, isLost: false, ...extra,
+  // Cores reais do produto (`pipeline_stages.color`): índigo nas iniciais,
+  // verde no ganho. A trilha espelha o quadro, então a cor importa aqui.
+  id, tenantId: 't', pipelineId: 'v', key: id, label, color: '#6366f1', order, isWon: false, isLost: false, ...extra,
 })
 const VENDAS: Pipeline = {
   id: 'v', tenantId: 't', name: 'Vendas', color: '#14b8a6', order: 0, isDefault: true, isArchived: false,
@@ -52,6 +59,17 @@ const PROCESSO: Pipeline = {
   ...VENDAS, id: 'p', name: 'Pós-venda', isDefault: false, kind: 'process',
   terminalLabels: { won: 'Concluído', lost: 'Cancelado' },
   stages: [st('p1', 'Novo', 1)],
+}
+
+/** Funil com quatro etapas — usado pela trilha e pelas regressões da etapa. */
+const VENDAS_3: Pipeline = {
+  ...VENDAS,
+  stages: [
+    st('v1', 'Novo', 1),
+    st('v2', 'Negociando', 2),
+    st('v3', 'Proposta', 3),
+    st('vw', 'Ganho', 4, { isWon: true }),
+  ],
 }
 
 const CRIADO = { data: { id: 'd9' } as Deal }
@@ -71,12 +89,27 @@ const renderDialog = (props: Partial<React.ComponentProps<typeof NewDealDialog>>
     />,
   )
 
-/** Passo 1 → passo 2 com os defaults (contato pronto, funil de venda). */
-const avancar = () => fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+/** Abre o bloco de valor — o convite de largura inteira na coluna esquerda. */
+const abrirValor = () => fireEvent.click(screen.getByRole('button', { name: /Adicionar valor ou itens/ }))
 
-/** Digita no campo monetário (acumulador: só dígitos contam). */
-const digitarValor = (reais: string) =>
+/** A etapa passou a ser escolhida na TRILHA, não numa ficha. */
+const etapaAtiva = () => screen.getByRole('button', { current: 'step' })
+
+/** Abre uma ficha e escolhe uma opção do popover. */
+const escolherNaFicha = (ficha: RegExp, opcao: RegExp) => {
+  fireEvent.click(screen.getByRole('button', { name: ficha }))
+  fireEvent.click(screen.getByRole('menuitem', { name: opcao }))
+}
+
+/**
+ * Digita no campo monetário. O campo é OPT-IN desde 09/09: o bloco recém-aberto
+ * mostra os botões de item, e quem quer valor livre pede o campo.
+ */
+const digitarValor = (reais: string) => {
+  const pedir = screen.queryByRole('button', { name: /Informar (valor sem itens|outro valor)/ })
+  if (pedir) fireEvent.click(pedir)
   fireEvent.change(screen.getByLabelText('Valor do negócio'), { target: { value: reais } })
+}
 
 const addItemPersonalizado = (nome: string, precoDigitos: string) => {
   fireEvent.click(screen.getByRole('button', { name: /Adicionar personalizado/ }))
@@ -92,39 +125,64 @@ beforeEach(() => {
   contacts.list.mockResolvedValue({ data: { data: [] } })
 })
 
-describe('NewDealDialog — 2 passos', () => {
+describe('NewDealDialog — uma tela', () => {
   // Antes o diálogo escondia os funis de processo sem dizer por quê — metade
   // dos funis do tenant sumia do seletor. Agora lista os dois, com o tipo no
   // rótulo; o caminho de 1 clique pelo "Adicionar ao funil ▾" continua existindo.
   it('lista os DOIS tipos de funil, com o tipo no rótulo', () => {
     renderDialog()
-    const funil = screen.getByLabelText(/Funil/) as HTMLSelectElement
-    const nomes = Array.from(funil.options).map((o) => o.textContent).join(' ')
+    fireEvent.click(screen.getByRole('button', { name: /^Funil:/ }))
+    const nomes = screen.getAllByRole('menuitem').map((o) => o.textContent).join(' ')
     expect(nomes).toContain('Vendas')
     expect(nomes).toContain('Pós-venda')
     expect(nomes).toContain('Processo ·')
   })
 
-  it('não avança sem título e mostra o erro no campo', () => {
+  it('não cria sem título e mostra o erro', () => {
     renderDialog({ contactName: null })
     fireEvent.change(screen.getByLabelText(/Título/), { target: { value: '   ' } })
-    avancar()
+    fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     expect(screen.getByText('O título é obrigatório.')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Valor do negócio')).not.toBeInTheDocument()
+    expect(deals.create).not.toHaveBeenCalled()
   })
 
-  it('pré-preenche o título com o nome do contato e avança para "Quanto"', () => {
+  it('pré-preenche o título com o nome do contato', () => {
     renderDialog()
-    expect((screen.getByLabelText(/Título/) as HTMLInputElement).value).toBe('Negócio · Mariana')
-    avancar()
-    expect(screen.getByLabelText('Valor do negócio')).toBeInTheDocument()
+    expect((screen.getByLabelText(/Título/) as HTMLTextAreaElement).value).toBe('Negócio · Mariana')
+  })
+
+  // O passo "Quanto" prometia dinheiro que quase nunca existe: criado do chat,
+  // o negócio nasce sem valor. Agora o bloco só ocupa a tela quando é pedido.
+  it('o bloco de valor só existe depois de ser pedido', () => {
+    renderDialog()
+    expect(screen.queryByRole('button', { name: /Adicionar do catálogo/ })).not.toBeInTheDocument()
+    abrirValor()
+    expect(screen.getByRole('button', { name: /Adicionar do catálogo/ })).toBeInTheDocument()
+  })
+
+  // O campo em branco no topo fazia o operador preencher na mão antes de
+  // descobrir o catálogo. O caminho normal é lançar itens e ver a soma.
+  it('o bloco abre nos ITENS, sem campo de valor para preencher na mão', () => {
+    renderDialog()
+    abrirValor()
+    expect(screen.queryByLabelText('Valor do negócio')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Informar valor sem itens/ })).toBeInTheDocument()
+  })
+
+  it('com itens lançados o total aparece somado, sem virar campo', async () => {
+    renderDialog()
+    abrirValor()
+    addItemPersonalizado('Instalação', '20000')
+    expect(await screen.findByTestId('valor-total')).toHaveTextContent('R$ 200,00')
+    expect(screen.queryByLabelText('Valor do negócio')).not.toBeInTheDocument()
+    expect(screen.getByText(/= soma de/)).toBeInTheDocument()
   })
 })
 
 describe('NewDealDialog — valor × itens (D0-2)', () => {
   it('valor digitado sem itens: POST com amountCents e sem lineItems', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     digitarValor('150000')
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
@@ -136,7 +194,7 @@ describe('NewDealDialog — valor × itens (D0-2)', () => {
 
   it('campo de valor intocado não viaja no POST (não pode zerar a soma dos itens)', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     addItemPersonalizado('Instalação', '20000')
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
@@ -149,7 +207,7 @@ describe('NewDealDialog — valor × itens (D0-2)', () => {
 
   it('valor divergente da soma: aparecem os dois botões, e "Vincular" preserva o valor', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     digitarValor('150000')
     addItemPersonalizado('Instalação', '20000')
     expect(screen.queryByRole('button', { name: /Criar negócio/i })).not.toBeInTheDocument()
@@ -162,7 +220,7 @@ describe('NewDealDialog — valor × itens (D0-2)', () => {
 
   it('"Vincular e atualizar valor" manda updateAmount: true', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     digitarValor('150000')
     addItemPersonalizado('Instalação', '20000')
     fireEvent.click(screen.getByRole('button', { name: 'Vincular e atualizar valor' }))
@@ -172,7 +230,7 @@ describe('NewDealDialog — valor × itens (D0-2)', () => {
 
   it('atalho "usar a soma" alinha o valor aos itens e a escolha some', async () => {
     renderDialog()
-    avancar()
+    abrirValor()
     digitarValor('150000')
     addItemPersonalizado('Instalação', '20000')
     fireEvent.click(screen.getByRole('button', { name: /Usar a soma dos itens/ }))
@@ -187,17 +245,18 @@ describe('NewDealDialog — dono opcional (D0-9)', () => {
   it('dono pré-preenchido com quem cria é OMITIDO (o default humano é do backend)', async () => {
     renderDialog()
     await waitFor(() => expect(users.list).toHaveBeenCalled())
-    avancar()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
     expect(deals.create.mock.calls[0][0]).not.toHaveProperty('ownerUserId')
   })
 
+  // "Sem dono" é destino legítimo, com fila própria — por isso a ficha fica
+  // PREENCHIDA com o texto, e não vazia como se o campo tivesse sido esquecido.
   it('remover o dono manda ownerUserId: null (fila "sem dono")', async () => {
     renderDialog()
     await waitFor(() => expect(users.list).toHaveBeenCalled())
-    fireEvent.change(screen.getByLabelText(/Dono/), { target: { value: '' } })
-    avancar()
+    escolherNaFicha(/^Dono:/, /Sem dono/)
+    expect(screen.getByRole('button', { name: 'Dono: Sem dono' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
     expect(deals.create.mock.calls[0][0].ownerUserId).toBeNull()
@@ -211,7 +270,6 @@ describe('NewDealDialog — conflito I1', () => {
     })
     const onConflict = vi.fn()
     renderDialog({ onConflict })
-    avancar()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(onConflict).toHaveBeenCalledWith({
       openDealId: 'd-aberto', pipelineId: 'v', contactId: 'c1', contactName: 'Mariana',
@@ -222,28 +280,17 @@ describe('NewDealDialog — conflito I1', () => {
 
 // ─── Revisão da A3: a etapa da COLUNA e o tenant sem múltiplos funis ────────
 describe('NewDealDialog — regressões da revisão', () => {
-  const VENDAS_3: Pipeline = {
-    ...VENDAS,
-    stages: [
-      st('v1', 'Novo', 1),
-      st('v2', 'Negociando', 2),
-      st('v3', 'Proposta', 3),
-      st('vw', 'Ganho', 4, { isWon: true }),
-    ],
-  }
-
   it('o "+" de uma coluna cria NAQUELA etapa — não na primeira', async () => {
     renderDialog({ pipelines: [VENDAS_3], initialPipelineId: 'v', initialStageId: 'v3' })
-    expect((screen.getByLabelText(/Etapa/) as HTMLSelectElement).value).toBe('v3')
-    avancar()
+    expect(etapaAtiva()).toHaveTextContent('Proposta')
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
     expect(deals.create.mock.calls[0][0].stageId).toBe('v3')
   })
 
-  it('etapa que não pertence ao funil escolhido cai na 1ª não-terminal', async () => {
+  it('etapa que não pertence ao funil escolhido cai na 1ª não-terminal', () => {
     renderDialog({ pipelines: [VENDAS_3], initialPipelineId: 'v', initialStageId: 'de-outro-funil' })
-    expect((screen.getByLabelText(/Etapa/) as HTMLSelectElement).value).toBe('v1')
+    expect(etapaAtiva()).toHaveTextContent('Novo')
   })
 
   // Tenant sem `FF_MULTI_PIPELINE`: o contexto entrega `pipelines: []`, e a aba
@@ -252,32 +299,28 @@ describe('NewDealDialog — regressões da revisão', () => {
   // backend resolve o funil default, como o `DealModal` fazia antes da A3.
   it('sem nenhum funil conhecido, cria mesmo assim e não pede funil', async () => {
     renderDialog({ pipelines: [] })
-    expect(screen.queryByLabelText(/Funil/)).not.toBeInTheDocument()
-    avancar()
-    expect(screen.queryByText('Selecione um funil.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Funil/ })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
+    expect(screen.queryByText('Selecione um funil.')).not.toBeInTheDocument()
     const body = deals.create.mock.calls[0][0]
     expect('pipelineId' in body).toBe(false)
     expect('stageId' in body).toBe(false)
   })
 
-  // Só funil de PROCESSO deixou de ser um beco sem saída: o diálogo o aceita,
-  // vira um passo só (processo não tem valor nem itens) e cria "registro".
-  // O Escopo vivia no passo "Quanto" — um passo que promete dinheiro, não
-  // escopo —, e por isso o diálogo de VENDA parecia não ter onde descrever o
-  // negócio. Agora fica ao lado do Título, no passo 1, nos dois tipos.
-  it('venda: Escopo está no passo 1, junto do Título', () => {
+  // Título e escopo respondem à mesma pergunta — "o que é isto?" — em duas
+  // escalas, e agora abrem a tela juntos, sem moldura.
+  it('título e escopo abrem a tela, juntos', () => {
     renderDialog()
     expect(screen.getByLabelText(/Título/)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Escopo/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Observações/)).toBeInTheDocument()
   })
 
   // O escopo (`description`) é o "o que está sendo tratado" — existe para os
-  // dois tipos e ficava preso ao passo 2, que some em processo.
+  // dois tipos e ficava preso ao passo 2, que sumia em processo.
   it('escopo é enviado como `description` e existe também em processo', async () => {
     renderDialog({ pipelines: [PROCESSO] })
-    fireEvent.change(screen.getByLabelText(/Escopo/), { target: { value: 'Consulta de retorno' } })
+    fireEvent.change(screen.getByLabelText(/Observações/), { target: { value: 'Consulta de retorno' } })
     fireEvent.click(screen.getByRole('button', { name: /Criar registro/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalledWith(
       expect.objectContaining({ description: 'Consulta de retorno' }),
@@ -291,11 +334,108 @@ describe('NewDealDialog — regressões da revisão', () => {
     expect(deals.create.mock.calls[0][0]).not.toHaveProperty('description')
   })
 
-  it('só com funil de processo: cria em um passo, com o substantivo do tipo', async () => {
+  // Processo não tem valor nem itens (§4 do Modelo B): a ficha "Valor" nem é
+  // oferecida — antes isso era resolvido sumindo com um passo inteiro.
+  it('funil de processo: sem ficha de valor, e o substantivo é o do tipo', async () => {
     renderDialog({ pipelines: [PROCESSO] })
     expect(screen.getByRole('button', { name: /Criar registro/i })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Continuar' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Definir valor' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Criar registro/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalled())
+  })
+
+  // A "Observação" saiu da criação (decisão do PO, 09/09): recado operacional
+  // para a equipe vive na ficha do negócio, não no diálogo que o cria.
+  it('a observação não existe mais na criação', () => {
+    renderDialog()
+    expect(screen.queryByLabelText(/Observação/)).not.toBeInTheDocument()
+  })
+})
+
+// ─── A didática que a primeira versão tinha perdido ────────────────────────
+// A passada de 09/09 tirou os rótulos junto com as molduras: o escopo virou um
+// texto sem borda que lia como legenda ("sumiu", nas palavras do PO) e a ficha
+// mostrava só o valor — "Novo" sem dizer que aquilo era a Etapa.
+describe('NewDealDialog — o nome de cada coisa', () => {
+  it('escopo é campo com rótulo visível, não legenda do título', () => {
+    renderDialog()
+    const escopo = screen.getByLabelText(/Observações/) as HTMLTextAreaElement
+    expect(escopo.tagName).toBe('TEXTAREA')
+    // O rótulo é do próprio campo — clicar nele foca o campo.
+    expect(escopo.id).toBeTruthy()
+    expect(document.querySelector(`label[for="${escopo.id}"]`)).toBeInTheDocument()
+  })
+
+  it('cada propriedade da coluna tem nome visível e valor', () => {
+    renderDialog()
+    // Na coluna o nome vive no rótulo acima; a ficha carrega só o valor, senão
+    // seria a mesma redundância das seções nomeadas do formulário antigo.
+    expect(screen.getByText('Dono')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dono: Ana Souza' })).toBeInTheDocument()
+  })
+
+  it('o popover diz o que está sendo escolhido e o que aquilo significa', () => {
+    renderDialog()
+    fireEvent.click(screen.getByRole('button', { name: /^Funil:/ }))
+    expect(screen.getByText(/Onde este negócio vai viver/)).toBeInTheDocument()
+  })
+
+  // A trilha substituiu a ficha "Etapa": mostra o caminho inteiro, marca onde o
+  // registro nasce e não deixa nascer numa etapa terminal.
+  // O quadro pinta o ponto e o rótulo da coluna com `stage.color`. A faixa
+  // repete a convenção — é o que a faz ler como "as colunas do meu funil" em
+  // vez de um stepper genérico.
+  it('a trilha usa a cor de cada etapa e se anuncia como as etapas do funil', () => {
+    renderDialog({ pipelines: [{ ...VENDAS_3, stages: [
+      st('v1', 'Novo', 1, { color: '#6366f1' }),
+      st('v2', 'Proposta', 2, { color: '#f59e0b' }),
+      st('vw', 'Ganho', 3, { isWon: true, color: '#10b981' }),
+    ] }] })
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    // O eixo é declarado: sem isso a faixa é só uma fileira de pontos.
+    expect(within(trilha).getByText('Etapas')).toBeInTheDocument()
+    // A etapa ativa leva a própria cor no rótulo, como no quadro — passando
+    // pela TINTA, que é a mesma cor ajustada ao tema: no escuro sai idêntica,
+    // no claro desce 40% para não sumir sobre o branco (âmbar cru dá 2,15:1).
+    expect(within(trilha).getByText('Novo')).toHaveStyle({
+      color: 'color-mix(in srgb, #6366f1, var(--ink-target) var(--ink-amount))',
+    })
+  })
+
+  it('a trilha mostra o funil inteiro e não deixa nascer em etapa terminal', () => {
+    renderDialog()
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    expect(trilha).toHaveTextContent('Novo')
+    expect(trilha).toHaveTextContent('Ganho')
+    const ganho = within(trilha).getByRole('button', { name: /Ganho/ })
+    expect(ganho).toBeDisabled()
+  })
+
+  // Opacidade sozinha dizia só "apagado" — tanto podia ser encerramento quanto
+  // "ainda não chegou". O terminal ganhou forma própria e o fio antes dele
+  // vira tracejado: é ali que o funil deixa de ser percurso.
+  it('etapa terminal se distingue por forma, não só por tom', () => {
+    renderDialog({ pipelines: [{ ...VENDAS_3, stages: [
+      st('v1', 'Novo', 1),
+      st('vw', 'Ganho', 2, { isWon: true, color: '#10b981' }),
+      st('vl', 'Perdido', 3, { isLost: true, color: '#ef4444' }),
+    ] }] })
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    // O ganho leva ✓ e a perda leva ×; a etapa de percurso não leva ícone.
+    expect(within(trilha).getByRole('button', { name: /Ganho/ }).querySelector('svg')).toBeTruthy()
+    expect(within(trilha).getByRole('button', { name: /Perdido/ }).querySelector('svg')).toBeTruthy()
+    expect(within(trilha).getByRole('button', { name: /Novo/ }).querySelector('svg')).toBeNull()
+    // O fio que antecede o primeiro terminal é tracejado.
+    expect(trilha.querySelectorAll('.border-dashed')).toHaveLength(1)
+  })
+
+  it('clicar numa etapa da trilha muda onde o negócio nasce', async () => {
+    renderDialog({ pipelines: [VENDAS_3] })
+    const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
+    fireEvent.click(within(trilha).getByRole('button', { name: /Proposta/ }))
+    expect(etapaAtiva()).toHaveTextContent('Proposta')
+    fireEvent.click(screen.getByRole('button', { name: /Criar negócio/i }))
+    await waitFor(() => expect(deals.create).toHaveBeenCalled())
+    expect(deals.create.mock.calls[0][0].stageId).toBe('v3')
   })
 })

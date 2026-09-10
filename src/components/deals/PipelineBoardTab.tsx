@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, Layers } from 'lucide-react'
 import { DealsBoard } from '@/components/deals/DealsBoard'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
@@ -20,6 +20,26 @@ interface PipelineBoardTabProps {
   pipelines: Pipeline[]
   /** Chamado após um negócio ser criado/movido — o pai reflete em badges/contadores fora deste tab. */
   onDealsChanged?: () => void
+  /**
+   * Termo da busca do cabeçalho (o campo mora lá, ao lado do seletor de funil).
+   * Vai para o backend, que casa nome/telefone/e-mail/empresa do CONTATO do
+   * negócio — filtrar no cliente esconderia os cards já carregados e mentiria
+   * nos totais das colunas, que somam o que veio da consulta.
+   */
+  search?: string
+  /**
+   * Criação CONTROLADA pela página.
+   *
+   * Os dois diálogos de criação (negócio em funil de venda, contato em funil de
+   * processo) moram aqui, mas o botão que os abre vive no CABEÇALHO da página —
+   * ele precisa estar visível sempre, e não só no estado vazio do quadro. Em
+   * vez de duplicar os diálogos lá em cima, o estado sobe e desce como prop: a
+   * página abre, este componente continua dono do fluxo.
+   */
+  novoNegocioEtapaId?: string | null
+  onNovoNegocioEtapa?: (stageId: string | null) => void
+  novoContatoAberto?: boolean
+  onNovoContato?: (aberto: boolean) => void
 }
 
 /**
@@ -30,14 +50,33 @@ interface PipelineBoardTabProps {
  * motivo, "Novo negócio", "Adicionar contato ao funil") vive aqui agora —
  * fora do contexto da tabela de contatos, que não é mais irmã dela na tela.
  */
-export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged }: PipelineBoardTabProps) {
+export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, novoNegocioEtapaId, onNovoNegocioEtapa, novoContatoAberto, onNovoContato }: PipelineBoardTabProps) {
   const { toast } = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
   const { openDeal } = useDealPanel()
   const { users } = useTagsAndUsers()
+  /**
+   * Busca com respiro: cada tecla mudaria o filtro e o `useKanbanDeals` refaz a
+   * consulta do quadro inteiro a cada mudança. 250 ms transformam "negócio" em
+   * uma requisição em vez de oito, sem atraso perceptível para quem digita.
+   * A tela de Contatos ainda dispara por tecla; aqui o volume por consulta é
+   * maior (todos os negócios do funil de uma vez) e não valia repetir.
+   */
+  const [buscaComRespiro, setBuscaComRespiro] = useState(search ?? '')
+  useEffect(() => {
+    const t = setTimeout(() => setBuscaComRespiro(search ?? ''), 250)
+    return () => clearTimeout(t)
+  }, [search])
+
+  const filtros = useMemo(
+    () => ({ search: buscaComRespiro.trim() || undefined }),
+    [buscaComRespiro],
+  )
+
   const {
     dealsByStage, loading, error, moveStage, movePipeline, refetch,
-  } = useKanbanDeals(pipeline.id)
+  } = useKanbanDeals(pipeline.id, filtros)
   /**
    * C2 (SCRUM-933): filtro "com mais de um aberto". Só existe em funil com
    * `allowMultipleOpen` — onde a I1 ainda vale, todo contato tem no máximo um
@@ -69,7 +108,11 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged }: Pipeli
   const isProcess = pipelineKindOf(pipeline) === 'process'
 
   const [closeDealTarget, setCloseDealTarget] = useState<{ deal: Deal; stage: PipelineStage } | null>(null)
-  const [newDealStageId, setNewDealStageId] = useState<string | null>(null)
+  // Controlado pela página quando ela passa os pares; local quando não passa
+  // (o componente continua utilizável sozinho, e os testes existentes não mudam).
+  const [newDealStageIdLocal, setNewDealStageIdLocal] = useState<string | null>(null)
+  const newDealStageId = novoNegocioEtapaId !== undefined ? novoNegocioEtapaId : newDealStageIdLocal
+  const setNewDealStageId = onNovoNegocioEtapa ?? setNewDealStageIdLocal
   // B2 (SCRUM-928): `?deal=<id>` — mesmo deep link que o antigo /contacts?pipeline=
   // usava pra realçar o card. Capturado uma vez (lazy initializer): o
   // DealPanelContext global consome e limpa o MESMO param pra abrir a ficha;
@@ -77,7 +120,9 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged }: Pipeli
   // que a ficha abrisse.
   const [searchParams] = useSearchParams()
   const [highlightDealId] = useState<string | null>(() => searchParams.get('deal'))
-  const [showNewContact, setShowNewContact] = useState(false)
+  const [showNewContactLocal, setShowNewContactLocal] = useState(false)
+  const showNewContact = novoContatoAberto !== undefined ? novoContatoAberto : showNewContactLocal
+  const setShowNewContact = onNovoContato ?? setShowNewContactLocal
 
   const handleMoveDeal = (deal: Deal, toStageId: string) => {
     const stage = sortedStages.find((st) => st.id === toStageId)
@@ -121,7 +166,14 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged }: Pipeli
     // Board isolado (sem drawer de contato irmão na mesma tela) — a ficha
     // completa é o destino natural aqui, ao contrário do antigo
     // /contacts?pipeline= (que abria o drawer quick-view da própria página).
-    navigate(`/contacts/${contactId}`)
+    //
+    // `voltarPara` leva o endereço EXATO de onde se saiu (com a aba do funil na
+    // querystring): o "Voltar" da ficha tem como padrão a lista de contatos, e
+    // sem isso quem entrou por um card do quadro era despejado no CRM — uma
+    // tela em que nunca esteve.
+    navigate(`/contacts/${contactId}`, {
+      state: { voltarPara: `${location.pathname}${location.search}`, voltarLabel: 'Voltar para o funil' },
+    })
   }
 
   const createContact = async (dto: Parameters<typeof contactsApi.create>[0]): Promise<Contact> => {

@@ -107,8 +107,10 @@ function InlineEdit({
           onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
           className="bg-surface-800 border border-brand-500/50 rounded-lg px-2 py-1 text-sm font-semibold text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
         />
-        <button onClick={handleSave} disabled={saving} className="p-1 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 transition">
-          <Check className="w-3.5 h-3.5 text-white" />
+        <button onClick={handleSave} disabled={saving} className="p-1 rounded-lg bg-surface-100 hover:bg-surface-50 disabled:opacity-50 transition">
+          {/* O disco do botão virou claro (10/09) — o ícone tinha de sair do
+              branco junto, senão some no próprio fundo. */}
+          <Check className="w-3.5 h-3.5 text-surface-950" />
         </button>
         <button onClick={() => { setDraft(value); setEditing(false) }} className="p-1 rounded-lg hover:bg-surface-700 transition">
           <X className="w-3.5 h-3.5 text-surface-400" />
@@ -497,7 +499,7 @@ function SystemPromptTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onU
             saved
               ? 'bg-status-active-bg text-status-active ring-1 ring-status-active-border'
               : isDirty
-                ? 'bg-brand-600 hover:bg-brand-500 text-surface-950'
+                ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
                 : 'bg-surface-800 text-surface-600 cursor-not-allowed',
           )}
         >
@@ -622,7 +624,7 @@ function ToolForm({
         <button
           onClick={handleSave}
           disabled={!form.name || !form.url || saving}
-          className="flex-1 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-surface-950 text-sm font-medium transition"
+          className="flex-1 px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-50 disabled:opacity-50 text-surface-950 text-sm font-medium transition"
         >
           {saving ? 'Salvando…' : 'Salvar ferramenta'}
         </button>
@@ -1674,7 +1676,7 @@ function FaqRuleForm({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium transition disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-100 hover:bg-surface-50 text-surface-950 text-xs font-medium transition disabled:opacity-50"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
           Salvar

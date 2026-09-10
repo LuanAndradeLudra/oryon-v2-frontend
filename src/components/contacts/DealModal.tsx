@@ -429,7 +429,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                 <button
                   onClick={() => handleSave(true)}
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
                 >
                   {saving ? 'Salvando...' : 'Vincular e atualizar valor'}
                 </button>
@@ -438,7 +438,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
               <button
                 onClick={() => handleSave()}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
               >
                 {saving ? 'Salvando...' : editDeal ? 'Salvar' : 'Criar'}
               </button>

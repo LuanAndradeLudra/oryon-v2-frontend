@@ -161,6 +161,7 @@ function UserFooter({
             name={name}
             imageUrl={currentUser?.avatarUrl}
             size="sm"
+            kind="operator"
           />
           <AnimatePresence>
             {(!animate || open) && (

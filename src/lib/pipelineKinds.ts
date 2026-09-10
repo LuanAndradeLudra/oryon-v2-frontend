@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react'
 import { Target, Repeat, type LucideIcon } from 'lucide-react'
+import { FEATURE_FLAGS } from '@/config/featureFlags'
 import type { Pipeline, PipelineKind, TerminalLabels } from '@/types'
 
 /**
@@ -45,6 +47,34 @@ export const PIPELINE_KIND_OPTIONS: ReadonlyArray<PipelineKindOption> = [
     nounPlural: 'registros',
   },
 ]
+
+/**
+ * Tipos OFERECIDOS na criação de um funil — subconjunto de
+ * `PIPELINE_KIND_OPTIONS`, filtrado pela flag `processPipelines`.
+ *
+ * A distinção importa: `PIPELINE_KIND_OPTIONS` é o dicionário de LEITURA (todo
+ * funil que já existe precisa achar o vocabulário dele aqui, inclusive os de
+ * processo criados antes da flag); esta é a lista de ESCOLHA. Desligar a flag
+ * fecha a porta de entrada sem apagar o dicionário.
+ */
+export const CREATABLE_PIPELINE_KIND_OPTIONS: ReadonlyArray<PipelineKindOption> =
+  PIPELINE_KIND_OPTIONS.filter((o) => o.kind !== 'process' || FEATURE_FLAGS.processPipelines)
+
+/**
+ * Selo das etapas terminais (Ganho/Perdido, Concluído/Cancelado).
+ *
+ * Aparece em TRÊS telas — cabeçalho da coluna no quadro, lista de etapas nas
+ * configurações e rascunho no "Novo funil" — e as três precisam do mesmo peso.
+ * Ficou aqui, junto do vocabulário dos terminais, porque já se provou que três
+ * cópias soltas divergem: ajustar o tom numa deixou as outras duas para trás.
+ *
+ * O `--chip-mix` mais fundo no de ganho é deliberado: nessas três telas o selo
+ * é anotação ao lado do nome da etapa, não o assunto da linha.
+ */
+export const TERMINAL_CHIP_STYLE: Record<'won' | 'lost', CSSProperties> = {
+  won: { ['--chip']: 'var(--color-success)', ['--chip-mix']: '70%' } as CSSProperties,
+  lost: { ['--chip']: 'var(--color-danger)' } as CSSProperties,
+}
 
 export function pipelineKindOption(kind: PipelineKind | undefined | null): PipelineKindOption {
   return PIPELINE_KIND_OPTIONS.find((o) => o.kind === (kind ?? DEFAULT_PIPELINE_KIND)) ?? PIPELINE_KIND_OPTIONS[0]

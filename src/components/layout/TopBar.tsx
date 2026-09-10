@@ -7,7 +7,7 @@ import {
   Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2,
   Smartphone, CreditCard, UserPlus, Zap, X, Tag, Clock,
   Filter, Download, PlusCircle, ArrowRight, ChevronRight,
-  LayoutGrid, List, KanbanSquare, FileText, Inbox,
+  LayoutGrid, KanbanSquare, FileText, Inbox,
   Globe, Users2, BellRing, Plug, BookOpen,
   AlertCircle, AtSign, Megaphone as MegaphoneIcon, ShieldAlert, UserCheck,
 } from 'lucide-react'
@@ -46,6 +46,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/conversations': 'Conversas',
   '/dashboard': 'Relatórios',
   '/contacts': 'Contatos',
+  '/pipelines': 'Funis',
   '/campaigns': 'Disparos',
   '/marketing': 'Marketing',
   '/automations': 'Automações',
@@ -63,7 +64,10 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/home': 'Seu dia num relance',
   '/conversations': 'Chat com clientes',
   '/dashboard': 'Relatórios e análises',
-  '/contacts': 'CRM e pipeline',
+  // O funil saiu daqui (D2 · SCRUM-935): virou /pipelines, com página e
+  // subtítulo próprios. Prometer "pipeline" nesta tela virou promessa falsa.
+  '/contacts': 'Base de clientes',
+  '/pipelines': 'Negócios por etapa',
   '/campaigns': 'Campanhas em massa',
   '/marketing': 'Estratégia e canais',
   '/automations': 'Fluxos automáticos',
@@ -94,7 +98,11 @@ const SEARCH_INDEX = ([
   { type: 'page', label: 'Home', description: 'Visão geral e atalhos rápidos', href: '/home', Icon: Home, keywords: ['início', 'painel', 'overview'] },
   { type: 'page', label: 'Conversas', description: 'Atendimento via WhatsApp', href: '/conversations', Icon: MessageSquare, keywords: ['whatsapp', 'chat', 'atendimento', 'mensagens'] },
   { type: 'page', label: 'Relatórios', description: 'Métricas, análises e KPIs', href: '/dashboard', Icon: BarChart3, keywords: ['dashboard', 'métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
-  { type: 'page', label: 'Contatos', description: 'CRM e situação dos contatos', href: '/contacts', Icon: Users, keywords: ['crm', 'leads', 'clientes', 'pipeline', 'kanban'] },
+  { type: 'page', label: 'Contatos', description: 'CRM e situação dos contatos', href: '/contacts', Icon: Users, keywords: ['crm', 'leads', 'clientes', 'base'] },
+  // 'pipeline'/'kanban'/'funil' migraram de Contatos para cá junto com a tela
+  // (D2 · SCRUM-935): quem busca por essas palavras quer o quadro, e ele não
+  // mora mais em /contacts.
+  { type: 'page', label: 'Funis', description: 'Quadro de negócios por etapa', href: '/pipelines', Icon: KanbanSquare, keywords: ['funil', 'pipeline', 'kanban', 'board', 'negócios', 'quadro'] },
   { type: 'page', label: 'Disparos', description: 'Campanhas de mensagens em massa', href: '/campaigns', Icon: Send, keywords: ['campanhas', 'broadcast', 'envio', 'massa'] },
   { type: 'page', label: 'Marketing', description: 'Meta Ads e funil de conversão', href: '/marketing', Icon: Megaphone, keywords: ['meta', 'ads', 'facebook', 'instagram', 'funil', 'tráfego'] },
   { type: 'page', label: 'Automações', description: 'Fluxos e regras automáticas', href: '/automations', Icon: Workflow, keywords: ['fluxo', 'regras', 'bot', 'trigger', 'automático'] },
@@ -111,8 +119,9 @@ const SEARCH_INDEX = ([
   // ── Ações em Contatos
   { type: 'action', label: 'Novo contato', description: 'Criar um contato manualmente', href: '/contacts', Icon: PlusCircle, keywords: ['criar', 'adicionar', 'novo', 'lead'] },
   { type: 'action', label: 'Importar contatos', description: 'Importar via CSV ou planilha', href: '/contacts', Icon: Download, keywords: ['importar', 'csv', 'planilha', 'upload'] },
-  { type: 'action', label: 'Contatos — vista lista', description: 'Ver contatos em formato lista', href: '/contacts', Icon: List, keywords: ['lista', 'tabela', 'view'] },
-  { type: 'action', label: 'Contatos — vista kanban', description: 'Ver pipeline em kanban', href: '/contacts', Icon: KanbanSquare, keywords: ['kanban', 'pipeline', 'board'] },
+  // As duas ações de 'vista' (lista × kanban) saíram: o segmented control que
+  // as ligava não existe mais em /contacts — a lista é a única vista, e o
+  // quadro virou /pipelines. Levavam a /contacts e não faziam nada.
   { type: 'action', label: 'Segmentos de contatos', description: 'Criar segmentos e grupos', href: '/contacts', Icon: Users2, keywords: ['segmento', 'grupo', 'filtro'] },
 
   // ── Ações em Disparos

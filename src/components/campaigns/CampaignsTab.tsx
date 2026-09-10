@@ -129,7 +129,11 @@ export function CampaignsTab() {
 
         <div className="flex-1" />
 
+        {/* `neutral` no lugar do teal (10/09): mesma conversão dos botões de
+            criação do funil. O teal aqui não dizia "importante", dizia "botão" —
+            e ele já é o único elemento cheio da barra. */}
         <Button
+          variant="neutral"
           onClick={() => hasWhatsappLine && setWizardOpen(true)}
           disabled={!hasWhatsappLine}
           title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar campanhas' : undefined}
@@ -353,6 +357,7 @@ function CampaignCard({
           )}
           {canSend && (
             <Button
+              variant="neutral"
               size="sm"
               onClick={onSend}
               loading={sending}

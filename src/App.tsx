@@ -57,7 +57,6 @@ import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
-const DealDetailPage    = lazyRoute(() => import('@/pages/DealDetailPage').then(m => ({ default: m.DealDetailPage })))
 const PipelinePage      = lazyRoute(() => import('@/pages/PipelinePage').then(m => ({ default: m.PipelinePage })))
 const PipelinesIndexPage = lazyRoute(() => import('@/pages/PipelinesIndexPage').then(m => ({ default: m.PipelinesIndexPage })))
 const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
@@ -163,12 +162,7 @@ function AnimatedRoutes() {
   // vice-versa no voltar.
   const routeKey = segments[1] === 'contacts' && segments[2]
     ? '/contacts/:id'
-    // B2 (SCRUM-928): mesmo crossfade suave do perfil do contato — o painel
-    // da ficha (aberto de /conversations ou /contacts) "Expande" para
-    // /deals/:id, e o botão Voltar faz o caminho inverso.
-    : segments[1] === 'deals' && segments[2]
-      ? '/deals/:id'
-      : '/' + segments[1]
+    : '/' + segments[1]
 
   return (
     <AnimatePresence initial={false}>
@@ -223,13 +217,6 @@ function AnimatedRoutes() {
               permanece como quick-view; esta rota é o deep-dive expandido. */}
           <Route path="/contacts/:id" element={
             <ProtectedRoute><ContactProfilePage /></ProtectedRoute>
-          } />
-          {/* B2 (SCRUM-928) — ficha do negócio como PÁGINA (deep link
-              compartilhável); o mesmo componente abre como PAINEL (via
-              DealPanelProvider, montado abaixo) de dentro de /conversations
-              e /contacts?pipeline=, sem navegar. */}
-          <Route path="/deals/:id" element={
-            <ProtectedRoute><DealDetailPage /></ProtectedRoute>
           } />
           {/* D2 (SCRUM-935) — entrada "Funis" da navegação: /pipelines cai no
               funil padrão do tenant; /pipelines/:id é o board+relatórios. */}

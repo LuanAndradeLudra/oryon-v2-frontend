@@ -11,7 +11,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { DealDetailPanel } from '@/components/deals/DealDetailPanel'
 
 interface DealPanelContextValue {
@@ -41,6 +41,7 @@ export function useDealPanel(): DealPanelContextValue {
 export function DealPanelProvider({ children }: { children: ReactNode }) {
   const [openDealId, setOpenDealId] = useState<string | null>(null)
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const conversationOpenerRef = useRef<((conversationId: string) => void) | null>(null)
 
@@ -100,7 +101,7 @@ export function DealPanelProvider({ children }: { children: ReactNode }) {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-                className="fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-50 bg-surface-950 border-l overlay-frame flex flex-col"
+                className="drawer-invertido fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-50 bg-surface-950 border-l overlay-frame flex flex-col"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Ficha do negócio"
@@ -108,7 +109,15 @@ export function DealPanelProvider({ children }: { children: ReactNode }) {
                 <DealDetailPanel
                   dealId={openDealId}
                   onClose={closeDeal}
-                  onExpand={(id) => { closeDeal(); navigate(`/deals/${id}`) }}
+                  /* "No funil": leva ao QUADRO do funil do negócio, com a ficha
+                     pedida na URL (`?deal=`) — o mesmo contrato que o painel do
+                     contato já usa. A ficha NÃO fecha: quem chega quer ver o
+                     card no lugar dele, com o contexto ainda aberto por cima.
+
+                     `replace: false` de propósito — é uma ida de verdade, e o
+                     "voltar" do navegador precisa devolver a tela de origem. */
+                  onOpenBoard={(deal) => navigate(`/pipelines/${deal.pipelineId}?deal=${deal.id}`)}
+                  rotaAtual={location.pathname}
                 />
               </motion.div>
             </>

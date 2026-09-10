@@ -1,6 +1,9 @@
-// B2 (SCRUM-928) — a ficha do negócio. Mesmo componente serve de PÁGINA
-// (/deals/:id) e de PAINEL LATERAL (DealPanelContext) — quem chama decide
-// via `onClose`/`onExpand` (presentes = modo painel; ausentes = página).
+// B2 (SCRUM-928) — a ficha do negócio, sempre em PAINEL LATERAL
+// (DealPanelContext). Serviu também de página em `/deals/:id` até 10/09, mas
+// aquela rota era a mesma ficha ocupando a tela inteira e ficou sem nenhum link
+// quando o botão "Expandir" saiu; foi removida. As props de painel
+// (`onClose`/`onOpenBoard`) continuam opcionais — o componente não depende do
+// contexto que o monta.
 // Espelha a estrutura de `ContactDetailPanel.tsx` (header + tabs + corpo),
 // com dados próprios: `GET /deals/:id` não vem enriquecido (kind/terminalLabels/
 // probabilidade efetiva/ator do último movimento) como o board vem — a ficha
@@ -14,20 +17,31 @@ import { useToast } from '@/hooks/useToast'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { getApiErrorMessage } from '@/lib/utils'
 import { movedByLabel } from '@/lib/contactPipelines'
+import { pipelineNoun } from '@/lib/pipelineKinds'
 import { DealDetailHeader } from './DealDetailHeader'
 import { DealSummaryTab } from './tabs/DealSummaryTab'
 import { DealActivityTab } from './tabs/DealActivityTab'
 import { DealConversationsTab } from './tabs/DealConversationsTab'
 import type { Deal, DealStageHistoryEntry, PipelineStage, User } from '@/types'
 
-type TabId = 'summary' | 'activity' | 'conversations' | 'proposal'
+type TabId = 'summary' | 'activity' | 'conversations'
 
 interface DealDetailPanelProps {
   dealId: string
   /** Presente = modo painel (drawer): mostra botão fechar. */
   onClose?: () => void
-  /** Presente = oferece "Expandir" para a página /deals/:id. */
-  onExpand?: (dealId: string) => void
+  /** Presente = oferece "No funil": leva ao quadro com a ficha em cima. */
+  onOpenBoard?: (deal: Deal) => void
+  /**
+   * `pathname` de quem está mostrando a ficha. Serve a uma coisa só: esconder
+   * o "No funil" quando ele levaria para a tela em que já se está.
+   *
+   * Vem por PROP, e não de `useLocation()` aqui dentro, porque nem este
+   * componente nem o cabeçalho conhecem o router — vários testes os montam sem
+   * `MemoryRouter`, e a página `/deals/:id` os usa fora de qualquer contexto de
+   * painel. Quem tem a rota é quem abre o painel.
+   */
+  rotaAtual?: string
 }
 
 function statusFromError(err: unknown): 404 | 403 | 'other' {
@@ -37,7 +51,7 @@ function statusFromError(err: unknown): 404 | 403 | 'other' {
   return 'other'
 }
 
-export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelProps) {
+export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: DealDetailPanelProps) {
   const { pipelines } = useCRMConfig()
   const { toast } = useToast()
   const [deal, setDeal] = useState<Deal | null>(null)
@@ -102,6 +116,17 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
   }, [deal, loadDeal, loadHistory])
 
   const pipeline = deal ? pipelines.find((p) => p.id === deal.pipelineId) ?? null : null
+  /**
+   * O substantivo do tipo, em toda mensagem que o operador lê.
+   *
+   * A ficha dizia "negócio" em 21 lugares — toast, `aria-label`, estado de
+   * erro —, inclusive num funil de PROCESSO, onde o objeto se chama registro.
+   * `pipelineNoun` já existia e resolvia isso desde o Modelo B (§4.2); esta
+   * tela simplesmente não o usava. Sem funil carregado o fallback é "negócio",
+   * que é o default do tenant.
+   */
+  const noun = pipelineNoun(pipeline)
+  const Noun = noun.charAt(0).toUpperCase() + noun.slice(1)
 
   const handlePatch = useCallback(async (patch: Partial<Deal> & { updateAmount?: boolean }) => {
     if (!deal) return
@@ -123,14 +148,28 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
       return
     }
     const previousStageId = deal.stageId
-    setDeal({ ...deal, stageId: stage.id, status: 'open' })
-    dealsApi.setStatus(deal.id, { status: 'open', stageId: stage.id })
+    setDeal({ ...deal, stageId: stage.id })
+    /**
+     * `PATCH /deals/:id/stage` — mover é mover.
+     *
+     * Aqui ia `PATCH /deals/:id/status` com `status: 'open'`, desde a B2
+     * (SCRUM-928). Esse endpoint é o comando de REABRIR, e o backend o rejeita
+     * com `not_closed` quando o registro já está aberto
+     * (`pipeline-items.service.ts`). Como os dois gestos que chegam aqui — o
+     * stepper e o menu "Mover" — só existem com `status === 'open'`, a troca
+     * de etapa devolvia 400 SEMPRE. É o mesmo endpoint que o painel do contato
+     * já usava (`useContactPipelines.moveTo`).
+     *
+     * Etapa terminal não passa por aqui: sai antes, para o modal de motivo —
+     * o backend exige `closeReason` e devolveria 400 `close_reason_required`.
+     */
+    dealsApi.moveStage(deal.id, stage.id)
       .then((res) => setDeal(res.data))
       .catch((err: unknown) => {
         setDeal((d) => (d ? { ...d, stageId: previousStageId } : d))
-        toast(getApiErrorMessage(err, 'Não foi possível mover o negócio.'), 'error')
+        toast(getApiErrorMessage(err, `Não foi possível mover o ${noun}.`), 'error')
       })
-  }, [deal, toast])
+  }, [deal, toast, noun])
 
   const handleCloseWithReason = useCallback(async (input: CloseDealReasonInput) => {
     if (!closeTarget) return
@@ -142,21 +181,21 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
     setDeal(res.data)
     setCloseTarget(null)
     loadHistory()
-    toast(`Negócio marcado como ${stage.label}.`, 'success')
-  }, [closeTarget, loadHistory, toast])
+    toast(`${Noun} marcado como ${stage.label}.`, 'success')
+  }, [closeTarget, loadHistory, toast, Noun])
 
   const handleTransferPipeline = useCallback((pipelineId: string) => {
     if (!deal) return
     dealsApi.movePipeline(deal.id, pipelineId)
-      .then((res) => { setDeal(res.data); toast('Negócio transferido de funil.', 'success') })
-      .catch((err: unknown) => toast(getApiErrorMessage(err, 'Não foi possível transferir o negócio.'), 'error'))
+      .then((res) => { setDeal(res.data); toast(`${Noun} transferido de funil.`, 'success') })
+      .catch((err: unknown) => toast(getApiErrorMessage(err, `Não foi possível transferir o ${noun}.`), 'error'))
   }, [deal, toast])
 
   const handleDelete = useCallback(() => {
     if (!deal) return
     dealsApi.remove(deal.id)
-      .then(() => { toast('Negócio excluído.', 'success'); onClose?.() })
-      .catch((err: unknown) => toast(getApiErrorMessage(err, 'Não foi possível excluir o negócio.'), 'error'))
+      .then(() => { toast(`${Noun} excluído.`, 'success'); onClose?.() })
+      .catch((err: unknown) => toast(getApiErrorMessage(err, `Não foi possível excluir o ${noun}.`), 'error'))
   }, [deal, toast, onClose])
 
   const lastEntry = Array.isArray(history) ? history[history.length - 1] : null
@@ -176,8 +215,8 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
     return (
       <EmptyState
         icon={AlertTriangle}
-        title="Negócio não encontrado"
-        description="Este negócio não existe, foi excluído, ou está fora do seu setor."
+        title={`${Noun} não encontrado`}
+        description={`Este ${noun} não existe, foi excluído, ou está fora do seu setor.`}
         onClose={onClose}
       />
     )
@@ -188,7 +227,7 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
       <EmptyState
         icon={Lock}
         title="Sem acesso"
-        description="Você não tem acesso a este negócio — fale com um admin se acha que deveria ter."
+        description={`Você não tem acesso a este ${noun} — fale com um admin se acha que deveria ter.`}
         onClose={onClose}
       />
     )
@@ -199,7 +238,7 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
       <EmptyState
         icon={AlertTriangle}
         title="Erro ao carregar"
-        description="Não foi possível carregar este negócio. Tente novamente."
+        description={`Não foi possível carregar este ${noun}. Tente novamente.`}
         onClose={onClose}
       />
     )
@@ -215,11 +254,21 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
     )
   }
 
-  const TABS: { id: TabId; label: string; disabled?: boolean }[] = [
+  /**
+   * A aba "Proposta" saiu (10/09). Ela nascia `disabled: true` e nunca teve
+   * conteúdo — nenhum renderizador, nenhum tipo, nenhuma rota; a única
+   * ocorrência da palavra em todo o código-fonte era a própria aba.
+   *
+   * Não era um recurso escondido atrás de permissão ou de flag: era um lugar
+   * reservado para algo que não existe. E um destino permanentemente cinza
+   * custa mais do que não existir — anuncia uma capacidade que o produto não
+   * tem e faz o operador achar que perdeu um acesso. Se a proposta vier a ser
+   * construída, o lugar de reservá-la é o backlog, não a barra de abas.
+   */
+  const TABS: { id: TabId; label: string }[] = [
     { id: 'summary', label: 'Resumo' },
     { id: 'activity', label: 'Atividade' },
     { id: 'conversations', label: 'Conversas' },
-    { id: 'proposal', label: 'Proposta', disabled: true },
   ]
 
   return (
@@ -230,12 +279,17 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
         pipelines={pipelines}
         users={users}
         lastMovedLabel={lastMovedLabel}
+        history={Array.isArray(history) ? history : null}
         onPatch={handlePatch}
         onMoveToStage={handleMoveToStage}
         onTransferPipeline={handleTransferPipeline}
         onDelete={handleDelete}
         onClose={onClose}
-        onExpand={onExpand ? () => onExpand(dealId) : undefined}
+        /* Some quando a ficha já está aberta SOBRE o quadro daquele negócio —
+           ali o botão levaria para onde já se está. Compara o funil do NEGÓCIO,
+           não só "estou em /pipelines": aberta a ficha de um negócio de outro
+           funil (busca, chip do contato), o botão continua valendo. */
+        onOpenBoard={onOpenBoard && deal && rotaAtual !== `/pipelines/${deal.pipelineId}` ? () => onOpenBoard(deal) : undefined}
       />
 
       <div className="flex px-5 flex-shrink-0 border-b border-surface-800">
@@ -243,10 +297,9 @@ export function DealDetailPanel({ dealId, onClose, onExpand }: DealDetailPanelPr
           <button
             key={tab.id}
             type="button"
-            disabled={tab.disabled}
             onClick={() => setActiveTab(tab.id)}
             data-testid={`deal-tab-${tab.id}`}
-            className="relative pb-3 pt-3 mr-5 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="relative pb-3 pt-3 mr-5 text-sm font-medium transition-colors"
             style={{ color: activeTab === tab.id ? 'var(--color-brand-400, #818cf8)' : 'var(--color-surface-400, #94a3b8)' }}
           >
             {tab.label}

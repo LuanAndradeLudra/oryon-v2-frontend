@@ -186,19 +186,32 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             classify the conversation, ghost icons+text for live state. */}
         <div className="flex items-center gap-1.5 mt-1.5">
           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-            {tags?.slice(0, 2).map((tag) => (
+            {/* Etiquetas como PONTO, não como pílula preenchida.
+                A cor da etiqueta é escolhida pelo tenant e costuma vir
+                saturada; a pílula preenchida amplificava isso duas vezes por
+                linha, vinte linhas na tela. O ponto de 6 px preserva o código
+                de cor — quem navega por ele continua navegando — e devolve a
+                saturação aos sinais de ESTADO, que são os únicos que exigem
+                ação. O nome completo vive no painel do contato, que desde
+                09/09 é o dono das etiquetas. */}
+            {tags && tags.length > 0 && (
               <span
-                key={tag.id}
-                className="color-chip inline-flex items-center gap-1 whitespace-nowrap text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                style={{ ['--chip']: tag.color } as React.CSSProperties}
+                className="inline-flex items-center gap-1.5 min-w-0"
+                title={tags.map((t) => t.name).join(' · ')}
               >
-                <span className="w-1.5 h-1.5 rounded-full chip-dot" />
-                {tag.name}
+                {tags.slice(0, 2).map((tag) => (
+                  <i
+                    key={tag.id}
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: tag.color }}
+                    aria-hidden
+                  />
+                ))}
+                <span className="text-[10.5px] text-surface-500 truncate">
+                  {tags.slice(0, 2).map((t) => t.name).join(', ')}
+                  {tags.length > 2 && ` +${tags.length - 2}`}
+                </span>
               </span>
-            ))}
-
-            {tags && tags.length > 2 && (
-              <span className="text-[10px] text-surface-500">+{tags.length - 2}</span>
             )}
 
             {/* Phase 33c — selo de verificação. Desde o Verification Gateway o

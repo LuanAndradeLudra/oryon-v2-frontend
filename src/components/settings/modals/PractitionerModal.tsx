@@ -124,7 +124,7 @@ export function PractitionerModal({ open, onClose, onSave, editPractitioner }: P
           <Button variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
-          <Button variant="primary" onClick={handleSave} disabled={saving || hasLimitError}>
+          <Button variant="neutral" onClick={handleSave} disabled={saving || hasLimitError}>
             {saving ? 'Salvando...' : editPractitioner ? 'Salvar alterações' : 'Criar profissional'}
           </Button>
         </div>

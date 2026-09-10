@@ -301,7 +301,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
                     isPicked ? 'bg-surface-700 text-surface-100' : 'text-surface-200 hover:bg-surface-700/60',
                   )}
                 >
-                  <Avatar name={full || u.email} size="xs" />
+                  <Avatar name={full || u.email} size="xs" kind="operator" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium truncate">{full || u.email}</p>
                     <p className="text-[10px] text-surface-500 truncate">{u.email}</p>

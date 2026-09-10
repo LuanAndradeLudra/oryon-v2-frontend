@@ -9,7 +9,9 @@ import { Banner, type BannerVariant } from './Banner'
 interface ModalProps {
   open: boolean
   onClose: () => void
-  title: string
+  /** Título. Aceita nós para cabeçalhos com ícone e linha de contexto.
+   *  Quando vem string, o Modal aplica a tipografia padrão. */
+  title: ReactNode
   children: ReactNode
   /**
    * Optional footer rendered as a sticky bar below the scrollable body. When
@@ -28,6 +30,13 @@ interface ModalProps {
    */
   fillHeight?: boolean
   className?: string
+  /**
+   * Substitui o recuo padrão do corpo. Use `p-0` quando o conteúdo precisar
+   * encostar nas bordas — uma faixa de largura inteira sob o cabeçalho, uma
+   * coluna com fundo próprio. Aí o consumidor passa a ser o dono de todo o
+   * espaçamento interno.
+   */
+  bodyClassName?: string
 }
 
 /**
@@ -44,7 +53,7 @@ interface ModalProps {
  *    independently. Large content (e.g. the 6k-char system prompt review)
  *    used to push the footer off-screen, hiding the action buttons.
  */
-export function Modal({ open, onClose, title, children, footer, fillHeight, className }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, fillHeight, className, bodyClassName }: ModalProps) {
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -96,8 +105,10 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
             transition={{ duration: 0.18, ease: 'easeOut' }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
-              <h2 className="text-base font-display font-semibold text-surface-50">{title}</h2>
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
+              {typeof title === 'string'
+                ? <h2 className="text-base font-display font-semibold text-surface-50">{title}</h2>
+                : title}
               <button
                 onClick={onClose}
                 aria-label="Fechar"
@@ -120,6 +131,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
               fillHeight
                 ? 'flex flex-col flex-1 min-h-0 overflow-hidden'
                 : 'overflow-y-auto flex-1 min-h-0',
+              bodyClassName,
             )}>
               {children}
             </div>

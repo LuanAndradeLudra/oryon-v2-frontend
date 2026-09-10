@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  variant?: 'primary' | 'neutral' | 'secondary' | 'ghost' | 'danger'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   leftIcon?: ReactNode
@@ -17,6 +17,20 @@ const variantStyles = {
     'focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'shadow-[0_6px_20px_rgba(20,184,166,0.35)] hover:shadow-[0_6px_24px_rgba(20,184,166,0.45)]',
     'disabled:bg-brand-700 disabled:text-surface-500 disabled:shadow-none',
+  ],
+  // Ação principal SEM cor de marca: fundo claro, texto escuro. A hierarquia
+  // vem do contraste, não do acento — o teal do `primary` puxa o olho mesmo
+  // quando a ação não é o assunto da tela.
+  //
+  // Funciona nos dois temas sem variante porque a escala de `surface` é
+  // invertida POR PAPEL: `surface-100` é o texto claro no escuro (#ECF1F1) e o
+  // texto escuro no claro (#1A1F2E), e `surface-950` é o chão dos dois. O par
+  // fundo/texto continua legível quando o tema vira.
+  neutral: [
+    'bg-surface-100 text-surface-950 font-semibold',
+    'hover:bg-surface-50',
+    'focus-visible:ring-2 focus-visible:ring-surface-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
+    'disabled:bg-surface-700 disabled:text-surface-500',
   ],
   secondary: [
     'bg-surface-800 text-surface-100 font-medium',

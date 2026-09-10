@@ -1,8 +1,10 @@
-import { useParams, Navigate } from 'react-router-dom'
+import { useParams, useSearchParams, Navigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 import { SettingsLayout, firstVisibleSection, MULTI_PIPELINE_SECTIONS } from '@/components/settings/SettingsLayout'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { destinoDeVolta } from '@/lib/voltarPara'
 import { DesktopRecommendedBanner } from '@/components/common/DesktopRecommendedBanner'
 import { useDesktopRecommendedBanner } from '@/hooks/useDesktopRecommendedBanner'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
@@ -33,11 +35,17 @@ import { PractitionersManager } from '@/components/settings/sections/crm/Practit
 import { PipelineRoutingSettings } from '@/components/settings/sections/crm/PipelineRoutingSettings'
 import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSettings'
 import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
+import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health', 'whatsapp-profile',
   'quick-replies', 'tags', 'billing', 'security', 'ad-accounts', 'vertical',
   'audit', 'crm-products', 'crm-practitioners', 'stages', 'pipeline-stages', 'pipeline-routing',
+  // Campos personalizados: o componente e a API (`/settings/custom-fields`)
+  // existiam, mas a única referência ao editor era um drawer sem gatilho —
+  // não havia NENHUMA forma de configurar campos pela interface. Ganha rota
+  // canônica aqui, junto do resto do CRM.
+  'custom-fields',
 ]
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
@@ -92,6 +100,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   'crm-products':   ProductsManager,
   'crm-practitioners': PractitionersManager,
   stages:           ContactStagesSettings,
+  'custom-fields':  CustomFieldsManager,
   'pipeline-stages': FunnelsSettings,
   'pipeline-routing': PipelineRoutingSettings,
 }
@@ -109,6 +118,8 @@ export function SettingsPage() {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   const { isFeatureVisible } = useFeatureVisibility()
+  const [searchParams] = useSearchParams()
+  const volta = destinoDeVolta(searchParams)
 
   // Settings é superfície de INTENÇÃO, não de browsing: quem entra já sabe o
   // que quer mudar. Sem hub/home — /settings cai direto na primeira seção
@@ -138,6 +149,23 @@ export function SettingsPage() {
 
   return (
     <SettingsLayout currentRole={user?.role ?? 'admin'} multiPipeline={multiPipeline}>
+      {/* Faixa de retorno — só aparece para quem chegou de um contexto de
+          trabalho (`?voltarPara=`). Quem entrou por Configurações não vê nada:
+          ali a tela É o destino, e um "voltar" apontando para lugar nenhum
+          seria pior que a ausência dele.
+
+          O endereço de volta carrega `pathname + search` da tela de origem,
+          então a volta devolve aba, filtro e seleção — não a rota crua. */}
+      {volta && (
+        <button
+          type="button"
+          onClick={() => navigate(volta.para)}
+          data-testid="settings-voltar"
+          className="inline-flex items-center gap-1.5 mb-4 text-xs font-medium text-surface-400 hover:text-surface-100 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> {volta.rotulo}
+        </button>
+      )}
       {showBanner && (
         <DesktopRecommendedBanner
           visible

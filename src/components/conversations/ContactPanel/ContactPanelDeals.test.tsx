@@ -1,11 +1,13 @@
 // B3 (SCRUM-929) — painel do contato (Conversas) na densidade `row` do
-// `DealSummary` compartilhado: uma linha por registro aberto com funil, tipo,
-// etapa e "Mover etapa ▾"; "Em aberto"/"Ganho" somam só registro de VENDA
-// (a regra certa, que as outras 3 telas passaram a seguir também).
+// `DealSummary` compartilhado: uma linha por registro aberto com funil, tipo e
+// o seletor de etapa (o botão exibe a etapa ATUAL e abre o menu de troca);
+// "Em aberto"/"Ganho" somam só registro de VENDA (a regra certa, que as outras
+// 3 telas passaram a seguir também).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-const { api, openDeal, multi, socket } = vi.hoisted(() => ({
+const { api, openDeal, multi, socket, navigate } = vi.hoisted(() => ({
+  navigate: vi.fn(),
   api: { list: vi.fn(), moveStage: vi.fn(), setStatus: vi.fn(), history: vi.fn() },
   openDeal: vi.fn(),
   multi: vi.fn(() => true),
@@ -13,7 +15,7 @@ const { api, openDeal, multi, socket } = vi.hoisted(() => ({
 }))
 vi.mock('@/services/api', () => ({ dealsApi: api }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
+vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }))
 vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => multi() }))
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
@@ -41,7 +43,7 @@ const VENDA_GANHA: Deal = { ...base, id: 'd3', pipelineId: 'v', stageId: 'v3', s
 
 beforeEach(() => {
   Object.values(api).forEach((m) => m.mockReset())
-  openDeal.mockReset(); multi.mockReturnValue(true)
+  openDeal.mockReset(); navigate.mockReset(); multi.mockReturnValue(true)
   api.moveStage.mockResolvedValue({ data: {} })
 })
 
@@ -58,6 +60,19 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
     const vendas = screen.getByTestId('panel-pipeline-v')
     expect(vendas).toHaveTextContent('Vendas')
     expect(screen.getByTestId('panel-pipeline-stage-v')).toHaveTextContent('Proposta')
+  })
+
+  // A etapa aparecia duas vezes na linha: rótulo à direita + o botão que a
+  // troca. Passou a ser uma coisa só — o botão É a etapa atual (10/09).
+  it('a etapa atual mora DENTRO do botão que abre o menu, e não em outro lugar', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    const botao = await screen.findByTestId('panel-pipeline-move-p')
+    expect(botao).toHaveTextContent('Em atendimento')
+    expect(botao).toContainElement(screen.getByTestId('panel-pipeline-stage-p'))
+    // O verbo sumiu da tela, mas continua sendo o nome acessível da ação.
+    expect(botao).toHaveAttribute('aria-label', 'Mover etapa — atual: Em atendimento')
+    expect(screen.queryByText('Mover etapa')).not.toBeInTheDocument()
   })
 
   it('"Em aberto"/"Ganho" somam só VENDA — processo nunca entra na conta', async () => {
@@ -92,6 +107,19 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
     expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('0 em aberto')
   })
 
+  it('o menu abre com a etapa atual destacada no topo, fora da lista de destinos', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    fireEvent.click(await screen.findByTestId('panel-pipeline-move-p'))
+
+    const atual = screen.getByTestId('panel-pipeline-current-p')
+    expect(atual).toHaveTextContent('Em atendimento')
+    expect(atual).toHaveTextContent('atual')
+    // Destaque, não destino: não é `menuitem` e não pode ser escolhida.
+    expect(atual).not.toHaveAttribute('role', 'menuitem')
+    expect(screen.queryByRole('menuitem', { name: /Em atendimento/ })).toBeNull()
+  })
+
   it('"Mover etapa" chama PATCH /deals/:id/stage; "Abrir" abre a ficha (B2/928)', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
     renderPanel()
@@ -101,5 +129,48 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
     await waitFor(() => expect(api.moveStage).toHaveBeenCalledWith('d1', 's1'))
     fireEvent.click(screen.getByTestId('panel-pipeline-board-p'))
     expect(openDeal).toHaveBeenCalledWith('d1')
+  })
+})
+
+// ─── "No funil" (09/09) ─────────────────────────────────────────────────────
+// A B2 (SCRUM-928) trocou "ver no board" pela ficha em painel, com um bom
+// motivo: navegar abandonava a conversa e o rascunho (F-CONV-29). O efeito
+// colateral foi perder a pergunta "ONDE ele está no meu funil" — que a ficha
+// sozinha não responde. As duas voltam a existir, e sair da tela é escolha.
+describe('ContactPanelDeals — ir ao quadro', () => {
+  it('leva ao funil do registro com a ficha pedida na URL', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByTestId('panel-pipeline-goboard-p')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('panel-pipeline-goboard-p'))
+    expect(navigate).toHaveBeenCalledWith('/pipelines/p?deal=d1')
+  })
+
+  // O botão "Abrir" saiu (09/09): o bloco INTEIRO é o alvo. O alvo esticado
+  // fica ATRÁS dos controles, então "Mover etapa" e "No funil" continuam
+  // recebendo o próprio clique.
+  it('clicar no bloco abre a ficha, sem sair da conversa', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByTestId('panel-pipeline-board-p')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Abrir' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('panel-pipeline-board-p'))
+    expect(openDeal).toHaveBeenCalledWith('d1')
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it('o alvo do bloco tem nome acessível com funil e etapa', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByTestId('panel-pipeline-board-p')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Abrir Suporte · Em atendimento' })).toBeInTheDocument()
+  })
+
+  it('clicar em "Mover etapa" NÃO abre a ficha', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByTestId('panel-pipeline-move-p')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('panel-pipeline-move-p'))
+    expect(openDeal).not.toHaveBeenCalled()
   })
 })

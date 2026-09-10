@@ -9,7 +9,7 @@ import { pipelinesApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { getApiErrorMessage, cn } from '@/lib/utils'
-import { pipelineKindOf, terminalLabelsOf } from '@/lib/pipelineKinds'
+import { pipelineKindOf, terminalLabelsOf, TERMINAL_CHIP_STYLE } from '@/lib/pipelineKinds'
 import type { Pipeline, PipelineStage } from '@/types'
 
 interface PipelineStagesManagerProps {
@@ -178,7 +178,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                     {stage.isWon && (
                       <span
                         className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border"
-                        style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
+                        style={TERMINAL_CHIP_STYLE.won}
                       >
                         <Trophy className="w-2.5 h-2.5" /> {terminalLabels.won}
                       </span>
@@ -186,7 +186,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                     {stage.isLost && (
                       <span
                         className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border"
-                        style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+                        style={TERMINAL_CHIP_STYLE.lost}
                       >
                         <X className="w-2.5 h-2.5" /> {terminalLabels.lost}
                       </span>

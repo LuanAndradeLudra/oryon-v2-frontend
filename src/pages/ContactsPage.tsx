@@ -9,11 +9,11 @@ import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
+import { CRMConfigDrawer } from '@/components/contacts/CRMConfigDrawer'
 import { ContactsTable } from '@/components/contacts/ContactsTable'
 import { ContactsMobileList } from '@/components/contacts/ContactsMobileList'
 import { ContactDetailPanel } from '@/components/contacts/ContactDetailPanel'
 import type { TabId } from '@/components/contacts/ContactDetailTabs'
-import { CRMConfigDrawer } from '@/components/contacts/CRMConfigDrawer'
 import { NewContactDrawer } from '@/components/contacts/NewContactDrawer'
 import { ImportContactsDrawer } from '@/components/contacts/ImportContactsDrawer'
 import { BulkActionBar } from '@/components/contacts/BulkActionBar'
@@ -180,8 +180,21 @@ export function ContactsPage() {
         {total.toLocaleString('pt-BR')}
       </span>
 
+      {/* Abre o DRAWER de configuração do CRM, não a página de Configurações.
+
+          Cheguei a trocar por atalhos para /settings, argumentando que duas
+          superfícies com as mesmas telas fazem as regras de permissão
+          divergirem. O PO preferiu o drawer, e a razão dele vence a minha: sair
+          da tela para criar UM campo custa o contexto inteiro do trabalho em
+          curso — a lista, os filtros, a rolagem —, e configuração de CRM é algo
+          que se faz no meio de outra coisa, quase nunca como destino.
+
+          As telas de dentro são os MESMOS componentes de /settings
+          (`StagesManager`, `CustomFieldsManager`), então não há duas
+          implementações: há duas portas para a mesma sala. */}
       <button
         onClick={() => setShowCRMConfig(true)}
+        data-testid="crm-config-link"
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors"
       >
         <Settings2 className="w-3.5 h-3.5" />
@@ -196,12 +209,17 @@ export function ContactsPage() {
       </button>
       <button
         onClick={() => setShowNewContact(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-colors shadow-sm"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-colors shadow-sm"
       >
         <Plus className="w-3.5 h-3.5" />
         Novo {vocab.contact}
       </button>
     </div>,
+    // ATENÇÃO: o nó é registrado na topbar por um efeito com dependências, e o
+    // que ela renderiza é a árvore capturada na última registração. Qualquer
+    // ESTADO que este bloco leia precisa entrar nesta lista, senão o controle
+    // fica congelado no valor antigo e o clique não faz nada visível — foi o
+    // que aconteceu quando o botão virou menu (10/09).
     [total, vocab.contact],
   )
 
@@ -488,7 +506,6 @@ export function ContactsPage() {
         pipelines={pipelines}
       />
 
-      {/* CRM Config Drawer */}
       <CRMConfigDrawer
         open={showCRMConfig}
         onClose={() => setShowCRMConfig(false)}

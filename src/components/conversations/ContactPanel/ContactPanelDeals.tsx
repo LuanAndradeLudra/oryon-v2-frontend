@@ -1,5 +1,13 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { KanbanSquare } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
+import { ConversationDealSelector } from '@/components/conversations/ChatWindow/ConversationDealSelector'
+import { needsDealSelector, selectableDeals, linkedDeal } from '@/lib/dealIndicator'
+import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
+import { useToast } from '@/hooks/useToast'
+import { dealsApi } from '@/services/api'
+import { getApiErrorMessage } from '@/lib/utils'
 import { DealSummary, useDealSummaryMove } from '@/components/deals/DealSummary'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useDealPanel } from '@/contexts/DealPanelContext'
@@ -38,6 +46,16 @@ import type { Deal, Pipeline, PipelineStage } from '@/types'
  * direto e transformava o conflito num erro cru — duas portas para a mesma
  * ação, uma delas errada.
  */
+/**
+ * C2 (SCRUM-933) — o seletor "negócio desta conversa" mudou de casa em 09/09.
+ *
+ * Ele morava no `ConversationDealIndicator`, no cabeçalho do chat. Com os chips
+ * de negócio saindo de lá (eram a mesma informação que esta seção, em dois
+ * lugares), o seletor viria junto — e ele não é enfeite: é o que grava
+ * `originConversationId` e decide em qual negócio a IA e o "resolver com
+ * desfecho" vão agir. Aqui ele fica ao lado da lista que ele desambigua, que é
+ * onde a pergunta faz sentido.
+ */
 export function ContactPanelDeals({
   contactId,
   contactName,
@@ -49,12 +67,51 @@ export function ContactPanelDeals({
   conversationId: string
 }) {
   const { openDeal } = useDealPanel()
+  const { toast } = useToast()
+  const navigate = useNavigate()
+
+  /**
+   * "No funil" — leva ao quadro do funil do registro, com a ficha aberta em
+   * cima (`?deal=`, consumido uma vez pela PipelinePage).
+   *
+   * Sai da conversa, e isso tem custo conhecido: o rascunho da mensagem se
+   * perde (F-CONV-29). Por isso ele é a AÇÃO SECUNDÁRIA — "Abrir" continua
+   * respondendo "o que é este negócio" sem tirar ninguém do lugar, e este
+   * responde "onde ele está", que é a pergunta que a ficha sozinha não
+   * respondia desde a B2 (SCRUM-928).
+   */
+  const irAoQuadro = (deal: Deal) => {
+    const pipeline = pipelineOf(deal)
+    if (!pipeline) return
+    navigate(`/pipelines/${pipeline.id}?deal=${deal.id}`)
+  }
   const {
     enabled, deals, open, closed, error, busyId, pipelines,
     closeTarget, setCloseTarget, history,
     pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName)
   const moveState = useDealSummaryMove()
+  const [linking, setLinking] = useState(false)
+
+  // Só existe com mais de um aberto no MESMO funil — o que só acontece em
+  // funil com multiplicidade (C1 · SCRUM-932). Sem isso não há ambiguidade.
+  const opcoes = selectableDeals(open, conversationId)
+  const mostraSeletor = needsDealSelector(open)
+  const vinculado = linkedDeal(open, conversationId)
+
+  const vincular = async (dealId: string) => {
+    setLinking(true)
+    try {
+      await dealsApi.linkConversation(dealId, conversationId)
+      reload()
+      // As outras superfícies deste contato leem o mesmo `originConversationId`.
+      window.dispatchEvent(new CustomEvent(DEALS_INVALIDATE_EVENT, { detail: { contactId } }))
+    } catch (e: unknown) {
+      toast(getApiErrorMessage(e, 'Não foi possível vincular o negócio a esta conversa.'), 'error')
+    } finally {
+      setLinking(false)
+    }
+  }
   // A3 (SCRUM-925): o vazio ganha ação. Não e a "segunda porta" que a
   // SCRUM-920 tirou daqui — aquele "Novo" abria o DealModal cru e virava erro
   // no conflito; este passa pelo MESMO fluxo do cabeçalho, com o 409 tratado.
@@ -114,6 +171,19 @@ export function ContactPanelDeals({
 
       {error && <p className="text-xs text-danger" role="alert">{error}</p>}
 
+      {mostraSeletor && (
+        <div className="mb-2">
+          <ConversationDealSelector
+            deals={opcoes}
+            pipelines={pipelines}
+            linkedDealId={vinculado?.id ?? null}
+            busy={linking}
+            onPick={(id) => void vincular(id)}
+            onOpenDeal={openDeal}
+          />
+        </div>
+      )}
+
       {salesDeals.length > 0 && (
         <div className="grid grid-cols-2 gap-2 mb-2" data-testid="panel-pipelines-money">
           <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
@@ -143,6 +213,7 @@ export function ContactPanelDeals({
               onToggleMove={() => moveState.toggle(deal.id)}
               onMove={(stage) => void handleMove(deal, stage, pipeline)}
               onOpen={() => openDeal(deal.id)}
+              onOpenBoard={() => irAoQuadro(deal)}
               testIdPrefix="panel-pipeline"
               testIdKey={pipeline.id}
             />

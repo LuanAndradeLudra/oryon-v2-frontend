@@ -5,6 +5,7 @@
 //     quem não é admin-tier; a tela continua legível (só uso).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import type { Pipeline, User } from '@/types'
 
 const SALES: Pipeline = {
@@ -58,6 +59,12 @@ vi.mock('@/contexts/CRMConfigContext', () => ({
 
 import { FunnelsSettings } from './FunnelsSettings'
 
+// O funil selecionado vive na URL (`?pipeline=`) desde 10/09 — é o que permite
+// chegar aqui já no funil certo por um atalho do quadro, e voltar sem perder a
+// escolha. Por isso o componente agora precisa de um Router em volta.
+const renderTela = (rota = '/settings/pipeline-stages') =>
+  render(<FunnelsSettings />, { wrapper: ({ children }) => <MemoryRouter initialEntries={[rota]}>{children}</MemoryRouter> })
+
 beforeEach(() => {
   currentUser = ADMIN
   currentPipelines = [SALES, PROCESS]
@@ -70,7 +77,7 @@ beforeEach(() => {
 
 describe('FunnelsSettings — seção Vendas por kind', () => {
   it('mostra a seção "Vendas" no funil de vendas (default selecionado)', async () => {
-    render(<FunnelsSettings />)
+    renderTela()
     // O badge de tipo do funil também mostra o texto "Vendas" — desambigua
     // pelo título da seção (heading), não pelo texto solto.
     expect(await screen.findByRole('heading', { name: 'Vendas', level: 3 })).toBeInTheDocument()
@@ -78,7 +85,7 @@ describe('FunnelsSettings — seção Vendas por kind', () => {
 
   it('esconde a seção "Vendas" no funil de processo', async () => {
     currentPipelines = [PROCESS]
-    render(<FunnelsSettings />)
+    renderTela()
     await screen.findByRole('heading', { name: 'Etapas', level: 3 })
     expect(screen.queryByRole('heading', { name: 'Vendas', level: 3 })).toBeNull()
   })
@@ -86,7 +93,7 @@ describe('FunnelsSettings — seção Vendas por kind', () => {
 
 describe('FunnelsSettings — gate de papel (P13)', () => {
   it('admin vê as ações de ciclo de vida do funil', async () => {
-    render(<FunnelsSettings />)
+    renderTela()
     await screen.findByRole('heading', { name: 'Etapas', level: 3 })
     expect(screen.getByRole('button', { name: /Novo funil/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Renomear \/ cor/ })).toBeInTheDocument()
@@ -94,11 +101,31 @@ describe('FunnelsSettings — gate de papel (P13)', () => {
 
   it('agent não vê nenhuma ação de criar/renomear/arquivar/excluir', async () => {
     currentUser = AGENT
-    render(<FunnelsSettings />)
+    renderTela()
     await screen.findByRole('heading', { name: 'Etapas', level: 3 })
     expect(screen.queryByRole('button', { name: /Novo funil/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Renomear \/ cor/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Arquivar/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Excluir/ })).toBeNull()
+  })
+})
+
+// Fase 0 da redistribuição de configurações: o estado de tela vive na URL, não
+// em memória. É o que permite a porta contextual do quadro ("editar este
+// funil") abrir JÁ no funil certo — sem isso, o atalho cairia no padrão do
+// tenant, que é pior do que não ter atalho.
+describe('FunnelsSettings — o funil selecionado vem da URL', () => {
+  it('abre no funil pedido por ?pipeline=, e não no padrão do tenant', async () => {
+    currentPipelines = [SALES, PROCESS]
+    renderTela('/settings/pipeline-stages?pipeline=' + PROCESS.id)
+    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLSelectElement
+    expect(seletor.value).toBe(PROCESS.id)
+  })
+
+  it('sem o parâmetro, cai no padrão do tenant como antes', async () => {
+    currentPipelines = [SALES, PROCESS]
+    renderTela()
+    const seletor = (await screen.findAllByRole('combobox'))[0] as HTMLSelectElement
+    expect(seletor.value).toBe(SALES.id)
   })
 })

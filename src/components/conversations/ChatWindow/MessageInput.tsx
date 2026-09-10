@@ -8,6 +8,7 @@ import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { Banner } from '@/components/ui/Banner'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
 import { templateVariableSlots, variablesComplete, variablesToArray } from '@/lib/templateVariables'
 import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
@@ -572,7 +573,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
   if (!windowOpen) {
     return (
       <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
-        <div className="card-24h bg-brand-800/20 border border-brand-600/30 rounded-xl px-4 py-3 shadow-lg">
+        <div className="card-24h rounded-xl px-4 py-3 shadow-lg">
           <div className="flex items-center gap-2">
             <AlertTriangle className="card-24h-accent w-4 h-4 text-brand-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
@@ -582,14 +583,21 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
               </p>
             </div>
             {!templateSent && (
-              <button
+              /* Mesmo padrão dos controles do cabeçalho do contato — o
+                 "Adicionar ao funil ▾" e o seletor de status. Os dois são
+                 superfície neutra com borda (`bg-surface-800` +
+                 `border-surface-700`), que é o que o DS chama de `secondary`.
+                 Antes era um color-chip teal sobre um card que JÁ é teal, e o
+                 botão se dissolvia dentro do próprio aviso. */
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={toggleTemplatePicker}
-                style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
-                className="color-chip flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border hover:brightness-110 transition"
+                className="flex-shrink-0"
+                rightIcon={<ChevronDown className={cn('w-3 h-3', templatePickerOpen && 'rotate-180')} />}
               >
                 Escolher template
-                <ChevronDown className={cn('w-3 h-3', templatePickerOpen && 'rotate-180')} />
-              </button>
+              </Button>
             )}
           </div>
 

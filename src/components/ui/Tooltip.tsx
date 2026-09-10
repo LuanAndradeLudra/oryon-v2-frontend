@@ -3,7 +3,13 @@ import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
 interface TooltipProps {
-  content: string
+  /**
+   * Texto do balão. Aceita `ReactNode` (e não só `string`) desde 10/09, para
+   * caber ajuda de várias frases com quebras e ênfase — o caso que motivou:
+   * o campo "Observações" do negócio, onde a parte importante é o AVISO de
+   * que a IA lê o que estiver ali. Chamadas antigas passam string e não mudam.
+   */
+  content: React.ReactNode
   children: React.ReactNode
   side?: 'top' | 'right' | 'bottom' | 'left'
   /**

@@ -1511,7 +1511,7 @@ function Step6({
           </div>
           <button
             type="button" onClick={generate}
-            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 font-medium transition-all shadow-lg shadow-brand-900/40"
+            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 font-medium transition-all shadow-lg shadow-brand-900/40"
           >
             <Sparkles className="w-5 h-5" />
             Gerar System Prompt com IA

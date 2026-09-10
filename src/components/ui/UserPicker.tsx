@@ -79,7 +79,7 @@ export function UserPicker({
                   isSelected ? 'bg-brand-600/10' : 'hover:bg-surface-700'
                 )}
               >
-                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" className="flex-shrink-0" />
+                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" className="flex-shrink-0" />
                 <div className="min-w-0 flex-1 text-left">
                   <p className={cn('text-sm font-medium', isSelected ? 'text-brand-300' : 'text-surface-200')}>
                     {user.firstName} {user.lastName}

@@ -3,8 +3,9 @@ import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus,
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { cn, hexToRgba, getActivePipelines } from '@/lib/utils'
-import { pipelineKindOf, pipelineKindOption, terminalLabelsOf, pipelineNoun } from '@/lib/pipelineKinds'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { cn, hexToRgba, tintaDaEtapa, getActivePipelines } from '@/lib/utils'
+import { pipelineKindOf, pipelineKindOption, terminalLabelsOf, pipelineNoun, TERMINAL_CHIP_STYLE } from '@/lib/pipelineKinds'
 import { originInfo, movedByChip, timeInStage, boardStats, entrySources } from '@/lib/dealCard'
 import { dealProbability } from '@/lib/dealProbability'
 import type { Deal, Pipeline, PipelineStage, User } from '@/types'
@@ -72,6 +73,16 @@ export function DealsBoard({
   // OUTRO estado mudasse a re-renderizar o componente; redimensionar a janela
   // sozinho não atualizava o layout (min-width da coluna) até isso acontecer.
   const isDesktop = !useIsMobile()
+  /**
+   * O ponteiro ARRASTA? O drag do card é HTML5 nativo (`draggable`), que não
+   * existe em toque — sem mouse, não há como mover um card no quadro.
+   *
+   * A pergunta é de CAPACIDADE do ponteiro, não de largura de tela: um iPad
+   * em paisagem tem 1024 px e passaria por "desktop" no `useIsMobile`, mas
+   * continua sem arrastar. `(hover: hover) and (pointer: fine)` é o que
+   * separa mouse de dedo.
+   */
+  const ponteiroArrasta = useMediaQuery('(hover: hover) and (pointer: fine)')
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [overStageId, setOverStageId] = useState<string | null>(null)
   const [pipelineMenuDealId, setPipelineMenuDealId] = useState<string | null>(null)
@@ -156,6 +167,14 @@ export function DealsBoard({
   // entradas, contagens e total) — antes vinham DUAS faixas empilhadas de
   // fora (ContactsPage). Migrada pra cá porque só existe quando `pipeline`
   // está presente (chamadores antigos/testes sem esse prop não a veem).
+  //
+  // A faixa usa `board-bar`, como o cabeçalho da página logo acima: as
+  // duas formam a barra de contexto do funil, e só as colunas ficam no chão.
+  // No escuro o token É o chão (a barra se funde com a TopBar e só a borda a
+  // separa do quadro); no claro ela é branca e sobe. Antes era `surface-950/40`
+  // — o próprio chão com um véu, que no tema claro
+  // deixava a barra cinza enquanto os cards eram brancos, invertendo a
+  // hierarquia (o que informa recuava, o que é conteúdo subia).
   const allDeals = pipeline ? Object.values(dealsByStage).flat() : []
   const stats = pipeline ? boardStats(allDeals) : null
   const entries = pipeline ? entrySources(allDeals) : []
@@ -165,8 +184,8 @@ export function DealsBoard({
   return (
     <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none flex flex-col">
       {pipeline && stats && kindOption && (
-        <div className="border-b border-surface-800/60 bg-surface-950/40 flex-shrink-0 px-4 py-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-surface-500" data-testid="board-context-strip">
-          <span className="inline-flex items-center gap-1 text-3xs font-semibold px-1.5 py-0.5 rounded-full bg-surface-800 border border-surface-700 text-surface-300">
+        <div className="border-b border-surface-700 bg-board-bar flex-shrink-0 px-4 py-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-surface-500" data-testid="board-context-strip">
+          <span className="inline-flex items-center gap-1 text-3xs font-semibold px-1.5 py-0.5 rounded-full bg-surface-900 border border-surface-700 text-surface-300">
             <kindOption.icon className="w-3 h-3" /> {kindOption.label}
           </span>
           <span>
@@ -237,11 +256,11 @@ export function DealsBoard({
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} />
-                  <span className="text-xs font-semibold truncate" style={{ color: stage.color }}>{stage.label}</span>
+                  <span className="text-xs font-semibold truncate" style={{ color: tintaDaEtapa(stage.color) }}>{stage.label}</span>
                   {stage.isWon && (
                     <span
                       className="text-3xs px-1.5 py-0.5 rounded border color-chip"
-                      style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
+                      style={TERMINAL_CHIP_STYLE.won}
                     >
                       {terminalLabels.won.toLowerCase()}
                     </span>
@@ -249,7 +268,7 @@ export function DealsBoard({
                   {stage.isLost && (
                     <span
                       className="text-3xs px-1.5 py-0.5 rounded border color-chip"
-                      style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
+                      style={TERMINAL_CHIP_STYLE.lost}
                     >
                       {terminalLabels.lost.toLowerCase()}
                     </span>
@@ -258,7 +277,7 @@ export function DealsBoard({
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <span
                     className="text-xs font-medium px-2 py-0.5 rounded-full transition-all"
-                    style={{ color: stage.color, backgroundColor: hexToRgba(stage.color, isOver ? 0.2 : 0.1) }}
+                    style={{ color: tintaDaEtapa(stage.color), backgroundColor: hexToRgba(stage.color, isOver ? 0.2 : 0.1) }}
                   >
                     {cards.length}
                   </span>
@@ -294,12 +313,33 @@ export function DealsBoard({
                   loading && cards.length > 0 && 'opacity-50',
                 )}
               >
+                {/* As três leituras da coluna (carregando · vazia · com cards)
+                    têm CHAVE, e isso não é enfeite. Sem chave o React casa por
+                    posição e tipo: o `div` do esqueleto e o `div` do vazio são
+                    o mesmo nó, reaproveitado. O nó chegava sem `border-color`
+                    (o padrão do Tailwind v4 é `currentColor`) e recebia
+                    `border-surface-700` JUNTO com `transition-colors` — então
+                    a borda ANIMAVA de `currentColor` até o cinza.
+
+                    `currentColor` ali é a cor de texto herdada do body:
+                    `surface-100`, que é #ECF1F1 no escuro e #1A1F2E no claro.
+                    Por isso o tracejado piscava CLARO no tema escuro e ESCURO
+                    no tema claro — o inverso do tema, sempre. Não era a cor do
+                    vazio, era o ponto de partida da transição.
+
+                    Com chave, cada leitura monta seu próprio nó e já nasce na
+                    cor final; `transition-colors` volta a servir só ao que foi
+                    feito para servir, o realce de arrastar-sobre. */}
                 {loading && cards.length === 0 ? (
-                  <div className="h-16 rounded-xl bg-surface-800/60 animate-pulse" aria-hidden />
+                  /* `surface-700`, não `surface-800`: a escala é INVERTIDA por
+                     tema, e a 800 no claro é #FFFFFF — o esqueleto seria um
+                     retângulo branco pulsando sobre o chão cinza. A 700 é cinza
+                     claro no claro (#D9DCE5) e escuro no escuro (#243333). */
+                  <div key="carregando" className="h-16 rounded-xl bg-surface-700/50 animate-pulse" aria-hidden />
                 ) : cards.length === 0 ? (
-                  <div className={cn(
+                  <div key="vazia" className={cn(
                     'border-2 border-dashed rounded-xl h-20 flex items-center justify-center transition-colors',
-                    isOver ? 'border-brand-500/50 bg-brand-500/5' : 'border-surface-800',
+                    isOver ? 'border-brand-500/50 bg-brand-500/5' : 'border-surface-700',
                   )}>
                     <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-600')}>
                       {isOver ? 'Soltar aqui' : `Nenhum ${noun}`}
@@ -329,9 +369,13 @@ export function DealsBoard({
                           hover, que não existe por toque); no desktop seguem
                           reveladas por hover/foco, como antes. */}
                       <div className={cn('absolute top-2 right-2 z-10 flex items-center gap-1', !isDesktop && 'opacity-100')}>
-                        {/* F-FUNIL-09: "Mover ▾" — alternativa por toque ao
-                            drag nativo, que não funciona em touch. Lista as
-                            demais etapas do MESMO funil. */}
+                        {/* F-FUNIL-09: "Mover ▾" — a alternativa ao drag para
+                            quem NÃO tem mouse. Some onde o arrasto funciona
+                            (10/09): ali eram dois caminhos para o mesmo gesto,
+                            e o botão ainda cobria o canto do card no hover.
+                            Onde o ponteiro não arrasta ele continua sendo o
+                            ÚNICO jeito de mover um card, então fica. */}
+                        {!ponteiroArrasta && (
                         <div className="relative">
                           <button
                             type="button"
@@ -366,6 +410,7 @@ export function DealsBoard({
                             </div>
                           )}
                         </div>
+                        )}
                         {onMovePipeline && otherPipelines.length > 0 && (
                           <div className="relative">
                             <button
@@ -439,7 +484,7 @@ export function DealsBoard({
  * operador não tem como saber que são propostas distintas do mesmo cliente.
  */
 /**
- * Escopo no card (`description`, B1/SCRUM-927). O campo existia no banco e na
+ * Observações no card (`description`, B1/SCRUM-927). O campo existia no banco e na
  * ficha, mas o card nunca o mostrava — num board de processo, onde o título é
  * o nome do contato, isso deixava os cards indistinguíveis entre si. Duas
  * linhas no máximo; o texto inteiro fica no `title`.
@@ -454,7 +499,7 @@ function CardScope({ description }: { description?: string | null }) {
     // para saber o que era — título? observação? Um ícone não resolveria:
     // símbolo sem legenda não ensina.
     <div className="mt-3 mb-2.5" data-testid="card-scope" title={text}>
-      <span className="block text-3xs uppercase tracking-wide text-surface-500 leading-none">Escopo</span>
+      <span className="block text-3xs uppercase tracking-wide text-surface-500 leading-none">Observações</span>
       <p className="mt-0.5 text-2xs text-surface-300 line-clamp-2 leading-snug">{text}</p>
     </div>
   )
@@ -499,7 +544,7 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
       </button>
       <CardScope description={deal.description} />
       <div className="mt-1.5 flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1 text-2xs text-surface-400 truncate" title={origin.label} data-testid="process-card-origin">
+        <span className="inline-flex items-center gap-1 text-2xs text-surface-400 truncate" title={`Origem: ${origin.label}`} data-testid="process-card-origin">
           <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
         </span>
         {by === 'ia' && (
@@ -511,7 +556,7 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-2xs text-surface-500">
         {time ? (
-          <span className="inline-flex items-center gap-1" data-testid="process-card-time"><Clock className="w-3 h-3" /> {time}</span>
+          <span className="inline-flex items-center gap-1" title={`Nesta etapa há ${time}`} data-testid="process-card-time"><Clock className="w-3 h-3" /> {time}</span>
         ) : <span />}
         {phone && (
           <span className="inline-flex items-center gap-1 tabular-nums"><Phone className="w-3 h-3" /> {phone}</span>
@@ -564,19 +609,24 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
         </div>
       </div>
       <div className="mt-1.5 flex items-center justify-between gap-2 text-2xs text-surface-500">
-        <span className="inline-flex items-center gap-1 truncate" data-testid="sales-card-owner">
+        {/* As quatro linhas de metadado do card não têm rótulo — o ícone é o
+            rótulo, e num card de 4 linhas isso é o certo. O `title` é a rede:
+            quem não decifrar o ícone descobre passando o mouse, sem gastar
+            espaço. Cada um diz o CAMPO, não só o valor, porque o valor já
+            está escrito ao lado ("Admin Local" sozinho não ensina nada). */}
+        <span className="inline-flex items-center gap-1 truncate" title={`Dono do negócio: ${ownerLabel}`} data-testid="sales-card-owner">
           <UserRound className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{ownerLabel}</span>
         </span>
-        <span className="inline-flex items-center gap-1 flex-shrink-0" data-testid="sales-card-forecast">
+        <span className="inline-flex items-center gap-1 flex-shrink-0" title={forecast ? `Previsão de fechamento: ${forecast}` : 'Sem previsão de fechamento'} data-testid="sales-card-forecast">
           <CalendarClock className="w-3 h-3" /> {forecast ?? 'sem previsão'}
         </span>
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-2xs text-surface-500">
-        <span className="inline-flex items-center gap-1 truncate" title={origin.label} data-testid="sales-card-origin">
+        <span className="inline-flex items-center gap-1 truncate" title={`Origem: ${origin.label}`} data-testid="sales-card-origin">
           <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
         </span>
         {time && (
-          <span className="inline-flex items-center gap-1 flex-shrink-0" data-testid="sales-card-time">
+          <span className="inline-flex items-center gap-1 flex-shrink-0" title={`Nesta etapa há ${time}`} data-testid="sales-card-time">
             <Clock className="w-3 h-3" /> {time}
           </span>
         )}

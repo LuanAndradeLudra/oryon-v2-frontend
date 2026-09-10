@@ -661,7 +661,7 @@ function DraftEditor({
           type="button"
           onClick={onSave}
           disabled={!draft.name.trim() || draft.keywords.length === 0 || saving}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-medium transition inline-flex items-center justify-center gap-2"
+          className="flex-1 px-4 py-2.5 rounded-xl bg-surface-100 hover:bg-surface-50 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-medium transition inline-flex items-center justify-center gap-2"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           {saving ? 'Salvando…' : 'Salvar regra'}
@@ -968,7 +968,7 @@ function AIRuleBuilder({
               onClick={handleSend}
               disabled={!input.trim() || generating}
               aria-label="Enviar descrição da regra"
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950"
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all bg-surface-100 hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -1147,7 +1147,7 @@ export function HandoffRulesPanel({
                 </button>
                 <button
                   onClick={() => setModal('ai_builder')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-xs font-medium transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 text-xs font-medium transition"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   Criar com IA
