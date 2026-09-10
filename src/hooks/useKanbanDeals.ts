@@ -18,8 +18,27 @@ type BoardFilters = Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'so
  */
 export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters = {}) {
   const [dealsByStage, setDealsByStage] = useState<Record<string, Deal[]>>({})
-  const [loading, setLoading] = useState(false)
+  const [buscando, setBuscando] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  /**
+   * De QUAL funil são os dados que estão em `dealsByStage`.
+   *
+   * Sem isto havia sempre um render em que as ETAPAS já eram as do funil novo
+   * e os NEGÓCIOS ainda eram os do antigo (ou nenhum), com `loading` em
+   * `false` — porque o fetch só começa no efeito, depois da pintura. O board
+   * lia `cards.length === 0` e desenhava o contorno tracejado \"Nenhum
+   * negócio\" em TODAS as colunas; no quadro seguinte vinha o esqueleto e
+   * depois os cards. Era esse o pisca-pisca dos contornos ao trocar de funil,
+   * e a animação da troca só o deixou visível.
+   *
+   * `loading` agora é uma PERGUNTA sobre os dados, não sobre a requisição: se
+   * o que está na mão não é do funil pedido, o board está carregando — desde
+   * o primeiro render, sem esperar efeito nenhum. Também cobre a corrida de
+   * duas trocas rápidas: a resposta da intermediária chega, não corresponde ao
+   * pedido atual e o board continua em esqueleto em vez de exibir os negócios
+   * de um funil sob as etapas de outro.
+   */
+  const [dadosDoFunil, setDadosDoFunil] = useState<string | null>(null)
 
   // Serializado p/ dependência estável — `filters` é um objeto novo a cada
   // render de ContactsPage; sem isto o efeito refetch-aria em loop.
@@ -28,9 +47,10 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
   const load = useCallback(async () => {
     if (!pipelineId) {
       setDealsByStage({})
+      setDadosDoFunil(null)
       return
     }
-    setLoading(true)
+    setBuscando(true)
     setError(null)
     try {
       const res = await dealsApi.board(pipelineId, filters)
@@ -42,7 +62,10 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
-      setLoading(false)
+      // Marca mesmo em falha: a tentativa para este funil terminou, e quem
+      // mostra o erro é o chamador — deixar em `loading` eterno esconderia.
+      setDadosDoFunil(pipelineId)
+      setBuscando(false)
     }
     // filtersKey (não `filters`) é a dependência estável — o objeto em si
     // muda de identidade a cada render.
@@ -120,6 +143,10 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
       return next
     })
   }, [])
+
+  // Em voo OU segurando dados de outro funil — as duas coisas são "o board
+  // ainda não tem o que mostrar", e o board só sabe desenhar uma delas.
+  const loading = buscando || dadosDoFunil !== pipelineId
 
   return { dealsByStage, loading, error, moveStage, movePipeline, refetch: load }
 }

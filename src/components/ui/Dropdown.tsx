@@ -12,19 +12,54 @@ interface DropdownProps {
   className?: string
 }
 
+/**
+ * Posição do menu: lado (`align`) + DIREÇÃO e ALTURA, decididas pela janela.
+ *
+ * Antes o menu abria sempre para baixo, com `top: rect.bottom`, e a altura era
+ * a do conteúdo. Numa lista longa perto do rodapé — um catálogo de produtos, o
+ * caso que expôs isto — ele vazava para fora da tela: as últimas opções ficavam
+ * inalcançáveis, sem rolagem que as trouxesse de volta.
+ *
+ * Agora mede-se o espaço dos dois lados do gatilho. Se não couber embaixo e
+ * houver mais espaço em cima, o menu VIRA para cima; de um jeito ou de outro, a
+ * altura máxima é o espaço que existe de verdade, e o que passar disso rola
+ * dentro do menu.
+ *
+ * Para cima o menu é ancorado por `bottom`, não por `top`: assim não é preciso
+ * medir a altura do conteúdo antes de posicionar (o que exigiria um render
+ * intermediário e faria o menu piscar no lugar errado).
+ */
+interface PosicaoMenu {
+  top?: number
+  bottom?: number
+  left?: number
+  right?: number
+  maxHeight: number
+}
+
 function useDropdownPosition(open: boolean, align: 'left' | 'right', anchorRef: React.RefObject<HTMLDivElement | null>) {
-  const [pos, setPos] = useState<{ top: number; left?: number; right?: number }>({ top: 0, left: 0 })
+  const [pos, setPos] = useState<PosicaoMenu>({ top: 0, left: 0, maxHeight: 320 })
 
   const update = () => {
     const el = anchorRef.current
     if (!el) return
     const rect = el.getBoundingClientRect()
     const gap = 6
-    if (align === 'right') {
-      setPos({ top: rect.bottom + gap, right: window.innerWidth - rect.right })
-    } else {
-      setPos({ top: rect.bottom + gap, left: rect.left })
-    }
+    // Respiro contra a borda da janela — um menu colado no fim da tela parece
+    // cortado mesmo quando não está.
+    const margem = 12
+    const espacoAbaixo = window.innerHeight - rect.bottom - gap - margem
+    const espacoAcima = rect.top - gap - margem
+    // Só vira para cima quando embaixo é apertado E em cima cabe mais. Abrir
+    // para cima por qualquer motivo desorienta: o menu deve seguir o gatilho.
+    const minimoUtil = 180
+    const paraCima = espacoAbaixo < minimoUtil && espacoAcima > espacoAbaixo
+    const lado = align === 'right'
+      ? { right: window.innerWidth - rect.right }
+      : { left: rect.left }
+    setPos(paraCima
+      ? { ...lado, bottom: window.innerHeight - rect.top + gap, maxHeight: Math.max(espacoAcima, 120) }
+      : { ...lado, top: rect.bottom + gap, maxHeight: Math.max(espacoAbaixo, 120) })
   }
 
   useLayoutEffect(() => {
@@ -119,14 +154,18 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
           transition={{ duration: 0.13, ease: 'easeOut' }}
           style={{
             position: 'fixed',
-            top: pos.top,
+            ...(pos.top !== undefined ? { top: pos.top } : {}),
+            ...(pos.bottom !== undefined ? { bottom: pos.bottom } : {}),
             ...(pos.left !== undefined ? { left: pos.left } : {}),
             ...(pos.right !== undefined ? { right: pos.right } : {}),
+            maxHeight: pos.maxHeight,
           }}
           className={cn(
             'z-50',
             'overlay-surface border rounded-xl',
-            'min-w-[200px] overflow-hidden',
+            // `overflow-y-auto` (e não `hidden`): com a altura limitada pela
+            // janela, o que exceder precisa rolar DENTRO do menu.
+            'min-w-[200px] overflow-x-hidden overflow-y-auto',
             className
           )}
         >
