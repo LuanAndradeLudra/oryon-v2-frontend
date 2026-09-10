@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
-import { cn, hexToRgba, formatRelativeTime } from '@/lib/utils'
+import { cn, hexToRgba, tintaDaEtapa, formatRelativeTime } from '@/lib/utils'
 import { pipelineKindOf } from '@/lib/pipelineKinds'
 import { stepperFor } from '@/lib/contactPipelines'
 import { PipelineTrail } from './PipelineTrail'
@@ -90,8 +90,20 @@ function TrilhaDoFunil({ pipeline, deal, onMoveToStage, disabled, tempoNaEtapa }
         }}
         // A faixa vive dentro do cabeçalho da ficha, não como banda própria:
         // sem fundo, sem borda inferior e sem recuo lateral.
-        className="flex-1 min-w-0 bg-transparent border-b-0 px-0 py-0"
+        //
+        // `py-1 -my-1` NÃO é espaçamento: é folga para o que se pinta FORA da
+        // caixa de cada passo. O anel do ponto ativo é um `box-shadow` de 3px,
+        // e a trilha passou a ter `overflow-hidden` (para não invadir o
+        // contador ao lado). Com `py-0` esse anel batia na aresta do recorte e
+        // era cortado em reta — a sombra terminava de estalo em vez de
+        // esvaecer. O padding dá o espaço, e a margem negativa devolve, para o
+        // layout ficar exatamente onde estava.
+        className="flex-1 min-w-0 bg-transparent border-b-0 px-0 py-1 -my-1"
       />
+      {/* Fio separando o contador da trilha: com a faixa cortada no limite, a
+          última etapa visível encosta no contador e os dois viram um bloco só
+          de texto. A linha diz onde uma coisa acaba e a outra começa. */}
+      <span className="w-px h-3.5 bg-surface-800 shrink-0" aria-hidden />
       <span className="text-[10.5px] text-surface-500 whitespace-nowrap shrink-0 tabular-nums" data-testid="deal-stage-position">
         {posicao > 0 ? `${posicao} de ${caminho.length}` : `${caminho.length} etapas`}
         {tempoNaEtapa && <span className="text-surface-600"> · {tempoNaEtapa}</span>}
@@ -129,7 +141,7 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
               {terminal ? (
                 <span
                   className="w-[11px] h-[11px] rounded-full border grid place-items-center"
-                  style={{ borderColor: hexToRgba(cor, 0.5), color: hexToRgba(cor, 0.85) }}
+                  style={{ borderColor: tintaDaEtapa(cor, 0.5), color: tintaDaEtapa(cor) }}
                   aria-hidden
                 >
                   {p.state === 'won'
@@ -190,7 +202,9 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                 <motion.span
                   layoutId={blocoId}
                   className="absolute -inset-y-1 inset-x-0 rounded-r-md border-l-2 pointer-events-none"
-                  style={{ borderLeftColor: cor, backgroundColor: hexToRgba(cor, 0.09) }}
+                  /* A aresta é linha FINA (2 px), então é tinta; o fundo é lavagem
+                     e fica na cor crua — ninguém lê 9% de opacidade. */
+                  style={{ borderLeftColor: tintaDaEtapa(cor), backgroundColor: hexToRgba(cor, 0.09) }}
                   transition={semMovimento
                     ? { duration: 0 }
                     : { type: 'spring', stiffness: 380, damping: 34 }}
@@ -216,7 +230,12 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                   disabled={!clicavel}
                   onClick={() => stage && onMoveToStage(stage)}
                   aria-current={atual ? 'step' : undefined}
-                  title={clicavel ? `Mover para "${p.label}"` : p.label}
+                  // A linha do tempo é vertical e tem largura folgada, então o
+                  // rótulo raramente encolhe — aqui o balão nativo basta e dizer
+                  // a AÇÃO é o que acrescenta. (Na trilha horizontal é diferente:
+                  // lá o texto encolhe até "No…", e o balão é estilizado porque
+                  // precisa carregar o rótulo inteiro.)
+                  title={clicavel ? 'Clique para mover para esta etapa' : undefined}
                   data-testid={`deal-stepper-stage-${p.id}`}
                   className={cn(
                     'text-left truncate rounded transition-colors min-w-0',
@@ -225,10 +244,24 @@ function LinhaDoTempo({ pipeline, deal, history, onMoveToStage, disabled, tempoN
                     // outras ficam neutras. Sem isso, quatro linhas de peso
                     // parecido obrigam a procurar o ponto aceso.
                     atual ? 'text-[15px] font-bold' : 'text-xs',
-                    !atual && (feito ? 'text-surface-400' : 'text-surface-600'),
-                    clicavel ? 'cursor-pointer hover:text-surface-200' : 'cursor-default',
+                    // Terminal alcançado lê como 'feito': a COR do desfecho já está
+                    // no ✓/× ao lado. Antes o rótulo usava a cor da etapa a 55%, e cor
+                    // esmaecida é exatamente o que desaparece no tema claro (âmbar a
+                    // 55% sobre branco: 1,52:1).
+                    !atual && (feito || terminal ? 'text-surface-400' : 'text-surface-600'),
+                    // Mesma resposta ao mouse da trilha de venda: o passo
+                    // cresce. Aqui a linha é vertical e o texto está à
+                    // esquerda, então a origem também é a esquerda — crescer do
+                    // centro afastaria o rótulo do ponto da timeline.
+                    // Hover mais longo e com desaceleração mais macia que a
+                    // padrão: em 150ms/ease-out o passo 'pula'. 220ms com
+                    // ease-out-quint faz o crescimento assentar em vez de bater.
+                    'transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] origin-left motion-reduce:transition-none',
+                    clicavel
+                      ? 'cursor-pointer hover:text-surface-200 hover:scale-[1.03] motion-reduce:hover:scale-100'
+                      : 'cursor-default',
                   )}
-                  style={atual ? { color: cor } : terminal ? { color: hexToRgba(cor, 0.55) } : undefined}
+                  style={atual ? { color: tintaDaEtapa(cor) } : undefined}
                 >
                   {p.label}
                 </button>

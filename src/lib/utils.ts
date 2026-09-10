@@ -111,6 +111,32 @@ export function truncate(text: string, maxLength: number): string {
  * Convert a #rrggbb hex colour to an rgba() string.
  * Used for stage/tag colour tinting across the contacts UI.
  */
+/**
+ * TINTA de uma etapa — a cor dela quando vira TEXTO ou linha fina.
+ *
+ * A cor crua da etapa serve para MARCA (ponto, preenchimento, aresta grossa):
+ * é área, identifica sem precisar de contraste de leitura. Para texto ela não
+ * serve nos dois temas — a paleta foi calibrada no escuro, e sobre o card
+ * branco âmbar dá 2,15:1 e amarelo 1,92:1. Pintar um rótulo com isso é o que
+ * faz a etapa sumir no tema claro.
+ *
+ * Aqui a cor passa por `color-mix` com dois tokens de tema (`--ink-target` e
+ * `--ink-amount`, definidos no index.css): no escuro a mistura é 0% e nada
+ * muda; no claro ela desce 40% para o preto e a paleta inteira vai a 5–6:1,
+ * com a matiz intacta. Funciona com qualquer hex vindo do banco — não há
+ * paleta nova para migrar.
+ *
+ * `alpha` opcional para quando a tinta precisa recuar (uma borda fina, por
+ * exemplo). Evite usá-lo em TEXTO: esmaecer é justamente o que apaga a cor no
+ * tema claro — para hierarquia em texto, prefira um cinza da escala.
+ */
+export function tintaDaEtapa(hex: string | null | undefined, alpha?: number): string {
+  const base = /^#[0-9a-f]{6}$/i.test(hex ?? '') ? (hex as string) : '#6B8080'
+  const tinta = `color-mix(in srgb, ${base}, var(--ink-target) var(--ink-amount))`
+  if (alpha === undefined) return tinta
+  return `color-mix(in srgb, ${tinta} ${Math.round(alpha * 100)}%, transparent)`
+}
+
 export function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)

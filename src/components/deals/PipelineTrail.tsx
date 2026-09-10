@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { cn, hexToRgba } from '@/lib/utils'
+import { cn, hexToRgba, tintaDaEtapa } from '@/lib/utils'
 import { ChipOption } from './AttributeChip'
 import type { PipelineStage } from '@/types'
 
@@ -55,7 +55,13 @@ export interface PipelineTrailProps {
 }
 
 /** Acima disto o meio é recolhido — abaixo de ~9 caracteres o rótulo não serve. */
-const MAX_VISIVEIS = 6
+/* Quantas etapas a faixa mostra antes de agrupar o meio em "+N".
+
+   Caiu de 6 para 5 quando os rótulos cresceram (11,5 → 12,5px): o mesmo número
+   de passos passou a pedir mais largura, e a faixa começou a estourar antes de
+   o agrupamento entrar. O corte de contenção acima impede a sobreposição; este
+   número é o que evita chegar nela. */
+const MAX_VISIVEIS = 5
 
 const isTerminal = (s: PipelineStage) => s.isWon || s.isLost
 
@@ -154,7 +160,9 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
             <span className="flex items-baseline gap-2 min-w-0">
               <span
                 className="text-xs font-semibold truncate"
-                style={{ color: ativa ? corDa(ativa) : '#ECF1F1' }}
+                /* `#ECF1F1` era o surface-100 do tema ESCURO cravado à mão —
+                   quase branco sobre o branco do tema claro. */
+                style={{ color: ativa ? tintaDaEtapa(corDa(ativa)) : 'var(--color-surface-100)' }}
               >
                 {ativa?.label}
               </span>
@@ -164,15 +172,20 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
             </span>
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={() => setListaAberta((v) => !v)}
-            aria-haspopup="menu"
-            aria-expanded={listaAberta}
-            className="inline-flex items-center rounded-full border border-dashed border-surface-700 px-2 py-0.5 text-[10.5px] text-surface-500 hover:text-surface-300 hover:border-surface-600 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
-          >
-            +{itens.reduce((n, i) => n + (i.tipo === 'grupo' ? i.quantidade : 0), 0)}
-          </button>
+          /* O "+N" esconde etapas e nada na tela diz o que ele faz — mesmo
+             balão estilizado do resto da faixa, para não haver dois visuais de
+             balão na mesma tira. */
+          <Tooltip side="bottom" content="Clique para ver todas as etapas">
+            <button
+              type="button"
+              onClick={() => setListaAberta((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={listaAberta}
+              className="inline-flex items-center rounded-full border border-dashed border-surface-700 px-2 py-0.5 text-[11px] text-surface-500 hover:text-surface-300 hover:border-surface-600 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+            >
+              +{itens.reduce((n, i) => n + (i.tipo === 'grupo' ? i.quantidade : 0), 0)}
+            </button>
+          </Tooltip>
         )
       }
     >
@@ -214,7 +227,23 @@ export function PipelineTrail({ stages, activeId, onSelect, compact, className }
 
   // ─── Degraus 1 a 3 ───────────────────────────────────────────────────────
   return (
-    <nav aria-label="Etapa de entrada" className={cn('flex items-center px-4 py-3 bg-surface-950 border-b border-surface-800', className)}>
+    /* `overflow-hidden` + `min-w-0`: a CONTENÇÃO da faixa.
+
+       Sem isso a trilha transbordava para fora da própria caixa quando os
+       rótulos não cabiam — e, como o contador ("3 de 3 · 11 dias") é irmão dela
+       na mesma linha, o excesso era pintado POR CIMA dele. Um flex item só
+       encolhe até o conteúdo se puder; sem `min-w-0` ele empurra, e sem
+       `overflow-hidden` o que sobra vaza em vez de ser cortado.
+
+       O recorte é horizontal por natureza do problema (a trilha crescia para o
+       lado), mas `overflow-hidden` corta nos dois eixos: quem pinta FORA da
+       própria caixa — o anel de 3px do ponto ativo — precisa de folga vertical
+       de quem monta a faixa, senão a sombra é cortada em reta. Ver o `py-1
+       -my-1` no `DealProgress`.
+
+       Com os dois, o pior caso vira um rótulo cortado — e cortado tem quem o
+       leia: é exatamente para isso que o balão carrega o nome inteiro. */
+    <nav aria-label="Etapa de entrada" className={cn('flex items-center min-w-0 overflow-hidden px-4 py-3 bg-surface-950 border-b border-surface-800', className)}>
       {/* Diz de que eixo a faixa fala. O cabeçalho logo acima nomeia o funil,
           então aqui basta o substantivo. */}
       <span className="flex items-center gap-2.5 shrink-0 mr-2.5">
@@ -288,9 +317,21 @@ function Passo({
       onClick={() => onSelect(etapa.id)}
       aria-current={ativa ? 'step' : undefined}
       className={cn(
-        'flex items-center gap-1.5 min-w-0 rounded-md px-1 py-0.5 transition-colors',
+        'flex items-center gap-1.5 min-w-0 rounded-md px-1 py-0.5',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
-        terminal ? 'cursor-default' : 'cursor-pointer hover:bg-surface-900',
+        // O passo CRESCE ao passar o mouse. Numa faixa de texto pequeno, fundo
+        // sozinho é fraco demais para dizer "isto reage"; escala diz na hora.
+        // 4% é o teto útil: acima disso o rótulo se desloca em relação aos
+        // vizinhos e a faixa parece tremer. `origin-left` faz o passo crescer
+        // para DENTRO da faixa em vez de empurrar quem está à esquerda.
+        // 220ms com ease-out-quint: a escala desacelera até assentar. Em 150ms
+        // com ease-out padrão o passo 'pula' — o movimento termina cedo demais
+        // para o olho acompanhar num alvo desse tamanho.
+        'transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] origin-left',
+        'motion-reduce:transition-none',
+        terminal
+          ? 'cursor-default'
+          : 'cursor-pointer hover:bg-surface-900 hover:scale-[1.03] motion-reduce:hover:scale-100',
       )}
     >
       {terminal ? (
@@ -300,7 +341,7 @@ function Passo({
         // "encerramento" quanto "ainda não chegou".
         <span
           className="flex items-center justify-center w-3.5 h-3.5 rounded-full shrink-0 border"
-          style={{ borderColor: hexToRgba(cor, 0.55), color: hexToRgba(cor, 0.9) }}
+          style={{ borderColor: tintaDaEtapa(cor, 0.55), color: tintaDaEtapa(cor) }}
           aria-hidden
         >
           {etapa.isWon
@@ -334,11 +375,23 @@ function Passo({
       </span>
       )}
       <span
-        className={cn('text-[11.5px] truncate transition-colors duration-200 ease-out', ativa && 'font-semibold')}
+        /* O rótulo cresceu (11,5 → 12,5px) e o ATIVO cresce mais (13px).
+
+           Preferi tamanho a cor: a cor aqui já tem dono — ela diz QUAL etapa é,
+           e é a mesma do quadro. Intensificá-la para chamar atenção faria a
+           faixa competir com o próprio código de cores e, no tema claro, essa
+           paleta não tem para onde subir sem sujar. Tamanho e peso são o
+           recurso que ainda estava livre. */
+        className={cn(
+          'truncate transition-colors duration-200 ease-out',
+          ativa ? 'text-[13px] font-semibold' : 'text-[12.5px]',
+        )}
         style={ativa
-          ? { color: cor }
+          ? { color: tintaDaEtapa(cor) }
           : terminal
-            ? { color: hexToRgba(cor, 0.62) }
+            // Cinza, não a cor a 62%: o desfecho já é dito pelo ✓/× acima, e
+            // cor esmaecida some no tema claro.
+            ? { color: 'var(--color-surface-400)' }
             : { color: 'var(--color-surface-500)' }}
       >
         {etapa.label}
@@ -347,20 +400,37 @@ function Passo({
   )
 
   return (
+    /* O balão volta, e volta ESTILIZADO — o `title` nativo não serve aqui.
+
+       O motivo é a própria faixa: com muitas etapas ela encolhe os rótulos até
+       "No…", "Ate…", "Fe…". Nesse estado o texto na tela não identifica mais a
+       etapa, e o balão deixa de ser repetição para virar a ÚNICA leitura
+       possível. Foi por não considerar a trilha encolhida que eu o removi.
+
+       Por isso ele traz o rótulo INTEIRO em destaque e a ação embaixo, em tom
+       de apoio: identidade primeiro, instrução depois.
+
+       Só nas não-ativas: a etapa atual é `shrink-0`, nunca encolhe, e sempre se
+       lê por completo. */
     <span className={cn('flex items-center min-w-0', ativa ? 'shrink-0' : 'shrink')}>
-      {ativa
-        ? corpo
-        : (
-          <Tooltip
-            content={terminal
-              ? `${etapa.label} — encerramento do funil. O ${etapa.isWon ? 'ganho' : 'encerramento'} não é etapa de entrada.`
-              : etapa.label}
-            side="bottom"
-            wide={terminal}
-          >
-            {corpo}
-          </Tooltip>
-        )}
+      {ativa ? corpo : (
+        <Tooltip
+          side="bottom"
+          wide
+          content={
+            <span className="block leading-snug">
+              <span className="block font-semibold text-surface-50">{etapa.label}</span>
+              <span className="block text-surface-400">
+                {terminal
+                  ? 'Encerramento do funil — fechar exige motivo, então não é etapa de entrada.'
+                  : 'Clique para mover para esta etapa'}
+              </span>
+            </span>
+          }
+        >
+          {corpo}
+        </Tooltip>
+      )}
     </span>
   )
 }

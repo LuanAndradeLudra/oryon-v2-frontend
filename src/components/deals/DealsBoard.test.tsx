@@ -106,7 +106,7 @@ describe('DealsBoard — escopo no card', () => {
     const scope = screen.getByTestId('card-scope')
     expect(scope).toHaveTextContent('Site institucional + hospedagem')
     // O rótulo é o que diz ao operador o QUE é aquele texto no card.
-    expect(scope).toHaveTextContent('Escopo')
+    expect(scope).toHaveTextContent('Observações')
   })
 
   it('sem escopo, nao ocupa espaco no card', () => {

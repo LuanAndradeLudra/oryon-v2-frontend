@@ -110,6 +110,25 @@ describe('DealsBoard — card de VENDA com dono, previsão, tempo na etapa e ori
     expect(screen.getByTestId('sales-card-time')).toHaveTextContent('3 h na etapa')
   })
 
+  // O card tinha DUAS linhas com ícone de pessoa, uma sob a outra: o dono e a
+  // origem 'Manual'. Como quase todo negócio nasce manual, o caso comum era o
+  // ambíguo. A origem manual passou a usar outro ícone, e cada linha diz no
+  // hover QUAL campo é — o valor sozinho ('Ana Souza') não ensina nada.
+  it('dono e origem não se confundem: rótulo no hover e ícones distintos', () => {
+    const USERS = [{ id: 'u1', tenantId: 't', email: 'ana@x.com', firstName: 'Ana', lastName: 'Souza', role: 'agent', isActive: true }] as never
+    const sales = deal({ pipelineId: 'ps', ownerUserId: 'u1', originKind: 'manual' })
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} users={USERS} />)
+
+    expect(screen.getByTestId('sales-card-owner')).toHaveAttribute('title', 'Dono do negócio: Ana Souza')
+    expect(screen.getByTestId('sales-card-origin')).toHaveAttribute('title', 'Origem: Manual')
+
+    // Se os dois ícones voltarem a ser o mesmo, a ambiguidade volta com eles.
+    const svgDono = screen.getByTestId('sales-card-owner').querySelector('svg')
+    const svgOrigem = screen.getByTestId('sales-card-origin').querySelector('svg')
+    expect(svgDono?.innerHTML).toBeTruthy()
+    expect(svgOrigem?.innerHTML).not.toEqual(svgDono?.innerHTML)
+  })
+
   it('sem dono/previsão: "Sem dono" e "sem previsão" — nada inventado', () => {
     const sales = deal({ pipelineId: 'ps', ownerUserId: undefined, expectedCloseAt: undefined })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} />)
@@ -146,6 +165,31 @@ describe('DealsBoard — "Mover ▾" por toque e clique no card (F-FUNIL-09)', (
     // "Confirmado" aparece 2x (cabeçalho da coluna + opção do menu) — a opção é um <button>.
     fireEvent.click(screen.getByRole('button', { name: 'Confirmado' }))
     expect(onMoveStage).toHaveBeenCalledWith(sales, 's3')
+  })
+
+  // O botão é a alternativa de quem NÃO arrasta. Onde o ponteiro é fino (mouse),
+  // ele some — eram dois caminhos para o mesmo gesto, e o botão cobria o canto
+  // do card no hover. O `matchMedia` do setup responde `false` a tudo, então o
+  // padrão dos outros testes é o caso sem mouse; aqui a resposta é trocada.
+  it('com mouse (ponteiro fino), o "Mover ▾" some do card', () => {
+    const original = window.matchMedia
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes('pointer: fine'),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as typeof window.matchMedia
+    try {
+      const sales = deal({ pipelineId: 'ps', stageId: 's1' })
+      render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} />)
+      expect(screen.queryByRole('button', { name: /Mover .* para outra etapa/ })).toBeNull()
+    } finally {
+      window.matchMedia = original
+    }
   })
 
   it('clicar no CORPO do card chama onOpenDeal com o id do negócio', () => {
