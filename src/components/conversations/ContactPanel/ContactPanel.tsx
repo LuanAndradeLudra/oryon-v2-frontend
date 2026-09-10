@@ -59,7 +59,7 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
           const isSelected = user.id === selectedUserId
           return (
             <button key={user.id} onClick={() => onSelect(user)} className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all', isSelected ? 'bg-brand-600/10' : 'hover:bg-surface-700')}>
-              <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" className="flex-shrink-0" />
+              <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" className="flex-shrink-0" />
               <div className="min-w-0 flex-1 text-left">
                 <p className={cn('text-sm font-medium', isSelected ? 'text-brand-300' : 'text-surface-200')}>{user.firstName} {user.lastName}</p>
                 <p className="text-[11px] text-surface-500 truncate">{roleLabel(user.role)} · {user.email}</p>
@@ -318,7 +318,7 @@ export function ContactPanel({
                 'bg-brand-600/10 text-brand-300 hover:bg-brand-600/20',
               )}
             >
-              <Avatar name={`${assignedUser.firstName} ${assignedUser.lastName}`} size="xs" />
+              <Avatar name={`${assignedUser.firstName} ${assignedUser.lastName}`} size="xs" kind="operator" />
               <span className="truncate">{assignedUser.firstName} {assignedUser.lastName}</span>
             </button>
           ) : (
@@ -367,7 +367,7 @@ export function ContactPanel({
                 onClick={() => { onTransfer(user); setXferModal(false) }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all mb-1 hover:bg-surface-800"
               >
-                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
+                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" />
                 <div className="flex-1 text-left min-w-0">
                   <p className="text-sm font-medium text-surface-200">
                     {user.firstName} {user.lastName}

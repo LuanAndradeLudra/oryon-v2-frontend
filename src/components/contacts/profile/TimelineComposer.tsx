@@ -30,7 +30,7 @@ export function TimelineComposer({ onSubmit, textareaRef }: TimelineComposerProp
   return (
     <div className="rounded-xl border border-surface-700 bg-surface-800 p-3 transition-colors focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/30">
       <div className="flex items-start gap-3">
-        <Avatar name={userName} imageUrl={user?.avatarUrl} size="sm" />
+        <Avatar name={userName} imageUrl={user?.avatarUrl} size="sm" kind="operator" />
         <textarea
           ref={textareaRef}
           value={body}

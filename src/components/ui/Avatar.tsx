@@ -6,6 +6,16 @@ interface AvatarProps {
   size?: 'xs' | 'sm' | 'md' | 'lg'
   online?: boolean
   className?: string
+  /**
+   * QUEM é esta pessoa para o produto.
+   *
+   * `contact` (padrão) é o cliente — o assunto da tela. `operator` é gente da
+   * plataforma: o dono do negócio, quem está atribuído, o autor de uma nota, o
+   * usuário logado. As duas apareciam com o mesmo rosto, e numa lista de
+   * atendimento isso é confusão real: o avatar ao lado de "atribuído a" lia
+   * igual ao avatar de quem escreveu.
+   */
+  kind?: 'contact' | 'operator'
 }
 
 const sizes = {
@@ -23,14 +33,22 @@ const dotSizes = {
 }
 
 
-export function Avatar({ name, imageUrl, size = 'md', online, className }: AvatarProps) {
+export function Avatar({ name, imageUrl, size = 'md', online, className, kind = 'contact' }: AvatarProps) {
+  /* A FORMA é o sinal principal: círculo para o cliente, quadrado de cantos
+     arredondados para quem é da casa. Raio em PORCENTAGEM para acompanhar o
+     tamanho — a 40 px dá 12 px de canto, a 24 px dá 7 px; um raio fixo viraria
+     quase-círculo nos avatares pequenos e a distinção se perderia justamente
+     onde ela mais aparece (listas). Vale também para a FOTO: um operador com
+     foto continua sendo um quadrado arredondado. */
+  const forma = kind === 'operator' ? 'rounded-[30%]' : 'rounded-full'
+
   return (
     <div className={cn('relative flex-shrink-0', className)}>
       {imageUrl ? (
         <img
           src={imageUrl}
           alt={name}
-          className={cn('rounded-full object-cover', sizes[size])}
+          className={cn(forma, 'object-cover', sizes[size])}
         />
       ) : (
         /**
@@ -48,11 +66,25 @@ export function Avatar({ name, imageUrl, size = 'md', online, className }: Avata
          * não lido, o alerta. Identidade se resolve com forma e texto.
          *
          * Foto continua sendo foto: quando existe `imageUrl`, nada disto vale.
+         *
+         * Disco e inicial vêm de tokens SEMÂNTICOS (`avatar-surface` /
+         * `avatar-initials`), não de degraus da escala. É o que permite o
+         * escuro inverter — disco cinza claro, letra na cor do chão da lista,
+         * recortada nele — sem arrastar o tema claro junto, onde chão e disco
+         * são vizinhos e o recorte apagaria a letra. Um nome só aqui, dois
+         * valores por tema no `index.css`, com as medidas de contraste.
          */
         <div
           className={cn(
-            'rounded-full flex items-center justify-center font-semibold',
-            'bg-surface-700 text-surface-300',
+            forma,
+            'flex items-center justify-center font-semibold',
+            // Operador leva o gradiente da marca (`.avatar-operador`, no
+            // index.css) — teal diz "é da casa". O contato fica no par
+            // monocromático por tema: cliente é identidade, e identidade não
+            // se codifica em cor.
+            kind === 'operator'
+              ? 'avatar-operador'
+              : 'bg-avatar-surface text-avatar-initials',
             sizes[size],
           )}
         >
