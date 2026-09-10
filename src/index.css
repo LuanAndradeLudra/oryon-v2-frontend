@@ -158,6 +158,58 @@
   --color-surface-100-dark: #ECF1F1;
   --color-surface-50-dark:  #F6FAFA;
 
+  /* Avatar sem foto — disco claro, letra RECORTADA nele.
+     No escuro a inicial é o próprio chão da lista de conversas (#060909 =
+     surface-950): a letra não pinta, ela fura o disco. Último passo da limpeza
+     da inbox — depois de tirar as 8 cores sorteadas do avatar e as pílulas das
+     etiquetas, o que restava chamando atenção era texto claro em vinte
+     iniciais.
+
+     O disco inverte para cinza claro justamente para o recorte existir: contra
+     o antigo #243333 a letra dava 1.52:1 e sumia; contra #B5C8C8 dá 11.48:1.
+     A escolha do degrau é de luminância, não de contraste — do 200 para cima
+     seriam vinte discos quase brancos, e a mancha voltaria pelo brilho o que se
+     ganhou tirando matiz. O 300 lê como cinza claro sem virar farol.
+
+     O tema claro usa o mesmo par com os papéis trocados (disco escuro, letra
+     clara) — ver o bloco de [data-theme="light"]. */
+  /* Barra de contexto do funil — o cabeçalho de /pipelines/:id e a faixa de
+     números logo abaixo dele.
+
+     No CLARO ela sobe: o chão da página é cinza (#F1F3F7) e a barra é branca,
+     o que separa "o que informa" de "o que é conteúdo". No ESCURO não há o que
+     subir — o chão já é o mais escuro que existe, e qualquer elevação faria a
+     barra destoar da TopBar logo acima, que também está no chão. Então ela é o
+     PRÓPRIO chão, e quem separa a barra do quadro é a borda, não a cor.
+
+     Token semântico e não um degrau da escala justamente por isso: os dois
+     temas querem papéis diferentes aqui, e nenhum degrau único serve aos dois
+     (`surface-800` é #FFFFFF no claro e #161E1E no escuro — certo lá, elevado
+     demais aqui). */
+  /* TINTA DA ETAPA — a direção e a força com que a cor de uma etapa é ajustada
+     quando vira TEXTO ou linha fina (ver `tintaDaEtapa` em lib/utils).
+
+     A paleta de etapas foi calibrada para o escuro e só para ele: sobre o card
+     escuro as cores rendem 7–9:1, sobre o card branco as MESMAS cores rendem
+     1,9–2,5:1 (âmbar 2,15 · amarelo 1,92 · verde 2,28). Como texto, somem.
+
+     No escuro o ajuste é ZERO — nada muda no que já funciona. No claro a cor
+     é misturada com 40% de preto, o que leva a paleta inteira para 5,0–6,2:1
+     preservando a matiz: âmbar continua âmbar, só mais fundo.
+
+     Fica como token (e não como uma segunda paleta) porque a cor da etapa vem
+     do BANCO, escolhida por cada tenant. Uma paleta nova exigiria migração e
+     quebraria na próxima cor que alguém escolhesse; a mistura vale para
+     qualquer hex. */
+  --ink-target: #FFFFFF;
+  --ink-amount: 0%;
+
+  --color-board-bar: #060909;
+
+  --color-avatar-surface:  #B5C8C8;
+  --color-avatar-initials: #060909;
+
+
   /* ── Status — não substituir com teal ──────────────────────────────────── */
   --color-success:               #22C55E;
   --color-success-light:         #15803D;
@@ -265,11 +317,38 @@
   --color-bubble-in-lk:       #FFFFFF;
 
   /* ── Card Janela 24h ─────────────────────────────────────────────────── */
-  --color-card-24h-bg:     #161E1E;
+  /* O card de "janela de 24h encerrada" OCUPA O LUGAR do composer quando a
+     janela fecha — os dois nunca aparecem juntos. Ficou em #161E1E enquanto o
+     composer descia, e o resultado foi o pior dos dois mundos: uma caixa mais
+     clara que tudo em volta, com a matiz da escala (G=B>R) visível contra o
+     quase-preto do chat. Lia como "bloco esverdeado fora do lugar", não como
+     aviso.
+
+     Acompanha o composer — os dois ocupam o mesmo lugar e devem ter o mesmo
+     peso de superfície. O que diferencia os estados não é o preenchimento: o
+     ícone de alerta e o título já são teal (`card-24h-accent`), e é aí que a
+     informação mora. */
+  --color-card-24h-bg:     #0E1414;
   --color-card-24h-border: #243333;
 
   /* ── Composer (campo de mensagem) ─────────────────────────────────────── */
-  --color-composer-bg:     #161E1E;
+  /* Duas descidas em 10/09: #161E1E (surface-800) → #0E1414 → #060909.
+
+     No 800 o composer era a maior mancha clara da tela: dobro da luminância
+     dos cards e a um passo dos overlays — uma caixa fixa na base competindo em
+     elevação com o que flutua.
+
+     O nível de card (#0E1414) ainda não bastou, e o motivo é LOCAL: a vizinhança
+     do composer é a área mais escura do app (`.chat-shell-bg` é um radial que
+     chega a #000000 no canto), então o mesmo cinza que passa despercebido no
+     painel do contato salta aqui. Cor é relativa ao que está em volta.
+
+     O #060909 (chão) chegou a ser testado e ficou escuro DEMAIS: sem nenhum
+     preenchimento, a caixa sumia no fundo do chat e sobrava só uma borda. O
+     ponto está no meio — #0E1414, nível de card, o mesmo dos cards do painel
+     do contato. Um degrau acima do chão: existe como superfície sem virar a
+     mancha mais clara da tela. */
+  --color-composer-bg:     #0E1414;
   --color-composer-border: #243333;
 
   /* ── Elevação nível 3: overlays (dropdown/popover/tooltip/notificações) ──
@@ -602,10 +681,15 @@ code, pre, kbd, samp {
 /* ── Colored chip (etiquetas, estágio do funil, status, etc.) ────────────────
    A cor entra via --chip. Nos DOIS temas: cheio — fundo = cor levemente
    escurecida + texto quase branco. O ponto (.chip-dot) segue o texto. */
+/* `--chip` é a cor do selo; `--chip-mix` é QUANTO dela sobrevive à mistura com
+   preto — 85% por padrão, menos para um selo mais fundo. Fica como variável
+   porque a proporção certa depende do peso que o selo tem na tela: no
+   cabeçalho de uma coluna do funil ele é anotação e não deve competir com o
+   nome da etapa; noutros lugares é o próprio assunto. */
 .color-chip {
-  background-color: color-mix(in srgb, var(--chip) 85%, #000);
+  background-color: color-mix(in srgb, var(--chip) var(--chip-mix, 85%), #000);
   color: #fff;
-  border-color: color-mix(in srgb, var(--chip) 85%, #000);
+  border-color: color-mix(in srgb, var(--chip) var(--chip-mix, 85%), #000);
 }
 .chip-dot { background-color: currentColor; }
 
@@ -666,6 +750,31 @@ code, pre, kbd, samp {
      sobre ele (+ sombras suaves). Antes o fundo era branco puro e os cards um
      cinza quase branco — nada separava de nada. Ordem agora consistente com o
      escuro: 950 = fundo/recua, 800 = superfície elevada. */
+  /* Avatar: os papéis TROCADOS em relação ao escuro — lá o disco é claro e a
+     letra é o chão; aqui o disco é o cinza escuro e a letra é branca (10.31:1).
+
+     A troca é o que faz o avatar se comportar igual nos dois temas: disco em
+     contraluz com o chão da página, inicial no extremo oposto. Manter o disco
+     claro aqui deixaria vinte discos quase invisíveis sobre o chão #F1F3F7,
+     que é quase da mesma luminância.
+
+     O disco é o surface-400 do claro (#374151) e não o 300 (#1f2937): um degrau
+     acima tira o peso de vinte círculos quase pretos sobre um chão quase
+     branco, sem chegar perto do limite — a alavanca continua sendo a luminância
+     do disco, e o branco da letra aguenta até o 600 (4.76:1). Dois degraus
+     acima (#565B64) já ficou lavado demais na tela. */
+  /* Barra de contexto do funil: aqui ela SOBE — branca sobre o chão cinza. */
+  /* Tinta da etapa: aqui a cor precisa DESCER para ser legível — ver o bloco
+     do @theme para os números. */
+  --ink-target: #000000;
+  --ink-amount: 40%;
+
+  --color-board-bar: #FFFFFF;
+
+  --color-avatar-surface:  #374151;
+  --color-avatar-initials: #FFFFFF;
+
+
   --color-surface-950: #F1F3F7;
   --color-surface-900: #FBFBFD;
   --color-surface-800: #FFFFFF;
@@ -1010,10 +1119,132 @@ code, pre, kbd, samp {
   color: color-mix(in srgb, var(--color-brand-600) 85%, #000);
 }
 
+/* ── Drawer de negócio: papéis invertidos no tema CLARO ────────────────────
+ *
+ * Vale para os drawers que carregam a mesma classe: a ficha do negócio e o
+ * painel do contato no CRM. Não é global de propósito — é um arranjo de
+ * PAINEL, e páginas continuam com a escala normal, onde o branco é o card que
+ * sobe sobre o cinza.
+ *
+ * No claro a escala `surface` faz o chão ser cinza
+ * (#F1F3F7) e as superfícies elevadas serem brancas — bom numa PÁGINA, onde o
+ * branco é o card que sobe sobre o cinza. Num drawer o efeito se inverte: o
+ * painel inteiro já é a superfície elevada, e deixá-lo cinza com campos
+ * brancos dentro faz cada campo parecer um segundo nível de elevação sobre
+ * algo que deveria ser o mais alto da tela.
+ *
+ * Aqui o drawer vira BRANCO e os blocos internos (observações, itens
+ * fechados) recebem o cinza. A troca é feita redefinindo os tokens NA RAIZ do
+ * drawer, não em cada componente: as utilidades do Tailwind compilam para
+ * `var(--color-surface-*)`, então tudo que estiver dentro herda a inversão sem
+ * um único `className` alterado — e nada fora do drawer é tocado.
+ *
+ * O tema escuro não entra: lá a escala já vai do escuro (chão) ao claro
+ * (elevado), que é a ordem certa para um painel.
+ */
+[data-theme="light"] .drawer-invertido {
+  --color-surface-950: #FFFFFF;  /* chão do drawer */
+  --color-surface-900: #F8F9FB;  /* seções internas */
+  --color-surface-800: #EDF0F6;  /* campos e blocos — um fio abaixo do chão
+                                    da página, para o bloco ter corpo sem virar
+                                    aquele cinza de campo desabilitado */
+}
+
+/* ── Dentro do drawer invertido: estrutura por LINHA e ELEVAÇÃO ────────────
+ *
+ * O cinza claro não funcionava, e não era questão de achar o tom certo: sobre
+ * branco, qualquer cinza suficientemente visível para separar já começa a ler
+ * como campo DESABILITADO. É um beco — mais contraste piora a impressão.
+ *
+ * A saída é trocar o recurso. Numa superfície branca, quem separa não é a
+ * massa, é a ARESTA e a SOMBRA. E os dois elementos ganham tratamentos
+ * OPOSTOS, porque são coisas diferentes:
+ *
+ *   · BLOCO (item/produto) SOBE — branco, aresta definida, sombra curta de
+ *     contato. É um objeto pousado sobre a superfície.
+ *   · CAMPO (observações) AFUNDA — branco, aresta e uma sombra INTERNA de 1px.
+ *     É um sulco na superfície, onde se escreve.
+ *
+ * Essa distinção é o que faz uma tela clara parecer construída em vez de
+ * pintada: o olho lê profundidade, não tonalidade. É o vocabulário do Stripe e
+ * do Linear, e custa zero saturação.
+ *
+ * Só no tema CLARO: sombra sobre fundo escuro é invisível, e lá a escala já
+ * separa por luminância. */
+/* Em repouso o bloco também é um CARTÃO, não um retângulo desenhado: aresta
+   firme e duas camadas de sombra — contato (curta, cola o objeto na
+   superfície) e altura (longa e difusa, diz a que distância ele está). Uma
+   sombra só, genérica, borra; são as duas camadas que dão peso real. */
+[data-theme="light"] .drawer-invertido .bloco-drawer {
+  background: #FFFFFF;
+  border-color: #D8DDE7;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 3px 8px -3px rgba(16, 24, 40, 0.10);
+}
+/* O aberto precisa continuar UM DEGRAU acima do repouso — se os dois pesarem
+   igual, a elevação para de significar "este está em edição". Subiu junto. */
+[data-theme="light"] .drawer-invertido .bloco-drawer-ativo {
+  background: #FFFFFF;
+  border-color: #BFC7D8;
+  box-shadow: 0 8px 20px -6px rgba(16, 24, 40, 0.16), 0 2px 6px -2px rgba(16, 24, 40, 0.08);
+}
+[data-theme="light"] .drawer-invertido .campo-drawer {
+  background: #FFFFFF;
+  border-color: #C9D0DE;
+  /* Sulco distribuído pelo PERÍMETRO, não só pelo topo.
+
+     As três camadas anteriores tinham deslocamento vertical, então toda a
+     sombra se acumulava sob a borda de cima e as outras três ficavam limpas —
+     o campo lia como se tivesse só um beiral, não como uma cavidade.
+
+     Agora a camada principal (`0 0`) não tem deslocamento: sem direção, ela
+     entra igual pelos quatro lados. A quina superior continua existindo, só que
+     mais discreta — é o que dá a leitura de "afunda a partir daqui" —, e a
+     terceira camada mantém uma leve queda para baixo, que é para onde a luz
+     empurra a sombra. No conjunto, mais leve que antes e espalhada. */
+  box-shadow:
+    inset 0 1px 0 rgba(16, 24, 40, 0.07),
+    inset 0 0 6px rgba(16, 24, 40, 0.07),
+    inset 0 2px 5px -2px rgba(16, 24, 40, 0.06);
+}
+
 /* ── Composer (campo de mensagem) — acompanha o tema (escuro/claro) ──────── */
 .msg-composer {
   background: var(--color-composer-bg);
   border-color: var(--color-composer-border);
+}
+
+/* ── Avatar de OPERADOR — gradiente da marca ──────────────────────────────
+ *
+ * Operador é quem é da casa, e teal é a casa: aqui a cor não decora, ela diz
+ * de que LADO a pessoa está. Uma cor só para todos os operadores — codifica
+ * categoria, não identidade, que é a diferença entre isto e as oito cores
+ * sorteadas por inicial que o avatar tinha antes e que não significavam nada.
+ *
+ * A faixa é FUNDA: #0F766E → #134E4A. Isso obrigou a virar as iniciais para
+ * BRANCO, e a troca não é preferência — é onde os números mandam.
+ *
+ * Existe um ponto de cruzamento por volta de #0D9488: acima dele o teal é claro
+ * e só iniciais escuras leem; abaixo, escuro e só brancas leem. Tentar ficar em
+ * cima do cruzamento dá o pior dos dois (5,2:1 com escuras, 3,7:1 com brancas).
+ * Escolhido o lado escuro, o branco vai de 5,5:1 no topo a 9,5:1 na base — a
+ * parte pior do disco agora é MELHOR do que era a melhor antes.
+ *
+ * O teto é #0F766E no topo: acima disso o branco cai abaixo de 4,5:1 justamente
+ * na ponta clara. Mais intensidade só existe descendo a base, não subindo o
+ * topo.
+ *
+ * Igual nos dois temas: o teal se vira tanto sobre branco quanto sobre preto,
+ * então este é o único avatar que não precisa de par por tema.
+ *
+ * A FORMA (quadrado arredondado, no componente) continua sendo o sinal
+ * principal, e não é redundância: quando o operador tem FOTO não há gradiente
+ * nenhum, e sem a forma o avatar voltaria a ser indistinguível do cliente. É
+ * também ela que separa o operador do ícone do Copilot logo abaixo, que usa a
+ * mesma família de teal — lá é círculo, aqui é quadrado. */
+.avatar-operador {
+  background-image: linear-gradient(135deg, #0F766E 0%, #134E4A 100%);
+  /* Branco, e não `--color-accent-on`: aquele token existe para teal CLARO. */
+  color: #FFFFFF;
 }
 
 /* ── Copilot / IA icon — gradiente teal ─────────────────────────────────── */
