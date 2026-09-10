@@ -713,7 +713,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       <button
                         onClick={processPaste}
                         disabled={!pasteText.trim()}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-40 transition-all"
+                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-40 transition-all"
                       >
                         <ArrowRight className="w-3.5 h-3.5" />
                         Processar texto
@@ -1035,7 +1035,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                         </button>
                         <button
                           onClick={handleClose}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
                         >
                           <Users className="w-3.5 h-3.5" />
                           Ver contatos
@@ -1061,7 +1061,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   <button
                     onClick={() => setStep('preview')}
                     disabled={!hasRequiredMapped || aiLoading}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-50 transition-all"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-50 transition-all"
                   >
                     {aiLoading
                       ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Aguardando IA…</>
@@ -1072,7 +1072,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   <button
                     onClick={handleImport}
                     disabled={validCount === 0}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-50 transition-all"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-50 transition-all"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     Importar {validCount} contato{validCount !== 1 ? 's' : ''}

@@ -50,10 +50,18 @@ export function EmptyState({ icon: Icon, title, hint, action, className, iconSty
               {action.label}
             </a>
           ) : (
+            /* `neutral`, não teal (10/09): o CTA de um estado vazio é a mesma
+               classe de botão do "Novo negócio" do cabeçalho, e os dois
+               apareciam lado a lado na mesma tela com cores diferentes.
+
+               É a continuação da conversão que tirou o teal dos botões de
+               confirmação: aqui o teal não marcava importância, marcava
+               "botão" — e num estado vazio, onde ele é o único elemento
+               interativo, não precisava marcar nada. */
             <button
               type="button"
               onClick={action.onClick}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-brand-600 hover:bg-brand-500 text-surface-950 text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-100 hover:bg-surface-50 text-surface-950 text-xs font-semibold transition-colors"
             >
               {action.label}
             </button>

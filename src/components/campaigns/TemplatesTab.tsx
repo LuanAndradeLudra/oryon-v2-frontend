@@ -194,6 +194,7 @@ export function TemplatesTab() {
         </Button>
 
         <Button
+          variant="neutral"
           onClick={() => { if (!hasWhatsappLine) return; setEditing(null); setDrawerOpen(true) }}
           disabled={!hasWhatsappLine}
           title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar templates' : undefined}

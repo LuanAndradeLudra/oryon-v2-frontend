@@ -125,7 +125,7 @@ export function CRMConfigDrawer({
                   <Link
                     to="/settings/pipeline-stages"
                     onClick={onClose}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
                   >
                     Ir para Configurações → Funis <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>

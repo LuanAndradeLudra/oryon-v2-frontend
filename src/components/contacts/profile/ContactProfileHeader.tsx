@@ -32,6 +32,8 @@ interface ContactProfileHeaderProps {
   /** Nome do último atendente atribuído (de getStats). */
   assignedTo?: string | null
   onBack: () => void
+  /** Para onde o voltar leva, em palavras — a ficha tem mais de uma origem. */
+  backLabel?: string
   onOpenChat: () => void
   onSendTemplate: () => void
   onAddNote: () => void
@@ -66,7 +68,7 @@ const WINDOW_CHIP: Record<WhatsAppWindowState, string> = {
  */
 export function ContactProfileHeader({
   contact, lastActivityAt, lastMessagePreview, lastMessageSenderKind, assignedTo,
-  onBack, onOpenChat, onSendTemplate, onAddNote, onAddTask, onDelete, onStageChanged, compact = false,
+  onBack, backLabel = 'Voltar para contatos', onOpenChat, onSendTemplate, onAddNote, onAddTask, onDelete, onStageChanged, compact = false,
 }: ContactProfileHeaderProps) {
   const addToPipeline = useAddToPipeline()
   const { stages, pipelines } = useCRMConfig()
@@ -94,8 +96,8 @@ export function ContactProfileHeader({
       <div className="flex items-start gap-3">
         <button
           onClick={onBack}
-          title="Voltar para contatos"
-          aria-label="Voltar para contatos"
+          title={backLabel}
+          aria-label={backLabel}
           className="mt-0.5 p-2 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />

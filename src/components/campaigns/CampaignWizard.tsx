@@ -614,10 +614,13 @@ export function CampaignWizard({
                       !canAdvance && step === 3 ? 'Preencha o mapeamento de todas as variáveis para continuar' :
                       undefined
                     }
+                    /* Avanço/criação do assistente em `neutral` (10/09) — o teal
+                       aqui só dizia "botão", e o estado desabilitado já é quem
+                       carrega a informação real (pode ou não avançar). */
                     className={cn(
                       'flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium transition-all',
                       canAdvance
-                        ? 'bg-brand-600 hover:bg-brand-500 text-surface-950'
+                        ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
                         : 'bg-surface-700 text-surface-500 cursor-not-allowed'
                     )}
                   >
@@ -632,7 +635,7 @@ export function CampaignWizard({
                     className={cn(
                       'flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium transition-all',
                       !saving && !(waNumbers.length > 1 && !whatsappNumberId)
-                        ? 'bg-brand-600 hover:bg-brand-500 text-surface-950'
+                        ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
                         : 'bg-surface-700 text-surface-500 cursor-not-allowed'
                     )}
                   >
@@ -1809,7 +1812,7 @@ function ContactListModal({
         <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
           <button
             onClick={onClose}
-            className="w-full py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-medium transition-all"
+            className="w-full py-2 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 text-sm font-medium transition-all"
           >
             Fechar e continuar
           </button>

@@ -324,7 +324,7 @@ function ConstraintsModal({
           <button
             type="button"
             onClick={handleSave}
-            className="px-3 py-1.5 text-sm rounded-md bg-brand-600 hover:bg-brand-500 text-white font-medium"
+            className="px-3 py-1.5 text-sm rounded-md bg-surface-100 hover:bg-surface-50 text-surface-950 font-medium"
           >
             Salvar limites
           </button>

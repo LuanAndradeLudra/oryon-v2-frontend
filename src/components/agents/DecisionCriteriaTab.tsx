@@ -212,7 +212,7 @@ function CriterionEditor({
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition',
               isDirty && !saving
-                ? 'bg-brand-600 hover:bg-brand-500 text-white'
+                ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
                 : 'bg-surface-800 text-surface-500 cursor-not-allowed',
             )}
           >
