@@ -9,7 +9,13 @@ import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { getApiErrorMessage, cn } from '@/lib/utils'
-import { PIPELINE_KIND_OPTIONS, pipelineKindOption, pipelineKindOf, DEFAULT_PIPELINE_KIND } from '@/lib/pipelineKinds'
+import {
+  PIPELINE_KIND_OPTIONS,
+  CREATABLE_PIPELINE_KIND_OPTIONS,
+  pipelineKindOption,
+  pipelineKindOf,
+  DEFAULT_PIPELINE_KIND,
+} from '@/lib/pipelineKinds'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { pipelinesApi } from '@/services/api'
 import { loadHubAsync } from '@/services/companyContextService'
@@ -134,6 +140,18 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
   const templatesOfKind = useMemo(() => (templates ?? []).filter((t) => t.kind === kind), [templates, kind])
   const kindOption = pipelineKindOption(kind)
 
+  // Tipos visíveis no campo: os que a criação oferece hoje, mais o tipo do
+  // próprio funil quando se está editando — um funil de processo que já existe
+  // continua se declarando como tal mesmo com a criação fechada. Sobrando um
+  // só, o campo inteiro some: escolher entre uma coisa não é escolher.
+  const kindOptions = useMemo(
+    () =>
+      PIPELINE_KIND_OPTIONS.filter(
+        (o) => CREATABLE_PIPELINE_KIND_OPTIONS.some((c) => c.kind === o.kind) || (isEdit && o.kind === kind),
+      ),
+    [isEdit, kind],
+  )
+
   const applyTemplate = (key: string, nextKind: PipelineKind) => {
     const tpl = (templates ?? []).find((t) => t.key === key && t.kind === nextKind) ?? null
     setTemplateKey(tpl?.key ?? '')
@@ -256,11 +274,13 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
           </FormField>
         )}
 
-        {/* Tipo — decide vocabulário, campos e terminais. Na edição vira só leitura. */}
+        {/* Tipo — decide vocabulário, campos e terminais. Na edição vira só
+            leitura; com um tipo só disponível, não é mostrado. */}
+        {kindOptions.length > 1 && (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-semibold text-surface-400">Tipo</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" role="radiogroup" aria-label="Tipo do funil">
-            {PIPELINE_KIND_OPTIONS.map((opt) => {
+            {kindOptions.map((opt) => {
               const active = opt.kind === kind
               const Icon = opt.icon
               return (
@@ -295,6 +315,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
             <p className="text-[11px] text-surface-500">O tipo não muda depois de criado — ele define o vocabulário do histórico.</p>
           )}
         </div>
+        )}
 
         {/* Etapas — modelo por tipo + lista editável (terminais fixos e renomeáveis) */}
         {!isEdit && (

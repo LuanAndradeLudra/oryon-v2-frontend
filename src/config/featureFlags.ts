@@ -80,6 +80,17 @@ export const FEATURE_FLAGS = {
   // do menu lateral, mas as rotas continuam acessíveis via URL direta
   // (mesmo padrão das outras feature flags).
   oryonStaffSidebar: true,
+  // Funis de PROCESSO (Modelo B §4.2) como opção na CRIAÇÃO de funil.
+  //
+  // `false` esconde só a escolha: o cartão "Processo" some do campo "Tipo" em
+  // CreatePipelineModal e todo funil novo nasce `sales`. NÃO esconde o que já
+  // existe — os funis de processo do tenant continuam abrindo, operáveis, com
+  // o vocabulário deles ("registro", Concluído/Cancelado), porque os ramos que
+  // leem `pipelineKindOf()` seguem intactos. Esconder os existentes órfãos os
+  // registros abertos e é uma decisão separada, com migração antes.
+  //
+  // Reativar = trocar para `true`. Uma linha.
+  processPipelines: false,
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS
