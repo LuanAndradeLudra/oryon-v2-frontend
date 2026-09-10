@@ -313,14 +313,14 @@ describe('NewDealDialog — regressões da revisão', () => {
   it('título e escopo abrem a tela, juntos', () => {
     renderDialog()
     expect(screen.getByLabelText(/Título/)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Escopo/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Observações/)).toBeInTheDocument()
   })
 
   // O escopo (`description`) é o "o que está sendo tratado" — existe para os
   // dois tipos e ficava preso ao passo 2, que sumia em processo.
   it('escopo é enviado como `description` e existe também em processo', async () => {
     renderDialog({ pipelines: [PROCESSO] })
-    fireEvent.change(screen.getByLabelText(/Escopo/), { target: { value: 'Consulta de retorno' } })
+    fireEvent.change(screen.getByLabelText(/Observações/), { target: { value: 'Consulta de retorno' } })
     fireEvent.click(screen.getByRole('button', { name: /Criar registro/i }))
     await waitFor(() => expect(deals.create).toHaveBeenCalledWith(
       expect.objectContaining({ description: 'Consulta de retorno' }),
@@ -359,7 +359,7 @@ describe('NewDealDialog — regressões da revisão', () => {
 describe('NewDealDialog — o nome de cada coisa', () => {
   it('escopo é campo com rótulo visível, não legenda do título', () => {
     renderDialog()
-    const escopo = screen.getByLabelText(/Escopo/) as HTMLTextAreaElement
+    const escopo = screen.getByLabelText(/Observações/) as HTMLTextAreaElement
     expect(escopo.tagName).toBe('TEXTAREA')
     // O rótulo é do próprio campo — clicar nele foca o campo.
     expect(escopo.id).toBeTruthy()
@@ -394,8 +394,12 @@ describe('NewDealDialog — o nome de cada coisa', () => {
     const trilha = screen.getByRole('navigation', { name: 'Etapa de entrada' })
     // O eixo é declarado: sem isso a faixa é só uma fileira de pontos.
     expect(within(trilha).getByText('Etapas')).toBeInTheDocument()
-    // A etapa ativa leva a própria cor no rótulo, como no quadro.
-    expect(within(trilha).getByText('Novo')).toHaveStyle({ color: '#6366f1' })
+    // A etapa ativa leva a própria cor no rótulo, como no quadro — passando
+    // pela TINTA, que é a mesma cor ajustada ao tema: no escuro sai idêntica,
+    // no claro desce 40% para não sumir sobre o branco (âmbar cru dá 2,15:1).
+    expect(within(trilha).getByText('Novo')).toHaveStyle({
+      color: 'color-mix(in srgb, #6366f1, var(--ink-target) var(--ink-amount))',
+    })
   })
 
   it('a trilha mostra o funil inteiro e não deixa nascer em etapa terminal', () => {

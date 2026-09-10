@@ -98,7 +98,9 @@ describe('DealDetailPanel — carregado', () => {
     expect(screen.getByTestId('deal-tab-summary')).toBeInTheDocument()
     expect(screen.getByTestId('deal-tab-activity')).toBeInTheDocument()
     expect(screen.getByTestId('deal-tab-conversations')).toBeInTheDocument()
-    expect(screen.getByTestId('deal-tab-proposal')).toBeDisabled()
+    // Três abas, e as três abrem. A quarta ('Proposta') nascia desabilitada e
+    // sem conteúdo nenhum — saiu em 10/09.
+    expect(screen.queryByTestId('deal-tab-proposal')).not.toBeInTheDocument()
   })
 
   it('aba Resumo é a padrão (escopo + itens)', async () => {
@@ -138,15 +140,17 @@ describe('DealDetailPanel — carregado', () => {
     expect(dealsApi.setStatus).not.toHaveBeenCalled()
   })
 
-  // Registro fechado nem chega aqui: o stepper e o menu "Mover" só existem com
+  // Registro fechado não oferece caminho para mover: o stepper só existe com
   // `status === 'open'` (DealDetailHeader). Fixar isso evita que o endpoint de
-  // reabrir volte a ser usado como se fosse o de mover.
+  // reabrir volte a ser usado como se fosse o de mover. O menu "Mover ▾" que
+  // este teste também cobria saiu — a trilha/linha do tempo é a única porta,
+  // e ela some junto com o `open`.
   it('registro FECHADO não oferece o stepper', async () => {
     dealsApi.get.mockResolvedValue({ data: { ...DEAL, status: 'won', stageId: 's3' } })
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
     expect(screen.queryByTestId('deal-stepper')).not.toBeInTheDocument()
-    expect(screen.getByTestId('deal-move-button')).toBeDisabled()
+    expect(screen.queryByTestId('deal-move-button')).not.toBeInTheDocument()
   })
 
   it('"Marcar ganho" abre o modal de motivo (A4) em vez de mover direto', async () => {
@@ -189,18 +193,42 @@ describe('DealDetailPanel — carregado', () => {
 })
 
 describe('DealDetailPanel — modo painel vs. página', () => {
-  it('modo painel (onClose presente): mostra fechar e expandir', async () => {
-    render(<DealDetailPanel dealId="d1" onClose={vi.fn()} onExpand={vi.fn()} />)
+  // "Abrir como página" saiu em 10/09: levava à MESMA ficha, só maior. No lugar
+  // entrou "No funil", que responde a pergunta que a ficha sozinha não responde
+  // — onde este negócio está no quadro.
+  it('modo painel (onClose presente): mostra fechar e "No funil"', async () => {
+    const onOpenBoard = vi.fn()
+    render(<DealDetailPanel dealId="d1" onClose={vi.fn()} onOpenBoard={onOpenBoard} />)
     await screen.findByTestId('deal-title')
     expect(screen.getByTitle('Fechar')).toBeInTheDocument()
-    expect(screen.getByTitle('Abrir como página')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('deal-open-board'))
+    // Recebe o NEGÓCIO, não só o id: quem navega precisa do funil dele para
+    // montar a rota, e a ficha já tem o objeto carregado.
+    expect(onOpenBoard).toHaveBeenCalledWith(expect.objectContaining({ id: 'd1' }))
   })
 
-  it('modo página (sem onClose/onExpand): sem os dois botões', async () => {
+  // O botão leva ao quadro do funil DO NEGÓCIO. Aberto sobre esse mesmo quadro,
+  // ele levaria para onde já se está — some. Sobre o quadro de OUTRO funil ele
+  // continua valendo, e é por isso que a comparação usa o funil do negócio e
+  // não apenas "estou em /pipelines".
+  it('some quando a ficha já está aberta sobre o quadro daquele funil', async () => {
+    render(<DealDetailPanel dealId="d1" onClose={vi.fn()} onOpenBoard={vi.fn()} rotaAtual="/pipelines/p1" />)
+    await screen.findByTestId('deal-title')
+    expect(screen.queryByTestId('deal-open-board')).toBeNull()
+  })
+
+  it('continua aparecendo sobre o quadro de OUTRO funil', async () => {
+    render(<DealDetailPanel dealId="d1" onClose={vi.fn()} onOpenBoard={vi.fn()} rotaAtual="/pipelines/p-outro" />)
+    await screen.findByTestId('deal-title')
+    expect(screen.getByTestId('deal-open-board')).toBeInTheDocument()
+  })
+
+  it('modo página (sem onClose/onOpenBoard): sem os dois botões', async () => {
     render(<DealDetailPanel dealId="d1" />)
     await screen.findByTestId('deal-title')
     expect(screen.queryByTitle('Fechar')).toBeNull()
-    expect(screen.queryByTitle('Abrir como página')).toBeNull()
+    expect(screen.queryByTestId('deal-open-board')).toBeNull()
   })
 })
 

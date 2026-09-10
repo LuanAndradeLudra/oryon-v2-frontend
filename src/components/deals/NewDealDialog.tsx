@@ -420,7 +420,7 @@ export function NewDealDialog({
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="novo-negocio-escopo" className="text-xs font-medium text-surface-400">
-          Escopo <span className="text-surface-500">(opcional)</span>
+          Observações <span className="text-surface-500">(opcional)</span>
         </label>
         <textarea
           id="novo-negocio-escopo"
@@ -435,8 +435,8 @@ export function NewDealDialog({
         />
         <span className="text-[11px] text-surface-500">
           {isProcess
-            ? 'O que está sendo tratado — aparece no card do quadro, abaixo do título.'
-            : 'O que está sendo proposto ao cliente — aparece no card do quadro, abaixo do título.'}
+            ? 'O que está sendo tratado — aparece no card do quadro e a IA lê.'
+            : 'O que o time precisa saber — aparece no card do quadro e a IA lê.'}
         </span>
       </div>
     </div>

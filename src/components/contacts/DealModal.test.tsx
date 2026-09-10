@@ -78,6 +78,10 @@ const renderModal = (props: Partial<Parameters<typeof DealModal>[0]> = {}) =>
       {...props}
     />,
   )
+/** O acordeão de itens nasce FECHADO (10/09) — a linha compacta não tem os
+ *  campos. Estes testes são sobre PREÇO e QUANTIDADE, não sobre o acordeão,
+ *  então abrem o item antes. */
+const abrirItem = () => fireEvent.click(screen.getAllByRole('button', { name: /^Editar / })[0])
 
 const tituloInput = () => screen.getByPlaceholderText('Ex: Proposta — Plano Anual')
 const salvar = () => fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
@@ -96,6 +100,7 @@ describe('DealModal — payload do salvar (#1 da revisão)', () => {
 
   it('editar o título SEM mexer nos itens: PATCH sem `lineItems` — o valor digitado não é zerado', async () => {
     renderModal({ editDeal: DEAL_VENDA })
+    abrirItem()
     fireEvent.change(tituloInput(), { target: { value: 'Plano Anual — revisado' } })
     salvar()
     await waitFor(() => expect(api.update).toHaveBeenCalled())
@@ -111,6 +116,7 @@ describe('DealModal — payload do salvar (#1 da revisão)', () => {
     // modal exige a escolha explícita, igual ao caso em que o operador digita
     // o valor.
     renderModal({ editDeal: DEAL_VENDA })
+    abrirItem()
     fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '3' } })
     expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Vincular e atualizar valor' }))
@@ -123,6 +129,7 @@ describe('DealModal — payload do salvar (#1 da revisão)', () => {
 
   it('com item ALTERADO e valor do banco já divergente: "Vincular" preserva o valor do banco sem reenviá-lo (SCRUM-965)', async () => {
     renderModal({ editDeal: DEAL_VENDA })
+    abrirItem()
     fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '3' } })
     fireEvent.click(screen.getByRole('button', { name: 'Vincular' }))
     await waitFor(() => expect(api.update).toHaveBeenCalled())
@@ -172,6 +179,7 @@ describe('DealModal — erro genérico visível (#1 da revisão)', () => {
       response: { data: { message: 'Registros de processo não têm itens.' } },
     })
     renderModal({ editDeal: DEAL_VENDA })
+    abrirItem()
     salvar()
     const alert = await screen.findByTestId('deal-modal-error')
     expect(alert).toHaveTextContent('Registros de processo não têm itens.')
@@ -180,6 +188,7 @@ describe('DealModal — erro genérico visível (#1 da revisão)', () => {
 
   it('erro com campo próprio (título) NÃO duplica no bloco genérico', async () => {
     renderModal({ editDeal: DEAL_VENDA })
+    abrirItem()
     fireEvent.change(tituloInput(), { target: { value: '' } })
     salvar()
     await waitFor(() => expect(screen.getAllByText('O título é obrigatório.')).toHaveLength(1))
@@ -243,6 +252,7 @@ describe('DealModal — campo Valor (A3/956)', () => {
 
   it('abre com o valor do negócio e, sem tocar nele, o PATCH não o envia', async () => {
     renderModal({ editDeal: DEAL_VENDA })
+    abrirItem()
     expect((valorInput() as HTMLInputElement).value).toContain('1.500,00')
     fireEvent.change(tituloInput(), { target: { value: 'Plano Anual — revisado' } })
     salvar()
@@ -252,6 +262,7 @@ describe('DealModal — campo Valor (A3/956)', () => {
 
   it('editar SÓ o valor: PATCH com amountCents e sem lineItems (valor livre, D4)', async () => {
     renderModal({ editDeal: DEAL_VENDA })
+    abrirItem()
     fireEvent.change(valorInput(), { target: { value: '200000' } })
     salvar()
     await waitFor(() => expect(api.update).toHaveBeenCalled())
@@ -262,6 +273,7 @@ describe('DealModal — campo Valor (A3/956)', () => {
 
   it('valor divergente + itens alterados: dois botões, e "Vincular" preserva o valor', async () => {
     renderModal({ editDeal: DEAL_VENDA })
+    abrirItem()
     fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '3' } })
     fireEvent.change(valorInput(), { target: { value: '200000' } })
     expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull()
@@ -275,6 +287,7 @@ describe('DealModal — campo Valor (A3/956)', () => {
 
   it('"Vincular e atualizar valor": updateAmount true e sem amountCents no corpo', async () => {
     renderModal({ editDeal: DEAL_VENDA })
+    abrirItem()
     fireEvent.change(screen.getByLabelText('Qtd'), { target: { value: '3' } })
     fireEvent.change(valorInput(), { target: { value: '200000' } })
     fireEvent.click(screen.getByRole('button', { name: 'Vincular e atualizar valor' }))
