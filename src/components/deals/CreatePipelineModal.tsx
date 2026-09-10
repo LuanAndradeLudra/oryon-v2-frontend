@@ -15,6 +15,7 @@ import {
   pipelineKindOption,
   pipelineKindOf,
   DEFAULT_PIPELINE_KIND,
+  TERMINAL_CHIP_STYLE,
 } from '@/lib/pipelineKinds'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { pipelinesApi } from '@/services/api'
@@ -382,12 +383,12 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
                         className="flex-1 min-w-0 bg-transparent text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none"
                       />
                       {stage.role === 'won' && (
-                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={TERMINAL_CHIP_STYLE.won}>
                           <Trophy className="w-2.5 h-2.5" /> {kindOption.terminalLabels.won}
                         </span>
                       )}
                       {stage.role === 'lost' && (
-                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={TERMINAL_CHIP_STYLE.lost}>
                           <X className="w-2.5 h-2.5" /> {kindOption.terminalLabels.lost}
                         </span>
                       )}

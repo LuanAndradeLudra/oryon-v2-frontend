@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Archive, ArchiveRestore, Star, ArrowRight } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { SettingsSection } from '@/components/settings/SettingsSection'
@@ -30,7 +31,28 @@ export function FunnelsSettings() {
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
 
-  const [selectedId, setSelectedId] = useState('')
+  /**
+   * Funil selecionado — na URL (`?pipeline=<id>`), não em memória.
+   *
+   * Duas coisas dependem disso. Primeira: voltar para esta tela devolve o funil
+   * que se estava editando, em vez de recomeçar no padrão do tenant. Segunda, e
+   * a razão de ser agora: é o que permite CHEGAR aqui já no funil certo, vindo
+   * de um atalho do quadro — sem isso, uma porta contextual abriria a
+   * configuração de outro funil, que é pior do que não ter porta.
+   *
+   * `replace: true` porque escolher um funil não é navegar para outro lugar: o
+   * "voltar" do navegador deve sair da tela, não desfazer a seleção.
+   */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('pipeline') ?? ''
+  const setSelectedId = (id: string) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      if (id) params.set('pipeline', id)
+      else params.delete('pipeline')
+      return params
+    }, { replace: true })
+  }
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
