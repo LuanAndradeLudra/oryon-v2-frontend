@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, ArrowUpRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSettings'
+import { comVolta } from '@/lib/voltarPara'
 
 interface Props {
   open: boolean
@@ -27,6 +28,17 @@ interface Props {
  * página com o painel aberto devolve a mesma seleção.
  */
 export function FunnelsConfigDrawer({ open, onClose }: Props) {
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  /* O link de saída leva o caminho de VOLTA. Quem clica aqui já estava
+     configurando de dentro do funil; ir para a tela cheia não deveria custar o
+     caminho de retorno. O endereço de origem inclui `?config=funis`, então
+     voltar reabre o painel — o operador retoma exatamente onde parou. */
+  const telaCheia = comVolta(
+    `/settings/pipeline-stages?pipeline=${searchParams.get('pipeline') ?? ''}`,
+    `${location.pathname}${location.search}`,
+    'Voltar para o funil',
+  )
   return (
     <AnimatePresence>
       {open && (
@@ -73,7 +85,7 @@ export function FunnelsConfigDrawer({ open, onClose }: Props) {
 
             <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
               <Link
-                to="/settings/pipeline-stages"
+                to={telaCheia}
                 onClick={onClose}
                 className="inline-flex items-center gap-1.5 text-xs text-surface-400 hover:text-surface-100 transition-colors"
               >
