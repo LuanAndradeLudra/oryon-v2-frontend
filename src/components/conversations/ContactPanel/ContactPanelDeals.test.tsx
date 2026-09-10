@@ -1,7 +1,8 @@
 // B3 (SCRUM-929) — painel do contato (Conversas) na densidade `row` do
-// `DealSummary` compartilhado: uma linha por registro aberto com funil, tipo,
-// etapa e "Mover etapa ▾"; "Em aberto"/"Ganho" somam só registro de VENDA
-// (a regra certa, que as outras 3 telas passaram a seguir também).
+// `DealSummary` compartilhado: uma linha por registro aberto com funil, tipo e
+// o seletor de etapa (o botão exibe a etapa ATUAL e abre o menu de troca);
+// "Em aberto"/"Ganho" somam só registro de VENDA (a regra certa, que as outras
+// 3 telas passaram a seguir também).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
@@ -61,6 +62,19 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
     expect(screen.getByTestId('panel-pipeline-stage-v')).toHaveTextContent('Proposta')
   })
 
+  // A etapa aparecia duas vezes na linha: rótulo à direita + o botão que a
+  // troca. Passou a ser uma coisa só — o botão É a etapa atual (10/09).
+  it('a etapa atual mora DENTRO do botão que abre o menu, e não em outro lugar', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    const botao = await screen.findByTestId('panel-pipeline-move-p')
+    expect(botao).toHaveTextContent('Em atendimento')
+    expect(botao).toContainElement(screen.getByTestId('panel-pipeline-stage-p'))
+    // O verbo sumiu da tela, mas continua sendo o nome acessível da ação.
+    expect(botao).toHaveAttribute('aria-label', 'Mover etapa — atual: Em atendimento')
+    expect(screen.queryByText('Mover etapa')).not.toBeInTheDocument()
+  })
+
   it('"Em aberto"/"Ganho" somam só VENDA — processo nunca entra na conta', async () => {
     api.list.mockResolvedValue({ data: [PROCESSO_ABERTO, VENDA_ABERTA, VENDA_GANHA] })
     renderPanel()
@@ -91,6 +105,19 @@ describe('ContactPanelDeals — densidade row (B3 · SCRUM-929)', () => {
     renderPanel()
     expect(await screen.findByTestId('panel-pipelines')).toBeInTheDocument()
     expect(screen.getByTestId('panel-pipelines-count')).toHaveTextContent('0 em aberto')
+  })
+
+  it('o menu abre com a etapa atual destacada no topo, fora da lista de destinos', async () => {
+    api.list.mockResolvedValue({ data: [PROCESSO_ABERTO] })
+    renderPanel()
+    fireEvent.click(await screen.findByTestId('panel-pipeline-move-p'))
+
+    const atual = screen.getByTestId('panel-pipeline-current-p')
+    expect(atual).toHaveTextContent('Em atendimento')
+    expect(atual).toHaveTextContent('atual')
+    // Destaque, não destino: não é `menuitem` e não pode ser escolhida.
+    expect(atual).not.toHaveAttribute('role', 'menuitem')
+    expect(screen.queryByRole('menuitem', { name: /Em atendimento/ })).toBeNull()
   })
 
   it('"Mover etapa" chama PATCH /deals/:id/stage; "Abrir" abre a ficha (B2/928)', async () => {

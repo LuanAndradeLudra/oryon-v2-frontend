@@ -6,7 +6,7 @@ import { pipelineKindOption, pipelineKindOf, terminalLabelsOf } from '@/lib/pipe
 import { originInfo, timeInStage } from '@/lib/dealCard'
 import { movedByLabel, moveTargets, stepperFor, type StepperStep } from '@/lib/contactPipelines'
 import { formatBRL } from '@/utils/money'
-import type { Deal, DealStageHistoryEntry, Pipeline, PipelineStage } from '@/types'
+import type { Deal, DealStageHistoryEntry, Pipeline, PipelineStage, TerminalLabels } from '@/types'
 
 export type DealSummaryDensity = 'chip' | 'row' | 'card'
 
@@ -24,7 +24,8 @@ export type DealSummaryDensity = 'chip' | 'row' | 'card'
  *   processo, nunca "Ganho/Perdido" fixo).
  *
  * Ações por densidade (Modelo B, prancheta 6-8): `chip` só abre a ficha;
- * `row` ganha "Mover etapa ▾"; `card` ganha "Mover etapa ▾" + "Abrir negócio"
+ * `row` ganha o seletor de etapa (o botão É a etapa atual — ver abaixo);
+ * `card` ganha "Mover etapa ▾" + "Abrir negócio"
  * e, OPCIONALMENTE (`onEdit`/`onDelete` informados), editar/excluir — a
  * ficha (`ContactPipelinesSection`) usa `card` SEM essas duas, porque editar
  * valor e itens continua exclusivo do `DealModal` (aba Negócios).
@@ -33,6 +34,14 @@ export type DealSummaryDensity = 'chip' | 'row' | 'card'
  * (ciclo de vida, `contact.stage`) tem sua própria ação — "Mudar situação"
  * (`StageCard`/`ContactPanel`) — com ícone e verbo diferentes, pra não
  * colidir com mover a ETAPA do negócio dentro do funil.
+ *
+ * Na densidade `row` esse verbo saiu da tela (10/09). A etapa aparecia DUAS
+ * vezes na mesma linha: como rótulo à direita do nome do funil e, logo abaixo,
+ * como o botão que a troca. Agora é uma coisa só — o botão MOSTRA a etapa atual
+ * e abre o mesmo menu. É o padrão de select: o controle exibe o valor, não o
+ * verbo. O verbo continua existindo para quem não vê a tela, no `aria-label`.
+ * A `card` mantém o rótulo + "Mover etapa ▾" porque lá o stepper já desenha o
+ * caminho inteiro, e o botão não é o único lugar que responde "onde estou".
  */
 
 interface ChipProps {
@@ -130,6 +139,69 @@ function Stepper({ steps }: { steps: StepperStep[] }) {
   )
 }
 
+/**
+ * Corpo do menu de etapas — as duas densidades com ação usam este mesmo.
+ *
+ * `current` desenha a etapa ATUAL no topo, destacada e sem ação: o menu passa a
+ * responder "onde estou" antes de perguntar "para onde vou". Ela não é um
+ * `DropdownItem` de propósito — não há para onde ir clicando nela, e um item
+ * inerte dentro de um `role="menu"` viraria uma parada morta na navegação por
+ * teclado (o `Dropdown` percorre `[role="menuitem"]`). Daí o
+ * `role="presentation"`: o destaque é visual, e o nome da etapa já é anunciado
+ * pelo `aria-label` do botão que abriu o menu.
+ *
+ * O destaque repete a gramática que a ficha usa para "você está aqui": faixa na
+ * cor da etapa à esquerda e fundo mais claro que a superfície do menu.
+ */
+function StageMenu({
+  current,
+  targets,
+  labels,
+  onMove,
+  testId,
+}: {
+  current?: PipelineStage
+  targets: { normal: PipelineStage[]; terminal: PipelineStage[] }
+  labels: TerminalLabels
+  onMove: (stage: PipelineStage) => void
+  testId?: string
+}) {
+  return (
+    <div className="px-1 py-1 flex flex-col gap-0.5">
+      {current && (
+        <>
+          <div
+            role="presentation"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-surface-800 border-l-2"
+            style={{ borderLeftColor: current.color }}
+            data-testid={testId}
+          >
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: current.color }} />
+            <span className="text-xs font-medium text-surface-100 truncate">{current.label}</span>
+            <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider text-surface-400 flex-shrink-0">
+              atual
+            </span>
+          </div>
+          <DropdownSeparator />
+        </>
+      )}
+      {targets.normal.map((s) => (
+        <DropdownItem key={s.id} onClick={() => onMove(s)}>
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+          {s.label}
+        </DropdownItem>
+      ))}
+      {targets.normal.length > 0 && targets.terminal.length > 0 && <DropdownSeparator />}
+      {targets.terminal.map((s) => (
+        <DropdownItem key={s.id} onClick={() => onMove(s)} danger={s.isLost}>
+          {s.isWon ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+          {s.isWon ? labels.won : labels.lost} (com motivo)
+        </DropdownItem>
+      ))}
+    </div>
+  )
+}
+
 function ChipDensity({ pipeline, stageLabel, busy, onOpen, testId }: ChipProps) {
   if (!pipeline) return null
   const KindIcon = pipelineKindOption(pipeline.kind).icon
@@ -184,7 +256,7 @@ function OpenDensity(props: OpenDealProps) {
             controles. Envolver a linha inteira num <button> aninharia botões
             (HTML inválido, e o leitor de tela anuncia um alvo só); um <div
             role="button"> exigiria reimplementar teclado. Assim o clique em
-            qualquer lugar vazio abre a ficha, e "Mover etapa" e "No funil"
+            qualquer lugar vazio abre a ficha, e o seletor de etapa e "No funil"
             continuam sendo eles mesmos. */}
         <button
           type="button"
@@ -197,11 +269,6 @@ function OpenDensity(props: OpenDealProps) {
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline!.color }} />
           <span className="text-xs text-surface-200 truncate">{pipeline!.name}</span>
           <KindIcon className="w-3 h-3 text-surface-500 flex-shrink-0" aria-label={kind.label} />
-          {stage && (
-            <span className="ml-auto text-[10px] text-surface-300 whitespace-nowrap" data-testid={`${testIdPrefix}-stage-${testIdKey}`}>
-              {stage.label}
-            </span>
-          )}
         </div>
         {meta && <p className="relative z-10 text-[10px] text-surface-600 truncate pl-3.5 pointer-events-none">{meta}</p>}
         <div className="relative z-10 flex items-center gap-1 pl-3.5 w-fit">
@@ -220,26 +287,26 @@ function OpenDensity(props: OpenDealProps) {
                   data-testid={`${testIdPrefix}-move-${testIdKey}`}
                   aria-haspopup="menu"
                   aria-expanded={moveOpen}
+                  aria-label={stage ? `Mover etapa — atual: ${stage.label}` : undefined}
                 >
-                  Mover etapa <ChevronDown className="w-2.5 h-2.5" />
+                  {stage ? (
+                    <span className="truncate max-w-[9rem]" data-testid={`${testIdPrefix}-stage-${testIdKey}`}>
+                      {stage.label}
+                    </span>
+                  ) : (
+                    'Mover etapa'
+                  )}
+                  <ChevronDown className="w-2.5 h-2.5 flex-shrink-0" />
                 </button>
               }
             >
-              <div className="px-1 py-1 flex flex-col gap-0.5">
-                {targets.normal.map((s) => (
-                  <DropdownItem key={s.id} onClick={() => onMove(s)}>
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                    {s.label}
-                  </DropdownItem>
-                ))}
-                {targets.normal.length > 0 && targets.terminal.length > 0 && <DropdownSeparator />}
-                {targets.terminal.map((s) => (
-                  <DropdownItem key={s.id} onClick={() => onMove(s)} danger={s.isLost}>
-                    {s.isWon ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                    {s.isWon ? labels.won : labels.lost} (com motivo)
-                  </DropdownItem>
-                ))}
-              </div>
+              <StageMenu
+                current={stage}
+                targets={targets}
+                labels={labels}
+                onMove={onMove}
+                testId={`${testIdPrefix}-current-${testIdKey}`}
+              />
             </Dropdown>
           )}
           {onOpenBoard && (
@@ -312,21 +379,10 @@ function OpenDensity(props: OpenDealProps) {
               </button>
             }
           >
-            <div className="px-1 py-1 flex flex-col gap-0.5">
-              {targets.normal.map((s) => (
-                <DropdownItem key={s.id} onClick={() => onMove(s)}>
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                  {s.label}
-                </DropdownItem>
-              ))}
-              {targets.normal.length > 0 && targets.terminal.length > 0 && <DropdownSeparator />}
-              {targets.terminal.map((s) => (
-                <DropdownItem key={s.id} onClick={() => onMove(s)} danger={s.isLost}>
-                  {s.isWon ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                  {s.isWon ? labels.won : labels.lost} (com motivo)
-                </DropdownItem>
-              ))}
-            </div>
+            {/* Sem `current`: aqui o botão ainda diz o verbo e a etapa já está
+                no cabeçalho do card e no stepper — o topo do menu seria a
+                terceira vez. */}
+            <StageMenu targets={targets} labels={labels} onMove={onMove} />
           </Dropdown>
         )}
         {pipeline && (

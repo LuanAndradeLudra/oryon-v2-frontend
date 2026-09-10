@@ -573,7 +573,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
   if (!windowOpen) {
     return (
       <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
-        <div className="card-24h bg-brand-800/20 border border-brand-600/30 rounded-xl px-4 py-3 shadow-lg">
+        <div className="card-24h rounded-xl px-4 py-3 shadow-lg">
           <div className="flex items-center gap-2">
             <AlertTriangle className="card-24h-accent w-4 h-4 text-brand-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">

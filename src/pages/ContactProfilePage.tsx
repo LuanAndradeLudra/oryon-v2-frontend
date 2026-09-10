@@ -151,7 +151,8 @@ export function ContactProfilePage() {
   // Contato semeado pelo "Expandir" do drawer (navigation state) — permite a
   // página nascer com dados durante o crossfade, sem flash de skeleton.
   const location = useLocation()
-  const seededContact = (location.state as { contact?: Contact } | null)?.contact
+  const navState = location.state as { contact?: Contact; voltarPara?: string; voltarLabel?: string } | null
+  const seededContact = navState?.contact
   const contactId = id ?? ''
   const profile = useContactProfile(
     contactId,
@@ -200,12 +201,23 @@ export function ContactProfilePage() {
 
   const userName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Você'
 
-  // "Voltar" sempre retorna à lista COM o drawer deste contato reaberto —
-  // a ContactsPage lê ?contact=<id> e abre o quick-view. Não usamos
-  // navigate(-1): a entrada anterior do histórico é /contacts SEM o param
-  // (o drawer era estado local, perdido ao navegar), então voltar pelo
-  // histórico caía no kanban sem o drawer.
-  const handleBack = () => navigate(`/contacts?contact=${contactId}`)
+  /**
+   * Para ONDE o "Voltar" volta.
+   *
+   * O padrão é a lista de contatos COM o drawer deste contato reaberto — a
+   * ContactsPage lê `?contact=<id>` e abre o quick-view. Não usamos
+   * `navigate(-1)`: a entrada anterior do histórico é /contacts SEM o param (o
+   * drawer é estado local, perdido ao navegar), então voltar pelo histórico
+   * caía no kanban sem o drawer.
+   *
+   * Só que esta página deixou de ter uma origem só. Quem chega de um card do
+   * QUADRO de um funil era despejado no CRM ao voltar — um lugar em que nunca
+   * esteve. Quem navega passa `voltarPara` no state (mesmo canal do `contact`
+   * semeado logo acima) e manda de volta para a tela exata de onde saiu, com
+   * aba e filtros da URL preservados. Sem o state, o padrão histórico vale.
+   */
+  const voltarPara = navState?.voltarPara ?? `/contacts?contact=${contactId}`
+  const handleBack = () => navigate(voltarPara)
 
   const handleOpenChat = () => {
     const lastConv = conversations[0]
@@ -373,6 +385,7 @@ export function ContactProfilePage() {
               lastMessageSenderKind={lastConversation?.lastMessageSenderKind}
               assignedTo={stats?.assignedTo ?? null}
               onBack={handleBack}
+              backLabel={navState?.voltarLabel ?? 'Voltar para contatos'}
               onOpenChat={handleOpenChat}
               onSendTemplate={() => setTemplateDrawerOpen(true)}
               onAddNote={focusComposer}
