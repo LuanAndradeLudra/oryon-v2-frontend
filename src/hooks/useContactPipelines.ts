@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/useToast'
 import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
 import { getApiErrorMessage } from '@/lib/utils'
 import { splitDeals } from '@/lib/contactPipelines'
+import { toastDealClosedWithUndo } from '@/lib/dealClose'
 import type { CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import type { Deal, DealStageHistoryEntry, Pipeline, PipelineStage } from '@/types'
 
@@ -90,6 +91,13 @@ export function useContactPipelines(
     [pipelines],
   )
 
+  /** Avisa as OUTRAS superfícies deste contato (tabela, board, outro painel
+   *  aberto) que os funis mudaram — o socket `deal:changed` também chega,
+   *  mas depois do round-trip; este evento local é a atualização na hora. */
+  const notifyInvalidated = useCallback(() => {
+    window.dispatchEvent(new CustomEvent(DEALS_INVALIDATE_EVENT, { detail: { contactId } }))
+  }, [contactId])
+
   /** Etapa normal move direto; terminal abre o modal de motivo (I5 do §4.6). */
   const moveTo = useCallback(async (deal: Deal, stage: PipelineStage, pipeline: Pipeline) => {
     if (stage.isWon || stage.isLost) { setCloseTarget({ deal, stage, pipeline }); return }
@@ -97,25 +105,62 @@ export function useContactPipelines(
     try {
       await dealsApi.moveStage(deal.id, stage.id)
       toast(`${contactName} foi para ${stage.label} em ${pipeline.name}.`, 'success')
-      load()
+      // `notifyInvalidated` dispara o evento local, que o listener logo abaixo
+      // desta mesma instância também ouve — um `dispatchEvent` só, sem recarga
+      // duplicada, e as OUTRAS superfícies (tabela, board) recarregam junto.
+      notifyInvalidated()
     } catch (e: unknown) {
       toast(getApiErrorMessage(e, 'Não foi possível mover.'), 'error')
     } finally {
       setBusyId(null)
     }
-  }, [contactName, load, toast])
+  }, [contactName, load, notifyInvalidated, toast])
 
   const closeWithReason = useCallback(async (input: CloseDealReasonInput) => {
     if (!closeTarget) return
-    await dealsApi.setStatus(closeTarget.deal.id, {
+    const { deal, stage, pipeline } = closeTarget
+    const fromStageId = deal.stageId
+    // Valor final confirmado no modal (venda sem itens): grava antes de fechar
+    // — depois de fechado o registro não aceita mais edição de valor.
+    if (input.amountCents !== undefined) {
+      await dealsApi.update(deal.id, { amountCents: input.amountCents })
+    }
+    await dealsApi.setStatus(deal.id, {
       status: input.outcome,
       closeReason: input.reason,
       closeNote: input.note,
     })
-    toast(`${contactName} marcado como ${closeTarget.stage.label} em ${closeTarget.pipeline.name}.`, 'success')
+    // A4 (SCRUM-926): fechar é reversível por 5 s — depois disso, "Reabrir" na
+    // linha do registro fechado.
+    toastDealClosedWithUndo({
+      message: `${contactName} marcado como ${stage.label} em ${pipeline.name}.`,
+      dealId: deal.id,
+      fromStageId,
+      onUndone: load,
+    })
     setCloseTarget(null)
-    load()
-  }, [closeTarget, contactName, load, toast])
+    notifyInvalidated()
+  }, [closeTarget, contactName, load, notifyInvalidated])
+
+  /**
+   * Reabre um registro fechado na 1ª etapa não-terminal do funil (A4 ·
+   * SCRUM-926). Existe porque o único lugar que reabria era o seletor de
+   * Status do `DealModal`, que saiu — fechar virou ação própria, com motivo, e
+   * reabrir precisava de casa nova. 409 (o contato já tem outro aberto no
+   * funil, I1) chega como mensagem do backend, que explica o que houve.
+   */
+  const reopen = useCallback(async (deal: Deal) => {
+    setBusyId(deal.id)
+    try {
+      await dealsApi.setStatus(deal.id, { status: 'open' })
+      toast(`${contactName} voltou para o funil.`, 'success')
+      notifyInvalidated()
+    } catch (e: unknown) {
+      toast(getApiErrorMessage(e, 'Não foi possível reabrir.'), 'error')
+    } finally {
+      setBusyId(null)
+    }
+  }, [contactName, notifyInvalidated, toast])
 
   const toggleHistory = useCallback(async (dealId: string) => {
     if (history[dealId] && history[dealId] !== 'loading') {
@@ -150,6 +195,7 @@ export function useContactPipelines(
     pipelineOf,
     moveTo,
     closeWithReason,
+    reopen,
     toggleHistory,
     reload: load,
   }

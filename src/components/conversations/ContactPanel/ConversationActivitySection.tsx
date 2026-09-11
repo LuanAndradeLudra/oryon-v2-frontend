@@ -30,6 +30,8 @@ import { fetchUserActivity, type UserActivity } from '@/services/userActivityApi
 import { getSocket } from '@/services/socket'
 import { Modal } from '@/components/ui/Modal'
 import { guardCorrectedTimelineLabel, guardReasonTimelineLabel } from '@/lib/guardReason'
+import { pipelineKindOption } from '@/lib/pipelineKinds'
+import type { PipelineKind } from '@/types'
 
 const COLLAPSED_LIMIT = 4
 const EXPANDED_LIMIT = 8
@@ -644,14 +646,20 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
                chip: 'var(--color-accent-green)' }
     }
     case 'deal_won': {
+      // SCRUM-980: "ganho" só é o vocabulário certo pra funil de VENDA — um
+      // funil de PROCESSO fecha em "Concluído", não em "ganho".
       const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
       const v = typeof metadata.amountCents === 'number' ? ` · ${formatBRL(metadata.amountCents)}` : ''
-      return { label: `Negócio "${t}" ganho${v}`, Icon: Trophy,
+      const kind = typeof metadata.pipelineKind === 'string' ? (metadata.pipelineKind as PipelineKind) : undefined
+      const label = pipelineKindOption(kind).terminalLabels.won
+      return { label: `Negócio "${t}" ${label.toLowerCase()}${v}`, Icon: Trophy,
                chip: 'var(--color-success)' }
     }
     case 'deal_lost': {
       const t = typeof metadata.dealTitle === 'string' ? metadata.dealTitle : 'Negócio'
-      return { label: `Negócio "${t}" perdido`, Icon: XCircle,
+      const kind = typeof metadata.pipelineKind === 'string' ? (metadata.pipelineKind as PipelineKind) : undefined
+      const label = pipelineKindOption(kind).terminalLabels.lost
+      return { label: `Negócio "${t}" ${label.toLowerCase()}`, Icon: XCircle,
                chip: 'var(--color-danger)' }
     }
     case 'deal_updated': {

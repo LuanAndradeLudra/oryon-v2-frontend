@@ -184,7 +184,7 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomF
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
             >
               <Save className="w-3 h-3" />
               {saving ? 'Salvando...' : 'Salvar'}

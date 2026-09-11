@@ -6,11 +6,11 @@
 
 import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
-import { cn } from '@/lib/utils'
 import type { JsonSchemaProperty } from '@/types/skills'
 
 const NAME_RE = /^[a-z][a-z0-9_]*$/
@@ -217,21 +217,10 @@ export function SchemaFieldModal({
         )}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            className={cn(
-              'px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-              'bg-brand-600 text-surface-950 hover:bg-brand-500',
-            )}
-          >
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button onClick={handleSave}>
             {initial ? 'Salvar alterações' : 'Adicionar campo'}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

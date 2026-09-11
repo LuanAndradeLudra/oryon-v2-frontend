@@ -45,3 +45,30 @@ describe('PipelineConflictModal (F9)', () => {
     expect(screen.getByTestId('conflict-confirm')).toBeDisabled()
   })
 })
+
+describe('PipelineConflictModal — 4a saida com multiplicidade (C2 · SCRUM-933)', () => {
+  const MULTI: Pipeline = { ...PIPE, allowMultipleOpen: true }
+
+  it('funil com allowMultipleOpen oferece "Criar outro" e ja vem escolhido', async () => {
+    const onChoose = vi.fn(async () => {})
+    render(<PipelineConflictModal open onClose={vi.fn()} contactName="Mariana" pipeline={MULTI} existing={EXISTING} onChoose={onChoose} />)
+    expect(screen.getByTestId('conflict-create_another')).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByTestId('conflict-confirm')).toHaveTextContent('Criar outro registro')
+    fireEvent.click(screen.getByTestId('conflict-confirm'))
+    await waitFor(() => expect(onChoose).toHaveBeenCalledWith('create_another'))
+  })
+
+  it('explica a regra do funil — com multiplicidade o texto muda', () => {
+    const { unmount } = render(<PipelineConflictModal open onClose={vi.fn()} contactName="Mariana" pipeline={MULTI} existing={EXISTING} onChoose={vi.fn()} />)
+    expect(screen.getByTestId('conflict-summary')).toHaveTextContent('Este funil permite mais de um registro aberto por contato.')
+    unmount()
+    render(<PipelineConflictModal open onClose={vi.fn()} contactName="Mariana" pipeline={PIPE} existing={EXISTING} onChoose={vi.fn()} />)
+    expect(screen.getByTestId('conflict-summary')).toHaveTextContent('O funil permite um registro aberto por contato.')
+  })
+
+  it('sem multiplicidade a saida "Criar outro" nao existe — a I1 continua valendo', () => {
+    render(<PipelineConflictModal open onClose={vi.fn()} contactName="Mariana" pipeline={PIPE} existing={EXISTING} onChoose={vi.fn()} />)
+    expect(screen.queryByTestId('conflict-create_another')).toBeNull()
+    expect(screen.getByTestId('conflict-open_existing')).toHaveAttribute('aria-checked', 'true')
+  })
+})

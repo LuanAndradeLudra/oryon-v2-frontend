@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dealsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
+import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
 import type { ContactFilters, Deal } from '@/types'
 
 type BoardFilters = Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'source' | 'tagId' | 'optIn'>
@@ -17,8 +18,27 @@ type BoardFilters = Pick<ContactFilters, 'search' | 'intent' | 'sentiment' | 'so
  */
 export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters = {}) {
   const [dealsByStage, setDealsByStage] = useState<Record<string, Deal[]>>({})
-  const [loading, setLoading] = useState(false)
+  const [buscando, setBuscando] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  /**
+   * De QUAL funil são os dados que estão em `dealsByStage`.
+   *
+   * Sem isto havia sempre um render em que as ETAPAS já eram as do funil novo
+   * e os NEGÓCIOS ainda eram os do antigo (ou nenhum), com `loading` em
+   * `false` — porque o fetch só começa no efeito, depois da pintura. O board
+   * lia `cards.length === 0` e desenhava o contorno tracejado \"Nenhum
+   * negócio\" em TODAS as colunas; no quadro seguinte vinha o esqueleto e
+   * depois os cards. Era esse o pisca-pisca dos contornos ao trocar de funil,
+   * e a animação da troca só o deixou visível.
+   *
+   * `loading` agora é uma PERGUNTA sobre os dados, não sobre a requisição: se
+   * o que está na mão não é do funil pedido, o board está carregando — desde
+   * o primeiro render, sem esperar efeito nenhum. Também cobre a corrida de
+   * duas trocas rápidas: a resposta da intermediária chega, não corresponde ao
+   * pedido atual e o board continua em esqueleto em vez de exibir os negócios
+   * de um funil sob as etapas de outro.
+   */
+  const [dadosDoFunil, setDadosDoFunil] = useState<string | null>(null)
 
   // Serializado p/ dependência estável — `filters` é um objeto novo a cada
   // render de ContactsPage; sem isto o efeito refetch-aria em loop.
@@ -27,9 +47,10 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
   const load = useCallback(async () => {
     if (!pipelineId) {
       setDealsByStage({})
+      setDadosDoFunil(null)
       return
     }
-    setLoading(true)
+    setBuscando(true)
     setError(null)
     try {
       const res = await dealsApi.board(pipelineId, filters)
@@ -41,7 +62,10 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
-      setLoading(false)
+      // Marca mesmo em falha: a tentativa para este funil terminou, e quem
+      // mostra o erro é o chamador — deixar em `loading` eterno esconderia.
+      setDadosDoFunil(pipelineId)
+      setBuscando(false)
     }
     // filtersKey (não `filters`) é a dependência estável — o objeto em si
     // muda de identidade a cada render.
@@ -54,18 +78,26 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
 
   // Realtime: qualquer mudança de negócio no tenant recarrega o board (mesmo
   // padrão de deal:changed usado no Kanban de contatos e na ficha do contato).
+  // SCRUM-929 (item 5): o socket sozinho deixava o board um passo atrás de
+  // quem acabou de mover um negócio noutra superfície (tabela/ficha/painel)
+  // até o round-trip voltar — agora também ouve o evento local, que chega na
+  // hora (o board não filtra por contactId: qualquer mudança recarrega).
   useEffect(() => {
     if (!pipelineId) return
-    const socket = connectSocket()
     const onChanged = () => void load()
+    window.addEventListener(DEALS_INVALIDATE_EVENT, onChanged)
+    const socket = connectSocket()
     socket.on('deal:changed', onChanged)
     return () => {
+      window.removeEventListener(DEALS_INVALIDATE_EVENT, onChanged)
       socket.off('deal:changed', onChanged)
     }
   }, [pipelineId, load])
 
-  /** Move um deal para outro estágio, otimista, com rollback em erro. */
-  const moveStage = useCallback(async (deal: Deal, toStageId: string) => {
+  /** Move um deal para outro estágio, otimista, com rollback em erro.
+   *  `close` (motivo do catálogo) é obrigatório quando o destino é terminal —
+   *  quem chama já passou pelo modal de motivo (A4 · SCRUM-926). */
+  const moveStage = useCallback(async (deal: Deal, toStageId: string, close?: { closeReason: string; closeNote?: string }) => {
     if (deal.stageId === toStageId) return
     const fromStageId = deal.stageId
 
@@ -77,7 +109,7 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
     })
 
     try {
-      const res = await dealsApi.moveStage(deal.id, toStageId)
+      const res = await dealsApi.moveStage(deal.id, toStageId, close)
       // Reconcilia com o servidor (status/closedAt podem ter mudado ao entrar
       // num estágio terminal).
       setDealsByStage((prev) => {
@@ -111,6 +143,10 @@ export function useKanbanDeals(pipelineId: string | null, filters: BoardFilters 
       return next
     })
   }, [])
+
+  // Em voo OU segurando dados de outro funil — as duas coisas são "o board
+  // ainda não tem o que mostrar", e o board só sabe desenhar uma delas.
+  const loading = buscando || dadosDoFunil !== pipelineId
 
   return { dealsByStage, loading, error, moveStage, movePipeline, refetch: load }
 }

@@ -3,7 +3,6 @@ import { Route } from 'lucide-react'
 import { Switch } from '@/components/ui/Switch'
 import { Select } from '@/components/ui/Select'
 import { useToast } from '@/hooks/useToast'
-import { ToastContainer } from '@/components/ui/Toast'
 import { pipelineRoutingApi, pipelinesApi, whatsappNumbersApi, usersApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { isAdminTier } from '@/lib/roleHelpers'
@@ -36,7 +35,7 @@ const OWNER_RULE_LABELS: Record<OwnerRule, string> = {
 }
 
 export function PipelineRoutingSettings() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   // Espelha @Roles(ADMIN, BUSINESS_ADMIN) na escrita de /settings/pipeline-routing.
   // GET é aberto, mas configurar/remover roteamento fica só p/ admin.
@@ -281,8 +280,6 @@ export function PipelineRoutingSettings() {
           })}
         </div>
       )}
-
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   )
 }

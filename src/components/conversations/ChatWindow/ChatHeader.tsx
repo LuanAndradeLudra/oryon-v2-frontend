@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   ChevronDown, Info,
-  Check, Archive, ArrowLeft, MoreVertical,
+  Check, Archive, ArrowLeft, MoreVertical, Handshake, KanbanSquare,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
@@ -9,11 +9,17 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { cn, hexToRgba } from '@/lib/utils'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useDealPanel } from '@/contexts/DealPanelContext'
+import { useToast } from '@/hooks/useToast'
+import { dealsApi } from '@/services/api'
+import { cn, hexToRgba, getApiErrorMessage } from '@/lib/utils'
 import { HandoffChip } from './AiHandoffBanner'
-import { ConversationDealIndicator } from './ConversationDealIndicator'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useTenantVocab } from '@/contexts/TenantVocabContext'
+import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { useResolveWithOutcome } from '@/hooks/useResolveWithOutcome'
 import { ResolveOutcomePopover } from './ResolveOutcomePopover'
 import type { Conversation, DealOutcomeInput, Tag as TagType, User } from '@/types'
@@ -65,10 +71,20 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const isMobile = useIsMobile()
   const { contact, status, whatsappNumber, assignedUser, tags = [] } = conversation
+  // `tags` continua sendo lida — não para desenhar pílulas no cabeçalho, e sim
+  // para o marcador do botão de Informações saber que há o que ver lá dentro.
   // F9 (SCRUM-874): "Adicionar ao funil" a partir da conversa — o registro
-  // nasce ligado a ela (`originConversationId`). O chip do cabeçalho
-  // (`ConversationDealIndicator`) atualiza pelo socket `deal:changed`.
+  // nasce ligado a ela (`originConversationId`).
   const addToPipeline = useAddToPipeline()
+  const { pipelines } = useCRMConfig()
+  const { vocab } = useTenantVocab()
+  /**
+   * A3 (SCRUM-925): no mobile o cabeçalho não comporta o "Adicionar ao funil ▾",
+   * então a ação vive no menu ⋯ e aponta direto para o funil de venda padrão —
+   * o diálogo de 2 passos deixa trocar o funil no passo 1. Sem funil de venda
+   * configurado, o item não aparece (nada a criar).
+   */
+  const salesPipeline = defaultSalesPipeline(pipelines)
   // F10 (SCRUM-880): "Resolvida" com registro-alvo aberto → popover de desfecho
   // (prancheta 5); sem alvo, resolve como sempre.
   const resolve = useResolveWithOutcome({
@@ -76,6 +92,27 @@ export function ChatHeader({
     contactId: contact.id,
     onResolve: (dealOutcome) => onStatusChange('resolved', dealOutcome),
   })
+  const multiPipeline = useMultiPipeline()
+  const { openDeal } = useDealPanel()
+  const { toast } = useToast()
+  const [viewDealLoading, setViewDealLoading] = useState(false)
+  // B4 (SCRUM-930): "Ver negócio" no menu ⋯ do mobile — mesma precedência do
+  // "Resolver com desfecho" (`GET /deals/ai/stages`, §4.7: conversa de
+  // origem → campanha única → `no_target`) pra achar o registro desta
+  // conversa, sem inventar um seletor novo (o de múltiplos negócios abertos
+  // é da C2/SCRUM-933, fora de escopo aqui).
+  const handleViewDeal = async () => {
+    setViewDealLoading(true)
+    try {
+      const { data } = await dealsApi.conversationTarget(conversation.id)
+      if (data?.dealId) openDeal(data.dealId)
+      else toast('Nenhum negócio vinculado a esta conversa ainda.', 'error')
+    } catch (err: unknown) {
+      toast(getApiErrorMessage(err, 'Não foi possível abrir o negócio.'), 'error')
+    } finally {
+      setViewDealLoading(false)
+    }
+  }
 
   const [archiveOpen,  setArchiveOpen]  = useState(false)
   const [statusOpen,   setStatusOpen]   = useState(false)
@@ -166,24 +203,38 @@ export function ChatHeader({
                   setStatusOpen(false)
                 }}
                 className={cn(
-                  'w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-medium text-left transition-colors',
+                  'w-full flex flex-col items-stretch gap-0.5 px-3 py-2 text-xs font-medium text-left transition-colors',
                   statusBg,
                   statusText,
                 )}
               >
-                {label}
-                {active && <Check className={cn('w-3.5 h-3.5 flex-shrink-0', statusText)} />}
+                <span className="flex items-center justify-between gap-2">
+                  {label}
+                  {active && <Check className={cn('w-3.5 h-3.5 flex-shrink-0', statusText)} />}
+                </span>
+                {/* F-CONV achado do Auditor: "Resolver com desfecho" ficava
+                    escondido atrás desta opção, sem nenhuma pista de que
+                    também fecha o negócio vinculado — hint estático (sem
+                    request extra, o alvo só é buscado ao clicar). */}
+                {v === 'resolved' && multiPipeline && (
+                  <span className="text-[10px] font-normal opacity-70">
+                    Também fecha o {vocab.deal.toLowerCase()} vinculado, se houver
+                  </span>
+                )}
               </button>
             )
           })}
         </div>
       )}
       <ResolveOutcomePopover
-        open={!!resolve.target}
+        open={!!resolve.target || !!resolve.candidates}
         mobile={isMobile}
         target={resolve.target}
+        candidates={resolve.candidates}
+        onPickCandidate={(id) => void resolve.pickCandidate(id)}
         contactName={contact.displayName || contact.waId}
         currentAmountCents={resolve.currentAmountCents}
+        hasLineItems={resolve.hasLineItems}
         busy={resolve.busy}
         onConfirm={resolve.confirm}
         onCancel={resolve.close}
@@ -217,31 +268,15 @@ export function ChatHeader({
           <p className="text-sm font-semibold text-surface-50 truncate">
             {contact.displayName}
           </p>
-          <div className="flex items-center gap-1 text-[11px] text-surface-400">
+          {/* Só identidade. Negócios e etiquetas saíram daqui (09/09): são
+              atributos do CONTATO, e o cabeçalho carrega o que muda a próxima
+              mensagem — situação da conversa e estado da IA. Os dois já têm
+              seção própria no painel da direita, e mantê-los aqui era a mesma
+              informação em dois lugares, disputando a mesma tela. */}
+          <div className="flex items-center gap-1 text-[11px] text-surface-400 flex-wrap">
             <WhatsAppIcon size={10} />
             <span className="truncate">{contact.waId}</span>
           </div>
-          <div className="mt-0.5"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} conversationId={conversation.id} /></div>
-          {tags.length > 0 && (
-            <div className="flex items-center flex-wrap gap-1 mt-0.5">
-              {visibleTags.map((t) => (
-                <span
-                  key={t.id}
-                  className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap"
-                  style={{
-                    backgroundColor: hexToRgba(t.color, 0.18),
-                    color: t.color,
-                  }}
-                >
-                  <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} />
-                  {t.name}
-                </span>
-              ))}
-              {extraTags > 0 && (
-                <span className="text-[10px] text-surface-500 font-medium">+{extraTags}</span>
-              )}
-            </div>
-          )}
           {/* Handoff chip — wraps below the phone/tags row so the right-side
               buttons (status / more) stay reachable even on narrow phones. */}
           <div className="mt-1">
@@ -284,6 +319,31 @@ export function ChatHeader({
             >
               Detalhes do contato
             </DropdownItem>
+            {salesPipeline && (
+              <DropdownItem
+                icon={Handshake}
+                onClick={() => {
+                  setMoreOpen(false)
+                  addToPipeline.requestAdd({
+                    contactId: contact.id,
+                    contactName: contact.displayName || contact.waId,
+                    pipeline: salesPipeline,
+                    conversationId: conversation.id,
+                  })
+                }}
+              >
+                Novo {vocab.deal.toLowerCase()}
+              </DropdownItem>
+            )}
+            {/* B4 (SCRUM-930): paridade com o chip do cabeçalho (que já abre a
+                ficha) — mesma resolução do "Resolver com desfecho". */}
+            <DropdownItem
+              icon={KanbanSquare}
+              disabled={viewDealLoading}
+              onClick={() => { setMoreOpen(false); void handleViewDeal() }}
+            >
+              Ver negócio
+            </DropdownItem>
             <DropdownItem
               icon={Archive}
               danger
@@ -295,6 +355,9 @@ export function ChatHeader({
         </div>
 
         {sharedOverlays}
+        {/* A3: os diálogos do "Adicionar ao funil" (novo negócio, conflito I1,
+            motivo do fechamento) só eram montados no layout desktop. */}
+        {addToPipeline.dialogs}
       </div>
     )
   }
@@ -324,16 +387,39 @@ export function ChatHeader({
               </>
             )}
           </div>
-          <div className="mt-1"><ConversationDealIndicator contactId={contact.id} whatsappNumberId={whatsappNumber.id} conversationId={conversation.id} /></div>
         </div>
       </div>
 
       {/* ── Right: actions ────────────────────────────────────── */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        {/* Handoff chip lives at the leftmost position of the actions group
-            so the colored pill (emerald/amber) catches the eye before the
-            neutral-toned icon buttons. Replaces the full-width banner that
-            used to sit below the header. */}
+        {/* "Novo negócio" NÃO mora mais aqui. A A3 (SCRUM-925) o trouxe para o
+            cabeçalho quando criar negócio só existia escondido dentro do menu
+            de funis; desde então o painel da direita ganhou a mesma ação, com
+            a lista de negócios do contato do lado — que é o lugar onde ela faz
+            sentido. Dois botões idênticos na mesma tela é ruído, não atalho.
+            Continua a um clique em: painel do contato (à direita) e
+            "Adicionar ao funil ▾" (aqui ao lado). */}
+        {!isMobile && (
+          <AddToPipelineMenu
+            contactId={contact.id}
+            contactName={contact.displayName || contact.waId}
+            size="sm"
+            onPick={(pipeline) => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline, conversationId: conversation.id })}
+            onOpenDetailed={() => addToPipeline.requestAddDetailed({ contactId: contact.id, contactName: contact.displayName || contact.waId, conversationId: conversation.id })}
+          />
+        )}
+        {addToPipeline.dialogs}
+
+        {/* Ordem do grupo de ações: o status vem antes do HandoffChip
+            (âmbar/emerald), que fica entre ele e Info/Arquivar. Veio do PR
+            #102, que também tinha um botão "Resolver" de 1 clique ao lado
+            deste dropdown — removido a pedido do PO por duplicar a ação que
+            o dropdown já faz. Resolver volta a ser a opção "Resolvidas"
+            daqui, que continua chamando `resolve.requestResolve` e abrindo o
+            popover de desfecho quando a conversa tem negócio vinculado. */}
+        {statusDropdown}
+
+        <span className="w-px h-5 bg-surface-800" />
         <HandoffChip
           aiPausedUntil={conversation.aiPausedUntil}
           assignedUser={conversation.assignedUser}
@@ -341,19 +427,6 @@ export function ChatHeader({
           onResume={() => onSetAiPause(null)}
           onIntervene={onInterveneAi}
         />
-        <span className="w-px h-5 bg-surface-800" />
-
-        {!isMobile && (
-          <AddToPipelineMenu
-            contactId={contact.id}
-            contactName={contact.displayName || contact.waId}
-            size="sm"
-            onPick={(pipeline) => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline, conversationId: conversation.id })}
-          />
-        )}
-        {addToPipeline.dialogs}
-
-        {statusDropdown}
 
         <Tooltip content="Informações do contato" side="bottom">
           <button
@@ -367,7 +440,9 @@ export function ChatHeader({
           >
             <div className="relative">
               <Info className="w-4 h-4" />
-              {(contact.metaAdsReferral || contact.googleAdsAttribution) && !infoOpen && (
+              {/* Com as etiquetas fora do cabeçalho, o marcador é o que avisa
+                  que há algo do contato para ver — o painel nasce fechado. */}
+              {(contact.metaAdsReferral || contact.googleAdsAttribution || tags.length > 0) && !infoOpen && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-surface-400 border border-surface-900" />
               )}
             </div>

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, Check, Layers, Smartphone, ShieldCheck, ChevronDown, ExternalLink } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
-import { ToastContainer } from '@/components/ui/Toast'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -321,7 +320,7 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function Departments() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const [departments, setDepartments] = useState<Department[]>([])
   const [waNumbers, setWaNumbers] = useState<WhatsAppNumber[]>([])
   const [loading, setLoading] = useState(true)
@@ -430,7 +429,6 @@ export function Departments() {
 
       <ConfirmModal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}
         title="Excluir setor" description={`Tem certeza que deseja excluir o setor "${deleteTarget?.name}"? Os usuários vinculados não serão afetados.`} confirmLabel="Excluir" danger />
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

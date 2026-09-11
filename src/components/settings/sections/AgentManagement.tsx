@@ -14,7 +14,6 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { RadioOptionList } from '@/components/ui/RadioOptionList'
 import { CreateUserDrawer } from '../drawers/CreateUserDrawer'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import type { User, UserRole, Department } from '@/types'
@@ -101,7 +100,7 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
       error={error}
     >
       <div className="flex items-center gap-3 py-3 border-b border-surface-800">
-        <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
+        <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" />
         <div>
           <p className="text-sm font-medium text-surface-100">{user.firstName} {user.lastName}</p>
           <p className="text-xs text-surface-400">{user.email}</p>
@@ -124,7 +123,7 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
 }
 
 export function AgentManagement() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
@@ -295,7 +294,7 @@ export function AgentManagement() {
                 <tr key={user.id} className="hover:bg-surface-900/60 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" online={user.isActive && user.status !== 'pending'} />
+                      <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" online={user.isActive && user.status !== 'pending'} />
                       <div>
                         <p className="text-sm font-medium text-surface-100">{user.firstName} {user.lastName}</p>
                         <p className="text-xs text-surface-400">{user.email}</p>
@@ -407,7 +406,6 @@ export function AgentManagement() {
         confirmLabel={deactivateTarget?.isActive ? 'Desativar' : 'Reativar'}
         danger={deactivateTarget?.isActive}
       />
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

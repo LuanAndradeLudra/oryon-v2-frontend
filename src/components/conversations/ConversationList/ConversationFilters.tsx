@@ -90,13 +90,15 @@ export function ConversationFiltersBar({
 
   const handlingValue = resolveHandlingValue(filters)
   const handlingActive = handlingValue !== 'all'
-  const totalActiveFilters = [handlingActive, filters.tagId].filter(Boolean).length
+  const quickTogglesActive = !!(filters.unreadOnly || filters.awaitingReply || filters.untagged || filters.needsReview)
 
   // ── Period filter state ────────────────────────────────────────────────────
   // The active preset is derived from `filters.startDate` so the chips stay in
   // sync even when a parent swaps the filters object. `null` = no period
   // narrowing applied, in which case NO chip lights up (see resolveActivePreset).
   const activePeriod = useMemo(() => resolveActivePreset(filters.startDate), [filters.startDate])
+  const periodActive = activePeriod !== null
+  const totalActiveFilters = [handlingActive, filters.tagId, quickTogglesActive, periodActive].filter(Boolean).length
 
   const [customRange, setCustomRange] = useState<DateRange | undefined>(() => {
     if (activePeriod === 'custom' && filters.startDate && filters.endDate) {
@@ -150,11 +152,19 @@ export function ConversationFiltersBar({
     set({ tagId: ids.length ? ids.join(',') : undefined })
   }
   const clearAll = () => {
+    setCustomRange(undefined)
+    setCalendarOpen(false)
     onFiltersChange({
       ...filters,
       assignedTo: 'all',
       aiHandling: 'all',
       tagId: undefined,
+      unreadOnly: undefined,
+      awaitingReply: undefined,
+      untagged: undefined,
+      needsReview: undefined,
+      startDate: undefined,
+      endDate: undefined,
     })
   }
 

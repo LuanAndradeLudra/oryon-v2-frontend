@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, X, Hash, MessageSquareDot, Users, Info,
-  ChevronRight, Building2, Plus, Phone, Video, Pin,
+  ChevronRight, Building2, Plus, Pin,
   ExternalLink, Copy, Trash2, UserMinus, LogOut, AlertTriangle,
 } from 'lucide-react'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -10,6 +10,7 @@ import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { EmptyState as UiEmptyState } from '@/components/ui/EmptyState'
 import { SkeletonList } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/Modal'
 
 import { useInternalChat } from '@/contexts/InternalChatContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -53,6 +54,7 @@ function ChannelRow({ channel, currentUserId, isActive, onClick }: {
   const canDelete = isDM
     ? channel.memberIds.includes(currentUserId)
     : channel.createdByUserId === currentUserId
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = [
@@ -69,67 +71,76 @@ function ChannelRow({ channel, currentUserId, isActive, onClick }: {
         label: isDM ? 'Excluir conversa' : 'Excluir canal',
         icon: Trash2,
         danger: true,
-        onClick: () => {
-          const confirmText = isDM
-            ? `Excluir a conversa com ${displayName}? Todas as mensagens serão removidas.`
-            : `Excluir o canal #${displayName}? Todas as mensagens e membros serão removidos.`
-          if (window.confirm(confirmText)) deleteChannel(channel.id).catch(() => {})
-        },
+        onClick: () => setDeleteConfirmOpen(true),
       })
     }
     return items
-  }, [isDM, displayName, onClick, canDelete, channel.id, deleteChannel])
+  }, [isDM, displayName, onClick, canDelete])
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      onContextMenu={onContextMenu}
-      className={cn(
-        'w-full flex items-center gap-3 px-4 py-3 text-left transition-colors',
-        isActive
-          ? 'bg-surface-800 border-r-2 border-brand-500'
-          : 'hover:bg-surface-800/60',
-      )}
-    >
-      {/* Avatar */}
-      <div className="relative flex-shrink-0">
-        {isDM ? (
-          <>
-            <div className={cn('w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-white', avatarColor(displayName))}>
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-            {status && <PresenceDot status={status} size="sm" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
-          </>
-        ) : (
-          <div className="w-9 h-9 rounded-full bg-surface-700 flex items-center justify-center">
-            {channel.emoji ? <Emoji native={channel.emoji} size="1.25rem" /> : <Hash className="w-4 h-4 text-surface-400" />}
-          </div>
+    <>
+      <button
+        type="button"
+        onClick={onClick}
+        onContextMenu={onContextMenu}
+        className={cn(
+          'w-full flex items-center gap-3 px-4 py-3 text-left transition-colors',
+          isActive
+            ? 'bg-surface-800 border-r-2 border-brand-500'
+            : 'hover:bg-surface-800/60',
         )}
-      </div>
-
-      {/* Text */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-1 mb-0.5">
-          <span className={cn(
-            'text-sm truncate',
-            channel.unreadCount > 0 ? 'font-semibold text-surface-50' : 'font-medium text-surface-200',
-          )}>
-            {displayName}
-          </span>
-          <span className="text-[11px] text-surface-500 flex-shrink-0">{chatRelTime(channel.lastMessageAt)}</span>
-        </div>
-        <div className="flex items-center justify-between gap-1">
-          <ChannelPreview channel={channel} isDM={isDM} />
-          {channel.unreadCount > 0 && (
-            <span className="flex-shrink-0 min-w-[18px] h-[18px] rounded-full bg-brand-500 text-surface-950 text-[10px] font-bold flex items-center justify-center px-1">
-              {channel.unreadCount > 9 ? '9+' : channel.unreadCount}
-            </span>
+      >
+        {/* Avatar */}
+        <div className="relative flex-shrink-0">
+          {isDM ? (
+            <>
+              <div className={cn('w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-white', avatarColor(displayName))}>
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+              {status && <PresenceDot status={status} size="sm" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
+            </>
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-surface-700 flex items-center justify-center">
+              {channel.emoji ? <Emoji native={channel.emoji} size="1.25rem" /> : <Hash className="w-4 h-4 text-surface-400" />}
+            </div>
           )}
         </div>
-      </div>
-    </button>
+
+        {/* Text */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-1 mb-0.5">
+            <span className={cn(
+              'text-sm truncate',
+              channel.unreadCount > 0 ? 'font-semibold text-surface-50' : 'font-medium text-surface-200',
+            )}>
+              {displayName}
+            </span>
+            <span className="text-[11px] text-surface-500 flex-shrink-0">{chatRelTime(channel.lastMessageAt)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-1">
+            <ChannelPreview channel={channel} isDM={isDM} />
+            {channel.unreadCount > 0 && (
+              <span className="flex-shrink-0 min-w-[18px] h-[18px] rounded-full bg-brand-500 text-surface-950 text-[10px] font-bold flex items-center justify-center px-1">
+                {channel.unreadCount > 9 ? '9+' : channel.unreadCount}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={() => { deleteChannel(channel.id).catch(() => {}); setDeleteConfirmOpen(false) }}
+        title={isDM ? 'Excluir conversa' : 'Excluir canal'}
+        description={isDM
+          ? `Excluir a conversa com ${displayName}? Todas as mensagens serão removidas.`
+          : `Excluir o canal #${displayName}? Todas as mensagens e membros serão removidos.`}
+        confirmLabel="Excluir"
+        danger
+      />
+    </>
   )
 }
 
@@ -417,23 +428,38 @@ function InfoPanel({ channel, currentUserId, onClose }: {
     ? channel.memberIds.includes(currentUserId)
     : isCreator
 
+  const [removeMemberTarget, setRemoveMemberTarget] = useState<{ uid: string; name: string } | null>(null)
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+
   function handleRemoveMember(uid: string, name: string) {
-    if (!window.confirm(`Remover ${name} do canal?`)) return
-    removeMember(channel.id, uid).catch(() => {})
+    setRemoveMemberTarget({ uid, name })
+  }
+  function confirmRemoveMember() {
+    if (!removeMemberTarget) return
+    removeMember(channel.id, removeMemberTarget.uid).catch(() => {})
+    setRemoveMemberTarget(null)
   }
   function handleLeave() {
-    if (!window.confirm('Sair deste canal? Você deixará de receber mensagens.')) return
+    setLeaveConfirmOpen(true)
+  }
+  function confirmLeave() {
     removeMember(channel.id, currentUserId).catch(() => {})
+    setLeaveConfirmOpen(false)
   }
   function handleDelete() {
-    const confirmText = isDM
-      ? `Excluir a conversa com ${otherName}? Todas as mensagens serão removidas.`
-      : `Excluir o canal #${channel.name}? Todas as mensagens e membros serão removidos.`
-    if (!window.confirm(confirmText)) return
-    deleteChannel(channel.id).catch(() => {})
+    setDeleteConfirmOpen(true)
   }
+  function confirmDelete() {
+    deleteChannel(channel.id).catch(() => {})
+    setDeleteConfirmOpen(false)
+  }
+  const deleteConfirmText = isDM
+    ? `Excluir a conversa com ${otherName}? Todas as mensagens serão removidas.`
+    : `Excluir o canal #${channel.name}? Todas as mensagens e membros serão removidos.`
 
   return (
+    <>
     <div className="w-72 h-full border-l border-surface-800 flex flex-col bg-surface-950 flex-shrink-0 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800 flex-shrink-0">
         <span className="text-sm font-semibold text-surface-100">
@@ -460,14 +486,6 @@ function InfoPanel({ channel, currentUserId, onClose }: {
                 <p className={cn('text-xs mt-0.5', PRESENCE_COLOR[otherStatus ?? 'offline'])}>
                   {PRESENCE_LABEL[otherStatus ?? 'offline']}
                 </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-700 text-xs font-medium text-surface-200 transition-colors">
-                  <Phone className="w-3.5 h-3.5" /> Ligar
-                </button>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-700 text-xs font-medium text-surface-200 transition-colors">
-                  <Video className="w-3.5 h-3.5" /> Vídeo
-                </button>
               </div>
             </>
           ) : (
@@ -574,6 +592,35 @@ function InfoPanel({ channel, currentUserId, onClose }: {
         )}
       </div>
     </div>
+
+    <ConfirmModal
+      open={!!removeMemberTarget}
+      onClose={() => setRemoveMemberTarget(null)}
+      onConfirm={confirmRemoveMember}
+      title="Remover membro"
+      description={`Remover ${removeMemberTarget?.name ?? ''} do canal?`}
+      confirmLabel="Remover"
+      danger
+    />
+    <ConfirmModal
+      open={leaveConfirmOpen}
+      onClose={() => setLeaveConfirmOpen(false)}
+      onConfirm={confirmLeave}
+      title="Sair do canal"
+      description="Sair deste canal? Você deixará de receber mensagens."
+      confirmLabel="Sair"
+      danger
+    />
+    <ConfirmModal
+      open={deleteConfirmOpen}
+      onClose={() => setDeleteConfirmOpen(false)}
+      onConfirm={confirmDelete}
+      title={isDM ? 'Excluir conversa' : 'Excluir canal'}
+      description={deleteConfirmText}
+      confirmLabel="Excluir"
+      danger
+    />
+    </>
   )
 }
 
@@ -651,16 +698,6 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
             <button onClick={toggleSearch} className="p-2 rounded-full text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors" title="Pesquisar">
               <Search className="w-4 h-4" />
             </button>
-            {isDM && (
-              <>
-                <button className="p-2 rounded-full text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors" title="Ligar">
-                  <Phone className="w-4 h-4" />
-                </button>
-                <button className="p-2 rounded-full text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors" title="Vídeo">
-                  <Video className="w-4 h-4" />
-                </button>
-              </>
-            )}
             <button
               onClick={onToggleInfo}
               className={cn('p-2 rounded-full transition-colors', showInfo ? 'text-brand-400 bg-brand-500/15' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800')}

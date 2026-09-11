@@ -151,7 +151,7 @@ function FlowSection({ eyebrow, icon, onClick, children }: {
     >
       <div className="flex items-center gap-1.5 mb-1">
         <span className="text-surface-500">{icon}</span>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-surface-500">{eyebrow}</span>
+        <span className="text-3xs font-bold uppercase tracking-widest text-surface-500">{eyebrow}</span>
         {onClick && <Pencil className="w-2.5 h-2.5 text-surface-600 opacity-0 group-hover/sec:opacity-100 transition-opacity ml-auto" />}
       </div>
       <div className="text-xs text-surface-200 leading-relaxed pl-[18px]">{children}</div>
@@ -205,7 +205,7 @@ function FlowCard({ automation, onEdit }: {
           className="w-full flex items-start gap-1.5 text-left rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-surface-800/60 transition-colors group/ia"
         >
           <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0 mt-0.5" />
-          <span className="text-[11px] text-surface-400 leading-relaxed">{agentBehaviorSentence(automation)}</span>
+          <span className="text-2xs text-surface-400 leading-relaxed">{agentBehaviorSentence(automation)}</span>
           <Pencil className="w-2.5 h-2.5 text-surface-600 opacity-0 group-hover/ia:opacity-100 transition-opacity ml-auto flex-shrink-0 mt-0.5" />
         </button>
       </div>
@@ -235,12 +235,12 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className={cn('text-xs font-medium', st.text)}>{st.label}</span>
-            <span className="text-[11px] text-surface-500 truncate">· {runTriggerLabel(run.triggerType)}</span>
+            <span className="text-2xs text-surface-500 truncate">· {runTriggerLabel(run.triggerType)}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {run.durationMs != null && <span className="text-[10px] text-surface-500 tabular-nums">{fmtDuration(run.durationMs)}</span>}
-          <span className="text-[11px] text-surface-500 tabular-nums" title={formatFullTime(run.startedAt)}>{relativeDate(run.startedAt)}</span>
+          {run.durationMs != null && <span className="text-3xs text-surface-500 tabular-nums">{fmtDuration(run.durationMs)}</span>}
+          <span className="text-2xs text-surface-500 tabular-nums" title={formatFullTime(run.startedAt)}>{relativeDate(run.startedAt)}</span>
           {canExpand && (
             <ChevronDown className={cn('w-3 h-3 text-surface-600 transition-transform', open && 'rotate-180')} />
           )}
@@ -258,7 +258,7 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
           >
             <div className="pb-2.5 pl-4 space-y-1.5">
               {run.errorMessage && (
-                <p className="text-[11px] text-danger bg-danger/10 border border-danger/20 rounded-lg px-2 py-1.5 leading-relaxed">
+                <p className="text-2xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-2 py-1.5 leading-relaxed">
                   {run.errorMessage}
                 </p>
               )}
@@ -266,7 +266,7 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
                 const ok = ac.status === 'success'
                 const failed = ac.status === 'failed'
                 return (
-                  <div key={i} className="flex items-start gap-2 text-[11px]">
+                  <div key={i} className="flex items-start gap-2 text-2xs">
                     <span className="flex-shrink-0 mt-0.5">
                       {ok ? <Check className="w-3 h-3 text-status-active" />
                         : failed ? <X className="w-3 h-3 text-danger" />
@@ -283,12 +283,12 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
               {(run.contactId || run.conversationId) && (
                 <div className="flex items-center gap-3 pt-0.5">
                   {run.conversationId && (
-                    <button onClick={() => onOpenConversation(run.conversationId!)} className="inline-flex items-center gap-1 text-[11px] text-brand-400 hover:text-brand-300 transition-colors">
+                    <button onClick={() => onOpenConversation(run.conversationId!)} className="inline-flex items-center gap-1 text-2xs text-brand-400 hover:text-brand-300 transition-colors">
                       <ExternalLink className="w-2.5 h-2.5" /> ver conversa
                     </button>
                   )}
                   {run.contactId && (
-                    <button onClick={() => onOpenContact(run.contactId!)} className="inline-flex items-center gap-1 text-[11px] text-brand-400 hover:text-brand-300 transition-colors">
+                    <button onClick={() => onOpenContact(run.contactId!)} className="inline-flex items-center gap-1 text-2xs text-brand-400 hover:text-brand-300 transition-colors">
                       <ExternalLink className="w-2.5 h-2.5" /> ver contato
                     </button>
                   )}
@@ -352,12 +352,12 @@ export function AutomationDetail({
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-surface-100 truncate">{automation.name}</h2>
             {isDraft && (
-              <span className="color-chip inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+              <span className="color-chip inline-flex items-center px-1.5 py-0.5 rounded-full text-3xs font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
                 Rascunho
               </span>
             )}
           </div>
-          {automation.description && <p className="text-[11px] text-surface-400 mt-0.5 line-clamp-2">{automation.description}</p>}
+          {automation.description && <p className="text-2xs text-surface-400 mt-0.5 line-clamp-2">{automation.description}</p>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <Switch checked={isActive} onChange={() => onToggle(automation)} />
@@ -386,7 +386,7 @@ export function AutomationDetail({
             {onResolveWithAI && (
               <button
                 onClick={() => onResolveWithAI(automation, attention[0])}
-                className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-[11px] font-semibold text-white transition-colors"
+                className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-2xs font-semibold text-white transition-colors"
               >
                 <Sparkles className="w-3 h-3" /> Resolver com IA
               </button>
@@ -400,15 +400,15 @@ export function AutomationDetail({
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-surface-900 border border-surface-800 rounded-xl px-3 py-2.5">
-            <p className="text-[10px] text-surface-500 mb-1 flex items-center gap-1"><Play className="w-2.5 h-2.5" /> Execuções</p>
+            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Play className="w-2.5 h-2.5" /> Execuções</p>
             <p className="text-sm font-display font-bold text-surface-100 tabular-nums">{automation.executionCount.toLocaleString('pt-BR')}</p>
           </div>
           <div className="bg-surface-900 border border-surface-800 rounded-xl px-3 py-2.5">
-            <p className="text-[10px] text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Última</p>
+            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Última</p>
             <p className="text-xs font-medium text-surface-200 tabular-nums">{automation.lastExecutedAt ? relativeDate(automation.lastExecutedAt) : '—'}</p>
           </div>
           <div className="bg-surface-900 border border-surface-800 rounded-xl px-3 py-2.5 min-w-0">
-            <p className="text-[10px] text-surface-500 mb-1">Linha</p>
+            <p className="text-3xs text-surface-500 mb-1">Linha</p>
             <WhatsappLineChip whatsappNumberId={automation.whatsappNumberId} />
             {!automation.whatsappNumberId && <p className="text-xs text-surface-400">—</p>}
           </div>
@@ -417,11 +417,11 @@ export function AutomationDetail({
         {/* Runs */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Execuções recentes</h3>
+            <h3 className="text-3xs font-bold uppercase tracking-widest text-surface-500">Execuções recentes</h3>
             <button
               onClick={() => setFailedOnly((v) => !v)}
               className={cn(
-                'text-[10px] font-medium px-2 py-0.5 rounded-md border transition-colors',
+                'text-3xs font-medium px-2 py-0.5 rounded-md border transition-colors',
                 failedOnly
                   ? 'bg-danger/10 border-danger/30 text-danger'
                   : 'bg-surface-800 border-surface-700 text-surface-400 hover:text-surface-200',
@@ -438,9 +438,9 @@ export function AutomationDetail({
           {runsLoading ? (
             <div className="flex items-center justify-center py-6"><Loader2 className="w-4 h-4 text-surface-500 animate-spin" /></div>
           ) : runsError ? (
-            <p className="text-[11px] text-surface-500 py-4 text-center">Não foi possível carregar o histórico.</p>
+            <p className="text-2xs text-surface-500 py-4 text-center">Não foi possível carregar o histórico.</p>
           ) : runs.length === 0 ? (
-            <p className="text-[11px] text-surface-500 py-4 text-center">
+            <p className="text-2xs text-surface-500 py-4 text-center">
               {failedOnly ? 'Nenhuma falha na janela recente. 🎉' : 'Ainda sem execuções registradas.'}
             </p>
           ) : (
@@ -452,7 +452,7 @@ export function AutomationDetail({
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="w-full py-2 text-[11px] text-brand-400 hover:text-brand-300 transition-colors flex items-center justify-center gap-1.5 border-t border-surface-800/60"
+                  className="w-full py-2 text-2xs text-brand-400 hover:text-brand-300 transition-colors flex items-center justify-center gap-1.5 border-t border-surface-800/60"
                 >
                   {loadingMore ? <Loader2 className="w-3 h-3 animate-spin" /> : <ChevronDown className="w-3 h-3" />}
                   Carregar mais

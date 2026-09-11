@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, X, GripVertical, Lock, Check, Trophy, Loader2, Sparkles } from 'lucide-react'
+import { Plus, X, GripVertical, Lock, Check, Trophy, Loader2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
@@ -9,7 +9,14 @@ import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { getApiErrorMessage, cn } from '@/lib/utils'
-import { PIPELINE_KIND_OPTIONS, pipelineKindOption, pipelineKindOf, DEFAULT_PIPELINE_KIND } from '@/lib/pipelineKinds'
+import {
+  PIPELINE_KIND_OPTIONS,
+  CREATABLE_PIPELINE_KIND_OPTIONS,
+  pipelineKindOption,
+  pipelineKindOf,
+  DEFAULT_PIPELINE_KIND,
+  TERMINAL_CHIP_STYLE,
+} from '@/lib/pipelineKinds'
 import { useDragReorder } from '@/hooks/useDragReorder'
 import { pipelinesApi } from '@/services/api'
 import { loadHubAsync } from '@/services/companyContextService'
@@ -86,8 +93,11 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
   // F13-904: a geração de etapas por IA saiu do onboarding e veio para cá —
   // é aqui que ela faz sentido (o usuário está criando UM funil, com nome e
   // tipo já escolhidos), e o resultado é rascunho editável, não configuração
-  // aplicada às escondidas.
+  // aplicada às escondidas. F-FUNIL-17: "Sugerir com IA" é uma OPÇÃO do
+  // mesmo campo "Modelo", não um botão concorrente — um só caminho pra
+  // preencher as etapas, sem duas afordances competindo por atenção.
   const [suggesting, setSuggesting] = useState(false)
+  const [usedAi, setUsedAi] = useState(false)
 
   const isEdit = !!editPipeline
 
@@ -131,10 +141,23 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
   const templatesOfKind = useMemo(() => (templates ?? []).filter((t) => t.kind === kind), [templates, kind])
   const kindOption = pipelineKindOption(kind)
 
+  // Tipos visíveis no campo: os que a criação oferece hoje, mais o tipo do
+  // próprio funil quando se está editando — um funil de processo que já existe
+  // continua se declarando como tal mesmo com a criação fechada. Sobrando um
+  // só, o campo inteiro some: escolher entre uma coisa não é escolher.
+  const kindOptions = useMemo(
+    () =>
+      PIPELINE_KIND_OPTIONS.filter(
+        (o) => CREATABLE_PIPELINE_KIND_OPTIONS.some((c) => c.kind === o.kind) || (isEdit && o.kind === kind),
+      ),
+    [isEdit, kind],
+  )
+
   const applyTemplate = (key: string, nextKind: PipelineKind) => {
     const tpl = (templates ?? []).find((t) => t.key === key && t.kind === nextKind) ?? null
     setTemplateKey(tpl?.key ?? '')
     setStages(tpl ? stagesFromTemplate(tpl) : fallbackStages(nextKind))
+    setUsedAi(false)
   }
 
   // Trocar o tipo troca o vocabulário inteiro: modelo padrão do novo tipo e
@@ -161,11 +184,21 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
       const draft = stagesFromAiSuggestion(result.stages ?? [], kind)
       setStages(draft)
       setTemplateKey('')
+      setUsedAi(true)
     } catch {
       setError('Não foi possível sugerir etapas agora. Escolha um modelo ou monte a lista à mão.')
+      setUsedAi(false)
     } finally {
       setSuggesting(false)
     }
+  }
+
+  /** Único handler do campo "Modelo" — a opção especial de IA (F-FUNIL-17)
+   *  dispara a sugestão; qualquer outro valor é um `templateKey` normal. */
+  const AI_OPTION = '__ai__'
+  const handleModelChange = (value: string) => {
+    if (value === AI_OPTION) { void handleSuggest(); return }
+    applyTemplate(value, kind)
   }
 
   const normals = normalStages(stages)
@@ -204,7 +237,7 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
         <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
         <Button
           type="button"
-          variant="primary"
+          variant="neutral"
           onClick={handleSave}
           loading={saving}
           disabled={saving || loadingTemplates || !!blocker}
@@ -242,11 +275,13 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
           </FormField>
         )}
 
-        {/* Tipo — decide vocabulário, campos e terminais. Na edição vira só leitura. */}
+        {/* Tipo — decide vocabulário, campos e terminais. Na edição vira só
+            leitura; com um tipo só disponível, não é mostrado. */}
+        {kindOptions.length > 1 && (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-semibold text-surface-400">Tipo</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" role="radiogroup" aria-label="Tipo do funil">
-            {PIPELINE_KIND_OPTIONS.map((opt) => {
+            {kindOptions.map((opt) => {
               const active = opt.kind === kind
               const Icon = opt.icon
               return (
@@ -281,38 +316,31 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
             <p className="text-[11px] text-surface-500">O tipo não muda depois de criado — ele define o vocabulário do histórico.</p>
           )}
         </div>
+        )}
 
         {/* Etapas — modelo por tipo + lista editável (terminais fixos e renomeáveis) */}
         {!isEdit && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-xs font-semibold text-surface-400">Etapas</span>
-              <button
-                type="button"
-                onClick={handleSuggest}
-                disabled={suggesting || loadingTemplates}
-                data-testid="suggest-stages-ai"
-                className="inline-flex items-center gap-1.5 text-xs text-brand-400 hover:text-brand-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {suggesting
-                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sugerindo…</>
-                  : <><Sparkles className="w-3.5 h-3.5" /> Sugerir etapas com IA</>}
-              </button>
-              {templatesOfKind.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-surface-500">Modelo:</span>
-                  <Select
-                    aria-label="Modelo de etapas"
-                    value={templateKey}
-                    onChange={(e) => applyTemplate(e.target.value, kind)}
-                    className="py-1 text-xs w-48"
-                  >
-                    {templatesOfKind.map((t) => (
-                      <option key={t.key} value={t.key}>{t.name}</option>
-                    ))}
-                  </Select>
-                </div>
-              )}
+              {/* F-FUNIL-17: um só campo para preencher as etapas — "Sugerir com
+                  IA" é uma opção do MESMO select, não um botão concorrente. */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-surface-500">Modelo:</span>
+                <Select
+                  aria-label="Modelo de etapas"
+                  value={suggesting || usedAi ? AI_OPTION : templateKey}
+                  onChange={(e) => handleModelChange(e.target.value)}
+                  disabled={suggesting || loadingTemplates}
+                  className="py-1 text-xs w-56"
+                >
+                  {templatesOfKind.map((t) => (
+                    <option key={t.key} value={t.key}>{t.name}</option>
+                  ))}
+                  <option value={AI_OPTION}>✨ Sugerir com IA</option>
+                </Select>
+                {suggesting && <Loader2 className="w-3.5 h-3.5 animate-spin text-surface-400" />}
+              </div>
             </div>
 
             {loadingTemplates ? (
@@ -355,12 +383,12 @@ export function CreatePipelineModal({ open, onClose, onSave, editPipeline, tenan
                         className="flex-1 min-w-0 bg-transparent text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none"
                       />
                       {stage.role === 'won' && (
-                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={TERMINAL_CHIP_STYLE.won}>
                           <Trophy className="w-2.5 h-2.5" /> {kindOption.terminalLabels.won}
                         </span>
                       )}
                       {stage.role === 'lost' && (
-                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border" style={TERMINAL_CHIP_STYLE.lost}>
                           <X className="w-2.5 h-2.5" /> {kindOption.terminalLabels.lost}
                         </span>
                       )}

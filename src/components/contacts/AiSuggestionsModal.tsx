@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, Sparkles, Loader2, BarChart3, User, Settings2 } from 'lucide-react'
+import { X, Check, Sparkles, BarChart3, User, Settings2 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
+import { Spinner } from '@/components/ui/Spinner'
 
 type Suggestions = {
   qualification: Record<string, unknown>
@@ -322,7 +323,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
                 disabled={applying || enabledCount === 0}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-brand-600 text-surface-950 hover:bg-brand-500 disabled:opacity-50 transition-colors"
               >
-                {applying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                {applying ? <Spinner className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
                 {applying ? 'Aplicando...' : 'Aplicar selecionadas'}
               </button>
             </div>

@@ -25,6 +25,7 @@ import { useContextMenuCtx } from '@/components/ui/contextMenuCore'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DataTable, type DataTableColumn, type DataTableSort } from '@/components/ui/DataTable'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { Switch } from '@/components/ui/Switch'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import {
@@ -115,31 +116,6 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
 // ── Contagens de status (alimentam o SegmentedControl) ───────────────────────
 
 interface Counts { total: number; active: number; inactive: number; draft: number; totalExec: number }
-
-// ── Empty state (nenhuma automação) ──────────────────────────────────────────
-
-function EmptyStateBlank({ onNew }: { onNew: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center flex-1 gap-5 py-20">
-      <div className="w-16 h-16 rounded-2xl bg-brand-600/10 border border-brand-500/20 flex items-center justify-center">
-        <Workflow className="w-8 h-8 text-brand-400" />
-      </div>
-      <div className="text-center">
-        <h3 className="text-base font-semibold text-surface-200">Nenhuma automação configurada</h3>
-        <p className="text-sm text-surface-500 mt-1 max-w-xs mx-auto">
-          Automatize respostas, follow-ups e atribuições para economizar tempo e responder mais rápido.
-        </p>
-      </div>
-      <button
-        onClick={onNew}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-colors shadow-lg shadow-brand-900/30"
-      >
-        <Plus className="w-4 h-4" />
-        Criar automação
-      </button>
-    </div>
-  )
-}
 
 // ── Delete confirm ────────────────────────────────────────────────────────────
 
@@ -674,7 +650,13 @@ export function AutomationsPage() {
 
         {/* Conteúdo */}
         {!loading && automations.length === 0 && !waLoading && hasWhatsappLine ? (
-          <EmptyStateBlank onNew={openNew} />
+          <EmptyState
+            icon={Workflow}
+            title="Nenhuma automação configurada"
+            hint="Automatize respostas, follow-ups e atribuições para economizar tempo e responder mais rápido."
+            action={{ label: 'Criar automação', onClick: openNew }}
+            className="flex-1 justify-center mx-4 my-3"
+          />
         ) : isMobile ? (
           // Mobile: lista vertical de cards — a tabela larga (Fluxo, Atividade,
           // Linha) fica inutilizável em viewport estreita.

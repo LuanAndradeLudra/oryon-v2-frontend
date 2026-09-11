@@ -4,7 +4,6 @@ import {
   XCircle, AlertCircle, Trash2, BarChart3, Users, Copy
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
 import { campaignsApi } from '@/services/api'
 import { CampaignWizard } from './CampaignWizard'
 import { CampaignReport } from './CampaignReport'
@@ -130,7 +129,11 @@ export function CampaignsTab() {
 
         <div className="flex-1" />
 
+        {/* `neutral` no lugar do teal (10/09): mesma conversão dos botões de
+            criação do funil. O teal aqui não dizia "importante", dizia "botão" —
+            e ele já é o único elemento cheio da barra. */}
         <Button
+          variant="neutral"
           onClick={() => hasWhatsappLine && setWizardOpen(true)}
           disabled={!hasWhatsappLine}
           title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar campanhas' : undefined}
@@ -317,14 +320,15 @@ function CampaignCard({
             )}
           </div>
 
-          {/* Stats (only when sent) */}
+          {/* Stats (only when sent) — mesmas cores do relatório da campanha
+              (CampaignReport.tsx) por consistência entre as duas telas. */}
           {isSent && stats.total > 0 && (
             <div className="flex items-center gap-4">
-              <StatChip label="Enviadas" value={stats.sent} color="text-brand-400" />
-              <StatChip label="Entregues" value={stats.delivered} color="text-emerald-400" suffix={`${deliveredRate}%`} />
-              <StatChip label="Lidas" value={stats.read} color="text-amber-400" suffix={`${readRate}%`} />
+              <StatChip label="Enviadas" value={stats.sent} color="var(--color-accent-blue)" />
+              <StatChip label="Entregues" value={stats.delivered} color="var(--color-accent-cyan)" suffix={`${deliveredRate}%`} />
+              <StatChip label="Lidas" value={stats.read} color="var(--color-accent-amber)" suffix={`${readRate}%`} />
               {stats.failed > 0 && (
-                <StatChip label="Falhas" value={stats.failed} color="text-danger" />
+                <StatChip label="Falhas" value={stats.failed} color="var(--color-danger)" />
               )}
               {/* Progress bar */}
               <div className="flex-1 max-w-xs">
@@ -353,6 +357,7 @@ function CampaignCard({
           )}
           {canSend && (
             <Button
+              variant="neutral"
               size="sm"
               onClick={onSend}
               loading={sending}
@@ -379,12 +384,13 @@ function CampaignCard({
 function StatChip({ label, value, color, suffix }: {
   label: string
   value: number
+  /** CSS color value (design-token `var(--color-*)`), not a Tailwind class. */
   color: string
   suffix?: string
 }) {
   return (
     <div className="text-center">
-      <p className={cn('text-sm font-bold', color)}>{suffix ?? value}</p>
+      <p className="text-sm font-bold" style={{ color }}>{suffix ?? value}</p>
       <p className="text-[10px] text-surface-600">{label}</p>
     </div>
   )

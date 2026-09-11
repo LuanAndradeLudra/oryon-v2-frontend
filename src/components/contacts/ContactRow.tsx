@@ -1,19 +1,22 @@
 import { useCallback, useState, type MouseEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   MoreHorizontal, MessageSquare, ExternalLink, Smile, Meh, Frown, HelpCircle, Check, X,
-  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare,
+  Phone, Copy, CheckSquare, Square, ArrowRightLeft, Trash2, KanbanSquare, Handshake,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { DealSummary } from '@/components/deals/DealSummary'
 import { StageBadge } from './StageBadge'
 import { LeadScorePill } from './LeadScorePill'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useDealPanel } from '@/contexts/DealPanelContext'
+import { dealsApi } from '@/services/api'
+import { useToast } from '@/hooks/useToast'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
-import { cn, relativeDate, getActivePipelines } from '@/lib/utils'
-import { pipelineKindOption, pipelineKindOf } from '@/lib/pipelineKinds'
+import { cn, relativeDate, getActivePipelines, getApiErrorMessage } from '@/lib/utils'
+import { pipelineKindOption, pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { openPipelineChips } from '@/lib/contactPipelines'
 import type { Contact, ContactStage, Pipeline } from '@/types'
 
@@ -31,57 +34,91 @@ const INTENT_CONFIG = {
   unknown: { label: '—',       chip: 'var(--color-status-muted)' },
 }
 
-/** Chips "● Funil · Etapa" por registro ABERTO (F11-884, prancheta 6) — um por
- *  funil (I1), com o ícone do tipo; clique abre o board daquele funil
- *  (`/contacts?pipeline=`). Sem registro aberto: chip tracejado "nenhum
- *  aberto". Reusado igual entre `ContactRow` (desktop) e `ContactCard`
- *  (mobile, `ContactsMobileList`). Lê só o `dealsSummary` já carregado em lote
- *  (`GET /deals/summary`, 1 chamada por página) — nenhuma requisição extra. */
+/** Chips "● Funil · Etapa" por registro ABERTO (F11-884, prancheta 6; B3 ·
+ *  SCRUM-929) — densidade `chip` do `DealSummary`, um por funil (I1). Reusado
+ *  igual entre `ContactRow` (desktop) e `ContactCard` (mobile,
+ *  `ContactsMobileList`). Lê só o `dealsSummary` já carregado em lote (`GET
+ *  /deals/summary`, 1 chamada por página) — nenhuma requisição extra para
+ *  MOSTRAR o chip; por isso o `chip` do `DealSummary` recebe só funil+etapa,
+ *  não o `Deal` inteiro que `row`/`card` (ficha, painel, aba) têm à mão.
+ *
+ *  B2 (SCRUM-928): clique abre a FICHA do negócio, não mais o board. O
+ *  resumo em lote não traz `dealId` (só `pipelineId` + rótulo de etapa) — ao
+ *  clicar, busca o negócio aberto deste (contato, funil) via `GET
+ *  /deals?contactId=` (mesma chamada que `ConversationDealIndicator` já faz)
+ *  e abre a ficha assim que resolve. Único ponto do produto sem o id à mão.
+ *
+ *  SCRUM-929 (item 6): sem nenhum aberto, a célula fica VAZIA — o chip
+ *  tracejado "nenhum aberto" era ruído puro, sem ação nenhuma atrás dele.
+ *  Com `onAddToPipeline` (só o desktop passa — a tabela já tem o funil de
+ *  venda padrão à mão pro menu de contexto), aparece "+ Novo negócio" no
+ *  hover da linha; sem ele (mobile), a célula some — tocar no card já abre o
+ *  painel, que tem o mesmo CTA na aba Negócios. */
 export function DealsSummaryChips({
   contact,
   className,
+  onAddToPipeline,
 }: {
   contact: Contact
   className?: string
+  onAddToPipeline?: (contact: Contact, pipeline: Pipeline) => void
 }) {
   // Gate de múltiplos funis (SCRUM-498): sem o módulo o backend não manda
-  // `dealsSummary` — mostraria "nenhum aberto" para todo mundo, inclusive
-  // quem tem. Some (desktop e mobile passam por aqui).
+  // `dealsSummary` — mostraria a célula vazia pra todo mundo, inclusive quem
+  // tem. Some (desktop e mobile passam por aqui).
   const multiPipeline = useMultiPipeline()
   const { pipelines } = useCRMConfig()
-  const navigate = useNavigate()
+  const { openDeal } = useDealPanel()
+  const { toast } = useToast()
+  const [resolvingPipelineId, setResolvingPipelineId] = useState<string | null>(null)
   if (!multiPipeline) return null
   const chips = openPipelineChips(contact.dealsSummary?.byPipeline ?? [], pipelines)
-  return (
-    <div className={cn('flex gap-1 flex-wrap', className)}>
-      {chips.length === 0 ? (
-        <span
-          className="text-[10px] text-surface-600 border border-dashed border-surface-700 px-1.5 py-0.5 rounded-full whitespace-nowrap"
-          data-testid="pipeline-chip-none"
+
+  const handleOpen = async (pipelineId: string) => {
+    if (resolvingPipelineId) return
+    setResolvingPipelineId(pipelineId)
+    try {
+      const res = await dealsApi.list(contact.id)
+      const match = res.data.find((d) => d.pipelineId === pipelineId && d.status === 'open')
+      if (match) openDeal(match.id)
+      else toast('Este negócio não está mais aberto — atualize a página.', 'error')
+    } catch (err: unknown) {
+      toast(getApiErrorMessage(err, 'Não foi possível abrir o negócio.'), 'error')
+    } finally {
+      setResolvingPipelineId(null)
+    }
+  }
+
+  if (chips.length === 0) {
+    const salesDefault = onAddToPipeline ? defaultSalesPipeline(pipelines) : null
+    if (!salesDefault) return <div className={className} />
+    return (
+      <div className={className}>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onAddToPipeline!(contact, salesDefault) }}
+          title="Novo negócio"
+          data-testid="pipeline-chip-add"
+          className="flex items-center gap-1 text-[10px] font-medium text-surface-600 hover:text-brand-300 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all whitespace-nowrap"
         >
-          nenhum aberto
-        </span>
-      ) : (
-        chips.map((c) => {
-          const KindIcon = pipelineKindOption(c.kind).icon
-          return (
-            <button
-              key={c.pipelineId}
-              type="button"
-              onClick={(e) => { e.stopPropagation(); navigate(`/contacts?pipeline=${c.pipelineId}`) }}
-              title={`${c.pipelineName}${c.stageLabel ? ` · ${c.stageLabel}` : ''} — abrir no board`}
-              data-testid={`pipeline-chip-${c.pipelineId}`}
-              className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap hover:brightness-110 transition-all"
-              style={{ color: c.color, borderColor: `${c.color}40`, backgroundColor: `${c.color}18` }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
-              <KindIcon className="w-2.5 h-2.5 opacity-70" aria-label={pipelineKindOption(c.kind).label} />
-              {c.pipelineName}
-              {c.stageLabel && <span className="opacity-80">· {c.stageLabel}</span>}
-            </button>
-          )
-        })
-      )}
+          <Handshake className="w-3 h-3" /> Novo negócio
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn('flex gap-1 flex-wrap', className)} onClick={(e) => e.stopPropagation()}>
+      {chips.map((c) => (
+        <DealSummary
+          key={c.dealId}
+          density="chip"
+          pipeline={{ id: c.pipelineId, name: c.pipelineName, color: c.color, kind: c.kind }}
+          stageLabel={c.stageLabel}
+          onOpen={() => openDeal(c.dealId)}
+          testId={`pipeline-chip-${c.dealId}`}
+        />
+      ))}
     </div>
   )
 }
@@ -165,6 +202,23 @@ export function ContactRow({
     // registro aberto (resumo por funil, F4-848) a entrada fica desabilitada
     // com "já está · etapa" — I1, um aberto por funil.
     const activePipelines = multiPipeline && onAddToPipeline ? getActivePipelines(pipelines) : []
+    // A3 (SCRUM-925): entrada PRIMÁRIA "Novo negócio" na linha — antes criar
+    // negócio daqui exigia abrir o submenu de funis e saber qual escolher. O
+    // submenu continua abaixo, para processo e para quem já sabe o funil.
+    const salesDefault = onAddToPipeline ? defaultSalesPipeline(pipelines) : null
+    if (salesDefault) {
+      // C2 (SCRUM-933): num funil com multiplicidade ter um negócio aberto
+      // não impede o próximo — a entrada só desabilita onde a I1 ainda vale.
+      const jaAberto = !salesDefault.allowMultipleOpen
+        && !!contact.dealsSummary?.byPipeline.find((b) => b.pipelineId === salesDefault.id && b.openCount > 0)
+      items.push({ separator: true })
+      items.push({
+        label: 'Novo negócio',
+        icon: Handshake,
+        disabled: jaAberto,
+        onClick: () => onAddToPipeline!(contact, salesDefault),
+      })
+    }
     if (activePipelines.length > 0) {
       items.push({ separator: true })
       items.push({
@@ -172,16 +226,28 @@ export function ContactRow({
         icon: KanbanSquare,
         children: activePipelines.map((p) => {
           const open = contact.dealsSummary?.byPipeline.find((b) => b.pipelineId === p.id && b.openCount > 0)
+          const openStages = open?.openStages ?? []
+          // C2 (SCRUM-933): com multiplicidade o funil deixa de ser um destino
+          // ocupado — "já está" vira "+ outro", e a entrada volta a ser
+          // clicável. Sem multiplicidade, segue desabilitada como sempre (I1).
+          const allowsMultiple = !!p.allowMultipleOpen
+          const openLabel = openStages.length > 1
+            ? `${openStages.length} abertos`
+            : openStages[0]?.stageLabel ?? null
           const KindIcon = pipelineKindOption(pipelineKindOf(p)).icon
           return {
-            label: open ? `${p.name} — já está${open.stageLabel ? ` · ${open.stageLabel}` : ''}` : p.name,
+            label: !open
+              ? p.name
+              : allowsMultiple
+                ? `${p.name} — + outro${openLabel ? ` (${openLabel})` : ''}`
+                : `${p.name} — já está${openLabel ? ` · ${openLabel}` : ''}`,
             icon: () => (
               <span className="inline-flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
                 <KindIcon className="w-3 h-3 opacity-70" />
               </span>
             ),
-            disabled: !!open,
+            disabled: !!open && !allowsMultiple,
             onClick: () => onAddToPipeline!(contact, p),
           }
         }),
@@ -288,8 +354,9 @@ export function ContactRow({
           {(contact.tags ?? []).slice(0, 2).map((tag) => (
             <span
               key={tag.id}
-              className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+              className="color-chip inline-block whitespace-nowrap align-middle text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
               style={{ ['--chip']: tag.color } as React.CSSProperties}
+              title={tag.name}
             >
               {tag.name}
             </span>
@@ -304,7 +371,7 @@ export function ContactRow({
           inteira some sem o gate (SCRUM-498) — o cabeçalho em ContactsTable acompanha. */}
       {multiPipeline && (
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-          <DealsSummaryChips contact={contact} className="max-w-[260px]" />
+          <DealsSummaryChips contact={contact} className="max-w-[260px]" onAddToPipeline={onAddToPipeline} />
         </td>
       )}
 

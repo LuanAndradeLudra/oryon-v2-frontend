@@ -1,21 +1,19 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, Loader2, KanbanSquare, ChevronDown, CheckCircle2, XCircle, History } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { DealModal } from '@/components/contacts/DealModal'
-import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { NewDealDialog } from '@/components/deals/NewDealDialog'
+import { DealSummary, useDealSummaryMove } from '@/components/deals/DealSummary'
 import { CloseDealReasonModal } from '@/components/deals/CloseDealReasonModal'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { dealsApi } from '@/services/api'
-import { formatRelativeTime } from '@/lib/utils'
-import { pipelineKindOption, pipelineKindOf, terminalLabelsOf, pipelineNoun } from '@/lib/pipelineKinds'
-import { originInfo, timeInStage } from '@/lib/dealCard'
-import { movedByLabel, moveTargets } from '@/lib/contactPipelines'
-import { formatBRL } from '@/utils/money'
+import { pipelineNoun, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 /**
@@ -33,16 +31,17 @@ import type { Deal, Pipeline, PipelineStage } from '@/types'
  * repetia carga e socket próprios, sem ouvir o evento local. O chip prometia uma
  * coisa e a aba que ele abre entregava outra.
  *
- * **Densidade média**, entre o stepper da ficha e a linha do painel estreito:
- * um card por registro aberto com funil, tipo, **etapa**, o que mudou por
- * último, "Mover ▾" e "Ver no board"; fechados em linha com motivo e histórico
- * sob demanda.
+ * Densidade `card` do `DealSummary` compartilhado (B3 · SCRUM-929): um card
+ * por registro aberto com funil, tipo, **etapa**, stepper de progresso, o que
+ * mudou por último, "Mover etapa ▾" e "Abrir negócio"; fechados em linha com
+ * motivo e histórico sob demanda.
  *
  * **O que continua só aqui.** Editar (valor e itens de linha) e excluir — o
  * `DealModal` é o único lugar da plataforma onde se mexe no dinheiro do
- * negócio. Já o "Novo" saiu: virou o `AddToPipelineMenu` (F9), com a distinção
- * venda/processo e o conflito `409 open_exists`, em vez de abrir o `DealModal`
- * cru como antes.
+ * negócio; por isso só esta tela passa `onEdit`/`onDelete` ao `DealSummary`
+ * (a ficha, `ContactPipelinesSection`, não passa). Já o "Novo" saiu: virou o
+ * `AddToPipelineMenu` (F9), com a distinção venda/processo e o conflito
+ * `409 open_exists`, em vez de abrir o `DealModal` cru como antes.
  *
  * **Sem o flag de múltiplos funis a aba não some** — diferente da ficha e do
  * painel. No tenant legado de funil único ela é a lista de negócios, que existe
@@ -52,16 +51,22 @@ import type { Deal, Pipeline, PipelineStage } from '@/types'
 export function DealsTab({ contactId, contactName }: { contactId: string; contactName: string }) {
   const { vocab } = useTenantVocab()
   const { toast } = useToast()
-  const navigate = useNavigate()
+  const { openDeal } = useDealPanel()
   // A aba precisa listar mesmo sem o flag — daí `requireMultiPipeline: false`.
   const {
     multiPipeline, pipelines, deals, open, closed, error, busyId,
     closeTarget, setCloseTarget, history,
-    pipelineOf, moveTo, closeWithReason, toggleHistory, reload,
+    pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName, { requireMultiPipeline: false })
-  const { requestAdd, dialogs: addDialogs } = useAddToPipeline()
-  const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
+  const { requestAdd, requestAddDetailed, dialogs: addDialogs, reportConflict } = useAddToPipeline()
+  const moveState = useDealSummaryMove()
   const [modalOpen, setModalOpen] = useState(false)
+  // A3 (SCRUM-925): sem o flag de múltiplos funis não há "Adicionar ao funil ▾",
+  // e o "Novo" abria o `DealModal` — que é o formulário de EDIÇÃO e não tem
+  // campo de valor. Agora abre o mesmo diálogo de 2 passos das outras
+  // superfícies; o `DealModal` fica só para editar.
+  const [newDealOpen, setNewDealOpen] = useState(false)
+  const salesPipeline = defaultSalesPipeline(pipelines)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
   const [deleteDeal, setDeleteDeal] = useState<Deal | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -70,7 +75,7 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
   const deletePipeline = deleteDeal ? pipelineOf(deleteDeal) : undefined
 
   const handleMove = (deal: Deal, stage: PipelineStage, pipeline: Pipeline) => {
-    setMoveOpenFor(null)
+    moveState.close()
     void moveTo(deal, stage, pipeline)
   }
 
@@ -116,11 +121,12 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
             openDeals={deals === null ? null : open}
             size="sm"
             onPick={(pipeline) => void requestAdd({ contactId, contactName, pipeline })}
+            onOpenDetailed={() => requestAddDetailed({ contactId, contactName })}
           />
         ) : (
           <button
-            onClick={() => { setEditDeal(null); setModalOpen(true) }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all whitespace-nowrap"
+            onClick={() => setNewDealOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5" /> Novo {dealWord}
           </button>
@@ -134,179 +140,68 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
           <Loader2 className="w-5 h-5 animate-spin text-brand-400" />
         </div>
       ) : open.length === 0 && closed.length === 0 ? (
-        <p className="text-sm text-surface-500 text-center py-10">
-          {multiPipeline ? 'Nenhum registro ainda — use "Adicionar ao funil".' : `Nenhum ${dealWord} ainda.`}
-        </p>
+        <div className="flex flex-col items-center gap-3 py-10">
+          <p className="text-sm text-surface-500">Nenhum {dealWord} ainda.</p>
+          {/* A3 (SCRUM-925): o vazio ganha ação — com o flag, pelo mesmo fluxo
+              do "Adicionar ao funil" (conflito I1 incluso); sem o flag, pelo
+              diálogo direto, que é o único caminho de criação do tenant legado. */}
+          {(!multiPipeline || salesPipeline) && (
+            <Button
+              size="sm"
+              variant="primary"
+              leftIcon={<Plus className="w-3.5 h-3.5" />}
+              onClick={() => {
+                if (!multiPipeline || !salesPipeline) { setNewDealOpen(true); return }
+                void requestAdd({ contactId, contactName, pipeline: salesPipeline })
+              }}
+            >
+              Novo {dealWord}
+            </Button>
+          )}
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           {open.map((deal) => {
             const pipeline = pipelineOf(deal)
-            const kind = pipelineKindOption(pipelineKindOf(pipeline))
-            const KindIcon = kind.icon
-            const stage = pipeline?.stages.find((s) => s.id === deal.stageId)
-            const targets = pipeline ? moveTargets(pipeline, deal.stageId) : null
-            const labels = terminalLabelsOf(pipeline)
-            // Sem funil (tenant legado) todo negócio é comercial; com funil, só
-            // o de VENDA tem dinheiro — processo não tem valor, e o "R$ 0,00"
-            // que aparecia ali era leitura falsa, não formatação feia.
-            const showsMoney = !pipeline || pipelineKindOf(pipeline) === 'sales'
-            const items = deal.lineItems?.length ?? 0
-            // Em funil de processo o título É o contato (F8, decisão (a)):
-            // repeti-lo dentro da ficha do próprio contato não informa nada.
-            const title = deal.title?.trim()
-            const showsTitle = !!title && title !== contactName.trim()
-            const who = movedByLabel(deal)
-            const meta = multiPipeline
-              ? [timeInStage(deal), who ? `movido por ${who}` : null, `origem ${originInfo(deal).label}`]
-                .filter(Boolean).join(' · ')
-              : ''
             return (
-              <article
+              <DealSummary
                 key={deal.id}
-                className="bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 flex flex-col gap-2"
-                data-testid={`deal-open-${deal.id}`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  {pipeline && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />}
-                  <span className="text-sm font-medium text-surface-100 truncate">
-                    {pipeline?.name ?? title ?? vocab.deal}
-                  </span>
-                  {pipeline && <KindIcon className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" aria-label={kind.label} />}
-                  {stage && (
-                    <span className="ml-auto text-[11px] text-surface-300 whitespace-nowrap" data-testid={`deal-stage-${deal.id}`}>
-                      {stage.label}
-                    </span>
-                  )}
-                </div>
-
-                {pipeline && showsTitle && <p className="text-xs text-surface-300 truncate">{title}</p>}
-
-                {showsMoney && (
-                  <p className="text-[11px] text-surface-400 tabular-nums" data-testid={`deal-money-${deal.id}`}>
-                    {formatBRL(deal.amountCents)}
-                    {items ? ` · ${items} ${items === 1 ? 'item' : 'itens'}` : ''}
-                  </p>
-                )}
-
-                {meta && <p className="text-[11px] text-surface-500 truncate" data-testid={`deal-meta-${deal.id}`}>{meta}</p>}
-
-                <div className="flex items-center gap-1.5">
-                  {pipeline && targets && (
-                    <Dropdown
-                      open={moveOpenFor === deal.id}
-                      onClose={() => setMoveOpenFor(null)}
-                      align="left"
-                      className="w-56"
-                      anchor={
-                        <button
-                          type="button"
-                          onClick={() => setMoveOpenFor((v) => (v === deal.id ? null : deal.id))}
-                          disabled={busyId === deal.id}
-                          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 disabled:opacity-50 transition-colors"
-                          data-testid={`deal-move-${deal.id}`}
-                          aria-haspopup="menu"
-                          aria-expanded={moveOpenFor === deal.id}
-                        >
-                          Mover <ChevronDown className="w-3 h-3" />
-                        </button>
-                      }
-                    >
-                      <div className="px-1 py-1 flex flex-col gap-0.5">
-                        {targets.normal.map((s) => (
-                          <DropdownItem key={s.id} onClick={() => handleMove(deal, s, pipeline)}>
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                            {s.label}
-                          </DropdownItem>
-                        ))}
-                        {targets.normal.length > 0 && targets.terminal.length > 0 && <DropdownSeparator />}
-                        {targets.terminal.map((s) => (
-                          <DropdownItem key={s.id} onClick={() => handleMove(deal, s, pipeline)} danger={s.isLost}>
-                            {s.isWon ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                            {s.isWon ? labels.won : labels.lost} (com motivo)
-                          </DropdownItem>
-                        ))}
-                      </div>
-                    </Dropdown>
-                  )}
-                  {pipeline && (
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/contacts?pipeline=${pipeline.id}`)}
-                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
-                      data-testid={`deal-board-${deal.id}`}
-                    >
-                      <KanbanSquare className="w-3.5 h-3.5" /> Ver no board
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => { setEditDeal(deal); setModalOpen(true) }}
-                    title={`Editar ${pipelineNoun(pipeline)}`}
-                    className="ml-auto p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
-                    data-testid={`deal-edit-${deal.id}`}
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteDeal(deal)}
-                    title={`Excluir ${pipelineNoun(pipeline)}`}
-                    className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
-                    data-testid={`deal-delete-${deal.id}`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </article>
+                density="card"
+                deal={deal}
+                pipeline={pipeline}
+                contactName={contactName}
+                busy={busyId === deal.id}
+                showMeta={multiPipeline}
+                moveOpen={moveState.isOpen(deal.id)}
+                onToggleMove={() => moveState.toggle(deal.id)}
+                onMove={(stage) => pipeline && handleMove(deal, stage, pipeline)}
+                onOpen={() => openDeal(deal.id)}
+                onEdit={() => { setEditDeal(deal); setModalOpen(true) }}
+                onDelete={() => setDeleteDeal(deal)}
+                testIdPrefix="deal"
+                testIdKey={deal.id}
+              />
             )
           })}
 
           {closed.length > 0 && (
             <div className="flex flex-col gap-1.5 pt-1" data-testid="deals-closed">
-              {closed.map((deal) => {
-                const pipeline = pipelineOf(deal)
-                const stage = pipeline?.stages.find((s) => s.id === deal.stageId)
-                const won = deal.status === 'won'
-                const labels = terminalLabelsOf(pipeline)
-                const reasonLabel = pipeline?.closeReasons?.find((r) => r.key === deal.closeReason)?.label ?? deal.closeReason ?? null
-                const h = history[deal.id]
-                return (
-                  <div key={deal.id} className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5 text-[11px] text-surface-400 min-w-0">
-                      {won ? <CheckCircle2 className="w-3 h-3 text-status-active flex-shrink-0" /> : <XCircle className="w-3 h-3 text-surface-500 flex-shrink-0" />}
-                      <span className="truncate">
-                        <span className="text-surface-300">{pipeline?.name ?? deal.title ?? vocab.deal}</span>
-                        {' · '}{stage?.label ?? (won ? labels.won : labels.lost)}
-                        {deal.closedAt && <> · {formatRelativeTime(deal.closedAt)}</>}
-                        {reasonLabel && <> · {reasonLabel}</>}
-                      </span>
-                      {multiPipeline && (
-                        <button
-                          type="button"
-                          onClick={() => void toggleHistory(deal.id)}
-                          className="ml-auto inline-flex items-center gap-1 text-[11px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
-                          data-testid={`deal-history-${deal.id}`}
-                        >
-                          <History className="w-3 h-3" /> {h && h !== 'loading' ? 'ocultar' : 'ver histórico'}
-                        </button>
-                      )}
-                    </div>
-                    {h === 'loading' && <p className="text-[11px] text-surface-600 pl-4">Carregando…</p>}
-                    {Array.isArray(h) && (
-                      <ol className="pl-4 flex flex-col gap-0.5" data-testid={`deal-history-list-${deal.id}`}>
-                        {h.length === 0 && <li className="text-[11px] text-surface-600">Sem passagens registradas.</li>}
-                        {h.map((e) => (
-                          <li key={e.id} className="text-[11px] text-surface-500">
-                            {e.fromStageLabel ? `${e.fromStageLabel} → ` : 'entrou em '}<span className="text-surface-300">{e.toStageLabel ?? '?'}</span>
-                            {' · '}{movedByLabel({ lastMovedByKind: e.movedByKind, lastMovedByActorName: e.movedByActorName }) ?? 'sistema'}
-                            {' · '}{formatRelativeTime(e.createdAt)}
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-                  </div>
-                )
-              })}
+              {closed.map((deal) => (
+                <DealSummary
+                  key={deal.id}
+                  density="card"
+                  closed
+                  deal={deal}
+                  pipeline={pipelineOf(deal)}
+                  busy={busyId === deal.id}
+                  onReopen={() => void reopen(deal)}
+                  history={history[deal.id]}
+                  onToggleHistory={() => void toggleHistory(deal.id)}
+                  showReopenHistory={multiPipeline}
+                  testIdPrefix="deal"
+                  testIdKey={deal.id}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -321,6 +216,24 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
         onClose={closeModal}
         onSaved={() => { closeModal(); reload() }}
       />
+
+      {/* A3: criação (o `DealModal` acima ficou só para edição). O 409 vai para
+          o modal de conflito do hook — este caminho não o tratava (F-05). */}
+      {newDealOpen && (
+      <NewDealDialog
+        open
+        contactId={contactId}
+        contactName={contactName}
+        pipelines={pipelines}
+        onClose={() => setNewDealOpen(false)}
+        onCreated={() => { setNewDealOpen(false); reload() }}
+        onConflict={({ openDealId, pipelineId }) => {
+          setNewDealOpen(false)
+          const pipeline = pipelines.find((p) => p.id === pipelineId)
+          if (pipeline) reportConflict({ contactId, contactName, pipeline }, openDealId)
+        }}
+      />
+      )}
 
       <ConfirmModal
         open={!!deleteDeal}

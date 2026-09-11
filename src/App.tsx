@@ -48,6 +48,7 @@ import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
 import { InternalChatProvider } from '@/contexts/InternalChatContext'
+import { DealPanelProvider } from '@/contexts/DealPanelContext'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
@@ -56,6 +57,8 @@ import { SetPasswordPage }      from '@/pages/SetPasswordPage'
 const ConversationsPage = lazyRoute(() => import('@/pages/ConversationsPage').then(m => ({ default: m.ConversationsPage })))
 const ContactsPage      = lazyRoute(() => import('@/pages/ContactsPage').then(m => ({ default: m.ContactsPage })))
 const ContactProfilePage = lazyRoute(() => import('@/pages/ContactProfilePage').then(m => ({ default: m.ContactProfilePage })))
+const PipelinePage      = lazyRoute(() => import('@/pages/PipelinePage').then(m => ({ default: m.PipelinePage })))
+const PipelinesIndexPage = lazyRoute(() => import('@/pages/PipelinesIndexPage').then(m => ({ default: m.PipelinesIndexPage })))
 const SettingsPage      = lazyRoute(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const SetupPage         = lazyRoute(() => import('@/pages/SetupPage').then(m => ({ default: m.SetupPage })))
 const DashboardPage     = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
@@ -215,6 +218,14 @@ function AnimatedRoutes() {
           <Route path="/contacts/:id" element={
             <ProtectedRoute><ContactProfilePage /></ProtectedRoute>
           } />
+          {/* D2 (SCRUM-935) — entrada "Funis" da navegação: /pipelines cai no
+              funil padrão do tenant; /pipelines/:id é o board+relatórios. */}
+          <Route path="/pipelines" element={
+            <ProtectedRoute><PipelinesIndexPage /></ProtectedRoute>
+          } />
+          <Route path="/pipelines/:id" element={
+            <ProtectedRoute><PipelinePage /></ProtectedRoute>
+          } />
           <Route path="/more" element={
             <ProtectedRoute><MorePage /></ProtectedRoute>
           } />
@@ -317,13 +328,15 @@ export default function App() {
           <InternalChatProvider>
           <CopilotProvider>
             <ContextMenuProvider>
-              <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
-                <AnimatedRoutes />
-                <Suspense fallback={null}>
-                  <CopilotPanel />
-                </Suspense>
-                <GlobalToastContainer />
-              </div>
+              <DealPanelProvider>
+                <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
+                  <AnimatedRoutes />
+                  <Suspense fallback={null}>
+                    <CopilotPanel />
+                  </Suspense>
+                  <GlobalToastContainer />
+                </div>
+              </DealPanelProvider>
             </ContextMenuProvider>
           </CopilotProvider>
           </InternalChatProvider>

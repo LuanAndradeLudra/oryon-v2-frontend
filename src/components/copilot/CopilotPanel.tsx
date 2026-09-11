@@ -78,6 +78,7 @@ function AttachmentChip({
         onClick={onRemove}
         className="flex-shrink-0 w-4 h-4 rounded-full bg-surface-600 hover:bg-surface-500 flex items-center justify-center transition-colors"
         title="Remover"
+        aria-label={`Remover anexo ${att.name}`}
       >
         <X className="w-2.5 h-2.5 text-surface-300" />
       </button>
@@ -138,6 +139,7 @@ function PresetPicker({
           </div>
           <button
             onClick={onClose}
+            aria-label="Fechar seletor de preset de design"
             className="p-1 rounded text-surface-500 hover:text-surface-300 transition-colors"
           >
             <X className="w-3 h-3" />
@@ -296,6 +298,7 @@ function ChatWindow() {
           </div>
           <button
             onClick={close}
+            aria-label="Fechar Copilot"
             className="p-1.5 rounded-full text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
           >
             <X className="w-3.5 h-3.5" />
@@ -415,6 +418,7 @@ function ChatWindow() {
                 <button
                   type="button"
                   onClick={() => setSlidePreset(null)}
+                  aria-label={`Remover preset "${activePreset.name}"`}
                   className="ml-auto text-surface-600 hover:text-surface-400 transition-colors"
                 >
                   <X className="w-3 h-3" />
@@ -463,6 +467,7 @@ function ChatWindow() {
               isBusy && 'opacity-40 cursor-not-allowed',
             )}
             title="Anexar imagem ou PDF"
+            aria-label="Anexar imagem ou PDF"
           >
             <Paperclip className="w-3.5 h-3.5" />
           </button>
@@ -480,6 +485,7 @@ function ChatWindow() {
               isBusy && 'opacity-40 cursor-not-allowed',
             )}
             title="Design preset para slides"
+            aria-label="Escolher preset de design para slides"
           >
             <Palette className="w-3.5 h-3.5" />
           </button>
@@ -500,6 +506,7 @@ function ChatWindow() {
               onClick={abort}
               className="w-9 h-9 rounded-full bg-surface-700 hover:bg-surface-600 text-surface-300 transition-colors flex items-center justify-center flex-shrink-0"
               title="Interromper"
+              aria-label="Interromper resposta"
             >
               <Square className="w-3.5 h-3.5" />
             </button>
@@ -507,6 +514,7 @@ function ChatWindow() {
             <button
               type="submit"
               disabled={!input.trim() && attachments.length === 0}
+              aria-label="Enviar mensagem"
               className="w-9 h-9 rounded-full bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 transition-all hover:scale-105 hover:shadow-lg hover:shadow-brand-600/30 flex items-center justify-center flex-shrink-0"
             >
               <Send className="w-3.5 h-3.5" />

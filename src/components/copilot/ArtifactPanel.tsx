@@ -254,10 +254,10 @@ const PanelCode = memo(function PanelCode({ lang, content }: { lang: string; con
       <div className="flex items-center justify-between px-4 py-2 bg-surface-900 border-b border-surface-800">
         <div className="flex items-center gap-2">
           <Code2 className="w-3.5 h-3.5 text-surface-500" />
-          <span className="text-[11px] font-semibold text-surface-400 font-mono">{lang}</span>
-          <span className="text-[10px] text-surface-600">{content.split('\n').length} linhas</span>
+          <span className="text-2xs font-semibold text-surface-400 font-mono">{lang}</span>
+          <span className="text-3xs text-surface-600">{content.split('\n').length} linhas</span>
         </div>
-        <button onClick={copy} className="p-1 rounded text-surface-500 hover:text-surface-300 transition-colors">
+        <button onClick={copy} aria-label="Copiar código" className="p-1 rounded text-surface-500 hover:text-surface-300 transition-colors">
           {copied ? <Check className="w-3.5 h-3.5 text-status-active" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       </div>
@@ -274,12 +274,12 @@ const PanelPlan = memo(function PanelPlan({ title, items }: { title: string; ite
       <div className="flex items-center gap-2 px-4 py-3 bg-surface-900/60 border-b border-surface-800/60">
         <ListOrdered className="w-4 h-4 text-brand-400" />
         <span className="text-sm font-semibold text-surface-200">{title}</span>
-        <span className="text-[11px] text-surface-500 ml-1">· {items.length} etapas</span>
+        <span className="text-2xs text-surface-500 ml-1">· {items.length} etapas</span>
       </div>
       <div className="px-4 py-4 flex flex-col gap-4">
         {items.map((item, i) => (
           <div key={i} className="flex items-start gap-3.5">
-            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-600/15 border border-brand-500/25 flex items-center justify-center text-[11px] font-bold text-brand-400 mt-0.5">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-600/15 border border-brand-500/25 flex items-center justify-center text-2xs font-bold text-brand-400 mt-0.5">
               {i + 1}
             </span>
             <span className="text-sm text-surface-200 leading-relaxed flex-1">{stripInline(item)}</span>
@@ -295,8 +295,8 @@ const PanelTable = memo(function PanelTable({ headers, rows }: { headers: string
     <div className="rounded-xl overflow-hidden border border-surface-700/50 bg-surface-900/40 my-3">
       <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-900/60 border-b border-surface-800/60">
         <Table2 className="w-3.5 h-3.5 text-surface-400" />
-        <span className="text-[11px] font-semibold text-surface-300">Tabela</span>
-        <span className="text-[10px] text-surface-500">· {rows.length} linhas</span>
+        <span className="text-2xs font-semibold text-surface-300">Tabela</span>
+        <span className="text-3xs text-surface-500">· {rows.length} linhas</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -701,6 +701,7 @@ function FullscreenOverlay({ content, title, type, onClose }: { content: string;
         <span className="text-xs font-medium text-surface-400 truncate">{title}</span>
         <button
           onClick={onClose}
+          aria-label="Fechar tela cheia (Esc)"
           className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors ml-4 flex-shrink-0"
           title="Fechar tela cheia (Esc)"
         >
@@ -766,18 +767,20 @@ function VersionNav({
         type="button"
         onClick={() => canPrev && onSwitch(artifact.id, artifact.versionIndex - 1)}
         disabled={!canPrev}
+        aria-label="Versão anterior"
         className="flex h-4 w-4 items-center justify-center rounded text-surface-400 hover:text-surface-100 disabled:opacity-30"
         title="Versão anterior"
       >
         <ChevronLeft className="h-3 w-3" />
       </button>
-      <span className="px-0.5 text-[10px] font-medium text-surface-300 tabular-nums">
+      <span className="px-0.5 text-3xs font-medium text-surface-300 tabular-nums">
         v{current}<span className="text-surface-500">/{total}</span>
       </span>
       <button
         type="button"
         onClick={() => canNext && onSwitch(artifact.id, artifact.versionIndex + 1)}
         disabled={!canNext}
+        aria-label="Próxima versão"
         className="flex h-4 w-4 items-center justify-center rounded text-surface-400 hover:text-surface-100 disabled:opacity-30"
         title="Próxima versão"
       >
@@ -999,7 +1002,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                   <p className="text-sm font-semibold text-surface-100 truncate">{artifact.title}</p>
                 )}
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-[10px] text-surface-500">{typeLabel(artifact.type)} · gerado pela IA</p>
+                  <p className="text-3xs text-surface-500">{typeLabel(artifact.type)} · gerado pela IA</p>
                   {artifact.versions.length > 1 && (
                     <VersionNav artifact={artifact} onSwitch={setArtifactVersion} />
                   )}
@@ -1037,7 +1040,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate leading-snug">{art.title}</p>
-                            <p className="text-[10px] text-surface-500 mt-0.5">{typeLabel(art.type)}</p>
+                            <p className="text-3xs text-surface-500 mt-0.5">{typeLabel(art.type)}</p>
                           </div>
                           {art.id === artifact.id && (
                             <Check className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
@@ -1056,7 +1059,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                   <button
                     onClick={() => setEditMode((v) => !v)}
                     className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors border text-[11px] font-medium',
+                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors border text-2xs font-medium',
                       editMode
                         ? 'bg-brand-600/15 border-brand-500/30 text-brand-300'
                         : 'border-surface-700/50 text-surface-400 hover:text-surface-100 hover:bg-surface-800/60 hover:border-surface-600',
@@ -1073,6 +1076,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                 {hasPreview && (
                   <button
                     onClick={openFullscreen}
+                    aria-label="Tela cheia"
                     className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
                     title="Tela cheia"
                   >
@@ -1083,6 +1087,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                 {/* Copy */}
                 <button
                   onClick={copy}
+                  aria-label="Copiar conteúdo"
                   className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
                   title="Copiar conteúdo"
                 >
@@ -1113,7 +1118,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                     title="Baixar componente como HTML interativo"
                   >
                     <Download className="w-3 h-3" />
-                    <span className="text-[11px] font-medium">HTML interativo</span>
+                    <span className="text-2xs font-medium">HTML interativo</span>
                   </button>
                 ) : isSlidesJson ? (
                   // slides-json: download as PPTX. Disable while the JSON is
@@ -1148,7 +1153,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                         title={slidesValid ? 'Baixar como PPTX' : 'Aguardando geração completa…'}
                       >
                         <Download className="w-3 h-3" />
-                        <span className="text-[11px] font-medium">PPTX</span>
+                        <span className="text-2xs font-medium">PPTX</span>
                       </button>
                     )
                   })()
@@ -1160,7 +1165,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                       title="Baixar arquivo HTML"
                     >
                       <Download className="w-3 h-3" />
-                      <span className="text-[11px] font-medium">HTML</span>
+                      <span className="text-2xs font-medium">HTML</span>
                     </button>
                     <button
                       onClick={() => exportHTMLAsPDF(artifact.content, artifact.title, artifact.type)}
@@ -1168,7 +1173,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                       title="Baixar como PDF"
                     >
                       <Download className="w-3 h-3" />
-                      <span className="text-[11px] font-medium">PDF</span>
+                      <span className="text-2xs font-medium">PDF</span>
                     </button>
                   </div>
                 ) : (
@@ -1178,7 +1183,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                     title="Exportar como PDF"
                   >
                     <Download className="w-3 h-3" />
-                    <span className="text-[11px] font-medium">PDF</span>
+                    <span className="text-2xs font-medium">PDF</span>
                   </button>
                 )}
 
@@ -1195,7 +1200,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                         : CANVA_LABELS[canvaStatus]
                     }
                     className={cn(
-                      'flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-lg transition-all border text-[11px] font-semibold',
+                      'flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-lg transition-all border text-2xs font-semibold',
                       canvaStatus === 'done'
                         ? 'bg-status-active-bg border-status-active-border text-status-active'
                         : canvaStatus === 'error'
@@ -1219,6 +1224,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                 {/* Close */}
                 <button
                   onClick={closeArtifact}
+                  aria-label="Fechar"
                   className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800/60 transition-colors ml-1"
                   title="Fechar"
                 >

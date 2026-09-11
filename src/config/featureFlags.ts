@@ -62,12 +62,14 @@ export const FEATURE_FLAGS = {
   // Quando false, o painel inteiro fica oculto — análises já feitas também
   // não aparecem para evitar UI inconsistente.
   conversionAnalysisPanel: false,
-  // Seção "Negócios" no painel do contato dentro de Conversas
-  // (ContactPanelDeals) — oculta enquanto a funcionalidade de múltiplos
-  // pipelines (SCRUM-285 / épico SCRUM-809) não estiver rodando em
-  // produção. Quando false, a seção inteira some do painel; nada de
-  // rota/backend muda. Reativar = trocar para true.
-  contactPanelDeals: false,
+  // Seção "Funis" no painel do contato dentro de Conversas
+  // (ContactPanelDeals). Ficou `false` enquanto múltiplos pipelines
+  // (SCRUM-285 / épico SCRUM-809) não rodavam em produção — condição que
+  // o épico SCRUM-922 encerra: é ele que entrega o módulo. Ligada.
+  // A seção continua se escondendo sozinha quando o contato não tem
+  // registro nenhum; esta flag é o interruptor de rollback, não a regra
+  // de exibição.
+  contactPanelDeals: true,
   // Página dedicada de perfil do contato (/contacts/:id) — Customer 360.
   // Quando false: a rota redireciona para o drawer (/contacts?contact=<id>)
   // e o botão "Expandir" do drawer some. O drawer continua funcionando
@@ -78,6 +80,17 @@ export const FEATURE_FLAGS = {
   // do menu lateral, mas as rotas continuam acessíveis via URL direta
   // (mesmo padrão das outras feature flags).
   oryonStaffSidebar: true,
+  // Funis de PROCESSO (Modelo B §4.2) como opção na CRIAÇÃO de funil.
+  //
+  // `false` esconde só a escolha: o cartão "Processo" some do campo "Tipo" em
+  // CreatePipelineModal e todo funil novo nasce `sales`. NÃO esconde o que já
+  // existe — os funis de processo do tenant continuam abrindo, operáveis, com
+  // o vocabulário deles ("registro", Concluído/Cancelado), porque os ramos que
+  // leem `pipelineKindOf()` seguem intactos. Esconder os existentes órfãos os
+  // registros abertos e é uma decisão separada, com migração antes.
+  //
+  // Reativar = trocar para `true`. Uma linha.
+  processPipelines: false,
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS

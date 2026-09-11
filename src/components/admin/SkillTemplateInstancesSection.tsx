@@ -20,7 +20,6 @@ import type {
 } from '@/types/skills'
 import { EditAgentSkillConfigModal } from './EditAgentSkillConfigModal'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 
@@ -33,7 +32,7 @@ export function SkillTemplateInstancesSection({ template }: Props) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<SkillTemplateInstance | null>(null)
-  const { toasts, toast, dismiss } = useToast()
+  const { toast } = useToast()
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -178,7 +177,6 @@ export function SkillTemplateInstancesSection({ template }: Props) {
         />
       )}
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </section>
   )
 }

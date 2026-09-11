@@ -7,7 +7,7 @@ import {
   Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2,
   Smartphone, CreditCard, UserPlus, Zap, X, Tag, Clock,
   Filter, Download, PlusCircle, ArrowRight, ChevronRight,
-  LayoutGrid, List, KanbanSquare, FileText, Inbox,
+  LayoutGrid, KanbanSquare, FileText, Inbox,
   Globe, Users2, BellRing, Plug, BookOpen,
   AlertCircle, AtSign, Megaphone as MegaphoneIcon, ShieldAlert, UserCheck,
 } from 'lucide-react'
@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import { useTopBarActions } from '@/contexts/TopBarActionsContext'
 import { TopBarReadinessIndicator } from './TopBarReadinessIndicator'
+import { EmptyState } from '@/components/ui/EmptyState'
 import {
   useNotifications,
   type AppNotification,
@@ -45,6 +46,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/conversations': 'Conversas',
   '/dashboard': 'Relatórios',
   '/contacts': 'Contatos',
+  '/pipelines': 'Funis',
   '/campaigns': 'Disparos',
   '/marketing': 'Marketing',
   '/automations': 'Automações',
@@ -62,7 +64,10 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/home': 'Seu dia num relance',
   '/conversations': 'Chat com clientes',
   '/dashboard': 'Relatórios e análises',
-  '/contacts': 'CRM e pipeline',
+  // O funil saiu daqui (D2 · SCRUM-935): virou /pipelines, com página e
+  // subtítulo próprios. Prometer "pipeline" nesta tela virou promessa falsa.
+  '/contacts': 'Base de clientes',
+  '/pipelines': 'Negócios por etapa',
   '/campaigns': 'Campanhas em massa',
   '/marketing': 'Estratégia e canais',
   '/automations': 'Fluxos automáticos',
@@ -93,7 +98,11 @@ const SEARCH_INDEX = ([
   { type: 'page', label: 'Home', description: 'Visão geral e atalhos rápidos', href: '/home', Icon: Home, keywords: ['início', 'painel', 'overview'] },
   { type: 'page', label: 'Conversas', description: 'Atendimento via WhatsApp', href: '/conversations', Icon: MessageSquare, keywords: ['whatsapp', 'chat', 'atendimento', 'mensagens'] },
   { type: 'page', label: 'Relatórios', description: 'Métricas, análises e KPIs', href: '/dashboard', Icon: BarChart3, keywords: ['dashboard', 'métricas', 'relatório', 'gráfico', 'dados', 'análise'] },
-  { type: 'page', label: 'Contatos', description: 'CRM e pipeline de leads', href: '/contacts', Icon: Users, keywords: ['crm', 'leads', 'clientes', 'pipeline', 'kanban'] },
+  { type: 'page', label: 'Contatos', description: 'CRM e situação dos contatos', href: '/contacts', Icon: Users, keywords: ['crm', 'leads', 'clientes', 'base'] },
+  // 'pipeline'/'kanban'/'funil' migraram de Contatos para cá junto com a tela
+  // (D2 · SCRUM-935): quem busca por essas palavras quer o quadro, e ele não
+  // mora mais em /contacts.
+  { type: 'page', label: 'Funis', description: 'Quadro de negócios por etapa', href: '/pipelines', Icon: KanbanSquare, keywords: ['funil', 'pipeline', 'kanban', 'board', 'negócios', 'quadro'] },
   { type: 'page', label: 'Disparos', description: 'Campanhas de mensagens em massa', href: '/campaigns', Icon: Send, keywords: ['campanhas', 'broadcast', 'envio', 'massa'] },
   { type: 'page', label: 'Marketing', description: 'Meta Ads e funil de conversão', href: '/marketing', Icon: Megaphone, keywords: ['meta', 'ads', 'facebook', 'instagram', 'funil', 'tráfego'] },
   { type: 'page', label: 'Automações', description: 'Fluxos e regras automáticas', href: '/automations', Icon: Workflow, keywords: ['fluxo', 'regras', 'bot', 'trigger', 'automático'] },
@@ -110,8 +119,9 @@ const SEARCH_INDEX = ([
   // ── Ações em Contatos
   { type: 'action', label: 'Novo contato', description: 'Criar um contato manualmente', href: '/contacts', Icon: PlusCircle, keywords: ['criar', 'adicionar', 'novo', 'lead'] },
   { type: 'action', label: 'Importar contatos', description: 'Importar via CSV ou planilha', href: '/contacts', Icon: Download, keywords: ['importar', 'csv', 'planilha', 'upload'] },
-  { type: 'action', label: 'Contatos — vista lista', description: 'Ver contatos em formato lista', href: '/contacts', Icon: List, keywords: ['lista', 'tabela', 'view'] },
-  { type: 'action', label: 'Contatos — vista kanban', description: 'Ver pipeline em kanban', href: '/contacts', Icon: KanbanSquare, keywords: ['kanban', 'pipeline', 'board'] },
+  // As duas ações de 'vista' (lista × kanban) saíram: o segmented control que
+  // as ligava não existe mais em /contacts — a lista é a única vista, e o
+  // quadro virou /pipelines. Levavam a /contacts e não faziam nada.
   { type: 'action', label: 'Segmentos de contatos', description: 'Criar segmentos e grupos', href: '/contacts', Icon: Users2, keywords: ['segmento', 'grupo', 'filtro'] },
 
   // ── Ações em Disparos
@@ -287,7 +297,7 @@ function SearchDropdown({
     return (
       <div className="py-4 text-center">
         <p className="text-xs text-surface-500">Nenhum resultado para <strong className="text-surface-300">"{trimmed}"</strong></p>
-        <p className="text-[11px] text-surface-600 mt-1">Tente buscar contatos diretamente na página de Contatos</p>
+        <p className="text-2xs text-surface-600 mt-1">Tente buscar contatos diretamente na página de Contatos</p>
       </div>
     )
   }
@@ -296,7 +306,7 @@ function SearchDropdown({
     <div className="overflow-hidden">
       {!trimmed && (
         <div className="px-3 pt-2.5 pb-1">
-          <span className="text-[10px] font-semibold text-surface-500 uppercase tracking-widest">
+          <span className="text-3xs font-semibold text-surface-500 uppercase tracking-widest">
             Sugestões
           </span>
         </div>
@@ -307,7 +317,7 @@ function SearchDropdown({
           <div key={type}>
             {trimmed && (
               <div className="px-3 pt-2.5 pb-1 first:pt-2">
-                <span className="text-[10px] font-semibold text-surface-500 uppercase tracking-widest">
+                <span className="text-3xs font-semibold text-surface-500 uppercase tracking-widest">
                   {TYPE_LABEL[type]}
                 </span>
               </div>
@@ -339,7 +349,7 @@ function SearchDropdown({
                     <p className="text-xs font-medium text-surface-100 leading-none mb-0.5">
                       {highlightText(item.label, trimmed)}
                     </p>
-                    <p className="text-[11px] text-surface-500 truncate leading-none">
+                    <p className="text-2xs text-surface-500 truncate leading-none">
                       {highlightText(item.description, trimmed)}
                     </p>
                   </div>
@@ -524,18 +534,18 @@ function NotificationItem({
             <button
               onClick={handleCategoryChip}
               style={{ ['--chip']: style.chip } as React.CSSProperties}
-              className="color-chip text-[10px] font-medium px-1.5 py-0.5 rounded border transition-[filter] hover:brightness-125"
+              className="color-chip text-3xs font-medium px-1.5 py-0.5 rounded border transition-[filter] hover:brightness-125"
               title="Filtrar por este tipo"
             >
               {style.label}
             </button>
           )}
-          <span className="text-[10px] text-surface-600">{formatListTime(n.createdAt)}</span>
+          <span className="text-3xs text-surface-600">{formatListTime(n.createdAt)}</span>
           {action && (
             <button
               onClick={handleInlineAction}
               className={cn(
-                'ml-auto text-[10px] font-medium px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity',
+                'ml-auto text-3xs font-medium px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity',
                 action.variant === 'primary'
                   ? 'bg-brand-600 text-surface-950 hover:bg-brand-500'
                   : 'text-brand-300 hover:bg-brand-600/20',
@@ -679,7 +689,7 @@ function buildFlow(
   // Origem cell — same shape across all types that carry a source.
   const origemCell = (
     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-      <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium', sourceStyle.className)}>
+      <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded border text-3xs font-medium', sourceStyle.className)}>
         {sourceStyle.label}
       </span>
       {actor && <span className="text-surface-300">· por {actor}</span>}
@@ -848,7 +858,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
           </div>
           <div className="flex-1 min-w-0">
             <h3 id="notif-modal-title" className="text-sm font-semibold text-surface-100 leading-snug">{n.title}</h3>
-            <p className="text-[11px] text-surface-500 mt-0.5" title={abs}>
+            <p className="text-2xs text-surface-500 mt-0.5" title={abs}>
               {formatRelativeTime(n.createdAt)} <span className="text-surface-700">·</span> {abs}
             </p>
           </div>
@@ -875,7 +885,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
                     i !== flow.length - 1 && 'border-b border-surface-800/60',
                   )}
                 >
-                  <dt className="text-[10px] font-semibold uppercase tracking-wider text-surface-500 w-20 shrink-0">
+                  <dt className="text-3xs font-semibold uppercase tracking-wider text-surface-500 w-20 shrink-0">
                     {step.label}
                   </dt>
                   <dd className="flex-1 min-w-0 text-sm text-surface-100 break-words">
@@ -891,7 +901,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
           {/* Grouped contacts list — name first, phone formatted and smaller. */}
           {groupedContacts && groupedContacts.length > 0 && (
             <div className="rounded-xl border border-surface-800 bg-surface-950/40 p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-surface-500 mb-2">
+              <p className="text-3xs font-semibold uppercase tracking-wide text-surface-500 mb-2">
                 {pluralize(affectedTotal, 'Contato afetado', 'Contatos afetados')} ({affectedTotal})
               </p>
               <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
@@ -908,13 +918,13 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
                         {c.name ?? 'Sem nome'}
                       </p>
                       {c.phone && (
-                        <p className="text-[11px] text-surface-500 truncate">{formatPhone(c.phone)}</p>
+                        <p className="text-2xs text-surface-500 truncate">{formatPhone(c.phone)}</p>
                       )}
                     </div>
                   </div>
                 ))}
                 {affectedTotal > groupedContacts.length && (
-                  <p className="text-[11px] text-surface-500 text-center py-1.5">
+                  <p className="text-2xs text-surface-500 text-center py-1.5">
                     e mais {affectedTotal - groupedContacts.length} {pluralize(affectedTotal - groupedContacts.length, 'contato', 'contatos')}
                   </p>
                 )}
@@ -926,7 +936,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
               so it's never mistaken for the system-generated narrative above. */}
           {userNote && (
             <div className="rounded-xl border border-brand-600/20 bg-brand-600/5 p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-300 mb-1">
+              <p className="text-3xs font-semibold uppercase tracking-wide text-brand-300 mb-1">
                 Observação da automação
               </p>
               <p className="text-xs text-surface-200 leading-relaxed whitespace-pre-line break-words">
@@ -941,7 +951,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
               <button
                 type="button"
                 onClick={() => setShowTech((v) => !v)}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-[11px] text-surface-400 hover:text-surface-200 transition-colors"
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-2xs text-surface-400 hover:text-surface-200 transition-colors"
               >
                 <span>{showTech ? 'Ocultar detalhes técnicos' : 'Ver detalhes técnicos'}</span>
                 <ChevronRight className={cn('w-3.5 h-3.5 transition-transform', showTech && 'rotate-90')} />
@@ -1161,7 +1171,7 @@ function NotificationsPanel() {
               <button
                 onClick={() => setShowArchived(!showArchived)}
                 className={cn(
-                  'text-[11px] transition-colors',
+                  'text-2xs transition-colors',
                   showArchived ? 'text-brand-300' : 'text-surface-500 hover:text-surface-300',
                 )}
                 title={showArchived ? 'Voltar às ativas' : 'Ver arquivadas'}
@@ -1171,7 +1181,7 @@ function NotificationsPanel() {
               {unreadCount > 0 && !showArchived && (
                 <button
                   onClick={() => markAllAsRead()}
-                  className="text-[11px] text-brand-400 hover:text-brand-300 transition-colors"
+                  className="text-2xs text-brand-400 hover:text-brand-300 transition-colors"
                   title="Marcar todas como lidas (A)"
                 >
                   Marcar todas como lidas
@@ -1197,7 +1207,7 @@ function NotificationsPanel() {
                   ? ({ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties)
                   : undefined}
                 className={cn(
-                  'px-2 py-0.5 rounded-md text-[10px] font-medium border shrink-0 transition-colors',
+                  'px-2 py-0.5 rounded-md text-3xs font-medium border shrink-0 transition-colors',
                   activeCategory === chip.key
                     ? 'color-chip'
                     : 'bg-surface-800/40 border-surface-700 text-surface-400 hover:text-surface-200',
@@ -1215,14 +1225,14 @@ function NotificationsPanel() {
               <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : sortedVisible.length === 0 ? (
-            <EmptyState title={empty.title} hint={empty.hint} />
+            <EmptyState icon={Bell} title={empty.title} hint={empty.hint} className="py-12 border-none bg-transparent" />
           ) : (
             <>
               {/* Phase 20 X2: animated list. AnimatePresence handles enter/exit
                   for new and archived items. Reduced-motion disables transitions. */}
               {groups.map((g) => (
                 <div key={g.label}>
-                  <div className="px-4 pt-2.5 pb-2 text-[10px] font-semibold uppercase tracking-wider text-surface-500 bg-[var(--color-overlay)] border-b border-surface-700/50 sticky top-0 z-10">
+                  <div className="px-4 pt-2.5 pb-2 text-3xs font-semibold uppercase tracking-wider text-surface-500 bg-[var(--color-overlay)] border-b border-surface-700/50 sticky top-0 z-10">
                     {g.label}
                   </div>
                   <AnimatePresence initial={false}>
@@ -1257,7 +1267,7 @@ function NotificationsPanel() {
                   <button
                     onClick={() => loadMore()}
                     disabled={loadingMore}
-                    className="text-[11px] text-brand-400 hover:text-brand-300 disabled:opacity-50 transition-colors"
+                    className="text-2xs text-brand-400 hover:text-brand-300 disabled:opacity-50 transition-colors"
                   >
                     {loadingMore ? 'Carregando…' : 'Carregar mais'}
                   </button>
@@ -1295,19 +1305,6 @@ function Kbd({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** Phase 20 I3: empty state with contextual copy per filter. */
-function EmptyState({ title, hint }: { title: string; hint?: string }) {
-  return (
-    <div className="py-12 px-6 text-center">
-      <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-surface-800/60 mb-3">
-        <Bell className="w-4 h-4 text-surface-500" />
-      </div>
-      <p className="text-xs font-medium text-surface-300">{title}</p>
-      {hint && <p className="text-[11px] text-surface-500 mt-1">{hint}</p>}
-    </div>
-  )
-}
-
 function FilterTab({ active, onClick, count, children }: {
   active: boolean
   onClick: () => void
@@ -1318,7 +1315,7 @@ function FilterTab({ active, onClick, count, children }: {
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
+        'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-2xs font-medium transition-colors',
         active
           ? 'bg-surface-800 text-surface-100'
           : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800/50',
@@ -1527,7 +1524,7 @@ export function TopBar() {
         >
           <Search className="w-3.5 h-3.5 flex-shrink-0" />
           <span className="flex-1 text-left truncate">Buscar</span>
-          <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-[10px] text-surface-400 font-medium flex-shrink-0">
+          <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-3xs text-surface-400 font-medium flex-shrink-0">
             /
           </kbd>
         </button>
@@ -1559,6 +1556,8 @@ export function TopBar() {
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setNotifOpen((v) => !v)}
+            title="Notificações"
+            aria-label={unreadCount > 0 ? `Notificações (${unreadCount > 9 ? '9+' : unreadCount} não lidas)` : 'Notificações'}
             className="relative flex items-center justify-center w-8 h-8 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
           >
             <Bell className="w-4 h-4" />
@@ -1622,6 +1621,7 @@ export function TopBar() {
                       type="button"
                       onClick={() => { setQuery(''); inputRef.current?.focus() }}
                       title="Limpar"
+                      aria-label="Limpar busca"
                       className="text-surface-500 hover:text-surface-300 transition-colors flex-shrink-0"
                     >
                       <X className="w-4 h-4" />
@@ -1631,7 +1631,7 @@ export function TopBar() {
                     type="button"
                     onClick={() => setDropOpen(false)}
                     title="Fechar"
-                    className="text-[10px] text-surface-500 hover:text-surface-300 px-1.5 py-0.5 rounded border border-surface-700"
+                    className="text-3xs text-surface-500 hover:text-surface-300 px-1.5 py-0.5 rounded border border-surface-700"
                   >
                     Esc
                   </button>

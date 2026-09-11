@@ -9,6 +9,7 @@ import { useState, useMemo } from 'react'
 import { Loader2, Play, AlertCircle, CheckCircle2, ChevronDown, Copy, Beaker, ClipboardList } from 'lucide-react'
 import { testSkillTemplate } from '@/services/skillTemplatesApi'
 import { DynamicSchemaFormFields } from './DynamicSchemaFormFields'
+import { ConfirmModal } from '@/components/ui/Modal'
 import type { SkillTemplate, TesterResult, JsonSchemaObject } from '@/types/skills'
 import { cn } from '@/lib/utils'
 
@@ -50,6 +51,11 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs }: 
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<TesterResult | null>(null)
+  // F-ADM-04: "Disparar" is not a simulation — it fires a real, signed POST
+  // against the live n8n webhook. For a skill flagged `mutates` that's a
+  // real mutation (e.g. actually books/cancels an appointment), so it needs
+  // a confirmation on every run, same as any other destructive action.
+  const [confirmingRun, setConfirmingRun] = useState(false)
 
   const inputSchema = template.input_schema as JsonSchemaObject | undefined
   const configSchema = (template.config_schema && !Array.isArray(template.config_schema))
@@ -83,6 +89,14 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs }: 
     }
   }
 
+  function handleRunClick() {
+    if (template.mutates) {
+      setConfirmingRun(true)
+      return
+    }
+    void handleRun()
+  }
+
   return (
     <div className="space-y-5">
       {/* ── Inputs section ──────────────────────────────────────────────── */}
@@ -111,7 +125,7 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs }: 
         </p>
         <button
           type="button"
-          onClick={handleRun}
+          onClick={handleRunClick}
           disabled={running}
           className={cn(
             'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ml-auto',
@@ -189,6 +203,17 @@ export function SkillTemplateTester({ template, initialConfig, initialInputs }: 
           />
         </Section>
       )}
+
+      <ConfirmModal
+        open={confirmingRun}
+        onClose={() => setConfirmingRun(false)}
+        onConfirm={() => { setConfirmingRun(false); void handleRun() }}
+        title="Esta skill é destrutiva"
+        description={`"${template.name}" está marcada como operação destrutiva. Disparar aqui não é uma simulação — executa a chamada de verdade contra ${template.webhook_path}, com os dados preenchidos acima. Continuar?`}
+        confirmLabel="Disparar mesmo assim"
+        danger
+        loading={running}
+      />
     </div>
   )
 }

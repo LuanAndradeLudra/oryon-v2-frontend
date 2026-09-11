@@ -24,7 +24,6 @@ import { ContactTimeline } from '@/components/contacts/profile/ContactTimeline'
 import { TimelineComposer } from '@/components/contacts/profile/TimelineComposer'
 import { NextActionPanel } from '@/components/contacts/profile/NextActionPanel'
 import { RelationshipHealthPanel } from '@/components/contacts/profile/RelationshipHealthPanel'
-import { BestTimePanel } from '@/components/contacts/profile/BestTimePanel'
 import { DealsTabMock } from '@/components/contacts/profile/DealsTabMock'
 import { CampaignTouchesMock } from '@/components/contacts/profile/CampaignTouchesMock'
 import { AutomationRunsMock } from '@/components/contacts/profile/AutomationRunsMock'
@@ -37,7 +36,6 @@ import {
 
 import { SendTemplateDrawer } from '@/components/contacts/SendTemplateDrawer'
 import { AIContextCard } from '@/components/contacts/tabs/AIContextCard'
-import { StageCard } from '@/components/contacts/tabs/StageCard'
 import { ContactInfoCard } from '@/components/contacts/tabs/ContactInfoCard'
 import { QualificationCard } from '@/components/contacts/tabs/QualificationCard'
 import { CustomFieldsCard } from '@/components/contacts/tabs/CustomFieldsCard'
@@ -153,7 +151,8 @@ export function ContactProfilePage() {
   // Contato semeado pelo "Expandir" do drawer (navigation state) — permite a
   // página nascer com dados durante o crossfade, sem flash de skeleton.
   const location = useLocation()
-  const seededContact = (location.state as { contact?: Contact } | null)?.contact
+  const navState = location.state as { contact?: Contact; voltarPara?: string; voltarLabel?: string } | null
+  const seededContact = navState?.contact
   const contactId = id ?? ''
   const profile = useContactProfile(
     contactId,
@@ -202,12 +201,23 @@ export function ContactProfilePage() {
 
   const userName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Você'
 
-  // "Voltar" sempre retorna à lista COM o drawer deste contato reaberto —
-  // a ContactsPage lê ?contact=<id> e abre o quick-view. Não usamos
-  // navigate(-1): a entrada anterior do histórico é /contacts SEM o param
-  // (o drawer era estado local, perdido ao navegar), então voltar pelo
-  // histórico caía no kanban sem o drawer.
-  const handleBack = () => navigate(`/contacts?contact=${contactId}`)
+  /**
+   * Para ONDE o "Voltar" volta.
+   *
+   * O padrão é a lista de contatos COM o drawer deste contato reaberto — a
+   * ContactsPage lê `?contact=<id>` e abre o quick-view. Não usamos
+   * `navigate(-1)`: a entrada anterior do histórico é /contacts SEM o param (o
+   * drawer é estado local, perdido ao navegar), então voltar pelo histórico
+   * caía no kanban sem o drawer.
+   *
+   * Só que esta página deixou de ter uma origem só. Quem chega de um card do
+   * QUADRO de um funil era despejado no CRM ao voltar — um lugar em que nunca
+   * esteve. Quem navega passa `voltarPara` no state (mesmo canal do `contact`
+   * semeado logo acima) e manda de volta para a tela exata de onde saiu, com
+   * aba e filtros da URL preservados. Sem o state, o padrão histórico vale.
+   */
+  const voltarPara = navState?.voltarPara ?? `/contacts?contact=${contactId}`
+  const handleBack = () => navigate(voltarPara)
 
   const handleOpenChat = () => {
     const lastConv = conversations[0]
@@ -319,7 +329,13 @@ export function ContactProfilePage() {
       />
       {showAiContext && <AIContextCard contact={contact} onRefresh={profile.refresh} />}
       <RelationshipHealthPanel contact={contact} stats={stats} />
-      <BestTimePanel contactId={contactId} />
+      {/* Achado do Lince (revisão do PR #81, gap no QW-01/P14): "Melhor
+          horário" era hash(contactId) travestido de dado real — o backend
+          ainda não expõe timestamps de mensagens por contato (a query por
+          hora/dia só existe agregada no dashboard). Removido em vez de
+          gated: sem fonte de verdade, o elemento não é montado (P6), não
+          basta esconder atrás de PROFILE_MOCKS_ENABLED. Volta quando
+          existir o endpoint real. */}
     </>
   )
 
@@ -369,11 +385,13 @@ export function ContactProfilePage() {
               lastMessageSenderKind={lastConversation?.lastMessageSenderKind}
               assignedTo={stats?.assignedTo ?? null}
               onBack={handleBack}
+              backLabel={navState?.voltarLabel ?? 'Voltar para contatos'}
               onOpenChat={handleOpenChat}
               onSendTemplate={() => setTemplateDrawerOpen(true)}
               onAddNote={focusComposer}
               onAddTask={PROFILE_MOCKS_ENABLED ? () => setTaskModalOpen(true) : undefined}
               onDelete={handleDelete}
+              onStageChanged={profile.setStage}
             />
           </div>
 
@@ -400,9 +418,22 @@ export function ContactProfilePage() {
                     <ContactInfoCard contact={contact} onSave={profile.save} />
                     <QualificationCard contact={contact} onSave={profile.save} hideStage />
                   </CollapsibleSection>
-                  <CollapsibleSection title={vocab.pipeline} storageKey="profile.pipeline">
-                    <StageCard contact={contact} onStageChanged={profile.setStage} hideTitle />
-                  </CollapsibleSection>
+                  {/* PROPOSTA do Auditor, decisão do Maestro registrada no PR:
+                      a situação do contato (contacts.stage, ciclo de vida)
+                      saiu deste acordeão — que antes ocupava ~2x a altura da
+                      seção real de Funis logo acima e era rotulado com o
+                      vocabulário de "Funil" (P15: "Situação do contato" é
+                      conceito distinto de "Funil"), colidindo com o conceito
+                      de Funis de negócio. Virou o StageBadge clicável no
+                      cabeçalho (N1) — decisão deliberada de manter em N1
+                      apesar de o P4 documentado não listar "situação" entre
+                      os itens de exemplo: o problema reportado era PESO
+                      VISUAL (card grande competindo com Funis), não "não
+                      deveria aparecer de cara"; um badge pequeno não estoura
+                      o orçamento do N1 do jeito que o card estourava, e N2
+                      (acordeão) reduziria a visibilidade rápida de que
+                      precisa quem quer saber se é lead ou cliente batendo o
+                      olho. Reversível — ver descrição do PR. */}
                   <CollapsibleSection title="Campos personalizados" storageKey="profile.customFields">
                     <CustomFieldsCard contact={contact} onSave={profile.save} hideTitle />
                   </CollapsibleSection>
@@ -461,7 +492,7 @@ export function ContactProfilePage() {
             <MockBadge />
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => setTaskModalOpen(false)}>Cancelar</Button>
-              <Button variant="primary" size="sm" onClick={handleCreateTask} disabled={!taskTitle.trim()}>
+              <Button variant="neutral" size="sm" onClick={handleCreateTask} disabled={!taskTitle.trim()}>
                 Criar tarefa
               </Button>
             </div>

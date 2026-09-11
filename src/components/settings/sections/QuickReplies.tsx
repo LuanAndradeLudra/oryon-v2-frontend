@@ -12,7 +12,6 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { QuickReplyModal } from '../modals/QuickReplyModal'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -104,7 +103,7 @@ function errorMessage(e: unknown, fallback: string): string {
 }
 
 export function QuickReplies() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: actor } = useAuth()
   const canManage = isAdminTier(actor?.role)
   const [responses, setResponses] = useState<CannedResponse[]>([])
@@ -258,7 +257,6 @@ export function QuickReplies() {
         confirmLabel="Excluir"
         danger
       />
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

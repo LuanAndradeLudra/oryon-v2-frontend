@@ -80,6 +80,7 @@ function RuleModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-500 hover:bg-surface-800 hover:text-surface-200 transition"
           >
             <X className="w-4 h-4" />
@@ -242,16 +243,16 @@ function RuleCard({
 
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={onToggle} title={rule.enabled ? 'Desativar' : 'Ativar'}
+          <button onClick={onToggle} title={rule.enabled ? 'Desativar' : 'Ativar'} aria-label={rule.enabled ? 'Desativar regra' : 'Ativar regra'}
             className="p-1 rounded-lg hover:bg-surface-800 transition text-surface-500 hover:text-surface-200">
             {rule.enabled
               ? <ToggleRight className="w-5 h-5 text-status-active" />
               : <ToggleLeft  className="w-5 h-5" />}
           </button>
-          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-500 hover:text-surface-200 transition">
+          <button onClick={onEdit} aria-label="Editar regra" className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-500 hover:text-surface-200 transition">
             <Edit3 className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-500/10 text-surface-600 hover:text-red-400 transition">
+          <button onClick={onDelete} aria-label="Excluir regra" className="p-1.5 rounded-lg hover:bg-red-500/10 text-surface-600 hover:text-red-400 transition">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
           <button onClick={() => setExpanded(v => !v)} className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-600 hover:text-surface-300 transition">
@@ -428,7 +429,7 @@ function KeywordTiersView({
                 >
                   {kw}
                   {flatKeywords.includes(kw) && (
-                    <button type="button" onClick={() => removeKeyword(kw)} className="opacity-60 hover:opacity-100 hover:text-red-400 transition">
+                    <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="opacity-60 hover:opacity-100 hover:text-red-400 transition">
                       <X className="w-3 h-3" />
                     </button>
                   )}
@@ -447,7 +448,7 @@ function KeywordTiersView({
             {manualKws.map(kw => (
               <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
                 {kw}
-                <button type="button" onClick={() => removeKeyword(kw)} className="text-surface-600 hover:text-red-400 transition">
+                <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-red-400 transition">
                   <X className="w-3 h-3" />
                 </button>
               </span>
@@ -465,7 +466,7 @@ function KeywordTiersView({
           placeholder="Adicionar keyword e pressionar Enter..."
           className={INPUT}
         />
-        <button type="button" onClick={addKeyword} disabled={!kwInput.trim()}
+        <button type="button" onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave"
           className="px-3 rounded-xl bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
           <Plus className="w-4 h-4" />
         </button>
@@ -597,7 +598,7 @@ function DraftEditor({
               {draft.keywords.map(kw => (
                 <span key={kw} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-800 border border-surface-700 text-xs text-surface-300 font-mono">
                   {kw}
-                  <button type="button" onClick={() => removeKeyword(kw)} className="text-surface-600 hover:text-red-400 transition">
+                  <button type="button" onClick={() => removeKeyword(kw)} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-600 hover:text-red-400 transition">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -611,7 +612,7 @@ function DraftEditor({
                 placeholder="Adicionar palavra-chave e pressionar Enter..."
                 className={INPUT}
               />
-              <button type="button" onClick={addKeyword} disabled={!kwInput.trim()}
+              <button type="button" onClick={addKeyword} disabled={!kwInput.trim()} aria-label="Adicionar palavra-chave"
                 className="px-3 rounded-xl bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
                 <Plus className="w-4 h-4" />
               </button>
@@ -660,7 +661,7 @@ function DraftEditor({
           type="button"
           onClick={onSave}
           disabled={!draft.name.trim() || draft.keywords.length === 0 || saving}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-medium transition inline-flex items-center justify-center gap-2"
+          className="flex-1 px-4 py-2.5 rounded-xl bg-surface-100 hover:bg-surface-50 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-medium transition inline-flex items-center justify-center gap-2"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           {saving ? 'Salvando…' : 'Salvar regra'}
@@ -966,7 +967,8 @@ function AIRuleBuilder({
             <button
               onClick={handleSend}
               disabled={!input.trim() || generating}
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950"
+              aria-label="Enviar descrição da regra"
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all bg-surface-100 hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -1145,7 +1147,7 @@ export function HandoffRulesPanel({
                 </button>
                 <button
                   onClick={() => setModal('ai_builder')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-xs font-medium transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 text-xs font-medium transition"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   Criar com IA

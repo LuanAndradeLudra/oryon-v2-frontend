@@ -288,7 +288,7 @@ export function AgentTestModal({
           <button
             onClick={() => void send()}
             disabled={!input.trim() || loading}
-            className="w-10 h-10 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 flex items-center justify-center flex-shrink-0 transition-all"
+            className="w-10 h-10 rounded-xl bg-surface-100 hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 flex items-center justify-center flex-shrink-0 transition-all"
           >
             {loading
               ? <RefreshCw className="w-4 h-4 animate-spin" />

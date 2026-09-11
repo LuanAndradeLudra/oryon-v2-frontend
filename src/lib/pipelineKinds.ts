@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react'
 import { Target, Repeat, type LucideIcon } from 'lucide-react'
+import { FEATURE_FLAGS } from '@/config/featureFlags'
 import type { Pipeline, PipelineKind, TerminalLabels } from '@/types'
 
 /**
@@ -46,6 +48,34 @@ export const PIPELINE_KIND_OPTIONS: ReadonlyArray<PipelineKindOption> = [
   },
 ]
 
+/**
+ * Tipos OFERECIDOS na criação de um funil — subconjunto de
+ * `PIPELINE_KIND_OPTIONS`, filtrado pela flag `processPipelines`.
+ *
+ * A distinção importa: `PIPELINE_KIND_OPTIONS` é o dicionário de LEITURA (todo
+ * funil que já existe precisa achar o vocabulário dele aqui, inclusive os de
+ * processo criados antes da flag); esta é a lista de ESCOLHA. Desligar a flag
+ * fecha a porta de entrada sem apagar o dicionário.
+ */
+export const CREATABLE_PIPELINE_KIND_OPTIONS: ReadonlyArray<PipelineKindOption> =
+  PIPELINE_KIND_OPTIONS.filter((o) => o.kind !== 'process' || FEATURE_FLAGS.processPipelines)
+
+/**
+ * Selo das etapas terminais (Ganho/Perdido, Concluído/Cancelado).
+ *
+ * Aparece em TRÊS telas — cabeçalho da coluna no quadro, lista de etapas nas
+ * configurações e rascunho no "Novo funil" — e as três precisam do mesmo peso.
+ * Ficou aqui, junto do vocabulário dos terminais, porque já se provou que três
+ * cópias soltas divergem: ajustar o tom numa deixou as outras duas para trás.
+ *
+ * O `--chip-mix` mais fundo no de ganho é deliberado: nessas três telas o selo
+ * é anotação ao lado do nome da etapa, não o assunto da linha.
+ */
+export const TERMINAL_CHIP_STYLE: Record<'won' | 'lost', CSSProperties> = {
+  won: { ['--chip']: 'var(--color-success)', ['--chip-mix']: '70%' } as CSSProperties,
+  lost: { ['--chip']: 'var(--color-danger)' } as CSSProperties,
+}
+
 export function pipelineKindOption(kind: PipelineKind | undefined | null): PipelineKindOption {
   return PIPELINE_KIND_OPTIONS.find((o) => o.kind === (kind ?? DEFAULT_PIPELINE_KIND)) ?? PIPELINE_KIND_OPTIONS[0]
 }
@@ -64,4 +94,21 @@ export function terminalLabelsOf(pipeline: Pick<Pipeline, 'kind' | 'terminalLabe
 export function pipelineNoun(pipeline: Pick<Pipeline, 'kind'> | null | undefined, plural = false): string {
   const opt = pipelineKindOption(pipelineKindOf(pipeline))
   return plural ? opt.nounPlural : opt.noun
+}
+
+/**
+ * Funil de VENDA padrão do tenant — o destino do botão primário "Novo negócio"
+ * (A3 · SCRUM-925), que aparece onde não cabe um menu de funis: cabeçalho do
+ * chat, ficha, menu da linha da tabela e estados vazios. O diálogo de 2 passos
+ * deixa trocar o funil depois, então errar para o padrão é barato; devolver
+ * `null` (tenant só com funis de processo) é o sinal de esconder o botão —
+ * criar negócio em funil de processo não existe.
+ */
+export function defaultSalesPipeline(pipelines: Pipeline[] | null | undefined): Pipeline | null {
+  const actives = (pipelines ?? []).filter((p) => !p.isArchived)
+  return (
+    actives.find((p) => pipelineKindOf(p) === 'sales' && p.isDefault) ??
+    actives.find((p) => pipelineKindOf(p) === 'sales') ??
+    null
+  )
 }

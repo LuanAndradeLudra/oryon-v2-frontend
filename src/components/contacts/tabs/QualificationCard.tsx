@@ -7,7 +7,8 @@ import { Switch } from '@/components/ui/Switch'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
-import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/useToast'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, ContactStage, ContactIntent, ContactSource } from '@/types'
 import { EmojiText } from '@/lib/emojiText'
 const INTENTS: { value: ContactIntent; label: string }[] = [
@@ -41,6 +42,7 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
   const [editing, setEditing] = useState(false)
   const { stages } = useCRMConfig()
   const { vocab } = useTenantVocab()
+  const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     stage: contact.stage ?? 'lead',
@@ -61,6 +63,7 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
       setEditing(false)
     } catch (err) {
       console.error('[QualificationCard] save failed:', err)
+      toast(getApiErrorMessage(err, 'Não foi possível salvar a qualificação.'), 'error')
     } finally {
       setSaving(false)
     }
@@ -95,7 +98,7 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-60 transition-all"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
             >
               <Save className="w-3 h-3" />
               {saving ? 'Salvando...' : 'Salvar'}
@@ -108,7 +111,7 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
         {editing ? (
           <>
             {!hideStage && (
-              <FormField label="Estágio">
+              <FormField label="Situação">
                 <Select value={form.stage} onChange={(e) => setForm((f) => ({ ...f, stage: e.target.value as ContactStage }))}>
                   {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </Select>
@@ -143,7 +146,7 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {!hideStage && (
-              <ReadField label="Estágio" value={contact.stage ? (stages.find(s => s.key === contact.stage)?.label ?? contact.stage) : '—'} />
+              <ReadField label="Situação" value={contact.stage ? (stages.find(s => s.key === contact.stage)?.label ?? contact.stage) : '—'} />
             )}
             <ReadField label={vocab.leadScore} value={contact.leadScore != null ? String(contact.leadScore) : '—'} />
             {contact.leadScore != null && (

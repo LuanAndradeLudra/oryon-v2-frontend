@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { KanbanSquare, ChevronDown, ArrowRight } from 'lucide-react'
+import { KanbanSquare, ChevronDown, ArrowRight, SlidersHorizontal } from 'lucide-react'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { dealsApi } from '@/services/api'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
@@ -13,6 +13,8 @@ interface AddToPipelineMenuProps {
   contactName: string
   /** Escolha de um funil onde o contato ainda não está. */
   onPick: (pipeline: Pipeline) => void
+  /** Segunda porta: abre o diálogo com os campos, em vez de criar em 1 clique. */
+  onOpenDetailed?: () => void
   /** Registros abertos já conhecidos pelo chamador — evita o fetch ao abrir. */
   openDeals?: Deal[] | null
   size?: 'sm' | 'md'
@@ -28,7 +30,7 @@ interface AddToPipelineMenuProps {
  * por abertura, ou nenhuma quando o chamador já os passa). Só existe com o
  * flag de múltiplos funis — sem ele o componente não renderiza nada.
  */
-export function AddToPipelineMenu({ contactId, contactName, onPick, openDeals: openDealsProp, size = 'md', className, align = 'right' }: AddToPipelineMenuProps) {
+export function AddToPipelineMenu({ contactId, contactName, onPick, onOpenDetailed, openDeals: openDealsProp, size = 'md', className, align = 'right' }: AddToPipelineMenuProps) {
   const multiPipeline = useMultiPipeline()
   const { pipelines } = useCRMConfig()
   const [open, setOpen] = useState(false)
@@ -49,9 +51,18 @@ export function AddToPipelineMenu({ contactId, contactName, onPick, openDeals: o
   const loading = open && !openDealsProp && fetched === null
   const openDeals = useMemo(() => openDealsProp ?? fetched ?? [], [openDealsProp, fetched])
   const rows = useMemo(() => getActivePipelines(pipelines).map((p) => {
-    const existing = openDeals.find((d) => d.pipelineId === p.id && d.status === 'open') ?? null
+    const mine = openDeals.filter((d) => d.pipelineId === p.id && d.status === 'open')
+    const existing = mine[0] ?? null
     const stage = existing ? p.stages.find((s) => s.id === existing.stageId) ?? null : null
-    return { pipeline: p, existing, stageLabel: stage?.label ?? null }
+    return {
+      pipeline: p,
+      existing,
+      openCount: mine.length,
+      stageLabel: stage?.label ?? null,
+      // C2 (SCRUM-933): funil com multiplicidade nunca está "ocupado" — o
+      // contato pode receber outro negócio ali, e o menu tem de deixar.
+      blocked: !!existing && !p.allowMultipleOpen,
+    }
   }), [pipelines, openDeals])
 
   if (!multiPipeline || pipelines.length === 0) return null
@@ -87,9 +98,9 @@ export function AddToPipelineMenu({ contactId, contactName, onPick, openDeals: o
         <KanbanSquare className="w-3 h-3" /> Adicionar {firstName} ao funil
       </div>
       <div className="py-1" role="menu">
-        {rows.map(({ pipeline: p, existing, stageLabel }) => {
+        {rows.map(({ pipeline: p, existing, stageLabel, openCount, blocked }) => {
           const KindIcon = pipelineKindOption(pipelineKindOf(p)).icon
-          const disabled = !!existing
+          const disabled = blocked
           return (
             <button
               key={p.id}
@@ -105,10 +116,19 @@ export function AddToPipelineMenu({ contactId, contactName, onPick, openDeals: o
               )}
             >
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-              <KindIcon className="w-3 h-3 flex-shrink-0 opacity-80" aria-label={pipelineKindOption(pipelineKindOf(p)).label} />
+              <KindIcon className="w-3 h-3 flex-shrink-0 opacity-80" aria-hidden />
               <span className="flex-1 truncate">{p.name}</span>
+              {/* O ícone sozinho não ensina: quem nunca viu não sabe que
+                  alvo = venda e ciclo = processo. A legenda diz. */}
+              <span className="text-[10px] text-surface-500 flex-shrink-0">
+                {pipelineKindOption(pipelineKindOf(p)).label}
+              </span>
               {disabled ? (
                 <span className="text-[10px] whitespace-nowrap">já está{stageLabel ? ` · ${stageLabel}` : ''}</span>
+              ) : existing ? (
+                <span className="text-[10px] whitespace-nowrap text-surface-500">
+                  + outro ({openCount} aberto{openCount > 1 ? 's' : ''})
+                </span>
               ) : (
                 <ArrowRight className="w-3 h-3 text-surface-500 flex-shrink-0" />
               )}
@@ -117,9 +137,24 @@ export function AddToPipelineMenu({ contactId, contactName, onPick, openDeals: o
         })}
         {loading && <p className="px-3 py-1.5 text-[11px] text-surface-500">Conferindo onde {firstName} já está…</p>}
       </div>
+      {/* Segunda porta: o clique num funil acima cria em 1 clique (que é o
+          gesto do dia a dia); quem precisa de título próprio, escopo, dono ou
+          previsão abre o formulário por aqui. */}
+      {onOpenDetailed && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => { close(); onOpenDetailed() }}
+          data-testid="add-to-pipeline-detailed"
+          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left text-surface-300 hover:bg-surface-700 border-t border-surface-700 transition-colors"
+        >
+          <SlidersHorizontal className="w-3 h-3 flex-shrink-0 opacity-80" />
+          <span className="flex-1">Adicionar com detalhes…</span>
+        </button>
+      )}
       <div className="px-3 py-2 border-t border-surface-700 text-[11px] text-surface-500 leading-relaxed">
         {(() => {
-          const proc = rows.find((r) => !r.existing && pipelineKindOf(r.pipeline) === 'process')
+          const proc = rows.find((r) => !r.blocked && pipelineKindOf(r.pipeline) === 'process')
           const first = proc ? proc.pipeline.stages.slice().sort((a, b) => a.order - b.order).find((s) => !s.isWon && !s.isLost) : null
           return proc
             ? <>Em <span className="text-surface-300">{proc.pipeline.name}</span> o {pipelineNoun(proc.pipeline)} nasce em <span className="text-surface-300">{first?.label ?? 'primeira etapa'}</span>{' '}ligado a esta origem.</>

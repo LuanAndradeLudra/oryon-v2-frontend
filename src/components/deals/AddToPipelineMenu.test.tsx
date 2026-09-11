@@ -38,7 +38,7 @@ describe('AddToPipelineMenu (F9)', () => {
     expect(screen.getByTestId('add-to-pipeline-vendas')).toBeInTheDocument()
     expect(screen.getByTestId('add-to-pipeline-suporte')).toBeInTheDocument()
     expect(screen.queryByTestId('add-to-pipeline-arq')).toBeNull()
-    expect(screen.getByLabelText('Processo')).toBeInTheDocument()
+    expect(screen.getByText('Processo')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByTestId('add-to-pipeline-suporte')).toBeEnabled())
     fireEvent.click(screen.getByTestId('add-to-pipeline-suporte'))
     expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: 'suporte' }))
@@ -67,5 +67,27 @@ describe('AddToPipelineMenu (F9)', () => {
     mockMulti.mockReturnValue(false)
     const { container } = render(<AddToPipelineMenu contactId="c1" contactName="Mariana" onPick={vi.fn()} />)
     expect(container).toBeEmptyDOMElement()
+  })
+})
+
+// A segunda porta: o clique num funil continua criando em 1 clique (o gesto do
+// dia a dia); quem precisa de titulo proprio, escopo, dono ou previsao abre o
+// formulario por aqui. Sem `onOpenDetailed`, a entrada nem existe.
+describe('AddToPipelineMenu — adicionar com detalhes', () => {
+  it('chama onOpenDetailed e fecha o menu, sem tocar em onPick', async () => {
+    const onPick = vi.fn()
+    const onOpenDetailed = vi.fn()
+    render(<AddToPipelineMenu contactId="c1" contactName="Mariana" onPick={onPick} onOpenDetailed={onOpenDetailed} />)
+    fireEvent.click(screen.getByTestId('add-to-pipeline-trigger'))
+    fireEvent.click(await screen.findByTestId('add-to-pipeline-detailed'))
+    expect(onOpenDetailed).toHaveBeenCalledTimes(1)
+    expect(onPick).not.toHaveBeenCalled()
+  })
+
+  it('sem onOpenDetailed a entrada nao aparece', async () => {
+    render(<AddToPipelineMenu contactId="c1" contactName="Mariana" onPick={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('add-to-pipeline-trigger'))
+    await screen.findByTestId('add-to-pipeline-vendas')
+    expect(screen.queryByTestId('add-to-pipeline-detailed')).toBeNull()
   })
 })

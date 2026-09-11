@@ -92,3 +92,130 @@ describe('DealsBoard — funil de VENDA continua como antes (regressão)', () =>
     expect(screen.getByText('ganho')).toBeInTheDocument()
   })
 })
+
+// ─── D2 (SCRUM-935) — card de venda com dono/previsão/tempo/origem (F-FUNIL-11) ───
+describe('DealsBoard — card de VENDA com dono, previsão, tempo na etapa e origem (F-FUNIL-11)', () => {
+  it('mostra o dono resolvido via `users`, a previsão de fechamento e a origem', () => {
+    const USERS = [{ id: 'u1', tenantId: 't', email: 'ana@x.com', firstName: 'Ana', lastName: 'Souza', role: 'agent', isActive: true }] as never
+    const sales = deal({
+      pipelineId: 'ps',
+      ownerUserId: 'u1',
+      expectedCloseAt: '2026-09-20T12:00:00.000Z', // meio-dia UTC — data estável em qualquer timezone do runner
+      originKind: 'manual',
+    })
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} users={USERS} />)
+    expect(screen.getByTestId('sales-card-owner')).toHaveTextContent('Ana Souza')
+    expect(screen.getByTestId('sales-card-forecast')).toHaveTextContent('20/09')
+    expect(screen.getByTestId('sales-card-origin')).toHaveTextContent('Manual')
+    expect(screen.getByTestId('sales-card-time')).toHaveTextContent('3 h na etapa')
+  })
+
+  // O card tinha DUAS linhas com ícone de pessoa, uma sob a outra: o dono e a
+  // origem 'Manual'. Como quase todo negócio nasce manual, o caso comum era o
+  // ambíguo. A origem manual passou a usar outro ícone, e cada linha diz no
+  // hover QUAL campo é — o valor sozinho ('Ana Souza') não ensina nada.
+  it('dono e origem não se confundem: rótulo no hover e ícones distintos', () => {
+    const USERS = [{ id: 'u1', tenantId: 't', email: 'ana@x.com', firstName: 'Ana', lastName: 'Souza', role: 'agent', isActive: true }] as never
+    const sales = deal({ pipelineId: 'ps', ownerUserId: 'u1', originKind: 'manual' })
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} users={USERS} />)
+
+    expect(screen.getByTestId('sales-card-owner')).toHaveAttribute('title', 'Dono do negócio: Ana Souza')
+    expect(screen.getByTestId('sales-card-origin')).toHaveAttribute('title', 'Origem: Manual')
+
+    // Se os dois ícones voltarem a ser o mesmo, a ambiguidade volta com eles.
+    const svgDono = screen.getByTestId('sales-card-owner').querySelector('svg')
+    const svgOrigem = screen.getByTestId('sales-card-origin').querySelector('svg')
+    expect(svgDono?.innerHTML).toBeTruthy()
+    expect(svgOrigem?.innerHTML).not.toEqual(svgDono?.innerHTML)
+  })
+
+  it('sem dono/previsão: "Sem dono" e "sem previsão" — nada inventado', () => {
+    const sales = deal({ pipelineId: 'ps', ownerUserId: undefined, expectedCloseAt: undefined })
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} />)
+    expect(screen.getByTestId('sales-card-owner')).toHaveTextContent('Sem dono')
+    expect(screen.getByTestId('sales-card-forecast')).toHaveTextContent('sem previsão')
+  })
+})
+
+// ─── D2 (SCRUM-935) — faixa de contexto única (F-FUNIL-10) ────────────────────
+describe('DealsBoard — UMA faixa de contexto (F-FUNIL-10)', () => {
+  it('com `pipeline`, mostra tipo do funil, entradas, contagens e total numa faixa só', () => {
+    const sales = deal({ pipelineId: 'ps', amountCents: 15_000, originKind: 'campaign', originLabel: 'Confirmação 28/08' })
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} />)
+    const strip = screen.getByTestId('board-context-strip')
+    expect(strip).toHaveTextContent('Vendas')
+    expect(within(strip).getByTestId('board-stats')).toHaveTextContent('1 aberto')
+    expect(strip).toHaveTextContent('Entradas:')
+    expect(strip).toHaveTextContent('campanha Confirmação 28/08')
+  })
+
+  it('sem `pipeline` (chamador antigo), não renderiza faixa nenhuma', () => {
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [deal({})] }} onMoveStage={vi.fn()} />)
+    expect(screen.queryByTestId('board-context-strip')).toBeNull()
+  })
+})
+
+// ─── D2 (SCRUM-935) — "Mover ▾" por toque e clique no card abre a ficha (F-FUNIL-09) ───
+describe('DealsBoard — "Mover ▾" por toque e clique no card (F-FUNIL-09)', () => {
+  it('"Mover ▾" lista as OUTRAS etapas e chama onMoveStage — mesmo caminho do drag', () => {
+    const onMoveStage = vi.fn()
+    const sales = deal({ pipelineId: 'ps', stageId: 's1' })
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={onMoveStage} pipeline={SALES} />)
+    fireEvent.click(screen.getByRole('button', { name: /Mover .* para outra etapa/ }))
+    // "Confirmado" aparece 2x (cabeçalho da coluna + opção do menu) — a opção é um <button>.
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmado' }))
+    expect(onMoveStage).toHaveBeenCalledWith(sales, 's3')
+  })
+
+  // O botão é a alternativa de quem NÃO arrasta. Onde o ponteiro é fino (mouse),
+  // ele some — eram dois caminhos para o mesmo gesto, e o botão cobria o canto
+  // do card no hover. O `matchMedia` do setup responde `false` a tudo, então o
+  // padrão dos outros testes é o caso sem mouse; aqui a resposta é trocada.
+  it('com mouse (ponteiro fino), o "Mover ▾" some do card', () => {
+    const original = window.matchMedia
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes('pointer: fine'),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as typeof window.matchMedia
+    try {
+      const sales = deal({ pipelineId: 'ps', stageId: 's1' })
+      render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} />)
+      expect(screen.queryByRole('button', { name: /Mover .* para outra etapa/ })).toBeNull()
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
+  it('clicar no CORPO do card chama onOpenDeal com o id do negócio', () => {
+    const onOpenDeal = vi.fn()
+    const sales = deal({ pipelineId: 'ps', id: 'deal-42' })
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} onOpenDeal={onOpenDeal} />)
+    fireEvent.click(screen.getByText('Título do registro'))
+    expect(onOpenDeal).toHaveBeenCalledWith('deal-42')
+  })
+
+  it('clicar no chip do CONTATO não abre a ficha do negócio (abre o contato)', () => {
+    const onOpenDeal = vi.fn()
+    const onOpenContact = vi.fn()
+    const sales = deal({ pipelineId: 'ps', id: 'deal-42' })
+    render(
+      <DealsBoard
+        stages={STAGES}
+        dealsByStage={{ s1: [sales] }}
+        onMoveStage={vi.fn()}
+        pipeline={SALES}
+        onOpenDeal={onOpenDeal}
+        onOpenContact={onOpenContact}
+      />,
+    )
+    fireEvent.click(screen.getByText('Mariana Souza').closest('button')!)
+    expect(onOpenContact).toHaveBeenCalledWith('c')
+    expect(onOpenDeal).not.toHaveBeenCalled()
+  })
+})

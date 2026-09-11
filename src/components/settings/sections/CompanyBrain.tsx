@@ -11,10 +11,10 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { ToastContainer } from '@/components/ui/Toast'
-import { useToast } from '@/hooks/useToast'
+import { useToast, showToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import {
-  loadHub, saveHub, syncBrainToRag, DEFAULT_HUB,
+  loadHubAsync, saveHub, syncBrainToRag, DEFAULT_HUB,
   type CompanyHubData, type BrandFile,
 } from '@/services/companyContextService'
 import { extractBrandFile } from '@/services/agentsApi'
@@ -173,11 +173,11 @@ function BrandFilesSection({
 
   const processFile = useCallback(async (raw: File) => {
     if (raw.size > MAX_FILE_MB * 1024 * 1024) {
-      alert(`"${raw.name}" excede o limite de ${MAX_FILE_MB} MB.`)
+      showToast(`"${raw.name}" excede o limite de ${MAX_FILE_MB} MB.`, 'error')
       return
     }
     if (!ACCEPTED_TYPES.includes(raw.type)) {
-      alert(`Tipo de arquivo não suportado: ${raw.type || raw.name}`)
+      showToast(`Tipo de arquivo não suportado: ${raw.type || raw.name}`, 'error')
       return
     }
 
@@ -364,11 +364,20 @@ export function CompanyBrain() {
   const { user } = useAuth()
   const { toast, toasts, dismiss } = useToast()
   const [form, setForm] = useState<CompanyHubData>({ ...DEFAULT_HUB })
+  const [fetching, setFetching] = useState(true)
   const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
-    if (user?.tenantId) setForm(loadHub(user.tenantId))
+    if (!user?.tenantId) { setFetching(false); return }
+    let cancelled = false
+    setFetching(true)
+    loadHubAsync(user.tenantId).then(hub => {
+      if (cancelled) return
+      setForm(hub)
+      setFetching(false)
+    })
+    return () => { cancelled = true }
   }, [user?.tenantId])
 
   const patch = (partial: Partial<CompanyHubData>) =>
@@ -568,7 +577,7 @@ export function CompanyBrain() {
         >
           Sincronizar com IA
         </Button>
-        <Button onClick={save} loading={loading}>Salvar contexto</Button>
+        <Button onClick={save} loading={loading} disabled={fetching}>Salvar contexto</Button>
       </div>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />

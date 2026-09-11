@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Lock, Building2 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
-import { ToastContainer } from '@/components/ui/Toast'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
 import { FormField } from '@/components/ui/FormField'
@@ -34,7 +33,7 @@ const LANGUAGES = [
 ]
 
 export function CompanyProfile() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user } = useAuth()
   const { checklist, markDone } = useSetupChecklist(user?.id)
   const [tenant, setTenant] = useState<Tenant | null>(null)
@@ -221,7 +220,6 @@ export function CompanyProfile() {
           <Button onClick={save} loading={loading}>Salvar alterações</Button>
         </div>
       </SettingsSection>
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

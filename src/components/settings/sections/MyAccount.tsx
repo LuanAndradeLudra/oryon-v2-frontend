@@ -10,7 +10,6 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
@@ -28,7 +27,7 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 export function MyAccount() {
-  const { toast, toasts, dismiss } = useToast()
+  const { toast } = useToast()
   const { user: authUser } = useAuth()
   const { checklist, markDone } = useSetupChecklist(authUser?.id)
   const [user, setUser] = useState<User | null>(null)
@@ -136,7 +135,7 @@ export function MyAccount() {
       >
         <div className="flex items-center gap-5 mb-6">
           <div className="relative group cursor-pointer">
-            <Avatar name={`${user.firstName} ${user.lastName}`} size="lg" />
+            <Avatar name={`${user.firstName} ${user.lastName}`} size="lg" kind="operator" />
             <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <Camera className="w-4 h-4 text-white" />
             </div>
@@ -232,7 +231,6 @@ export function MyAccount() {
           Abrir preferências de notificação →
         </a>
       </SettingsSection>
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink, ArrowRightLeft,
-  KanbanSquare, MapPin, Phone, Plus, Filter,
+  Milestone, MapPin, Phone,
   Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -59,7 +59,7 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
           const isSelected = user.id === selectedUserId
           return (
             <button key={user.id} onClick={() => onSelect(user)} className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all', isSelected ? 'bg-brand-600/10' : 'hover:bg-surface-700')}>
-              <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" className="flex-shrink-0" />
+              <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" className="flex-shrink-0" />
               <div className="min-w-0 flex-1 text-left">
                 <p className={cn('text-sm font-medium', isSelected ? 'text-brand-300' : 'text-surface-200')}>{user.firstName} {user.lastName}</p>
                 <p className="text-[11px] text-surface-500 truncate">{roleLabel(user.role)} · {user.email}</p>
@@ -99,68 +99,6 @@ function InfoTable({ rows }: { rows: { label: string; value: React.ReactNode }[]
         </div>
       ))}
     </div>
-  )
-}
-
-// ─── Notas section ────────────────────────────────────────────────────────────
-
-function NotasSection() {
-  const [notes, setNotes] = useState<string[]>([])
-  const [adding, setAdding] = useState(false)
-  const [draft, setDraft] = useState('')
-
-  const handleSave = () => {
-    const trimmed = draft.trim()
-    if (trimmed) setNotes(prev => [...prev, trimmed])
-    setDraft('')
-    setAdding(false)
-  }
-
-  return (
-    <Section
-      title="Notas"
-      action={
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="w-6 h-6 rounded-md flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      }
-    >
-      {notes.length === 0 && !adding && (
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="w-full text-left text-xs text-surface-500 hover:text-surface-300 transition-colors"
-        >
-          Adicionar uma nota…
-        </button>
-      )}
-      {notes.map((note, i) => (
-        <div key={i} className="text-xs text-surface-300 bg-surface-800/50 rounded-lg px-3 py-2 mb-2 last:mb-0">
-          {note}
-        </div>
-      ))}
-      {adding && (
-        <div className="mt-1">
-          <textarea
-            autoFocus
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave() } if (e.key === 'Escape') { setAdding(false); setDraft('') } }}
-            placeholder="Escreva uma nota…"
-            rows={3}
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-xs text-surface-200 placeholder:text-surface-500 resize-none outline-none focus:border-brand-500 transition-colors"
-          />
-          <div className="flex gap-2 mt-1.5">
-            <button type="button" onClick={handleSave} className="text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors">Salvar</button>
-            <button type="button" onClick={() => { setAdding(false); setDraft('') }} className="text-[11px] text-surface-500 hover:text-surface-300 transition-colors">Cancelar</button>
-          </div>
-        </div>
-      )}
-    </Section>
   )
 }
 
@@ -254,23 +192,26 @@ export function ContactPanel({
       {/* Action bar */}
       <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-950">
         <div className="min-w-0 flex items-center gap-1.5">
-          <Filter className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Estágio do funil" />
+          <Milestone className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Situação do contato" />
           {localStage ? (
             <StageBadge stage={localStage} stages={stages} />
           ) : (
-            <span className="text-[11px] text-surface-600">Sem estágio</span>
+            <span className="text-[11px] text-surface-600">Sem situação</span>
           )}
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          <button onClick={() => setStageOpen(true)} title="Mover para estágio"
+          {/* SCRUM-929 (F-FICHA-08): "Mudar situação" — ícone e verbo distintos
+              de "Mover etapa" (DealSummary, ícone KanbanSquare) — etapa é do
+              FUNIL do negócio, situação é o ciclo de vida do CONTATO. */}
+          <button onClick={() => setStageOpen(true)} title="Mudar situação" aria-label="Mudar situação"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
-            <KanbanSquare className="w-4 h-4" />
+            <Milestone className="w-4 h-4" />
           </button>
-          <button onClick={() => navigate(`/contacts?contact=${contact.id}`)} title="Ver no CRM"
+          <button onClick={() => navigate(`/contacts?contact=${contact.id}`)} title="Ver no CRM" aria-label="Ver no CRM"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <ExternalLink className="w-4 h-4" />
           </button>
-          <button onClick={onClose} title="Fechar"
+          <button onClick={onClose} title="Fechar" aria-label="Fechar"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <X className="w-4 h-4" />
           </button>
@@ -304,7 +245,15 @@ export function ContactPanel({
           </div>
         </div>
 
-        {/* Etiquetas — logo abaixo do header (avatar + telefone) */}
+        {/* Negócios primeiro: numa conversa de venda, o que o atendente
+            precisa ver ao abrir o painel é se este contato já tem negócio
+            aberto e em que etapa — antes de etiquetas ou de quem atende.
+            Ficava depois de "Agente responsável", exigindo rolagem. */}
+        {isFeatureVisible('contactPanelDeals') && (
+          <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
+        )}
+
+        {/* Etiquetas — logo abaixo dos negócios */}
         <Section
           title="Etiquetas"
           action={
@@ -320,11 +269,12 @@ export function ContactPanel({
           {tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span key={tag.id} className="color-chip flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium"
-                  style={{ ['--chip']: tag.color } as React.CSSProperties}>
-                  <span className="w-1.5 h-1.5 rounded-full chip-dot" />
-                  {tag.name}
-                  <button onClick={() => onRemoveTag(tag.id)} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
+                <span key={tag.id} className="color-chip flex items-center gap-1 whitespace-nowrap flex-shrink-0 text-xs px-2 py-1 rounded-full font-medium"
+                  style={{ ['--chip']: tag.color } as React.CSSProperties}
+                  title={tag.name}>
+                  <span className="w-1.5 h-1.5 rounded-full chip-dot flex-shrink-0" />
+                  <span>{tag.name}</span>
+                  <button onClick={() => onRemoveTag(tag.id)} title={`Remover etiqueta ${tag.name}`} aria-label={`Remover etiqueta ${tag.name}`} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </span>
@@ -368,7 +318,7 @@ export function ContactPanel({
                 'bg-brand-600/10 text-brand-300 hover:bg-brand-600/20',
               )}
             >
-              <Avatar name={`${assignedUser.firstName} ${assignedUser.lastName}`} size="xs" />
+              <Avatar name={`${assignedUser.firstName} ${assignedUser.lastName}`} size="xs" kind="operator" />
               <span className="truncate">{assignedUser.firstName} {assignedUser.lastName}</span>
             </button>
           ) : (
@@ -386,10 +336,6 @@ export function ContactPanel({
           </Modal>
         </Section>
 
-        {isFeatureVisible('contactPanelDeals') && (
-          <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
-        )}
-
         {/* Hidden when conversionAnalysisPanel is off — covers both the
             "Analisar conversa com IA" CTA and any previously-rendered
             results, so the contact panel doesn't show a half-disabled
@@ -406,8 +352,6 @@ export function ContactPanel({
         {/* Timeline */}
         <ConversationActivitySection conversationId={conversation.id} />
 
-        {/* Notas */}
-        <NotasSection />
       </div>
 
       {/* Transfer modal */}
@@ -423,7 +367,7 @@ export function ContactPanel({
                 onClick={() => { onTransfer(user); setXferModal(false) }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all mb-1 hover:bg-surface-800"
               >
-                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" />
+                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" />
                 <div className="flex-1 text-left min-w-0">
                   <p className="text-sm font-medium text-surface-200">
                     {user.firstName} {user.lastName}

@@ -1,13 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, KanbanSquare, CheckCircle2, XCircle, History } from 'lucide-react'
+import { KanbanSquare } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
-import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { ConversationDealSelector } from '@/components/conversations/ChatWindow/ConversationDealSelector'
+import { needsDealSelector, selectableDeals, linkedDeal } from '@/lib/dealIndicator'
+import { DEALS_INVALIDATE_EVENT } from '@/hooks/useResolveWithOutcome'
+import { useToast } from '@/hooks/useToast'
+import { dealsApi } from '@/services/api'
+import { getApiErrorMessage } from '@/lib/utils'
+import { DealSummary, useDealSummaryMove } from '@/components/deals/DealSummary'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
-import { formatRelativeTime } from '@/lib/utils'
-import { pipelineKindOption, pipelineKindOf, terminalLabelsOf } from '@/lib/pipelineKinds'
-import { originInfo, timeInStage } from '@/lib/dealCard'
-import { movedByLabel, moveTargets } from '@/lib/contactPipelines'
+import { pipelineKindOf } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
@@ -24,11 +29,12 @@ import type { Deal, Pipeline, PipelineStage } from '@/types'
  * painel logo abaixo dizia "Negócio · R$ 0,00 · Ganho": duas leituras do mesmo
  * registro, discordando.
  *
- * **O que é agora.** A mesma fonte da ficha (`useContactPipelines`) numa
- * densidade compacta, que é o que cabe num painel estreito: uma linha por
- * registro aberto com funil, tipo, etapa atual e contexto, com "Mover ▾" — a
- * ação que antes exigia abrir um modal de edição de negócio ou ir até o board.
- * Passagens fechadas em linha, com histórico sob demanda.
+ * **O que é agora.** A mesma fonte da ficha (`useContactPipelines`), na
+ * densidade `row` do `DealSummary` compartilhado (B3 · SCRUM-929) — o que
+ * cabe num painel estreito: uma linha por registro aberto com funil, tipo,
+ * etapa atual e contexto, com "Mover etapa ▾" — a ação que antes exigia abrir
+ * um modal de edição de negócio ou ir até o board. Passagens fechadas em
+ * linha, com histórico sob demanda.
  *
  * **Dinheiro só onde existe.** Os totais "Em aberto/Ganho" aparecem apenas se
  * há registro de **venda**; num tenant que só usa funil de processo, a faixa
@@ -40,6 +46,16 @@ import type { Deal, Pipeline, PipelineStage } from '@/types'
  * direto e transformava o conflito num erro cru — duas portas para a mesma
  * ação, uma delas errada.
  */
+/**
+ * C2 (SCRUM-933) — o seletor "negócio desta conversa" mudou de casa em 09/09.
+ *
+ * Ele morava no `ConversationDealIndicator`, no cabeçalho do chat. Com os chips
+ * de negócio saindo de lá (eram a mesma informação que esta seção, em dois
+ * lugares), o seletor viria junto — e ele não é enfeite: é o que grava
+ * `originConversationId` e decide em qual negócio a IA e o "resolver com
+ * desfecho" vão agir. Aqui ele fica ao lado da lista que ele desambigua, que é
+ * onde a pergunta faz sentido.
+ */
 export function ContactPanelDeals({
   contactId,
   contactName,
@@ -50,15 +66,65 @@ export function ContactPanelDeals({
   contactName: string
   conversationId: string
 }) {
+  const { openDeal } = useDealPanel()
+  const { toast } = useToast()
   const navigate = useNavigate()
+
+  /**
+   * "No funil" — leva ao quadro do funil do registro, com a ficha aberta em
+   * cima (`?deal=`, consumido uma vez pela PipelinePage).
+   *
+   * Sai da conversa, e isso tem custo conhecido: o rascunho da mensagem se
+   * perde (F-CONV-29). Por isso ele é a AÇÃO SECUNDÁRIA — "Abrir" continua
+   * respondendo "o que é este negócio" sem tirar ninguém do lugar, e este
+   * responde "onde ele está", que é a pergunta que a ficha sozinha não
+   * respondia desde a B2 (SCRUM-928).
+   */
+  const irAoQuadro = (deal: Deal) => {
+    const pipeline = pipelineOf(deal)
+    if (!pipeline) return
+    navigate(`/pipelines/${pipeline.id}?deal=${deal.id}`)
+  }
   const {
-    enabled, deals, open, closed, error, busyId,
+    enabled, deals, open, closed, error, busyId, pipelines,
     closeTarget, setCloseTarget, history,
-    pipelineOf, moveTo, closeWithReason, toggleHistory,
+    pipelineOf, moveTo, closeWithReason, reopen, toggleHistory, reload,
   } = useContactPipelines(contactId, contactName)
-  const [moveOpenFor, setMoveOpenFor] = useState<string | null>(null)
+  const moveState = useDealSummaryMove()
+  const [linking, setLinking] = useState(false)
+
+  // Só existe com mais de um aberto no MESMO funil — o que só acontece em
+  // funil com multiplicidade (C1 · SCRUM-932). Sem isso não há ambiguidade.
+  const opcoes = selectableDeals(open, conversationId)
+  const mostraSeletor = needsDealSelector(open)
+  const vinculado = linkedDeal(open, conversationId)
+
+  const vincular = async (dealId: string) => {
+    setLinking(true)
+    try {
+      await dealsApi.linkConversation(dealId, conversationId)
+      reload()
+      // As outras superfícies deste contato leem o mesmo `originConversationId`.
+      window.dispatchEvent(new CustomEvent(DEALS_INVALIDATE_EVENT, { detail: { contactId } }))
+    } catch (e: unknown) {
+      toast(getApiErrorMessage(e, 'Não foi possível vincular o negócio a esta conversa.'), 'error')
+    } finally {
+      setLinking(false)
+    }
+  }
+  // A3 (SCRUM-925): o vazio ganha ação. Não e a "segunda porta" que a
+  // SCRUM-920 tirou daqui — aquele "Novo" abria o DealModal cru e virava erro
+  // no conflito; este passa pelo MESMO fluxo do cabeçalho, com o 409 tratado.
+  const addToPipeline = useAddToPipeline({ onCreated: () => reload() })
 
   if (!enabled) return null
+  // A seção só existe quando há o que mostrar. Enquanto carrega e quando o
+  // contato nunca entrou em funil nenhum, ela não ocupa espaço no painel —
+  // criar registro continua a um clique em "Adicionar ao funil ▾", no
+  // cabeçalho, e no menu ⋯ do mobile. Erro é exceção: aparece, senão o
+  // operador não saberia que a leitura falhou.
+  const vazio = deals !== null && open.length === 0 && closed.length === 0
+  if ((deals === null || vazio) && !error) return null
 
   /** O histórico da conversa mostra eventos de registro — recarrega junto. */
   const refreshActivity = () => {
@@ -68,13 +134,18 @@ export function ContactPanelDeals({
   }
 
   const handleMove = async (deal: Deal, stage: PipelineStage, pipeline: Pipeline) => {
-    setMoveOpenFor(null)
+    moveState.close()
     await moveTo(deal, stage, pipeline)
     refreshActivity()
   }
 
   const handleClose = async (input: CloseDealReasonInput) => {
     await closeWithReason(input)
+    refreshActivity()
+  }
+
+  const handleReopen = async (deal: Deal) => {
+    await reopen(deal)
     refreshActivity()
   }
 
@@ -88,22 +159,29 @@ export function ContactPanelDeals({
   const wonCents = salesDeals.filter((d) => d.status === 'won').reduce((s, d) => s + (d.amountCents ?? 0), 0)
 
   return (
-    <div className="px-4 py-3 border-b border-surface-800" data-testid="panel-pipelines">
+    <div className="panel-divider px-4 py-3 border-t border-surface-800" data-testid="panel-pipelines">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
           <KanbanSquare className="w-3 h-3" /> Funis
           <span className="text-surface-600 normal-case tracking-normal" data-testid="panel-pipelines-count">
-            · {deals === null ? '…' : `${open.length} ${open.length === 1 ? 'aberto' : 'abertos'}`}
+            · {open.length} em aberto
           </span>
         </p>
       </div>
 
       {error && <p className="text-xs text-danger" role="alert">{error}</p>}
 
-      {deals !== null && open.length === 0 && closed.length === 0 && !error && (
-        <p className="text-xs text-surface-600">
-          Nenhum registro ainda — use "Adicionar ao funil" no cabeçalho da conversa.
-        </p>
+      {mostraSeletor && (
+        <div className="mb-2">
+          <ConversationDealSelector
+            deals={opcoes}
+            pipelines={pipelines}
+            linkedDealId={vinculado?.id ?? null}
+            busy={linking}
+            onPick={(id) => void vincular(id)}
+            onOpenDeal={openDeal}
+          />
+        </div>
       )}
 
       {salesDeals.length > 0 && (
@@ -123,123 +201,42 @@ export function ContactPanelDeals({
         {open.map((deal) => {
           const pipeline = pipelineOf(deal)
           if (!pipeline) return null
-          const kind = pipelineKindOption(pipelineKindOf(pipeline))
-          const KindIcon = kind.icon
-          const stage = pipeline.stages.find((s) => s.id === deal.stageId)
-          const targets = moveTargets(pipeline, deal.stageId)
-          const labels = terminalLabelsOf(pipeline)
-          const meta = [timeInStage(deal), movedByLabel(deal) ? `por ${movedByLabel(deal)}` : null, `origem ${originInfo(deal).label}`]
-            .filter(Boolean).join(' · ')
           return (
-            <article key={deal.id} className="flex flex-col gap-1" data-testid={`panel-pipeline-${pipeline.id}`}>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />
-                <span className="text-xs text-surface-200 truncate">{pipeline.name}</span>
-                <KindIcon className="w-3 h-3 text-surface-500 flex-shrink-0" aria-label={kind.label} />
-                {stage && (
-                  <span
-                    className="ml-auto text-[10px] text-surface-300 whitespace-nowrap"
-                    data-testid={`panel-pipeline-stage-${pipeline.id}`}
-                  >
-                    {stage.label}
-                  </span>
-                )}
-              </div>
-              {meta && <p className="text-[10px] text-surface-600 truncate pl-3.5">{meta}</p>}
-              <div className="flex items-center gap-1 pl-3.5">
-                <Dropdown
-                  open={moveOpenFor === deal.id}
-                  onClose={() => setMoveOpenFor(null)}
-                  align="left"
-                  className="w-52"
-                  anchor={
-                    <button
-                      type="button"
-                      onClick={() => setMoveOpenFor((v) => (v === deal.id ? null : deal.id))}
-                      disabled={busyId === deal.id}
-                      className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium bg-surface-800 border border-surface-700 text-surface-200 hover:bg-surface-700 disabled:opacity-50 transition-colors"
-                      data-testid={`panel-pipeline-move-${pipeline.id}`}
-                      aria-haspopup="menu"
-                      aria-expanded={moveOpenFor === deal.id}
-                    >
-                      Mover <ChevronDown className="w-2.5 h-2.5" />
-                    </button>
-                  }
-                >
-                  <div className="px-1 py-1 flex flex-col gap-0.5">
-                    {targets.normal.map((st) => (
-                      <DropdownItem key={st.id} onClick={() => void handleMove(deal, st, pipeline)}>
-                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />
-                        {st.label}
-                      </DropdownItem>
-                    ))}
-                    {targets.normal.length > 0 && targets.terminal.length > 0 && <DropdownSeparator />}
-                    {targets.terminal.map((st) => (
-                      <DropdownItem key={st.id} onClick={() => void handleMove(deal, st, pipeline)} danger={st.isLost}>
-                        {st.isWon ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                        {st.isWon ? labels.won : labels.lost} (com motivo)
-                      </DropdownItem>
-                    ))}
-                  </div>
-                </Dropdown>
-                <button
-                  type="button"
-                  onClick={() => navigate(`/contacts?pipeline=${pipeline.id}`)}
-                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
-                  data-testid={`panel-pipeline-board-${pipeline.id}`}
-                >
-                  <KanbanSquare className="w-3 h-3" /> Board
-                </button>
-              </div>
-            </article>
+            <DealSummary
+              key={deal.id}
+              density="row"
+              deal={deal}
+              pipeline={pipeline}
+              contactName={contactName}
+              busy={busyId === deal.id}
+              moveOpen={moveState.isOpen(deal.id)}
+              onToggleMove={() => moveState.toggle(deal.id)}
+              onMove={(stage) => void handleMove(deal, stage, pipeline)}
+              onOpen={() => openDeal(deal.id)}
+              onOpenBoard={() => irAoQuadro(deal)}
+              testIdPrefix="panel-pipeline"
+              testIdKey={pipeline.id}
+            />
           )
         })}
 
         {closed.length > 0 && (
           <div className="flex flex-col gap-1 pt-1 border-t border-surface-800/60" data-testid="panel-pipelines-closed">
-            {closed.map((deal) => {
-              const pipeline = pipelineOf(deal)
-              const stage = pipeline?.stages.find((s) => s.id === deal.stageId)
-              const won = deal.status === 'won'
-              const reasonLabel = pipeline?.closeReasons?.find((r) => r.key === deal.closeReason)?.label ?? deal.closeReason ?? null
-              const h = history[deal.id]
-              return (
-                <div key={deal.id} className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-1 text-[10px] text-surface-500 min-w-0">
-                    {won
-                      ? <CheckCircle2 className="w-3 h-3 text-status-active flex-shrink-0" />
-                      : <XCircle className="w-3 h-3 text-surface-600 flex-shrink-0" />}
-                    <span className="truncate">
-                      <span className="text-surface-400">{pipeline?.name ?? 'Funil'}</span> · {stage?.label ?? (won ? 'Ganho' : 'Perdido')}
-                      {deal.closedAt && <> · {formatRelativeTime(deal.closedAt)}</>}
-                      {reasonLabel && <> · {reasonLabel}</>}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => void toggleHistory(deal.id)}
-                      className="ml-auto inline-flex items-center gap-1 text-[10px] text-brand-300 hover:text-brand-200 whitespace-nowrap"
-                      data-testid={`panel-pipeline-history-${deal.id}`}
-                    >
-                      <History className="w-2.5 h-2.5" /> {h && h !== 'loading' ? 'ocultar' : 'histórico'}
-                    </button>
-                  </div>
-                  {h === 'loading' && <p className="text-[10px] text-surface-600 pl-4">Carregando…</p>}
-                  {Array.isArray(h) && (
-                    <ol className="pl-4 flex flex-col gap-0.5" data-testid={`panel-pipeline-history-list-${deal.id}`}>
-                      {h.length === 0 && <li className="text-[10px] text-surface-600">Sem passagens registradas.</li>}
-                      {h.map((e) => (
-                        <li key={e.id} className="text-[10px] text-surface-600">
-                          {e.fromStageLabel ? `${e.fromStageLabel} → ` : 'entrou em '}
-                          <span className="text-surface-400">{e.toStageLabel ?? '?'}</span>
-                          {' · '}{movedByLabel({ lastMovedByKind: e.movedByKind, lastMovedByActorName: e.movedByActorName }) ?? 'sistema'}
-                          {' · '}{formatRelativeTime(e.createdAt)}
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </div>
-              )
-            })}
+            {closed.map((deal) => (
+              <DealSummary
+                key={deal.id}
+                density="row"
+                closed
+                deal={deal}
+                pipeline={pipelineOf(deal)}
+                busy={busyId === deal.id}
+                onReopen={() => void handleReopen(deal)}
+                history={history[deal.id]}
+                onToggleHistory={() => void toggleHistory(deal.id)}
+                testIdPrefix="panel-pipeline"
+                testIdKey={deal.id}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -252,6 +249,7 @@ export function ContactPanelDeals({
         pipeline={closeTarget?.pipeline ?? null}
         onConfirm={handleClose}
       />
+      {addToPipeline.dialogs}
     </div>
   )
 }

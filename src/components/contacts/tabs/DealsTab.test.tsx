@@ -7,18 +7,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-const { api, navigate, multi, socket } = vi.hoisted(() => ({
+const { api, openDeal, multi, socket } = vi.hoisted(() => ({
   api: { list: vi.fn(), moveStage: vi.fn(), setStatus: vi.fn(), history: vi.fn(), remove: vi.fn(), get: vi.fn(), create: vi.fn() },
-  navigate: vi.fn(),
+  openDeal: vi.fn(),
   multi: vi.fn(() => true),
   socket: { on: vi.fn(), off: vi.fn() },
 }))
-vi.mock('@/services/api', () => ({ dealsApi: api, contactsApi: { get: vi.fn() } }))
+vi.mock('@/services/api', () => ({ dealsApi: api, contactsApi: { get: vi.fn(), list: vi.fn() }, usersApi: { list: vi.fn(() => Promise.resolve({ data: [] })) } }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
-vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }))
+// `useAddToPipeline` (por baixo de AddToPipelineMenu/NewDealDialog) ainda chama
+// useNavigate — sem Router no render de teste, precisa continuar mockado.
+vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }))
+// B2 (SCRUM-928): "Ver no board" virou "Abrir negócio" — abre a ficha, não navega.
+vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/hooks/useMultiPipeline', () => ({ useMultiPipeline: () => multi() }))
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn(), toasts: [], dismiss: vi.fn() }) }))
 vi.mock('@/contexts/TenantVocabContext', () => ({ useTenantVocab: () => ({ vocab: { deal: 'Negócio', deals: 'Negócios' } }) }))
+// A3 (SCRUM-925): o "Novo negócio" abre o NewDealDialog, que lê o usuário atual
+// para pré-preencher o dono (D0-9). Sem este mock o diálogo derruba a árvore.
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'u1', tenantId: 't', email: 'eu@oryon.com', firstName: 'Ana', lastName: 'Souza', role: 'agent', isActive: true } }),
+}))
 
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 const st = (id: string, label: string, order: number, extra: Partial<PipelineStage> = {}): PipelineStage => ({ id, tenantId: 't', pipelineId: 'p', key: id, label, color: '#111', order, isWon: false, isLost: false, ...extra })
@@ -46,7 +55,7 @@ const FECHADO: Deal = { ...base, id: 'd3', stageId: 's4', status: 'lost', closed
 
 beforeEach(() => {
   Object.values(api).forEach((m) => m.mockReset())
-  navigate.mockReset(); multi.mockReturnValue(true)
+  openDeal.mockReset(); multi.mockReturnValue(true)
   api.list.mockResolvedValue({ data: [PROCESSO, VENDA, FECHADO] })
   api.moveStage.mockResolvedValue({ data: {} })
   api.remove.mockResolvedValue({ data: {} })
@@ -80,7 +89,7 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     expect(screen.getByTestId('deal-open-d2')).toHaveTextContent('Plano Anual')
   })
 
-  it('"Mover" para etapa normal faz PATCH /deals/:id/stage e recarrega; "Ver no board" abre o funil', async () => {
+  it('"Mover" para etapa normal faz PATCH /deals/:id/stage e recarrega; "Abrir negócio" abre a FICHA (B2/928)', async () => {
     renderTab()
     await waitFor(() => expect(screen.getByTestId('deal-move-d1')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('deal-move-d1'))
@@ -88,7 +97,7 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     await waitFor(() => expect(api.moveStage).toHaveBeenCalledWith('d1', 's1'))
     await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
     fireEvent.click(screen.getByTestId('deal-board-d2'))
-    expect(navigate).toHaveBeenCalledWith('/contacts?pipeline=v')
+    expect(openDeal).toHaveBeenCalledWith('d2')
   })
 
   it('o terminal usa o vocabulário do TIPO do funil e pede motivo antes de fechar', async () => {
@@ -138,5 +147,23 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     // sem funil no cache todo negócio é comercial — o valor continua aparecendo
     expect(screen.getByTestId('deal-money-d1')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Novo negócio/i })).toBeInTheDocument()
+  })
+})
+
+// ─── A3 (SCRUM-925) — o estado vazio ganha ação ────────────────────────────
+// Antes: "Nenhum registro ainda — use 'Adicionar ao funil'". Texto mandando o
+// operador procurar outro botão é o padrão que o roteiro da A3 derrubou.
+describe('DealsTab — vazio com ação (A3/925)', () => {
+  it('sem nenhum negócio, oferece o botão "Novo negócio" e abre o diálogo de criação', async () => {
+    api.list.mockResolvedValue({ data: [] })
+    renderTab()
+    const btns = await screen.findAllByRole('button', { name: /Novo negócio/ })
+    // Um no cabeçalho (menu "Adicionar ao funil" convive) e um no vazio.
+    expect(btns.length).toBeGreaterThanOrEqual(1)
+    fireEvent.click(btns[btns.length - 1])
+    // O diálogo do fluxo compartilhado abre — nada de POST direto. O título é
+    // o herói da tela desde 09/09; o stepper "Quem e onde" não existe mais.
+    await waitFor(() => expect(screen.getByLabelText(/Título/)).toBeInTheDocument())
+    expect(api.create).not.toHaveBeenCalled()
   })
 })

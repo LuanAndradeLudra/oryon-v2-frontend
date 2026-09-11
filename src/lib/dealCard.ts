@@ -1,4 +1,4 @@
-import { Megaphone, Zap, Sparkles, UserRound, Upload, Workflow, type LucideIcon } from 'lucide-react'
+import { Megaphone, Zap, Sparkles, Pencil, Upload, Workflow, type LucideIcon } from 'lucide-react'
 import type { Deal, DealOriginKind, DealMovedByKind } from '@/types'
 
 /**
@@ -20,7 +20,13 @@ const ORIGIN_BASE: Record<DealOriginKind, { label: string; icon: LucideIcon }> =
   event: { label: 'Evento', icon: Zap },
   journey: { label: 'Automação', icon: Workflow },
   ai: { label: 'IA', icon: Sparkles },
-  manual: { label: 'Manual', icon: UserRound },
+  // `Pencil`, e não `UserRound`: no card de venda a ORIGEM fica na linha logo
+  // abaixo do DONO, que também é uma pessoa. Com o mesmo ícone nas duas, o
+  // caso mais comum do produto (origem manual) produzia duas linhas idênticas
+  // em forma, sem rótulo, significando coisas diferentes — 'quem responde por
+  // este negócio' e 'de onde ele veio'. As outras origens já tinham ícone
+  // próprio; só a manual colidia, e é justamente a maioria.
+  manual: { label: 'Manual', icon: Pencil },
   import: { label: 'Importação', icon: Upload },
 }
 

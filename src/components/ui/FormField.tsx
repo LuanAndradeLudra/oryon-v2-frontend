@@ -4,7 +4,8 @@ import { ComingSoonBadge } from './ComingSoonBadge'
 import { FormFieldContext, useFieldAria } from './formField.context'
 
 interface FormFieldProps {
-  label: string
+  /** Texto do rótulo. Aceita nós para casos como rótulo + ícone de ajuda. */
+  label: ReactNode
   error?: string
   hint?: string
   required?: boolean

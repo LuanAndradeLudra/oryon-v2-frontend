@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Bot, Plus, Wrench, MoreHorizontal, Power, PauseCircle,
-  FileText, Trash2, Save, X, Check, Edit3,
+  FileText, Trash2, Archive, Save, X, Check, Edit3,
   Zap, Clock, AlertCircle, Copy, Eye, EyeOff,
   ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Shield,
   Link2, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { loadHub, hubHasContent, isAgentStale, injectHubIntoPrompt } from '@/services/companyContextService'
 import { cn } from '@/lib/utils'
+import { Tabs, type TabAccent } from '@/components/ui/Tabs'
 import {
   updateAgent,
   addTool, updateTool, deleteTool,
@@ -106,8 +107,10 @@ function InlineEdit({
           onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
           className="bg-surface-800 border border-brand-500/50 rounded-lg px-2 py-1 text-sm font-semibold text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
         />
-        <button onClick={handleSave} disabled={saving} className="p-1 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 transition">
-          <Check className="w-3.5 h-3.5 text-white" />
+        <button onClick={handleSave} disabled={saving} className="p-1 rounded-lg bg-surface-100 hover:bg-surface-50 disabled:opacity-50 transition">
+          {/* O disco do botão virou claro (10/09) — o ícone tinha de sair do
+              branco junto, senão some no próprio fundo. */}
+          <Check className="w-3.5 h-3.5 text-surface-950" />
         </button>
         <button onClick={() => { setDraft(value); setEditing(false) }} className="p-1 rounded-lg hover:bg-surface-700 transition">
           <X className="w-3.5 h-3.5 text-surface-400" />
@@ -496,7 +499,7 @@ function SystemPromptTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onU
             saved
               ? 'bg-status-active-bg text-status-active ring-1 ring-status-active-border'
               : isDirty
-                ? 'bg-brand-600 hover:bg-brand-500 text-surface-950'
+                ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
                 : 'bg-surface-800 text-surface-600 cursor-not-allowed',
           )}
         >
@@ -621,7 +624,7 @@ function ToolForm({
         <button
           onClick={handleSave}
           disabled={!form.name || !form.url || saving}
-          className="flex-1 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-surface-950 text-sm font-medium transition"
+          className="flex-1 px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-50 disabled:opacity-50 text-surface-950 text-sm font-medium transition"
         >
           {saving ? 'Salvando…' : 'Salvar ferramenta'}
         </button>
@@ -774,7 +777,7 @@ function ToolsTab({
                   <button
                     onClick={() => setDeleteToolTarget(tool.id)}
                     disabled={deletingId === tool.id}
-                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-surface-600 hover:text-red-400 transition"
+                    className="p-1.5 rounded-lg hover:bg-danger/10 text-surface-600 hover:text-danger transition"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -940,7 +943,7 @@ function HandoffTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate
           </span>
         )}
         {status === 'error' && (
-          <span className="inline-flex items-center gap-1.5 text-red-400">
+          <span className="inline-flex items-center gap-1.5 text-danger">
             <AlertCircle className="w-3 h-3" />
             Falha ao salvar{errorMessage ? `: ${errorMessage}` : ''}
           </span>
@@ -1329,7 +1332,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
                   <button
                     type="button" onClick={() => setDeleteDocTarget(doc.id)}
                     title="Excluir"
-                    className="p-1 rounded text-surface-600 hover:text-red-400 transition"
+                    className="p-1 rounded text-surface-600 hover:text-danger transition"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1673,7 +1676,7 @@ function FaqRuleForm({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium transition disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-100 hover:bg-surface-50 text-surface-950 text-xs font-medium transition disabled:opacity-50"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
           Salvar
@@ -1848,7 +1851,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
                 </button>
                 <button
                   onClick={() => setDeleteTarget(rule.id)}
-                  className="p-1.5 rounded-lg hover:bg-red-500/10 text-surface-600 hover:text-red-400 transition mt-0.5"
+                  className="p-1.5 rounded-lg hover:bg-danger/10 text-surface-600 hover:text-danger transition mt-0.5"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -1960,13 +1963,13 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
           </div>
           <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Taxa de sucesso</p>
-            <p className={cn('text-xl font-bold', successRate !== null && successRate >= 95 ? 'text-status-active' : successRate !== null && successRate >= 80 ? 'text-status-pending' : 'text-red-400')}>
+            <p className={cn('text-xl font-bold', successRate !== null && successRate >= 95 ? 'text-status-active' : successRate !== null && successRate >= 80 ? 'text-status-pending' : 'text-danger')}>
               {successRate !== null ? `${successRate}%` : '—'}
             </p>
           </div>
           <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Falhas</p>
-            <p className={cn('text-xl font-bold', totals.failures === 0 ? 'text-surface-400' : 'text-red-400')}>
+            <p className={cn('text-xl font-bold', totals.failures === 0 ? 'text-surface-400' : 'text-danger')}>
               {totals.failures.toLocaleString('pt-BR')}
             </p>
           </div>
@@ -2022,10 +2025,10 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
                   <tr key={r.tool_name} className="hover:bg-surface-800/30 transition">
                     <td className="px-4 py-2.5 font-mono text-surface-200">{r.tool_name}</td>
                     <td className="px-4 py-2.5 text-right text-surface-300">{r.total}</td>
-                    <td className={cn('px-4 py-2.5 text-right font-medium', rate >= 95 ? 'text-status-active' : rate >= 80 ? 'text-status-pending' : 'text-red-400')}>
+                    <td className={cn('px-4 py-2.5 text-right font-medium', rate >= 95 ? 'text-status-active' : rate >= 80 ? 'text-status-pending' : 'text-danger')}>
                       {r.successes} <span className="text-surface-600">({rate.toFixed(1)}%)</span>
                     </td>
-                    <td className={cn('px-4 py-2.5 text-right', r.failures === 0 ? 'text-surface-500' : 'text-red-400 font-medium')}>
+                    <td className={cn('px-4 py-2.5 text-right', r.failures === 0 ? 'text-surface-500' : 'text-danger font-medium')}>
                       {r.failures}
                     </td>
                     <td className="px-4 py-2.5 text-right text-surface-400">
@@ -2098,22 +2101,29 @@ export function AgentDetail({
     setAgent(prev => ({ ...prev, tools }))
   }, [])
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  // Fase 5a: `accent` dá identidade categórica pra cada seção (só a aba
+  // ATIVA fica colorida — inativas continuam neutras, então nunca aparecem
+  // duas cores ao mesmo tempo). Escolhas por afinidade semântica, não por
+  // ordem mecânica: "Visão geral" fica sem accent (cor da marca, é a aba-
+  // -padrão/casa); Skills/Ferramentas usam os mesmos tons já convencionados
+  // pra essas categorias em outras telas deste arquivo (âmbar = destaque/
+  // integração, azul = técnico/bruto, ver `METHOD_COLOR` acima).
+  const tabs: { id: Tab; label: string; icon: React.ReactNode; accent?: TabAccent }[] = [
     { id: 'overview', label: 'Visão geral', icon: <Bot className="w-3.5 h-3.5" /> },
-    { id: 'prompt',   label: 'System Prompt', icon: <FileText className="w-3.5 h-3.5" /> },
-    { id: 'capabilities', label: 'Capacidades', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
-    { id: 'criteria', label: 'Critérios', icon: <Info className="w-3.5 h-3.5" /> },
+    { id: 'prompt',   label: 'System Prompt', icon: <FileText className="w-3.5 h-3.5" />, accent: 'violet' },
+    { id: 'capabilities', label: 'Capacidades', icon: <ShieldCheck className="w-3.5 h-3.5" />, accent: 'green' },
+    { id: 'criteria', label: 'Critérios', icon: <Info className="w-3.5 h-3.5" />, accent: 'cyan' },
     ...(skillsVisible
-      ? [{ id: 'skills' as Tab, label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" /> }]
+      ? [{ id: 'skills' as Tab, label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" />, accent: 'amber' as TabAccent }]
       : []),
     // Legacy raw-HTTP tools — only visible to users that flipped Advanced Mode.
     ...(advancedMode
-      ? [{ id: 'tools' as Tab, label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" /> }]
+      ? [{ id: 'tools' as Tab, label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" />, accent: 'blue' as TabAccent }]
       : []),
-    { id: 'rules',    label: 'Regras', icon: <Workflow className="w-3.5 h-3.5" /> },
-    { id: 'knowledge', label: 'Conhecimento', icon: <BookOpen className="w-3.5 h-3.5" /> },
-    { id: 'catalog',  label: 'Catálogo', icon: <Package className="w-3.5 h-3.5" /> },
-    { id: 'metrics',  label: 'Métricas', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { id: 'rules',    label: 'Regras', icon: <Workflow className="w-3.5 h-3.5" />, accent: 'rose' },
+    { id: 'knowledge', label: 'Conhecimento', icon: <BookOpen className="w-3.5 h-3.5" />, accent: 'cyan' },
+    { id: 'catalog',  label: 'Catálogo', icon: <Package className="w-3.5 h-3.5" />, accent: 'green' },
+    { id: 'metrics',  label: 'Métricas', icon: <BarChart3 className="w-3.5 h-3.5" />, accent: 'blue' },
   ]
 
   // If the user lands on `tools` while Advanced Mode is off, bounce them to
@@ -2214,8 +2224,13 @@ export function AgentDetail({
                   disabled={deletingAgent}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 transition-colors text-left cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Excluir agente
+                  {/* QW-18 (F-AGENT-11): rótulo/ícone diziam "excluir" — a
+                      ação de verdade move pra rascunho, não apaga nada
+                      (updateAgent(id, {status:'draft'}) abaixo). Archive em
+                      vez de Trash2 pela mesma razão: a lixeira promete
+                      destruição, isto é reversível. */}
+                  <Archive className="w-3.5 h-3.5" />
+                  Desativar (vira rascunho)
                 </button>
               </div>
             </>
@@ -2233,9 +2248,9 @@ export function AgentDetail({
             .then(() => onDeleted())
             .catch(() => setDeletingAgent(false))
         }}
-        title="Excluir agente"
-        description={`Excluir o agente "${agent.name}"? Ele será movido para rascunho e deixará de responder conversas.`}
-        confirmLabel="Excluir"
+        title="Desativar agente"
+        description={`Desativar o agente "${agent.name}"? Ele vira rascunho e deixa de responder conversas — pode reativar quando quiser.`}
+        confirmLabel="Desativar"
         danger
         loading={deletingAgent}
       />
@@ -2269,30 +2284,16 @@ export function AgentDetail({
       </AnimatePresence>
 
       {/* Tabs — underline (mais leve que pílulas com 9 opções; o indicador
-          de 2px comunica seleção sem competir com o conteúdo) */}
-      <div
-        role="tablist"
-        aria-label="Seções do agente"
-        className="flex items-center gap-1 px-6 border-b border-surface-800/60 flex-shrink-0 overflow-x-auto"
-      >
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-2.5 -mb-px border-b-2 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
-              activeTab === tab.id
-                ? 'text-surface-50 border-brand-500'
-                : 'text-surface-500 border-transparent hover:text-surface-300',
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+          de 2px comunica seleção sem competir com o conteúdo). Extraído pra
+          `ui/Tabs.tsx` (Fase 3 do plano de reestilização) — mesma marcação,
+          mesmas classes, só reaproveitável agora. */}
+      <Tabs
+        tabs={tabs}
+        value={activeTab}
+        onChange={setActiveTab}
+        label="Seções do agente"
+        className="px-6"
+      />
 
       {/* Tab content — "Regras" with Roteamento sub-tab needs flex-contained
           layout for the sticky save bar; everything else scrolls normally. */}

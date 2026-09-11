@@ -2,12 +2,14 @@ import { useState, useCallback, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dealsApi } from '@/services/api'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
 import { pipelineKindOf } from '@/lib/pipelineKinds'
+import { getActivePipelines } from '@/lib/utils'
 import { PipelineConflictModal, type ConflictChoice } from '@/components/deals/PipelineConflictModal'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
-import { DealModal } from '@/components/contacts/DealModal'
+import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import type { Deal, Pipeline, PipelineStage } from '@/types'
 
 /** O que "Adicionar ao funil" precisa saber, de qualquer superfície (conversa · ficha · tabela). */
@@ -37,9 +39,12 @@ function readConflict(e: unknown): { openDealId: string; pipelineId?: string } |
 /**
  * Fluxo "Adicionar ao funil" (F9 · SCRUM-874/875/877/879, pranchetas 3–4),
  * compartilhado pelas três superfícies. Regras:
- *   * funil de **processo** → cria o registro na hora (`POST /deals` com
- *     `originConversationId` quando vem da conversa) — sem "Novo negócio";
- *   * funil de **venda** → abre o `DealModal` (valor/itens opcionais);
+ *   * **os dois tipos** abrem o `NewDealDialog` pré-preenchido — uma superfície
+ *     de criação só, e nenhum atalho que a contorne. Em processo ele é a
+ *     CONFIRMAÇÃO do gesto: até 09/09 o clique num funil criava o registro na
+ *     hora e o operador só via o resultado no toast, depois do fato — e não há
+ *     desfazer, porque a API de negócios não tem `delete`. O diálogo já vem
+ *     preenchido e `⌘↵` cria, então confirmar custa uma tecla;
  *   * `409 open_exists` (I1) → modal de conflito com três saídas: abrir o
  *     existente · mover para a 1ª etapa · fechar como Cancelado/Perdido com
  *     motivo e abrir um novo. Nada acontece em silêncio.
@@ -52,13 +57,16 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
   const navigate = useNavigate()
   const { toast } = useToast()
   const { pipelines } = useCRMConfig()
+  const { openDeal } = useDealPanel()
   const [conflict, setConflict] = useState<ConflictState | null>(null)
   const [closeTarget, setCloseTarget] = useState<{ target: AddToPipelineTarget; existing: Deal; stage: PipelineStage } | null>(null)
-  const [salesTarget, setSalesTarget] = useState<AddToPipelineTarget | null>(null)
+  const [dialogTarget, setDialogTarget] = useState<AddToPipelineTarget | null>(null)
   const [busy, setBusy] = useState(false)
   const { onCreated } = opts
 
-  const boardHref = (pipelineId: string) => `/contacts?pipeline=${pipelineId}`
+  // D2 (SCRUM-935): o board mora em /pipelines/:id agora — link direto em vez
+  // do antigo /contacts?pipeline= (que ainda funciona, mas só redireciona pra cá).
+  const boardHref = (pipelineId: string) => `/pipelines/${pipelineId}`
 
   const announce = useCallback((deal: Deal, target: AddToPipelineTarget) => {
     const stage = target.pipeline.stages.find((s) => s.id === deal.stageId)
@@ -89,32 +97,91 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     }
   }, [])
 
+  /**
+   * Segunda porta do "Adicionar ao funil ▾": abre o diálogo SEM funil escolhido
+   * de antemão — o operador decide lá dentro, na ficha do funil.
+   *
+   * Desde 09/09 o clique num funil também abre o diálogo, então esta porta
+   * deixou de ser a única forma de preencher título, escopo, dono ou previsão.
+   * O que ela ainda faz de diferente é não exigir a escolha do funil no menu:
+   * serve a quem abre o menu sem saber ainda onde o registro vai entrar.
+   */
+  const requestAddDetailed = useCallback((target: Omit<AddToPipelineTarget, 'pipeline'> & { pipeline?: Pipeline }) => {
+    const fallback = target.pipeline ?? getActivePipelines(pipelines)[0]
+    if (!fallback) { toast('Nenhum funil disponível.', 'error'); return }
+    setDialogTarget({ ...target, pipeline: fallback })
+  }, [pipelines, toast])
+
   const requestAdd = useCallback(async (target: AddToPipelineTarget) => {
     if (pipelineKindOf(target.pipeline) === 'sales') {
-      setSalesTarget(target)
+      // C2 (SCRUM-933): em funil com multiplicidade (C1 · SCRUM-932) o backend
+      // NÃO devolve mais 409 — o segundo negócio nasceria em silêncio. O 409
+      // era o que fazia o operador parar e decidir; sem ele, a pergunta passa
+      // a ser nossa: outro negócio, ou é o mesmo que já está aberto? Só
+      // perguntamos quando existe negócio aberto AQUI — o primeiro de todos
+      // segue em um clique, como sempre foi.
+      if (target.pipeline.allowMultipleOpen) {
+        try {
+          const all = (await dealsApi.list(target.contactId)).data
+          const existing = (Array.isArray(all) ? all : []).find(
+            (d) => d.status === 'open' && d.pipelineId === target.pipeline.id,
+          )
+          if (existing) {
+            setConflict({ target, openDealId: existing.id, existing })
+            return
+          }
+        } catch {
+          // Sem a lista, seguir para o formulário é o comportamento antigo —
+          // pior que perguntar, melhor que travar a criação por um GET.
+        }
+      }
+      setDialogTarget(target)
       return
     }
-    setBusy(true)
-    try {
-      const res = await createRecord(target)
-      announce(res.data, target)
-    } catch (e: unknown) {
-      const c = readConflict(e)
-      if (c) await openConflict(target, c.openDealId)
-      else toast(getApiErrorMessage(e, `Não foi possível adicionar ao funil.`), 'error')
-    } finally {
-      setBusy(false)
-    }
-  }, [createRecord, announce, openConflict, toast])
+    // Processo: CONFIRMA antes de criar. Até aqui o clique num item do menu
+    // criava o registro na hora, e o operador só via o resultado no toast —
+    // depois do fato. Como a API de negócios não tem `delete`, o clique errado
+    // é irreversível pela interface: a única saída é fechar o registro numa
+    // etapa terminal, com motivo, deixando um cancelado no funil.
+    //
+    // A confirmação é o PRÓPRIO "Novo negócio" — a mesma superfície de criação
+    // do resto do produto, pré-preenchida com funil, etapa e título. Um modal
+    // de confirmação separado existiu por um dia e foi descartado: quem clicava
+    // em "Preencher detalhes…" caía neste diálogo, então eram duas telas para
+    // o mesmo gesto.
+    //
+    setDialogTarget(target)
+  }, [])
 
   const handleChoice = useCallback(async (choice: ConflictChoice) => {
     if (!conflict) return
     const { target, existing } = conflict
     if (!existing) return
     const stages = target.pipeline.stages.slice().sort((a, b) => a.order - b.order)
+    if (choice === 'create_another') {
+      // O funil permite N abertos: nada a fechar nem mover — segue para a
+      // criação normal. Em venda é o "Novo negócio" de 2 passos (A3), que é
+      // onde o operador dá título e valor ao segundo negócio; sem isso, dois
+      // negócios do mesmo contato nasceriam com o mesmo nome.
+      setConflict(null)
+      if (pipelineKindOf(target.pipeline) === 'sales') { setDialogTarget(target); return }
+      setBusy(true)
+      try {
+        const res = await createRecord(target)
+        announce(res.data, target)
+      } catch (e: unknown) {
+        toast(getApiErrorMessage(e, 'Não foi possível abrir outro registro.'), 'error')
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
     if (choice === 'open_existing') {
       setConflict(null)
-      navigate(boardHref(target.pipeline.id))
+      // B2 (SCRUM-928, F-FUNIL-14): abre A FICHA do registro existente, não
+      // mais o board inteiro — "abrir o negócio existente" agora abre o
+      // negócio, ponto.
+      openDeal(existing.id)
       return
     }
     if (choice === 'move_to_first') {
@@ -138,7 +205,7 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     if (!lost) { toast('Este funil não tem etapa de cancelamento configurada.', 'error'); return }
     setConflict(null)
     setCloseTarget({ target, existing, stage: lost })
-  }, [conflict, navigate, toast, onCreated])
+  }, [conflict, navigate, toast, onCreated, openDeal, createRecord, announce])
 
   const handleCloseAndNew = useCallback(async (input: CloseDealReasonInput) => {
     if (!closeTarget) return
@@ -173,24 +240,32 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
         pipeline={closeTarget?.target.pipeline ?? null}
         onConfirm={handleCloseAndNew}
       />
-      {salesTarget && (
-        <DealModal
+      {/* A3 (SCRUM-925): o gesto abre o "Novo negócio" — a MESMA superfície de
+          criação em todo o produto. Antes era o `DealModal`, que é o formulário
+          de EDIÇÃO e não tem campo de valor.
+          09/09: passou a servir também o funil de PROCESSO, como confirmação do
+          "Adicionar ao funil" — pré-preenchido, é o formulário e a conferência
+          na mesma tela, em vez de um modal de confirmação à parte. */}
+      {dialogTarget && (
+        <NewDealDialog
           open
-          contactId={salesTarget.contactId}
-          contactName={salesTarget.contactName}
-          pipelines={pipelines.length > 0 ? pipelines : [salesTarget.pipeline]}
-          initialPipelineId={salesTarget.pipeline.id}
-          originConversationId={salesTarget.conversationId ?? null}
-          onClose={() => setSalesTarget(null)}
-          onSaved={() => {
-            const t = salesTarget
-            setSalesTarget(null)
-            toast(`${t.contactName} entrou em ${t.pipeline.name}.`, 'success', { label: 'Ver no board', onClick: () => navigate(boardHref(t.pipeline.id)) })
-            onCreated?.({ id: '', contactId: t.contactId, title: t.contactName, status: 'open', pipelineId: t.pipeline.id, stageId: '', amountCents: 0 })
+          contactId={dialogTarget.contactId}
+          contactName={dialogTarget.contactName}
+          pipelines={pipelines.length > 0 ? pipelines : [dialogTarget.pipeline]}
+          initialPipelineId={dialogTarget.pipeline.id}
+          originConversationId={dialogTarget.conversationId ?? null}
+          onClose={() => setDialogTarget(null)}
+          onCreated={(deal) => {
+            const t = dialogTarget
+            setDialogTarget(null)
+            // O negócio criado volta INTEIRO do POST — o chamador recebe o
+            // registro real (antes ia um esqueleto com `id: ''`, que impedia
+            // qualquer leitura otimista de valor/etapa).
+            announce(deal, t)
           }}
           onConflict={(info) => {
-            const t = salesTarget
-            setSalesTarget(null)
+            const t = dialogTarget
+            setDialogTarget(null)
             void openConflict(t, info.openDealId)
           }}
         />
@@ -198,5 +273,16 @@ export function useAddToPipeline(opts: { onCreated?: (deal: Deal) => void } = {}
     </>
   )
 
-  return { requestAdd, dialogs, busy }
+  /**
+   * A3 (SCRUM-925): o board cria negócio SEM passar por `requestAdd` — o
+   * contato só é escolhido dentro do diálogo. Expor o conflito deixa esse
+   * caminho reusar o mesmo modal de três saídas, em vez de nascer uma segunda
+   * implementação (ou, pior, um erro cru).
+   */
+  const reportConflict = useCallback(
+    (target: AddToPipelineTarget, openDealId: string) => { void openConflict(target, openDealId) },
+    [openConflict],
+  )
+
+  return { requestAdd, requestAddDetailed, dialogs, busy, reportConflict }
 }
