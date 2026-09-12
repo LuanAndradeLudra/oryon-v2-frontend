@@ -163,7 +163,7 @@ export function ContactsMobileList({ contacts, loading, onOpenPanel, hasMore, lo
   }
 
   return (
-    <div ref={listRef} className="flex-1 overflow-auto" onScroll={handleScroll}>
+    <div ref={listRef} className="flex-1 overflow-auto overscroll-y-contain" onScroll={handleScroll}>
       <CardListView
         items={contacts}
         getKey={(c) => c.id}

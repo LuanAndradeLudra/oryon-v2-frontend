@@ -53,9 +53,9 @@ export async function initCapacitor(): Promise<void> {
     // alguns devices/emuladores nao suportam todos os metodos — ignora silenciosamente
   }
 
-  // Eventos de teclado disparam CustomEvents no window — o ChatWindow escuta
-  // para fazer scroll/avoid do composer. CustomEvent evita acoplar o React
-  // diretamente ao plugin.
+  // Eventos de teclado disparam CustomEvents no window — MessageInput escuta
+  // `cap:keyboardShow` para dar scroll no composer (SCRUM-1069). CustomEvent
+  // evita acoplar o React diretamente ao plugin.
   Keyboard.addListener('keyboardWillShow', (info) => {
     window.dispatchEvent(new CustomEvent('cap:keyboardShow', { detail: { height: info.keyboardHeight } }))
   })

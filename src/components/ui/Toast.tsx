@@ -40,7 +40,10 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   return createPortal(
     // Mobile: bottom-24 (96px) para ficar ACIMA da BottomTabBar (~56px+safe-area).
     // Desktop (md+): bottom-5 original.
-    <div className="fixed bottom-24 md:bottom-5 right-5 z-[200] flex items-end justify-end pointer-events-none">
+    // inset-x-5 (não só right-5): sem uma borda esquerda também amarrada à
+    // viewport, o toast (min-w-[260px]) ficava quase colado na borda esquerda
+    // em telas de 320px — margem simétrica dos dois lados agora.
+    <div className="fixed bottom-24 md:bottom-5 inset-x-5 md:left-auto z-[200] flex items-end justify-end pointer-events-none">
       <div
         className={cn(
           'flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl min-w-[260px] max-w-[400px] pointer-events-auto',
