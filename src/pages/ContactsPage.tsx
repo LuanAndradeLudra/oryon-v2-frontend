@@ -25,6 +25,7 @@ import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useListScrollMemory } from '@/hooks/useListScrollMemory'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
@@ -55,6 +56,9 @@ const COMMERCIAL_OPTIONS: { key: CommercialSituation; label: string }[] = [
  */
 export function ContactsPage() {
   const isMobile = useIsMobile()
+  // SCRUM-1068: sobrevive à troca de rota (/contacts → /contacts/:id → volta),
+  // diferente de um useRef local que se perde no unmount da página.
+  const listScrollPosRef = useListScrollMemory('contacts-list')
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [initialPanelTab, setInitialPanelTab] = useState<TabId | undefined>(undefined)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -366,6 +370,7 @@ export function ContactsPage() {
               hasMore={hasMore}
               loadingMore={loadingMore}
               onLoadMore={loadMore}
+              scrollPositionRef={listScrollPosRef}
             />
           ) : (
             <ContactsTable

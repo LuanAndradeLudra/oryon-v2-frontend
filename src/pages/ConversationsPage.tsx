@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/useToast'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useContacts } from '@/hooks/useContacts'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useListScrollMemory } from '@/hooks/useListScrollMemory'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { isAdminTier } from '@/lib/roleHelpers'
@@ -52,8 +53,10 @@ export function ConversationsPage() {
   // Persists the conversation list's scrollTop across the mobile mount/unmount
   // cycle (list ↔ chat). Without this, tapping an old conversation and then
   // hitting back used to drop the user at the top of the list — which they
-  // reported on 2026-05-09 as "barra volta para o início".
-  const listScrollPosRef = useRef(0)
+  // reported on 2026-05-09 as "barra volta para o início". SCRUM-1068:
+  // upgraded from a plain useRef to useListScrollMemory, which survives
+  // even a full unmount of this page (not just the list↔chat toggle).
+  const listScrollPosRef = useListScrollMemory('conversations-list')
 
   // True once handleSelectConversation itself pushed the history entry for
   // the open conversation (mobile only). False when the conversation came
