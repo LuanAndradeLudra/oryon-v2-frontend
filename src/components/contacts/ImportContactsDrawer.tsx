@@ -9,6 +9,7 @@ import { appLogger } from '@/services/appLogger'
 import { Banner } from '@/components/ui/Banner'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useLayer } from '@/contexts/LayerContext'
 import { cn, getPipelineStages, getActivePipelines } from '@/lib/utils'
 import type { Contact, ContactSource, Pipeline } from '@/types'
 
@@ -364,6 +365,11 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
     step === 'map' || step === 'preview' || step === 'importing' ||
     (step === 'upload' && (!!file || pasteText.trim().length > 0))
   const requestClose = () => { if (isDirty) setConfirmDiscard(true); else handleClose() }
+
+  // Registro central de camadas (SCRUM-1067) — Esc passa pelo mesmo
+  // dirty-check do botão de fechar/backdrop, em vez de descartar progresso
+  // sem avisar.
+  const { zIndex } = useLayer(open, requestClose)
   const confirmDiscardAndClose = () => { setConfirmDiscard(false); handleClose() }
 
   // ── Parse helpers ──────────────────────────────────────────────────────────
@@ -515,7 +521,8 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
             key="ic-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40 z-[39]"
+            className="fixed inset-0 bg-black/40"
+            style={{ zIndex }}
             onClick={requestClose}
           />
 
@@ -523,7 +530,8 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
             key="ic-drawer"
             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-            className="fixed top-0 right-0 bottom-0 w-[560px] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
+            className="fixed top-0 right-0 bottom-0 w-full sm:w-[560px] bg-surface-950 border-l overlay-frame flex flex-col"
+            style={{ zIndex: zIndex + 1 }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">

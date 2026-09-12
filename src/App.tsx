@@ -49,6 +49,7 @@ import { CopilotProvider } from '@/contexts/CopilotContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
 import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { DealPanelProvider } from '@/contexts/DealPanelContext'
+import { LayerProvider } from '@/contexts/LayerContext'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
@@ -322,6 +323,7 @@ export default function App() {
   return (
     <ErrorBoundary>
     <BrowserRouter>
+      <LayerProvider>
       <AuthProvider>
         <TenantVocabProvider>
         <CRMConfigProvider>
@@ -343,6 +345,7 @@ export default function App() {
         </CRMConfigProvider>
       </TenantVocabProvider>
       </AuthProvider>
+      </LayerProvider>
     </BrowserRouter>
     </ErrorBoundary>
   )
