@@ -4,7 +4,9 @@ import { Drawer } from '@/components/ui/Drawer'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 
 function getBackdrop(): HTMLElement {
-  const el = document.querySelector<HTMLElement>('.fixed.inset-0.z-\\[60\\]')
+  // z-index vem do LayerContext (style inline, SCRUM-1067) — não é mais uma
+  // classe fixa, então o seletor identifica o backdrop só pelo layout.
+  const el = document.querySelector<HTMLElement>('.fixed.inset-0')
   if (!el) throw new Error('backdrop not found')
   return el
 }

@@ -171,6 +171,19 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
   const attachMenuRef = useRef<HTMLDivElement>(null)
   const attachButtonRef = useRef<HTMLButtonElement>(null)
 
+  // SCRUM-1069: capacitor-init.ts já dispara `cap:keyboardShow`/`cap:keyboardHide`
+  // (app nativo — no-op em navegador, o evento nunca é despachado lá), mas até
+  // aqui nada os escutava, então o teclado on-screen podia cobrir o composer
+  // sem nenhum ajuste. `scrollIntoView` é seguro mesmo quando o WebView já
+  // redimensiona sozinho (efeito colateral no máximo redundante, nunca ruim).
+  useEffect(() => {
+    const handleKeyboardShow = () => {
+      textareaRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+    }
+    window.addEventListener('cap:keyboardShow', handleKeyboardShow)
+    return () => window.removeEventListener('cap:keyboardShow', handleKeyboardShow)
+  }, [])
+
   const buildInputContextMenu = useCallback((): ContextMenuEntry[] => {
     const el = textareaRef.current
     const hasSelection = !!el && el.selectionStart !== el.selectionEnd
@@ -776,7 +789,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
               onClick={onCancelReply}
               title="Cancelar resposta"
               aria-label="Cancelar resposta"
-              className="w-6 h-6 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors flex-shrink-0"
+              className="w-6 h-6 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors flex-shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -847,7 +860,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
                       disabled={uploadingId !== null}
                       title="Remover anexo"
                       aria-label={`Remover ${att.file.name}`}
-                      className="w-5 h-5 flex items-center justify-center rounded text-surface-400 hover:text-surface-100 hover:bg-surface-600 transition-colors flex-shrink-0 disabled:opacity-40 disabled:hover:bg-transparent"
+                      className="w-5 h-5 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9 flex items-center justify-center rounded text-surface-400 hover:text-surface-100 hover:bg-surface-600 transition-colors flex-shrink-0 disabled:opacity-40 disabled:hover:bg-transparent"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -893,7 +906,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             <button
               ref={attachButtonRef}
               onClick={() => setShowAttachMenu(!showAttachMenu)}
-              className="w-8 h-8 flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors flex-shrink-0"
+              className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors flex-shrink-0"
               title="Anexar arquivo"
             >
               <Paperclip className="w-4 h-4" />
@@ -977,7 +990,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
           <EmojiPickerButton
             textareaRef={textareaRef}
             onEmojiInsert={(newValue) => setText(newValue)}
-            className="w-8 h-8"
+            className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
           />
 
           {/* Send — aparece com texto E/OU anexos em espera */}
@@ -986,7 +999,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
               onClick={handleSend}
               disabled={sending || disabled}
               aria-label="Enviar mensagem"
-              className="w-8 h-8 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 shadow-sm flex items-center justify-center flex-shrink-0 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 shadow-sm flex items-center justify-center flex-shrink-0 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send className="w-4 h-4" />
             </button>

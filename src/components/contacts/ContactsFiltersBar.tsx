@@ -250,11 +250,15 @@ export function ContactsFiltersBar({ filters, onFiltersChange }: ContactsFilters
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" />
           <input
-            type="text"
+            type="search"
+            inputMode="search"
             value={filters.search ?? ''}
             onChange={(e) => set({ search: e.target.value || undefined })}
             placeholder="Buscar por nome, telefone, empresa ou etiqueta..."
-            className="w-full pl-9 pr-9 py-2 rounded-lg text-sm bg-surface-800 border border-surface-700 text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+            // [&::-webkit-search-cancel-button]:appearance-none: type="search"
+            // já traz o teclado/label "Buscar" no mobile — sem isso o "x" nativo
+            // do WebKit duplicaria o botão de limpar customizado logo abaixo.
+            className="w-full pl-9 pr-9 py-2 rounded-lg text-sm bg-surface-800 border border-surface-700 text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all [&::-webkit-search-cancel-button]:appearance-none"
           />
           {filters.search && (
             <button

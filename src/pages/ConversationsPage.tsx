@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/useToast'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useContacts } from '@/hooks/useContacts'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useListScrollMemory } from '@/hooks/useListScrollMemory'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { isAdminTier } from '@/lib/roleHelpers'
@@ -52,8 +53,18 @@ export function ConversationsPage() {
   // Persists the conversation list's scrollTop across the mobile mount/unmount
   // cycle (list ↔ chat). Without this, tapping an old conversation and then
   // hitting back used to drop the user at the top of the list — which they
-  // reported on 2026-05-09 as "barra volta para o início".
-  const listScrollPosRef = useRef(0)
+  // reported on 2026-05-09 as "barra volta para o início". SCRUM-1068:
+  // upgraded from a plain useRef to useListScrollMemory, which survives
+  // even a full unmount of this page (not just the list↔chat toggle).
+  const listScrollPosRef = useListScrollMemory('conversations-list')
+
+  // True once handleSelectConversation itself pushed the history entry for
+  // the open conversation (mobile only). False when the conversation came
+  // from a deep link (?id= already in the URL on mount) — in that case
+  // there's no "list" entry underneath to pop back to, so the back button
+  // must navigate there explicitly instead of history.back()-ing out of the
+  // app entirely.
+  const openedViaPushRef = useRef(false)
 
   const {
     conversations, loading, loadingMore, hasMore, loadMore, statusCounts, needsReviewCount,
@@ -232,7 +243,14 @@ export function ConversationsPage() {
     if (!isMobile) setInfoOpen(true)
     markAsRead(conv.id)
     if (conv.unreadCount > 0) setTotalUnread((p) => Math.max(0, p - conv.unreadCount))
-    setSearchParams({ id: conv.id }, { replace: true })
+    // No mobile, lista e chat são telas alternadas — abrir uma conversa
+    // precisa empilhar uma entrada de histórico própria (replace: false),
+    // senão o gesto/botão de voltar do navegador pula direto pra tela
+    // anterior à lista (ex. Home) em vez de fechar o chat primeiro. No
+    // desktop lista+chat convivem na mesma tela, então mantém replace
+    // (comportamento inalterado).
+    setSearchParams({ id: conv.id }, { replace: !isMobile })
+    openedViaPushRef.current = isMobile
   }
 
   // B2 (SCRUM-928) — a aba "Conversas" da ficha do negócio (aberta como
@@ -298,6 +316,18 @@ export function ConversationsPage() {
         // don't retry on every render, and let the empty state explain.
       })
   }, [conversations, searchParams, isMobile, loading])
+
+  // Symmetric to the restore effect above: whenever `?id` is gone from the
+  // URL — via the mobile back gesture/browser-back button (popstate) or the
+  // header's back button (navigate(-1), see handleMobileBack) — close the
+  // open conversation to match. This is what makes "voltar" a single code
+  // path instead of two (URL state vs. imperative setActiveConversation).
+  useEffect(() => {
+    if (searchParams.get('id')) return
+    if (!activeConversation) return
+    setActiveConversation(null)
+    setInfoOpen(false)
+  }, [searchParams, activeConversation])
 
   // Tells the ConversationActivitySection to refetch its timeline. We dispatch
   // a CustomEvent rather than threading a ref through several layers because
@@ -512,12 +542,20 @@ export function ConversationsPage() {
     }
   })()
 
-  // Mobile back: clear active conversation, close info panel, drop ?id from URL.
+  // Mobile back: when we pushed the history entry ourselves (see
+  // handleSelectConversation), going back through the router is enough —
+  // the effect above clears activeConversation once `?id` drops out of the
+  // URL, so this behaves exactly like the native gesture/browser-back
+  // button. A conversation opened via deep link has no such entry to pop
+  // (nothing was pushed on mount), so instead it navigates to the list
+  // explicitly — history.back() there would leave the app.
   const handleMobileBack = useCallback(() => {
-    setActiveConversation(null)
-    setInfoOpen(false)
-    setSearchParams({}, { replace: true })
-  }, [setSearchParams])
+    if (openedViaPushRef.current) {
+      navigate(-1)
+    } else {
+      setSearchParams({}, { replace: true })
+    }
+  }, [navigate, setSearchParams])
 
   // In mobile, list and chat are alternative full-screen views — never both at
   // once. Desktop keeps the original side-by-side layout.

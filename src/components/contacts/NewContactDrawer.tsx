@@ -14,6 +14,7 @@ import type { Contact, ContactSource, Tag, Pipeline } from '@/types'
 import { Input } from '@/components/ui/Input'
 import { PhoneField } from '@/components/ui/PhoneField'
 import { FormFieldContext, useFieldAria } from '@/components/ui/formField.context'
+import { useLayer } from '@/contexts/LayerContext'
 
 const SOURCE_OPTIONS: { value: ContactSource; label: string }[] = [
   { value: 'whatsapp',  label: 'WhatsApp' },
@@ -193,6 +194,10 @@ function TagsSelector({ selected, onChange }: { selected: Tag[]; onChange: (tags
 export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines, defaultPipelineId }: NewContactDrawerProps) {
   const { stages, fieldDefs } = useCRMConfig()
   const { toast } = useToast()
+  // Registro central de camadas (SCRUM-1067) — este drawer não usa o
+  // componente <Drawer> compartilhado (layout próprio), então ganha o
+  // mesmo z-index coordenado e o Esc-fecha-só-o-topo via useLayer.
+  const { zIndex } = useLayer(open, onClose)
 
   const [displayName, setDisplayName] = useState('')
   const [waId, setWaId]               = useState('')
@@ -312,7 +317,8 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40 z-[39]"
+            className="fixed inset-0 bg-black/40"
+            style={{ zIndex }}
             onClick={onClose}
           />
 
@@ -322,7 +328,8 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
+            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] bg-surface-950 border-l overlay-frame flex flex-col"
+            style={{ zIndex: zIndex + 1 }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">

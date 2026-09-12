@@ -1,6 +1,5 @@
 // B2 (SCRUM-928) — o "painel lateral" da ficha do negócio. Não existia
-// nenhum sistema de camada/drawer genérico no app (`useLayer` citado no
-// card não existe em lugar nenhum — grep confirmado) — o padrão real do
+// nenhum sistema de camada/drawer genérico no app — o padrão real do
 // código é um drawer sempre-montado, controlado por prop local, portal para
 // `document.body` (ver `CRMConfigDrawer`/`ContactDetailPanel` em
 // `ContactsPage`). Este provider generaliza esse MESMO padrão para um único
@@ -8,11 +7,19 @@
 // painel a partir de VÁRIAS páginas (/contacts, /contacts/:id,
 // /conversations) — replicar o estado local em cada uma reintroduziria
 // divergência (o mesmo problema que a B5 matou para os funis).
+//
+// SCRUM-1067: o z-index fixo (z-49/z-50) foi substituído pelo registro
+// central de camadas (`useLayer`, ver LayerContext.tsx) — o painel agora
+// empilha corretamente acima ou abaixo de um Modal/Drawer aberto por cima
+// dele, em vez de um número fixo escolhido sem olhar pros outros overlays.
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { DealDetailPanel } from '@/components/deals/DealDetailPanel'
+import { useLayer } from '@/contexts/LayerContext'
+
+const NOOP = () => {}
 
 interface DealPanelContextValue {
   /** Abre a ficha do negócio `dealId` como painel lateral, por cima da
@@ -44,6 +51,11 @@ export function DealPanelProvider({ children }: { children: ReactNode }) {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const conversationOpenerRef = useRef<((conversationId: string) => void) | null>(null)
+
+  // NOOP: o painel nunca fechou sozinho no Esc (só clique no backdrop) — o
+  // registro é só para ganhar a posição certa na pilha de z-index, sem
+  // mudar esse comportamento.
+  const { zIndex } = useLayer(!!openDealId, NOOP)
 
   const openDeal = useCallback((dealId: string) => setOpenDealId(dealId), [])
   const closeDeal = useCallback(() => setOpenDealId(null), [])
@@ -92,7 +104,8 @@ export function DealPanelProvider({ children }: { children: ReactNode }) {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 bg-black/40 z-[49]"
+                className="fixed inset-0 bg-black/40"
+                style={{ zIndex }}
                 onClick={closeDeal}
               />
               <motion.div
@@ -101,7 +114,8 @@ export function DealPanelProvider({ children }: { children: ReactNode }) {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-                className="drawer-invertido fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-50 bg-surface-950 border-l overlay-frame flex flex-col"
+                className="drawer-invertido fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] bg-surface-950 border-l overlay-frame flex flex-col"
+                style={{ zIndex: zIndex + 1 }}
                 role="dialog"
                 aria-modal="true"
                 aria-label="Ficha do negócio"

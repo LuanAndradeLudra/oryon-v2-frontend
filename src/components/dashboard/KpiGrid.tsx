@@ -268,12 +268,15 @@ export function KpiGrid({
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-3">
+      {/* flex-wrap (SCRUM-1070): sem isto, em ~375px a soma de label + seletor
+          de período + "Personalizar" excedia a largura e o container pai
+          (overflow-hidden) cortava o botão fora da tela em vez de rolar. */}
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
         <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest shrink-0">
           Métricas Principais
         </p>
-        <div className="flex-1" />
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex-1 min-w-0" />
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {headerCenter}
           <button
             onClick={() => setCustomizerOpen(true)}

@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type PanInfo } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { useLayer } from '@/contexts/LayerContext'
 
 export type DrawerSide = 'left' | 'right' | 'bottom'
 
@@ -29,6 +30,7 @@ const SIDE_PANEL = {
 
 const CLOSE_OFFSET_PX = 100
 const CLOSE_VELOCITY = 500
+const NOOP = () => {}
 
 export function Drawer({
   open,
@@ -41,23 +43,22 @@ export function Drawer({
 }: DrawerProps) {
   const previouslyFocused = useRef<HTMLElement | null>(null)
 
+  // Registro central de camadas (ver LayerContext.tsx) — mesmo mecanismo do
+  // Modal. Um drawer não-dismissible ainda entra na pilha (ocupa uma
+  // posição/z-index), mas seu onClose nunca é chamado pelo Esc.
+  const { zIndex } = useLayer(open, dismissible ? onClose : NOOP)
+
   useEffect(() => {
     if (!open) return
     previouslyFocused.current = (document.activeElement as HTMLElement) ?? null
-
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dismissible) onClose()
-    }
-    window.addEventListener('keydown', handler)
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
     return () => {
-      window.removeEventListener('keydown', handler)
       document.body.style.overflow = prevOverflow
       previouslyFocused.current?.focus?.()
     }
-  }, [open, onClose, dismissible])
+  }, [open])
 
   if (typeof document === 'undefined') return null
 
@@ -86,7 +87,8 @@ export function Drawer({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[60]"
+          className="fixed inset-0"
+          style={{ zIndex }}
           onClick={dismissible ? onClose : undefined}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

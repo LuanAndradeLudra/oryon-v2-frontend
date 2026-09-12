@@ -182,7 +182,12 @@ export function DealsBoard({
   const totalOpenCents = allDeals.reduce((sum, d) => sum + (d.amountCents ?? 0), 0)
 
   return (
-    <div className="flex-1 overflow-x-auto kanban-scroll snap-x snap-mandatory md:snap-none flex flex-col">
+    <div
+      // touch-pan-x: avisa o navegador que este container trata o gesto
+      // horizontal — reduz a disputa com o swipe nativo de "voltar" do
+      // iOS/Android perto da borda da tela, sem desabilitar o scroll-snap.
+      className="flex-1 overflow-x-auto kanban-scroll touch-pan-x snap-x snap-mandatory md:snap-none flex flex-col"
+    >
       {pipeline && stats && kindOption && (
         <div className="border-b border-surface-700 bg-board-bar flex-shrink-0 px-4 py-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-surface-500" data-testid="board-context-strip">
           <span className="inline-flex items-center gap-1 text-3xs font-semibold px-1.5 py-0.5 rounded-full bg-surface-900 border border-surface-700 text-surface-300">

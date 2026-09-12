@@ -1,8 +1,9 @@
 ﻿import { Link, useLocation } from 'react-router-dom'
-import { MessageSquare, Users, BarChart3, Menu } from 'lucide-react'
-import { useEffect, useState, useCallback, type ComponentType } from 'react'
+import { MessageSquare, Users, BarChart3, Handshake, Menu } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo, type ComponentType } from 'react'
 import { cn } from '@/lib/utils'
 import { conversationsApi } from '@/services/api'
+import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 
 interface Tab {
   href: string
@@ -12,12 +13,15 @@ interface Tab {
   matchPrefix?: boolean
 }
 
-const TABS: Tab[] = [
+const BASE_TABS: Tab[] = [
   { href: '/conversations', label: 'Conversas', Icon: MessageSquare, matchPrefix: true },
   { href: '/contacts', label: 'Contatos', Icon: Users, matchPrefix: true },
   { href: '/dashboard', label: 'Relatórios', Icon: BarChart3, matchPrefix: true },
-  { href: '/more', label: 'Mais', Icon: Menu, matchPrefix: true },
 ]
+
+const NEGOCIOS_TAB: Tab = { href: '/pipelines', label: 'Negócios', Icon: Handshake, matchPrefix: true }
+
+const MAIS_TAB: Tab = { href: '/more', label: 'Mais', Icon: Menu, matchPrefix: true }
 
 function isActive(pathname: string, tab: Tab): boolean {
   if (tab.matchPrefix) return pathname === tab.href || pathname.startsWith(tab.href + '/')
@@ -27,6 +31,14 @@ function isActive(pathname: string, tab: Tab): boolean {
 export function BottomTabBar() {
   const location = useLocation()
   const [unreadConversations, setUnreadConversations] = useState(0)
+  // Negócios só entra na barra principal quando o tenant tem múltiplos funis
+  // (mesmo gate do item "Funis" em MorePage — SCRUM-935/SCRUM-498); um único
+  // funil não justifica um item de primeiro nível dedicado.
+  const multiPipeline = useMultiPipeline()
+  const TABS = useMemo(
+    () => [...BASE_TABS, ...(multiPipeline ? [NEGOCIOS_TAB] : []), MAIS_TAB],
+    [multiPipeline],
+  )
 
   const refresh = useCallback(() => {
     conversationsApi
@@ -58,7 +70,10 @@ export function BottomTabBar() {
     <nav
       role="tablist"
       aria-label="NavegaÃ§Ã£o principal"
-      className="flex-shrink-0 grid grid-cols-4 bg-surface-950 border-t border-surface-800/80 pb-[env(safe-area-inset-bottom)]"
+      className={cn(
+        'flex-shrink-0 grid bg-surface-950 border-t border-surface-800/80 pb-[env(safe-area-inset-bottom)]',
+        TABS.length === 5 ? 'grid-cols-5' : 'grid-cols-4',
+      )}
     >
       {TABS.map((tab) => {
         const active = isActive(location.pathname, tab)

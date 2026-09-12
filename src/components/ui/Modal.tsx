@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Button } from './Button'
 import { Banner, type BannerVariant } from './Banner'
+import { useLayer } from '@/contexts/LayerContext'
 
 interface ModalProps {
   open: boolean
@@ -54,19 +55,22 @@ interface ModalProps {
  *    used to push the footer off-screen, hiding the action buttons.
  */
 export function Modal({ open, onClose, title, children, footer, fillHeight, className, bodyClassName }: ModalProps) {
+  // Registro central de camadas (ver LayerContext.tsx) — decide o z-index
+  // pela posição real na pilha de overlays abertos, e garante que Esc feche
+  // só o overlay do topo mesmo com um Modal empilhado sobre um Drawer (ou
+  // vice-versa), em vez de cada overlay reagir ao Esc por conta própria.
+  const { zIndex } = useLayer(open, onClose)
+
   useEffect(() => {
     if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
     // Lock body scroll while a modal is open so the page underneath doesn't
     // jiggle when the user scrolls the modal contents.
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
-      window.removeEventListener('keydown', handler)
       document.body.style.overflow = prevOverflow
     }
-  }, [open, onClose])
+  }, [open])
 
   // SSR-safe guard: createPortal needs a DOM target, which doesn't exist
   // during server rendering. Vite's dev server is CSR-only so this is just
@@ -77,10 +81,12 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
     <AnimatePresence>
       {open && (
         <motion.div
-          // z-[60] keeps modals above any full-screen overlay (e.g. the
-          // agent-builder wizard at z-50). Combined with the portal target
-          // of <body>, no ancestor stacking context can clip this.
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          // zIndex vem do LayerContext — sobe conforme a posição real na
+          // pilha de overlays abertos, em vez de um valor fixo. Combined
+          // with the portal target of <body>, no ancestor stacking context
+          // can clip this.
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ zIndex }}
           onClick={onClose}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
