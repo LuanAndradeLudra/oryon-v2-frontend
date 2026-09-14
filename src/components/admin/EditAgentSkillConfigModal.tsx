@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { DynamicSchemaFormFields } from './DynamicSchemaFormFields'
+import { DynamicSchemaFormFields } from '@/components/shared/DynamicSchemaFormFields'
 import { updateAgentSkill, listSkillExecutions } from '@/services/agentSkillsApi'
 import { listSkillTemplateInstances } from '@/services/skillTemplatesApi'
 import type {
