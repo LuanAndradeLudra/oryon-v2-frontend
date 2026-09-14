@@ -5,6 +5,7 @@ import { SettingsSectionsProvider, SettingsOutline } from './SettingsSection'
 import { isRouteVisible } from '@/config/featureFlags'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
+import { isOwnerTier } from '@/lib/roleHelpers'
 
 interface SettingsLayoutProps {
   children: ReactNode
@@ -54,6 +55,7 @@ interface NavItem {
   section: string
   label: string
   adminOnly?: boolean
+  ownerOnly?: boolean
   supervisorOnly?: boolean
   /** Só aparece com `FF_MULTI_PIPELINE` ligado para o tenant (SCRUM-498). */
   multiPipelineOnly?: boolean
@@ -128,7 +130,7 @@ export const SETTINGS_NAV: NavDomain[] = [
         label: 'CRM',
         items: [
           { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
-          { section: 'crm-practitioners', label: 'Profissionais',         adminOnly: true },
+          { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true, hidden: true },
           // F13-903: a situação do contato ganha seção própria — o wizard apontava
           // para uma tela que não existia. Vale para todo tenant (não é do funil).
           { section: 'stages',            label: 'Situação do contato',   adminOnly: true },
@@ -147,7 +149,7 @@ export const SETTINGS_NAV: NavDomain[] = [
       {
         label: 'Administração',
         items: [
-          { section: 'billing',  label: 'Plano & faturamento', adminOnly: true },
+          { section: 'billing',  label: 'Plano & faturamento', ownerOnly: true },
           { section: 'security', label: 'Segurança',           adminOnly: true },
           { section: 'audit',    label: 'Auditoria',           adminOnly: true },
         ],
@@ -173,6 +175,7 @@ export function visibleSettingsNav(currentRole: string, opts: SettingsNavOptions
   const allowed = (item: NavItem) => {
     if (item.hidden) return false
     if (item.adminOnly && !isAdmin) return false
+    if (item.ownerOnly && !isOwnerTier(currentRole)) return false
     if (item.supervisorOnly && currentRole === 'agent') return false
     if (item.multiPipelineOnly && !opts.multiPipeline) return false
     return isRouteVisible(`/settings/${item.section}`)

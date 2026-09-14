@@ -29,6 +29,25 @@ export function isAdminTier(role: UserRole | string | undefined | null): boolean
 }
 
 /**
+ * "Owner tier" — the tenant owner (business_admin) plus Oryon staff
+ * (super_admin), who can act on the owner's behalf.
+ *
+ * Narrower than {@link isAdminTier}: it EXCLUDES `admin`. Use it only where
+ * `admin` genuinely must not pass — today that means the money surfaces.
+ *
+ * SCRUM-694 fechou /settings/billing no backend com @Roles(BUSINESS_ADMIN)
+ * (PaymentController e BillingController). Sem este helper a aba continuaria
+ * visivel para `admin`, que passaria a tomar 403 em cada chamada — o pior dos
+ * dois mundos: a UI oferece, a API recusa.
+ *
+ * Mantenha em sincronia com o @Roles do backend. Se um papel entrar la, entra
+ * aqui; e o contrario tambem vale.
+ */
+export function isOwnerTier(role: UserRole | string | undefined | null): boolean {
+  return role === 'super_admin' || role === 'business_admin'
+}
+
+/**
  * "Supervisor and above" — anyone in the admin tier OR a supervisor.
  *
  * Use this for: team-wide notifications, conversation handoff overrides,

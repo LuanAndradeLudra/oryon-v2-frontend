@@ -1,3 +1,4 @@
+import { isOwnerTier } from '@/lib/roleHelpers'
 import { useParams, useSearchParams, Navigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -37,6 +38,7 @@ import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSetti
 import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 const VALID_SECTIONS = [
+const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health', 'whatsapp-profile',
   'quick-replies', 'tags', 'billing', 'security', 'ad-accounts', 'vertical',
@@ -138,8 +140,15 @@ export function SettingsPage() {
   // e quem ja tinha a tela salva continuaria entrando. Como a tela nao deveria
   // estar habilitada, a URL fecha junto. Mesmo padrao de guarda explicita que
   // o comentario do featureFlags.ts cita para campaigns.
+  // Mitigação: FE chamava /practitioners sem backend
+  if (section === 'crm-practitioners') {
+    return <Navigate to="/settings/company" replace />
+  }
   if (section === 'billing' && !isFeatureVisible('settingsBilling')) {
     return <Navigate to="/settings/account" replace />
+  }
+  if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {
+    return <Navigate to="/settings/company" replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]
