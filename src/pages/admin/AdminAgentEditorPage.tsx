@@ -26,11 +26,10 @@ import {
   getAdminAgentEffectivePrompt,
   updateAdminAgentSystemPrompt,
   updateAdminAgentPreferredModel,
-  TENANT_SELECTABLE_MODELS,
-  MODEL_LABELS,
+  getModelCatalog,
   type AdminAgentRecord,
   type EffectivePromptResponse,
-  type TenantSelectableModel,
+  type ModelCatalogEntry,
 } from '@/services/adminAgentsApi'
 import { cn } from '@/lib/utils'
 
@@ -45,6 +44,8 @@ export function AdminAgentEditorPage() {
 
   const [orgs, setOrgs] = useState<AdminOrganization[]>([])
   const [agents, setAgents] = useState<AgentConfig[]>([])
+  // SCRUM-1085 (Fase 4) — model catalog, any provider. Loaded once, like orgs.
+  const [modelCatalog, setModelCatalog] = useState<ModelCatalogEntry[]>([])
   const [tenantId, setTenantId] = useState(initialTenantId)
   const [agentId, setAgentId] = useState(initialAgentId)
 
@@ -74,14 +75,19 @@ export function AdminAgentEditorPage() {
     [draft, eff],
   )
 
-  // ── Load orgs once ───────────────────────────────────────────────────────
+  // ── Load orgs + model catalog once ───────────────────────────────────────
   useEffect(() => {
     setLoadingOrgs(true)
     listAdminOrganizations()
       .then(setOrgs)
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoadingOrgs(false))
+    // Failure here degrades to id-as-label and no picker options rather than
+    // blocking the whole page — the prompt editor above doesn't depend on it.
+    getModelCatalog().then(setModelCatalog).catch(() => {})
   }, [])
+
+  const modelLabel = (id: string) => modelCatalog.find((m) => m.id === id)?.label ?? id
 
   // ── When tenant changes, reload its agents and reset selections ──────────
   useEffect(() => {
@@ -152,8 +158,7 @@ export function AdminAgentEditorPage() {
   async function handleModelChange(value: string) {
     if (!agentRec) return
     // Empty string from the <Select> = "Automático" → null (clear override).
-    const next: TenantSelectableModel | null =
-      value === '' ? null : (value as TenantSelectableModel)
+    const next: string | null = value === '' ? null : value
     setSavingModel(true)
     setError(null)
     setModelHint(null)
@@ -166,8 +171,8 @@ export function AdminAgentEditorPage() {
       })
       setModelHint(
         next === null
-          ? `Modelo automático (${MODEL_LABELS[res.auto_choice] ?? res.auto_choice}) aplicado nas próximas conversas.`
-          : `Modelo fixo "${MODEL_LABELS[next] ?? next}" aplicado nas próximas conversas.`,
+          ? `Modelo automático (${modelLabel(res.auto_choice)}) aplicado nas próximas conversas.`
+          : `Modelo fixo "${modelLabel(next)}" aplicado nas próximas conversas.`,
       )
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -271,8 +276,9 @@ export function AdminAgentEditorPage() {
               <div>
                 <h2 className="text-sm font-semibold text-surface-100">Modelo de IA</h2>
                 <p className="text-2xs text-surface-500 mt-0.5">
-                  Haiku 4.5 é ~10x mais barato que Sonnet. Em "Automático" o sistema promove pra Sonnet
-                  quando o agente tem capacidades CRM destrutivas (status, atribuição, funil).
+                  Modelos "econômicos" custam bem menos que os "robustos". Em "Automático" o sistema
+                  promove pro robusto do provedor quando o agente tem capacidades CRM destrutivas
+                  (status, atribuição, funil) — hoje isso só acontece dentro da Anthropic.
                 </p>
               </div>
               <span className="text-3xs font-mono uppercase tracking-wide text-surface-500">
@@ -287,11 +293,19 @@ export function AdminAgentEditorPage() {
                 className="max-w-md"
               >
                 <option value="">
-                  Automático — atualmente: {MODEL_LABELS[agentRec.auto_choice] ?? agentRec.auto_choice}
+                  Automático — atualmente: {modelLabel(agentRec.auto_choice)}
                 </option>
-                {TENANT_SELECTABLE_MODELS.map((m) => (
-                  <option key={m} value={m}>{MODEL_LABELS[m] ?? m}</option>
-                ))}
+                {(['anthropic', 'openai'] as const).map((provider) => {
+                  const options = modelCatalog.filter((m) => m.provider === provider && m.selectable)
+                  if (options.length === 0) return null
+                  return (
+                    <optgroup key={provider} label={provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}>
+                      {options.map((m) => (
+                        <option key={m.id} value={m.id}>{m.label}</option>
+                      ))}
+                    </optgroup>
+                  )
+                })}
               </Select>
               {savingModel && <Loading text="Salvando…" />}
             </div>
