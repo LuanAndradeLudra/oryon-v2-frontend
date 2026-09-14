@@ -38,7 +38,6 @@ import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSetti
 import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 const VALID_SECTIONS = [
-const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health', 'whatsapp-profile',
   'quick-replies', 'tags', 'billing', 'security', 'ad-accounts', 'vertical',
@@ -49,6 +48,8 @@ const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
   // canônica aqui, junto do resto do CRM.
   'custom-fields',
 ]
+
+const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
 // bloquear (usuario pode acessar mas com aviso).

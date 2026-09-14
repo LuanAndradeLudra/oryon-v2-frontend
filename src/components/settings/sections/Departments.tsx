@@ -14,7 +14,6 @@ import { cn, formatWaSelectLabel } from '@/lib/utils'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { departmentsApi, whatsappNumbersApi } from '@/services/api'
-import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
 import type { Department, DepartmentPermission, WhatsAppNumber } from '@/types'
 
 // ── Permission definitions ───────────────────────────────────────────────────

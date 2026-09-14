@@ -6,7 +6,7 @@ import {
   ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Shield,
   Link2, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
   Pencil, CheckCircle2, Upload, MessageCircleQuestion, BarChart3,
-  Workflow, Info, ShieldCheck, Package, Archive,
+  Workflow, Info, ShieldCheck, Package,
 } from 'lucide-react'
 import { CapabilitiesTab } from './CapabilitiesTab'
 import { DecisionCriteriaTab } from './DecisionCriteriaTab'
