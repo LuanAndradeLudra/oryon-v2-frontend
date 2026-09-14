@@ -20,6 +20,7 @@ import {
   Pin,
   PinOff,
   Handshake,
+  Inbox,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
 import { cn } from '@/lib/utils'
@@ -407,6 +408,12 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
                   icon={<Bot className="w-[16.5px] h-[16.5px]" />}
                   label="Agentes (cross-tenant)"
                   active={activeHref.startsWith('/admin/agents')}
+                />
+                <SidebarLink
+                  href="/admin/connector-requests"
+                  icon={<Inbox className="w-[16.5px] h-[16.5px]" />}
+                  label="Solicitações de conector"
+                  active={activeHref === '/admin/connector-requests'}
                 />
                 <SidebarLink
                   href="/admin/audit"

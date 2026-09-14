@@ -34,3 +34,27 @@ export interface TestConnectorResult {
   success: boolean
   message: string
 }
+
+// ── Staff triage (SCRUM-1079) ───────────────────────────────────────────────
+
+export interface ConnectorRequestRow {
+  id: string
+  tenant_id: string
+  requested_by_user_id: string
+  connector_name_freeform: string
+  connector_id: string | null
+  use_case: string
+  status: string
+  staff_notes: string | null
+  created_at: string
+  resolved_at: string | null
+}
+
+/** GET /admin/connectors — staff-only, unfiltered by visibility/status. */
+export interface ConnectorSummaryForStaff {
+  id: string
+  slug: string
+  name: string
+  status: string
+  visibility: string
+}

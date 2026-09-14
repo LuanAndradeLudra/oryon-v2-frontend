@@ -4,7 +4,14 @@
 // enforced again server-side, this client trusts the backend's 403.
 
 import { apiFetch } from './agentsApi'
-import type { ConnectorSummary, ConnectorDetail, InstallConnectorResult, TestConnectorResult } from '@/types/connectors'
+import type {
+  ConnectorSummary,
+  ConnectorDetail,
+  InstallConnectorResult,
+  TestConnectorResult,
+  ConnectorRequestRow,
+  ConnectorSummaryForStaff,
+} from '@/types/connectors'
 
 export async function listConnectors(agentId: string): Promise<ConnectorSummary[]> {
   return apiFetch<ConnectorSummary[]>(`/connectors?agentId=${encodeURIComponent(agentId)}`)
@@ -51,4 +58,25 @@ export async function requestConnector(connectorNameFreeform: string, useCase: s
     method: 'POST',
     body: JSON.stringify({ connector_name_freeform: connectorNameFreeform, use_case: useCase }),
   })
+}
+
+// ── Staff triage (SCRUM-1079) — super_admin only, enforced server-side ──────
+
+export async function listConnectorRequestsForStaff(status?: string): Promise<ConnectorRequestRow[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : ''
+  return apiFetch<ConnectorRequestRow[]>(`/admin/connector-requests${qs}`)
+}
+
+export async function triageConnectorRequest(
+  id: string,
+  patch: { status?: string; staff_notes?: string | null; connector_id?: string | null },
+): Promise<ConnectorRequestRow> {
+  return apiFetch<ConnectorRequestRow>(`/admin/connector-requests/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+}
+
+export async function listAllConnectorsForStaff(): Promise<ConnectorSummaryForStaff[]> {
+  return apiFetch<ConnectorSummaryForStaff[]>('/admin/connectors')
 }
