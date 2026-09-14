@@ -92,6 +92,7 @@ const SkillTemplateEditorPage  = lazyRoute(() => import('@/pages/admin/SkillTemp
 const SkillTemplateTesterPage  = lazyRoute(() => import('@/pages/admin/SkillTemplateTesterPage').then(m => ({ default: m.SkillTemplateTesterPage })))
 const AssignSkillPage          = lazyRoute(() => import('@/pages/admin/AssignSkillPage').then(m => ({ default: m.AssignSkillPage })))
 const ConnectorRequestsPage    = lazyRoute(() => import('@/pages/admin/ConnectorRequestsPage').then(m => ({ default: m.ConnectorRequestsPage })))
+const ConnectorAdminPage       = lazyRoute(() => import('@/pages/admin/ConnectorAdminPage').then(m => ({ default: m.ConnectorAdminPage })))
 const AuditPage                = lazyRoute(() => import('@/pages/admin/AuditPage').then(m => ({ default: m.AuditPage })))
 const AiObservabilityPage      = lazyRoute(() => import('@/pages/admin/AiObservabilityPage').then(m => ({ default: m.AiObservabilityPage })))
 const AiExecutionsPage         = lazyRoute(() => import('@/pages/admin/AiExecutionsPage').then(m => ({ default: m.AiExecutionsPage })))
@@ -278,6 +279,9 @@ function AnimatedRoutes() {
           } />
           <Route path="/admin/connector-requests" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Solicitações de conector"><ConnectorRequestsPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
+          } />
+          <Route path="/admin/connectors" element={
+            <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Conectores"><ConnectorAdminPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
           <Route path="/admin/audit" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Auditoria"><AuditPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>

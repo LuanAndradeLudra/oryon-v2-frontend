@@ -11,6 +11,8 @@ import type {
   TestConnectorResult,
   ConnectorRequestRow,
   ConnectorSummaryForStaff,
+  ConnectorAdminDetail,
+  UpdateConnectorLifecyclePayload,
 } from '@/types/connectors'
 
 export async function listConnectors(agentId: string): Promise<ConnectorSummary[]> {
@@ -79,4 +81,18 @@ export async function triageConnectorRequest(
 
 export async function listAllConnectorsForStaff(): Promise<ConnectorSummaryForStaff[]> {
   return apiFetch<ConnectorSummaryForStaff[]>('/admin/connectors')
+}
+
+export async function getConnectorAdminDetail(id: string): Promise<ConnectorAdminDetail> {
+  return apiFetch<ConnectorAdminDetail>(`/admin/connectors/${id}`)
+}
+
+export async function updateConnectorLifecycle(
+  id: string,
+  patch: UpdateConnectorLifecyclePayload,
+): Promise<ConnectorAdminDetail> {
+  return apiFetch<ConnectorAdminDetail>(`/admin/connectors/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
 }

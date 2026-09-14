@@ -58,3 +58,30 @@ export interface ConnectorSummaryForStaff {
   status: string
   visibility: string
 }
+
+/** GET /admin/connectors/:id — staff-only full lifecycle detail. */
+export interface ConnectorAdminDetail {
+  id: string
+  slug: string
+  name: string
+  vendor: string | null
+  description: string
+  category: string
+  logo_url: string | null
+  status: string
+  visibility: string
+  pilot_tenant_id: string | null
+  docs_url: string | null
+  draft_notes: unknown
+  setup_instructions: string | null
+  created_at: string
+  updated_at: string
+  members: Array<{ id: string; slug: string; name: string; enabled: boolean }>
+}
+
+export interface UpdateConnectorLifecyclePayload {
+  status?: string
+  visibility?: string
+  pilot_tenant_id?: string | null
+  confirmed_gate?: boolean
+}

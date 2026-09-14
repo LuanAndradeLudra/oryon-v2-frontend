@@ -22,6 +22,8 @@ import { CategoryPills } from './CategoryPills'
 import { ScopeSelector, type ScopeValue } from './ScopeSelector'
 import { useToast } from '@/hooks/useToast'
 import { createSkillTemplate, updateSkillTemplate, listSkillTemplateInstances } from '@/services/skillTemplatesApi'
+import { listAllConnectorsForStaff } from '@/services/connectorsApi'
+import type { ConnectorSummaryForStaff } from '@/types/connectors'
 import { ConfirmModal } from '@/components/ui/Modal'
 import type {
   SkillTemplate,
@@ -71,6 +73,9 @@ interface FormState {
   /** Operational instructions automatically injected into the system_prompt
    *  of every agent that has this skill attached. Empty string == no fragment. */
   prompt_fragment: string
+  /** SCRUM-1082 — empty string means "standalone, no connector" (null on
+   *  the wire). */
+  connectorId: string
 }
 
 const PROMPT_FRAGMENT_MAX = 2_000
@@ -93,6 +98,7 @@ function fromTemplate(t: SkillTemplate | null | undefined, fallbackTenantId: str
       scope: 'public',
       tenant_id: fallbackTenantId,
       prompt_fragment: '',
+      connectorId: '',
     }
   }
   const inputSchema = (t.input_schema && (t.input_schema as JsonSchemaObject).type === 'object')
@@ -117,6 +123,7 @@ function fromTemplate(t: SkillTemplate | null | undefined, fallbackTenantId: str
     scope: t.tenant_id ? 'private' : 'public',
     tenant_id: t.tenant_id ?? '',
     prompt_fragment: t.prompt_fragment ?? '',
+    connectorId: t.connector_id ?? '',
   }
 }
 
@@ -135,6 +142,9 @@ export function SkillTemplateForm({ template }: Props) {
   const isEdit = !!template
   const [form, setForm] = useState<FormState>(() => fromTemplate(template, user?.tenantId ?? ''))
   const [saving, setSaving] = useState(false)
+  // SCRUM-1082 — picker for grouping this template under a `connectors` row.
+  const [connectors, setConnectors] = useState<ConnectorSummaryForStaff[]>([])
+  useEffect(() => { listAllConnectorsForStaff().then(setConnectors).catch(() => setConnectors([])) }, [])
   // Cascade gate: when editing a field that every attached instance/agent
   // inherits (config_schema, webhook_path, http_method, timeout_ms,
   // prompt_fragment) and there are attached instances, the next Save click
@@ -272,6 +282,7 @@ export function SkillTemplateForm({ template }: Props) {
           mutates: form.mutates,
           // Empty string == "remove the fragment". Backend collapses to NULL.
           prompt_fragment: form.prompt_fragment.trim().length > 0 ? form.prompt_fragment : null,
+          connector_id: form.connectorId || null,
         })
         toast('Template atualizado', 'success')
         navigate(`/admin/skill-templates/${updated.id}`, { replace: true })
@@ -291,6 +302,7 @@ export function SkillTemplateForm({ template }: Props) {
           mutates: form.mutates,
           tenant_id: form.scope === 'private' ? form.tenant_id : null,
           prompt_fragment: form.prompt_fragment.trim().length > 0 ? form.prompt_fragment : null,
+          connector_id: form.connectorId || null,
         }
         const created = await createSkillTemplate(payload)
         toast('Template criado', 'success')
@@ -360,6 +372,17 @@ export function SkillTemplateForm({ template }: Props) {
             value={form.category}
             onChange={(v) => update('category', v)}
           />
+        </Field>
+        <Field
+          label="Conector"
+          hint="Agrupa este template sob um conector de 1ª classe (SCRUM-1071/1082) — várias skills do mesmo fornecedor (ex.: os 5 templates do Feegow) compartilham um conector. Deixe em branco pra um template standalone."
+        >
+          <Select value={form.connectorId} onChange={(e) => update('connectorId', e.target.value)}>
+            <option value="">— nenhum (standalone) —</option>
+            {connectors.map((c) => (
+              <option key={c.id} value={c.id}>{c.name} ({c.status})</option>
+            ))}
+          </Select>
         </Field>
         <Field label="Escopo">
           <ScopeSelector
