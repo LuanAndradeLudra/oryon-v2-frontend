@@ -76,6 +76,7 @@ export function WhatsAppNumbers() {
   const startConnect = async () => {
     try {
       const { data } = await api.get<Record<string, unknown>>('/meta/oauth/start')
+      // Backend returns { redirectUrl: "https://facebook.com/dialog/oauth?..." }
       const oauthUrl = (data.redirectUrl ?? data.url ?? '') as string
       if (oauthUrl) {
         window.open(oauthUrl, '_blank', 'width=600,height=700')
@@ -99,6 +100,8 @@ export function WhatsAppNumbers() {
     setSavingAgent(null)
   }
 
+  /** R16 — promote a line to primary. Refreshes the workspace context too,
+   *  so the TopBar switcher picks up the change without a manual reload. */
   const handlePromote = async (numberId: string) => {
     if (promoting) return
     setPromoting(numberId)
@@ -114,6 +117,8 @@ export function WhatsAppNumbers() {
     }
   }
 
+  /** R16 — force unsubscribe → subscribe on the line's WABA. Self-serve fix
+   *  for "webhook stopped delivering" instead of depending on support. */
   const handleResubscribe = async (num: WhatsAppNumberDetailed) => {
     if (resubscribing) return
     setResubscribing(num.id)
@@ -147,6 +152,9 @@ export function WhatsAppNumbers() {
     fetchNumbers()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** R16 — pre-flight before showing the disconnect confirmation, so the
+   *  operator sees how many templates/campaigns/automations/departments
+   *  would be affected. Best-effort if this fails. */
   const openDisconnectConfirm = async (num: WhatsAppNumberDetailed) => {
     setDisconnectTarget(num)
     setDependencies(null)

@@ -91,7 +91,10 @@ export function useSocket(handlers: SocketHandlers = {}) {
     // Renew the HTTP session first — the socket's own `auth` callback
     // (services/socket.ts) fetches a fresh ws-token on every `.connect()`,
     // but that call itself depends on the (now-expired) session cookie, so
-    // reconnecting without refreshing first would just fail again.
+    // reconnecting without refreshing first would just fail again. Reuses
+    // `socket.disconnect()/.connect()` on the SAME instance (not
+    // connectSocket()/disconnectSocket(), which tear down the module-level
+    // singleton) so the listeners registered below stay attached (R39).
     socket.on('auth:expired', () => {
       console.warn('[socket] Token expired — refreshing session and reconnecting')
       socket.disconnect()

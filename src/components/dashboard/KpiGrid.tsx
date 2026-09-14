@@ -6,7 +6,7 @@ import {
   Target, Zap, Timer, ShieldCheck, Star, ThumbsUp, RefreshCw,
   ArrowDownLeft, ArrowUpRight, UserPlus, Bot, Users, Activity,
   Send, Eye, Reply, MousePointer, AlertTriangle, UserX, Radio, Megaphone,
-  DollarSign, BarChart2,
+  DollarSign, BarChart2, CalendarCheck, CalendarX,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
@@ -54,6 +54,9 @@ const KPI_ICONS: Record<KpiId, React.ReactNode> = {
   ads_conversion_rate:    <TrendingUp className="w-4 h-4" />,
   ads_qualified_rate:     <CheckCircle2 className="w-4 h-4" />,
   ads_customer_rate:      <Star className="w-4 h-4" />,
+  // Clínica
+  appointments_scheduled: <CalendarCheck className="w-4 h-4" />,
+  appointments_cancelled: <CalendarX className="w-4 h-4" />,
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -65,6 +68,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Equipe:      'var(--color-status-muted)',
   Disparos:    'var(--color-warning)',
   Marketing:   '#1877f2',
+  Clínica:     'var(--color-accent-rose)',
 }
 
 
