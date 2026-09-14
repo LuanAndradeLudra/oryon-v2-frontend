@@ -29,6 +29,7 @@ import { EditAgentSkillConfigModal } from '@/components/admin/EditAgentSkillConf
 import { TestAgentSkillModal } from '@/components/admin/TestAgentSkillModal'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import { SkillStatusBadge } from '@/components/skills/SkillStatusBadge'
+import { McpProvidersSection } from './McpProvidersSection'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
@@ -121,28 +122,34 @@ export function SkillsTab({ agentId, tenantId }: Props) {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-surface-400">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando skills…
-      </div>
+      <>
+        <div className="flex items-center justify-center py-16 text-surface-400">
+          <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando skills…
+        </div>
+        <McpProvidersSection agentId={agentId} />
+      </>
     )
   }
 
   // ── Initial load error (no data at all) ─────────────────────────────────
   if (loadError && rows.length === 0) {
     return (
-      <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
-        <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-danger font-medium mb-1">Erro ao carregar skills</p>
-          <p className="text-surface-400 break-words">{loadError}</p>
+      <>
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-sm">
+          <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-danger font-medium mb-1">Erro ao carregar skills</p>
+            <p className="text-surface-400 break-words">{loadError}</p>
+          </div>
+          <button
+            onClick={reload}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium flex-shrink-0"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Tentar novamente
+          </button>
         </div>
-        <button
-          onClick={reload}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium flex-shrink-0"
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Tentar novamente
-        </button>
-      </div>
+        <McpProvidersSection agentId={agentId} />
+      </>
     )
   }
 
@@ -161,27 +168,33 @@ export function SkillsTab({ agentId, tenantId }: Props) {
       if (tenantId) params.set('tenant', tenantId)
       params.set('agent', agentId)
       return (
-        <EmptyState
-          icon={Sparkles}
-          title="Nenhuma skill atribuída a este agente"
-          hint="Atribua um template do catálogo para dar uma nova capacidade a este agente."
-          action={{
-            label: 'Atribuir skill',
-            onClick: () => navigate(`/admin/skills/assign?${params.toString()}`),
-          }}
-        />
+        <>
+          <EmptyState
+            icon={Sparkles}
+            title="Nenhuma skill atribuída a este agente"
+            hint="Atribua um template do catálogo para dar uma nova capacidade a este agente."
+            action={{
+              label: 'Atribuir skill',
+              onClick: () => navigate(`/admin/skills/assign?${params.toString()}`),
+            }}
+          />
+          <McpProvidersSection agentId={agentId} />
+        </>
       )
     }
     return (
-      <EmptyState
-        icon={Sparkles}
-        title="Nenhuma skill ativada para este agente"
-        hint="Sua equipe Oryon pode ativar capacidades específicas para o seu negócio (marcar consulta, consultar pedido, etc). Fale com seu gerente para liberar."
-        action={{
-          label: 'Falar com a Oryon',
-          href: 'mailto:contato@oryonsolutions.com?subject=Quero+ativar+skills+no+meu+agente',
-        }}
-      />
+      <>
+        <EmptyState
+          icon={Sparkles}
+          title="Nenhuma skill ativada para este agente"
+          hint="Sua equipe Oryon pode ativar capacidades específicas para o seu negócio (marcar consulta, consultar pedido, etc). Fale com seu gerente para liberar."
+          action={{
+            label: 'Falar com a Oryon',
+            href: 'mailto:contato@oryonsolutions.com?subject=Quero+ativar+skills+no+meu+agente',
+          }}
+        />
+        <McpProvidersSection agentId={agentId} />
+      </>
     )
   }
 
@@ -268,6 +281,8 @@ export function SkillsTab({ agentId, tenantId }: Props) {
           onClose={() => setTesting(null)}
         />
       )}
+
+      <McpProvidersSection agentId={agentId} />
     </div>
   )
 }
