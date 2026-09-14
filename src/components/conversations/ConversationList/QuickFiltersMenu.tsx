@@ -2,7 +2,7 @@ import { useState, useRef, useMemo, useEffect, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
   SlidersHorizontal,
-  Users, Bot, UserCheck, UserX, Mail, Hourglass, Tag as TagIcon, AlertTriangle,
+  Users, Bot, BotOff, UserCheck, UserX, Mail, Hourglass, Tag as TagIcon, AlertTriangle,
   ChevronRight, Check, X, Search,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -12,10 +12,11 @@ import type { ConversationFilters, User } from '@/types'
 
 const MENU_W = 250
 
-const HANDLING_ITEMS: Array<{ value: 'all' | 'ai' | 'me'; label: string; icon: typeof Bot }> = [
-  { value: 'all', label: 'Todas',  icon: Users },
-  { value: 'ai',  label: 'IA',     icon: Bot },
-  { value: 'me',  label: 'Minhas', icon: UserCheck },
+const HANDLING_ITEMS: Array<{ value: 'all' | 'ai' | 'paused' | 'me'; label: string; icon: typeof Bot }> = [
+  { value: 'all',    label: 'Todas',      icon: Users },
+  { value: 'ai',     label: 'IA',         icon: Bot },
+  { value: 'paused', label: 'IA pausada', icon: BotOff },
+  { value: 'me',     label: 'Minhas',     icon: UserCheck },
 ]
 
 const QUICK_TOGGLES: Array<{ key: 'unreadOnly' | 'awaitingReply' | 'untagged' | 'needsReview'; label: string; icon: typeof Mail }> = [
@@ -143,10 +144,11 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
   }, [open, flyout])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const setHandling = (v: 'all' | 'ai' | 'me') => {
-    if (v === 'all')     set({ assignedTo: 'all', aiHandling: 'all' })
-    else if (v === 'ai') set({ assignedTo: 'all', aiHandling: 'active' })
-    else                 set({ assignedTo: 'me',  aiHandling: 'all' })
+  const setHandling = (v: 'all' | 'ai' | 'paused' | 'me') => {
+    if (v === 'all')         set({ assignedTo: 'all', aiHandling: 'all' })
+    else if (v === 'ai')     set({ assignedTo: 'all', aiHandling: 'active' })
+    else if (v === 'paused') set({ assignedTo: 'all', aiHandling: 'paused' })
+    else                     set({ assignedTo: 'me',  aiHandling: 'all' })
     setFlyout(null)
   }
 

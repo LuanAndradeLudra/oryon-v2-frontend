@@ -137,6 +137,7 @@ export function ConversationFiltersBar({
 
   const handlingLabel = useMemo(() => {
     if (handlingValue === 'ai') return 'IA'
+    if (handlingValue === 'paused') return 'IA pausada'
     if (handlingValue === 'me') return 'Minhas'
     if (handlingValue === 'team') {
       if (filters.assignedTo === 'unassigned') return 'Sem atribuição'

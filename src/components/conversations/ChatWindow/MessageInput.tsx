@@ -457,9 +457,8 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
     setSendingTemplate(true)
     setTemplateError(null)
     try {
-      // SCRUM-807 — as variáveis vão POSICIONAIS; o backend valida a contagem
-      // contra o template aprovado, monta os components e persiste o corpo já
-      // renderizado no histórico.
+      // Meta template flow (R10/SCRUM-807): real WhatsApp template API with
+      // positional variables — not plain-text `tpl.body` (fails outside 24h).
       await contactsApi.sendTemplate(
         contactId,
         previewTemplate.name,
