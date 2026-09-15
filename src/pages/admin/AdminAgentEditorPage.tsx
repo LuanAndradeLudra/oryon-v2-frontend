@@ -52,6 +52,7 @@ export function AdminAgentEditorPage() {
   const [loadingOrgs, setLoadingOrgs] = useState(true)
   const [loadingAgents, setLoadingAgents] = useState(false)
   const [loadingPrompt, setLoadingPrompt] = useState(false)
+  const [loadingModelCatalog, setLoadingModelCatalog] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -82,9 +83,18 @@ export function AdminAgentEditorPage() {
       .then(setOrgs)
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoadingOrgs(false))
-    // Failure here degrades to id-as-label and no picker options rather than
-    // blocking the whole page — the prompt editor above doesn't depend on it.
-    getModelCatalog().then(setModelCatalog).catch(() => {})
+    // Loading state matters here (unlike a pure "degrade to id-as-label"
+    // fallback would suggest): the <select> below is controlled by
+    // `agentRec.preferred_model`, and while modelCatalog is still empty every
+    // <optgroup> filters out — an agent pinned to a real model would render
+    // as if "Automático" were selected, misleading the operator about what's
+    // actually set. Errors surface like every other loader on this page
+    // instead of failing silently into that same misleading empty state.
+    setLoadingModelCatalog(true)
+    getModelCatalog()
+      .then(setModelCatalog)
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setLoadingModelCatalog(false))
   }, [])
 
   const modelLabel = (id: string) => modelCatalog.find((m) => m.id === id)?.label ?? id
@@ -286,27 +296,34 @@ export function AdminAgentEditorPage() {
               </span>
             </header>
             <div className="flex items-center gap-3">
-              <Select
-                value={agentRec.preferred_model ?? ''}
-                onChange={(e) => handleModelChange(e.target.value)}
-                disabled={savingModel}
-                className="max-w-md"
-              >
-                <option value="">
-                  Automático — atualmente: {modelLabel(agentRec.auto_choice)}
-                </option>
-                {(['anthropic', 'openai'] as const).map((provider) => {
-                  const options = modelCatalog.filter((m) => m.provider === provider && m.selectable)
-                  if (options.length === 0) return null
-                  return (
-                    <optgroup key={provider} label={provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}>
-                      {options.map((m) => (
-                        <option key={m.id} value={m.id}>{m.label}</option>
-                      ))}
-                    </optgroup>
-                  )
-                })}
-              </Select>
+              {loadingModelCatalog ? (
+                // Never render the <select> against an empty/partial catalog —
+                // a real override with no matching <option> yet would look
+                // exactly like "Automático" selected. See the load effect above.
+                <Loading text="Carregando modelos…" />
+              ) : (
+                <Select
+                  value={agentRec.preferred_model ?? ''}
+                  onChange={(e) => handleModelChange(e.target.value)}
+                  disabled={savingModel}
+                  className="max-w-md"
+                >
+                  <option value="">
+                    Automático — atualmente: {modelLabel(agentRec.auto_choice)}
+                  </option>
+                  {(['anthropic', 'openai'] as const).map((provider) => {
+                    const options = modelCatalog.filter((m) => m.provider === provider && m.selectable)
+                    if (options.length === 0) return null
+                    return (
+                      <optgroup key={provider} label={provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}>
+                        {options.map((m) => (
+                          <option key={m.id} value={m.id}>{m.label}</option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
+                </Select>
+              )}
               {savingModel && <Loading text="Salvando…" />}
             </div>
             {modelHint && (
