@@ -32,11 +32,17 @@ export const ReplyQuoteBar: FC<{ message: Message; quoted?: Message | null }> = 
     <div className="mb-1 rounded-md bg-current/10 border-l-2 border-current/40 px-2 py-1 max-w-full">
       {quoted ? (
         <>
-          <p className="text-[11px] font-medium opacity-70 truncate">{authorOf(quoted)}</p>
-          <p className="text-xs opacity-80 truncate">{previewOf(quoted)}</p>
+          {/* `line-clamp-1` em vez de `truncate`: `truncate` é `white-space:
+              nowrap`, uma linha inquebrável cuja largura mínima vence o
+              `max-w-[72%]` da bolha quando a mensagem citada é longa — a
+              bolha inteira estourava a largura do chat (e o texto normal só
+              preenchia o espaço já estourado). `line-clamp` deixa o texto
+              quebrar normalmente e só corta visualmente após 1 linha. */}
+          <p className="text-[11px] font-medium opacity-70 line-clamp-1 break-words">{authorOf(quoted)}</p>
+          <p className="text-xs opacity-80 line-clamp-1 break-words">{previewOf(quoted)}</p>
         </>
       ) : (
-        <p className="text-xs opacity-60 italic truncate">Mensagem original</p>
+        <p className="text-xs opacity-60 italic line-clamp-1">Mensagem original</p>
       )}
     </div>
   )

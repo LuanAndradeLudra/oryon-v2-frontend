@@ -184,6 +184,19 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
     return () => window.removeEventListener('cap:keyboardShow', handleKeyboardShow)
   }, [])
 
+  // A textarea fica `disabled` enquanto `sending` está em voo (linha do
+  // <textarea> abaixo) — e um elemento desabilitado não pode reter foco, o
+  // navegador o solta sozinho. Sem isto o campo reabilitava mas ficava sem
+  // foco, e o operador precisava clicar de novo pra digitar a próxima
+  // mensagem (padrão WhatsApp é o foco nunca sair). O efeito roda DEPOIS do
+  // commit com `disabled=false`, que é o que falha ao tentar focar logo após
+  // o `await` em `handleSend` — o DOM ainda não re-renderizou.
+  const wasSendingRef = useRef(false)
+  useEffect(() => {
+    if (wasSendingRef.current && !sending) textareaRef.current?.focus()
+    wasSendingRef.current = sending
+  }, [sending])
+
   const buildInputContextMenu = useCallback((): ContextMenuEntry[] => {
     const el = textareaRef.current
     const hasSelection = !!el && el.selectionStart !== el.selectionEnd
