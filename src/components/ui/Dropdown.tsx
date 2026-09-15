@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { useLayer } from '@/contexts/LayerContext'
 
 interface DropdownProps {
   open: boolean
@@ -85,6 +86,11 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
   const wrapRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const pos = useDropdownPosition(open, align, wrapRef)
+  // Mesma pilha compartilhada do Modal/Drawer (ver LayerContext): sem isto o
+  // menu usava um z-index fixo (40/50) e ficava atrás de qualquer diálogo
+  // aberto por cima dele (BASE_Z=60+), caso do seletor de catálogo dentro do
+  // modal de "Novo negócio".
+  const { zIndex } = useLayer(open, onClose)
 
   // Devolve o foco ao gatilho ao fechar (WCAG 2.4.3).
   const returnFocusToTrigger = () => {
@@ -138,8 +144,12 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
 
   const menu =
     open && (
-      <>
-        <div className="overlay-scrim z-40" aria-hidden />
+      // Wrapper posicionado com o zIndex da pilha compartilhada: o scrim e o
+      // menu dentro dele só precisam de ordem relativa (DOM order já basta),
+      // é o wrapper que decide se isto fica acima ou abaixo de um Modal/Drawer
+      // aberto por cima ou por baixo dele.
+      <div style={{ position: 'fixed', inset: 0, zIndex }}>
+        <div className="overlay-scrim" aria-hidden />
         <motion.div
           ref={menuRef}
           role="menu"
@@ -161,7 +171,6 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
             maxHeight: pos.maxHeight,
           }}
           className={cn(
-            'z-50',
             'overlay-surface border rounded-xl',
             // `overflow-y-auto` (e não `hidden`): com a altura limitada pela
             // janela, o que exceder precisa rolar DENTRO do menu.
@@ -171,7 +180,7 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
         >
           {children}
         </motion.div>
-      </>
+      </div>
     )
 
   return (

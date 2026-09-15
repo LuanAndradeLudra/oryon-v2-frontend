@@ -44,6 +44,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
 import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
+import { TagsProvider }         from '@/contexts/TagsContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
@@ -327,6 +328,7 @@ export default function App() {
       <AuthProvider>
         <TenantVocabProvider>
         <CRMConfigProvider>
+        <TagsProvider>
           <InternalChatProvider>
           <CopilotProvider>
             <ContextMenuProvider>
@@ -342,6 +344,7 @@ export default function App() {
             </ContextMenuProvider>
           </CopilotProvider>
           </InternalChatProvider>
+        </TagsProvider>
         </CRMConfigProvider>
       </TenantVocabProvider>
       </AuthProvider>

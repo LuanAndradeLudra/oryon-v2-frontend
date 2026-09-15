@@ -1,10 +1,9 @@
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback, useState } from 'react'
 import { Plus, Pencil, Trash2, Check, X, Copy, Tag as TagIcon } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonList } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -12,9 +11,9 @@ import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { DEFAULT_ENTITY_COLOR } from '@/lib/colorPalette'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTags } from '@/contexts/TagsContext'
 import { isAdminTier } from '@/lib/roleHelpers'
 import type { Tag } from '@/types'
-import { api } from '@/services/api'
 
 
 // Simulated usage count
@@ -102,8 +101,10 @@ export function TagsSettings() {
   // /tags. Read-only access (GET /tags) is open, so non-admins still see
   // the section to know which tags exist — they just can't mutate.
   const canManageTags = isAdminTier(actor?.role)
-  const [tags, setTags] = useState<Tag[]>([])
-  const [loading, setLoading] = useState(true)
+  // Cache compartilhado (TagsContext) — antes esta tela buscava sua própria
+  // cópia (`api.get('/tags')`), então uma tag criada aqui só aparecia em
+  // Conversas/CRM depois de logout/login (e vice-versa).
+  const { tags, loadingTags: loading, createTag, updateTag, deleteTag } = useTags()
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [newColor, setNewColor] = useState(DEFAULT_ENTITY_COLOR)
@@ -112,26 +113,12 @@ export function TagsSettings() {
   const [editColor, setEditColor] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Tag | null>(null)
   const [saving, setSaving] = useState(false)
-  const [fetchError, setFetchError] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
-
-  useEffect(() => {
-    setFetchError(false)
-    api.get<{ data: Tag[] } | Tag[]>('/tags').then((r) => {
-      setTags(Array.isArray(r.data) ? r.data : r.data.data)
-      setLoading(false)
-    }).catch(() => {
-      setFetchError(true)
-      setLoading(false)
-    })
-  }, [reloadKey])
 
   const handleCreate = async () => {
     if (!newName.trim()) return
     setSaving(true)
     try {
-      const r = await api.post<Tag>('/tags', { name: newName.trim(), color: newColor })
-      setTags((t) => [...t, r.data])
+      await createTag(newName.trim(), newColor)
       setNewName('')
       setNewColor(DEFAULT_ENTITY_COLOR)
       setCreating(false)
@@ -154,8 +141,7 @@ export function TagsSettings() {
     if (!editTarget || !editName.trim()) return
     setSaving(true)
     try {
-      const r = await api.patch<Tag>(`/tags/${editTarget.id}`, { name: editName.trim(), color: editColor })
-      setTags((t) => t.map((x) => x.id === editTarget.id ? r.data : x))
+      await updateTag(editTarget.id, { name: editName.trim(), color: editColor })
       setEditTarget(null)
       toast('Tag atualizada.', 'success')
     } catch (err: any) {
@@ -169,8 +155,7 @@ export function TagsSettings() {
   const handleDelete = async () => {
     if (!deleteTarget) return
     try {
-      await api.delete(`/tags/${deleteTarget.id}`)
-      setTags((t) => t.filter((x) => x.id !== deleteTarget.id))
+      await deleteTag(deleteTarget.id)
       toast('Tag excluída.', 'success')
     } catch (err: any) {
       const msg = err?.response?.data?.message
@@ -185,15 +170,6 @@ export function TagsSettings() {
       <div>
         <SectionHeader title="Tags" description="Organize conversas com etiquetas personalizadas." />
         <SkeletonList items={5} />
-      </div>
-    )
-  }
-
-  if (fetchError) {
-    return (
-      <div>
-        <SectionHeader title="Tags" description="Organize conversas com etiquetas personalizadas." />
-        <ErrorState compact onRetry={() => { setLoading(true); setReloadKey((k) => k + 1) }} />
       </div>
     )
   }
