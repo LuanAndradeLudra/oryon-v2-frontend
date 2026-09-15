@@ -30,7 +30,7 @@ import { TestAgentSkillModal } from '@/components/admin/TestAgentSkillModal'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import { SkillStatusBadge } from '@/components/skills/SkillStatusBadge'
 import { McpProvidersSection } from './McpProvidersSection'
-import { ConnectorCatalogModal } from './ConnectorCatalog'
+import { ConnectorTogglesSection } from './ConnectorTogglesSection'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff, isOwnerTier } from '@/lib/roleHelpers'
@@ -61,9 +61,6 @@ export function SkillsTab({ agentId, tenantId }: Props) {
   const [removing, setRemoving] = useState<AgentSkillWithTemplate | null>(null)
   const [removingPending, setRemovingPending] = useState(false)
   const [testing, setTesting] = useState<AgentSkillWithTemplate | null>(null)
-  // SCRUM-1078 — self-service catalog modal (customer side only; staff keep
-  // their own "Atribuir skill" deep-link into the internal assign flow).
-  const [catalogOpen, setCatalogOpen] = useState(false)
   const { toast } = useToast()
 
   const reload = useCallback(async () => {
@@ -131,6 +128,7 @@ export function SkillsTab({ agentId, tenantId }: Props) {
         <div className="flex items-center justify-center py-16 text-surface-400">
           <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando skills…
         </div>
+        <ConnectorTogglesSection agentId={agentId} />
         <McpProvidersSection agentId={agentId} />
       </>
     )
@@ -153,6 +151,7 @@ export function SkillsTab({ agentId, tenantId }: Props) {
             <RefreshCw className="w-3.5 h-3.5" /> Tentar novamente
           </button>
         </div>
+        <ConnectorTogglesSection agentId={agentId} />
         <McpProvidersSection agentId={agentId} />
       </>
     )
@@ -183,6 +182,7 @@ export function SkillsTab({ agentId, tenantId }: Props) {
               onClick: () => navigate(`/admin/skills/assign?${params.toString()}`),
             }}
           />
+          <ConnectorTogglesSection agentId={agentId} />
           <McpProvidersSection agentId={agentId} />
         </>
       )
@@ -194,19 +194,13 @@ export function SkillsTab({ agentId, tenantId }: Props) {
           title="Nenhuma skill ativada para este agente"
           hint={
             owner
-              ? 'Conecte uma integração do nosso catálogo para dar uma nova capacidade a este agente — sem precisar falar com a Oryon.'
-              : 'Só o dono da conta pode conectar uma nova integração. Peça pra ele acessar esta aba.'
+              ? 'Instale uma integração em Configurações → Conectores e depois ative aqui pra este agente — sem precisar falar com a Oryon.'
+              : 'Só o dono da conta pode instalar uma nova integração, em Configurações.'
           }
-          action={owner ? { label: 'Conectar uma integração', onClick: () => setCatalogOpen(true) } : undefined}
+          action={owner ? { label: 'Ir para Conectores', onClick: () => navigate('/settings/connectors') } : undefined}
         />
+        <ConnectorTogglesSection agentId={agentId} />
         <McpProvidersSection agentId={agentId} />
-        {catalogOpen && (
-          <ConnectorCatalogModal
-            agentId={agentId}
-            onClose={() => setCatalogOpen(false)}
-            onInstalled={() => { setCatalogOpen(false); void reload() }}
-          />
-        )}
       </>
     )
   }
@@ -216,27 +210,16 @@ export function SkillsTab({ agentId, tenantId }: Props) {
     <div>
       {/* Hero — explain + at-a-glance counters */}
       <header className="mb-5">
-        <div className="flex items-center justify-between gap-3 mb-1.5">
-          <div className="flex items-center gap-1.5">
-            <h2 className="text-sm font-semibold text-surface-100">Capacidades do agente</h2>
-            <Tooltip
-              content="As configurações detalhadas (tokens, IDs, regras de cada integração) são gerenciadas pela equipe Oryon. Você pode pausar e retomar qualquer capacidade aqui."
-              side="top"
-            >
-              <span className="text-surface-500 hover:text-surface-300 cursor-help inline-flex">
-                <HelpCircle className="w-3.5 h-3.5" />
-              </span>
-            </Tooltip>
-          </div>
-          {!staff && owner && (
-            <button
-              type="button"
-              onClick={() => setCatalogOpen(true)}
-              className="text-xs font-medium text-brand-300 hover:text-brand-200 flex-shrink-0"
-            >
-              + Conectar outra integração
-            </button>
-          )}
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <h2 className="text-sm font-semibold text-surface-100">Capacidades do agente</h2>
+          <Tooltip
+            content="As configurações detalhadas (tokens, IDs, regras de cada integração) são gerenciadas pela equipe Oryon. Você pode pausar e retomar qualquer capacidade aqui."
+            side="top"
+          >
+            <span className="text-surface-500 hover:text-surface-300 cursor-help inline-flex">
+              <HelpCircle className="w-3.5 h-3.5" />
+            </span>
+          </Tooltip>
         </div>
         <p className="text-xs text-surface-500 mb-3">
           O que esse agente sabe fazer durante as conversas. Pause uma capacidade para suspender o uso temporariamente.
@@ -306,15 +289,8 @@ export function SkillsTab({ agentId, tenantId }: Props) {
         />
       )}
 
+      <ConnectorTogglesSection agentId={agentId} />
       <McpProvidersSection agentId={agentId} />
-
-      {catalogOpen && (
-        <ConnectorCatalogModal
-          agentId={agentId}
-          onClose={() => setCatalogOpen(false)}
-          onInstalled={() => { setCatalogOpen(false); void reload() }}
-        />
-      )}
     </div>
   )
 }

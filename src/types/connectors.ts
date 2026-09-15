@@ -1,9 +1,11 @@
 // ─── Connector types (frontend) ─────────────────────────────────────────────
-// SCRUM-1078 — mirrors agent-server's connectorService.ts response shapes.
+// Redesigned 2026-09-14: two-level model — hub (tenant-scoped, "installed")
+// + per-agent toggle ("enabled for this agent"). Mirrors agent-server's
+// connectorService.ts response shapes exactly.
 
 import type { JsonSchemaObject } from '@/types/skills'
 
-/** One row from GET /connectors?agentId=xxx — the tenant-visible catalog. */
+/** One row from GET /connectors (the hub catalog, Settings → Conectores). */
 export interface ConnectorSummary {
   id: string
   slug: string
@@ -15,24 +17,52 @@ export interface ConnectorSummary {
   status: string
   docs_url: string | null
   setup_instructions: string | null
-  /** Whether THIS agent (not just the tenant) already has the connector's
-   *  skills attached. */
-  connected: boolean
+  /** Whether the TENANT already has a credential installed — says nothing
+   *  about which agents use it. */
+  installed: boolean
 }
 
-/** GET /connectors/:id?agentId=xxx */
+/** GET /connectors/:id */
 export interface ConnectorDetail extends ConnectorSummary {
   config_schema: JsonSchemaObject | unknown[] | null
+  /** Redacted current config (secret fields = the sentinel string) — lets
+   *  the manage form prefill without ever seeing the real secret. Null when
+   *  the connector isn't installed yet. */
+  current_config: Record<string, unknown> | null
+  /** Longer-form copy for the detail modal (ClickUp-style). Null for
+   *  connectors that predate migration 50. */
+  long_description: string | null
+  /** Bullet list of what the connector lets the agent do — rendered as a
+   *  capability list in the detail modal. Null for older connectors. */
+  capabilities: string[] | null
 }
 
 export interface InstallConnectorResult {
   installation: { id: string; status: string; connector_id: string }
-  skills: Array<{ template_id: string; template_name: string; agent_skill_id?: string; already_connected: boolean }>
 }
 
 export interface TestConnectorResult {
   success: boolean
   message: string
+}
+
+/** GET /configs/:agentId/connectors — the per-agent toggle list. */
+export interface AgentConnectorToggle {
+  id: string
+  slug: string
+  name: string
+  category: string
+  logo_url: string | null
+  description: string
+  /** True only when EVERY enabled member skill is attached and enabled for
+   *  this agent — not "at least one". A single switch can't represent a
+   *  partial state honestly. */
+  enabled: boolean
+}
+
+export interface SetConnectorEnabledResult {
+  enabled: boolean
+  skills: Array<{ template_id: string; template_name: string; agent_skill_id?: string; already_in_sync: boolean }>
 }
 
 // ── Staff triage (SCRUM-1079) ───────────────────────────────────────────────

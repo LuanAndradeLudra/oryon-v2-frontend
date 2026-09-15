@@ -14,6 +14,12 @@ interface SettingsLayoutProps {
    *  Default `false`: seções de funil ficam escondidas a menos que o caller
    *  afirme o contrário. */
   multiPipeline?: boolean
+  /** SCRUM-1071: o container de leitura padrão (`max-w-4xl` + outline lateral)
+   *  foi desenhado para prosa/formulários — numa grade de 30+ cards de
+   *  conectores ele sobra espaço vazio dos dois lados da tela. `fullWidth`
+   *  troca esse container por uma faixa bem mais larga e tira o outline
+   *  (que não faz sentido para uma grade, só para conteúdo com seções). */
+  fullWidth?: boolean
 }
 
 /** Opções de visibilidade além do papel — flags por tenant vindas do backend. */
@@ -28,6 +34,7 @@ const SEARCH_KEYWORDS: Record<string, string[]> = {
   notifications:       ['alertas', 'push', 'avisos'],
   company:             ['empresa', 'organização', 'logo'],
   'company-brain':     ['ia', 'contexto', 'cérebro', 'conhecimento', 'prompt', 'agentes'],
+  connectors:          ['integrações', 'conectores', 'erp', 'feegow', 'conectar', 'skills', 'mcp'],
   agents:              ['usuários', 'atendentes', 'equipe', 'membros', 'convites'],
   departments:         ['setores', 'times', 'filas'],
   'quick-replies':     ['respostas rápidas', 'atalhos', 'mensagens prontas'],
@@ -147,6 +154,15 @@ export const SETTINGS_NAV: NavDomain[] = [
         ],
       },
       {
+        label: 'Integrações',
+        items: [
+          // Instala a credencial 1x por tenant; qual agente usa é decidido
+          // por um toggle na própria aba Skills do agente (redesign 2026-09-14
+          // — modelo de dois níveis, mesmo padrão de Anthropic/OpenAI).
+          { section: 'connectors', label: 'Conectores', ownerOnly: true },
+        ],
+      },
+      {
         label: 'Administração',
         items: [
           { section: 'billing',  label: 'Plano & faturamento', ownerOnly: true },
@@ -195,7 +211,7 @@ export function firstVisibleSection(currentRole: string, opts: SettingsNavOption
   return visibleSettingsNav(currentRole, opts)[0]?.clusters[0]?.items[0]?.section ?? 'account'
 }
 
-export function SettingsLayout({ children, currentRole = 'admin', multiPipeline = false }: SettingsLayoutProps) {
+export function SettingsLayout({ children, currentRole = 'admin', multiPipeline = false, fullWidth = false }: SettingsLayoutProps) {
   const isMobile = useIsMobile()
   const [search, setSearch] = useState('')
   const query = normalize(search.trim())
@@ -270,12 +286,18 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
           sobrava vira navegação intra-página (padrão Stripe/docs). */}
       <main className="flex-1 overflow-y-auto py-6 px-4 md:py-8 md:px-10">
         <SettingsSectionsProvider>
-          <div className="flex justify-center gap-10">
-            <div className="max-w-4xl w-full min-w-0">
+          {fullWidth ? (
+            <div className="w-full max-w-[1760px] mx-auto min-w-0">
               {children}
             </div>
-            <SettingsOutline />
-          </div>
+          ) : (
+            <div className="flex justify-center gap-10">
+              <div className="max-w-4xl w-full min-w-0">
+                {children}
+              </div>
+              <SettingsOutline />
+            </div>
+          )}
         </SettingsSectionsProvider>
       </main>
       </div>

@@ -37,6 +37,7 @@ import { PipelineRoutingSettings } from '@/components/settings/sections/crm/Pipe
 import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSettings'
 import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
+import { ConnectorsSettings } from '@/components/settings/sections/ConnectorsSettings'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health', 'whatsapp-profile',
@@ -47,9 +48,13 @@ const VALID_SECTIONS = [
   // não havia NENHUMA forma de configurar campos pela interface. Ganha rota
   // canônica aqui, junto do resto do CRM.
   'custom-fields',
+  // Redesign 2026-09-14 (SCRUM-1071): hub de conectores — instala a
+  // credencial 1x por tenant aqui; qual agente usa é um toggle na aba
+  // Skills de cada agente, não mais um formulário duplicado por agente.
+  'connectors',
 ]
 
-const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
+const OWNER_ONLY_SECTIONS = new Set<string>(['billing', 'connectors'])
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
 // bloquear (usuario pode acessar mas com aviso).
@@ -106,6 +111,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   'custom-fields':  CustomFieldsManager,
   'pipeline-stages': FunnelsSettings,
   'pipeline-routing': PipelineRoutingSettings,
+  connectors:       ConnectorsSettings,
 }
 
 export function SettingsPage() {
@@ -158,7 +164,7 @@ export function SettingsPage() {
   const blockLabel = HARD_BLOCK_LABELS[section]
 
   return (
-    <SettingsLayout currentRole={user?.role ?? 'admin'} multiPipeline={multiPipeline}>
+    <SettingsLayout currentRole={user?.role ?? 'admin'} multiPipeline={multiPipeline} fullWidth={section === 'connectors'}>
       {/* Faixa de retorno — só aparece para quem chegou de um contexto de
           trabalho (`?voltarPara=`). Quem entrou por Configurações não vê nada:
           ali a tela É o destino, e um "voltar" apontando para lugar nenhum

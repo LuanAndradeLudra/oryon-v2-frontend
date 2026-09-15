@@ -1,6 +1,8 @@
 // ─── Connectors API (frontend) ──────────────────────────────────────────────
-// Wraps /agents/builder/connectors (SCRUM-1075/1076). Reads are open to any
-// tenant admin tier; writes (install/edit/test) require owner tier —
+// Wraps /agents/builder/connectors. Redesigned 2026-09-14 into hub (tenant-
+// scoped, no agent) + per-agent toggle — see connectorService.ts (backend)
+// for the full rationale. Reads are open to any tenant admin tier; writes
+// (install/edit/test, and the per-agent toggle) require owner tier —
 // enforced again server-side, this client trusts the backend's 403.
 
 import { apiFetch } from './agentsApi'
@@ -9,28 +11,31 @@ import type {
   ConnectorDetail,
   InstallConnectorResult,
   TestConnectorResult,
+  AgentConnectorToggle,
+  SetConnectorEnabledResult,
   ConnectorRequestRow,
   ConnectorSummaryForStaff,
   ConnectorAdminDetail,
   UpdateConnectorLifecyclePayload,
 } from '@/types/connectors'
 
-export async function listConnectors(agentId: string): Promise<ConnectorSummary[]> {
-  return apiFetch<ConnectorSummary[]>(`/connectors?agentId=${encodeURIComponent(agentId)}`)
+// ── Hub (tenant-scoped) ─────────────────────────────────────────────────────
+
+export async function listConnectors(): Promise<ConnectorSummary[]> {
+  return apiFetch<ConnectorSummary[]>('/connectors')
 }
 
-export async function getConnectorDetail(agentId: string, connectorId: string): Promise<ConnectorDetail> {
-  return apiFetch<ConnectorDetail>(`/connectors/${connectorId}?agentId=${encodeURIComponent(agentId)}`)
+export async function getConnectorDetail(connectorId: string): Promise<ConnectorDetail> {
+  return apiFetch<ConnectorDetail>(`/connectors/${connectorId}`)
 }
 
 export async function installConnector(
   connectorId: string,
-  agentId: string,
-  config?: Record<string, unknown>,
+  config: Record<string, unknown>,
 ): Promise<InstallConnectorResult> {
   return apiFetch<InstallConnectorResult>(`/connectors/${connectorId}/install`, {
     method: 'POST',
-    body: JSON.stringify({ agentId, config }),
+    body: JSON.stringify({ config }),
   })
 }
 
@@ -46,12 +51,11 @@ export async function updateConnectorInstallation(
 
 export async function testConnectorInstallation(
   connectorId: string,
-  agentId: string,
   config: Record<string, unknown>,
 ): Promise<TestConnectorResult> {
   return apiFetch<TestConnectorResult>(`/connectors/${connectorId}/test-installation`, {
     method: 'POST',
-    body: JSON.stringify({ agentId, config }),
+    body: JSON.stringify({ config }),
   })
 }
 
@@ -59,6 +63,23 @@ export async function requestConnector(connectorNameFreeform: string, useCase: s
   return apiFetch<{ id: string }>('/connector-requests', {
     method: 'POST',
     body: JSON.stringify({ connector_name_freeform: connectorNameFreeform, use_case: useCase }),
+  })
+}
+
+// ── Per-agent toggle ─────────────────────────────────────────────────────────
+
+export async function listInstalledConnectorsForAgent(agentId: string): Promise<AgentConnectorToggle[]> {
+  return apiFetch<AgentConnectorToggle[]>(`/configs/${agentId}/connectors`)
+}
+
+export async function setConnectorEnabledForAgent(
+  agentId: string,
+  connectorId: string,
+  enabled: boolean,
+): Promise<SetConnectorEnabledResult> {
+  return apiFetch<SetConnectorEnabledResult>(`/configs/${agentId}/connectors/${connectorId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
   })
 }
 
