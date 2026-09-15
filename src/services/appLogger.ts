@@ -78,13 +78,28 @@ function post(table: string, data: Record<string, unknown>): void {
 }
 
 // ─── AI model cost constants (USD per million tokens) ─────────────────────────
-// Mirror of ai_model_pricing table — update both when Anthropic changes pricing.
+// Mirror of agent-server/src/services/modelPricing.ts — update both when a
+// provider changes pricing or a model is added/removed. This is a rough
+// client-side estimate for logging only, never real billing.
+//
+// SCRUM-1085 (Fase 4): fixed Haiku's price here — it had drifted to
+// {in:0.25, out:1.25} (a stale 4th-generation rate), while modelPricing.ts's
+// real Haiku 4.5 price is {in:1.00, out:5.00}. Every estimate logged through
+// this table since the drift started under-reported Haiku cost by 4x. Also
+// added the 5 curated OpenAI models so their turns don't silently fall back
+// to Sonnet pricing (the same failure mode modelPricing.ts's own fallback
+// has, and just as real here).
 
 const MODEL_COST: Record<string, { in: number; out: number }> = {
   'claude-sonnet-4-6':         { in: 3.00,  out: 15.00 },
-  'claude-haiku-4-5-20251001': { in: 0.25,  out: 1.25  },
-  'claude-haiku-4-5':          { in: 0.25,  out: 1.25  },
+  'claude-haiku-4-5-20251001': { in: 1.00,  out: 5.00  },
+  'claude-haiku-4-5':          { in: 1.00,  out: 5.00  },
   'claude-opus-4-6':           { in: 15.00, out: 75.00 },
+  'gpt-4o-mini':                { in: 0.15,  out: 0.60  },
+  'gpt-4.1-mini':               { in: 0.40,  out: 1.60  },
+  'gpt-5-mini':                 { in: 0.25,  out: 2.00  },
+  'gpt-5-nano':                 { in: 0.05,  out: 0.40  },
+  'gpt-4.1':                    { in: 2.00,  out: 8.00  },
 }
 
 function estimateCost(model: string, inputTokens: number, outputTokens: number) {
