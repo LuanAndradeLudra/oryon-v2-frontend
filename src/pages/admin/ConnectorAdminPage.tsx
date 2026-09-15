@@ -9,13 +9,14 @@
 // so this UI gate is a courtesy, not the only line of defense.
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plug, Loader2, ArrowLeft } from 'lucide-react'
+import { Plug, Loader2, ArrowLeft, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react'
 import {
   listAllConnectorsForStaff,
   getConnectorAdminDetail,
   updateConnectorLifecycle,
+  runAutomatedConnectorDraft,
 } from '@/services/connectorsApi'
-import type { ConnectorSummaryForStaff, ConnectorAdminDetail } from '@/types/connectors'
+import type { ConnectorSummaryForStaff, ConnectorAdminDetail, AutomatedDraftResult } from '@/types/connectors'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -109,7 +110,11 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
   const [confirmedGate, setConfirmedGate] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
+  const [autoDrafting, setAutoDrafting] = useState(false)
+  const [autoDraftError, setAutoDraftError] = useState<string | null>(null)
+  const [autoDraftResult, setAutoDraftResult] = useState<AutomatedDraftResult | null>(null)
+
+  const loadDetail = useCallback(() => {
     getConnectorAdminDetail(id)
       .then((d) => {
         setDetail(d)
@@ -120,6 +125,23 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
       .catch((err) => setLoadError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(loadDetail, [loadDetail])
+
+  async function handleAutoDraft() {
+    setAutoDrafting(true)
+    setAutoDraftError(null)
+    setAutoDraftResult(null)
+    try {
+      const result = await runAutomatedConnectorDraft(id)
+      setAutoDraftResult(result)
+      loadDetail() // status/members mudaram — recarrega pra refletir requested → drafting
+    } catch (err) {
+      setAutoDraftError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setAutoDrafting(false)
+    }
+  }
 
   const statusChangedToGated = detail && status !== detail.status && GATED_STATUSES.has(status)
 
@@ -164,6 +186,75 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
               <h1 className="text-xl font-semibold text-surface-100">{detail.name}</h1>
               <p className="text-sm text-surface-400">{detail.description}</p>
             </header>
+
+            {/* SCRUM-1092 — só faz sentido no primeiro rascunho (mesma trava
+                que o backend já aplica: status precisa ser 'requested'). Tela
+                bem simples de propósito — o painel de revisão de verdade
+                (transcrição, chat de correção) é a SCRUM-1094, ainda não
+                construída. */}
+            {detail.status === 'requested' && (
+              <div className="mb-6 p-4 rounded-xl border border-brand-500/30 bg-brand-500/5">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-4 h-4 text-brand-300 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-surface-100 mb-1">Rascunho automático (IA)</p>
+                    <p className="text-xs text-surface-400 mb-3">
+                      Lê a documentação pública do fornecedor ({detail.docs_url || 'nenhuma docs_url cadastrada'})
+                      e, se confirmar algum endpoint de verdade, cria um workflow rascunho INATIVO no n8n +
+                      skills desabilitadas pra revisão. Nunca inventa endpoint — o que não for confirmado vira
+                      nota, não workflow. Demora de 30s a alguns minutos.
+                    </p>
+                    <Button onClick={handleAutoDraft} disabled={autoDrafting || !detail.docs_url} variant="secondary">
+                      {autoDrafting ? (
+                        <><Loader2 className="w-3.5 h-3.5 mr-1.5 inline animate-spin" /> Lendo documentação…</>
+                      ) : (
+                        'Iniciar rascunho automático'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {autoDraftError && (
+              <div className="mb-6 p-3 rounded-lg bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                {autoDraftError}
+              </div>
+            )}
+
+            {autoDraftResult && (
+              <div className="mb-6 p-4 rounded-xl border border-status-active/30 bg-status-active/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="w-4 h-4 text-status-active" />
+                  <p className="text-sm font-medium text-surface-100">Rascunho concluído</p>
+                </div>
+                <p className="text-xs text-surface-300 mb-1">
+                  {autoDraftResult.capabilitiesMap.confirmedCapabilities.length} capacidade(s) confirmada(s),{' '}
+                  {autoDraftResult.capabilitiesMap.unconfirmedEndpoints.length} não confirmada(s).
+                </p>
+                {autoDraftResult.n8nWorkflowId ? (
+                  <p className="text-xs text-surface-400">
+                    Workflow rascunho criado no n8n (inativo) — id: <code className="text-surface-200">{autoDraftResult.n8nWorkflowId}</code>.
+                    {' '}Abra no n8n pra revisar antes de qualquer gate.
+                  </p>
+                ) : (
+                  <p className="text-xs text-surface-400">
+                    Nenhum endpoint confirmado com URL absoluta — nenhum workflow foi criado. Veja as notas
+                    em "não confirmada(s)" abaixo pra entender o motivo.
+                  </p>
+                )}
+                {autoDraftResult.capabilitiesMap.unconfirmedEndpoints.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {autoDraftResult.capabilitiesMap.unconfirmedEndpoints.map((u, i) => (
+                      <li key={i} className="text-[11px] text-surface-500">
+                        <strong className="text-surface-400">{u.operation}:</strong> {u.note}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             <div className="space-y-4 p-4 rounded-xl border border-surface-800 bg-surface-900/60 mb-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

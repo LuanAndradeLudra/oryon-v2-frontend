@@ -109,6 +109,17 @@ export interface ConnectorAdminDetail {
   members: Array<{ id: string; slug: string; name: string; enabled: boolean }>
 }
 
+/** POST /admin/connectors/:id/auto-draft — SCRUM-1092's result. */
+export interface AutomatedDraftResult {
+  capabilitiesMap: {
+    confirmedCapabilities: Array<{ operation: string; endpoint: string; source: string }>
+    unconfirmedEndpoints: Array<{ operation: string; note: string }>
+    n8nWorkflowId?: string
+  }
+  n8nWorkflowId: string | null
+  skillTemplateIds: string[]
+}
+
 export interface UpdateConnectorLifecyclePayload {
   status?: string
   visibility?: string

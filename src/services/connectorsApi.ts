@@ -17,6 +17,7 @@ import type {
   ConnectorSummaryForStaff,
   ConnectorAdminDetail,
   UpdateConnectorLifecyclePayload,
+  AutomatedDraftResult,
 } from '@/types/connectors'
 
 // ── Hub (tenant-scoped) ─────────────────────────────────────────────────────
@@ -115,5 +116,15 @@ export async function updateConnectorLifecycle(
   return apiFetch<ConnectorAdminDetail>(`/admin/connectors/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(patch),
+  })
+}
+
+/** SCRUM-1092 — reads the vendor's public docs and, if it confirms any real
+ *  endpoint, creates an inactive draft n8n workflow + disabled skill_templates.
+ *  Takes 30s-90s+ (a real doc-reading + tool-use loop, not a CRUD call) —
+ *  callers should show a loading state sized for that, not a quick spinner. */
+export async function runAutomatedConnectorDraft(id: string): Promise<AutomatedDraftResult> {
+  return apiFetch<AutomatedDraftResult>(`/admin/connectors/${id}/auto-draft`, {
+    method: 'POST',
   })
 }
