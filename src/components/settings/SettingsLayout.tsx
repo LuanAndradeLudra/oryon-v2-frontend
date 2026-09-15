@@ -160,17 +160,13 @@ export const SETTINGS_NAV: NavDomain[] = [
           // por um toggle na própria aba Skills do agente (redesign 2026-09-14
           // — modelo de dois níveis, mesmo padrão de Anthropic/OpenAI).
           //
-          // Tirado do menu 2026-09-15 (decisão de produto): o sidebar é pra
-          // ferramentas principais da plataforma, e Conectores não funciona
-          // sozinho — só ganha função quando um agente liga o toggle. A rota
-          // continua existindo (ver VALID_SECTIONS/OWNER_ONLY_SECTIONS em
-          // SettingsPage.tsx, que não dependem deste item) e o caminho real
-          // de descoberta passou a ser o link "Ir para Conectores"/"Instalar
-          // outro conector" dentro da aba Skills de cada agente
-          // (ConnectorTogglesSection.tsx) — reforçado pela sessão de
-          // onboarding + tutoriais em vídeo planejados pro produto, que
-          // cobrem a descoberta de recursos sem depender do menu.
-          { section: 'connectors', label: 'Conectores', ownerOnly: true, hidden: true },
+          // Esteve `hidden: true` por um período em 2026-09-15 (decisão
+          // revertida no mesmo dia) — a intenção real era tirar o item
+          // *staff* equivalente do sidebar PRINCIPAL do app (NavSidebar.tsx,
+          // seção "Oryon" → GET /admin/connectors, o ciclo de vida do
+          // catálogo), não este aqui. Este item (hub tenant-facing de
+          // instalar credencial) continua no menu de Configurações.
+          { section: 'connectors', label: 'Conectores', ownerOnly: true },
         ],
       },
       {

@@ -21,7 +21,6 @@ import {
   PinOff,
   Handshake,
   Inbox,
-  Plug,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
 import { cn } from '@/lib/utils'
@@ -410,12 +409,12 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
                   label="Agentes (cross-tenant)"
                   active={activeHref.startsWith('/admin/agents')}
                 />
-                <SidebarLink
-                  href="/admin/connectors"
-                  icon={<Plug className="w-[16.5px] h-[16.5px]" />}
-                  label="Conectores"
-                  active={activeHref === '/admin/connectors'}
-                />
+                {/* "Conectores" (ciclo de vida do catálogo, /admin/connectors)
+                    tirado deste menu em 2026-09-15 — decisão de produto: essa
+                    entrada estava duplicando a confusão com o item homônimo
+                    do menu de Configurações (hub de instalação, outra tela,
+                    outro propósito). A rota continua acessível por URL
+                    direta, mesmo padrão do flag `oryonStaffSidebar` acima. */}
                 <SidebarLink
                   href="/admin/connector-requests"
                   icon={<Inbox className="w-[16.5px] h-[16.5px]" />}
