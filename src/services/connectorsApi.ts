@@ -18,6 +18,7 @@ import type {
   ConnectorAdminDetail,
   UpdateConnectorLifecyclePayload,
   AutomatedDraftResult,
+  DraftSessionResponse,
 } from '@/types/connectors'
 
 // ── Hub (tenant-scoped) ─────────────────────────────────────────────────────
@@ -126,5 +127,21 @@ export async function updateConnectorLifecycle(
 export async function runAutomatedConnectorDraft(id: string): Promise<AutomatedDraftResult> {
   return apiFetch<AutomatedDraftResult>(`/admin/connectors/${id}/auto-draft`, {
     method: 'POST',
+  })
+}
+
+/** SCRUM-1094 — read-only transcript of what the drafting agent has read/
+ *  decided/created so far for this connector. `transcript: null` means it
+ *  never had an automated draft run (nothing to show). */
+export async function getConnectorDraftSession(id: string): Promise<DraftSessionResponse> {
+  return apiFetch<DraftSessionResponse>(`/admin/connectors/${id}/draft-session`)
+}
+
+/** SCRUM-1093 — resumes the drafting agent's conversation with a reviewer's
+ *  correction. Same slow-call caveat as runAutomatedConnectorDraft. */
+export async function sendConnectorDraftFeedback(id: string, note: string): Promise<AutomatedDraftResult> {
+  return apiFetch<AutomatedDraftResult>(`/admin/connectors/${id}/draft-feedback`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
   })
 }

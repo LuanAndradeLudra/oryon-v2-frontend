@@ -109,7 +109,8 @@ export interface ConnectorAdminDetail {
   members: Array<{ id: string; slug: string; name: string; enabled: boolean }>
 }
 
-/** POST /admin/connectors/:id/auto-draft — SCRUM-1092's result. */
+/** POST /admin/connectors/:id/auto-draft (SCRUM-1092) and
+ *  POST /admin/connectors/:id/draft-feedback (SCRUM-1093) return the same shape. */
 export interface AutomatedDraftResult {
   capabilitiesMap: {
     confirmedCapabilities: Array<{ operation: string; endpoint: string; source: string }>
@@ -118,6 +119,20 @@ export interface AutomatedDraftResult {
   }
   n8nWorkflowId: string | null
   skillTemplateIds: string[]
+}
+
+/** GET /admin/connectors/:id/draft-session — SCRUM-1094. */
+export interface DraftTranscriptEntry {
+  turn: number
+  role: 'reviewer' | 'agent'
+  kind: 'note' | 'fetch' | 'submit' | 'text'
+  summary: string
+}
+
+export interface DraftSessionResponse {
+  /** Null when the connector never had an automated draft run. */
+  transcript: DraftTranscriptEntry[] | null
+  n8nBaseUrl: string | null
 }
 
 export interface UpdateConnectorLifecyclePayload {

@@ -9,21 +9,31 @@
 // so this UI gate is a courtesy, not the only line of defense.
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plug, Loader2, ArrowLeft, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Plug, Loader2, ArrowLeft, Sparkles, CheckCircle2, AlertCircle, MessageSquare, ExternalLink, Send } from 'lucide-react'
 import {
   listAllConnectorsForStaff,
   getConnectorAdminDetail,
   updateConnectorLifecycle,
   runAutomatedConnectorDraft,
+  getConnectorDraftSession,
+  sendConnectorDraftFeedback,
 } from '@/services/connectorsApi'
-import type { ConnectorSummaryForStaff, ConnectorAdminDetail, AutomatedDraftResult } from '@/types/connectors'
+import type {
+  ConnectorSummaryForStaff,
+  ConnectorAdminDetail,
+  AutomatedDraftResult,
+  DraftSessionResponse,
+  DraftTranscriptEntry,
+} from '@/types/connectors'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Select } from '@/components/ui/Select'
 import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/hooks/useToast'
+import { cn } from '@/lib/utils'
 
 const STATUS_OPTIONS = ['requested', 'drafting', 'mock_tested', 'in_review', 'pilot', 'live', 'retired']
 const VISIBILITY_OPTIONS = ['private', 'tenant_only', 'catalog']
@@ -111,8 +121,15 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
   const [saving, setSaving] = useState(false)
 
   const [autoDrafting, setAutoDrafting] = useState(false)
-  const [autoDraftError, setAutoDraftError] = useState<string | null>(null)
-  const [autoDraftResult, setAutoDraftResult] = useState<AutomatedDraftResult | null>(null)
+  const [draftError, setDraftError] = useState<string | null>(null)
+  const [draftResult, setDraftResult] = useState<AutomatedDraftResult | null>(null)
+
+  // SCRUM-1094 — transcrição da SCRUM-1093. `session === null` = ainda não
+  // carregada; `session.transcript === null` = carregada, mas o conector
+  // nunca teve um rascunho automático (nada pra mostrar).
+  const [session, setSession] = useState<DraftSessionResponse | null>(null)
+  const [feedbackNote, setFeedbackNote] = useState('')
+  const [sendingFeedback, setSendingFeedback] = useState(false)
 
   const loadDetail = useCallback(() => {
     getConnectorAdminDetail(id)
@@ -126,20 +143,44 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
       .finally(() => setLoading(false))
   }, [id])
 
+  const loadSession = useCallback(() => {
+    getConnectorDraftSession(id).then(setSession).catch(() => setSession({ transcript: null, n8nBaseUrl: null }))
+  }, [id])
+
   useEffect(loadDetail, [loadDetail])
+  useEffect(loadSession, [loadSession])
 
   async function handleAutoDraft() {
     setAutoDrafting(true)
-    setAutoDraftError(null)
-    setAutoDraftResult(null)
+    setDraftError(null)
+    setDraftResult(null)
     try {
       const result = await runAutomatedConnectorDraft(id)
-      setAutoDraftResult(result)
+      setDraftResult(result)
       loadDetail() // status/members mudaram — recarrega pra refletir requested → drafting
+      loadSession() // a conversa acabou de ser criada — recarrega a transcrição
     } catch (err) {
-      setAutoDraftError(err instanceof Error ? err.message : String(err))
+      setDraftError(err instanceof Error ? err.message : String(err))
     } finally {
       setAutoDrafting(false)
+    }
+  }
+
+  async function handleSendFeedback() {
+    if (!feedbackNote.trim()) return
+    setSendingFeedback(true)
+    setDraftError(null)
+    setDraftResult(null)
+    try {
+      const result = await sendConnectorDraftFeedback(id, feedbackNote.trim())
+      setDraftResult(result)
+      setFeedbackNote('')
+      loadDetail()
+      loadSession()
+    } catch (err) {
+      setDraftError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSendingFeedback(false)
     }
   }
 
@@ -216,37 +257,37 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
               </div>
             )}
 
-            {autoDraftError && (
+            {draftError && (
               <div className="mb-6 p-3 rounded-lg bg-danger/10 border border-danger/30 text-xs text-danger flex items-start gap-2">
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                {autoDraftError}
+                {draftError}
               </div>
             )}
 
-            {autoDraftResult && (
+            {draftResult && (
               <div className="mb-6 p-4 rounded-xl border border-status-active/30 bg-status-active/5">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle2 className="w-4 h-4 text-status-active" />
-                  <p className="text-sm font-medium text-surface-100">Rascunho concluído</p>
+                  <p className="text-sm font-medium text-surface-100">Rascunho atualizado</p>
                 </div>
                 <p className="text-xs text-surface-300 mb-1">
-                  {autoDraftResult.capabilitiesMap.confirmedCapabilities.length} capacidade(s) confirmada(s),{' '}
-                  {autoDraftResult.capabilitiesMap.unconfirmedEndpoints.length} não confirmada(s).
+                  {draftResult.capabilitiesMap.confirmedCapabilities.length} capacidade(s) confirmada(s),{' '}
+                  {draftResult.capabilitiesMap.unconfirmedEndpoints.length} não confirmada(s).
                 </p>
-                {autoDraftResult.n8nWorkflowId ? (
+                {draftResult.n8nWorkflowId ? (
                   <p className="text-xs text-surface-400">
-                    Workflow rascunho criado no n8n (inativo) — id: <code className="text-surface-200">{autoDraftResult.n8nWorkflowId}</code>.
+                    Workflow rascunho no n8n (inativo) — id: <code className="text-surface-200">{draftResult.n8nWorkflowId}</code>.
                     {' '}Abra no n8n pra revisar antes de qualquer gate.
                   </p>
                 ) : (
                   <p className="text-xs text-surface-400">
-                    Nenhum endpoint confirmado com URL absoluta — nenhum workflow foi criado. Veja as notas
-                    em "não confirmada(s)" abaixo pra entender o motivo.
+                    Nenhum endpoint confirmado com URL absoluta — nenhum workflow foi criado/atualizado. Veja
+                    as notas em "não confirmada(s)" abaixo pra entender o motivo.
                   </p>
                 )}
-                {autoDraftResult.capabilitiesMap.unconfirmedEndpoints.length > 0 && (
+                {draftResult.capabilitiesMap.unconfirmedEndpoints.length > 0 && (
                   <ul className="mt-2 space-y-1">
-                    {autoDraftResult.capabilitiesMap.unconfirmedEndpoints.map((u, i) => (
+                    {draftResult.capabilitiesMap.unconfirmedEndpoints.map((u, i) => (
                       <li key={i} className="text-[11px] text-surface-500">
                         <strong className="text-surface-400">{u.operation}:</strong> {u.note}
                       </li>
@@ -254,6 +295,22 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
                   </ul>
                 )}
               </div>
+            )}
+
+            {/* SCRUM-1094 — painel de revisão. Só aparece quando existe uma
+                sessão de verdade (o conector já passou por um rascunho
+                automático) — sem sessão não tem o que mostrar nem como
+                retomar uma correção. */}
+            {session?.transcript && (
+              <DraftReviewPanel
+                transcript={session.transcript}
+                n8nWorkflowId={(detail.draft_notes as { n8nWorkflowId?: string } | null)?.n8nWorkflowId}
+                n8nBaseUrl={session.n8nBaseUrl}
+                feedbackNote={feedbackNote}
+                onFeedbackNoteChange={setFeedbackNote}
+                onSendFeedback={handleSendFeedback}
+                sending={sendingFeedback}
+              />
             )}
 
             <div className="space-y-4 p-4 rounded-xl border border-surface-800 bg-surface-900/60 mb-6">
@@ -314,7 +371,7 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
               </div>
             </div>
 
-            <div>
+            <div className="mb-6">
               <h2 className="text-sm font-semibold text-surface-100 mb-2">
                 Skills membro ({detail.members.length})
               </h2>
@@ -333,6 +390,107 @@ function ConnectorDetailPanel({ id, onBack }: { id: string; onBack: () => void }
             </div>
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ─── SCRUM-1094 — painel de revisão (transcrição + chat de correção) ───────
+// Deliberadamente sem streaming/websocket — é uma lista que recarrega do
+// zero depois de cada ação (mesmo padrão do resto desta tela). A transcrição
+// já vem resumida do backend (connectorDraftSession.ts::summarizeDraftSession)
+// — este componente só estiliza, nunca reinterpreta os blocos brutos da
+// Messages API.
+
+const KIND_LABEL: Record<DraftTranscriptEntry['kind'], string> = {
+  note: 'Correção do revisor',
+  fetch: 'Leitura de documentação',
+  submit: 'Mapa de capacidades',
+  text: 'Raciocínio do agente',
+}
+
+function DraftReviewPanel({
+  transcript,
+  n8nWorkflowId,
+  n8nBaseUrl,
+  feedbackNote,
+  onFeedbackNoteChange,
+  onSendFeedback,
+  sending,
+}: {
+  transcript: DraftTranscriptEntry[]
+  n8nWorkflowId: string | undefined
+  n8nBaseUrl: string | null
+  feedbackNote: string
+  onFeedbackNoteChange: (v: string) => void
+  onSendFeedback: () => void
+  sending: boolean
+}) {
+  return (
+    <div className="mb-6 rounded-xl border border-surface-800 bg-surface-900/60 overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-surface-800">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-surface-400" />
+          <p className="text-sm font-medium text-surface-100">Revisão do rascunho (IA)</p>
+        </div>
+        {n8nWorkflowId && n8nBaseUrl && (
+          <a
+            href={`${n8nBaseUrl}/workflow/${n8nWorkflowId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-brand-300 hover:text-brand-200 transition-colors"
+          >
+            Abrir workflow no n8n <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+      </div>
+
+      <div className="max-h-80 overflow-y-auto px-4 py-3 space-y-2.5">
+        {transcript.length === 0 ? (
+          <p className="text-xs text-surface-500">Sessão vazia.</p>
+        ) : (
+          transcript.map((entry) => (
+            <div
+              key={entry.turn}
+              className={cn(
+                'p-2.5 rounded-lg text-xs leading-relaxed',
+                entry.role === 'reviewer'
+                  ? 'bg-brand-500/10 border border-brand-500/30 text-surface-100'
+                  : 'bg-surface-800/60 text-surface-300',
+              )}
+            >
+              <p className={cn(
+                'text-[10px] uppercase tracking-wide font-semibold mb-1',
+                entry.role === 'reviewer' ? 'text-brand-300' : 'text-surface-500',
+              )}>
+                {entry.role === 'reviewer' ? 'Você' : 'Agente'} · {KIND_LABEL[entry.kind]}
+              </p>
+              <p className="whitespace-pre-wrap break-words">{entry.summary}</p>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="p-4 border-t border-surface-800 space-y-2">
+        <label className="block text-[11px] font-medium text-surface-500">
+          Correção pro agente (ele retoma a conversa com o contexto completo)
+        </label>
+        <Textarea
+          rows={3}
+          value={feedbackNote}
+          onChange={(e) => onFeedbackNoteChange(e.target.value)}
+          placeholder='Ex.: "confirme também o endpoint de estorno" ou "esse endpoint de cancelamento está errado, é DELETE não POST"'
+          disabled={sending}
+        />
+        <div className="flex justify-end">
+          <Button onClick={onSendFeedback} disabled={sending || !feedbackNote.trim()} variant="secondary">
+            {sending ? (
+              <><Loader2 className="w-3.5 h-3.5 mr-1.5 inline animate-spin" /> Aplicando correção…</>
+            ) : (
+              <><Send className="w-3.5 h-3.5 mr-1.5 inline" /> Enviar correção</>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   )
