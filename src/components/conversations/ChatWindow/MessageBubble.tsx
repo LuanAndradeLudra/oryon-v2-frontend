@@ -716,9 +716,16 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
   const touchStart = useRef<{ x: number; y: number } | null>(null)
   const canReply = !!onReply && message.status !== 'failed'
 
+  // Mensagens recebidas ficam coladas à borda esquerda — exatamente onde o
+  // gesto nativo de "voltar" do iOS/Android intercepta o toque. Um gesto que
+  // começa nessa faixa não inicia o rastreio de swipe-to-reply, então o
+  // sistema operacional recebe o toque sem disputa.
+  const EDGE_GUARD_PX = 24
+
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!canReply) return
     const t = e.touches[0]
+    if (t.clientX < EDGE_GUARD_PX) return
     touchStart.current = { x: t.clientX, y: t.clientY }
   }
   const handleTouchMove = (e: React.TouchEvent) => {

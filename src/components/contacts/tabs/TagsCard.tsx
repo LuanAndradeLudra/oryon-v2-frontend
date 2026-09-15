@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Tag as TagIcon, X, Plus, Loader2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { TagPickerContent } from '@/components/ui/TagPicker'
-import { tagsApi } from '@/services/api'
+import { useTags } from '@/contexts/TagsContext'
 import { cn } from '@/lib/utils'
 import type { Contact, Tag } from '@/types'
 
@@ -13,35 +13,14 @@ interface TagsCardProps {
 }
 
 export function TagsCard({ contact, onAddTag, onRemoveTag }: TagsCardProps) {
-  const [allTags, setAllTags] = useState<Tag[]>([])
-  const [loadingAll, setLoadingAll] = useState(false)
+  // Cache compartilhado (TagsContext) — antes era um fetch local próprio
+  // deste card, então uma tag criada aqui só aparecia em Conversas/CRM
+  // depois de logout/login (e vice-versa).
+  const { tags: allTags, loadingTags: loadingAll, createTag, deleteTag } = useTags()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
 
   const selectedTags = contact.tags ?? []
-
-  // Carrega tags do tenant ao abrir o picker (lazy — evita request desnecessário
-  // quando o usuário não interage com o card).
-  useEffect(() => {
-    if (!pickerOpen) return
-    setLoadingAll(true)
-    tagsApi
-      .list()
-      .then((res) => setAllTags(res.data ?? []))
-      .catch(() => setAllTags([]))
-      .finally(() => setLoadingAll(false))
-  }, [pickerOpen])
-
-  const handleCreate = async (name: string, color: string): Promise<Tag> => {
-    const res = await tagsApi.create(name, color)
-    setAllTags((prev) => [...prev, res.data])
-    return res.data
-  }
-
-  const handleDeleteTag = async (tagId: string) => {
-    await tagsApi.delete(tagId)
-    setAllTags((prev) => prev.filter((t) => t.id !== tagId))
-  }
 
   const handleRemoveOnCard = async (tagId: string) => {
     setRemovingId(tagId)
@@ -131,8 +110,8 @@ export function TagsCard({ contact, onAddTag, onRemoveTag }: TagsCardProps) {
             onRemove={(tagId) => {
               void onRemoveTag(tagId)
             }}
-            onCreate={handleCreate}
-            onDelete={handleDeleteTag}
+            onCreate={createTag}
+            onDelete={deleteTag}
           />
         )}
       </Modal>

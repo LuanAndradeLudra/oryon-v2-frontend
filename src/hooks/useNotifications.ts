@@ -112,6 +112,9 @@ export function useNotifications() {
     [filterTypes, showArchived],
   )
 
+  // See useConversations.fetchTokenRef for the rationale — a request-id
+  // token so a slower, superseded `load()` (fast filter toggling) can't
+  // overwrite state with stale data after a newer call already landed (R41).
   const loadTokenRef = useRef(0)
 
   const load = useCallback(async () => {

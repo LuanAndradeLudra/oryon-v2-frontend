@@ -1,31 +1,23 @@
-import { useState, useEffect, useCallback } from 'react'
-import { tagsApi, usersApi } from '@/services/api'
-import type { Tag, User } from '@/types'
+import { useState, useEffect } from 'react'
+import { usersApi } from '@/services/api'
+import { useTags } from '@/contexts/TagsContext'
+import type { User } from '@/types'
 
+/**
+ * Tags vêm do cache compartilhado (`TagsContext` — hotfix da tag que só
+ * aparecia em outra tela após logout/login). Usuários continuam com fetch
+ * local: hoje só este hook os consome, sem o mesmo problema de duplicação.
+ */
 export function useTagsAndUsers() {
-  const [tags, setTags]   = useState<Tag[]>([])
+  const { tags, loadingTags, createTag, deleteTag } = useTags()
   const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadingUsers, setLoadingUsers] = useState(true)
 
   useEffect(() => {
-    Promise.all([tagsApi.list(), usersApi.list()])
-      .then(([tagsRes, usersRes]) => {
-        setTags(tagsRes.data)
-        setUsers(usersRes.data)
-      })
-      .finally(() => setLoading(false))
+    usersApi.list()
+      .then((r) => setUsers(r.data))
+      .finally(() => setLoadingUsers(false))
   }, [])
 
-  const createTag = useCallback(async (name: string, color: string): Promise<Tag> => {
-    const { data } = await tagsApi.create(name, color)
-    setTags((prev) => [...prev, data])
-    return data
-  }, [])
-
-  const deleteTag = useCallback(async (id: string) => {
-    await tagsApi.delete(id)
-    setTags((prev) => prev.filter((t) => t.id !== id))
-  }, [])
-
-  return { tags, users, loading, createTag, deleteTag }
+  return { tags, users, loading: loadingTags || loadingUsers, createTag, deleteTag }
 }

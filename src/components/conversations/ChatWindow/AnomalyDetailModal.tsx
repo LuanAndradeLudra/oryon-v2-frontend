@@ -13,7 +13,7 @@ import type { Message } from '@/types'
 import { guardCheckGuidance, guardOutcomeDetail, guardTypeLabel, findingReasonLabel } from '@/lib/guardReason'
 
 type Anomaly = NonNullable<Message['anomaly']>
-type AnomalyFinding = NonNullable<Anomaly['findings']>[number]
+export type AnomalyFinding = NonNullable<Anomaly['findings']>[number]
 
 /** Map the required-skill slug to a friendly operation name. */
 function skillLabel(slug: string | null | undefined): string | null {
@@ -68,7 +68,7 @@ function Detail({ icon: Icon, label, children }: { icon: typeof Quote; label: st
  * sempre melhor que marcar o trecho errado. Texto puro, nunca HTML: isto é
  * saída de modelo.
  */
-function renderHighlighted(text: string, findings: AnomalyFinding[]): ReactNode {
+export function renderHighlighted(text: string, findings: AnomalyFinding[]): ReactNode {
   const spans = findings
     .map((f) => f.span)
     .filter((s): s is [number, number] =>

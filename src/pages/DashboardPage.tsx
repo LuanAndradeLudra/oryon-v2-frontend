@@ -132,7 +132,8 @@ export function DashboardPage() {
       const sinceIso = new Date(Date.now() - 4 * 3600 * 1000).toISOString()
       const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.all([
         api.get('/home/snapshot').catch(() => ({ data: null })),
-        api.get<HomeStats>('/home/stats'),
+        // `range` scopes appointmentsScheduled/appointmentsCancelled (SCRUM-966/967).
+        api.get<HomeStats>('/home/stats', { params: { range: dateRange } }),
         api.get<{ data: ActivityFeedApiRow[] }>(`/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
       ])
 
@@ -168,6 +169,8 @@ export function DashboardPage() {
         'campaign_reply_rate':      0,
         'campaign_ctr':             0,
         'campaign_optout_rate':     0,
+        'appointments_scheduled':   s.appointmentsScheduled ?? 0,
+        'appointments_cancelled':   s.appointmentsCancelled ?? 0,
       }
       snap.kpis = snap.kpis.map((kpi: KpiMetric) => {
         const val = realKpis[kpi.id]

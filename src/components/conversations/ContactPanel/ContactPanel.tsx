@@ -15,7 +15,7 @@ import { isAiActive } from '@/lib/conversationSignals'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
 import { ConversationActivitySection } from './ConversationActivitySection'
 import { ContactPanelDeals } from './ContactPanelDeals'
-import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
+import { roleLabel } from '@/lib/roleHelpers'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { MoveStageModal } from '@/components/contacts/MoveStageModal'
 import { StageBadge } from '@/components/contacts/StageBadge'
@@ -132,9 +132,9 @@ export function ContactPanel({
 
   const [tagOpen,     setTagOpen]     = useState(false)
   const [assignOpen,  setAssignOpen]  = useState(false)
+  const [transferOpen, setTransferOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [stageOpen,   setStageOpen]   = useState(false)
-  const [xferModal,   setXferModal]   = useState(false)
   const [localStage, setLocalStage] = useState<string | undefined | null>(contact.stage)
   useEffect(() => { setLocalStage(contact.stage) }, [contact.id, contact.stage])
 
@@ -293,7 +293,7 @@ export function ContactPanel({
             <div className="flex items-center gap-2">
               {assignedUser && (
                 <button
-                  onClick={() => setXferModal(true)}
+                  onClick={() => setTransferOpen(true)}
                   title="Transferir conversa"
                   className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
                 >
@@ -334,6 +334,13 @@ export function ContactPanel({
             <UserPickerList users={allUsers} selectedUserId={assignedUser?.id}
               onSelect={(user) => { onAssign(user); setAssignOpen(false) }} />
           </Modal>
+          {/* Transferir — endpoint/handler distinto de "Atribuir" (R13): já
+              existia no hook (useConversations.transferUser → PATCH .../transfer)
+              mas não tinha nenhum gatilho na UI. */}
+          <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transferir conversa" className="max-w-sm">
+            <UserPickerList users={allUsers.filter((u) => u.id !== assignedUser?.id)}
+              onSelect={(user) => { if (user) onTransfer(user); setTransferOpen(false) }} />
+          </Modal>
         </Section>
 
         {/* Hidden when conversionAnalysisPanel is off — covers both the
@@ -353,38 +360,6 @@ export function ContactPanel({
         <ConversationActivitySection conversationId={conversation.id} />
 
       </div>
-
-      {/* Transfer modal */}
-      <Modal open={xferModal} onClose={() => setXferModal(false)} title="Transferir conversa">
-        <p className="text-xs text-surface-500 mb-3">
-          Selecione o usuário que receberá esta conversa:
-        </p>
-        <div className="max-h-72 overflow-y-auto -mx-5 px-5">
-          {allUsers.filter((u) => u.id !== assignedUser?.id).map((user) => {
-            return (
-              <button
-                key={user.id}
-                onClick={() => { onTransfer(user); setXferModal(false) }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all mb-1 hover:bg-surface-800"
-              >
-                <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" />
-                <div className="flex-1 text-left min-w-0">
-                  <p className="text-sm font-medium text-surface-200">
-                    {user.firstName} {user.lastName}
-                  </p>
-                  <p className="text-[11px] text-surface-500 truncate">{user.email}</p>
-                </div>
-                <span className={cn(
-                  'text-[10px] px-2 py-0.5 rounded-full font-medium',
-                  isAdminTier(user.role) ? 'bg-brand-600/20 text-brand-300' : 'bg-surface-700 text-surface-400'
-                )}>
-                  {roleLabel(user.role)}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </Modal>
 
       {/* Archive confirm modal */}
       <ConfirmModal

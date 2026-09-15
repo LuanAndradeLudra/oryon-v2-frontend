@@ -6,7 +6,7 @@ import {
   Target, Zap, Timer, ShieldCheck, Star, ThumbsUp, RefreshCw,
   ArrowDownLeft, ArrowUpRight, UserPlus, Bot, Users, Activity,
   Send, Eye, Reply, MousePointer, AlertTriangle, UserX, Radio, Megaphone,
-  DollarSign, BarChart2,
+  DollarSign, BarChart2, CalendarCheck, CalendarX,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
@@ -54,6 +54,9 @@ const KPI_ICONS: Record<KpiId, React.ReactNode> = {
   ads_conversion_rate:    <TrendingUp className="w-4 h-4" />,
   ads_qualified_rate:     <CheckCircle2 className="w-4 h-4" />,
   ads_customer_rate:      <Star className="w-4 h-4" />,
+  // Clínica
+  appointments_scheduled: <CalendarCheck className="w-4 h-4" />,
+  appointments_cancelled: <CalendarX className="w-4 h-4" />,
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -65,6 +68,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Equipe:      'var(--color-status-muted)',
   Disparos:    'var(--color-warning)',
   Marketing:   '#1877f2',
+  Clínica:     'var(--color-accent-rose)',
 }
 
 
@@ -268,12 +272,15 @@ export function KpiGrid({
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-3">
+      {/* flex-wrap (SCRUM-1070): sem isto, em ~375px a soma de label + seletor
+          de período + "Personalizar" excedia a largura e o container pai
+          (overflow-hidden) cortava o botão fora da tela em vez de rolar. */}
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
         <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest shrink-0">
           Métricas Principais
         </p>
-        <div className="flex-1" />
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex-1 min-w-0" />
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {headerCenter}
           <button
             onClick={() => setCustomizerOpen(true)}

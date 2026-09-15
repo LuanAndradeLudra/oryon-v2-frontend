@@ -1,3 +1,4 @@
+import { isOwnerTier } from '@/lib/roleHelpers'
 import { useParams, useSearchParams, Navigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -47,6 +48,8 @@ const VALID_SECTIONS = [
   // canônica aqui, junto do resto do CRM.
   'custom-fields',
 ]
+
+const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
 
 // Sections soft-warn em mobile: banner discreto sugerindo desktop, sem
 // bloquear (usuario pode acessar mas com aviso).
@@ -138,8 +141,15 @@ export function SettingsPage() {
   // e quem ja tinha a tela salva continuaria entrando. Como a tela nao deveria
   // estar habilitada, a URL fecha junto. Mesmo padrao de guarda explicita que
   // o comentario do featureFlags.ts cita para campaigns.
+  // Mitigação: FE chamava /practitioners sem backend
+  if (section === 'crm-practitioners') {
+    return <Navigate to="/settings/company" replace />
+  }
   if (section === 'billing' && !isFeatureVisible('settingsBilling')) {
     return <Navigate to="/settings/account" replace />
+  }
+  if (OWNER_ONLY_SECTIONS.has(section) && !isOwnerTier(user?.role)) {
+    return <Navigate to="/settings/company" replace />
   }
 
   const SectionComponent = SECTION_COMPONENTS[section]

@@ -44,11 +44,13 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff } from '@/lib/roleHelpers'
 import { CRMConfigProvider }    from '@/contexts/CRMConfigContext'
+import { TagsProvider }         from '@/contexts/TagsContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
 import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { DealPanelProvider } from '@/contexts/DealPanelContext'
+import { LayerProvider } from '@/contexts/LayerContext'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage }            from '@/pages/LoginPage'
 import { SetPasswordPage }      from '@/pages/SetPasswordPage'
@@ -322,9 +324,11 @@ export default function App() {
   return (
     <ErrorBoundary>
     <BrowserRouter>
+      <LayerProvider>
       <AuthProvider>
         <TenantVocabProvider>
         <CRMConfigProvider>
+        <TagsProvider>
           <InternalChatProvider>
           <CopilotProvider>
             <ContextMenuProvider>
@@ -340,9 +344,11 @@ export default function App() {
             </ContextMenuProvider>
           </CopilotProvider>
           </InternalChatProvider>
+        </TagsProvider>
         </CRMConfigProvider>
       </TenantVocabProvider>
       </AuthProvider>
+      </LayerProvider>
     </BrowserRouter>
     </ErrorBoundary>
   )

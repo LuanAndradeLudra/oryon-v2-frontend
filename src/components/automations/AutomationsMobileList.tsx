@@ -119,7 +119,7 @@ function AutomationCard({
 
 export function AutomationsMobileList({ automations, loading, multiLine, onOpenDetail, onToggle }: AutomationsMobileListProps) {
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto overscroll-y-contain">
       <CardListView
         items={automations}
         getKey={(a) => a.id}

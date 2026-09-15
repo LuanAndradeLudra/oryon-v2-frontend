@@ -116,8 +116,11 @@ export function CampaignsTab() {
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
+      {/* Toolbar. flex-wrap (SCRUM-1070): sem isto, em ~375px o SegmentedControl
+          + LineFilterChip já consumiam a largura útil e "Nova campanha" — o
+          CTA primário da tela — ficava cortado fora da barra em vez de
+          quebrar linha. */}
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0 flex-wrap">
         <SegmentedControl
           options={FILTER_OPTIONS}
           value={statusFilter}
@@ -127,7 +130,7 @@ export function CampaignsTab() {
 
         <LineFilterChip value={lineFilter} onChange={setLineFilter} />
 
-        <div className="flex-1" />
+        <div className="flex-1 min-w-0" />
 
         {/* `neutral` no lugar do teal (10/09): mesma conversão dos botões de
             criação do funil. O teal aqui não dizia "importante", dizia "botão" —

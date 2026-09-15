@@ -1,3 +1,4 @@
+import { useRef, useLayoutEffect, type MutableRefObject } from 'react'
 import { ChevronRight, Phone, Building2, Mail, TrendingUp, Loader2 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
@@ -17,6 +18,9 @@ interface ContactsMobileListProps {
   hasMore?: boolean
   loadingMore?: boolean
   onLoadMore?: () => void
+  /** SCRUM-1068: guarda externa do scrollTop — ver useListScrollMemory.
+   *  Sem isto, voltar de um contato pra lista sempre reabre no topo. */
+  scrollPositionRef?: MutableRefObject<number>
 }
 
 const MAX_TAGS_VISIBLE = 3
@@ -137,18 +141,29 @@ function ContactCard({
   )
 }
 
-export function ContactsMobileList({ contacts, loading, onOpenPanel, hasMore, loadingMore, onLoadMore }: ContactsMobileListProps) {
+export function ContactsMobileList({ contacts, loading, onOpenPanel, hasMore, loadingMore, onLoadMore, scrollPositionRef }: ContactsMobileListProps) {
   const { stages } = useCRMConfig()
+  const listRef = useRef<HTMLDivElement>(null)
+
+  // Restaura a posição antes do 1º paint — mesmo padrão do ConversationList
+  // (SCRUM-1068). O container é sempre remontado ao voltar de /contacts/:id
+  // (rota diferente), então a ref precisa vir de um armazenamento que
+  // sobrevive ao unmount (useListScrollMemory), não de um useRef local.
+  useLayoutEffect(() => {
+    if (!listRef.current || !scrollPositionRef) return
+    listRef.current.scrollTop = scrollPositionRef.current
+  }, [scrollPositionRef])
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (!hasMore || loadingMore || !onLoadMore) return
     const el = e.currentTarget
+    if (scrollPositionRef) scrollPositionRef.current = el.scrollTop
+    if (!hasMore || loadingMore || !onLoadMore) return
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
     if (distanceFromBottom < 200) onLoadMore()
   }
 
   return (
-    <div className="flex-1 overflow-auto" onScroll={handleScroll}>
+    <div ref={listRef} className="flex-1 overflow-auto overscroll-y-contain" onScroll={handleScroll}>
       <CardListView
         items={contacts}
         getKey={(c) => c.id}

@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { StagesManager } from '@/components/settings/sections/crm/StagesManager'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useLayer } from '@/contexts/LayerContext'
 
 const TABS = [
   { id: 'stages', label: 'Situação do contato', icon: Columns },
@@ -44,6 +45,9 @@ export function CRMConfigDrawer({
   const visibleTabs = multiPipeline ? TABS : TABS.filter((t) => t.id !== 'pipelineStages')
   const currentTab: Tab = !multiPipeline && activeTab === 'pipelineStages' ? 'stages' : activeTab
 
+  // Registro central de camadas (SCRUM-1067) — mesmo motivo do NewContactDrawer.
+  const { zIndex } = useLayer(open, onClose)
+
   return (
     <AnimatePresence>
       {open && (
@@ -54,7 +58,8 @@ export function CRMConfigDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40 z-[39]"
+            className="fixed inset-0 bg-black/40"
+            style={{ zIndex }}
             onClick={onClose}
           />
 
@@ -64,7 +69,8 @@ export function CRMConfigDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-            className="fixed top-0 right-0 bottom-0 w-full sm:w-[44rem] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
+            className="fixed top-0 right-0 bottom-0 w-full sm:w-[44rem] bg-surface-950 border-l overlay-frame flex flex-col"
+            style={{ zIndex: zIndex + 1 }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">

@@ -27,16 +27,23 @@ export interface AdminAgentRecord {
   updated_at?: string
 }
 
-export const TENANT_SELECTABLE_MODELS = [
-  'claude-haiku-4-5-20251001',
-  'claude-sonnet-4-6',
-] as const
-export type TenantSelectableModel = typeof TENANT_SELECTABLE_MODELS[number]
+// SCRUM-1085 (Fase 4): the model list used to be hardcoded here, duplicated
+// from agent-server/src/services/modelRouting.ts with no way to notice when
+// the two drifted apart. It's now fetched from the agent-server's own
+// catalog endpoint — this file no longer needs updating when a model is
+// added or removed on the other side.
 
-export const MODEL_LABELS: Record<string, string> = {
-  'claude-haiku-4-5-20251001': 'Haiku 4.5 (rápido, ~12x mais barato)',
-  'claude-sonnet-4-6': 'Sonnet 4.6 (raciocínio mais forte)',
-  'claude-opus-4-6': 'Opus 4.6 (raciocínio premium, caro)',
+export type ModelProvider = 'anthropic' | 'openai'
+export type ModelRole = 'economy' | 'standard'
+
+export interface ModelCatalogEntry {
+  /** Value to send as `preferred_model`. */
+  id: string
+  provider: ModelProvider
+  role: ModelRole
+  label: string
+  /** False only for Opus today — staff-only, set via DB direct, not this UI. */
+  selectable: boolean
 }
 
 export interface EffectivePromptFragment {
@@ -86,6 +93,12 @@ export function getAdminAgent(agentId: string): Promise<AdminAgentRecord> {
   return adminFetch<AdminAgentRecord>(`/agents/admin/agents/${encodeURIComponent(agentId)}`)
 }
 
+/** Every model an agent can be pinned to, any provider — the model picker's
+ *  single source of truth (super_admin only). */
+export function getModelCatalog(): Promise<ModelCatalogEntry[]> {
+  return adminFetch<ModelCatalogEntry[]>('/agents/admin/models/catalog')
+}
+
 /** Fetches the effective prompt the model sees: customer system_prompt
  *  concatenated with each attached skill's prompt_fragment. */
 export function getAdminAgentEffectivePrompt(agentId: string): Promise<EffectivePromptResponse> {
@@ -109,10 +122,12 @@ export function updateAdminAgentSystemPrompt(
 }
 
 /** Updates the explicit model override (super_admin only). Pass `null` to
- *  clear the override and return the agent to the auto heuristic. */
+ *  clear the override and return the agent to the auto heuristic. `preferredModel`
+ *  should be one of `getModelCatalog()`'s `selectable` ids — the agent-server
+ *  re-validates regardless, so a stale id just comes back as a 400. */
 export function updateAdminAgentPreferredModel(
   agentId: string,
-  preferredModel: TenantSelectableModel | null,
+  preferredModel: string | null,
 ): Promise<{ agent_id: string; preferred_model: string | null; auto_choice: string }> {
   return adminFetch<{ agent_id: string; preferred_model: string | null; auto_choice: string }>(
     `/agents/admin/agents/${encodeURIComponent(agentId)}/preferred-model`,

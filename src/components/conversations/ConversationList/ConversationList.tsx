@@ -9,9 +9,6 @@ import { TagFilterMenu } from './TagFilterMenu'
 import { cn } from '@/lib/utils'
 import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
 
-// TODO: substituir por dado real da API de billing
-const USAGE_MOCK = { used: 847, total: 1000 }
-
 interface ConversationListProps {
   conversations: Conversation[]
   loading: boolean
@@ -185,7 +182,12 @@ export function ConversationList({
       </div>
 
       {/* List */}
-      <div ref={listRef} onScroll={handleScroll} className="flex-1 overflow-y-auto" style={{ contain: 'layout style', willChange: 'transform' }}>
+      <div
+        ref={listRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto overscroll-y-contain"
+        style={{ contain: 'layout style', willChange: 'transform' }}
+      >
         {loading && conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 gap-2">
             <Loader2 className="w-5 h-5 text-surface-400 animate-spin" />

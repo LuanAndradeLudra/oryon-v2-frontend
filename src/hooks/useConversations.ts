@@ -67,7 +67,11 @@ export function useConversations(filters: ConversationFilters = {}) {
   const pendingFetches = useRef<Set<string>>(new Set())
 
   // Bumped on every call; a response only gets applied if it's still the
-  // most recent one in flight when it resolves.
+  // most recent one in flight when it resolves. Guards against a fast
+  // filter/screen switch letting a slower, superseded request's response
+  // land after (and overwrite) a newer one (R41). A request-id token
+  // instead of AbortController because aborting would just make `withRetry`
+  // retry the (still-aborted) call up to 3 times before giving up.
   const fetchTokenRef = useRef(0)
 
   const fetchConversations = useCallback(async () => {

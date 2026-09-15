@@ -419,7 +419,7 @@ export function WelcomePage() {
       {/* ── Footer ── */}
       <footer className={`border-t ${isLight ? 'bg-white border-gray-200' : 'bg-surface-900 border-surface-800'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
             {/* Brand */}
             <div className="col-span-1">
               <div className="flex items-center gap-2 mb-3">
@@ -445,33 +445,24 @@ export function WelcomePage() {
               </div>
             </div>
 
-            {/* Links */}
-            {[
-              { title: 'Produto',   links: ['Funcionalidades', 'Planos', 'Segurança', 'Novidades'] },
-              { title: 'Empresa',   links: ['Sobre nós', 'Blog', 'Carreiras', 'Parceiros'] },
-              { title: 'Suporte',   links: ['Documentação', 'Status', 'Contato', 'Comunidade'] },
-            ].map((col) => (
-              <div key={col.title}>
-                <h4 className={`text-xs font-semibold uppercase tracking-widest mb-4 ${isLight ? 'text-gray-400' : 'text-surface-600'}`}>{col.title}</h4>
-                <ul className="flex flex-col gap-2.5">
-                  {col.links.map((l) => (
-                    <li key={l}>
-                      <a href="#" className={`text-sm transition-colors hover:text-brand-400 ${textSec}`}>{l}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {/* Links — só o que tem destino real dentro do app. As colunas
+                "Empresa" e "Suporte" e os demais itens de "Produto" foram
+                removidos por não terem rota/âncora correspondente (R37);
+                apontar para href="#" dava a impressão de link quebrado. */}
+            <div>
+              <h4 className={`text-xs font-semibold uppercase tracking-widest mb-4 ${isLight ? 'text-gray-400' : 'text-surface-600'}`}>Produto</h4>
+              <ul className="flex flex-col gap-2.5">
+                <li>
+                  <Link to="/pricing" className={`text-sm transition-colors hover:text-brand-400 ${textSec}`}>Planos</Link>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div className={`pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3 ${isLight ? 'border-gray-200' : 'border-surface-800'}`}>
             <p className={`text-xs ${isLight ? 'text-gray-400' : 'text-surface-600'}`}>
               © 2026 Oryon · Todos os direitos reservados
             </p>
-            <div className="flex items-center gap-4">
-              <a href="#" className={`text-xs transition-colors hover:text-brand-400 ${isLight ? 'text-gray-400' : 'text-surface-600'}`}>Privacidade</a>
-              <a href="#" className={`text-xs transition-colors hover:text-brand-400 ${isLight ? 'text-gray-400' : 'text-surface-600'}`}>Termos de uso</a>
-            </div>
           </div>
         </div>
       </footer>

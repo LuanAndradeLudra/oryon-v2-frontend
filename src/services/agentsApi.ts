@@ -1051,14 +1051,90 @@ export async function endTestSession(agentId: string, sessionId: string): Promis
   })
 }
 
+/** Uma linha do histórico — só os campos que o GET de listagem devolve
+ *  (sem agent_id/tenant_id/user_id, que `AgentTestSession` tem mas o
+ *  SELECT da listagem não busca). */
+export interface TestSessionSummary {
+  id: string
+  message_count: number
+  input_tokens: number
+  output_tokens: number
+  created_at: string
+  ended_at: string | null
+}
+
+/** Histórico de sessões de teste do agente — aba "Sessões anteriores" do modal. */
+export async function listTestSessions(agentId: string): Promise<TestSessionSummary[]> {
+  return apiFetch<TestSessionSummary[]>(`/configs/${agentId}/test-sessions`)
+}
+
+export interface AgentTestMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  model: string | null
+  input_tokens: number | null
+  output_tokens: number | null
+  /** Mesmo payload de debug que o /chat devolve ao vivo — null em turnos de usuário. */
+  debug: ChatTurnDebug | null
+  created_at: string
+}
+
+export async function getTestSessionMessages(agentId: string, sessionId: string): Promise<AgentTestMessage[]> {
+  return apiFetch<AgentTestMessage[]>(`/configs/${agentId}/test-sessions/${sessionId}/messages`)
+}
+
 // ─── Agent Chat (Test Mode) ───────────────────────────────────────────────────
+
+/** Uma ferramenta acionada no turno — espelha `CrmJudgeToolUse` do agent-server. */
+export interface ToolCall {
+  name: string
+  kind: 'http' | 'skill' | 'crm' | 'kb' | 'unknown'
+  success: boolean
+}
+
+export interface TurnSummary {
+  status: 'answered' | 'aborted_loop' | 'max_turns'
+  model: string
+  turns: number
+  toolsCalledCount: number
+  tokens: { input: number; output: number; cacheRead: number; cacheCreation: number }
+}
+
+/**
+ * Sinal do guard/Verification Gateway quando ele intervém no turno — MESMO
+ * formato do `message.anomaly` de produção (ver `types/index.ts`), sem
+ * `kind`/`occurredAt`/`reviewedAt` (o modal de teste deriva/ignora esses).
+ * Reaproveitado pelo `AnomalyDetailModal` já existente no chat de produção.
+ */
+export interface GuardSignal {
+  outcome: string
+  claimType: string | null
+  matchedText: string | null
+  handoffRequested: boolean
+  requiredSkill: string | null
+  skillFailures: Array<{ name: string; kind: string; statusCode: number | null; message: string | null }>
+  correlationId: string | null
+  blockedText?: string | null
+  findings?: Array<{ type: string; reason: string; raw: string; span: [number, number] | null; suggested: string | null }>
+  evidence?: { slots: string[]; prices: string[]; names: string[] } | null
+  repair?: { rung: number | null; llmCalls: number | null } | null
+}
+
+export interface ChatTurnDebug {
+  toolCalls: ToolCall[]
+  turnSummary: TurnSummary
+  guard: GuardSignal | null
+}
+
+export type ChatWithAgentResult = { message: string } & ChatTurnDebug
 
 export async function chatWithAgent(
   systemPrompt: string,
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   meta: { sessionId?: string; agentId?: string } = {},
-): Promise<string> {
-  const data = await apiFetch<{ message: string }>('/chat', {
+): Promise<ChatWithAgentResult> {
+  const data = await apiFetch<{ message: string; toolCalls: ToolCall[]; turnSummary: TurnSummary; guard?: GuardSignal }>('/chat', {
     method: 'POST',
     body: JSON.stringify({
       system_prompt: systemPrompt,
@@ -1067,7 +1143,12 @@ export async function chatWithAgent(
       agent_id:   meta.agentId  ?? null,
     }),
   })
-  return data.message
+  return {
+    message: data.message,
+    toolCalls: data.toolCalls,
+    turnSummary: data.turnSummary,
+    guard: data.guard ?? null,
+  }
 }
 
 // ─── Brand File Extraction ─────────────────────────────────────────────────────
