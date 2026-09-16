@@ -31,7 +31,7 @@ const variantStyles = {
     'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] font-semibold',
     'hover:brightness-90',
     'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
-    'disabled:opacity-40',
+    'disabled:opacity-[0.45]',
   ],
   // spec/1a-primitivos.md BTN-02/06: neutral = fundo --sf + borda de ênfase
   // --bd2 (não --bd); hover escurece 1 passo. ghost = texto --tx2, hover 1
@@ -41,25 +41,25 @@ const variantStyles = {
     'border border-[var(--bd2)]',
     'hover:bg-surface-700',
     'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
-    'disabled:opacity-40',
+    'disabled:opacity-[0.45]',
   ],
   secondary: [
     'bg-accent-soft text-accent-dark font-semibold',
     'hover:brightness-110',
     'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
-    'disabled:opacity-40',
+    'disabled:opacity-[0.45]',
   ],
   ghost: [
     'bg-transparent text-surface-400 font-semibold px-3',
     'hover:bg-[var(--rowhover)] hover:text-surface-100',
     'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
-    'disabled:opacity-40',
+    'disabled:opacity-[0.45]',
   ],
   danger: [
     'bg-[var(--color-btn-danger-bg)] text-[var(--color-btn-danger-fg)] font-semibold',
     'hover:brightness-90',
     'focus-visible:ring-2 focus-visible:ring-danger/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
-    'disabled:opacity-40',
+    'disabled:opacity-[0.45]',
   ],
 }
 

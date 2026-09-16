@@ -90,6 +90,8 @@
   /* SCRUM-1097: mistura do logo do conector com o fundo do tile — 0% no
    * escuro (branco puro é a "janela" onde qualquer cor de marca funciona). */
   --connector-tile-mix: 0%;
+  /* Par da borda do tile (CONN-CARD-05, README: 12%/22% claro · 0%/0% escuro). */
+  --connector-tile-border-mix: 0%;
 
   /* SCRUM-1097: hover universal de linha/card clicável (DataTable, Sidebar,
    * ConversationItem, Card com onClick) — usar `hover:bg-[var(--rowhover)]`
@@ -881,6 +883,7 @@ code, pre, kbd, samp {
   /* SCRUM-1097: no claro, o branco do tile já é a superfície — 12% de marca
    * evita que o tile desapareça contra o card branco. */
   --connector-tile-mix: 12%;
+  --connector-tile-border-mix: 22%;
 
   /* SCRUM-1097 (claro): ver comentário dark. */
   --rowhover: rgba(15, 23, 42, 0.035);
@@ -1393,8 +1396,10 @@ svg[data-oryon-icon] {
  * SEMPRE escuro — de propósito, independente do tema. Shell + sidebar são a
  * "moldura" do app e ficam escuros mesmo com o conteúdo (canvas) no tema
  * claro; por isso não há override [data-theme="light"] aqui. */
+/* SHELL-SIDEBAR-01 (spec shell.md): moldura/sidebar em fundo CHAPADO --sb
+   #0E1414 — o gradiente radial preto não existe no mock. */
 .workspace-shell {
-  background: radial-gradient(ellipse farthest-corner at 0% 0%, #000000 0%, #050808 60%);
+  background: #0E1414;
 }
 
 /* Chat background — no escuro usa a MESMA cor do shell/sidebar (não o

@@ -77,7 +77,8 @@ export const DesktopSidebar = ({
         // Sem bg/borda própria: a sidebar vive sobre o SHELL (fundo profundo) e
         // faz parte da moldura do workspace — o canvas de conteúdo é quem se
         // destaca. (bg via token local .nav-sidebar continua p/ hovers/chips.)
-        'nav-sidebar h-full py-4 flex flex-col bg-transparent flex-shrink-0 overflow-hidden',
+        // SHELL-SIDEBAR-01/05 (spec shell.md): container 10 10 12.
+        'nav-sidebar h-full pt-2.5 pb-3 px-2.5 flex flex-col bg-transparent flex-shrink-0 overflow-hidden',
         'transition-[width] duration-200 ease-out will-change-[width]',
         className
       )}
@@ -102,11 +103,12 @@ export const SidebarSectionLabel = memo(function SidebarSectionLabel({ label }: 
   const collapsed = animate && !open
 
   return (
-    <div className="relative px-3 pt-5 pb-1 select-none" aria-label={label}>
+    // SHELL-SIDEBAR-08: eyebrow 14 6 10, .14em, #6B8080 (surface-500 no escuro).
+    <div className="relative px-2.5 pt-3.5 pb-1.5 select-none" aria-label={label}>
       <div className="relative h-[15px]">
         <p
           className={cn(
-            'absolute inset-0 flex items-center text-3xs font-bold uppercase tracking-widest text-surface-600 whitespace-nowrap',
+            'absolute inset-0 flex items-center text-3xs font-bold uppercase tracking-[0.14em] text-surface-500 whitespace-nowrap',
             'transition-opacity duration-200',
             collapsed ? 'opacity-0' : 'opacity-100',
           )}
@@ -150,25 +152,27 @@ export const SidebarLink = memo(function SidebarLink({
   const inner = (
     <span
       className={cn(
-        'flex items-center w-full transition-colors duration-100',
+        // SHELL-SIDEBAR-03 (spec shell.md): item 32px, raio 6, 13px; inativo
+        // #8FA5A5 (surface-400 no escuro); ativo pílula clara + 600.
+        'flex items-center w-full h-8 gap-2 px-2 rounded-[6px] transition-colors duration-100',
         active
-          ? 'gap-2 px-2 py-1 rounded-lg bg-white/85 backdrop-blur-sm text-black'
-          : 'gap-3 px-3 py-2 rounded-xl text-white hover:bg-white/10',
+          ? 'bg-white/85 backdrop-blur-sm text-black font-semibold'
+          : 'text-surface-400 hover:bg-white/10 hover:text-white',
       )}
     >
       {/* Icon wrapper — fixed size so it doesn't shift */}
       <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
         {icon}
-        {badge !== undefined && badge > 0 && (
-          // Dot-only indicator: shows there's unread activity without putting
-          // a number that could be confused with the status-tab counters
-          // inside the Conversas page. The `badge: number` prop still flows
-          // from NavSidebar (so the trigger is unchanged) — only the render
-          // is now a fixed-size circle. Keep aria-label for screen readers.
+        {/* SIDEBAR-03: contador "Conversas N" — número na pílula quando
+            expandida (à direita, abaixo), disco com número sobre o ícone
+            quando colapsada. */}
+        {badge !== undefined && badge > 0 && animate && !open && (
           <span
-            aria-label="Atividade não lida"
-            className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-danger rounded-full"
-          />
+            aria-label={`${badge} não lidas`}
+            className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-3xs font-bold flex items-center justify-center tabular-nums"
+          >
+            {badge > 99 ? '99+' : badge}
+          </span>
         )}
         {/* Nudge dot — visible only when sidebar is collapsed */}
         {nudge && animate && !open && (
@@ -179,12 +183,20 @@ export const SidebarLink = memo(function SidebarLink({
       {/* Label — CSS transition instead of AnimatePresence */}
       <span
         className={cn(
-          'flex items-center gap-2 text-sm font-medium whitespace-pre overflow-hidden flex-1',
+          'flex items-center gap-2 text-[13px] font-medium whitespace-pre overflow-hidden flex-1',
           'transition-opacity duration-150',
           animate && !open ? 'opacity-0 w-0' : 'opacity-100',
         )}
       >
         {label}
+        {badge !== undefined && badge > 0 && (
+          <span
+            aria-label={`${badge} não lidas`}
+            className="ml-auto min-w-[18px] h-[18px] px-[5px] rounded-full bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-[10.5px] font-bold flex items-center justify-center tabular-nums"
+          >
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
         {nudge && (
           <span className="text-3xs font-semibold text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap">
             {nudge}

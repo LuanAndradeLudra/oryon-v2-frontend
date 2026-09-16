@@ -1361,12 +1361,13 @@ function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: 
     <span
       className="relative inline-flex flex-shrink-0 w-7 h-7 rounded-[30%] overflow-hidden transition-shadow duration-150"
       // Anel teal — único estado em que o avatar recebe cor, sinaliza "menu aberto" (handoff 3.13).
-      style={active ? { boxShadow: '0 0 0 2px var(--color-surface-950), 0 0 0 4px var(--color-accent)' } : undefined}
+      // SHELL-TOPBAR-07: camada interna do anel na cor da TopBar (--sf).
+      style={active ? { boxShadow: '0 0 0 2px var(--color-surface-800), 0 0 0 4px var(--color-accent)' } : undefined}
     >
       {imageUrl ? (
         <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
       ) : (
-        <span className="avatar-operador w-full h-full flex items-center justify-center text-[11px] font-semibold">
+        <span className="bg-avatar-surface text-avatar-initials w-full h-full flex items-center justify-center text-2xs font-semibold">
           {getInitials(name)}
         </span>
       )}
@@ -1410,11 +1411,12 @@ function UserMenu() {
         </button>
       }
     >
-      {/* Header: avatar 32px + nome + e-mail · papel */}
-      <div className="flex items-center gap-3 px-3 py-3 border-b border-surface-700">
+      {/* Header: avatar 32px + nome + e-mail · papel — SHELL-USERMENU-02:
+          8 8 10, gap 10, mb 4, nome 13px. */}
+      <div className="flex items-center gap-2.5 px-2 pt-2 pb-2.5 mb-1">
         <Avatar name={name} imageUrl={user?.avatarUrl} size="sm" kind="operator" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-surface-100 truncate">{name}</p>
+          <p className="text-[13px] font-semibold text-surface-100 truncate">{name}</p>
           <p className="text-[11px] text-surface-500 truncate">
             {user?.email}{user?.role ? ` · ${roleLabel(user.role)}` : ''}
           </p>
@@ -1428,7 +1430,7 @@ function UserMenu() {
       {settingsVisible && (
         <DropdownItem icon={Settings} onClick={() => go('/settings')}>
           <span className="flex-1">Configurações</span>
-          <kbd className="font-mono text-3xs text-surface-500">⌘,</kbd>
+          <kbd className="font-mono text-2xs text-surface-500">⌘,</kbd>
         </DropdownItem>
       )}
 
@@ -1436,7 +1438,7 @@ function UserMenu() {
           Não é um DropdownItem: o SegmentedControl é interativo por dentro,
           e DropdownItem é um <button> — não dá para aninhar botão em botão. */}
       <div role="none" className="px-3 py-2.5 flex items-center justify-between gap-3">
-        <span className="text-sm text-surface-200">Tema</span>
+        <span className="text-[12.5px] text-surface-200">Tema</span>
         <SegmentedControl
           label="Tema"
           size="sm"
@@ -1618,23 +1620,20 @@ export function TopBar() {
   }
 
   return (
-    <div className="conv-surface h-12 flex-shrink-0 bg-surface-950 border-b border-surface-700 px-4 flex items-center gap-3">
+    <div className="conv-surface h-12 flex-shrink-0 bg-surface-800 border-b border-surface-700 px-4 flex items-center gap-3">
+      {/* SHELL-TOPBAR-01/02 (spec shell.md): 48px em --sf com hairline --bd;
+          título 14/700 -.01em; subtítulo 12px --tx2, sem bullet. */}
 
-      {/* Left: page title + subtitle (inline with "·" bullet separator).
-          Subtitle hidden on small viewports so the row stays single-line
-          on phones. Title stays bold; bullet + subtitle use the muted
-          surface-500/600 ramp so the secondary copy doesn't compete. */}
+      {/* Left: page title + subtitle. Subtitle hidden on small viewports so
+          the row stays single-line on phones. */}
       <div className="flex items-baseline gap-2 min-w-0">
-        <span className="text-sm font-display font-bold text-surface-50 flex-shrink-0 truncate">
+        <span className="text-sm font-display font-bold tracking-[-0.01em] text-surface-50 flex-shrink-0 truncate">
           {pageTitle}
         </span>
         {pageSubtitle && (
-          <>
-            <span className="text-sm text-surface-600 hidden md:inline flex-shrink-0">·</span>
-            <span className="text-sm text-surface-500 hidden md:inline truncate">
-              {pageSubtitle}
-            </span>
-          </>
+          <span className="text-xs text-surface-400 hidden md:inline truncate">
+            {pageSubtitle}
+          </span>
         )}
       </div>
 
@@ -1666,11 +1665,12 @@ export function TopBar() {
           onClick={() => setDropOpen(true)}
           title="Buscar (atalho /)"
           aria-label="Abrir busca"
-          className="hidden md:inline-flex items-center gap-2 px-3 h-8 rounded-lg border border-surface-700/60 hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors w-[160px] flex-shrink-0"
+          // SHELL-TOPBAR-04: 28px, raio 7, fundo --sf2, borda --bd, 200px; kbd só borda --bd2.
+          className="hidden md:inline-flex items-center gap-2 px-2.5 h-7 rounded-sm border border-surface-700 hover:border-[var(--bd2)] bg-[var(--sf2)] text-xs text-surface-400 hover:text-surface-200 transition-colors w-[200px] flex-shrink-0"
         >
           <Search className="w-3.5 h-3.5 flex-shrink-0" />
           <span className="flex-1 text-left truncate">Buscar</span>
-          <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-3xs text-surface-400 font-medium flex-shrink-0">
+          <kbd className="px-1 rounded-[4px] border border-[var(--bd2)] text-3xs text-surface-500 font-medium flex-shrink-0 leading-4">
             /
           </kbd>
         </button>

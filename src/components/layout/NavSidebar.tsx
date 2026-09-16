@@ -46,11 +46,15 @@ interface NavSidebarProps {
 function LogoSection() {
   const { open, animate } = useSidebar()
   return (
-    <div className="flex items-center gap-3 px-3 mb-2 flex-shrink-0">
+    <div className="flex items-center h-9 gap-[9px] px-1.5 mb-2 flex-shrink-0">
+      {/* SHELL-SIDEBAR-02/06 (spec shell.md): header 36px, gap 9, padding 6;
+          logo 26px (o mock usa um tile-placeholder; mantemos a marca real no
+          tamanho da spec). Nome do workspace à direita = [!] (campo do tenant
+          a confirmar). */}
       <img
         src="/oryon-logo.svg"
         alt="Oryon"
-        className="w-9 h-9 flex-shrink-0 select-none"
+        className="w-[26px] h-[26px] flex-shrink-0 select-none"
         draggable={false}
       />
       <AnimatePresence>
@@ -66,7 +70,7 @@ function LogoSection() {
             // (branca→preta) no tema claro, mas a sidebar agora é sempre
             // escura — a wordmark original (branca) precisa ficar como está
             // nos dois temas, senão fica preta sobre fundo escuro.
-            className="h-[27px] w-auto select-none"
+            className="h-5 w-auto select-none"
             draggable={false}
           />
         )}
@@ -225,7 +229,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
           {geralItems.length > 0 && (
             <>
               <SidebarSectionLabel label="Geral" />
-              <nav className="flex flex-col gap-0.5 px-1.5">
+              <nav className="flex flex-col gap-0.5">
                 {geralItems.map((item) => (
                   <SidebarLink
                     key={item.href}
@@ -243,7 +247,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
 
           {/* Chat Interno */}
           {internalChatVisible && (
-            <nav className="flex flex-col gap-0.5 px-1.5 mb-1">
+            <nav className="flex flex-col gap-0.5 mb-1">
               <SidebarLink
                 href={internalChatItem.href}
                 icon={internalChatItem.icon}
@@ -258,7 +262,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
           {ferramentasItems.length > 0 && (
             <>
               <SidebarSectionLabel label="Ferramentas" />
-              <nav className="flex flex-col gap-0.5 px-1.5">
+              <nav className="flex flex-col gap-0.5">
                 {ferramentasItems.map((item) => (
                   <SidebarLink
                     key={item.href}
@@ -280,7 +284,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
           {isOryonStaff && isFeatureVisible('oryonStaffSidebar') && (
             <>
               <SidebarSectionLabel label="Oryon" />
-              <nav className="flex flex-col gap-0.5 px-1.5">
+              <nav className="flex flex-col gap-0.5">
                 <SidebarLink
                   href="/admin/skill-templates"
                   icon={<ShieldCheck className="w-[16.5px] h-[16.5px]" />}

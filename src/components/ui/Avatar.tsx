@@ -3,7 +3,8 @@ import { cn, getInitials } from '@/lib/utils'
 interface AvatarProps {
   name: string
   imageUrl?: string
-  size?: 'xs' | 'sm' | 'md' | 'lg'
+  /** `2xs` = 20px (spec 1b TEAM-03: avatar mono de lista densa). */
+  size?: '2xs' | 'xs' | 'sm' | 'md' | 'lg'
   online?: boolean
   className?: string
   /**
@@ -19,6 +20,7 @@ interface AvatarProps {
 }
 
 const sizes = {
+  '2xs': 'w-5 h-5 text-[9px]',
   xs: 'w-6 h-6 text-3xs',
   sm: 'w-8 h-8 text-xs',
   md: 'w-10 h-10 text-sm',
@@ -26,6 +28,7 @@ const sizes = {
 }
 
 const dotSizes = {
+  '2xs': 'w-1.5 h-1.5',
   xs: 'w-1.5 h-1.5',
   sm: 'w-2 h-2',
   md: 'w-2.5 h-2.5',

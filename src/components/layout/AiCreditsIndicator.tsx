@@ -139,7 +139,9 @@ export function AiCreditsIndicator() {
       onMouseEnter={handleEnter}
       onMouseLeave={scheduleClose}
     >
-      <div className="mx-3 mb-1.5 border-t border-surface-700" />
+      {/* SHELL-SIDEBAR-04/09: expandida = hairline largura total + pt 8;
+          colapsada = traço 20×1 centrado. */}
+      <div className={expanded ? 'mb-2 border-t border-surface-700' : 'w-5 h-px mx-auto mb-2 bg-surface-700'} />
 
       <button
         ref={anchorRef}
@@ -148,8 +150,9 @@ export function AiCreditsIndicator() {
         disabled={noData}
         aria-label={noData ? 'Créditos de IA indisponíveis' : `Créditos de IA: ${pctLabel}% usados`}
         className={cn(
-          'w-full flex items-center gap-2.5 mx-1.5 rounded-xl transition-colors text-left',
-          'hover:bg-white/[0.06] disabled:cursor-default disabled:hover:bg-transparent',
+          // SHELL-CREDITS-01/02: raio 6 e fundo .06 em REPOUSO (não só no hover).
+          'w-full flex items-center gap-2.5 mx-1.5 rounded-[6px] transition-colors text-left',
+          'bg-white/[0.06] hover:bg-white/[0.1] disabled:cursor-default disabled:bg-transparent disabled:hover:bg-transparent',
           expanded ? 'h-10 px-2' : 'h-9 px-2 justify-center mx-auto',
         )}
         style={{ width: expanded ? 'calc(100% - 12px)' : 36 }}
