@@ -76,7 +76,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
             className="fixed top-0 right-0 bottom-0 w-full sm:w-[420px] z-50 bg-surface-900 border-l overlay-frame flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700 flex-shrink-0">
               <div>
                 <h3 className="text-sm font-semibold text-surface-100">Iniciar conversa</h3>
                 <p className="text-[11px] text-surface-500">Enviar template para {contact.displayName}</p>
@@ -117,7 +117,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
                   <p className="text-xs text-surface-600">Crie templates em Disparos e aguarde aprovação da Meta.</p>
                 </div>
               ) : (
-                <div className="flex flex-col divide-y divide-surface-800">
+                <div className="flex flex-col divide-y divide-surface-700">
                   {templates.map((tpl) => (
                     <button
                       key={tpl.id}

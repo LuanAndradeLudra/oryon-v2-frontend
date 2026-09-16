@@ -167,7 +167,7 @@ export function HistoryTab({ contactId }: HistoryTabProps) {
   return (
     <div className="p-4">
       {/* Segmented filter */}
-      <div className="flex items-center gap-1 mb-4 bg-surface-900 border border-surface-800 rounded-lg p-0.5">
+      <div className="flex items-center gap-1 mb-4 bg-surface-900 border border-surface-700 rounded-lg p-0.5">
         {TABS.map((t) => (
           <button
             key={t.key}

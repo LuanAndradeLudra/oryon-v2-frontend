@@ -286,7 +286,7 @@ export function ContactRow({
       onClick={handleRowClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'border-b border-surface-800 cursor-pointer transition-colors group',
+        'border-b border-surface-700 cursor-pointer transition-colors group',
         isSelected ? 'bg-brand-500/5 hover:bg-brand-500/10' : 'hover:bg-surface-800/50',
       )}
     >

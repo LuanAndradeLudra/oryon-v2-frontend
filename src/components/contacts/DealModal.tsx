@@ -398,7 +398,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           </p>
         )}
 
-        <div className="flex items-center justify-between border-t border-surface-800 pt-3">
+        <div className="flex items-center justify-between border-t border-surface-700 pt-3">
           {isProcess ? (
             <span className="text-xs text-surface-500" data-testid="deal-modal-process-note">
               {`Registro de processo — sem valor nem produtos.`}

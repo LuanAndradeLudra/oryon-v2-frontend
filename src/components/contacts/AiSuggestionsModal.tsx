@@ -117,7 +117,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-brand-600/20 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-brand-400" />
@@ -309,7 +309,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-surface-800 bg-surface-900/80">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-surface-700 bg-surface-900/80">
             <button
               onClick={() => onApplied()}
               className="text-xs text-surface-500 hover:text-surface-300 transition-colors"
@@ -351,7 +351,7 @@ function EditableRow({ id, label, enabled, onToggle, editor }: {
 }) {
   return (
     <div className={`flex items-start gap-3 px-3 py-2.5 rounded-lg border transition-all ${
-      enabled ? 'border-brand-500/30 bg-brand-600/5' : 'border-surface-800 bg-surface-800/30 opacity-50'
+      enabled ? 'border-brand-500/30 bg-brand-600/5' : 'border-surface-700 bg-surface-800/30 opacity-50'
     }`}>
       <button
         onClick={onToggle}

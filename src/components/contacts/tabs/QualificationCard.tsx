@@ -154,7 +154,7 @@ export function QualificationCard({ contact, onSave, hideStage = false, hideTitl
             )}
             <ReadField label={vocab.intent} value={contact.intent ? (INTENTS.find(x => x.value === contact.intent)?.label ?? '—') : '—'} />
             <ReadField label="Origem" value={contact.source ? SOURCES.find(s => s.value === contact.source)?.label : '—'} />
-            <div className="col-span-2 flex items-center justify-between pt-1 border-t border-surface-800">
+            <div className="col-span-2 flex items-center justify-between pt-1 border-t border-surface-700">
               <span className="text-sm text-surface-300">Opt-in campanhas</span>
               <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', contact.optIn ? 'text-status-active bg-status-active-bg' : 'text-surface-500 bg-surface-800')}>
                 {contact.optIn ? 'Autorizado' : 'Não autorizado'}

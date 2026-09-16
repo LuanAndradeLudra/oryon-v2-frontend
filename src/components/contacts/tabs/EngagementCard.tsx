@@ -137,7 +137,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
 
         {/* Delivery stats */}
         {(messages.readCount > 0 || messages.failedCount > 0) && (
-          <div className="flex items-center gap-4 pt-1 border-t border-surface-800">
+          <div className="flex items-center gap-4 pt-1 border-t border-surface-700">
             {messages.readCount > 0 && (
               <div className="flex items-center gap-1.5">
                 <CheckCheck className="w-3 h-3 text-blue-400" />
@@ -155,7 +155,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
 
         {/* Message types */}
         {Object.keys(messages.byType).length > 1 && (
-          <div className="pt-1 border-t border-surface-800">
+          <div className="pt-1 border-t border-surface-700">
             <p className="text-3xs text-surface-500 uppercase tracking-wide mb-2">Tipos de mensagem</p>
             <div className="flex flex-wrap gap-2">
               {Object.entries(messages.byType).map(([type, count]) => (
@@ -170,7 +170,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
         )}
 
         {/* Response time + assigned */}
-        <div className="grid grid-cols-2 gap-3 pt-1 border-t border-surface-800">
+        <div className="grid grid-cols-2 gap-3 pt-1 border-t border-surface-700">
           <Stat
             icon={<Clock className="w-3.5 h-3.5" />}
             label="Tempo médio de resposta"
@@ -187,7 +187,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
 
         {/* Conversation status breakdown */}
         {conversations.total > 0 && (
-          <div className="pt-1 border-t border-surface-800">
+          <div className="pt-1 border-t border-surface-700">
             <p className="text-3xs text-surface-500 uppercase tracking-wide mb-2">Conversas por status</p>
             <div className="flex gap-2">
               {Object.entries(conversations.byStatus).map(([status, count]) => {
@@ -214,7 +214,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
 
         {/* Last analysis */}
         {lastAnalysis && (
-          <div className="pt-1 border-t border-surface-800">
+          <div className="pt-1 border-t border-surface-700">
             <p className="text-3xs text-surface-500 uppercase tracking-wide mb-2">Última análise de conversa</p>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5">

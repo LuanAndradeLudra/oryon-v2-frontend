@@ -57,7 +57,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
 
   return (
     <>
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-4 flex flex-col gap-4 overflow-hidden">
+      <div className="bg-surface-900 border border-surface-700 rounded-2xl p-4 flex flex-col gap-4 overflow-hidden">
         {/* ── Header ───────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -202,7 +202,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
 
             {/* ── Quick adjacent navigation ───────────────────────────── */}
             {(previous || next) && (
-              <div className="flex items-center gap-2 pt-1 border-t border-surface-800">
+              <div className="flex items-center gap-2 pt-1 border-t border-surface-700">
                 <button
                   type="button"
                   onClick={() => previous && quickMove(previous.key)}

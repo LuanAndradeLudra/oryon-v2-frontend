@@ -272,7 +272,7 @@ export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStats
   }, [collapsed, contacts.length > 0, insightsEnabled])
 
   return (
-    <div className="border-b border-surface-800">
+    <div className="border-b border-surface-700">
       {/* Linha-resumo (sempre visível) — clique alterna o detalhe */}
       <button
         onClick={() => setCollapsed((c) => !c)}

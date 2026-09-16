@@ -16,7 +16,7 @@ interface ContactsHeaderProps {
 export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact, onImport, onConfigure }: ContactsHeaderProps) {
   const { vocab } = useTenantVocab()
   return (
-    <div className="flex items-center justify-between px-4 py-4 border-b border-surface-800 flex-shrink-0">
+    <div className="flex items-center justify-between px-4 py-4 border-b border-surface-700 flex-shrink-0">
       <div className="flex items-center gap-3">
         <h1 className="text-xl font-bold text-surface-50">{vocab.contacts}</h1>
         <span className="text-sm text-surface-500 bg-surface-800 px-2.5 py-0.5 rounded-full font-medium border border-surface-700">

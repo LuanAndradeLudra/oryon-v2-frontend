@@ -258,7 +258,7 @@ function StepIndicator({ step }: { step: Step }) {
   const order: Step[] = ['upload', 'map', 'preview', 'importing', 'done']
   const cur = order.indexOf(step === 'done' ? 'importing' : step)
   return (
-    <div className="flex items-center gap-0 px-5 py-3 border-b border-surface-800 flex-shrink-0">
+    <div className="flex items-center gap-0 px-5 py-3 border-b border-surface-700 flex-shrink-0">
       {steps.map((s, i) => {
         const idx  = order.indexOf(s.id)
         const done = cur > idx
@@ -534,7 +534,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
             style={{ zIndex: zIndex + 1 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
               <div>
                 <h2 className="text-base font-semibold text-surface-50">Importar contatos</h2>
                 <p className="text-xs text-surface-500 mt-0.5">CSV, JSON ou XML — até 1.000 contatos por vez</p>
@@ -955,7 +955,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           {rows.slice(0, 8).map((row, i) => {
                             const { valid, issues } = validateRow(row, colMap)
                             return (
-                              <tr key={i} className={cn('border-b border-surface-800/60 last:border-0', !valid && 'bg-danger/5')}>
+                              <tr key={i} className={cn('border-b border-surface-700/60 last:border-0', !valid && 'bg-danger/5')}>
                                 {/* Número da linha no ARQUIVO, não a posição na prévia — rows já
                                     exclui o cabeçalho (parseCSV faz lines.slice(1)), então a linha
                                     1 do arquivo é o header e rows[0] é a linha 2. Mesma fórmula (+2)
@@ -983,7 +983,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       </table>
                     </div>
                     {rows.length > 8 && (
-                      <div className="px-3 py-2 text-center text-[11px] text-surface-600 border-t border-surface-800/60">
+                      <div className="px-3 py-2 text-center text-[11px] text-surface-600 border-t border-surface-700/60">
                         + {rows.length - 8} linhas não exibidas
                       </div>
                     )}
@@ -1057,7 +1057,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
 
             {/* Footer navigation */}
             {(step === 'map' || step === 'preview') && (
-              <div className="flex items-center justify-between px-5 py-4 border-t border-surface-800 flex-shrink-0">
+              <div className="flex items-center justify-between px-5 py-4 border-t border-surface-700 flex-shrink-0">
                 <button
                   onClick={() => setStep(step === 'map' ? 'upload' : 'map')}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all"

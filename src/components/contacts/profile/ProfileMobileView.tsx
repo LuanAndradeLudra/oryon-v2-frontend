@@ -60,7 +60,7 @@ export function ProfileMobileView({
 
   return (
     <div className="flex flex-col gap-3 pb-8">
-      <div className="sticky top-0 z-10 bg-surface-950/95 backdrop-blur border-b border-surface-800">
+      <div className="sticky top-0 z-10 bg-surface-950/95 backdrop-blur border-b border-surface-700">
         <ContactProfileHeader
           contact={contact}
           compact
@@ -107,7 +107,7 @@ export function ProfileMobileView({
         )}
 
         {segment === 'activity' && (
-          <section className="rounded-2xl border border-surface-800 bg-surface-900 p-3 flex flex-col gap-3">
+          <section className="rounded-2xl border border-surface-700 bg-surface-900 p-3 flex flex-col gap-3">
             {PROFILE_MOCKS_ENABLED && <TimelineComposer onSubmit={onAddNote} textareaRef={composerRef} />}
             <ContactTimeline contactId={contact.id} notes={notes} />
           </section>
