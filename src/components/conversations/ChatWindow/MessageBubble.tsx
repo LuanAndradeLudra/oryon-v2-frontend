@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { useContextMenu } from '@/hooks/useContextMenu'
+import { Avatar } from '@/components/ui/Avatar'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Message } from '@/types'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
@@ -52,6 +53,37 @@ interface MessageBubbleProps {
   quotedMessage?: Message | null
   /** Start a quoted reply to this message (desktop hover button + mobile swipe). */
   onReply?: (message: Message) => void
+  /** CONV-CHAT-16/21 (spec/1d-conversas.GAPS.md): dados do contato — avatar
+   *  inbound na 1ª bolha do grupo. */
+  contact: { displayName: string; profilePicUrl?: string | null }
+}
+
+/** Avatar/tile de 24px na 1ª bolha de cada grupo (CONV-CHAT-16/21). Inbound =
+ *  avatar do contato; outbound = tile "IA" (accent-soft) ou avatar do
+ *  operador — mesma classificação de `senderKey` (MessageList) e
+ *  `SenderInlineIcon`/`senderLabelOf` abaixo, pra nunca discordarem sobre
+ *  QUEM é o remetente. Campanha/regra automática caem no tile neutro. */
+function SenderAvatar({ message, contact }: { message: Message; contact: { displayName: string; profilePicUrl?: string | null } }) {
+  if (message.direction === 'inbound') {
+    return <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl ?? undefined} size="xs" />
+  }
+  if (message.senderKind === 'campaign' || message.senderKind === 'rule') {
+    const Icon = message.senderKind === 'campaign' ? Megaphone : Workflow
+    return (
+      <div className="w-6 h-6 rounded-full bg-surface-800 border border-surface-700 text-surface-400 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+    )
+  }
+  if (message.sentByUser) {
+    return <Avatar name={`${message.sentByUser.firstName} ${message.sentByUser.lastName ?? ''}`} size="xs" kind="operator" />
+  }
+  // IA (senderKind === 'ai', ou ausência de senderKind/sentByUserId).
+  return (
+    <div className="w-6 h-6 rounded-full bg-accent-soft text-accent-dark flex items-center justify-center flex-shrink-0">
+      <Bot className="w-3.5 h-3.5" />
+    </div>
+  )
 }
 
 /** Inline sender indicator for OUTBOUND messages, pinned to the LEFT of the
@@ -627,7 +659,7 @@ function TextContent({ message }: { message: Message }) {
   ) : null
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply, contact }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
   // Extra top spacing when a new sender run starts (the avatar sits above).
@@ -758,6 +790,11 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       }}
       title={bubbleTitle}
     >
+      {/* CONV-CHAT-16/21: avatar/tile de 24px só na 1ª bolha do grupo; nas
+          continuações fica um espaçador do mesmo tamanho, pra bolha não
+          "andar" quando o avatar some. */}
+      {showAvatar ? <SenderAvatar message={message} contact={contact} /> : <div className="w-6 h-6 flex-shrink-0" aria-hidden />}
+
       {/* Desktop reply affordance — appears on hover, beside the bubble. */}
       {canReply && (
         <button
@@ -779,18 +816,19 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
             discreet inline icon in the meta row below, outbound only. */}
         <div
           className={cn(
-            // README 3.3: raio 10px, com o canto "de cauda" em 3px — só na
-            // PRIMEIRA bolha do grupo (showAvatar). Nenhum --radius-* token
+            // CONV-CHAT-18/23 (spec/1d-conversas.GAPS.md): raio 10px, com o
+            // canto "de cauda" em 3px só na PRIMEIRA bolha do grupo
+            // (showAvatar) — geometria corrigida: o canto de cauda é o
+            // INFERIOR (perto do avatar), não o superior; continuações ficam
+            // uniformes, sem nenhum canto cortado. Nenhum --radius-* token
             // cobre 3px, então fica em valor arbitrário aqui mesmo (não é
             // mudança de token, é uso local).
             'relative px-3 py-2 rounded-[10px]',
             isOutbound
               ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg'
               : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)]',
-            showAvatar && isOutbound && 'rounded-tr-[3px]',
-            showAvatar && !isOutbound && 'rounded-tl-[3px]',
-            !showAvatar && isOutbound && 'rounded-br-[3px]',
-            !showAvatar && !isOutbound && 'rounded-bl-[3px]',
+            showAvatar && isOutbound && 'rounded-br-[3px]',
+            showAvatar && !isOutbound && 'rounded-bl-[3px]',
           )}
           style={isOutbound ? { boxShadow: 'var(--bubble-shadow-soft)' } : undefined}
         >

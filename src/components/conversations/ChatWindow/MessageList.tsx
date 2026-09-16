@@ -14,6 +14,9 @@ interface MessageListProps {
   onLoadMore: () => void
   /** Start an outbound quoted reply to this message (button/swipe in the bubble). */
   onReply?: (message: Message) => void
+  /** CONV-CHAT-16/21 (spec/1d-conversas.GAPS.md): avatar do contato na 1ª
+   *  bolha de cada grupo inbound. */
+  contact: { displayName: string; profilePicUrl?: string | null }
 }
 
 /** Identity key for grouping consecutive messages by the SAME sender, so the
@@ -50,7 +53,7 @@ function DateSeparator({ date }: { date: string }) {
   )
 }
 
-export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, onReply }: MessageListProps) {
+export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, onReply, contact }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(0)
@@ -178,6 +181,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
               showAvatar={showAvatar}
               quotedMessage={msg.contextWamid ? byWamid.get(msg.contextWamid) ?? null : null}
               onReply={onReply}
+              contact={contact}
             />
           </div>
         )
