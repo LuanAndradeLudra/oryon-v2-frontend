@@ -17,7 +17,7 @@ const { api, openDeal, multi, socket } = vi.hoisted(() => ({
   multi: vi.fn(() => true),
   socket: { on: vi.fn(), off: vi.fn() },
 }))
-vi.mock('@/services/api', () => ({ dealsApi: api, contactsApi: { get: vi.fn(), list: vi.fn() }, usersApi: { list: vi.fn(() => Promise.resolve({ data: [] })) } }))
+vi.mock('@/services/api', () => ({ dealsApi: api, contactsApi: { get: vi.fn(), list: vi.fn(), getHistory: vi.fn(() => Promise.resolve({ data: { data: [] } })) }, usersApi: { list: vi.fn(() => Promise.resolve({ data: [] })) } }))
 vi.mock('@/services/socket', () => ({ connectSocket: () => socket }))
 // `useAddToPipeline` (por baixo de AddToPipelineMenu/NewDealDialog) ainda chama
 // useNavigate — sem Router no render de teste, precisa continuar mockado.
@@ -34,6 +34,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 }))
 
 import type { Deal, Pipeline, PipelineStage } from '@/types'
+import { contactsApi } from '@/services/api'
 const st = (id: string, label: string, order: number, extra: Partial<PipelineStage> = {}): PipelineStage => ({ id, tenantId: 't', pipelineId: 'p', key: id, label, color: '#111', order, isWon: false, isLost: false, ...extra })
 const SUPORTE: Pipeline = {
   id: 'p', tenantId: 't', name: 'Suporte', color: '#14b8a6', order: 0, isDefault: false, isArchived: false, kind: 'process', openDealsCount: 0,
@@ -130,6 +131,17 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     const list = await screen.findByTestId('deal-history-list-d3')
     expect(list).toHaveTextContent('entrou em Novo · campanha')
     expect(list).toHaveTextContent('Novo → Cancelado · Ana')
+  })
+
+  it('DRAWER-29/30: "Atividade recente" mostra só eventos de negócio do histórico do contato', async () => {
+    vi.mocked(contactsApi.getHistory).mockResolvedValueOnce({ data: { data: [
+      { id: 'h1', contactId: 'c1', type: 'deal_won', actor: 'user', actorName: 'Ana', summary: 'ganhou o negócio Plano Anual', createdAt: '2026-08-01T00:00:00Z' },
+      { id: 'h2', contactId: 'c1', type: 'tag_added', actor: 'user', actorName: 'Ana', summary: 'adicionou a etiqueta VIP', createdAt: '2026-08-02T00:00:00Z' },
+    ] } } as never)
+    renderTab()
+    await waitFor(() => expect(screen.getByText('Atividade recente')).toBeInTheDocument())
+    expect(screen.getByText('Atividade recente').closest('div')).toHaveTextContent('ganhou o negócio Plano Anual')
+    expect(screen.queryByText(/adicionou a etiqueta/)).not.toBeInTheDocument()
   })
 
   it('excluir chama DELETE /deals/:id e recarrega', async () => {

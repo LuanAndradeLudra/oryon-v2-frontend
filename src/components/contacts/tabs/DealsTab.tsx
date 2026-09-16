@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Loader2, MoreHorizontal, CheckCircle2, XCircle, RotateCcw, History } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -13,12 +13,14 @@ import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
-import { dealsApi } from '@/services/api'
+import { dealsApi, contactsApi } from '@/services/api'
 import { pipelineNoun, defaultSalesPipeline, pipelineKindOf, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { moveTargets, movedByLabel } from '@/lib/contactPipelines'
 import { formatRelativeTime } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
-import type { Deal, Pipeline, PipelineStage } from '@/types'
+import type { Deal, Pipeline, PipelineStage, ContactHistoryEvent } from '@/types'
+
+const DEAL_HISTORY_TYPES = new Set(['deal_created', 'deal_won', 'deal_lost', 'deal_updated'])
 
 /**
  * Aba de negócios do quick-view do contato (drawer da tabela de CRM) — a
@@ -65,6 +67,22 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
   } = useContactPipelines(contactId, contactName, { requireMultiPipeline: false })
   const { requestAdd, requestAddDetailed, dialogs: addDialogs, reportConflict } = useAddToPipeline()
   const moveState = useDealSummaryMove()
+
+  // DRAWER-29/30 (spec/1c-contatos.GAPS.md): "Atividade recente" abaixo da
+  // tabela — só os eventos de NEGÓCIO do histórico do contato (criado/ganho/
+  // perdido/atualizado), não a timeline inteira (conversas/tags/IA), que já
+  // tem lugar próprio na aba Histórico.
+  const [recentActivity, setRecentActivity] = useState<ContactHistoryEvent[]>([])
+  useEffect(() => {
+    let alive = true
+    contactsApi.getHistory(contactId, 1, 30)
+      .then((r) => {
+        if (!alive) return
+        setRecentActivity(r.data.data.filter((e) => DEAL_HISTORY_TYPES.has(e.type)))
+      })
+      .catch(() => { if (alive) setRecentActivity([]) })
+    return () => { alive = false }
+  }, [contactId])
   const [modalOpen, setModalOpen] = useState(false)
   // A3 (SCRUM-925): sem o flag de múltiplos funis não há "Adicionar ao funil ▾",
   // e o "Novo" abria o `DealModal` — que é o formulário de EDIÇÃO e não tem
@@ -317,6 +335,26 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
                   </div>
                 )
               })}
+            </div>
+          )}
+
+          {recentActivity.length > 0 && (
+            <div className="mt-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-1.5">
+                Atividade recente
+              </p>
+              <ol>
+                {recentActivity.map((e) => (
+                  <li key={e.id} className="grid grid-cols-[64px_1fr] gap-2.5 py-[7px] border-b border-surface-700 last:border-0 text-[12.5px]">
+                    <span className="text-[11.5px] text-surface-500">{formatRelativeTime(e.createdAt)}</span>
+                    <span className="text-surface-300 truncate">
+                      <span className="font-semibold text-surface-100">{e.actorName}</span>
+                      {' '}
+                      <span className="text-surface-400">{e.summary}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </div>
           )}
         </div>
