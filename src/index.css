@@ -818,10 +818,15 @@ code, pre, kbd, samp {
   --color-avatar-initials: #FFFFFF;
 
 
-  --color-surface-950: #F1F3F7;
-  --color-surface-900: #FBFBFD;
-  --color-surface-800: #FFFFFF;
-  --color-surface-700: #D9DCE5;
+  /* SCRUM-1097 (reauditoria de fidelidade): valores exatos do README §fundo
+     do tema claro (linha 93) — fundo #FAFAFC · superfície #FFFFFF ·
+     superfície-2 #F5F6F8 · borda #E4E6EC. Os 4 estavam visivelmente mais
+     acinzentados que o mockup (usuário notou "tema claro tinha background
+     em branco"). */
+  --color-surface-950: #FAFAFC;
+  --color-surface-900: #FFFFFF;
+  --color-surface-800: #F5F6F8;
+  --color-surface-700: #E4E6EC;
   --color-surface-600: #6B7385;
   --color-surface-500: #4B5263;
   --color-surface-400: #374151;
