@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Copy, ExternalLink, Trash2, Maximize2 } from 'lucide-react'
+import { X, Copy, Trash2, Maximize2, MessageSquare, Handshake } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
 import { StageBadge } from './StageBadge'
 import { SendTemplateDrawer } from './SendTemplateDrawer'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { isAdminTier } from '@/lib/roleHelpers'
+import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { contactsApi } from '@/services/api'
 import type { Contact } from '@/types'
 
@@ -21,7 +24,7 @@ interface ContactDetailHeaderProps {
 }
 
 export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: ContactDetailHeaderProps) {
-  const { stages } = useCRMConfig()
+  const { stages, pipelines } = useCRMConfig()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -29,6 +32,8 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
   const [templateDrawerOpen, setTemplateDrawerOpen] = useState(false)
   const handleCopyWa = () => navigator.clipboard.writeText(contact.waId)
   const canDelete = isAdminTier(user?.role)
+  const addToPipeline = useAddToPipeline()
+  const salesPipeline = defaultSalesPipeline(pipelines)
 
   useEffect(() => {
     contactsApi.getConversations(contact.id).then((r) => {
@@ -55,14 +60,21 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
           {contact.stage && <StageBadge stage={contact.stage} stages={stages} />}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-surface-400">{contact.waId}</span>
           <button onClick={handleCopyWa} aria-label="Copiar número do WhatsApp" className="text-surface-500 hover:text-surface-200 transition-colors">
             <Copy className="w-3.5 h-3.5" />
           </button>
-          <button onClick={handleOpenChat} title="Abrir conversa" aria-label="Abrir conversa" className="text-surface-500 hover:text-emerald-400 transition-colors cursor-pointer">
-            <ExternalLink className="w-3.5 h-3.5" />
-          </button>
+          {contact.email && (
+            <>
+              <span className="text-surface-600 text-sm">·</span>
+              <span className="text-sm text-surface-400 truncate">{contact.email}</span>
+            </>
+          )}
+          <span className="text-surface-600 text-sm">·</span>
+          <span className="text-sm text-surface-400 whitespace-nowrap">
+            cliente desde {new Date(contact.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
+          </span>
         </div>
 
         {contact.company && (
@@ -70,6 +82,22 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
             {contact.jobTitle ? `${contact.jobTitle} · ` : ''}{contact.company}
           </p>
         )}
+
+        <div className="flex items-center gap-2 mt-3">
+          <Button size="sm" variant="primary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={handleOpenChat}>
+            Conversar
+          </Button>
+          {salesPipeline && (
+            <Button
+              size="sm"
+              variant="neutral"
+              leftIcon={<Handshake className="w-3.5 h-3.5" />}
+              onClick={() => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline: salesPipeline })}
+            >
+              Novo negócio
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -119,6 +147,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
         open={templateDrawerOpen}
         onClose={() => setTemplateDrawerOpen(false)}
       />
+      {addToPipeline.dialogs}
     </div>
   )
 }

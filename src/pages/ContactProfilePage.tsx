@@ -415,8 +415,8 @@ export function ContactProfilePage() {
                     visíveis nos dois temas (surface-800 = branco no claro). */}
                 <div className="profile-accordion rounded-2xl border border-surface-800 bg-surface-900 divide-y divide-surface-700 overflow-hidden grow shrink-0">
                   <CollapsibleSection title="Perfil" storageKey="profile.about">
-                    <ContactInfoCard contact={contact} onSave={profile.save} />
-                    <QualificationCard contact={contact} onSave={profile.save} hideStage />
+                    <ContactInfoCard contact={contact} onSave={profile.save} hideTitle />
+                    <QualificationCard contact={contact} onSave={profile.save} hideStage hideTitle />
                   </CollapsibleSection>
                   {/* PROPOSTA do Auditor, decisão do Maestro registrada no PR:
                       a situação do contato (contacts.stage, ciclo de vida)
@@ -438,7 +438,7 @@ export function ContactProfilePage() {
                     <CustomFieldsCard contact={contact} onSave={profile.save} hideTitle />
                   </CollapsibleSection>
                   <CollapsibleSection title="Etiquetas e origem" storageKey="profile.marketing" count={(contact.tags ?? []).length}>
-                    <TagsCard contact={contact} onAddTag={profile.addTag} onRemoveTag={profile.removeTag} />
+                    <TagsCard contact={contact} onAddTag={profile.addTag} onRemoveTag={profile.removeTag} hideTitle />
                     <AttributionCard contact={contact} />
                   </CollapsibleSection>
                   <CollapsibleSection title="Engajamento" storageKey="profile.engagement">
