@@ -185,3 +185,150 @@ testado e usado em produção.
 de "bloqueado até válido" para "clicável, valida ao tentar"? Se sim, dá pra fazer sem
 depender de nenhum dado novo — só precisa atualizar os testes que hoje afirmam o
 comportamento antigo.
+
+---
+
+## Auditoria 2 — Levas 6, 7, 8, 9, 10 (Dashboard, Agentes/Wizards, Campanhas, Agendamentos, Configurações)
+
+Segunda rodada do mesmo exercício (gate visual por leitura + consolidação de gaps),
+agora sobre as levas do Farol e da Bússola já mescladas no worktree. Mesma regra: só
+entra aqui divergência real, com evidência (imagem do mockup e/ou código), nunca chute.
+
+**Leva 11 (Plano & Faturamento) ficou de fora desta rodada por um motivo à parte:** o
+commit `f2e45f9` ("leva 11 — reestilização de Plano & Faturamento") existe no
+repositório, mas **não está mesclado no branch do épico**
+(`epic/SCRUM-1097-restyle-visual`) — ele só aparece na branch
+`SCRUM-1107-leva9-agendamentos`, aparentemente commitado ali por engano. Como o código
+real do épico não reflete essa leva, auditar contra ele agora documentaria gaps
+fantasmas. Fica para o Maestro decidir: recuperar o commit pra branch/PR certos, ou pedir
+pra quem fez para refazer o merge.
+
+## 4. Dashboard (leva 6, README 3.1)
+
+### 4.1 "Fila agora" é um resumo agregado, não a lista de conversas em espera
+
+O mockup (`telas/01-1b-dashboard.png`) mostra, no rail, um card "Fila agora" com uma
+**lista** de conversas individuais aguardando (avatar 26px, nome, trecho da última
+mensagem, tempo colorido por SLA, chip de ator) e rodapé "Ver todas as N". O card real
+equivalente, `LiveNowCard.tsx`, é um resumo agregado — 4 números (usuários online,
+conversas ativas, em fila, espera média) num grid 2×2, sem nenhuma lista de itens. Não é
+diferença de estilo, é um widget diferente: falta o componente que lista as conversas
+individuais em fila.
+
+**Para desbloquear:** não é gap de dado — a lista de conversas pendentes já existe (é a
+mesma consulta que alimenta a aba "Pendentes" do Inbox). É trabalho de construir o
+componente (lista + item de 44px + link "ver todas") e decidir se ele substitui o
+`LiveNowCard` atual ou convive ao lado dele (o card agregado também tem valor próprio).
+
+### 4.2 "Equipe": sem a linha fixa do Agente IA
+
+Já documentado no próprio commit da leva (`bf27136`): o mockup mostra a mini-tabela
+"Equipe" com uma última linha fixa para o agente de IA (tile de acento suave). O
+`TeamMiniCard` real lista os top-5 agentes HUMANOS por conversas abertas hoje
+(`agentMetrics`, mesmo dado da `AgentTable`) e não inclui essa linha — o dado de hoje
+(`agentMetrics`) não cobre métricas do agente de IA no mesmo formato comparável, e
+fabricar um número ali viraria estatística fictícia.
+
+**Para desbloquear:** decisão de produto — o que a linha do "Agente IA" deveria mostrar
+(conversas resolvidas pela IA hoje? taxa de resolução?) e se esse dado já existe em algum
+endpoint (ex. os KPIs `bot_resolved`/`bot_deflection`, hoje zerados no snapshot) ou precisa
+ser calculado no backend.
+
+## 5. Agentes IA + Wizards (leva 7, README 3.5/3.6)
+
+### 5.1 Taxonomia de abas do detalhe do agente
+
+Já documentado no próprio commit da leva (`6d2bc48`): o mockup descreve 6 abas
+(Desempenho · Comportamento · Conhecimento · Handoff · Canais · Histórico — confirmado
+visualmente em `telas/01-2a-agentes-ia.png`). O `AgentDetail.tsx` real tem 9 abas
+(overview/prompt/capabilities/criteria/skills/tools/rules/knowledge/catalog/metrics),
+mantidas como estão de propósito — consolidar 9 em 6 é reorganização de informação, não
+reestilo.
+
+**Para desbloquear:** decisão de produto — quais das 9 abas reais se agrupam em cada uma
+das 6 do mockup (ex. capabilities+criteria+skills+tools+rules dentro de "Comportamento"?),
+e se algo se perde nesse agrupamento.
+
+### 5.2 `AgentDetail.tsx` não foi atualizado para o token `--sf2` (já existe, ficou pendente)
+
+A leva 7 flagou pro Maestro que o token `--sf2` (fundo de rail/nav secundário, usado em
+5+ telas) não existia em `index.css` e aproximou com `surface-800/60`/`surface-900/60` como
+solução temporária. O Maestro já adicionou `--sf2` à fundação (`index.css`,
+`--sf2: var(--color-surface-900)`) — mas só o `AutomationBuilder.tsx` (mesma leva) foi
+atualizado para consumir o token de verdade (`bg-[var(--sf2)]`). O rail direito do
+`AgentDetail.tsx` ("KPIs 2×2... rail em `--sf2`", README 3.5) continua na classe de
+aproximação antiga (`bg-surface-900/60`).
+
+Achado relacionado nas outras 2 auditorias desta rodada: o mesmo padrão se repete em
+`ScheduleWeekGrid.tsx` (fim de semana, leva 9) e `VerticalSettings.tsx` (bloco de prévia,
+leva 10) — nenhuma das telas que o comentário de `--sf2` em `index.css` lista
+(3.5/3.6/3.8/3.9/3.11) migrou pro token de verdade além do `AutomationBuilder`.
+
+**Para desbloquear:** não depende de decisão nenhuma — é troca mecânica de classe
+(`bg-surface-900/60` ou `bg-surface-900/40` → `bg-[var(--sf2)]`) nos 3+ lugares
+encontrados. Baixo risco, puramente visual; vale fazer de uma vez só, não tela por tela.
+
+## 6. Disparos/Campanhas (leva 8, README 3.7)
+
+### 6.1 Aba Templates continua em lista, não na "grade de 4 cards"
+
+O mockup (`telas/01-2c-templates-preview-whatsapp.png`) mostra a aba Templates como uma
+grade de 4 cards (header com nome em mono + chip de status Meta, corpo com a prévia em
+fundo `#EFE7DD`). O código real manteve `TemplatesTab.tsx` como lista de linhas — uma
+tabela bem mais densa, com edição/exclusão/duplicar/atribuir linha/motivo de rejeição por
+linha, que a leva não teve tempo de encaixar com segurança na grade do mockup sem perder
+funcionalidade (achado já registrado no commit `d6cc939`, confirmado aqui contra o código
+atual e a imagem).
+
+**Para desbloquear:** não é gap de dado — é escopo/risco. Migrar pra grade de cards exige
+decidir onde cabem as ações hoje disponíveis por linha (edição/exclusão/duplicar/atribuir
+linha/motivo de rejeição) dentro de um card menor.
+
+### 6.2 Banner âmbar de limite diário do WABA não aparece no CampaignWizard
+
+O mockup mostra, na etapa Revisão do wizard, um banner de aviso quando o envio ultrapassa
+o limite diário da linha WhatsApp ("Envio ultrapassa o limite diário (1.000). A campanha
+será dividida em 3 dias automaticamente."). O dado real (`messagingLimit`) existe em
+`WhatsAppNumberDetailed`, mas não está disponível no contexto que o wizard já consome
+(`useWorkspaceNumber` só expõe `WhatsAppNumber` básico) — buscar via `/whatsapp/numbers`
+só para isso ficou fora do escopo da leva (registrado no commit `d6cc939`).
+
+**Para desbloquear:** não é decisão de produto, é trabalho técnico — expor
+`messagingLimit` no contexto que o wizard consome (ou buscar sob demanda na etapa de
+Revisão).
+
+## 7. Agendamentos (leva 9, README 3.8)
+
+Leva 9 foi deliberadamente escopada como "casca visual de exemplo" (sem rota/API real de
+agenda no backend — dado fixo em `scheduleMock.ts`, documentado em comentário e Banner na
+própria tela). Isso é esperado e **não é gap** (mesma natureza do que já está registrado na
+memória do projeto sobre esta leva). Verificação item a item contra o mockup e o código:
+toolbar, grade semanal 08–17h, header de dia com "HOJE", popover de detalhe
+(Contato/Responsável/Origem/Status + ações), linha do "agora" (2px cor de perigo + bolinha
+de 8px) e visualização Lista batem com o mockup. A entrada de navegação
+(NavSidebar/TopBar), que o commit da leva previa deixar para o Maestro, já está presente.
+
+### 7.1 Fim de semana não usa o token `--sf2`
+
+Ver 5.2 — mesmo padrão, aqui em `ScheduleWeekGrid.tsx` (colunas de fim de semana e
+cabeçalho de dia usam `bg-surface-900/40` em vez de `bg-[var(--sf2)]`).
+
+## 8. Configurações (leva 10, README 3.9)
+
+### 8.1 Bloco de prévia (Vocabulário) não usa o token `--sf2`
+
+Ver 5.2 — mesmo padrão, aqui em `VerticalSettings.tsx` (bloco de prévia da seção
+"Registros do funil" usa `bg-surface-900/60` em vez de `bg-[var(--sf2)]`).
+
+Fora esse ponto, a leva 10 bate com o mockup com alta fidelidade: `SettingsSection` já usa
+exatamente o grid `260px | 1fr`, gap 24px e padding vertical 22px do README; o índice
+"Nesta página" já é 180px; o texto de erro obrigatório do campo de Fechamento vazio
+("Obrigatório — usado no modal de motivo") e o texto da prévia batem literalmente com o
+PNG.
+
+## 9. Plano & Faturamento (leva 11, README 3.11) — auditoria pendente
+
+Ver nota no topo desta seção: o commit da leva 11 não está mesclado no branch do épico
+(está órfão em `SCRUM-1107-leva9-agendamentos`). Auditar agora produziria gaps baseados em
+código que o épico não tem. Repetir esta auditoria assim que o commit estiver no lugar
+certo.
