@@ -1,9 +1,10 @@
-import { Briefcase, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { Button } from '@/components/ui/Button'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { pipelineKindOf, defaultSalesPipeline, pipelineNoun } from '@/lib/pipelineKinds'
 import { formatBRL } from '@/utils/money'
@@ -85,14 +86,8 @@ export function DealsSummaryCard({ contactId, contactName }: { contactId: string
   ) : null
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-2xl p-4">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2">
-          <Briefcase className="w-4 h-4 text-surface-400" />
-          <h4 className="text-sm font-semibold text-surface-100">{vocab.deals}</h4>
-        </div>
-        {addAction}
-      </div>
+    <>
+    <CollapsibleSection title={vocab.deals} storageKey="contact-drawer.deals" actions={addAction}>
       {deals === null ? (
         <p className="text-xs text-surface-600">Carregando…</p>
       ) : isEmpty ? (
@@ -129,7 +124,8 @@ export function DealsSummaryCard({ contactId, contactName }: { contactId: string
           )}
         </div>
       )}
+    </CollapsibleSection>
       {addToPipeline.dialogs}
-    </div>
+    </>
   )
 }

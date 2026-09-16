@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Pencil, Save, X as XIcon, BarChart3 } from 'lucide-react'
+import { Pencil, Save, X as XIcon } from 'lucide-react'
 import { FormField } from '@/components/ui/FormField'
 import { Select } from '@/components/ui/Select'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { useToast } from '@/hooks/useToast'
@@ -36,9 +37,11 @@ interface QualificationCardProps {
   /** Esconde o campo Estágio (quando um StageCard dedicado já o gerencia na
    *  mesma tela) — evita a triplicação e o duplo caminho de escrita do estágio. */
   hideStage?: boolean
+  /** Esconde o título "Qualificação" quando uma seção já o rotula (ex.: acordeão da ficha completa). */
+  hideTitle?: boolean
 }
 
-export function QualificationCard({ contact, onSave, hideStage = false }: QualificationCardProps) {
+export function QualificationCard({ contact, onSave, hideStage = false, hideTitle = false }: QualificationCardProps) {
   const [editing, setEditing] = useState(false)
   const { stages } = useCRMConfig()
   const { vocab } = useTenantVocab()
@@ -80,35 +83,30 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
     setEditing(false)
   }
 
-  return (
-    <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
-        <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-surface-400" /> Qualificação
-        </h3>
-        {!editing ? (
-          <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-        ) : (
-          <div className="flex items-center gap-1">
-            <button onClick={handleCancel} disabled={saving} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
-              <XIcon className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
-            >
-              <Save className="w-3 h-3" />
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </div>
-        )}
-      </div>
+  const actions = !editing ? (
+    <button onClick={() => setEditing(true)} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+      <Pencil className="w-3 h-3" />
+    </button>
+  ) : (
+    <div className="flex items-center gap-1">
+      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+        <XIcon className="w-3 h-3" />
+      </button>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
+      >
+        <Save className="w-2.5 h-2.5" />
+        {saving ? 'Salvando...' : 'Salvar'}
+      </button>
+    </div>
+  )
 
-      <div className="px-4 py-4 flex flex-col gap-4">
-        {editing ? (
+  const body = (
+    <>
+
+      {editing ? (
           <>
             {!hideStage && (
               <FormField label="Situação">
@@ -164,8 +162,22 @@ export function QualificationCard({ contact, onSave, hideStage = false }: Qualif
             </div>
           </div>
         )}
+    </>
+  )
+
+  if (hideTitle) {
+    return (
+      <div>
+        <div className="flex items-center justify-end mb-2">{actions}</div>
+        {body}
       </div>
-    </div>
+    )
+  }
+
+  return (
+    <CollapsibleSection title="Qualificação" storageKey="contact-drawer.qualification" actions={actions}>
+      {body}
+    </CollapsibleSection>
   )
 }
 

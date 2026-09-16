@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Pencil, Save, X as XIcon, Plus, Trash2, Settings2 } from 'lucide-react'
+import { Pencil, Save, X as XIcon, Plus, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { contactsApi } from '@/services/api'
-import { cn } from '@/lib/utils'
 import type { Contact, ContactCustomField, ContactCustomFieldDef } from '@/types'
 
 interface CustomFieldsCardProps {
@@ -168,33 +168,29 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomF
     setEditing(false)
   }
 
-  return (
-    <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-      <div className={cn('flex items-center px-4 py-3', hideTitle ? 'justify-end' : 'justify-between border-b border-surface-800')}>
-        {!hideTitle && <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2"><Settings2 className="w-4 h-4 text-surface-400" /> Campos Personalizados</h3>}
-        {!editing ? (
-          <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-        ) : (
-          <div className="flex items-center gap-1">
-            <button onClick={handleCancel} disabled={saving} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
-              <XIcon className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
-            >
-              <Save className="w-3 h-3" />
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </div>
-        )}
-      </div>
+  const actions = !editing ? (
+    <button onClick={() => setEditing(true)} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+      <Pencil className="w-3 h-3" />
+    </button>
+  ) : (
+    <div className="flex items-center gap-1">
+      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+        <XIcon className="w-3 h-3" />
+      </button>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-surface-100 hover:bg-surface-50 text-surface-950 disabled:opacity-60 transition-all"
+      >
+        <Save className="w-2.5 h-2.5" />
+        {saving ? 'Salvando...' : 'Salvar'}
+      </button>
+    </div>
+  )
 
-      <div className="px-4 py-4 flex flex-col gap-3">
-        {fields.length === 0 && !editing && (
+  const body = (
+    <div className="flex flex-col gap-3">
+      {fields.length === 0 && !editing && (
           <p className="text-sm text-surface-600 py-1">Nenhum campo personalizado. Clique em editar para adicionar.</p>
         )}
 
@@ -234,7 +230,23 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomF
             </div>
           </div>
         )}
-      </div>
     </div>
+  )
+
+  // ContactProfilePage já rotula a seção por fora (hideTitle) — nesse caso o
+  // card entrega só as ações + conteúdo, sem duplicar o cabeçalho colapsável.
+  if (hideTitle) {
+    return (
+      <div>
+        <div className="flex items-center justify-end mb-2">{actions}</div>
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <CollapsibleSection title="Campos personalizados" storageKey="contact-drawer.custom-fields" actions={actions}>
+      {body}
+    </CollapsibleSection>
   )
 }

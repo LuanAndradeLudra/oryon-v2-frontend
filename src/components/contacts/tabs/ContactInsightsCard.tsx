@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Activity, MessageSquare, Clock, CalendarDays, Eye, Tag, Repeat2, UserPlus } from 'lucide-react'
+import { MessageSquare, Clock, CalendarDays, Eye, Tag, Repeat2, UserPlus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { contactsApi } from '@/services/api'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import type { Contact } from '@/types'
 
 function formatAbsolute(iso?: string) {
@@ -58,22 +59,19 @@ export function ContactInsightsCard({ contact }: Props) {
     abandoned: 'Abandonada',
   }
 
-  return (
-    <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
-        <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
-          <Activity className="w-4 h-4 text-surface-400" /> Visão Rápida
-        </h3>
-        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-surface-700 text-surface-400 bg-surface-800">
-          {isNew ? (
-            <span className="flex items-center gap-1"><UserPlus className="w-3 h-3" /> Novo contato</span>
-          ) : (
-            <span className="flex items-center gap-1"><Repeat2 className="w-3 h-3" /> Recorrente · {contact.conversationCount} conversas</span>
-          )}
-        </span>
-      </div>
+  const actions = (
+    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-surface-700 text-surface-400 bg-surface-800">
+      {isNew ? (
+        <span className="flex items-center gap-1"><UserPlus className="w-3 h-3" /> Novo contato</span>
+      ) : (
+        <span className="flex items-center gap-1"><Repeat2 className="w-3 h-3" /> Recorrente · {contact.conversationCount} conversas</span>
+      )}
+    </span>
+  )
 
-      <div className="px-4 py-4 grid grid-cols-2 gap-4">
+  return (
+    <CollapsibleSection title="Visão rápida" storageKey="contact-drawer.insights" actions={actions}>
+      <div className="grid grid-cols-2 gap-4">
         {/* Last message */}
         {lastMessage && (
           <div className="col-span-2">
@@ -133,6 +131,6 @@ export function ContactInsightsCard({ contact }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </CollapsibleSection>
   )
 }

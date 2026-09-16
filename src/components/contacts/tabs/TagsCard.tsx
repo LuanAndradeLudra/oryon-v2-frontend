@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Tag as TagIcon, X, Plus, Loader2 } from 'lucide-react'
+import { X, Plus, Loader2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { TagPickerContent } from '@/components/ui/TagPicker'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { useTags } from '@/contexts/TagsContext'
 import { cn } from '@/lib/utils'
 import type { Contact, Tag } from '@/types'
@@ -10,9 +11,11 @@ interface TagsCardProps {
   contact: Contact
   onAddTag: (tag: Tag) => Promise<void>
   onRemoveTag: (tagId: string) => Promise<void>
+  /** Esconde o título "Etiquetas" quando uma seção já o rotula (ex.: acordeão da ficha completa). */
+  hideTitle?: boolean
 }
 
-export function TagsCard({ contact, onAddTag, onRemoveTag }: TagsCardProps) {
+export function TagsCard({ contact, onAddTag, onRemoveTag, hideTitle = false }: TagsCardProps) {
   // Cache compartilhado (TagsContext) — antes era um fetch local próprio
   // deste card, então uma tag criada aqui só aparecia em Conversas/CRM
   // depois de logout/login (e vice-versa).
@@ -31,29 +34,21 @@ export function TagsCard({ contact, onAddTag, onRemoveTag }: TagsCardProps) {
     }
   }
 
-  return (
-    <>
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TagIcon className="w-4 h-4 text-surface-500" />
-            <h3 className="text-sm font-semibold text-surface-100">Etiquetas</h3>
-            {selectedTags.length > 0 && (
-              <span className="text-[11px] text-surface-500">{selectedTags.length}</span>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-brand-400 hover:text-brand-300 hover:bg-brand-500/10 rounded-lg transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Gerenciar
-          </button>
-        </div>
+  const actions = (
+    <button
+      type="button"
+      onClick={() => setPickerOpen(true)}
+      className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors"
+    >
+      <Plus className="w-3 h-3" />
+      Gerenciar
+    </button>
+  )
 
-        {selectedTags.length === 0 ? (
-          <p className="text-xs text-surface-500 italic">
+  const body = (
+    <>
+      {selectedTags.length === 0 ? (
+          <p className="text-xs text-surface-600">
             Nenhuma etiqueta atribuída. Use "Gerenciar" para adicionar.
           </p>
         ) : (
@@ -88,7 +83,26 @@ export function TagsCard({ contact, onAddTag, onRemoveTag }: TagsCardProps) {
             ))}
           </div>
         )}
-      </div>
+    </>
+  )
+
+  return (
+    <>
+      {hideTitle ? (
+        <div>
+          <div className="flex items-center justify-end mb-2">{actions}</div>
+          {body}
+        </div>
+      ) : (
+        <CollapsibleSection
+          title="Etiquetas"
+          count={selectedTags.length > 0 ? selectedTags.length : undefined}
+          storageKey="contact-drawer.tags"
+          actions={actions}
+        >
+          {body}
+        </CollapsibleSection>
+      )}
 
       <Modal
         open={pickerOpen}

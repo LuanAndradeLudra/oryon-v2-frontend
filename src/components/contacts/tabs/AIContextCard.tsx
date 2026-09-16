@@ -223,13 +223,15 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
   }, [justFinished])
 
   return (
-    <div className="rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
-      {/* Card header */}
+    <div>
+      {/* Header — mantém o badge "IA Contextual" e o mecanismo de colapso
+          próprios (diferente do padrão DADOS: este card é conteúdo gerado,
+          não campo administrativo, e o selo âmbar é o que marca essa
+          diferença). Só a caixa externa (borda/raio antigos) saiu daqui. */}
       <div
         className={cn(
-          'flex items-center justify-between px-4 py-3 transition-colors',
-          hasData && !generating ? 'cursor-pointer hover:bg-surface-800/40' : '',
-          (!collapsed || !hasData || generating) && 'border-b border-surface-800',
+          'flex items-center justify-between py-2 transition-colors rounded-lg',
+          hasData && !generating ? 'cursor-pointer hover:bg-surface-800/40 px-2 -mx-2' : '',
         )}
         onClick={hasData && !generating ? () => setCollapsed((v) => !v) : undefined}
       >
