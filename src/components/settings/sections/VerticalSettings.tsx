@@ -251,7 +251,7 @@ export function VerticalSettings() {
             ]}
           />
         </FormField>
-        <p className="text-xs text-surface-500 bg-surface-900/60 border border-surface-800 rounded-md px-3 py-2">
+        <p className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-800 rounded-md px-3 py-2">
           Prévia: <span className="text-surface-300">"Novo {dealLower}"</span> · <span className="text-surface-300">"3 {dealsLower} em Proposta"</span> · <span className="text-surface-300">"{vocab.deal} {wonAgreement}"</span>
         </p>
       </SettingsSection>

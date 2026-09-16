@@ -43,7 +43,7 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
             className={cn(
               'h-11 flex flex-col items-center justify-center border-b border-r border-surface-800 last:border-r-0',
               day.isToday && 'bg-accent-soft',
-              day.isWeekend && !day.isToday && 'bg-surface-900/40',
+              day.isWeekend && !day.isToday && 'bg-[var(--sf2)]',
             )}
           >
             <span className="text-[11px] font-semibold uppercase tracking-wide text-surface-400">{day.label}</span>
@@ -78,7 +78,7 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
               key={day.dayIndex}
               className={cn(
                 'relative border-r border-surface-800 last:border-r-0',
-                day.isWeekend && 'bg-surface-900/40',
+                day.isWeekend && 'bg-[var(--sf2)]',
               )}
               style={{ height: GRID_HEIGHT }}
             >
