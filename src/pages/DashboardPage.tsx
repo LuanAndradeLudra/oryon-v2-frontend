@@ -35,6 +35,7 @@ import { formatActivity, pickActivityType } from '@/components/dashboard/activit
 import type { HomeStats } from '@/types'
 import type { User } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
@@ -255,6 +256,11 @@ export function DashboardPage() {
     </div>
   )
 
+  // DASH-HEADER-03: período + refresh saem do header do KpiGrid pro slot de
+  // ações da TopBar (mesmo padrão de useRegisterTopBarActions das outras
+  // levas — não mexe em layout/TopBar.tsx).
+  useRegisterTopBarActions(dateAndRefreshActions, [dateRange, loading, lastUpdated])
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {isMobile && <MobilePageHeader title="Dashboard" />}
@@ -284,10 +290,7 @@ export function DashboardPage() {
                       Métricas Principais
                     </p>
                     <div className="flex-1" />
-                    <div className="flex items-center gap-2 shrink-0">
-                      {dateAndRefreshActions}
-                      <div className="h-8 w-[104px] bg-surface-800 border border-surface-700/60 rounded-lg animate-pulse shrink-0" />
-                    </div>
+                    <div className="h-8 w-[104px] bg-surface-800 border border-surface-700/60 rounded-lg animate-pulse shrink-0" />
                   </div>
                   <div className="h-[104px] bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />
                   <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
@@ -310,7 +313,7 @@ export function DashboardPage() {
                  vem primeiro (fila/espera são alerta, não rodapé). */
               <div className="grid grid-cols-12 gap-4 items-start">
                 <div className="col-span-12 xl:col-span-8 space-y-4">
-                  <KpiGrid metrics={snapshot.kpis} headerCenter={dateAndRefreshActions} />
+                  <KpiGrid metrics={snapshot.kpis} />
 
                   {/* Seção desligada por padrão (flag dashboardAiInsights) — não
                       montar evita a chamada generateDashboardInsights() e o gasto

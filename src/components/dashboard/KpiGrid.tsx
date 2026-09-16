@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   TrendingUp, TrendingDown, Settings2, X, RotateCcw, Check,
@@ -179,7 +179,7 @@ function KpiStrip({ metrics }: { metrics: KpiMetric[] }) {
   return (
     <div
       className={cn(
-        'card-glow bg-surface-900 border border-surface-700 rounded-xl grid grid-cols-1 divide-y sm:divide-y-0 sm:divide-x divide-surface-700 overflow-hidden',
+        'bg-surface-800 border border-surface-700 rounded-lg grid grid-cols-1 divide-y sm:divide-y-0 sm:divide-x divide-surface-700 overflow-hidden',
         STRIP_COLS[metrics.length] ?? 'sm:grid-cols-5',
       )}
     >
@@ -301,10 +301,8 @@ function CustomizerPanel({
 
 export function KpiGrid({
   metrics,
-  headerCenter,
 }: {
   metrics: KpiMetric[]
-  headerCenter?: ReactNode
 }) {
   const [slots, setSlots] = useState<KpiId[]>(loadSlots)
   const [customizerOpen, setCustomizerOpen] = useState(false)
@@ -332,7 +330,6 @@ export function KpiGrid({
         </p>
         <div className="flex-1 min-w-0" />
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          {headerCenter}
           <button
             onClick={() => setCustomizerOpen(true)}
             className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-surface-700/60 hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors shrink-0"
