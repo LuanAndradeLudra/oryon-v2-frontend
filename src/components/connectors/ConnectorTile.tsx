@@ -23,7 +23,7 @@ export function ConnectorTile({ connector, size = 40, radius = 9 }: ConnectorTil
         height: size,
         borderRadius: radius,
         background: 'color-mix(in srgb, var(--brand) var(--connector-tile-mix), #fff)',
-        borderColor: 'color-mix(in srgb, var(--brand) 22%, #fff)',
+        borderColor: 'color-mix(in srgb, var(--brand) var(--connector-tile-border-mix), #fff)',
       }}
       className={cn(
         'flex items-center justify-center border flex-shrink-0',
