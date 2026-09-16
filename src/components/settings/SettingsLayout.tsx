@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Search } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
 import { SettingsSectionsProvider, SettingsOutline } from './SettingsSection'
 import { isRouteVisible } from '@/config/featureFlags'
@@ -77,58 +78,34 @@ interface NavDomain {
 }
 
 // ── Arquitetura da informação ────────────────────────────────────────────────
-// Dois domínios (padrão Linear): CONTA = o que é meu, segue o usuário entre
-// workspaces; WORKSPACE = o que é da organização. Dentro do workspace, os
-// clusters seguem as perguntas do admin ("meu negócio", "meu time", "meus
-// canais"...) — não os módulos técnicos do código. Grupos de 1 item foram
-// fundidos: "Marketing" e "CRM" como categorias-fantasma morreram.
+// 4 domínios de topo (README §3.9 / mock 2e), nível de CLUSTER removido —
+// o eyebrow do domínio já cumpre esse papel nesta tela (nenhum nome de
+// cluster visível no mock). Reagrupamento dos itens EXISTENTES, sem mudar
+// rota/label/gate de nenhum — só a hierarquia visual (SCRUM-1097, Fase C
+// de 2e-configuracoes.GAPS.md, NAV-10). "Etapas e funis" e "Horário de
+// atendimento" do mock não têm rota própria hoje — decisão de produto,
+// documentada em GAPS-PENDENTES.md, não inventada aqui.
 export const SETTINGS_NAV: NavDomain[] = [
   {
-    domain: 'Conta',
+    domain: 'Workspace',
     clusters: [
       {
         items: [
-          { section: 'account',       label: 'Minha conta' },
-          { section: 'notifications', label: 'Notificações' },
+          { section: 'company',          label: 'Perfil da empresa',    supervisorOnly: true },
+          { section: 'numbers',          label: 'Números WhatsApp',     adminOnly: true },
+          { section: 'whatsapp-health',  label: 'Saúde das linhas',     adminOnly: true },
+          { section: 'whatsapp-profile', label: 'Perfil do WhatsApp',   adminOnly: true },
+          { section: 'ad-accounts',      label: 'Contas de anúncios',   adminOnly: true },
+          { section: 'agents',           label: 'Usuários',             supervisorOnly: true },
+          { section: 'departments',      label: 'Setores',              supervisorOnly: true },
         ],
       },
     ],
   },
   {
-    domain: 'Workspace',
+    domain: 'CRM',
     clusters: [
       {
-        label: 'Geral',
-        items: [
-          { section: 'company',  label: 'Perfil da empresa',      supervisorOnly: true },
-          { section: 'vertical', label: 'Vertical & vocabulário', adminOnly: true },
-        ],
-      },
-      {
-        label: 'Equipe',
-        items: [
-          { section: 'agents',      label: 'Usuários', supervisorOnly: true },
-          { section: 'departments', label: 'Setores',  supervisorOnly: true },
-        ],
-      },
-      {
-        label: 'Atendimento',
-        items: [
-          { section: 'quick-replies', label: 'Respostas rápidas', supervisorOnly: true },
-          { section: 'tags',          label: 'Tags',              supervisorOnly: true },
-        ],
-      },
-      {
-        label: 'Canais',
-        items: [
-          { section: 'numbers',          label: 'Números WhatsApp',   adminOnly: true },
-          { section: 'whatsapp-health',  label: 'Saúde das linhas',   adminOnly: true },
-          { section: 'whatsapp-profile', label: 'Perfil do WhatsApp', adminOnly: true },
-          { section: 'ad-accounts',      label: 'Contas de anúncios', adminOnly: true },
-        ],
-      },
-      {
-        label: 'CRM',
         items: [
           { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
           { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true, hidden: true },
@@ -139,27 +116,35 @@ export const SETTINGS_NAV: NavDomain[] = [
           { section: 'pipeline-stages',   label: 'Funis',                 adminOnly: true, multiPipelineOnly: true },
           // F11-888: roteamento congelado (Modelo B) — sai do menu; rota mantida oculta até a remoção física.
           { section: 'pipeline-routing',  label: 'Roteamento por canal',  adminOnly: true, multiPipelineOnly: true, hidden: true },
+          { section: 'vertical',          label: 'Vertical & vocabulário', adminOnly: true },
+          { section: 'tags',              label: 'Tags',                  supervisorOnly: true },
         ],
       },
+    ],
+  },
+  {
+    domain: 'Automação',
+    clusters: [
       {
-        label: 'Inteligência',
         items: [
-          { section: 'company-brain', label: 'Contexto da IA', supervisorOnly: true },
+          { section: 'company-brain', label: 'Contexto da IA',    supervisorOnly: true },
+          { section: 'quick-replies', label: 'Respostas rápidas', supervisorOnly: true },
         ],
       },
+    ],
+  },
+  {
+    domain: 'Conta',
+    clusters: [
       {
-        label: 'Integrações',
         items: [
+          { section: 'account',       label: 'Minha conta' },
+          { section: 'notifications', label: 'Notificações' },
+          { section: 'billing',       label: 'Plano & faturamento', ownerOnly: true },
+          { section: 'security',      label: 'Segurança',           adminOnly: true },
           // Leva 12 (SCRUM-1110) — Conectores, tela nova (README §3.10).
-          { section: 'connectors', label: 'Conectores', adminOnly: true },
-        ],
-      },
-      {
-        label: 'Administração',
-        items: [
-          { section: 'billing',  label: 'Plano & faturamento', ownerOnly: true },
-          { section: 'security', label: 'Segurança',           adminOnly: true },
-          { section: 'audit',    label: 'Auditoria',           adminOnly: true },
+          { section: 'connectors',    label: 'Conectores',          adminOnly: true },
+          { section: 'audit',         label: 'Auditoria',           adminOnly: true },
         ],
       },
     ],
@@ -227,7 +212,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
       {/* Navegação única — text-first, sem ícones, sem pills. A hierarquia é
           100% tipográfica: DOMÍNIO (caps) > cluster (sentence, mudo) > item. */}
-      <aside className="w-full md:w-[248px] flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-700 py-3 md:py-5 px-3 overflow-y-auto max-h-60 md:max-h-none">
+      <aside className="w-full md:w-[248px] flex-shrink-0 border-b md:border-b-0 border-surface-700 py-3 md:py-5 px-3 overflow-y-auto max-h-60 md:max-h-none">
         {/* Busca — encontra por rótulo OU sinônimo natural */}
         <div className="relative mb-4">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
@@ -244,15 +229,15 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
           <p className="px-2 py-4 text-xs text-surface-500">Nenhuma configuração encontrada.</p>
         )}
 
-        {nav.map((d) => (
-          <div key={d.domain} className="mb-6">
+        {nav.map((d, di) => (
+          <div key={d.domain} className={cn('mb-4', di > 0 && 'border-t border-surface-700 pt-4 mt-0')}>
             <p className="px-2 mb-2 text-[10px] font-bold uppercase text-surface-500" style={{ letterSpacing: '.14em' }}>
               {d.domain}
             </p>
             {d.clusters.map((cluster, i) => (
               <div key={cluster.label ?? i} className={cluster.label ? 'mt-3 first:mt-0' : ''}>
                 {cluster.label && (
-                  <p className="px-2 h-7 flex items-center text-[12.5px] font-medium text-surface-600">
+                  <p className="px-2 h-7 flex items-center text-[12.5px] font-normal text-surface-400">
                     {cluster.label}
                   </p>
                 )}
