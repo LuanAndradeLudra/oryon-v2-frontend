@@ -47,6 +47,7 @@ import type {
   TenantStage,
   User,
   WhatsAppNumber,
+  WhatsAppNumberDetailed,
   WhatsAppTemplate,
   TemplateHeaderTypeInput,
   AiDealTargetView,
@@ -1755,6 +1756,8 @@ export const departmentsApi = {
 
 export const whatsappNumbersApi = {
   list() { return api.get<WhatsAppNumber[]>('/meta/numbers') },
+  /** Inclui campos do WABA (qualityRating, messagingLimit) que `list()` não traz. */
+  listDetailed() { return api.get<WhatsAppNumberDetailed[]>('/whatsapp/numbers') },
   update(id: string, data: { label?: string }) { return api.patch<WhatsAppNumber>(`/meta/numbers/${id}`, data) },
   // Desconectar (soft) — pausa o atendimento, mantém a row e permite
   // reconectar pelo OAuth ressuscitando o mesmo registro.
