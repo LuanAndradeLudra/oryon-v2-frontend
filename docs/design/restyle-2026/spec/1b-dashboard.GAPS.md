@@ -71,3 +71,18 @@ e retirar `card-glow` — ou usar o primitivo `Card`, que já tem exatamente iss
 - `DashboardPage.tsx:263` envolve tudo em `max-w-[1440px] px-6`; o mock não mostra container. `TipCard` de setup (`:266-275`), `AiInsightsSection` (flag), `TagsChart`/`CsatChart`/`PeakHoursHeatmap`/`AgentTable`/`StatusDonut`/`ActivityFeed` não estão no mock 1b — produto real, sem item (mas todos usam o mesmo container transversal `bg-surface-900 border-surface-800 rounded-xl`; ao corrigir o item 1 acima vale aplicar neles pela consistência).
 - `KpiGrid.tsx:86-129` (`KpiCard` da grade secundária, slots 6+) e o botão "Personalizar" (`:336-342`): fora do mock; `KpiCard` ainda tem ícone em tile colorido + `rounded-xl` + `card-glow`.
 - Skeleton (`DashboardPage.tsx:277-304`) usa `rounded-xl` — acompanhar o raio 8 quando o item 1 for aplicado.
+
+## Fase D — reconferência linha a linha (Farol, sem navegador)
+
+Reconferido contra o `arquivo:linha` atual do epic: transversal dos 5 cards
+(`KpiGrid.tsx:182`, `VolumeChart.tsx:36`, `SalesFunnelCard.tsx`,
+`TeamMiniCard.tsx`, `LiveNowCard.tsx`) — `bg-surface-800 border-surface-700
+rounded-lg`, sem `card-glow`, confere; `LiveNowCard` sem gradiente
+(`text-surface-100`/`text-warning`) confere; headers 13px/padding 14 em
+SalesFunnelCard/TeamMiniCard/VolumeChart conferem; faixa `--sf2` 30px +
+hairline por linha do `SalesFunnelCard` confere; grid `1fr_60px_60px` sem
+borda por linha do `TeamMiniCard` confere, `Avatar size="2xs"` confere
+(TEAM-03 fechado); subtítulo dinâmico "atualizado há Ns" via
+`useRegisterTopBarSubtitle` confere (DASH-HEADER-01 fechado). Nenhuma
+divergência de valor exato encontrada nesta reconferência — zero achados
+novos, zero correções necessárias.

@@ -157,3 +157,18 @@ AGT-WIZ · 31 de AUTO-WIZ, mais as 5 discrepâncias já catalogadas na própria 
 ✅ · ~26 ❌ (contando grupos estruturais) · ~25 ❓ (arquivos fora do escopo lido ou estado
 ao vivo) · 2 `[!]`.** Itens `❓` são por arquivo não lido (listado no topo) ou por
 dependerem de captura ao vivo nos 2 temas — nenhum foi pulado sem motivo declarado.
+
+## Fase D — reconferência linha a linha (Farol, sem navegador)
+
+Reconferido contra o código atual do epic: `OverviewTab` em `AgentDetail.tsx`
+(grid `1fr_320px`, `SettingsGroup` 200px/1fr com hairline pros grupos
+Status/Comportamento da IA, rail direito único bloco `bg-[var(--sf2)]` com
+Atividade/Informações) confere; abas sem `accent` por categoria confere
+(sublinhado volta neutro); lista de agentes (`AgentsPage.tsx`) hairline
+edge-to-edge confere; `AgentBuilderWizard.tsx` — trilha do Tutor nos tokens
+`--acsoft/--acs`/`--btn/--btntx`/`--bd2`+`--tx3` confere, header 52px com 8
+segmentos (padding 24, segmento inativo `--bd`) confere, corpo sem card em
+volta do formulário confere, footer 64px sob o formulário com
+Voltar/Continuar/Publicar (aprovado depois da Fase C original) confere.
+Nenhuma divergência de valor exato encontrada nesta reconferência — zero
+achados novos, zero correções necessárias.
