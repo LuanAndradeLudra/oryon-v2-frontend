@@ -240,7 +240,10 @@ export function VerticalSettings() {
             <Input value={vocab.deals} onChange={(e) => update('deals', e.target.value)} />
           </FormField>
         </div>
-        <FormField label="Gênero gramatical" hint={'para "novo/nova", "ganho/ganha"'} className="mb-4 max-w-xs">
+        <FormField
+          label={<>Gênero gramatical <span className="text-surface-500 font-normal">· para "novo/nova", "ganho/ganha"</span></>}
+          className="mb-4 max-w-xs"
+        >
           <SegmentedControl
             label="Gênero gramatical"
             value={dealGender}
@@ -251,8 +254,8 @@ export function VerticalSettings() {
             ]}
           />
         </FormField>
-        <p className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 rounded-md px-3 py-2">
-          Prévia: <span className="text-surface-300">"Novo {dealLower}"</span> · <span className="text-surface-300">"3 {dealsLower} em Proposta"</span> · <span className="text-surface-300">"{vocab.deal} {wonAgreement}"</span>
+        <p className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 rounded-xs p-3">
+          Prévia: "Novo <span className="font-semibold text-surface-100">{dealLower}</span>" · "3 <span className="font-semibold text-surface-100">{dealsLower}</span> em Proposta" · "<span className="font-semibold text-surface-100">{vocab.deal}</span> {wonAgreement}"
         </p>
       </SettingsSection>
 
@@ -262,48 +265,38 @@ export function VerticalSettings() {
         description={`Nome das etapas terminais. Funis do tipo "${PIPELINE_KIND_OPTIONS.find((o) => o.kind === 'process')!.label.toLowerCase()}" usam o segundo par automaticamente.`}
       >
         <div className="flex flex-col gap-4">
-          <div>
-            <p className="text-2xs font-semibold uppercase tracking-wide text-surface-500 mb-1.5">
-              Positivo · funil de {PIPELINE_KIND_OPTIONS.find((o) => o.kind === 'sales')!.noun}s
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="Positivo">
-                <Input
-                  value={vocab.salesWonLabel ?? salesDefaults.won}
-                  onChange={(e) => update('salesWonLabel', e.target.value)}
-                />
-              </FormField>
-              <FormField label="Negativo">
-                <Input
-                  value={vocab.salesLostLabel ?? salesDefaults.lost}
-                  onChange={(e) => update('salesLostLabel', e.target.value)}
-                />
-              </FormField>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label={<>Positivo <span className="text-surface-500 font-normal">· funil de {PIPELINE_KIND_OPTIONS.find((o) => o.kind === 'sales')!.noun}s</span></>}>
+              <Input
+                value={vocab.salesWonLabel ?? salesDefaults.won}
+                onChange={(e) => update('salesWonLabel', e.target.value)}
+              />
+            </FormField>
+            <FormField label="Negativo">
+              <Input
+                value={vocab.salesLostLabel ?? salesDefaults.lost}
+                onChange={(e) => update('salesLostLabel', e.target.value)}
+              />
+            </FormField>
           </div>
-          <div>
-            <p className="text-2xs font-semibold uppercase tracking-wide text-surface-500 mb-1.5">
-              Positivo · funil de {PIPELINE_KIND_OPTIONS.find((o) => o.kind === 'process')!.noun}s
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="Positivo">
-                <Input
-                  value={vocab.processWonLabel ?? processDefaults.won}
-                  onChange={(e) => update('processWonLabel', e.target.value)}
-                />
-              </FormField>
-              <FormField
-                label="Negativo"
-                requirement="required"
-                filled={!!vocab.processLostLabel}
-                error={!vocab.processLostLabel ? 'Obrigatório — usado no modal de motivo' : undefined}
-              >
-                <Input
-                  value={vocab.processLostLabel ?? ''}
-                  onChange={(e) => update('processLostLabel', e.target.value)}
-                />
-              </FormField>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label={<>Positivo <span className="text-surface-500 font-normal">· funil de {PIPELINE_KIND_OPTIONS.find((o) => o.kind === 'process')!.noun}s</span></>}>
+              <Input
+                value={vocab.processWonLabel ?? processDefaults.won}
+                onChange={(e) => update('processWonLabel', e.target.value)}
+              />
+            </FormField>
+            <FormField
+              label="Negativo"
+              requirement="required"
+              filled={!!vocab.processLostLabel}
+              error={!vocab.processLostLabel ? 'Obrigatório — usado no modal de motivo' : undefined}
+            >
+              <Input
+                value={vocab.processLostLabel ?? ''}
+                onChange={(e) => update('processLostLabel', e.target.value)}
+              />
+            </FormField>
           </div>
         </div>
       </SettingsSection>
@@ -325,17 +318,19 @@ export function VerticalSettings() {
 
       {/* Onde isso aparece — referência, não editável */}
       <SettingsSection title="Onde isso aparece" description="Referência, não editável.">
-        <div className="border border-surface-700 rounded-md overflow-hidden">
+        <div>
           {[
-            ['Menu lateral', `Funis → coluna "${vocab.deals}"`],
-            ['Ficha do contato', `Aba "${vocab.deals}" · botão "Novo ${dealLower}"`],
-          ].map(([left, right], i) => (
+            ['Menu lateral', 'Funis → coluna "', vocab.deals, '"'],
+            ['Ficha do contato', 'Aba "', vocab.deals, `" · botão "Novo ${dealLower}"`],
+          ].map(([left, before, term, after], i) => (
             <div
               key={left}
-              className={`grid grid-cols-[160px_1fr] text-xs py-[7px] px-3 ${i > 0 ? 'border-t border-surface-700' : ''}`}
+              className={`grid grid-cols-[160px_1fr] text-xs py-[7px] ${i > 0 ? 'border-t border-surface-700' : ''}`}
             >
               <span className="text-surface-500">{left}</span>
-              <span className="text-surface-300">{right}</span>
+              <span className="text-surface-400">
+                {before}<span className="font-semibold text-surface-100">{term}</span>{after}
+              </span>
             </div>
           ))}
         </div>
