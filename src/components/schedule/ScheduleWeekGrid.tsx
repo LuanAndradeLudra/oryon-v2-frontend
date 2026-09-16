@@ -14,6 +14,47 @@ const ROW_HEIGHT = 64
 const HOURS = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i)
 const GRID_HEIGHT = HOURS.length * ROW_HEIGHT
 
+/** Divide a coluna do dia entre eventos que se sobrepõem no horário (README
+ *  3.8/SCHED-EVENT-13) — sem isso um bloco cobre o outro por completo em vez
+ *  de dividir a largura. Agrupa em "clusters" de eventos mutuamente
+ *  sobrepostos, empacota cada cluster em lanes (1ª lane livre, estilo
+ *  Google Calendar) e devolve left/width em % por evento. */
+function layoutLanes(dayEvents: ScheduleEvent[]): Map<string, { left: number; width: number }> {
+  const sorted = [...dayEvents].sort((a, b) => a.startMinutes - b.startMinutes || a.endMinutes - b.endMinutes)
+  const result = new Map<string, { left: number; width: number }>()
+  let cluster: ScheduleEvent[] = []
+  let clusterEnd = -Infinity
+
+  const flushCluster = () => {
+    if (cluster.length === 0) return
+    const laneEnds: number[] = []
+    const eventLane = new Map<string, number>()
+    for (const e of cluster) {
+      let laneIdx = laneEnds.findIndex((end) => end <= e.startMinutes)
+      if (laneIdx === -1) { laneIdx = laneEnds.length; laneEnds.push(e.endMinutes) }
+      else laneEnds[laneIdx] = e.endMinutes
+      eventLane.set(e.id, laneIdx)
+    }
+    const laneCount = laneEnds.length
+    for (const e of cluster) {
+      const laneIdx = eventLane.get(e.id)!
+      result.set(e.id, { left: (laneIdx / laneCount) * 100, width: (1 / laneCount) * 100 })
+    }
+    cluster = []
+  }
+
+  for (const e of sorted) {
+    if (cluster.length > 0 && e.startMinutes >= clusterEnd) {
+      flushCluster()
+      clusterEnd = -Infinity
+    }
+    cluster.push(e)
+    clusterEnd = Math.max(clusterEnd, e.endMinutes)
+  }
+  flushCluster()
+  return result
+}
+
 interface ScheduleWeekGridProps {
   days: ScheduleWeekDay[]
   events: ScheduleEvent[]
@@ -72,13 +113,15 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
         {/* Colunas de dia */}
         {days.map((day) => {
           const dayEvents = events.filter((e) => e.dayIndex === day.dayIndex)
+          const lanes = layoutLanes(dayEvents)
           const showNowLine = day.isToday && day.dayIndex === NOW_LINE.dayIndex
           return (
             <div
               key={day.dayIndex}
               className={cn(
                 'relative border-r border-surface-700 last:border-r-0',
-                day.isWeekend && 'bg-[var(--sf2)]',
+                day.isToday && 'bg-accent-soft',
+                day.isWeekend && !day.isToday && 'bg-[var(--sf2)]',
               )}
               style={{ height: GRID_HEIGHT }}
             >
@@ -109,6 +152,7 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
                     event={event}
                     top={top}
                     height={height}
+                    lane={lanes.get(event.id) ?? { left: 0, width: 100 }}
                     selected={selected?.event.id === event.id}
                     onClick={() => openEvent(event, day.date)}
                   />
