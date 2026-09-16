@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Eye, Pencil, Trash2, Clock, CheckCircle2, XCircle, PauseCircle, AlertCircle, Loader2, RefreshCw, Copy, FileText, MoreHorizontal } from 'lucide-react'
+import { Plus, Search, Eye, Pencil, Trash2, AlertCircle, Loader2, RefreshCw, Copy, FileText, MoreHorizontal } from 'lucide-react'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -20,12 +20,14 @@ import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequ
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { WhatsAppTemplate, TemplateStatus } from '@/types'
 
-const STATUS_CONFIG: Record<TemplateStatus, { label: string; chip: string; icon: React.ComponentType<{ className?: string }> }> = {
-  PENDING:  { label: 'Em análise',  chip: 'var(--color-status-pending)',  icon: Clock },
-  APPROVED: { label: 'Aprovado',    chip: 'var(--color-status-active)', icon: CheckCircle2 },
-  REJECTED: { label: 'Rejeitado',   chip: 'var(--color-danger)', icon: XCircle },
-  PAUSED:   { label: 'Pausado',     chip: 'var(--color-status-muted)', icon: PauseCircle },
-  DISABLED: { label: 'Desativado',  chip: 'var(--color-danger)', icon: AlertCircle },
+// `chip`/`icon` por status saíram junto com o `.color-chip` sólido — o chip
+// virou STATUS_CHIP_CLASS (TPL-05), sem ícone.
+const STATUS_CONFIG: Record<TemplateStatus, { label: string }> = {
+  PENDING:  { label: 'Em análise' },
+  APPROVED: { label: 'Aprovado' },
+  REJECTED: { label: 'Rejeitado' },
+  PAUSED:   { label: 'Pausado' },
+  DISABLED: { label: 'Desativado' },
 }
 
 // TPL-05 (spec 2c): chip suave (fundo tinta + texto colorido), sem ícone —
