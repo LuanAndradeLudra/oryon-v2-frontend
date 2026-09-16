@@ -29,7 +29,7 @@ describe('CloseDealReasonModal (F8)', () => {
     const onConfirm = vi.fn(async () => {})
     const onClose = vi.fn()
     render(<CloseDealReasonModal open onClose={onClose} deal={DEAL} stage={WON} pipeline={PIPE} onConfirm={onConfirm} />)
-    expect(screen.getByText('Confirmado — motivo')).toBeInTheDocument()
+    expect(screen.getByText('Mover para Confirmado')).toBeInTheDocument()
     expect(options()).toEqual(['', 'concluido', 'outro'])
     const confirm = screen.getByTestId('close-deal-confirm')
     expect(confirm).toBeDisabled()

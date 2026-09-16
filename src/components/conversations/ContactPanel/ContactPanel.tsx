@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
   Tag as TagIcon, ExternalLink, ArrowRightLeft,
-  Milestone, MapPin, Phone,
+  Milestone, MapPin, Phone, Handshake,
   Bot, UserCog,
 } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
 import { TagPickerContent } from '@/components/ui/TagPicker'
 import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
@@ -21,6 +22,8 @@ import { isFeatureVisible } from '@/config/featureFlags'
 import { MoveStageModal } from '@/components/contacts/MoveStageModal'
 import { StageBadge } from '@/components/contacts/StageBadge'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
+import { useAddToPipeline } from '@/hooks/useAddToPipeline'
+import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import type { Conversation, Tag, User } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -115,7 +118,9 @@ export function ContactPanel({
   const { contact, tags = [], assignedUser, createdAt, lastMessageAt } = conversation
 
   const navigate = useNavigate()
-  const { stages } = useCRMConfig()
+  const { stages, pipelines } = useCRMConfig()
+  const addToPipeline = useAddToPipeline()
+  const salesPipeline = defaultSalesPipeline(pipelines)
 
   const [tagOpen,     setTagOpen]     = useState(false)
   const [assignOpen,  setAssignOpen]  = useState(false)
@@ -232,6 +237,24 @@ export function ContactPanel({
           </div>
         </div>
 
+        {/* README 3.3 (via 3.2, mesmo padrão do drawer de Contatos): ações
+            nomeadas logo abaixo do cabeçalho de identidade. */}
+        <div className="flex items-center gap-2 px-4 pb-4">
+          <Button size="sm" variant="neutral" leftIcon={<ExternalLink className="w-3.5 h-3.5" />} onClick={() => navigate(`/contacts?contact=${contact.id}`)}>
+            Ver contato
+          </Button>
+          {salesPipeline && (
+            <Button
+              size="sm"
+              variant="neutral"
+              leftIcon={<Handshake className="w-3.5 h-3.5" />}
+              onClick={() => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline: salesPipeline, conversationId: conversation.id })}
+            >
+              Novo negócio
+            </Button>
+          )}
+        </div>
+
         {/* Negócios primeiro: numa conversa de venda, o que o atendente
             precisa ver ao abrir o painel é se este contato já tem negócio
             aberto e em que etapa — antes de etiquetas ou de quem atende.
@@ -342,8 +365,9 @@ export function ContactPanel({
           <ConversionAnalysisPanel conversationId={conversation.id} contact={contact} />
         )}
 
-        {/* Informações — referência estática, acima da timeline dinâmica */}
-        <CollapsibleSection title="Informações" storageKey="conv-panel.info" className="border-t border-surface-800">
+        {/* Dados — referência estática, acima da timeline dinâmica (mesmo
+            rótulo do drawer de Contatos, "Informações" era o nome antigo). */}
+        <CollapsibleSection title="Dados" storageKey="conv-panel.info" className="border-t border-surface-800">
           <InfoTable rows={infoRows} />
         </CollapsibleSection>
 
@@ -362,6 +386,7 @@ export function ContactPanel({
         confirmLabel="Arquivar"
         danger
       />
+      {addToPipeline.dialogs}
     </aside>
   )
 }

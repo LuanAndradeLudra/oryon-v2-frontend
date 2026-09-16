@@ -107,7 +107,8 @@ export function CloseDealReasonModal({ open, onClose, deal, stage, pipeline, onC
   }
 
   const terminalLabel = stage?.label ?? (outcome === 'won' ? labels.won : labels.lost)
-  const title = `${terminalLabel} — motivo`
+  // README 3.4: título "Mover para Perdido" (era "<etapa> — motivo").
+  const title = `Mover para ${terminalLabel}`
   const canConfirm = !!fields.picked || (!!pipeline?.allowFreeCloseReason && fields.free.trim().length > 0)
 
   return (
