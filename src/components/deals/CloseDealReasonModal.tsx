@@ -119,7 +119,7 @@ export function CloseDealReasonModal({ open, onClose, deal, stage, pipeline, onC
       className="max-w-md"
       footer={
         <div className="flex justify-end gap-2 w-full">
-          <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button type="button" variant="neutral" onClick={onClose}>Cancelar</Button>
           <Button
             type="button"
             variant={outcome === 'lost' ? 'danger' : 'primary'}
@@ -128,7 +128,7 @@ export function CloseDealReasonModal({ open, onClose, deal, stage, pipeline, onC
             disabled={saving || !canConfirm}
             data-testid="close-deal-confirm"
           >
-            {outcome === 'won' ? `Marcar como ${labels.won}` : `Marcar como ${labels.lost}`}
+            Mover para {terminalLabel}
           </Button>
         </div>
       }
