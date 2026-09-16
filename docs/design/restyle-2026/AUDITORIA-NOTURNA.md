@@ -177,7 +177,7 @@ feito por agente (só leitura, reporta ❌).
 | spec/conectores.md | 94 | Farol |
 | spec/1b-dashboard.md | 29 | Bússola |
 | spec/shell.md | 30 | Bússola |
-| spec/2d-agendamentos.md · 2e-configuracoes.md · 6a-faturamento.md | — | Cartógrafo (em andamento) |
+| spec/2d-agendamentos.md · 2e-configuracoes.md · 6a-faturamento.md | 61 · 65 · 51 | Cartógrafo — **só PNG+README** (não conseguiu parsear o canvas; precisão menor que as outras — se um item de 2d/2e/6a precisar de valor exato, extrair do HTML via `JSON.parse` do `<script type=__bundler/template>` + `grep -bo` pelo id) |
 
 Divergências entre fontes registradas dentro de cada spec (DISC-*, EMPTY-06,
 CARD-08, título 14px vs README 16px, `--acs` escuro). Regra: **HTML do canvas
@@ -189,7 +189,7 @@ CARD-08, título 14px vs README 16px, `--acs` escuro). Regra: **HTML do canvas
 |---|---|---|---|
 | 1a primitivos | Cartógrafo (após A) — só reporta | orquestrador | C parcial feita (`527a4e6`): --bd2, superfície clara 800/900, Card, EmptyState, Tabs, WizardProgress |
 | 1d Conversas | Bússola | Cartógrafo | B em andamento |
-| 1c Contatos | **feito** (fork, `1c-contatos.GAPS.md`, 95/95 + bloco "fora da referência") | Cartógrafo (após A) | B ✅ |
+| 1c Contatos | **feito** (fork, `1c-contatos.GAPS.md`, 95/95 + bloco "fora da referência") | Cartógrafo — branch `fix/SCRUM-1097-fase-c-contatos` | **C em andamento** (06:12) |
 | 2c Campanhas | **feito** (fork, `2c-campanhas.GAPS.md`, 83 itens + notas Step1–4) | Farol (após B de 1e/conn) | B ✅ |
 | 2a/2b Agentes | Bússola (após B de 1d) | Farol | — |
 | 1e Funis | Farol | Cartógrafo | B em andamento |
@@ -202,4 +202,5 @@ CARD-08, título 14px vs README 16px, `--acs` escuro). Regra: **HTML do canvas
 - 05:50 — arquivo criado. Conversas lista plana mesclada (`aaf4ca1` + `712ba02`).
 - 05:55 — Fase A disparada: 5 forks + 3 agentes (cruzado). Specs 1a/1c/1d/2a-2b/2c chegam entre 06:00 e 06:08 (`b5a3131`, `d1dafa6`).
 - 06:00 — Fase C nos primitivos contra a spec 1a (`527a4e6`): descoberta e corrigida a inversão 900/800 do tema claro feita mais cedo (`67819b9`); EmptyState e Card `elevated` voltaram pro que a referência mostra (a reauditoria anterior tinha lido errado). Suite 617/621 após atualizar Tabs.test ao contrato TABS-03.
+- 06:10 — **Fase D ✅ TOK-01..04 (claro)** ao vivo em /dashboard: página #FAFAFC, cards brancos por cima com hairline — relação fundo/superfície da spec; antes do `527a4e6` os cards saíam mais cinzas que a página (invertido). Escuro intacto. Specs 2d/2e/6a mescladas (`d488064`), Cartógrafo → Fase C de 1c.
 - 06:02 — 5 forks de Fase B morrem por 429 (limite da sessão até 09:20). 2 deixaram arquivo (1c, 2c). Fase B redistribuída: Farol → 1e+conectores (em curso), Bússola → 1d (+1c se o arquivo do fork estiver incompleto). Specs de Farol (`36aaa3b`) e Bússola (`678b867`) mescladas; epic em `b59c70e`, propagado.
