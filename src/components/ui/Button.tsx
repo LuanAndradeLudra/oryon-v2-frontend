@@ -8,6 +8,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
   leftIcon?: ReactNode
   rightIcon?: ReactNode
+  /** Botão quadrado só com ícone (BTN-10) — passe o ícone como `children`. */
+  iconOnly?: boolean
 }
 
 // SCRUM-1097 (Leva 1) — vocabulário de botão reestilizado (tela 1a):
@@ -28,7 +30,7 @@ const variantStyles = {
   primary: [
     'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] font-semibold',
     'hover:brightness-90',
-    'focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
+    'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-40',
   ],
   // spec/1a-primitivos.md BTN-02/06: neutral = fundo --sf + borda de ênfase
@@ -38,19 +40,19 @@ const variantStyles = {
     'bg-surface-800 text-surface-100 font-semibold',
     'border border-[var(--bd2)]',
     'hover:bg-surface-700',
-    'focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
+    'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-40',
   ],
   secondary: [
-    'bg-accent-soft text-accent-dark font-medium',
+    'bg-accent-soft text-accent-dark font-semibold',
     'hover:brightness-110',
-    'focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
+    'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-40',
   ],
   ghost: [
-    'bg-transparent text-surface-400 font-medium px-3',
+    'bg-transparent text-surface-400 font-semibold px-3',
     'hover:bg-[var(--rowhover)] hover:text-surface-100',
-    'focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
+    'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-40',
   ],
   danger: [
@@ -61,11 +63,18 @@ const variantStyles = {
   ],
 }
 
-// BTN-10/12: sm 12px · md 13px · lg 14px (HTML do canvas).
+// BTN-02/03/04/12: sm 28px/10px/12px · md 36/14/13 · lg 44/18/14 (HTML do canvas).
 const sizeStyles = {
-  sm: 'h-7 px-3 text-xs gap-1.5 rounded-sm',
-  md: 'h-9 px-4 text-[13px] gap-2 rounded-sm',
-  lg: 'h-11 px-5 text-sm gap-2 rounded-sm',
+  sm: 'h-7 px-2.5 text-xs gap-1.5 rounded-sm',
+  md: 'h-9 px-3.5 text-[13px] gap-2 rounded-sm',
+  lg: 'h-11 px-[18px] text-sm gap-2 rounded-sm',
+}
+
+// BTN-10: só-ícone é quadrado (28/36/44), ícone 16px.
+const iconOnlyStyles = {
+  sm: 'w-7 px-0',
+  md: 'w-9 px-0',
+  lg: 'w-11 px-0',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -76,6 +85,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       loading = false,
       leftIcon,
       rightIcon,
+      iconOnly = false,
       children,
       className,
       disabled,
@@ -95,6 +105,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           'focus-visible:outline-none',
           loading && 'opacity-60',
           sizeStyles[size],
+          iconOnly && iconOnlyStyles[size],
           variantStyles[variant],
           className,
         )}

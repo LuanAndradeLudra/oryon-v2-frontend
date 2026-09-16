@@ -12,9 +12,10 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>
   size?: 'sm' | 'md' | 'lg'
 }
 
+// spec/1a-primitivos.md FIELD-03: md 36px / padding 10px / 13px.
 const sizeStyles = {
   sm: 'h-7 px-2.5 text-xs',
-  md: 'h-9 px-3 text-sm',
+  md: 'h-9 px-2.5 text-[13px]',
   lg: 'h-11 px-3.5 text-sm',
 }
 
@@ -37,11 +38,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         className={cn(
           'w-full bg-surface-800 border rounded-sm text-surface-100',
           sizeStyles[size],
-          'placeholder:text-surface-400',
-          'focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500',
+          // FIELD-03/04: placeholder --tx3; borda de ênfase --bd2; foco = anel
+          // 3px --acsoft + borda --ac + caret --ac.
+          'placeholder:text-surface-500 caret-brand-500',
+          'focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           'transition-colors duration-150',
-          invalid ? 'border-danger' : 'border-surface-700',
+          invalid ? 'border-danger' : 'border-[var(--bd2)]',
           className,
         )}
         {...props}

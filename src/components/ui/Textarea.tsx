@@ -10,9 +10,10 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   size?: 'sm' | 'md' | 'lg'
 }
 
+// spec/1a-primitivos.md FIELD-03: md padding 10px / 13px.
 const sizeStyles = {
   sm: 'px-2.5 py-1.5 text-xs',
-  md: 'px-3 py-2 text-sm',
+  md: 'px-2.5 py-2 text-[13px]',
   lg: 'px-3.5 py-2.5 text-sm',
 }
 
@@ -31,11 +32,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         className={cn(
           'w-full bg-surface-800 border rounded-sm text-surface-100',
           sizeStyles[size],
-          'placeholder:text-surface-400 resize-none',
-          'focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500',
+          'placeholder:text-surface-500 caret-brand-500 resize-none',
+          'focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           'transition-colors duration-150',
-          invalid ? 'border-danger' : 'border-surface-700',
+          invalid ? 'border-danger' : 'border-[var(--bd2)]',
           className,
         )}
         {...props}
