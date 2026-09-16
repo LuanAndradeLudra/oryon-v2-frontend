@@ -218,12 +218,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             {/* Corpo: mini-fluxo vertical + seções */}
             <div className="flex-1 flex min-h-0 overflow-hidden">
               {/* Nav vertical (mini-fluxo) */}
-              {/* SCRUM-1105 (tela 2b): a spec pede fundo `--sf2` aqui — esse
-                  token não existe em index.css ainda (checado, não é só
-                  este arquivo: README também usa em 3.5/3.8/3.9/3.11).
-                  Aproximando com surface-800/60 até o Maestro confirmar o
-                  token na fundação; avisado via maestri ask. */}
-              <nav className="w-[200px] flex-shrink-0 border-r border-surface-800 bg-surface-800/60 p-3 overflow-y-auto hidden sm:block">
+              <nav className="w-[200px] flex-shrink-0 border-r border-surface-800 bg-[var(--sf2)] p-3 overflow-y-auto hidden sm:block">
                 <div className="flex flex-col gap-1">
                   {SECTIONS.map((s) => {
                     const Icon = s.icon

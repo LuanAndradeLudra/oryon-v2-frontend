@@ -35,7 +35,7 @@ export function TemplatePreview({ template, variables = {}, compact = false }: T
       <div className={compact ? 'w-full' : 'w-[280px]'}>
         {/* Phone mockup frame */}
         {!compact && (
-          <div className="relative bg-[#ECE5DD] rounded-2xl overflow-hidden shadow-2xl border border-surface-700">
+          <div className="relative bg-[#EFE7DD] rounded-2xl overflow-hidden shadow-2xl border border-surface-700">
             {/* Status bar */}
             <div className="bg-[#075E54] text-white px-4 py-2 flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
@@ -92,14 +92,14 @@ function MessageBubble({ template, bodyText, headerText, variables }: {
       )}
       {template.headerType === 'TEXT' && headerText && (
         <div className="px-3 pt-3 pb-1">
-          <p className="text-sm font-bold text-[#111827]">{headerText}</p>
+          <p className="text-sm font-bold text-[#111B21]">{headerText}</p>
         </div>
       )}
 
       {/* Body */}
       <div className="px-3 pt-2 pb-1">
         <p
-          className="text-[13px] text-[#111827] leading-relaxed"
+          className="text-[13px] text-[#111B21] leading-relaxed"
           dangerouslySetInnerHTML={{ __html: renderBody(bodyText) }}
         />
       </div>
@@ -113,14 +113,14 @@ function MessageBubble({ template, bodyText, headerText, variables }: {
 
       {/* Timestamp */}
       <div className="px-3 pb-2 flex justify-end">
-        <span className="text-[10px] text-[#9ca3af]">12:00 ✓✓</span>
+        <span className="text-[10px] text-[#667781]">12:00 ✓✓</span>
       </div>
 
       {/* Buttons */}
       {template.buttons && template.buttons.length > 0 && (
         <div className="border-t border-[#f3f4f6] divide-y divide-[#f3f4f6]">
           {template.buttons.map((btn, i) => (
-            <div key={i} className="flex items-center justify-center gap-1.5 py-2 text-[#0078D7]">
+            <div key={i} className="flex items-center justify-center gap-1.5 py-2 text-[#027EB5]">
               {btn.type === 'URL' && <ExternalLink className="w-3 h-3" />}
               {btn.type === 'PHONE_NUMBER' && <Phone className="w-3 h-3" />}
               {btn.type === 'QUICK_REPLY' && <CornerDownLeft className="w-3 h-3" />}
