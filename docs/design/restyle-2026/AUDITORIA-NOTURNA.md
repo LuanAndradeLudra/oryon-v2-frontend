@@ -188,12 +188,23 @@ Divergências entre fontes registradas dentro de cada spec (DISC-*, EMPTY-06,
 CARD-08, título 14px vs README 16px, `--acs` escuro). Regra: **HTML do canvas
 é a autoridade**; README só onde o HTML não mostra o estado.
 
+## Regra transversal descoberta às 09:45 (aplicada em `src/` fora de contacts/campaigns)
+
+`border-surface-800` / `divide-surface-800` (com ou sem `/NN`) = hairline
+INVISÍVEL no claro (surface-800 é a superfície). Hairline é **`surface-700`**
+(`--bd`). Sweep mecânico feito no epic em 139 arquivos; dentro de
+`contacts/*` e `campaigns/*` os donos aplicam na própria branch de Fase C.
+Fundos (`bg-surface-800`, `hover:bg-surface-800/50`) NÃO entram na regra.
+
 ## Fase B/C — atribuição atual
 
 | Tela | B (mapa) | C (correção) | Estado |
 |---|---|---|---|
-| 1a primitivos | Cartógrafo (após A) — só reporta | orquestrador | C parcial feita (`527a4e6`): --bd2, superfície clara 800/900, Card, EmptyState, Tabs, WizardProgress |
-| 1d Conversas | Bússola | Cartógrafo | B em andamento |
+| 1a primitivos | **feito** (fork, `1a-primitivos.GAPS.md`: 78 ✅ · 62 ❌ · 23 ❓ · 2 [!]) | orquestrador | C em partes: `527a4e6` (--bd2, superfície, Card, EmptyState, Tabs, WizardProgress), `e0ed622` (Button, DataTable hairlines). **Faltam** (ordem): Input/Select/Textarea/FormField (FIELD-02..05), Modal/Drawer/ConfirmModal/Banner (MODAL-01..08), Toast + Tooltip (tokens `--toast/--tooltip` novos), Badge/chips soft (BADGE-04..09), Dropdown, Switch, SegmentedControl, ErrorState, Avatar mono `--avs/--avi`, eyebrow |
+| 1d Conversas | **feito** (Bússola, `1d-conversas.GAPS.md`: 13 ✅ · ~58 ❌ · ~15 ❓ · 3 [!]) | Cartógrafo (após 1c) + orquestrador (CONV-HDR: header de página de 48px com contagens/chip de linha/Nova conversa é `layout/` — TopBar precisa de slot por página) | B ✅ |
+| 1b Dashboard | **feito** (fork, `1b-dashboard.GAPS.md`: 2 ✅ · 15 ❌ · 2 ❓ · 12 [!]) | Farol (após 2c) — 5 cards `bg-surface-900 border-surface-800 rounded-xl card-glow` → `Card` (`--sf`/`--bd`/8/sem sombra); LiveNowCard sem gradiente em KPI (CARD-11); Avatar mono é primitivo (orquestrador) | B ✅ |
+| Shell | **feito** (fork, `shell.GAPS.md`: 3 ✅ · 20 ❌ · 7 ❓ · 4 [!]) | orquestrador (TopBar `--sf`+hairline, sidebar item 32/6/13px inativo #8FA5A5, badge "Conversas N" com número, fundo sidebar chapado, busca 28/7/`--sf2`, AiCreditsIndicator) | B ✅ |
+| 2d/2e/6a | **feito** (fork; `✅~` = aproximado, specs vieram de PNG) — 2d 12 ❌ · 2e 20 ❌ · 6a 12 ❌ | Bússola (após 2a/2b) — OUTLINE-04/05/06 do SettingsOutline é o de maior alcance | B ✅ |
 | 1c Contatos | **feito** (fork, `1c-contatos.GAPS.md`, 95/95 + bloco "fora da referência") | Cartógrafo — branch `fix/SCRUM-1097-fase-c-contatos` | **C em andamento** (06:12) |
 | 2c Campanhas | **feito** (fork, `2c-campanhas.GAPS.md`, 83 itens + notas Step1–4) | Farol (após B de 1e/conn) | B ✅ |
 | 2a/2b Agentes | Bússola (após B de 1d) | Farol | — |
