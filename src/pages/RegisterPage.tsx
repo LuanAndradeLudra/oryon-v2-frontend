@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { Eye, EyeOff, Zap, Loader2, Building2, Sun, Moon } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Eye, EyeOff, Zap, Loader2, Building2, Sun, Moon, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { Banner } from '@/components/ui/Banner'
@@ -66,7 +66,6 @@ function PasswordStrength({ password }: { password: string }) {
 
 export function RegisterPage() {
   const { register } = useAuth()
-  const navigate = useNavigate()
   const { theme, toggle } = useTheme()
   const isLight = theme === 'light'
 
@@ -74,6 +73,7 @@ export function RegisterPage() {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }))
@@ -98,7 +98,7 @@ export function RegisterPage() {
     setError('')
     setLoading(true)
     try {
-      await register({
+      const result = await register({
         companyName: form.companyName.trim(),
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim() || undefined,
@@ -106,7 +106,7 @@ export function RegisterPage() {
         phone: form.phone.trim() || undefined,
         password: form.password,
       })
-      navigate('/conversations', { replace: true })
+      setSuccessMessage(result.message)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })
         ?.response?.data?.message
@@ -150,10 +150,17 @@ export function RegisterPage() {
         </div>
 
         {/* Card */}
-        <form
+        {successMessage ? (
+          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-8 shadow-2xl text-center">
+            <CheckCircle2 className="w-12 h-12 text-status-active mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-surface-100">Entraremos em contato</h2>
+            <p className="text-sm text-surface-400 mt-2">{successMessage}</p>
+          </div>
+        ) : (
+          <form
           onSubmit={handleSubmit}
           className="bg-surface-900 border border-surface-800 rounded-2xl p-5 flex flex-col gap-3 shadow-2xl"
-        >
+          >
           {/* Section: company */}
           <div className="flex items-center gap-2">
             <Building2 className="w-3.5 h-3.5 text-brand-400" />
@@ -274,7 +281,8 @@ export function RegisterPage() {
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Criar conta'}
           </button>
-        </form>
+          </form>
+        )}
 
         {/* Login link */}
         <p className="text-center text-xs text-surface-500 mt-4">
