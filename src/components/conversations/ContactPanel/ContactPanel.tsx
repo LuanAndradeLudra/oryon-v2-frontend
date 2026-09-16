@@ -227,7 +227,7 @@ export function ContactPanel({
       <div className="flex-1 overflow-y-auto">
         {/* Contact header */}
         <div className="flex items-center gap-3 py-4 px-4">
-          <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" className="flex-shrink-0" />
+          <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="44" className="flex-shrink-0" />
           <div className="min-w-0 flex-1">
             <h4 className="text-base font-semibold text-surface-50 truncate">{contact.displayName}</h4>
             {contact.waId && (

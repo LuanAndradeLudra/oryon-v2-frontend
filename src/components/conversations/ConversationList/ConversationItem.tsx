@@ -136,7 +136,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           e `channel` nunca é lido em nenhum lugar da UI hoje) — o selo
           repetia a mesma informação em 100% das linhas, sem distinguir nada. */}
       <div className="relative mt-0.5 flex-shrink-0">
-        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
+        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="36" />
       </div>
 
       {/* Content */}

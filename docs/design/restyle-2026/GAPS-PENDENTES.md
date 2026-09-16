@@ -91,6 +91,18 @@ essa feature ainda não existia. Vale confirmar com quem fez o mockup se "Resumo
 outra coisa (ex.: um resumo textual da conversa, distinto da análise de conversão) antes de
 descartar de vez.
 
+### 2.4 Barra "Sugestão do Copilot" no composer
+
+O mockup mostra uma faixa acima da caixa de texto com uma sugestão de resposta gerada por
+IA (aceitar/descartar). `MessageInput.tsx` não tem nada parecido — não achei fonte de dado
+(endpoint, campo no `Conversation`/`Message`, ou feature flag) que alimentaria essa sugestão
+hoje. `QuickReplyPicker` (o menu de "/" pra respostas rápidas) é uma coisa diferente: busca
+manual num catálogo fixo, não sugestão proativa da IA.
+
+**Para desbloquear:** precisa de uma fonte de dado real (endpoint que gera a sugestão a
+partir do contexto da conversa) antes de fazer sentido desenhar a UI — implementar só o
+visual sem o dado por trás inventaria uma feature que não existe.
+
 ## 3. Funis/Negócios (leva 5, README 3.4)
 
 ### 3.1 SegmentedControl "Kanban/Lista/Previsão" na board bar

@@ -262,7 +262,7 @@ export function ChatHeader({
           </button>
         )}
 
-        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="sm" />
+        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="30" />
 
         {/* Stack: nome / telefone / tags */}
         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -369,7 +369,7 @@ export function ChatHeader({
 
       {/* ── Left: contact info ────────────────────────────────── */}
       <div className="flex items-center gap-3 min-w-0">
-        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="sm" />
+        <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="30" />
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-[13.5px] font-bold text-surface-50 truncate">{contact.displayName}</h2>
