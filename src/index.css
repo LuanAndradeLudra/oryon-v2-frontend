@@ -104,6 +104,13 @@
    * tema porque delega pra --color-surface-900, que já tem light/dark. */
   --sf2: var(--color-surface-900);
 
+  /* SCRUM-1097: `--bd2` = borda de ênfase do handoff (spec 1a TOK-05:
+   * #2E4040 escuro / #C8CDD8 claro) — neutral, input, tracejado do
+   * EmptyState, `elevated` do Card, bolinha futura do wizard. Não é
+   * `surface-600`: no claro esse degrau é um cinza de TEXTO (#6B7385),
+   * escuro demais pra uma borda. Usar `border-[var(--bd2)]`. */
+  --bd2: #2E4040;
+
   /* brand scale (dark defaults) — componentes usam bg-brand-500 etc. */
   --color-brand-50:  #F0FDFA;
   --color-brand-100: #CCFBF1;
@@ -818,14 +825,17 @@ code, pre, kbd, samp {
   --color-avatar-initials: #FFFFFF;
 
 
-  /* SCRUM-1097 (reauditoria de fidelidade): valores exatos do README §fundo
-     do tema claro (linha 93) — fundo #FAFAFC · superfície #FFFFFF ·
-     superfície-2 #F5F6F8 · borda #E4E6EC. Os 4 estavam visivelmente mais
-     acinzentados que o mockup (usuário notou "tema claro tinha background
-     em branco"). */
+  /* SCRUM-1097 — spec/1a-primitivos.md TOK-01..05 (HTML do canvas):
+     fundo #FAFAFC · superfície #FFFFFF · superfície-2 #F5F6F8 · borda
+     #E4E6EC · borda de ênfase #C8CDD8. O mapeamento pro degrau segue a
+     escala ESCURA (canônica, é contra ela que os componentes foram escritos):
+     800 = superfície/card POR CIMA (dark #161E1E), 900 = superfície-2 atrás
+     (dark #0E1414, é o `--sf2`). Uma correção anterior desta noite tinha
+     posto 900=#FFF/800=#F5F6F8 — invertido; cards `bg-surface-800` saíam
+     cinza sobre página quase branca. */
   --color-surface-950: #FAFAFC;
-  --color-surface-900: #FFFFFF;
-  --color-surface-800: #F5F6F8;
+  --color-surface-900: #F5F6F8;
+  --color-surface-800: #FFFFFF;
   --color-surface-700: #E4E6EC;
   --color-surface-600: #6B7385;
   --color-surface-500: #4B5263;
@@ -866,6 +876,7 @@ code, pre, kbd, samp {
 
   /* SCRUM-1097 (claro): ver comentário dark. */
   --rowhover: rgba(15, 23, 42, 0.035);
+  --bd2: #C8CDD8;
 
   --color-accent:       #14B8A6;
   --color-accent-dark:  #0F766E;

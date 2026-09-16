@@ -1,11 +1,15 @@
 // ─── WizardProgress ──────────────────────────────────────────────────────────
-// Breadcrumb de etapas pra wizard linear e travado (tela 2c): círculos
-// pequenos (check = concluída, número = atual/futura) ligados por traço fino
-// pontilhado, sem barra de progresso separada — o breadcrumb inteiro já
-// comunica isso. Unlike `Stepper` — a free-jump section nav built for long
-// scrollable forms (any section clickable, active state driven by
-// IntersectionObserver) — a wizard step is gated: only *completed* steps are
-// clickable, because each step validates before the next unlocks.
+// Breadcrumb de etapas pra wizard linear e travado — valores exatos da spec
+// 2c (spec/2c-campanhas.md CAMP-WIZ-07..13, extraída do HTML do canvas):
+//   concluída  18px, fundo --acsoft, check em --acs           (WIZ-08)
+//   atual      18px, fundo --btn, número 10px/700 em --btntx  (WIZ-09)
+//   futura     18px, borda de ênfase, sem fundo               (WIZ-12, README 3.6)
+//   rótulo     12px/600; concluídas --tx2, atual --tx         (WIZ-10)
+//   conector   1px SÓLIDO em acento, margem 0 10px            (WIZ-11 — o PNG
+//              parece pontilhado por anti-aliasing; o HTML é sólido)
+// Sem barra de progresso separada. Unlike `Stepper` — a free-jump section nav
+// for long scrollable forms — a wizard step is gated: only *completed* steps
+// are clickable, because each step validates before the next unlocks.
 
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -42,22 +46,20 @@ export function WizardProgress({ steps, currentStep, onStepClick, className }: W
               )}
             >
               <span className={cn(
-                'w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 transition-colors duration-300',
-                done && 'bg-brand-600 text-surface-950 group-hover:brightness-110',
-                active && 'bg-brand-500 text-surface-950',
-                !done && !active && 'bg-surface-800 text-surface-500',
+                'w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-colors duration-300',
+                done && 'bg-accent-soft text-accent-dark group-hover:brightness-110',
+                active && 'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)]',
+                !done && !active && 'border border-[var(--bd2)] text-surface-400',
               )}>
-                {done ? <Check className="w-2.5 h-2.5" /> : s}
+                {done ? <Check className="w-2.5 h-2.5" strokeWidth={3} /> : s}
               </span>
               <span className={cn(
-                'text-[11px] font-medium whitespace-nowrap transition-colors duration-300',
-                active && 'text-surface-100 font-semibold',
-                done && !active && 'text-surface-400',
-                !done && !active && 'text-surface-600',
+                'text-xs font-semibold whitespace-nowrap transition-colors duration-300',
+                active ? 'text-surface-100' : 'text-surface-400',
               )}>{label}</span>
             </button>
             {!isLast && (
-              <div className="flex-1 min-w-4 border-t border-dashed border-surface-700" />
+              <div className={cn('flex-1 min-w-4 h-px mx-2.5', done ? 'bg-brand-500' : 'bg-surface-700')} />
             )}
           </div>
         )
