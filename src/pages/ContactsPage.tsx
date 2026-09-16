@@ -27,6 +27,8 @@ import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useListScrollMemory } from '@/hooks/useListScrollMemory'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { useContactColumnsConfig } from '@/hooks/useContactColumnsConfig'
+import { ContactsColumnsModal } from '@/components/contacts/ContactsColumnsModal'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
 import { tagsApi, pipelinesApi } from '@/services/api'
@@ -91,7 +93,9 @@ export function ContactsPage() {
   const [showNewContact, setShowNewContact] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showCRMConfig, setShowCRMConfig] = useState(false)
+  const [showColumnsModal, setShowColumnsModal] = useState(false)
   const [commercial, setCommercial] = useState<CommercialSituation>('all')
+  const columnsConfig = useContactColumnsConfig()
 
   // Funis do tenant — só para os pickers dos drawers (Novo contato/Importar,
   // "selecionar em qual funil esse contato vai"). Gate SCRUM-498: sem o
@@ -324,7 +328,11 @@ export function ContactsPage() {
 
         {/* Busca + filtros: 2 mais usados inline (Fonte, Etiquetas) e o resto
             dentro do botão "Filtros". */}
-        <ContactsFiltersBar filters={filters} onFiltersChange={handleFiltersChange} />
+        <ContactsFiltersBar
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onOpenColumns={() => setShowColumnsModal(true)}
+        />
 
         {/* Faceta "Situação comercial" (D-10) */}
         {multiPipeline && (
@@ -387,6 +395,10 @@ export function ContactsPage() {
               hasMore={hasMore}
               loadingMore={loadingMore}
               onLoadMore={loadMore}
+              columnsConfig={columnsConfig}
+              sortBy={filters.sortBy}
+              sortDir={filters.sortDir}
+              onSortChange={(sortBy, sortDir) => setFilters({ ...filters, sortBy, sortDir })}
             />
           )}
           </div>
@@ -514,6 +526,13 @@ export function ContactsPage() {
       <CRMConfigDrawer
         open={showCRMConfig}
         onClose={() => setShowCRMConfig(false)}
+      />
+
+      <ContactsColumnsModal
+        open={showColumnsModal}
+        onClose={() => setShowColumnsModal(false)}
+        config={columnsConfig}
+        multiPipeline={multiPipeline}
       />
 
       {/* F9 (SCRUM-875): diálogos do "Adicionar ao funil" (conflito / motivo / negócio) */}

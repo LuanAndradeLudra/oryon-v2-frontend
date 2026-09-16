@@ -207,9 +207,12 @@ function FilterGroup({ label, children }: { label: string; children: React.React
 interface ContactsFiltersBarProps {
   filters: ContactFilters
   onFiltersChange: (f: ContactFilters) => void
+  /** README 3.2 — botão "Colunas" (ghost, ícone sliders-horizontal) abre o
+   *  modal "Configurar colunas". */
+  onOpenColumns?: () => void
 }
 
-export function ContactsFiltersBar({ filters, onFiltersChange }: ContactsFiltersBarProps) {
+export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns }: ContactsFiltersBarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -342,6 +345,17 @@ export function ContactsFiltersBar({ filters, onFiltersChange }: ContactsFilters
               </div>
             )}
           </div>
+
+          {onOpenColumns && (
+            <button
+              onClick={onOpenColumns}
+              title="Configurar colunas"
+              className="flex items-center gap-1.5 pl-3 pr-2.5 py-2 rounded-lg text-sm bg-surface-800 border border-surface-700 text-surface-300 hover:border-surface-600 hover:text-surface-100 transition-all"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 flex-shrink-0" />
+              Colunas
+            </button>
+          )}
         </div>
       </div>
 
