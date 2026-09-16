@@ -381,8 +381,12 @@ function campaignColumns({ onSend, onDelete, onReport, onAssignWaba, sendingId, 
       header: 'Público',
       widthClass: 'w-[90px]',
       align: 'right',
+      // CAMP-TABLE-05 (achado ao vivo): sem nowrap, "600 · 95%" quebrava em
+      // 2 linhas na coluna de 90px e dobrava a altura da linha (36px). A
+      // tabela é `table-layout: auto` (sem `table-fixed`), então a coluna
+      // cresce pra caber o conteúdo em vez de cortar — mantém o "· %".
       render: (c) => c.stats.total > 0
-        ? <span className="tabular-nums text-surface-100">{c.stats.total.toLocaleString('pt-BR')}</span>
+        ? <span className="tabular-nums text-surface-100 whitespace-nowrap">{c.stats.total.toLocaleString('pt-BR')}</span>
         : <span className="tabular-nums text-surface-500">—</span>,
     },
     {
@@ -391,7 +395,7 @@ function campaignColumns({ onSend, onDelete, onReport, onAssignWaba, sendingId, 
       widthClass: 'w-[90px]',
       align: 'right',
       render: (c) => c.stats.sent > 0
-        ? <span className="tabular-nums text-surface-100">{c.stats.delivered.toLocaleString('pt-BR')} · {rate(c.stats.delivered, c.stats.sent)}</span>
+        ? <span className="tabular-nums text-surface-100 whitespace-nowrap">{c.stats.delivered.toLocaleString('pt-BR')} · {rate(c.stats.delivered, c.stats.sent)}</span>
         : <span className="tabular-nums text-surface-500">—</span>,
     },
     {
@@ -400,7 +404,7 @@ function campaignColumns({ onSend, onDelete, onReport, onAssignWaba, sendingId, 
       widthClass: 'w-[90px]',
       align: 'right',
       render: (c) => c.stats.sent > 0
-        ? <span className="tabular-nums text-surface-100">{c.stats.read.toLocaleString('pt-BR')} · {rate(c.stats.read, c.stats.sent)}</span>
+        ? <span className="tabular-nums text-surface-100 whitespace-nowrap">{c.stats.read.toLocaleString('pt-BR')} · {rate(c.stats.read, c.stats.sent)}</span>
         : <span className="tabular-nums text-surface-500">—</span>,
     },
     {
@@ -409,7 +413,7 @@ function campaignColumns({ onSend, onDelete, onReport, onAssignWaba, sendingId, 
       widthClass: 'w-[90px]',
       align: 'right',
       render: (c) => typeof c.stats.replied === 'number'
-        ? <span className="tabular-nums text-surface-100">{c.stats.replied.toLocaleString('pt-BR')}</span>
+        ? <span className="tabular-nums text-surface-100 whitespace-nowrap">{c.stats.replied.toLocaleString('pt-BR')}</span>
         : <span className="tabular-nums text-surface-500">—</span>,
     },
     {

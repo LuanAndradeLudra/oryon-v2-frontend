@@ -159,3 +159,40 @@ antes desta reconferência, sem mudança de status.
 Nenhuma outra divergência de valor exato encontrada nos itens Farol de
 CampaignWizard.tsx/TemplatePreview.tsx/CampaignsTab.tsx/CampaignsPage.tsx/
 TemplatesTab.tsx além dos 2 achados acima.
+
+## Fase D — achados ao vivo (navegador, usuário/Maestro)
+
+Sessão do navegador voltou depois do bloqueio — 3 achados em `/campaigns`
+(claro/escuro + wizard), reportados pelo usuário via Maestro, corrigidos
+na branch `fix/SCRUM-1097-fase-d-campanhas-live`:
+
+1. **Linha de 36px quebrada** (célula não identificada por ID de spec —
+   próxima do escopo de CAMP-TABLE-10): `CampaignsTab.tsx` colunas
+   Público/Entregues/Lidas/Respostas — "600 · 95%" quebrava em 2 linhas na
+   largura `w-[90px]` (a tabela é `table-layout: auto`, então a célula
+   cresceria em vez de cortar, mas sem `whitespace-nowrap` o span quebrava
+   no espaço antes de a coluna alargar). Corrigido: `whitespace-nowrap` nas
+   4 colunas numéricas — mantém "· %" (decisão já tomada em TABLE-10),
+   linha volta a 36px.
+2. **`WhatsappLineChip` gritava mais que o chip de status** — chip
+   solid verde-marca (`.color-chip` + `--color-brand-600`) com ícone de
+   telefone, sem equivalente no mock. `src/components/common/
+   WhatsappLineChip.tsx` (compartilhado com Automations, fora do meu
+   domínio de tela mas não é `ui/`/`index.css`/`layout/` — autorizado
+   explicitamente pelo usuário): virou chip neutro suave — `h-5 text-[11px]
+   font-semibold`, `bg-[var(--sf2)] border-surface-700 text-surface-400`,
+   ícone 12px, mesmo vocabulário do chip "Rascunho". Variante "sem linha"
+   unificada no mesmo tratamento neutro (só o conteúdo muda).
+3. **Coluna Envio parecia centralizada no screenshot** — conferido em
+   `ui/DataTable.tsx:114,170-171`: `align:'right'` já propaga certo pro
+   `<th>` e `<td>` (com `tabular-nums` automático); o span da célula não
+   tem `text-align` próprio, herda do `td`. Não é bug — um "—" sozinho
+   right-aligned numa coluna de 120px com padding lateral pode parecer
+   "no meio" num screenshot pequeno. Nenhuma mudança de código.
+
+Gate: tsc -b limpo, eslint zero problemas. Suite completa NÃO rodada —
+memória caiu pra ~340 MB durante o gate (outro agente rodando algo pesado
+em paralelo, provavelmente a própria sessão de navegador da Fase D);
+tsc+eslint bastam pra este tamanho de mudança (2 arquivos, CSS/classe só,
+sem lógica nova) e não há teste dedicado pra `CampaignsTab.tsx` ou
+`WhatsappLineChip.tsx`.
