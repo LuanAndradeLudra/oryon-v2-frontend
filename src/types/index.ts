@@ -12,6 +12,24 @@ export interface TenantVocabulary {
   pipeline:  string   // "Funil" | "Agenda" | "Pipeline"
   company:   string   // "Empresa" | "Clínica" | "Escritório"
   jobTitle:  string   // "Cargo" | "Especialidade" | "Área"
+  // Campos opcionais (SCRUM-1108, Leva 10) — ausentes em vocabulários salvos
+  // antes desta leva; toda leitura usa fallback (ex.: `vocab.dealGender ??
+  // 'masculino'`), nunca assume presença.
+  /** Gênero gramatical do termo de registro do funil — concorda "novo/nova", "ganho/ganha". */
+  dealGender?: 'masculino' | 'feminino'
+  /** Como chamar quem escreve (contato/cliente/paciente…). */
+  personWrites?: string
+  /** Como chamar quem atende (atendente/agente/recepcionista…). */
+  personAttends?: string
+  /** Rótulos de fechamento POSITIVO/NEGATIVO por tipo de funil — sobrescreve
+   *  `PIPELINE_KIND_OPTIONS` (src/lib/pipelineKinds.ts) só na TELA de
+   *  vocabulário; ainda não alimenta `pipelineKindOf`/`terminalLabelsOf`
+   *  (função protegida, ver DESIGN-SYSTEM.md §17) — editável aqui como
+   *  preparação para quando o backend expuser isso por tenant. */
+  salesWonLabel?: string
+  salesLostLabel?: string
+  processWonLabel?: string
+  processLostLabel?: string
 }
 
 export interface VerticalTemplateSuggestedStage {

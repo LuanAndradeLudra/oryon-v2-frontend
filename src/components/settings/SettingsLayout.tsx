@@ -219,7 +219,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
       {/* Navegação única — text-first, sem ícones, sem pills. A hierarquia é
           100% tipográfica: DOMÍNIO (caps) > cluster (sentence, mudo) > item. */}
-      <aside className="w-full md:w-56 lg:w-60 flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-800/60 py-3 md:py-5 px-3 overflow-y-auto max-h-60 md:max-h-none">
+      <aside className="w-full md:w-[248px] flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-800/60 py-3 md:py-5 px-3 overflow-y-auto max-h-60 md:max-h-none">
         {/* Busca — encontra por rótulo OU sinônimo natural */}
         <div className="relative mb-4">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
@@ -228,7 +228,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar configuração..."
             aria-label="Buscar configuração"
-            className="w-full bg-transparent border border-surface-700/60 rounded-lg pl-8 pr-2 py-1.5 text-sm text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+            className="w-full h-7 bg-transparent border border-surface-700/60 rounded-lg pl-8 pr-2 text-sm text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
           />
         </div>
 
@@ -238,13 +238,13 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
 
         {nav.map((d) => (
           <div key={d.domain} className="mb-6">
-            <p className="px-2 mb-2 text-[10px] font-bold uppercase tracking-widest text-surface-500">
+            <p className="px-2 mb-2 text-[10px] font-bold uppercase text-surface-500" style={{ letterSpacing: '.14em' }}>
               {d.domain}
             </p>
             {d.clusters.map((cluster, i) => (
               <div key={cluster.label ?? i} className={cluster.label ? 'mt-3 first:mt-0' : ''}>
                 {cluster.label && (
-                  <p className="px-2 mb-0.5 text-[11px] font-medium text-surface-600">
+                  <p className="px-2 h-7 flex items-center text-[12.5px] font-medium text-surface-600">
                     {cluster.label}
                   </p>
                 )}
