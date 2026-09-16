@@ -42,7 +42,7 @@ export function SettingsOutline() {
   const entries = useContext(EntriesCtx)
   if (entries.length < 3) return null
   return (
-    <nav aria-label="Nesta página" className="hidden 2xl:block w-44 flex-shrink-0 sticky top-8 self-start">
+    <nav aria-label="Nesta página" className="hidden 2xl:block w-[180px] flex-shrink-0 sticky top-8 self-start">
       <p className="text-[10px] font-bold uppercase tracking-widest text-surface-600 mb-2">Nesta página</p>
       <ul className="flex flex-col gap-1 border-l border-surface-800/60">
         {entries.map((e) => (
@@ -85,8 +85,8 @@ export function SettingsSection({ title, description, children, className, icon:
     <section
       id={id}
       className={cn(
-        'py-8 first:pt-2 border-b border-surface-800/60 last:border-0 scroll-mt-6',
-        'md:grid md:grid-cols-[200px_1fr] md:gap-10 md:items-start',
+        'py-[22px] first:pt-2 border-b border-surface-800/60 last:border-0 scroll-mt-6',
+        'md:grid md:grid-cols-[260px_1fr] md:gap-6 md:items-start',
         className,
       )}
     >

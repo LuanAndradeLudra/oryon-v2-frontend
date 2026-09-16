@@ -28,20 +28,14 @@ export function SettingsSidebarItem({ section, label, adminOnly, currentRole }: 
     <Link
       to={`/settings/${section}`}
       aria-current={isActive ? 'page' : undefined}
+      style={isActive ? { boxShadow: 'inset 2px 0 0 var(--color-brand-500)', borderRadius: '0 6px 6px 0' } : undefined}
       className={cn(
-        'relative flex items-center px-2 py-[5px] rounded-md text-sm transition-colors duration-100',
+        'flex items-center h-[26px] pl-[22px] pr-2 text-[13px] transition-colors duration-100',
         isActive
-          ? 'text-surface-50 font-medium'
-          : 'text-surface-400 hover:text-surface-100',
+          ? 'text-surface-50 font-semibold bg-[var(--rowhover)]'
+          : 'text-surface-400 hover:text-surface-100 rounded-md',
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          'absolute -left-1 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full transition-colors',
-          isActive ? 'bg-brand-500' : 'bg-transparent',
-        )}
-      />
       {label}
     </Link>
   )
