@@ -96,6 +96,14 @@
    * em vez de reinventar `hover:bg-surface-800/50` caso a caso. */
   --rowhover: rgba(255, 255, 255, 0.04);
 
+  /* SCRUM-1097: `--sf2` é o nome que o handoff usa (seções 3.5/3.6/3.8/3.9/
+   * 3.11) pro fundo de rail/nav secundário (painel Tutor do wizard, coluna
+   * de nav do AutomationBuilder, sidebar de Configurações etc.) — um degrau
+   * de profundidade atrás do card principal. Alias fino sobre a escala real
+   * de produção (não um token de prototipo paralelo): resolve sozinho por
+   * tema porque delega pra --color-surface-900, que já tem light/dark. */
+  --sf2: var(--color-surface-900);
+
   /* brand scale (dark defaults) — componentes usam bg-brand-500 etc. */
   --color-brand-50:  #F0FDFA;
   --color-brand-100: #CCFBF1;
