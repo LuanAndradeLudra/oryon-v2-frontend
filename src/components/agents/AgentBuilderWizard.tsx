@@ -2085,6 +2085,9 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                     exit={{ opacity: 0, y: -16 }}
                     transition={{ duration: 0.3, ease: 'easeOut' }}
                   >
+                    <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-2">
+                      Etapa {step} de {STEP_LABELS.length}
+                    </p>
                     <div className="flex items-center gap-3 mb-4">
                       <div
                         className="w-9 h-9 rounded-lg border flex items-center justify-center flex-shrink-0"
@@ -2096,9 +2099,9 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                       >
                         <TeachingIcon className="w-4.5 h-4.5" />
                       </div>
-                      <h2 className="text-base font-bold text-surface-100 leading-tight">{teaching.title}</h2>
+                      <h2 className="text-[18px] font-bold text-surface-100 leading-tight">{teaching.title}</h2>
                     </div>
-                    <p className="text-sm text-surface-400 leading-relaxed mb-6">{teaching.description}</p>
+                    <p className="text-[12.5px] text-surface-400 leading-[1.55] mb-6">{teaching.description}</p>
                     <div className="flex flex-col gap-3">
                       {teaching.tips.map((tip, i) => {
                         const TipIcon = tip.icon
@@ -2120,6 +2123,49 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                     </div>
                   </motion.div>
                 </AnimatePresence>
+              </div>
+
+              {/* Trilha de etapas (tela 2b) — só concluídas são clicáveis,
+                  mesmo gate de WizardProgress (ui/, à direita); esta é a
+                  vista vertical compacta que fica sempre visível no painel
+                  Tutor, sem competir com o stepper horizontal de cima. */}
+              <div className="px-8 py-4 border-t border-surface-800/60 flex-shrink-0">
+                <div className="flex flex-col gap-1">
+                  {STEP_LABELS.map((label, i) => {
+                    const s = i + 1
+                    const done = s < step
+                    const active = s === step
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => { if (done) { setValidationError(null); setStep(s) } }}
+                        disabled={!done}
+                        className={cn(
+                          'flex items-center gap-2.5 h-[30px] rounded-lg px-1.5 -mx-1.5 text-left transition-colors',
+                          done && 'cursor-pointer hover:bg-surface-800/50',
+                          !done && 'cursor-default',
+                        )}
+                      >
+                        <span className={cn(
+                          'w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0 border',
+                          done && 'bg-brand-500/15 border-transparent text-brand-400',
+                          active && 'bg-brand-600 border-transparent text-surface-950',
+                          !done && !active && 'border-surface-700 text-surface-600',
+                        )}>
+                          {done ? <Check className="w-3 h-3" /> : <span className="text-[9px] font-bold">{s}</span>}
+                        </span>
+                        <span className={cn(
+                          'text-xs truncate',
+                          active ? 'text-surface-100 font-semibold' : done ? 'text-surface-400' : 'text-surface-600',
+                        )}>
+                          {label}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="text-[10.5px] text-surface-600 mt-2 px-1.5">Só etapas concluídas são clicáveis.</p>
               </div>
 
               {/* Nav buttons + errors */}

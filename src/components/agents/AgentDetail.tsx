@@ -32,6 +32,7 @@ import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Select } from '@/components/ui/Select'
 import { Banner } from '@/components/ui/Banner'
+import { Switch } from '@/components/ui/Switch'
 import { conversationsApi } from '@/services/api'
 import { HandoffRulesPanel } from '@/components/agents/HandoffRuleBuilder'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
@@ -2141,7 +2142,7 @@ export function AgentDetail({
           destrutivo escondido no menu "..." (padrão enterprise: excluir
           nunca fica a 1 clique na superfície). */}
       <div className="flex items-center gap-4 px-6 pt-5 pb-4 flex-shrink-0">
-        <AgentIcon iconId={agent.icon} className="w-12 h-12" />
+        <AgentIcon iconId={agent.icon} className="w-10 h-10" />
         <div className="flex-1 min-w-0">
           <InlineEdit
             value={agent.name}
@@ -2173,23 +2174,20 @@ export function AgentDetail({
           <Sparkles className="w-3.5 h-3.5" />
           Testar
         </button>
-        {/* Ativar / Pausar */}
-        <button
-          onClick={toggleStatus}
-          disabled={togglingStatus}
-          className={cn(
-            'inline-flex items-center gap-1.5 px-3.5 h-9 rounded-xl text-xs font-semibold ring-1 transition-colors disabled:opacity-50 cursor-pointer',
-            agent.status === 'active'
-              ? 'bg-surface-800 text-surface-400 ring-surface-700 hover:bg-danger/10 hover:text-danger hover:ring-danger/30'
-              : 'bg-status-active-bg text-status-active ring-status-active-border hover:bg-status-active-bg/80',
-          )}
-        >
-          {togglingStatus
-            ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            : agent.status === 'active'
-              ? <><PauseCircle className="w-3.5 h-3.5" /> Pausar</>
-              : <><Power className="w-3.5 h-3.5" /> Ativar</>}
-        </button>
+        {/* Ativar / Pausar — Switch (tela 2a), mesmo toggleStatus binário
+            active⟷paused de sempre (um agente em rascunho liga direto pra
+            active, igual o botão antigo fazia). */}
+        <div className="flex items-center gap-2 px-1">
+          {togglingStatus && <RefreshCw className="w-3.5 h-3.5 animate-spin text-surface-500" />}
+          <span className="text-xs font-medium text-surface-400">
+            {agent.status === 'active' ? 'Ligado' : 'Desligado'}
+          </span>
+          <Switch
+            checked={agent.status === 'active'}
+            onChange={toggleStatus}
+            disabled={togglingStatus}
+          />
+        </div>
         {/* Overflow — ações raras/destrutivas */}
         <div className="relative">
           <button

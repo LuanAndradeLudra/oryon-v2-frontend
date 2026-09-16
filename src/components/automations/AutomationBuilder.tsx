@@ -73,6 +73,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState<string | null>(null)
   const [active, setActive]   = useState<string>('gatilho')
+  const [visited, setVisited] = useState<Set<string>>(new Set(['gatilho']))
   const [recipesOpen, setRecipesOpen] = useState(true)
   const [askClose, setAskClose]       = useState(false)
   const smartDefault = useSmartLineDefault()
@@ -119,7 +120,27 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
 
   const scrollTo = (key: string) => {
     setActive(key)
+    setVisited((prev) => (prev.has(key) ? prev : new Set(prev).add(key)))
     sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  // Bolinha de estado do nav (tela 2b): verde = seção com conteúdo válido,
+  // âmbar = seção obrigatória (gatilho/ações) já visitada e ainda vazia,
+  // vazio = ainda não visitada. Condições/IA são opcionais — nunca âmbar.
+  const sectionStatus = (key: string): 'ok' | 'pending' | 'unvisited' => {
+    const has = (() => {
+      switch (key) {
+        case 'gatilho':   return !!draft.trigger?.type
+        case 'condicoes': return (draft.conditions?.length ?? 0) > 0
+        case 'acoes':     return draft.actions.length > 0
+        case 'ia':        return true // sempre tem default ('auto')
+        case 'revisar':   return draft.name.trim().length > 0
+        default:          return false
+      }
+    })()
+    if (has) return 'ok'
+    if (!visited.has(key)) return 'unvisited'
+    return (key === 'gatilho' || key === 'acoes') ? 'pending' : 'unvisited'
   }
 
   const requestClose = () => {
@@ -178,10 +199,10 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             key="builder-panel"
             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 34, mass: 0.9 }}
-            className="fixed top-0 right-0 bottom-0 w-[min(72rem,95vw)] z-50 bg-surface-950 border-l overlay-frame flex flex-col"
+            className="fixed top-0 right-0 bottom-0 w-[min(880px,95vw)] z-50 bg-surface-950 border-l overlay-frame flex flex-col"
           >
             {/* Header + resumo vivo */}
-            <div className="flex items-start gap-3 px-6 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-start gap-3 px-6 min-h-14 py-2.5 border-b border-surface-800 flex-shrink-0">
               <div className="color-chip w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0" style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}>
                 {TypeIcon ?? <Zap className="w-4 h-4" />}
               </div>
@@ -197,26 +218,41 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             {/* Corpo: mini-fluxo vertical + seções */}
             <div className="flex-1 flex min-h-0 overflow-hidden">
               {/* Nav vertical (mini-fluxo) */}
-              <nav className="w-52 flex-shrink-0 border-r border-surface-800 p-4 overflow-y-auto hidden sm:block">
-                <div className="relative">
-                  <div className="absolute left-[13px] top-4 bottom-4 w-px bg-surface-800" />
+              {/* SCRUM-1105 (tela 2b): a spec pede fundo `--sf2` aqui — esse
+                  token não existe em index.css ainda (checado, não é só
+                  este arquivo: README também usa em 3.5/3.8/3.9/3.11).
+                  Aproximando com surface-800/60 até o Maestro confirmar o
+                  token na fundação; avisado via maestri ask. */}
+              <nav className="w-[200px] flex-shrink-0 border-r border-surface-800 bg-surface-800/60 p-3 overflow-y-auto hidden sm:block">
+                <div className="flex flex-col gap-1">
                   {SECTIONS.map((s) => {
                     const Icon = s.icon
                     const isActive = active === s.key
+                    const status = sectionStatus(s.key)
                     return (
-                      <button key={s.key} onClick={() => scrollTo(s.key)} className="relative w-full flex items-center gap-3 py-2 text-left">
-                        <span
-                          className={cn(
-                            'w-7 h-7 rounded-full flex items-center justify-center border z-10 transition-colors',
-                            isActive ? 'color-chip' : 'bg-surface-900 border-surface-700 text-surface-500',
-                          )}
-                          style={isActive ? ({ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties) : undefined}
-                        >
-                          <Icon className="w-3.5 h-3.5" />
-                        </span>
-                        <span className={cn('text-xs font-medium transition-colors', isActive ? 'text-surface-100' : 'text-surface-400 hover:text-surface-200')}>
+                      <button
+                        key={s.key}
+                        onClick={() => scrollTo(s.key)}
+                        className={cn(
+                          'w-full flex items-center gap-2.5 h-[30px] px-2.5 rounded-lg border text-left transition-colors',
+                          isActive
+                            ? 'bg-surface-800 border-surface-700'
+                            : 'border-transparent hover:bg-surface-800/50',
+                        )}
+                      >
+                        <Icon className={cn('w-3.5 h-3.5 flex-shrink-0', isActive ? 'text-brand-400' : 'text-surface-500')} />
+                        <span className={cn('flex-1 min-w-0 truncate text-xs font-medium transition-colors', isActive ? 'text-surface-100' : 'text-surface-400')}>
                           {s.label}
                         </span>
+                        <span
+                          aria-hidden
+                          className={cn(
+                            'w-1.5 h-1.5 rounded-full flex-shrink-0',
+                            status === 'ok' && 'bg-online',
+                            status === 'pending' && 'bg-away',
+                            status === 'unvisited' && 'border border-surface-600',
+                          )}
+                        />
                       </button>
                     )
                   })}
