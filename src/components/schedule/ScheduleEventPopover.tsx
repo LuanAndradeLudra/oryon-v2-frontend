@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useLayer } from '@/contexts/LayerContext'
+import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { formatDayLong, formatHourLabel, STATUS_CHIP_VAR, STATUS_LABEL, type ScheduleEvent } from './scheduleMock'
 
@@ -94,7 +95,10 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
             </>
           )}
           <span className="text-surface-500">Responsável</span>
-          <span className="text-surface-200">{event.agent}</span>
+          <span className="text-surface-200 flex items-center gap-1.5">
+            <Avatar name={event.agent} kind="operator" size="xs" className="w-4 h-4 text-[8px]" />
+            {event.agent}
+          </span>
           {event.detail.origin && (
             <>
               <span className="text-surface-500">Origem</span>
