@@ -180,9 +180,9 @@ export function ContactPanel({
 
   // Largura do painel (desktop): 308px = 280px +10%. Reverter = voltar para md:w-[280px].
   return (
-    <aside className="conv-surface w-full md:w-[308px] flex-shrink-0 flex flex-col h-full bg-surface-950 md:border-l md:border-surface-700">
+    <aside className="conv-surface w-full md:w-[308px] flex-shrink-0 flex flex-col h-full bg-surface-800 md:border-l md:border-surface-700">
       {/* Action bar */}
-      <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-950">
+      <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-800">
         <div className="min-w-0 flex items-center gap-1.5">
           <Milestone className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" aria-label="Situação do contato" />
           {localStage ? (

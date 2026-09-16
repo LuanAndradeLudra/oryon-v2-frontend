@@ -196,6 +196,7 @@ export function ChatWindow({
         hasMore={hasMore}
         onLoadMore={fetchMore}
         onReply={setReplyTo}
+        contact={conversation.contact}
       />
       <MessageInput
         onSend={handleSendWithErrorReporting}
