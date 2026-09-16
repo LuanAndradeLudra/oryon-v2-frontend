@@ -1,24 +1,18 @@
 import { useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
-import { Send, FileText, X, Target } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { Send } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { TipCard } from '@/components/ui/TipCard'
+import { Tabs, type TabOption } from '@/components/ui/Tabs'
 import { CampaignsTab } from '@/components/campaigns/CampaignsTab'
 import { TemplatesTab } from '@/components/campaigns/TemplatesTab'
 import { AttributionTab } from '@/components/campaigns/AttributionTab'
 
 type Tab = 'campaigns' | 'templates' | 'attribution'
-
-const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'campaigns',  label: 'Disparos',   icon: Send     },
-  { id: 'templates',  label: 'Templates',  icon: FileText },
-  { id: 'attribution', label: 'Atribuição', icon: Target  },
-]
 
 export function CampaignsPage() {
   const { user } = useAuth()
@@ -29,7 +23,6 @@ export function CampaignsPage() {
   // não tem lista própria no mock — sem contador.
   const [campaignsCount, setCampaignsCount] = useState<number | null>(null)
   const [templatesCount, setTemplatesCount] = useState<number | null>(null)
-  const tabCount: Partial<Record<Tab, number | null>> = { campaigns: campaignsCount, templates: templatesCount }
   // Tab na URL (?tab=) — deep-linkável e sobrevive a reload; os tabs vivem
   // IN-PAGE (padrão underline do app), não no TopBar global, onde eram
   // invisíveis para quem escaneia a página.
@@ -44,38 +37,25 @@ export function CampaignsPage() {
     return <Navigate to="/home" replace />
   }
 
+  // CAMP-TABS-01..06 (spec 2c): tablist artesanal (teal, 12px, ícones,
+  // contagem entre parênteses) trocado pelo primitivo Tabs — já implementa
+  // sublinhado inset 2px currentColor, 13px/500 --tx2/--tx, contador 11px
+  // --tx3 sem parênteses, sem ícone.
+  const tabOptions: TabOption<Tab>[] = [
+    { id: 'campaigns', label: 'Disparos', count: campaignsCount ?? undefined },
+    { id: 'templates', label: 'Templates', count: templatesCount ?? undefined },
+    { id: 'attribution', label: 'Atribuição' },
+  ]
+
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Tabs in-page — mesmo padrão underline do detalhe de Agentes */}
-        <div
-          role="tablist"
-          aria-label="Seções de campanhas"
-          className="flex items-center gap-1 px-6 border-b border-surface-800/60 flex-shrink-0 overflow-x-auto"
-        >
-          {TABS.map((tab) => {
-            const Icon = tab.icon
-            return (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-3 py-2.5 -mb-px border-b-2 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
-                  activeTab === tab.id
-                    ? 'text-surface-50 border-brand-500'
-                    : 'text-surface-500 border-transparent hover:text-surface-300',
-                )}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {tab.label}
-                {typeof tabCount[tab.id] === 'number' && (
-                  <span className="text-surface-600 tabular-nums">({tabCount[tab.id]})</span>
-                )}
-              </button>
-            )
-          })}
-        </div>
+        <Tabs
+          tabs={tabOptions}
+          value={activeTab}
+          onChange={setActiveTab}
+          label="Seções de campanhas"
+          className="px-6"
+        />
         {/* Setup card */}
         <AnimatePresence>
           {!checklist.campaigns && (

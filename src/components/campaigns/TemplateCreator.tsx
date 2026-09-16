@@ -607,7 +607,7 @@ function StepCategoria({
                   category === value
                     ? 'border-brand-500 bg-brand-500/10'
                     : disabled
-                      ? 'border-surface-800 bg-surface-800/20 opacity-60 cursor-not-allowed'
+                      ? 'border-surface-700 bg-surface-800/20 opacity-60 cursor-not-allowed'
                       : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
                 )}
               >

@@ -62,7 +62,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
         className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[480px] bg-surface-950 border-l overlay-frame flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
           <div className="w-8 h-8 rounded-xl bg-[#1877f2]/15 border border-[#1877f2]/20 flex items-center justify-center flex-shrink-0">
             <Users className="w-4 h-4 text-[#1877f2]" />
           </div>
@@ -79,7 +79,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
 
         {/* Outcome summary pills */}
         {!loading && leads.length > 0 && (
-          <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
+          <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <button
                 onClick={() => setOutcomeFilter('all')}
@@ -87,7 +87,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                   'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
                   outcomeFilter === 'all'
                     ? 'bg-surface-700 border-surface-500 text-surface-100'
-                    : 'border-surface-800 text-surface-400 hover:text-surface-200',
+                    : 'border-surface-700 text-surface-400 hover:text-surface-200',
                 )}
               >
                 Todos ({leads.length})
@@ -103,7 +103,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                       'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
                       outcomeFilter === key
                         ? 'color-chip'
-                        : 'border-surface-800 text-surface-400 hover:text-surface-200',
+                        : 'border-surface-700 text-surface-400 hover:text-surface-200',
                     )}
                     style={outcomeFilter === key ? ({ ['--chip']: cfg.color } as React.CSSProperties) : {}}
                   >
@@ -117,8 +117,8 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
 
         {/* Search */}
         {!loading && leads.length > 0 && (
-          <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
-            <div className="flex items-center gap-2 bg-surface-900 border border-surface-800 rounded-xl px-3 py-2">
+          <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
+            <div className="flex items-center gap-2 bg-surface-900 border border-surface-700 rounded-xl px-3 py-2">
               <Search className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
               <input
                 value={search}
@@ -140,7 +140,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
           ) : filtered.length === 0 ? (
             <EmptyState icon={Users} title="Nenhum lead encontrado" className="h-full justify-center" />
           ) : (
-            <div className="divide-y divide-surface-800/60">
+            <div className="divide-y divide-surface-700/60">
               {filtered.map((lead) => {
                 const outcome = OUTCOME_CONFIG[lead.outcome]
                 return (
@@ -186,7 +186,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
 
         {/* Footer CTA */}
         {!loading && leads.length > 0 && (
-          <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
+          <div className="px-5 py-3 border-t border-surface-700 flex-shrink-0">
             <button
               onClick={() => navigate('/contacts')}
               className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-surface-700 text-xs text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-all"

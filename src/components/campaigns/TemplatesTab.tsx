@@ -28,6 +28,16 @@ const STATUS_CONFIG: Record<TemplateStatus, { label: string; chip: string; icon:
   DISABLED: { label: 'Desativado',  chip: 'var(--color-danger)', icon: AlertCircle },
 }
 
+// TPL-05 (spec 2c): chip suave (fundo tinta + texto colorido), sem ícone —
+// mesmo padrão do statusChip de CampaignsTab.tsx, chip "Aprovado · Meta".
+const STATUS_CHIP_CLASS: Record<TemplateStatus, string> = {
+  APPROVED: 'bg-status-active-bg text-status-active',
+  PENDING:  'bg-status-pending-bg text-status-pending',
+  REJECTED: 'bg-danger/10 text-danger',
+  PAUSED:   'bg-surface-900 border border-surface-700 text-surface-400',
+  DISABLED: 'bg-danger/10 text-danger',
+}
+
 const FILTER_OPTIONS: { value: TemplateStatus | 'all'; label: string }[] = [
   { value: 'all',      label: 'Todos' },
   { value: 'APPROVED', label: 'Aprovados' },
@@ -166,7 +176,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
       )}
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
           <input
@@ -250,7 +260,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
           onClick={() => setPreviewTemplate(null)}
         >
           <div
-            className="bg-surface-900 rounded-2xl border border-surface-800 p-6 max-w-sm w-full"
+            className="bg-surface-900 rounded-2xl border border-surface-700 p-6 max-w-sm w-full"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -332,62 +342,71 @@ function TemplateCard({
   deleting: boolean
 }) {
   const cfg = STATUS_CONFIG[template.status]
-  const StatusIcon = cfg.icon
   const [menuOpen, setMenuOpen] = useState(false)
+  const metaBits = [
+    CATEGORY_LABELS[template.category],
+    template.language,
+    template.buttons && template.buttons.length > 0 ? `${template.buttons.length} botã${template.buttons.length === 1 ? 'o' : 'oes'}` : null,
+    template.bodyVariables && template.bodyVariables.length > 0 ? `${template.bodyVariables.length} variáve${template.bodyVariables.length === 1 ? 'l' : 'is'}` : null,
+  ].filter(Boolean)
 
   return (
-    <div className="flex flex-col bg-surface-800/50 hover:bg-surface-800 border border-surface-800 rounded-xl overflow-hidden transition-all group">
-      {/* Header — nome em mono + chip de status Meta (tela 2c) */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-surface-800">
-        <span className="flex-1 min-w-0 text-[13px] font-medium text-surface-100 font-mono truncate">{template.name}</span>
-        <span
-          className="color-chip border flex items-center gap-1 text-[10.5px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0"
-          style={{ ['--chip']: cfg.chip } as React.CSSProperties}
-        >
-          <StatusIcon className="w-3 h-3" />
-          {cfg.label}
-        </span>
-        <span onClick={(e) => e.stopPropagation()} className="inline-flex flex-shrink-0">
-          <Dropdown
-            open={menuOpen}
-            onClose={() => setMenuOpen(false)}
-            align="right"
-            className="w-48"
-            anchor={
-              <button
-                onClick={() => setMenuOpen((v) => !v)}
-                aria-label="Mais ações"
-                className="p-1 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-              >
-                <MoreHorizontal className="w-3.5 h-3.5" />
-              </button>
-            }
-          >
-            <div className="px-1 py-1 flex flex-col gap-0.5">
-              <DropdownItem onClick={() => { onPreview(); setMenuOpen(false) }}>
-                <Eye className="w-3.5 h-3.5" /> Preview
-              </DropdownItem>
-              {canEdit && (
-                <DropdownItem onClick={() => { onEdit(); setMenuOpen(false) }}>
-                  <Pencil className="w-3.5 h-3.5" /> Editar
+    // TPL-02: card sem hover, borda --bd (surface-700, visível no claro), raio 8px (rounded-lg).
+    <div className="flex flex-col bg-surface-800 border border-surface-700 rounded-lg overflow-hidden group">
+      {/* Header — TPL-03: 2 linhas (nome+chip+menu / meta), TPL-04/05/06. */}
+      <div className="flex flex-col gap-1 px-3 py-2.5 border-b border-surface-700">
+        <div className="flex items-center gap-2">
+          <span className="flex-1 min-w-0 text-xs font-medium text-surface-100 font-mono truncate">{template.name}</span>
+          <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0', STATUS_CHIP_CLASS[template.status])}>
+            {cfg.label}
+          </span>
+          <span onClick={(e) => e.stopPropagation()} className="inline-flex flex-shrink-0">
+            <Dropdown
+              open={menuOpen}
+              onClose={() => setMenuOpen(false)}
+              align="right"
+              className="w-48"
+              anchor={
+                <button
+                  onClick={() => setMenuOpen((v) => !v)}
+                  aria-label="Mais ações"
+                  className="p-1 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
+                >
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                </button>
+              }
+            >
+              <div className="px-1 py-1 flex flex-col gap-0.5">
+                <DropdownItem onClick={() => { onPreview(); setMenuOpen(false) }}>
+                  <Eye className="w-3.5 h-3.5" /> Preview
                 </DropdownItem>
-              )}
-              {template.needsWabaAssignment && (
-                <DropdownItem onClick={() => { onAssignWaba(); setMenuOpen(false) }}>
-                  <FileText className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
+                {canEdit && (
+                  <DropdownItem onClick={() => { onEdit(); setMenuOpen(false) }}>
+                    <Pencil className="w-3.5 h-3.5" /> Editar
+                  </DropdownItem>
+                )}
+                {template.needsWabaAssignment && (
+                  <DropdownItem onClick={() => { onAssignWaba(); setMenuOpen(false) }}>
+                    <FileText className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
+                  </DropdownItem>
+                )}
+                {onDuplicate && (
+                  <DropdownItem onClick={() => { onDuplicate(); setMenuOpen(false) }}>
+                    <Copy className="w-3.5 h-3.5" /> Duplicar para outra linha
+                  </DropdownItem>
+                )}
+                <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setMenuOpen(false) }}>
+                  {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Excluir
                 </DropdownItem>
-              )}
-              {onDuplicate && (
-                <DropdownItem onClick={() => { onDuplicate(); setMenuOpen(false) }}>
-                  <Copy className="w-3.5 h-3.5" /> Duplicar para outra linha
-                </DropdownItem>
-              )}
-              <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setMenuOpen(false) }}>
-                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Excluir
-              </DropdownItem>
-            </div>
-          </Dropdown>
-        </span>
+              </div>
+            </Dropdown>
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[11px] text-surface-500 truncate">{metaBits.join(' · ')}</span>
+          <WhatsappLineChip whatsappNumberId={template.whatsappNumberId} />
+          <span className="ml-auto text-[11px] text-surface-600 flex-shrink-0">{new Date(template.createdAt).toLocaleDateString('pt-BR')}</span>
+        </div>
       </div>
 
       {/* Corpo — prévia em fundo #EFE7DD (hex fixo, mockup do WhatsApp) */}
@@ -396,36 +415,16 @@ function TemplateCard({
         className="bg-[#EFE7DD] p-3 max-h-[220px] overflow-y-auto text-left cursor-zoom-in"
         title="Ver prévia completa"
       >
-        <TemplatePreview template={template} compact />
+        <TemplatePreview template={template} compact variant="card" />
       </button>
 
-      {/* Rodapé — categoria/idioma/linha + contadores */}
-      <div className="p-3 flex flex-col gap-1.5">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10.5px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded-full">
-            {CATEGORY_LABELS[template.category]}
-          </span>
-          <span className="text-[10.5px] text-surface-600">{template.language}</span>
-          <WhatsappLineChip whatsappNumberId={template.whatsappNumberId} />
-        </div>
-
-        {template.status === 'REJECTED' && template.rejectionReason && (
-          <p className="text-[11px] text-danger flex items-start gap-1 line-clamp-2">
-            <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-            {template.rejectionReason}
-          </p>
-        )}
-
-        <div className="flex items-center gap-2 text-[10.5px] text-surface-600">
-          {template.bodyVariables && template.bodyVariables.length > 0 && (
-            <span>{template.bodyVariables.length} variáve{template.bodyVariables.length === 1 ? 'l' : 'is'}</span>
-          )}
-          {template.buttons && template.buttons.length > 0 && (
-            <span>{template.buttons.length} botã{template.buttons.length === 1 ? 'o' : 'oes'}</span>
-          )}
-          <span className="ml-auto">{new Date(template.createdAt).toLocaleDateString('pt-BR')}</span>
-        </div>
-      </div>
+      {/* Rodapé — só o motivo de rejeição, quando existe (TPL-06: meta virou linha 2 do header). */}
+      {template.status === 'REJECTED' && template.rejectionReason && (
+        <p className="px-3 py-2 text-[11px] text-danger flex items-start gap-1 line-clamp-2">
+          <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+          {template.rejectionReason}
+        </p>
+      )}
     </div>
   )
 }
