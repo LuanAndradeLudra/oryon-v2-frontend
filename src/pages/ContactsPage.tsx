@@ -385,6 +385,7 @@ export function ContactsPage() {
               scrollPositionRef={listScrollPosRef}
             />
           ) : (
+            <>
             <ContactsTable
               contacts={contacts}
               loading={loading}
@@ -405,6 +406,32 @@ export function ContactsPage() {
               sortDir={filters.sortDir}
               onSortChange={(sortBy, sortDir) => setFilters({ ...filters, sortBy, sortDir })}
             />
+            {/* CONT-FOOTER-01..04 (spec/1c-contatos.GAPS.md): rodapé fixo de
+                40px — "1–N de total" fora de seleção, ações em massa dentro
+                dela (era uma pílula flutuante, BulkActionBar `inline`). As
+                setas de paginação do mock não entram: a lista é scroll
+                infinito, sem endpoint de página (GAPS-PENDENTES). */}
+            <div className="h-10 flex items-center px-4 gap-3.5 border-t border-surface-700 text-xs text-surface-400 flex-shrink-0">
+              {selectedIds.size > 0 ? (
+                <BulkActionBar
+                  inline
+                  count={selectedIds.size}
+                  selectedContacts={selectedContacts}
+                  tags={tags}
+                  onMoveStage={handleBulkMoveStage}
+                  onAddTag={handleBulkAddTag}
+                  onRemoveTag={handleBulkRemoveTag}
+                  onCreateCampaign={handleCreateCampaignFromSelection}
+                  onDelete={canBulkDelete ? requestBulkDelete : undefined}
+                  onClear={clearSelection}
+                />
+              ) : (
+                <span>
+                  {contacts.length === 0 ? '0 de 0' : `1–${contacts.length.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')}`}
+                </span>
+              )}
+            </div>
+            </>
           )}
         </div>
       </div>
@@ -415,24 +442,6 @@ export function ContactsPage() {
         label="Novo contato"
         onClick={() => setShowNewContact(true)}
       />
-
-      {/* Bulk selection floating bar */}
-      <AnimatePresence>
-        {selectedIds.size > 0 && (
-          <BulkActionBar
-            key="bulk-bar"
-            count={selectedIds.size}
-            selectedContacts={selectedContacts}
-            tags={tags}
-            onMoveStage={handleBulkMoveStage}
-            onAddTag={handleBulkAddTag}
-            onRemoveTag={handleBulkRemoveTag}
-            onCreateCampaign={handleCreateCampaignFromSelection}
-            onDelete={canBulkDelete ? requestBulkDelete : undefined}
-            onClear={clearSelection}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Bulk delete confirmation — shared between bar and context menu.
           Uses the raw Modal so we can preview the contacts being deleted. */}

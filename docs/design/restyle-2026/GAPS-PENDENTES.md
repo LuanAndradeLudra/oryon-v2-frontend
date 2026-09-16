@@ -24,17 +24,22 @@ filtrar.
 responsável da conversa mais recente do contato (o que traria ambiguidade em contatos com
 múltiplas conversas/atendentes ao longo do tempo).
 
-### 1.2 Rodapé de paginação → rodapé de seleção
+### 1.2 Rodapé de paginação → rodapé de seleção — CORRIGIDO PARCIALMENTE (Fase C)
 
 O mockup substitui o rodapé de paginação por um rodapé de seleção (`N selecionado ·
-Atribuir · Etiquetar · Exportar`) quando há itens marcados. A tela real não usa paginação —
-usa scroll infinito (`hasMore`/`loadMore`) — e a seleção já tem sua própria UI (`BulkActionBar`,
-barra flutuante). Trocar a arquitetura de interação (infinito → paginado) só para caber o
-rodapé do mockup quebraria um padrão de UX já testado e usado em outras listas do produto.
+Atribuir · Etiquetar · Exportar`) quando há itens marcados. A `BulkActionBar` (mover
+etapa/tags/campanha/vCard/excluir) agora renderiza **dentro** do rodapé de 40px da tabela
+(`inline`) em vez de como pílula flutuante — sem seleção, o mesmo rodapé mostra
+"1–N de total" (`ContactsPage.tsx`, CONT-FOOTER-01/02/04).
 
-**Para desbloquear:** decisão de produto — vale trocar scroll infinito por paginação em
-Contatos? Se não, o rodapé de seleção do mockup não se aplica; a `BulkActionBar` flutuante
-já cobre a mesma necessidade.
+O que continua diferente do mockup: a tela usa scroll infinito (`hasMore`/`loadMore`), não
+paginação por página — não há setas ◀▶ pra "página anterior/seguinte" (CONT-FOOTER-03).
+Trocar a arquitetura de interação (infinito → paginado) só para caber as setas quebraria um
+padrão de UX já testado e usado em outras listas do produto.
+
+**Para desbloquear:** decisão de produto — vale trocar scroll infinito por paginação real em
+Contatos (endpoint com `page`/`offset`)? Sem isso, "1–N de total" é o mais perto que dá pra
+chegar do rodapé do mockup sem inventar uma navegação que o backend não suporta.
 
 ### 1.3 Drawer com estado em `?contact=&tab=`
 
