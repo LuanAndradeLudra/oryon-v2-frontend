@@ -46,7 +46,7 @@ export function WizardProgress({ steps, currentStep, onStepClick, className }: W
               )}
             >
               <span className={cn(
-                'w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-colors duration-300',
+                'w-[18px] h-[18px] rounded-full flex items-center justify-center text-3xs font-bold flex-shrink-0 transition-colors duration-300',
                 done && 'bg-accent-soft text-accent-dark group-hover:brightness-110',
                 active && 'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)]',
                 !done && !active && 'border border-[var(--bd2)] text-surface-400',

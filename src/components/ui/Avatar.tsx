@@ -19,7 +19,7 @@ interface AvatarProps {
 }
 
 const sizes = {
-  xs: 'w-6 h-6 text-[10px]',
+  xs: 'w-6 h-6 text-3xs',
   sm: 'w-8 h-8 text-xs',
   md: 'w-10 h-10 text-sm',
   lg: 'w-12 h-12 text-base',
@@ -78,13 +78,11 @@ export function Avatar({ name, imageUrl, size = 'md', online, className, kind = 
           className={cn(
             forma,
             'flex items-center justify-center font-semibold',
-            // Operador leva o gradiente da marca (`.avatar-operador`, no
-            // index.css) — teal diz "é da casa". O contato fica no par
-            // monocromático por tema: cliente é identidade, e identidade não
-            // se codifica em cor.
-            kind === 'operator'
-              ? 'avatar-operador'
-              : 'bg-avatar-surface text-avatar-initials',
+            // SCRUM-1097 (spec 1a/1d/shell: `--avs/--avi`): operador e contato
+            // no MESMO par monocromático por tema — o que distingue "é da
+            // casa" é a FORMA (quadrado arredondado), não um gradiente teal.
+            // `.avatar-operador` (gradiente) saiu de uso.
+            'bg-avatar-surface text-avatar-initials',
             sizes[size],
           )}
         >

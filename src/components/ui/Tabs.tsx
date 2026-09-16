@@ -83,7 +83,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, label, className
             {tab.icon}
             {tab.label}
             {tab.count !== undefined && (
-              <span className="text-[11px] text-surface-500 ml-0.5">{tab.count}</span>
+              <span className="text-2xs text-surface-500 ml-0.5">{tab.count}</span>
             )}
           </button>
         )

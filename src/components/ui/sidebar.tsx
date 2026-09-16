@@ -106,7 +106,7 @@ export const SidebarSectionLabel = memo(function SidebarSectionLabel({ label }: 
       <div className="relative h-[15px]">
         <p
           className={cn(
-            'absolute inset-0 flex items-center text-[10px] font-bold uppercase tracking-widest text-surface-600 whitespace-nowrap',
+            'absolute inset-0 flex items-center text-3xs font-bold uppercase tracking-widest text-surface-600 whitespace-nowrap',
             'transition-opacity duration-200',
             collapsed ? 'opacity-0' : 'opacity-100',
           )}
@@ -186,7 +186,7 @@ export const SidebarLink = memo(function SidebarLink({
       >
         {label}
         {nudge && (
-          <span className="text-[10px] font-semibold text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap">
+          <span className="text-3xs font-semibold text-status-pending bg-status-pending-bg border border-status-pending-border px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap">
             {nudge}
           </span>
         )}

@@ -94,7 +94,7 @@ function Bullet({
   return (
     <span
       className={cn(
-        'w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ring-1 transition-colors',
+        'w-6 h-6 rounded-full flex items-center justify-center text-2xs font-semibold flex-shrink-0 ring-1 transition-colors',
         complete
           ? 'bg-status-active-bg text-status-active ring-status-active-border'
           : active

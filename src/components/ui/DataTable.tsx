@@ -109,7 +109,7 @@ export function DataTable<Row>({
               <th
                 key={col.key}
                 className={cn(
-                  'px-3 py-2 text-[11px] font-medium text-surface-500 uppercase tracking-wide whitespace-nowrap',
+                  'px-3 py-2 text-2xs font-medium text-surface-500 uppercase tracking-wide whitespace-nowrap',
                   alignClass(col.align),
                   col.widthClass,
                   col.responsiveClass,

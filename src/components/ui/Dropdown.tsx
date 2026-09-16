@@ -171,7 +171,8 @@ export function Dropdown({ open, onClose, anchor, children, align = 'left', clas
             maxHeight: pos.maxHeight,
           }}
           className={cn(
-            'overlay-surface border rounded-xl',
+            // DROP-01 (spec 1a): raio 8 + padding 4.
+            'overlay-surface border rounded-lg p-1',
             // `overflow-y-auto` (e não `hidden`): com a altura limitada pela
             // janela, o que exceder precisa rolar DENTRO do menu.
             'min-w-[200px] overflow-x-hidden overflow-y-auto',
@@ -198,9 +199,13 @@ interface DropdownItemProps {
   danger?: boolean
   active?: boolean
   disabled?: boolean
+  /** Atalho de teclado exibido à direita (DROP-04), ex.: "E", "⌘K". */
+  shortcut?: string
 }
 
-export function DropdownItem({ onClick, children, icon: Icon, danger, active, disabled }: DropdownItemProps) {
+// DROP-02/03/04 (spec 1a): item 30px, padding 8, raio 5, 13px em --tx; hover
+// e foco em --rowhover (o destrutivo também — só a cor do texto muda).
+export function DropdownItem({ onClick, children, icon: Icon, danger, active, disabled, shortcut }: DropdownItemProps) {
   return (
     <button
       role="menuitem"
@@ -208,18 +213,19 @@ export function DropdownItem({ onClick, children, icon: Icon, danger, active, di
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-all',
-        'focus-visible:outline-none focus-visible:bg-surface-700',
+        'w-full flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] text-[13px] text-left transition-all',
+        'focus-visible:outline-none focus-visible:bg-[var(--rowhover)] hover:bg-[var(--rowhover)]',
         danger
-          ? 'text-danger hover:bg-danger/10'
+          ? 'text-danger'
           : active
             ? 'text-brand-300 bg-brand-600/10'
-            : 'text-surface-200 hover:bg-surface-700',
+            : 'text-surface-100',
         disabled && 'opacity-40 cursor-not-allowed'
       )}
     >
       {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
       {children}
+      {shortcut && <span className="ml-auto pl-3 text-2xs font-mono text-surface-500">{shortcut}</span>}
     </button>
   )
 }
