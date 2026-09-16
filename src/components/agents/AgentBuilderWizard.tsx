@@ -2167,77 +2167,6 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                 </div>
                 <p className="text-[10.5px] text-surface-600 mt-2 px-1.5">Só etapas concluídas são clicáveis.</p>
               </div>
-
-              {/* Nav buttons + errors */}
-              <div className="px-8 pt-4 pb-8 border-t border-surface-700 flex flex-col gap-2 flex-shrink-0">
-                {step < 8 && validationError && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-1 text-xs text-danger flex items-start gap-1.5"
-                  >
-                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{validationError}</span>
-                  </motion.p>
-                )}
-                {step === 8 && publishError && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-1 text-xs text-danger flex items-start gap-1.5"
-                  >
-                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{publishError}</span>
-                  </motion.p>
-                )}
-                {step === 8 ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handlePublish('active')}
-                      disabled={publishing || !data.generated_prompt}
-                      className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-surface-950 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-900/40"
-                    >
-                      {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                      {publishing ? 'Publicando...' : 'Publicar agente'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handlePublish('draft')}
-                      disabled={publishing}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 border border-surface-700 transition-all disabled:opacity-50"
-                    >
-                      Salvar como rascunho
-                    </button>
-                    <button
-                      type="button"
-                      onClick={back}
-                      disabled={publishing}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-surface-500 hover:text-surface-300 transition-all disabled:opacity-50"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" /> Voltar
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={next}
-                      disabled={step === 7 && !data.generated_prompt}
-                      className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-surface-950 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-900/40"
-                    >
-                      {step === 7 ? <><Sparkles className="w-4 h-4" /> Revisar</> : <>Continuar <ChevronRight className="w-4 h-4" /></>}
-                    </button>
-                    {step > 1 && (
-                      <button
-                        type="button"
-                        onClick={back}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 border border-surface-700 transition-all"
-                      >
-                        <ChevronLeft className="w-4 h-4" /> Voltar
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
             </div>
 
             {/* ── RIGHT FORM PANEL ─────────────────────────────────────── */}
@@ -2288,6 +2217,78 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                       </>
                     </motion.div>
                   </AnimatePresence>
+                </div>
+              </div>
+
+              {/* AGT-WIZ-24..26: footer 64px sob o formulário — Voltar/Continuar
+                  saem do rail do Tutor (aprovado: reorganização de ações que já
+                  existiam, entra na regra de reestilo puro). Cresce um pouco só
+                  quando há erro de validação/publicação pra não cortar o texto. */}
+              <div className={cn(
+                'flex-shrink-0 min-h-16 px-10 border-t border-surface-700 bg-surface-900/85 backdrop-blur-md flex items-center',
+                (step < 8 ? validationError : publishError) ? 'flex-col items-stretch gap-2 py-3' : 'gap-2',
+              )}>
+                {step < 8 && validationError && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-xs text-danger flex items-start gap-1.5"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{validationError}</span>
+                  </motion.p>
+                )}
+                {step === 8 && publishError && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-xs text-danger flex items-start gap-1.5"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{publishError}</span>
+                  </motion.p>
+                )}
+                <div className="flex items-center gap-2 flex-1">
+                  {step > 1 && (
+                    <button
+                      type="button"
+                      onClick={back}
+                      disabled={publishing}
+                      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-sm text-[13px] font-semibold text-surface-400 hover:text-surface-200 transition-colors disabled:opacity-50"
+                    >
+                      <ChevronLeft className="w-4 h-4" /> Voltar
+                    </button>
+                  )}
+                  <div className="ml-auto flex items-center gap-2">
+                    {step === 8 ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handlePublish('draft')}
+                          disabled={publishing}
+                          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-sm border border-surface-700 text-[13px] font-semibold text-surface-300 hover:text-surface-100 transition-colors disabled:opacity-50"
+                        >
+                          Salvar como rascunho
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePublish('active')}
+                          disabled={publishing || !data.generated_prompt}
+                          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-sm text-[13px] font-semibold bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                          {publishing ? 'Publicando...' : 'Publicar agente'}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={next}
+                        disabled={step === 7 && !data.generated_prompt}
+                        className="inline-flex items-center gap-1.5 h-9 px-4 rounded-sm text-[13px] font-semibold bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {step === 7 ? <><Sparkles className="w-4 h-4" /> Revisar</> : <>Continuar <ChevronRight className="w-4 h-4" /></>}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
