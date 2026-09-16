@@ -232,10 +232,13 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
 
           <div className="flex items-center gap-3 ml-auto flex-shrink-0 pl-2">
             {/* AI indicator — only when the bot is currently replying. The
-                assignment chip below is shown independently of this one. */}
+                assignment chip below is shown independently of this one.
+                README 3.3: convenção de cor DELIBERADAMENTE invertida —
+                âmbar = IA no controle, verde = humano assumiu. Não "corrigir"
+                pra vermelho/verde-neutro por parecer mais intuitivo. */}
             {aiActive && (
               <span
-                className="inline-flex items-center gap-1 text-[10.5px] text-surface-300"
+                className="inline-flex items-center gap-1 text-[10.5px] text-status-pending"
                 title="IA respondendo nesta conversa"
               >
                 <Bot className="w-3.5 h-3.5" />
@@ -248,10 +251,10 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 the AI is the one typing right now. */}
             {assignment === 'human' && assignedUser ? (
               <span
-                className="inline-flex items-center gap-1 text-[10.5px] text-surface-200"
+                className="inline-flex items-center gap-1 text-[10.5px] text-status-active"
                 title={`Atribuída a ${assignedUser.firstName}${assignedUser.lastName ? ' ' + assignedUser.lastName : ''}`}
               >
-                <UserCheck className="w-3.5 h-3.5 text-surface-300" />
+                <UserCheck className="w-3.5 h-3.5" />
                 {truncate(assignedUser.firstName, 10)}
               </span>
             ) : (

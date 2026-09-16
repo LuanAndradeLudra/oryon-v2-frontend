@@ -779,12 +779,18 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
             discreet inline icon in the meta row below, outbound only. */}
         <div
           className={cn(
-            'relative px-3 py-2 rounded-md',
+            // README 3.3: raio 10px, com o canto "de cauda" em 3px — só na
+            // PRIMEIRA bolha do grupo (showAvatar). Nenhum --radius-* token
+            // cobre 3px, então fica em valor arbitrário aqui mesmo (não é
+            // mudança de token, é uso local).
+            'relative px-3 py-2 rounded-[10px]',
             isOutbound
-              ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg rounded-br-xs'
-              : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-xs',
-            showAvatar && isOutbound && 'rounded-br-md rounded-tr-xs',
-            showAvatar && !isOutbound && 'rounded-bl-md rounded-tl-xs'
+              ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg'
+              : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)]',
+            showAvatar && isOutbound && 'rounded-tr-[3px]',
+            showAvatar && !isOutbound && 'rounded-tl-[3px]',
+            !showAvatar && isOutbound && 'rounded-br-[3px]',
+            !showAvatar && !isOutbound && 'rounded-bl-[3px]',
           )}
           style={isOutbound ? { boxShadow: 'var(--bubble-shadow-soft)' } : undefined}
         >
