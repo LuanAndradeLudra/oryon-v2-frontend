@@ -144,7 +144,7 @@ export function DataTable<Row>({
                     ? 'bg-brand-500/15 [&>td:first-child]:shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
                     : selected
                       ? 'bg-surface-800/60'
-                      : 'hover:bg-surface-800/40',
+                      : 'hover:bg-[var(--rowhover)]',
                 )}
               >
                 {selectable && (
