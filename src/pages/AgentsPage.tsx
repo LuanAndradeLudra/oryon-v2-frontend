@@ -138,10 +138,12 @@ function AgentCard({
       onClick={onClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'relative w-full text-left pl-4 pr-3 py-3 rounded-2xl border transition-colors duration-150 group cursor-pointer',
+        // AGT-LIST-04/05: hairline entre itens (não card por item — sem
+        // raio/borda própria); selecionado = --rowhover + filete inset 2px --ac.
+        'relative w-full text-left p-3 border-b border-surface-700 last:border-b-0 transition-colors duration-150 group cursor-pointer',
         selected
-          ? 'bg-[var(--rowhover)] border-surface-700 shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
-          : 'bg-surface-900/50 border-surface-700 hover:bg-[var(--rowhover)] hover:border-surface-700',
+          ? 'bg-[var(--rowhover)] shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
+          : 'hover:bg-[var(--rowhover)]',
       )}
     >
       <div className="flex items-center gap-3">
@@ -310,15 +312,16 @@ export function AgentsPage() {
               </div>
             </div>
 
-            {/* List */}
-            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
+            {/* List — AGT-LIST-04: itens edge-to-edge, sem gap lateral (a
+                hairline por item é a única separação). */}
+            <div className="flex-1 overflow-y-auto">
               {loadingList ? (
-                <SkeletonList items={5} />
+                <SkeletonList items={5} className="px-3 pt-3" />
               ) : filtered.length === 0 ? (
                 <EmptyState
                   icon={Bot}
                   title={statusFilter === 'all' ? 'Nenhum agente ainda' : 'Nenhum agente neste status'}
-                  className="py-10"
+                  className="py-10 px-3"
                   iconStyle={{ color: 'color-mix(in srgb, var(--color-accent-violet) 55%, transparent)' }}
                 />
               ) : (
