@@ -207,7 +207,7 @@ Fundos (`bg-surface-800`, `hover:bg-surface-800/50`) NÃO entram na regra.
 | 2d/2e/6a | **feito** (fork; `✅~` = aproximado, specs vieram de PNG) — 2d 12 ❌ · 2e 20 ❌ · 6a 12 ❌ | Bússola (após 2a/2b) — OUTLINE-04/05/06 do SettingsOutline é o de maior alcance | B ✅ |
 | 1c Contatos | **feito** (fork, `1c-contatos.GAPS.md`, 95/95 + bloco "fora da referência") | Cartógrafo — branch `fix/SCRUM-1097-fase-c-contatos` | **C em andamento** (06:12) |
 | 2c Campanhas | **feito** (fork, `2c-campanhas.GAPS.md`, 83 itens + notas Step1–4) | Farol (após B de 1e/conn) | B ✅ |
-| 2a/2b Agentes | Bússola (após B de 1d) | Farol | — |
+| 2a/2b Agentes | **feito** (Bússola, `2a-2b-agentes.GAPS.md`: ~16 ✅ · ~26 ❌ · ~25 ❓ · 2 [!]) — aba "Comportamento" do mock só existe no wizard; OverviewTab em cards (zero-cards!); abas com `accent` por categoria em vez de sublinhado neutro (--tx); AutomationBuilder é o mais fiel | Farol (após 2c → 1b) | B ✅ — **Fase B 100% completa às 09:58** |
 | 1e Funis | Farol | Cartógrafo | B em andamento |
 | Conectores | Farol | Bússola | B em andamento |
 | 1b Dashboard · Shell | — | Farol · orquestrador | aguarda B |
