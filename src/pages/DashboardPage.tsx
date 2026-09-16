@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
 import { RefreshCw, BarChart3, X } from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { AnimatePresence, motion } from 'framer-motion'
 
 
@@ -35,7 +33,7 @@ import { formatActivity, pickActivityType } from '@/components/dashboard/activit
 import type { HomeStats } from '@/types'
 import type { User } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
+import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
@@ -105,6 +103,18 @@ function mapActivityFeed(rows: ActivityFeedApiRow[]): ActivityEvent[] {
   })
 }
 
+// DASH-HEADER-01: "Terça, 15 set · atualizado há 20 s" — dia da semana curto
+// capitalizado (date-fns EEEE dá "terça-feira" completo em pt-BR, não bate).
+const WEEKDAYS_SHORT = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+function formatUpdatedSubtitle(lastUpdated: Date, now: Date): string {
+  const dia = `${WEEKDAYS_SHORT[lastUpdated.getDay()]}, ${lastUpdated.getDate()} ${MESES_ABREV[lastUpdated.getMonth()]}`
+  const diffSec = Math.max(0, Math.floor((now.getTime() - lastUpdated.getTime()) / 1000))
+  const ago = diffSec < 60 ? `${diffSec} s` : diffSec < 3600 ? `${Math.floor(diffSec / 60)} min` : `${Math.floor(diffSec / 3600)} h`
+  return `${dia} · atualizado há ${ago}`
+}
+
 export function DashboardPage() {
   const isMobile = useIsMobile()
   const { user: authUser } = useAuth()
@@ -114,6 +124,12 @@ export function DashboardPage() {
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState(new Date())
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 5000)
+    return () => clearInterval(id)
+  }, [])
 
   useEffect(() => {
     api.get<User>('/auth/me').then((r) => setCurrentUser(r.data)).catch(() => {})
@@ -242,9 +258,6 @@ export function DashboardPage() {
 
   const dateAndRefreshActions = (
     <div className="flex items-center gap-2">
-      <span className="text-[11px] text-surface-500 hidden sm:block">
-        Atualizado às {format(lastUpdated, 'HH:mm', { locale: ptBR })}
-      </span>
       <DateRangePicker value={dateRange} onChange={setDateRange} />
       <button
         onClick={refresh}
@@ -260,6 +273,10 @@ export function DashboardPage() {
   // ações da TopBar (mesmo padrão de useRegisterTopBarActions das outras
   // levas — não mexe em layout/TopBar.tsx).
   useRegisterTopBarActions(dateAndRefreshActions, [dateRange, loading, lastUpdated])
+
+  // DASH-HEADER-01: subtítulo dinâmico "Terça, 15 set · atualizado há Ns" no
+  // lugar do texto fixo da rota — `now` tickando a cada 5s mantém o "há Ns" vivo.
+  useRegisterTopBarSubtitle(formatUpdatedSubtitle(lastUpdated, now), [lastUpdated, now])
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
