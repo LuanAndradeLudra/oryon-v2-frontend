@@ -196,7 +196,7 @@ export function CustomFieldModal({ open, onClose, onSave, editField, existingKey
           </FormField>
         )}
 
-        <div className="flex items-center justify-between py-2 border-t border-surface-800">
+        <div className="flex items-center justify-between py-2 border-t border-surface-700">
           <div>
             <p className="text-sm font-medium text-surface-200">Campo obrigatório</p>
             <p className="text-xs text-surface-500 mt-0.5">Bloqueia salvar contato sem preencher</p>

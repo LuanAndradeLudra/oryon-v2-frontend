@@ -187,7 +187,7 @@ export function AiExecutionsPage() {
                     <th className="px-3 py-2 font-medium text-right">Latência</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-surface-800">
+                <tbody className="divide-y divide-surface-700">
                   {rows.map(r => {
                     const statusChip = STATUS_STYLE[r.final_status] ?? 'var(--color-status-muted)'
                     return (
@@ -235,7 +235,7 @@ export function AiExecutionsPage() {
               </div>
 
               {nextCursor && (
-                <div className="border-t border-surface-800 px-3 py-2 flex justify-center">
+                <div className="border-t border-surface-700 px-3 py-2 flex justify-center">
                   <button
                     onClick={() => void loadMore()}
                     disabled={loadingMore}

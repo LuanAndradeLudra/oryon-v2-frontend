@@ -16,7 +16,7 @@ export const StatusDonut = memo(function StatusDonut({ data }: { data: StatusDis
   const total = slices.reduce((s, x) => s + x.value, 0)
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 h-full flex flex-col">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5 h-full flex flex-col">
       <p className="text-sm font-semibold text-surface-100 mb-3">Status das Conversas</p>
 
       <div className="relative flex-shrink-0">

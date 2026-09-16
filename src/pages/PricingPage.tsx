@@ -94,7 +94,7 @@ function PlanCard({ tier, annual }: { tier: PlanTier; annual: boolean }) {
   if (plan.modules.sla)            highlights.push('SLA 99,5%')
 
   return (
-    <div className={`relative flex flex-col rounded-2xl border ${popular ? 'border-brand-500' : 'border-surface-800'} bg-gradient-to-b ${PLAN_COLORS[tier]} p-6 gap-5`}>
+    <div className={`relative flex flex-col rounded-2xl border ${popular ? 'border-brand-500' : 'border-surface-700'} bg-gradient-to-b ${PLAN_COLORS[tier]} p-6 gap-5`}>
       {popular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-brand-600 text-surface-950 text-xs font-semibold">
           Mais popular
@@ -225,7 +225,7 @@ function FAQ() {
   return (
     <div className="space-y-2">
       {FAQS.map((faq, i) => (
-        <div key={i} className="rounded-xl border border-surface-800 bg-surface-900 overflow-hidden">
+        <div key={i} className="rounded-xl border border-surface-700 bg-surface-900 overflow-hidden">
           <button
             className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
             onClick={() => setOpen(open === i ? null : i)}
@@ -304,7 +304,7 @@ export function PricingPage() {
         </div>
 
         {/* Enterprise strip */}
-        <div className="rounded-2xl border border-surface-800 bg-surface-900 p-6 flex flex-col sm:flex-row items-center gap-6 justify-between">
+        <div className="rounded-2xl border border-surface-700 bg-surface-900 p-6 flex flex-col sm:flex-row items-center gap-6 justify-between">
           <div>
             <h3 className="text-lg font-bold text-surface-50">Enterprise</h3>
             <p className="text-sm text-surface-400 mt-1">
@@ -335,7 +335,7 @@ export function PricingPage() {
                 transition={{ duration: 0.25 }}
                 className="overflow-hidden mt-6"
               >
-                <div className="rounded-2xl border border-surface-800 bg-surface-900 p-6">
+                <div className="rounded-2xl border border-surface-700 bg-surface-900 p-6">
                   <ComparisonTable />
                 </div>
               </motion.div>

@@ -45,7 +45,7 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   const convRate = impressions > 0 ? ((customers / impressions) * 100).toFixed(3) : '0'
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm font-semibold text-surface-100">Funil de Conversão</p>
@@ -162,15 +162,15 @@ function AdCampaignsTable({
   ]
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-surface-800">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-surface-700">
         <p className="text-sm font-semibold text-surface-100">Campanhas Pagas</p>
         <p className="text-xs text-surface-400 mt-0.5">Performance com conversão no CRM</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-surface-800">
+            <tr className="border-b border-surface-700">
               <th className="text-left px-5 py-3 text-surface-400 font-medium">Campanha</th>
               {cols.map((c) => (
                 <th key={c.key}
@@ -189,7 +189,7 @@ function AdCampaignsTable({
               <>
                 <tr
                   key={camp.platformCampaignId}
-                  className="border-b border-surface-800/50 hover:bg-surface-800/30 transition-colors cursor-pointer"
+                  className="border-b border-surface-700 hover:bg-surface-800/30 transition-colors cursor-pointer"
                   onClick={() => setExpanded(expanded === camp.platformCampaignId ? null : camp.platformCampaignId)}
                 >
                   <td className="px-5 py-3">
@@ -231,7 +231,7 @@ function AdCampaignsTable({
                   </td>
                 </tr>
                 {expanded === camp.platformCampaignId && (
-                  <tr key={`${camp.platformCampaignId}-expanded`} className="border-b border-surface-800/50">
+                  <tr key={`${camp.platformCampaignId}-expanded`} className="border-b border-surface-700">
                     <td colSpan={8} className="px-5 py-3 bg-surface-800/20">
                       <div className="flex items-center gap-3 flex-wrap">
                         {camp.funnelBreakdown.map((stage, i) => (
@@ -299,7 +299,7 @@ function TotalsStrip({ totals }: { totals: MarketingFunnelTotals }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {items.map((item) => (
-        <div key={item.label} className="bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 flex items-center gap-3">
+        <div key={item.label} className="bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: item.color + '1a', color: item.color }}>
             {item.icon}
@@ -346,9 +346,9 @@ export function MarketingFunnelSection({ dateRange }: { dateRange: DateRange }) 
         {loading ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {[1,2,3,4].map((i) => <div key={i} className="h-16 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />)}
+              {[1,2,3,4].map((i) => <div key={i} className="h-16 bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />)}
             </div>
-            <div className="h-64 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
+            <div className="h-64 bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />
           </div>
         ) : (
           <>

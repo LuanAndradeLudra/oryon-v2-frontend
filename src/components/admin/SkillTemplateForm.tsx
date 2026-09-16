@@ -543,7 +543,7 @@ Depois de criar a consulta, envie uma confirmação amigável com emoji ✅.`}
           primary CTA on the last step. We expose the test shortcut and the
           submit only on the last step so the operator knows they reviewed
           everything before saving. */}
-      <div className="flex items-center justify-between gap-3 pt-4 border-t border-surface-800/60">
+      <div className="flex items-center justify-between gap-3 pt-4 border-t border-surface-700">
         <button
           type="button"
           onClick={() => navigate('/admin/skill-templates')}
@@ -678,7 +678,7 @@ function Section({
     <section
       id={id}
       data-section={id}
-      className="bg-surface-900/50 border border-surface-800 rounded-xl p-5 scroll-mt-24"
+      className="bg-surface-900/50 border border-surface-700 rounded-xl p-5 scroll-mt-24"
     >
       <header className="mb-4">
         <h2 className="text-base font-semibold text-surface-100 mb-0.5">{title}</h2>
@@ -731,7 +731,7 @@ function SlugField({
 
   if (disabled) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-900 border border-surface-800">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-900 border border-surface-700">
         <code className="flex-1 font-mono text-sm text-surface-200 truncate">{value}</code>
         <button
           type="button"
@@ -776,7 +776,7 @@ function DestructiveCallout({
         'flex items-start gap-3 p-3 rounded-lg border transition-colors',
         checked
           ? 'bg-status-pending-bg/40 border-status-pending-border'
-          : 'bg-surface-900 border-surface-800',
+          : 'bg-surface-900 border-surface-700',
       )}
     >
       <ShieldAlert

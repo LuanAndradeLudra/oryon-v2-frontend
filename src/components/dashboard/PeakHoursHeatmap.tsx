@@ -58,7 +58,7 @@ export const PeakHoursHeatmap = memo(function PeakHoursHeatmap({ data }: { data:
   ]
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
       <div className="mb-4">
         <p className="text-sm font-semibold text-surface-100">Horários de Pico</p>
         <p className="text-xs text-surface-400 mt-0.5">Volume de conversas por período e dia da semana</p>

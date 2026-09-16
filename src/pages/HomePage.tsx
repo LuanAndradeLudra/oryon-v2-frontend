@@ -102,7 +102,7 @@ function KPICard({ data, hero }: { data: KPIData; hero?: boolean }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 flex flex-col gap-3"
+      className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 flex flex-col gap-3"
     >
       <div className="flex items-start justify-between">
         <div className={cn('w-10 h-10 rounded-xl ring-1 flex items-center justify-center', c.bg, c.ring)}>
@@ -164,7 +164,7 @@ function KPIGridSkeleton() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-surface-900 border border-surface-800 rounded-2xl h-28 animate-pulse" />
+        <div key={i} className="bg-surface-900 border border-surface-700 rounded-2xl h-28 animate-pulse" />
       ))}
     </div>
   )
@@ -266,7 +266,7 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
   const myAvgMin    = stats.myAvgResponseMinutes ?? 0
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-brand-400" />
@@ -354,7 +354,7 @@ function QuickActions({ role }: { role: string }) {
   const navigate = useNavigate()
   const actions = getQuickActions(role)
   return (
-    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full">
+    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Ações rápidas</h3>
       <div className="grid grid-cols-2 gap-1.5">
         {actions.map((a) => {
@@ -395,7 +395,7 @@ const ACTION_MAP: Record<string, { label: string; dot: string }> = {
 
 function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean }) {
   return (
-    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full">
+    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Atividade recente</h3>
       {loading ? (
         <div className="flex justify-center py-10">
@@ -413,7 +413,7 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
           {logs.map((log, i) => {
             const action = ACTION_MAP[log.action] ?? { label: log.action, dot: 'bg-surface-500' }
             return (
-              <div key={log.id} className="flex items-start gap-3 py-2.5 border-b border-surface-800/60 last:border-0">
+              <div key={log.id} className="flex items-start gap-3 py-2.5 border-b border-surface-700 last:border-0">
                 <div className="flex flex-col items-center flex-shrink-0 mt-1.5 gap-1">
                   <div className={cn('w-2 h-2 rounded-full flex-shrink-0', action.dot)} />
                   {i < logs.length - 1 && <div className="w-px h-4 bg-surface-800" />}
@@ -448,7 +448,7 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
 function TeamCard({ stats }: { stats: HomeStats }) {
   const navigate = useNavigate()
   return (
-    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Equipe</h4>
         <Users className="w-4 h-4 text-surface-600" />
@@ -487,7 +487,7 @@ function WhatsAppNumbersCard() {
   }, [])
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Números WhatsApp</h4>
         <Smartphone className="w-4 h-4 text-surface-600" />
@@ -533,7 +533,7 @@ function WhatsAppNumbersCard() {
 function LiveServiceCard({ stats }: { stats: HomeStats }) {
   const navigate = useNavigate()
   return (
-    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full flex flex-col">
+    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Atendimento agora</h4>
         <div className="flex items-center gap-1.5">
@@ -599,7 +599,7 @@ function SupervisorBlock() {
   }, [])
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5">
+    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Fila de espera</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : `${queue.length} sem usuário`}</span>
@@ -655,7 +655,7 @@ function AgentBlock() {
   }, [])
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5">
+    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Minhas conversas abertas</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : `${convs.length} abertas`}</span>

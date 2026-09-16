@@ -96,7 +96,7 @@ export function AssignWabaModal({
         onClick={(e) => e.stopPropagation()}
         className="bg-surface-900 rounded-2xl border border-surface-700/60 w-full max-w-md overflow-hidden"
       >
-        <div className="flex items-start justify-between px-5 py-4 border-b border-surface-800/60">
+        <div className="flex items-start justify-between px-5 py-4 border-b border-surface-700">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-surface-100">{title}</h2>
             {resourceName && (
@@ -163,7 +163,7 @@ export function AssignWabaModal({
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-surface-800/60 bg-surface-950/30">
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-surface-700 bg-surface-950/30">
           <Button
             type="button"
             variant="ghost"

@@ -329,7 +329,7 @@ function OpenDensity(props: OpenDealProps) {
   return (
     <article
       key={deal.id}
-      className="bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 flex flex-col gap-2"
+      className="bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 flex flex-col gap-2"
       data-testid={`${testIdPrefix}-open-${testIdKey}`}
     >
       <div className="flex items-center gap-2 min-w-0">

@@ -91,7 +91,7 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
               const isActive = value === opt.value
               return (
                 <li key={opt.value}>
-                  {i === 1 && <div className="mx-3 my-1 border-t border-surface-800/60" />}
+                  {i === 1 && <div className="mx-3 my-1 border-t border-surface-700" />}
                   <button
                     type="button"
                     onClick={() => { onChange(opt.value); setOpen(false) }}
@@ -175,7 +175,7 @@ function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
               <button
                 key={l.id}
                 onClick={() => onPick(l.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-surface-800 bg-surface-900 hover:border-brand-500/40 hover:bg-surface-800 transition-colors text-left"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-surface-800 transition-colors text-left"
               >
                 <Phone className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
                 <span className="text-xs font-medium text-surface-200 flex-1 truncate">{l.label || l.displayPhoneNumber}</span>
@@ -669,7 +669,7 @@ export function AutomationsPage() {
           />
         ) : (
           <div className="flex-1 min-w-0 overflow-hidden flex flex-col px-4 py-3">
-            <div className="flex-1 min-h-0 flex flex-col rounded-xl border border-surface-800 overflow-hidden bg-surface-900/20">
+            <div className="flex-1 min-h-0 flex flex-col rounded-xl border border-surface-700 overflow-hidden bg-surface-900/20">
               <DataTable
                 columns={columns}
                 rows={sortedRows}

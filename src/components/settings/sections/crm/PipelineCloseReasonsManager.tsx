@@ -129,13 +129,13 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
         sem apagar o histórico de negócios já fechados com ele.
       </p>
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      <div className="bg-surface-900 border border-surface-700 rounded-2xl overflow-hidden">
         {reasons === null ? (
           <p className="text-sm text-surface-500 text-center py-10">Carregando…</p>
         ) : sorted.length === 0 ? (
           <p className="text-sm text-surface-500 text-center py-10">Nenhum motivo configurado.</p>
         ) : (
-          <ul className="divide-y divide-surface-800">
+          <ul className="divide-y divide-surface-700">
             {sorted.map((r, idx) => (
               <li
                 key={r.id}
@@ -197,7 +197,7 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
 
       {canManage && (
         creating ? (
-          <div className="flex items-center gap-2 bg-surface-900 border border-surface-800 rounded-xl p-3">
+          <div className="flex items-center gap-2 bg-surface-900 border border-surface-700 rounded-xl p-3">
             <input
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
@@ -231,7 +231,7 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
         )
       )}
 
-      <div className="flex items-center justify-between gap-3 pt-2 border-t border-surface-800/60">
+      <div className="flex items-center justify-between gap-3 pt-2 border-t border-surface-700">
         <div>
           <p className="text-sm font-medium text-surface-200">Permitir motivo livre neste funil</p>
           <p className="text-xs text-surface-500 mt-0.5">

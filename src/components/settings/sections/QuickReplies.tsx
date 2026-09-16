@@ -219,7 +219,7 @@ export function QuickReplies() {
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-800/60">
+              <tr className="border-b border-surface-700">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Atalho</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Título</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Preview</th>
@@ -227,7 +227,7 @@ export function QuickReplies() {
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800/60">
+            <tbody className="divide-y divide-surface-700">
               {filtered.map((cr) => (
                 <QuickReplyRow
                   key={cr.id}

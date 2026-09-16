@@ -86,7 +86,7 @@ export function SkillTemplateInstancesSection({ template }: Props) {
   }, [editing, template])
 
   return (
-    <section className="mt-8 bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+    <section className="mt-8 bg-surface-900/50 border border-surface-700 rounded-xl p-5">
       <header className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
@@ -143,7 +143,7 @@ export function SkillTemplateInstancesSection({ template }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[11px] uppercase tracking-wide text-surface-500 border-b border-surface-800">
+              <tr className="text-[11px] uppercase tracking-wide text-surface-500 border-b border-surface-700">
                 <th className="text-left font-medium py-2 pr-3">Agente</th>
                 <th className="text-left font-medium py-2 pr-3">Tenant</th>
                 <th className="text-left font-medium py-2 pr-3">Config</th>
@@ -200,7 +200,7 @@ function InstanceRow({
   }, [row.config])
 
   return (
-    <tr className="border-b border-surface-800/60 hover:bg-surface-900/30">
+    <tr className="border-b border-surface-700 hover:bg-surface-900/30">
       <td className="py-2.5 pr-3 text-surface-100 truncate max-w-[180px]">
         {row.agent_name}
       </td>

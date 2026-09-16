@@ -193,7 +193,7 @@ function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUp
   }
 
   return (
-    <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
+    <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <Bot className="w-3.5 h-3.5 text-surface-500" />
         <p className="text-xs font-medium text-surface-500">Comportamento da IA</p>
@@ -235,7 +235,7 @@ function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUp
             'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
             dirty
               ? 'border-transparent bg-status-active-bg text-status-active ring-1 ring-status-active-border hover:brightness-110 cursor-pointer'
-              : 'border-surface-800 text-surface-600 bg-surface-900 cursor-default',
+              : 'border-surface-700 text-surface-600 bg-surface-900 cursor-default',
           )}
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -319,7 +319,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
   return (
     <div className="space-y-6">
       {/* Status controls */}
-      <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
+      <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
         <p className="text-xs font-medium text-surface-500 mb-3">Status do agente</p>
         <div className="flex items-center gap-2">
           {(['active', 'paused', 'draft'] as const).map((s) => {
@@ -334,7 +334,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
                   'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
                   active
                     ? 'color-chip cursor-default'
-                    : 'border-surface-800 text-surface-500 hover:border-surface-700 hover:text-surface-300 bg-surface-900 cursor-pointer',
+                    : 'border-surface-700 text-surface-500 hover:border-surface-700 hover:text-surface-300 bg-surface-900 cursor-pointer',
                 )}
                 style={active ? { ['--chip']: cfg.chip } as React.CSSProperties : undefined}
               >
@@ -352,13 +352,13 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
       <AiBehaviorCard agent={agent} onUpdate={onUpdate} />
 
       {/* Activity */}
-      <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
+      <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
         <p className="text-xs font-medium text-surface-500 mb-3">Atividade</p>
         <div className="space-y-2">
           {activityRows.map(row => (
             <div key={row.label} className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors',
-              row.highlighted ? 'border-status-active-border/60 bg-status-active-bg/40' : 'border-surface-800/60 bg-surface-950/40',
+              row.highlighted ? 'border-status-active-border/60 bg-status-active-bg/40' : 'border-surface-700 bg-surface-950/40',
             )}>
               <span className={row.highlighted ? 'text-status-active' : 'text-surface-600'}>{row.icon}</span>
               <div className="flex-1 min-w-0">
@@ -383,7 +383,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
       </div>
 
       {/* Info rows */}
-      <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
+      <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
         <p className="text-xs font-medium text-surface-500 mb-3">Informações</p>
         <div className="space-y-2">
           {infoRows.map(r => (
@@ -566,7 +566,7 @@ function ToolForm({
   const textareaCls = "w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
 
   return (
-    <div className="space-y-4 bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
+    <div className="space-y-4 bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-2">
         <Wrench className="w-4 h-4 text-brand-400" />
         <p className="text-sm font-medium text-surface-200">{initial?.name ? 'Editar ferramenta' : 'Nova ferramenta'}</p>
@@ -718,7 +718,7 @@ function ToolsTab({
 
       {/* Tool cards */}
       {agent.tools.length === 0 && !adding && (
-        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-800 rounded-xl">
+        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-700 rounded-xl">
           <Wrench className="w-8 h-8 text-surface-700" />
           <div className="text-center">
             <p className="text-sm text-surface-500">Nenhuma ferramenta configurada</p>
@@ -732,7 +732,7 @@ function ToolsTab({
 
       <div className="space-y-2">
         {agent.tools.map(tool => (
-          <motion.div key={tool.id} layout className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl overflow-hidden">
+          <motion.div key={tool.id} layout className="bg-[var(--sf2)] border border-surface-700 rounded-xl overflow-hidden">
             {editingId === tool.id ? (
               <ToolForm
                 initial={{
@@ -795,7 +795,7 @@ function ToolsTab({
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      className="overflow-hidden border-t border-surface-800/60"
+                      className="overflow-hidden border-t border-surface-700"
                     >
                       <div className="px-4 py-3 space-y-3">
                         <div className="flex items-center gap-2 text-xs">
@@ -1013,7 +1013,7 @@ function KBUploadProgress({ fileName }: { fileName: string }) {
   const progress = Math.min(95, elapsed * 1.2)
 
   return (
-    <div className="p-3 bg-[var(--sf2)] border border-surface-800 rounded-xl space-y-2">
+    <div className="p-3 bg-[var(--sf2)] border border-surface-700 rounded-xl space-y-2">
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-brand-400 flex-shrink-0" />
         <p className="text-xs text-surface-200 font-medium truncate">{fileName}</p>
@@ -1299,7 +1299,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
             const isLoadingThis = editLoading && editingDocId === doc.id && editContent === ''
             const previewText = (doc.content_preview ?? '').split('\n').slice(0, 8).join('\n').trim()
             return (
-              <div key={doc.id} className="bg-[var(--sf2)] border border-surface-800 rounded-xl p-3">
+              <div key={doc.id} className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-3">
                 <div className="flex items-center gap-3">
                   <FileText className="w-4 h-4 text-surface-500 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -1339,7 +1339,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
                   </button>
                 </div>
                 {previewText && (
-                  <div className="mt-3 pt-3 border-t border-surface-800/60">
+                  <div className="mt-3 pt-3 border-t border-surface-700">
                     <pre className="text-[11px] text-surface-500 leading-relaxed whitespace-pre-wrap break-words font-sans line-clamp-[8]">
                       {previewText}
                     </pre>
@@ -1420,7 +1420,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
               {textInput.length.toLocaleString()} caracteres
             </p>
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-surface-800">
+          <div className="flex justify-end gap-2 pt-2 border-t border-surface-700">
             <button
               type="button"
               onClick={() => setTextModalOpen(false)}
@@ -1492,7 +1492,7 @@ function RulesTab({
   return (
     <div className={cn('flex flex-col gap-4', subTab === 'handoff' && 'h-full min-h-0')}>
       {/* Sub-tab selector (pill style, nested inside the main tab area) */}
-      <div className="flex items-center gap-1 p-1 bg-[var(--sf2)] border border-surface-800/60 rounded-xl w-fit flex-shrink-0">
+      <div className="flex items-center gap-1 p-1 bg-[var(--sf2)] border border-surface-700 rounded-xl w-fit flex-shrink-0">
         {subTabs.map(t => (
           <button
             key={t.id}
@@ -1592,7 +1592,7 @@ function FaqRuleForm({
           value={draft.name}
           onChange={e => setDraft({ ...draft, name: e.target.value })}
           placeholder="Ex: Saudações, Horário de funcionamento…"
-          className="w-full bg-surface-950 border border-surface-800 rounded-lg px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          className="w-full bg-surface-950 border border-surface-700 rounded-lg px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
         />
       </div>
 
@@ -1605,7 +1605,7 @@ function FaqRuleForm({
           value={keywordsText}
           onChange={e => setKeywordsText(e.target.value)}
           placeholder="oi, olá, bom dia, boa tarde"
-          className="w-full bg-surface-950 border border-surface-800 rounded-lg px-3 py-1.5 text-sm text-surface-100 font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          className="w-full bg-surface-950 border border-surface-700 rounded-lg px-3 py-1.5 text-sm text-surface-100 font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/40"
         />
       </div>
 
@@ -1616,7 +1616,7 @@ function FaqRuleForm({
           <select
             value={draft.match_mode}
             onChange={e => setDraft({ ...draft, match_mode: e.target.value as FaqMatchMode })}
-            className="w-full bg-surface-950 border border-surface-800 rounded-lg px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            className="w-full bg-surface-950 border border-surface-700 rounded-lg px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
           >
             {(Object.keys(FAQ_MATCH_MODE_LABEL) as FaqMatchMode[]).map(m => (
               <option key={m} value={m}>{FAQ_MATCH_MODE_LABEL[m]}</option>
@@ -1629,7 +1629,7 @@ function FaqRuleForm({
             type="number"
             value={draft.priority}
             onChange={e => setDraft({ ...draft, priority: parseInt(e.target.value, 10) || 0 })}
-            className="w-full bg-surface-950 border border-surface-800 rounded-lg px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            className="w-full bg-surface-950 border border-surface-700 rounded-lg px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
           />
         </div>
       </div>
@@ -1644,7 +1644,7 @@ function FaqRuleForm({
           onChange={e => setDraft({ ...draft, response_template: e.target.value })}
           rows={3}
           placeholder="Olá {{nome}}! Como posso ajudar?"
-          className="w-full bg-surface-950 border border-surface-800 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          className="w-full bg-surface-950 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
         />
       </div>
 
@@ -1658,7 +1658,7 @@ function FaqRuleForm({
           min={0}
           value={draft.cooldown_minutes}
           onChange={e => setDraft({ ...draft, cooldown_minutes: Math.max(0, parseInt(e.target.value, 10) || 0) })}
-          className="w-32 bg-surface-950 border border-surface-800 rounded-lg px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          className="w-32 bg-surface-950 border border-surface-700 rounded-lg px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
         />
       </div>
 
@@ -1775,7 +1775,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
       </AnimatePresence>
 
       {!loading && rules.length === 0 && !adding && (
-        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-800 rounded-xl">
+        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-700 rounded-xl">
           <MessageCircleQuestion className="w-8 h-8 text-surface-700" />
           <div className="text-center">
             <p className="text-sm text-surface-500">Nenhuma FAQ configurada</p>
@@ -1792,7 +1792,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
 
       <div className="space-y-2">
         {rules.map(rule => (
-          <motion.div key={rule.id} layout className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl overflow-hidden">
+          <motion.div key={rule.id} layout className="bg-[var(--sf2)] border border-surface-700 rounded-xl overflow-hidden">
             {editingId === rule.id ? (
               <FaqRuleForm
                 initial={{
@@ -1938,7 +1938,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
           <select
             value={windowDays}
             onChange={(e) => setWindowDays(parseInt(e.target.value, 10))}
-            className="bg-surface-900 border border-surface-800 rounded-lg px-2.5 py-1 text-xs text-surface-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className="bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1 text-xs text-surface-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
           >
             <option value={1}>Último dia</option>
             <option value={7}>Últimos 7 dias</option>
@@ -1947,7 +1947,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-900 hover:bg-surface-800 border border-surface-800 text-xs text-surface-300 transition disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-900 hover:bg-surface-800 border border-surface-700 text-xs text-surface-300 transition disabled:opacity-50"
           >
             <RefreshCw className={cn('w-3 h-3', refreshing && 'animate-spin')} />
             Atualizar
@@ -1958,17 +1958,17 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
       {/* Summary cards */}
       {!loading && !error && totals.total > 0 && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-3">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Total de chamadas</p>
             <p className="text-xl font-bold text-surface-100">{totals.total.toLocaleString('pt-BR')}</p>
           </div>
-          <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-3">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Taxa de sucesso</p>
             <p className={cn('text-xl font-bold', successRate !== null && successRate >= 95 ? 'text-status-active' : successRate !== null && successRate >= 80 ? 'text-status-pending' : 'text-danger')}>
               {successRate !== null ? `${successRate}%` : '—'}
             </p>
           </div>
-          <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-3">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Falhas</p>
             <p className={cn('text-xl font-bold', totals.failures === 0 ? 'text-surface-400' : 'text-danger')}>
               {totals.failures.toLocaleString('pt-BR')}
@@ -1994,7 +1994,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
       {/* Empty */}
       {!loading && !error && rows.length === 0 && (
-        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-800 rounded-xl">
+        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-700 rounded-xl">
           <BarChart3 className="w-8 h-8 text-surface-700" />
           <div className="text-center">
             <p className="text-sm text-surface-500">Nenhuma execução registrada</p>
@@ -2007,7 +2007,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
       {/* Per-tool table */}
       {!loading && !error && rows.length > 0 && (
-        <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl overflow-hidden">
+        <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl overflow-hidden">
           <table className="w-full text-xs">
             <thead className="bg-surface-950/60 text-surface-500 uppercase tracking-wide text-[10px]">
               <tr>
@@ -2019,7 +2019,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
                 <th className="text-right px-4 py-2 font-medium">p95</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800/60">
+            <tbody className="divide-y divide-surface-700">
               {rows.map(r => {
                 const rate = r.total > 0 ? (r.successes / r.total) * 100 : 0
                 return (
@@ -2206,7 +2206,7 @@ export function AgentDetail({
               'w-9 h-9 rounded-xl border flex items-center justify-center transition-colors cursor-pointer',
               moreOpen
                 ? 'border-surface-600 bg-surface-800 text-surface-200'
-                : 'border-surface-800 text-surface-500 hover:border-surface-700 hover:text-surface-300',
+                : 'border-surface-700 text-surface-500 hover:border-surface-700 hover:text-surface-300',
             )}
           >
             <MoreHorizontal className="w-4 h-4" />

@@ -665,7 +665,7 @@ export function NewDealDialog({
   )
 
   const footer = (
-    <div className="flex flex-col gap-2 border-t border-surface-800 bg-surface-950 px-4 py-3.5">
+    <div className="flex flex-col gap-2 border-t border-surface-700 bg-surface-950 px-4 py-3.5">
       {error && error !== 'Escolha o contato do negócio.' && (
         <p role="alert" className="text-xs text-danger">{error}</p>
       )}
@@ -739,7 +739,7 @@ export function NewDealDialog({
           {identidade}
           {blocoValor}
         </div>
-        <div className="flex flex-col gap-3 p-4 bg-surface-950 border-t sm:border-t-0 sm:border-l border-surface-800">
+        <div className="flex flex-col gap-3 p-4 bg-surface-950 border-t sm:border-t-0 sm:border-l border-surface-700">
           {propriedades}
         </div>
       </div>

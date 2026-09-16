@@ -81,7 +81,7 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
 
 function InfoTable({ rows }: { rows: { label: string; value: React.ReactNode }[] }) {
   return (
-    <div className="divide-y divide-surface-800/60">
+    <div className="divide-y divide-surface-700">
       {rows.map(({ label, value }) => (
         <div key={label} className="flex items-baseline justify-between gap-2 py-2 first:pt-0 last:pb-0">
           <span className="text-[11px] text-surface-500 flex-shrink-0">{label}</span>
@@ -180,7 +180,7 @@ export function ContactPanel({
 
   // Largura do painel (desktop): 308px = 280px +10%. Reverter = voltar para md:w-[280px].
   return (
-    <aside className="conv-surface w-full md:w-[308px] flex-shrink-0 flex flex-col h-full bg-surface-950 md:border-l md:border-surface-800">
+    <aside className="conv-surface w-full md:w-[308px] flex-shrink-0 flex flex-col h-full bg-surface-950 md:border-l md:border-surface-700">
       {/* Action bar */}
       <div className="conv-surface flex items-center justify-between gap-2 px-4 py-2 bg-surface-950">
         <div className="min-w-0 flex items-center gap-1.5">
@@ -267,7 +267,7 @@ export function ContactPanel({
         <CollapsibleSection
           title="Etiquetas"
           storageKey="conv-panel.tags"
-          className="border-t border-surface-800"
+          className="border-t border-surface-700"
           actions={
             <button onClick={() => setTagOpen(true)} className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors">
               <TagIcon className="w-3 h-3" />
@@ -302,7 +302,7 @@ export function ContactPanel({
         <CollapsibleSection
           title="Agente responsável"
           storageKey="conv-panel.assignee"
-          className="border-t border-surface-800"
+          className="border-t border-surface-700"
           actions={
             <div className="flex items-center gap-2">
               {assignedUser && (
@@ -367,7 +367,7 @@ export function ContactPanel({
 
         {/* Dados — referência estática, acima da timeline dinâmica (mesmo
             rótulo do drawer de Contatos, "Informações" era o nome antigo). */}
-        <CollapsibleSection title="Dados" storageKey="conv-panel.info" className="border-t border-surface-800">
+        <CollapsibleSection title="Dados" storageKey="conv-panel.info" className="border-t border-surface-700">
           <InfoTable rows={infoRows} />
         </CollapsibleSection>
 

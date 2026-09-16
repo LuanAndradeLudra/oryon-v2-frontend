@@ -64,7 +64,7 @@ export function FunnelsConfigDrawer({ open, onClose }: Props) {
             aria-label="Configurar funis"
             data-testid="funnels-config-drawer"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
               <div>
                 <h2 className="text-base font-semibold text-surface-50">Configurar funis</h2>
                 <p className="text-xs text-surface-500 mt-0.5">Etapas, motivos de desfecho e acesso por setor</p>
@@ -83,7 +83,7 @@ export function FunnelsConfigDrawer({ open, onClose }: Props) {
               <FunnelsSettings />
             </div>
 
-            <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
+            <div className="px-5 py-3 border-t border-surface-700 flex-shrink-0">
               <Link
                 to={telaCheia}
                 onClick={onClose}

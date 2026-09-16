@@ -48,7 +48,7 @@ export function MobileFeatureGate({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
     >
-      <header className="flex-shrink-0 h-14 px-3 flex items-center justify-between border-b border-surface-800/60">
+      <header className="flex-shrink-0 h-14 px-3 flex items-center justify-between border-b border-surface-700">
         <h1 className="text-sm font-semibold text-surface-100">{featureName}</h1>
         <button
           type="button"

@@ -360,7 +360,7 @@ function SkillRow({
         'border-l-2',
         row.enabled
           ? 'bg-surface-900 border-surface-700 border-l-status-active hover:border-surface-600'
-          : 'bg-surface-900/40 border-surface-800 border-l-transparent opacity-80',
+          : 'bg-surface-900/40 border-surface-700 border-l-transparent opacity-80',
       )}
     >
       <CategoryIcon

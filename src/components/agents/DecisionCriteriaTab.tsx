@@ -164,7 +164,7 @@ function CriterionEditor({
   }
 
   return (
-    <section className="rounded-xl border border-surface-800/60 bg-surface-900/40 p-4 flex flex-col gap-3">
+    <section className="rounded-xl border border-surface-700 bg-surface-900/40 p-4 flex flex-col gap-3">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-surface-100">{title}</h3>

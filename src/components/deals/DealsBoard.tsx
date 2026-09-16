@@ -370,7 +370,7 @@ export function DealsBoard({
                       data-testid={highlightDealId === deal.id ? 'deal-card-highlighted' : undefined}
                       className={cn(
                         // README 3.4: borda 1px, raio 8px, padding 10px 12px.
-                        'relative group/card rounded-lg border border-surface-800 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-surface-700 hover:bg-[var(--rowhover)]',
+                        'relative group/card rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-surface-700 hover:bg-[var(--rowhover)]',
                         onOpenDeal && 'cursor-pointer',
                         // Em arraste: única sombra fora de overlay (o card É um overlay enquanto flutua).
                         draggingId === deal.id && 'opacity-40 shadow-lg',

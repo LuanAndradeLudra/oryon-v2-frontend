@@ -218,7 +218,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                diluí-lo a 60% sobre o branco devolvia ~#F6F7FA — cinza nenhum.
 
                A BORDA é quem faz o bloco existir, não o preenchimento. O
-               fechado usava `border-surface-800`, a MESMA cor do próprio fundo
+               fechado usava `border-surface-700`, a MESMA cor do próprio fundo
                dentro do drawer invertido — ou seja, não tinha borda nenhuma, e
                sobrava um cinza de 1,1:1 contra o branco para se virar sozinho.
                Subir o cinza resolveria pela força bruta e traria o efeito de
@@ -476,7 +476,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
       )}
 
       {showTotal && value.length > 0 && (
-        <p className="text-xs text-surface-300 text-right border-t border-surface-800 pt-2">
+        <p className="text-xs text-surface-300 text-right border-t border-surface-700 pt-2">
           Soma dos itens: <span className="tabular-nums font-semibold">{formatBRL(total)}</span>
         </p>
       )}

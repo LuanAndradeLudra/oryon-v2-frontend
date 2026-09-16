@@ -118,7 +118,7 @@ export function AttributeChip({
  */
 function ChipHeader({ label, hint }: { label: string; hint?: string }) {
   return (
-    <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-800">
+    <div className="px-3 pt-2 pb-2 mb-1 border-b border-surface-700">
       <p className="text-xs font-semibold text-surface-200">{label}</p>
       {hint && <p className="mt-0.5 text-[11px] leading-snug text-surface-500">{hint}</p>}
     </div>

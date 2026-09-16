@@ -25,7 +25,7 @@ const PERIOD_OPTIONS: { value: DateRangePreset | 'all'; label: string }[] = [
 
 function StatCard({ icon: Icon, label, value, hint }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; hint?: string }) {
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 flex flex-col gap-2">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4 flex flex-col gap-2">
       <div className="flex items-center gap-2 text-surface-400">
         <Icon className="w-4 h-4" />
         <span className="text-xs font-medium">{label}</span>
@@ -94,7 +94,7 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
     <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center rounded-xl bg-surface-900 border border-surface-800 p-0.5 gap-0.5">
+        <div className="flex items-center rounded-xl bg-surface-900 border border-surface-700 p-0.5 gap-0.5">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -113,7 +113,7 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
           value={ownerFilter}
           onChange={(e) => setOwnerFilter(e.target.value)}
           aria-label="Filtrar por dono"
-          className="text-xs px-3 py-1.5 rounded-xl bg-surface-900 border border-surface-800 text-surface-300 focus:outline-none focus:border-brand-500"
+          className="text-xs px-3 py-1.5 rounded-xl bg-surface-900 border border-surface-700 text-surface-300 focus:outline-none focus:border-brand-500"
         >
           <option value="all">Todos os donos</option>
           <option value="unassigned">Sem dono</option>

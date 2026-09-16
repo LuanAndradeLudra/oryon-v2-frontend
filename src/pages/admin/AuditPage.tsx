@@ -203,7 +203,7 @@ function ActivityFeedTab() {
                   <Th>Quando</Th><Th>Tipo</Th><Th>Ação</Th><Th>Actor</Th><Th>Descrição</Th><Th>Drill</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-800">
+              <tbody className="divide-y divide-surface-700">
                 {rows.map(r => (
                   <tr key={r.id} className="hover:bg-surface-800/30">
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
@@ -336,7 +336,7 @@ function AuthEventsTab() {
                   <Th>Quando</Th><Th>Evento</Th><Th>userId</Th><Th>IP</Th><Th>User-Agent</Th><Th>Tenant</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-800">
+              <tbody className="divide-y divide-surface-700">
                 {rows.map(r => (
                   <tr key={r.id} className="hover:bg-surface-800/30">
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
@@ -448,7 +448,7 @@ function IntegrationEventsTab() {
                   <Th>Quando</Th><Th>Severidade</Th><Th>Origem</Th><Th>Código</Th><Th>Mensagem</Th><Th>Resolvido</Th><Th>Tenant</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-800">
+              <tbody className="divide-y divide-surface-700">
                 {rows.map(r => (
                   <tr key={r.id} className="hover:bg-surface-800/30">
                     <Td>{new Date(r.createdAt).toLocaleString('pt-BR')}</Td>
@@ -557,7 +557,7 @@ function AutomationRunsTab() {
                   <Th>Quando</Th><Th>Status</Th><Th>Trigger</Th><Th>automationId</Th><Th>Duração</Th><Th>Erro</Th><Th>Tenant</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-800">
+              <tbody className="divide-y divide-surface-700">
                 {rows.map(r => (
                   <tr key={r.id} className="hover:bg-surface-800/30">
                     <Td>{new Date(r.startedAt).toLocaleString('pt-BR')}</Td>

@@ -421,7 +421,7 @@ export function AgentTestModal({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-surface-800/60 bg-surface-900 flex-shrink-0">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-surface-700 bg-surface-900 flex-shrink-0">
           <AgentIcon iconId={agent.icon} className="w-9 h-9" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-surface-100 truncate">{agent.name}</p>
@@ -506,7 +506,7 @@ export function AgentTestModal({
         {/* Body: split */}
         <div className="flex-1 flex min-h-0">
           {/* ── Coluna esquerda: chat ──────────────────────────────────────── */}
-          <div className="w-[420px] flex-shrink-0 flex flex-col border-r border-surface-800/60 min-h-0">
+          <div className="w-[420px] flex-shrink-0 flex flex-col border-r border-surface-700 min-h-0">
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1" style={{ background: 'radial-gradient(ellipse at top, hsl(var(--color-surface-900)/0.4) 0%, transparent 70%)' }}>
               {loadingSessionView && (
                 <div className="flex justify-center py-6">
@@ -604,7 +604,7 @@ export function AgentTestModal({
             </div>
 
             {/* Input */}
-            <div className="flex items-end gap-2 px-4 py-3 border-t border-surface-800/60 bg-surface-900/60 flex-shrink-0">
+            <div className="flex items-end gap-2 px-4 py-3 border-t border-surface-700 bg-surface-900/60 flex-shrink-0">
               <textarea
                 ref={inputRef}
                 value={input}
@@ -630,7 +630,7 @@ export function AgentTestModal({
 
           {/* ── Coluna direita: painel de debug ─────────────────────────────── */}
           <div className="flex-1 flex flex-col min-h-0 bg-surface-900">
-            <div className="flex gap-1 px-3 pt-2.5 border-b border-surface-800/60 flex-shrink-0">
+            <div className="flex gap-1 px-3 pt-2.5 border-b border-surface-700 flex-shrink-0">
               {TABS.map(tab => {
                 const Icon = tab.icon
                 const active = activeTab === tab.id
@@ -641,7 +641,7 @@ export function AgentTestModal({
                       className={cn(
                         'inline-flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-[11px] font-bold transition-colors border border-b-0',
                         active
-                          ? 'text-brand-400 bg-surface-950 border-surface-800/60'
+                          ? 'text-brand-400 bg-surface-950 border-surface-700'
                           : 'text-surface-500 border-transparent hover:text-surface-300',
                       )}
                     >

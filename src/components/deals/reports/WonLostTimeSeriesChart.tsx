@@ -80,7 +80,7 @@ export function WonLostTimeSeriesChart({ pipelineId, from, to, ownerUserId }: Pr
 
   if (!from || !to) {
     return (
-      <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+      <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
         <p className="text-sm font-semibold text-surface-100 mb-2">{title}</p>
         <EmptyState icon={LineChartIcon} title="Selecione um período para ver a série temporal" className="py-8" />
       </div>
@@ -89,7 +89,7 @@ export function WonLostTimeSeriesChart({ pipelineId, from, to, ownerUserId }: Pr
 
   if (loading || buckets === null) {
     return (
-      <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+      <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
         <p className="text-sm font-semibold text-surface-100 mb-4">{title}</p>
         <div className="h-[200px] rounded-lg bg-surface-800/40 animate-pulse" aria-hidden />
       </div>
@@ -99,7 +99,7 @@ export function WonLostTimeSeriesChart({ pipelineId, from, to, ownerUserId }: Pr
   const hasData = buckets.some((b) => b.won > 0 || b.lost > 0)
   if (!hasData) {
     return (
-      <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+      <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
         <p className="text-sm font-semibold text-surface-100 mb-2">{title}</p>
         <EmptyState icon={LineChartIcon} title="Nenhum negócio fechado no período" className="py-8" />
       </div>
@@ -107,7 +107,7 @@ export function WonLostTimeSeriesChart({ pipelineId, from, to, ownerUserId }: Pr
   }
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
       <p className="text-sm font-semibold text-surface-100 mb-4">{title}</p>
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={buckets} margin={{ left: 4, right: 20, top: 4, bottom: 4 }}>

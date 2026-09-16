@@ -135,7 +135,7 @@ export function LoginPage() {
       )}
 
       {/* ── Right panel — login form ── */}
-      <div className="w-full lg:w-[480px] flex flex-col items-center justify-start lg:justify-center px-8 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(3rem+env(safe-area-inset-bottom))] lg:py-12 bg-surface-950 lg:border-l lg:border-surface-800">
+      <div className="w-full lg:w-[480px] flex flex-col items-center justify-start lg:justify-center px-8 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(3rem+env(safe-area-inset-bottom))] lg:py-12 bg-surface-950 lg:border-l lg:border-surface-700">
 
         {/* Mobile headline — logo + divisor + wordmark horizontalmente centralizados;
             headline + subheadline alinhados a esquerda. */}
@@ -173,7 +173,7 @@ export function LoginPage() {
           {/* Card chrome only on mobile/tablet — on desktop the right column
               already provides the surface-950 panel, so the inner card was
               competing with it visually. */}
-          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-5 shadow-2xl lg:bg-transparent lg:border-0 lg:p-5 lg:shadow-none lg:rounded-lg">
+          <div className="bg-surface-900 border border-surface-700 rounded-2xl p-5 shadow-2xl lg:bg-transparent lg:border-0 lg:p-5 lg:shadow-none lg:rounded-lg">
             <div className="mb-5">
               <h2 className="text-2xl font-bold text-surface-50">Entrar</h2>
               <p className="text-sm text-surface-400 mt-1">Acesse sua conta para continuar</p>

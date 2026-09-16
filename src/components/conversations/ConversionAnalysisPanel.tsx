@@ -447,7 +447,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
   const campaignName = contact.metaAdsReferral?.campaignName ?? contact.googleAdsAttribution?.utmCampaign
 
   return (
-    <div className="px-4 py-3 border-t border-surface-800">
+    <div className="px-4 py-3 border-t border-surface-700">
       {/* Section header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="w-6 h-6 rounded-lg bg-brand-500/15 flex items-center justify-center flex-shrink-0">

@@ -44,7 +44,7 @@ export function SettingsOutline() {
   return (
     <nav aria-label="Nesta página" className="hidden 2xl:block w-[180px] flex-shrink-0 sticky top-8 self-start">
       <p className="text-[10px] font-bold uppercase tracking-widest text-surface-600 mb-2">Nesta página</p>
-      <ul className="flex flex-col gap-1 border-l border-surface-800/60">
+      <ul className="flex flex-col gap-1 border-l border-surface-700">
         {entries.map((e) => (
           <li key={e.id}>
             <a
@@ -85,7 +85,7 @@ export function SettingsSection({ title, description, children, className, icon:
     <section
       id={id}
       className={cn(
-        'py-[22px] first:pt-2 border-b border-surface-800/60 last:border-0 scroll-mt-6',
+        'py-[22px] first:pt-2 border-b border-surface-700 last:border-0 scroll-mt-6',
         'md:grid md:grid-cols-[260px_1fr] md:gap-6 md:items-start',
         className,
       )}

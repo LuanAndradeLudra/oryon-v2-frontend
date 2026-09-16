@@ -48,7 +48,7 @@ function ConnectDrawer({
     <>
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
       <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface-950 border-l overlay-frame z-50 flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700">
           <p className="text-sm font-semibold text-surface-100">
             Conectar {isMeta ? 'Meta Ads' : 'Google Ads'}
           </p>
@@ -58,7 +58,7 @@ function ConnectDrawer({
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-6 space-y-4">
-          <div className="p-4 rounded-xl border border-surface-800 bg-surface-900 text-xs text-surface-400 space-y-2">
+          <div className="p-4 rounded-xl border border-surface-700 bg-surface-900 text-xs text-surface-400 space-y-2">
             {isMeta ? (
               <>
                 <p>1. Acesse o <strong className="text-surface-300">Meta Business Manager</strong> e crie um token de acesso com permissão <code className="text-brand-400">ads_read</code></p>
@@ -83,7 +83,7 @@ function ConnectDrawer({
                 value={accountId}
                 onChange={(e) => setAccountId(e.target.value)}
                 placeholder={isMeta ? 'act_1234567890' : '123-456-7890'}
-                className="w-full bg-surface-900 border border-surface-800 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
+                className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
               />
             </div>
             <div>
@@ -95,7 +95,7 @@ function ConnectDrawer({
                 onChange={(e) => setToken(e.target.value)}
                 type="password"
                 placeholder={isMeta ? 'EAAxxxxxxx...' : '4/0AQSTxxxxxx...'}
-                className="w-full bg-surface-900 border border-surface-800 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
+                className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
               />
             </div>
           </div>
@@ -105,7 +105,7 @@ function ConnectDrawer({
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-surface-800 flex gap-3">
+        <div className="px-5 py-4 border-t border-surface-700 flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-surface-700 text-surface-300 text-sm font-medium hover:border-surface-600 transition-colors"
@@ -190,7 +190,7 @@ function ConnectedCard({
         </div>
       </div>
 
-      <div className="py-2.5 border-t border-surface-800/60 flex items-center justify-between text-xs text-surface-500">
+      <div className="py-2.5 border-t border-surface-700 flex items-center justify-between text-xs text-surface-500">
         <span>Última sincronização: {account.lastSyncAt ? fmt(account.lastSyncAt) : '—'}</span>
         <button
           onClick={() => setExpanded(!expanded)}
@@ -202,10 +202,10 @@ function ConnectedCard({
       </div>
 
       {expanded && campaigns.length > 0 && (
-        <div className="border-t border-surface-800/60 overflow-x-auto">
+        <div className="border-t border-surface-700 overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-surface-800">
+              <tr className="border-b border-surface-700">
                 <th className="text-left pl-0 pr-3 py-2.5 text-surface-500 font-medium">Campanha</th>
                 <th className="text-right px-3 py-2.5 text-surface-500 font-medium">Invest.</th>
                 <th className="text-right px-3 py-2.5 text-surface-500 font-medium">Leads</th>
@@ -215,7 +215,7 @@ function ConnectedCard({
             </thead>
             <tbody>
               {campaigns.map((c) => (
-                <tr key={c.platformCampaignId} className="border-b border-surface-800/50 hover:bg-surface-800/30">
+                <tr key={c.platformCampaignId} className="border-b border-surface-700 hover:bg-surface-800/30">
                   <td className="pl-0 pr-3 py-2 text-surface-300 truncate max-w-[200px]">{c.platformCampaignName}</td>
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">R$ {c.spend.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</td>
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">{c.leadsGenerated}</td>
@@ -302,7 +302,7 @@ function PlatformTab({ platform, accounts, onAccountsChange }: {
         </div>
       ) : (
         <>
-          <div className="divide-y divide-surface-800/60">
+          <div className="divide-y divide-surface-700">
             {platAccounts.map((acc) => (
               <ConnectedCard
                 key={acc.id}
@@ -361,7 +361,7 @@ export function AdAccountsSettings() {
       />
 
       <div className="space-y-6">
-      <div className="flex items-center gap-2 border-b border-surface-800 pb-3">
+      <div className="flex items-center gap-2 border-b border-surface-700 pb-3">
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md"
           style={{ backgroundColor: '#1877f21a', color: '#1877f2' }}>
           Meta Ads

@@ -369,7 +369,7 @@ function SearchDropdown({
 
         {/* Contact search fallback */}
         {trimmed && (
-          <div className="border-t border-surface-800 mt-1 pt-1">
+          <div className="border-t border-surface-700 mt-1 pt-1">
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); onHover(flatItems.length) }}
@@ -855,7 +855,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
         className="w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col rounded-2xl overlay-frame border bg-surface-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b border-surface-800">
+        <div className="flex items-start gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 border-b border-surface-700">
           <div
             className="w-10 h-10 rounded-xl color-chip border flex items-center justify-center flex-shrink-0"
             style={{ ['--chip']: catStyle.chip } as React.CSSProperties}
@@ -883,13 +883,13 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
               description line so we don't duplicate info. Keys on the left,
               values on the right. Scannable in < 1 second. */}
           {flow && flow.length > 0 ? (
-            <dl className="rounded-xl border border-surface-800 bg-surface-950/40 overflow-hidden">
+            <dl className="rounded-xl border border-surface-700 bg-surface-950/40 overflow-hidden">
               {flow.map((step, i) => (
                 <div
                   key={step.label}
                   className={cn(
                     'flex items-baseline gap-3 px-3.5 py-2.5',
-                    i !== flow.length - 1 && 'border-b border-surface-800/60',
+                    i !== flow.length - 1 && 'border-b border-surface-700',
                   )}
                 >
                   <dt className="text-3xs font-semibold uppercase tracking-wider text-surface-500 w-20 shrink-0">
@@ -907,7 +907,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
           {/* Grouped contacts list — name first, phone formatted and smaller. */}
           {groupedContacts && groupedContacts.length > 0 && (
-            <div className="rounded-xl border border-surface-800 bg-surface-950/40 p-3">
+            <div className="rounded-xl border border-surface-700 bg-surface-950/40 p-3">
               <p className="text-3xs font-semibold uppercase tracking-wide text-surface-500 mb-2">
                 {pluralize(affectedTotal, 'Contato afetado', 'Contatos afetados')} ({affectedTotal})
               </p>
@@ -954,7 +954,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
           {/* Advanced details — collapsed by default, stripped of UUIDs. */}
           {techEntries.length > 0 && (
-            <div className="rounded-xl border border-surface-800 bg-surface-950/30">
+            <div className="rounded-xl border border-surface-700 bg-surface-950/30">
               <button
                 type="button"
                 onClick={() => setShowTech((v) => !v)}
@@ -1287,7 +1287,7 @@ function NotificationsPanel() {
         {/* Phase 20 X1: keyboard shortcuts hint bar. Discoverable without
             being in the way. */}
         {sortedVisible.length > 0 && (
-          <div className="hidden sm:flex items-center justify-center gap-3 px-3 py-1.5 border-t border-surface-800 bg-surface-950/50 text-[9px] text-surface-600">
+          <div className="hidden sm:flex items-center justify-center gap-3 px-3 py-1.5 border-t border-surface-700 bg-surface-950/50 text-[9px] text-surface-600">
             <Kbd>J</Kbd><Kbd>K</Kbd> navegar
             <Kbd>↵</Kbd> abrir
             <Kbd>E</Kbd> arquivar
@@ -1618,7 +1618,7 @@ export function TopBar() {
   }
 
   return (
-    <div className="conv-surface h-12 flex-shrink-0 bg-surface-950 border-b border-surface-800/60 px-4 flex items-center gap-3">
+    <div className="conv-surface h-12 flex-shrink-0 bg-surface-950 border-b border-surface-700 px-4 flex items-center gap-3">
 
       {/* Left: page title + subtitle (inline with "·" bullet separator).
           Subtitle hidden on small viewports so the row stays single-line
@@ -1754,7 +1754,7 @@ export function TopBar() {
                 exit={{ opacity: 0, y: -4, scale: 0.98 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
               >
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-800">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-700">
                   <Search className="w-4 h-4 text-surface-500 flex-shrink-0" />
                   <input
                     ref={inputRef}

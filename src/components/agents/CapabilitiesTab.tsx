@@ -255,7 +255,7 @@ function CapabilityCard({
         'rounded-lg border p-3 transition-colors',
         enabled
           ? 'border-brand-700/40 bg-brand-950/20'
-          : 'border-surface-800 bg-surface-950/40',
+          : 'border-surface-700 bg-surface-950/40',
       )}
     >
       <div className="flex items-start gap-3">
@@ -577,7 +577,7 @@ function PickerSection({ title, hint, children }: { title: string; hint: string;
     <div>
       <div className="text-xs font-semibold text-surface-200">{title}</div>
       <div className="text-[11px] text-surface-500 mt-0.5">{hint}</div>
-      <div className="mt-2 max-h-60 overflow-y-auto rounded-md border border-surface-800 bg-surface-950/40 p-1.5">
+      <div className="mt-2 max-h-60 overflow-y-auto rounded-md border border-surface-700 bg-surface-950/40 p-1.5">
         {children}
       </div>
     </div>

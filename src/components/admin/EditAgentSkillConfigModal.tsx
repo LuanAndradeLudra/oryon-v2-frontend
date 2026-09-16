@@ -314,7 +314,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
           re-opening the details is instant. The Recarregar button is the
           escape hatch when the operator just kicked a test fire and wants
           to see it. */}
-      <section className="mt-6 pt-5 border-t border-surface-800">
+      <section className="mt-6 pt-5 border-t border-surface-700">
         <details className="group" onToggle={(e) => {
           if ((e.currentTarget as HTMLDetailsElement).open) void loadExecutions()
         }}>
@@ -374,7 +374,7 @@ export function EditAgentSkillConfigModal({ open, onClose, onSaved, skill, tenan
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-3xs uppercase tracking-wide text-surface-500 border-b border-surface-800">
+                    <tr className="text-3xs uppercase tracking-wide text-surface-500 border-b border-surface-700">
                       <th className="text-left font-medium py-2 pr-3">Quando</th>
                       <th className="text-left font-medium py-2 pr-3">Status</th>
                       <th className="text-right font-medium py-2 pr-3">Latência</th>
@@ -405,7 +405,7 @@ function ExecutionRow({ row }: { row: SkillExecutionRow }) {
     navigator.clipboard?.writeText(row.request_id).catch(() => {})
   }
   return (
-    <tr className="border-b border-surface-800/60">
+    <tr className="border-b border-surface-700">
       <td className="py-2 pr-3 text-surface-300 whitespace-nowrap">
         <Tooltip content={new Date(row.created_at).toLocaleString('pt-BR')} side="top">
           <span className="cursor-help">{formatRelativeTime(row.created_at)}</span>

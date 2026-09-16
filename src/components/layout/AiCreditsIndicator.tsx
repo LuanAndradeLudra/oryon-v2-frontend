@@ -139,7 +139,7 @@ export function AiCreditsIndicator() {
       onMouseEnter={handleEnter}
       onMouseLeave={scheduleClose}
     >
-      <div className="mx-3 mb-1.5 border-t border-surface-800/60" />
+      <div className="mx-3 mb-1.5 border-t border-surface-700" />
 
       <button
         ref={anchorRef}
@@ -196,7 +196,7 @@ export function AiCreditsIndicator() {
             style={{ position: 'fixed', left: pos.left, bottom: pos.bottom, width: 300, pointerEvents: 'auto' }}
             className="overlay-surface border rounded-lg overflow-hidden"
           >
-            <div className="p-3.5 flex items-center gap-3 border-b border-surface-800">
+            <div className="p-3.5 flex items-center gap-3 border-b border-surface-700">
               <CreditRing size={36} pct={pct} color={color} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-surface-100 truncate">
@@ -233,7 +233,7 @@ export function AiCreditsIndicator() {
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2 px-3.5 py-3 text-center border-b border-surface-800">
+            <div className="grid grid-cols-3 gap-2 px-3.5 py-3 text-center border-b border-surface-700">
               <div>
                 <p className="text-xs font-semibold text-surface-100 tabular-nums">{formatCredits(used)}</p>
                 <p className="text-3xs text-surface-500 mt-0.5">Usados</p>

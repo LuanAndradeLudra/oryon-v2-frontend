@@ -56,7 +56,7 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
         className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-surface-900 rounded-2xl overlay-frame border overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700">
           <h3 className="text-sm font-semibold text-surface-100">Nova mensagem direta</h3>
           <button
             onClick={onClose}

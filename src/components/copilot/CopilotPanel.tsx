@@ -132,7 +132,7 @@ function PresetPicker({
     >
       <div className="rounded-2xl border border-surface-700/60 bg-surface-900/95 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800/60">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700">
           <div className="flex items-center gap-2">
             <Palette className="w-3.5 h-3.5 text-brand-400" />
             <span className="text-xs font-semibold text-surface-200">Design Preset para Slides</span>
@@ -279,7 +279,7 @@ function ChatWindow() {
     <div className="flex flex-col overflow-hidden rounded-2xl border border-surface-700/50 bg-surface-950/80 shadow-2xl backdrop-blur-xl ring-1 ring-white/5" style={{ width: 400, maxHeight: '88vh' }}>
 
       {/* Header */}
-      <div className="relative border-b border-surface-800/60 bg-surface-900/60 px-4 py-3.5 overflow-hidden flex-shrink-0">
+      <div className="relative border-b border-surface-700 bg-surface-900/60 px-4 py-3.5 overflow-hidden flex-shrink-0">
         {/* Gradient accent */}
         <div className="absolute inset-0 bg-gradient-to-br from-brand-600/15 to-violet-600/15 pointer-events-none" />
         <div className="relative flex items-center gap-3 z-10">
@@ -336,7 +336,7 @@ function ChatWindow() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="px-4 py-2 border-t border-surface-800/50 flex items-center gap-2 flex-shrink-0 bg-surface-900/40"
+            className="px-4 py-2 border-t border-surface-700 flex items-center gap-2 flex-shrink-0 bg-surface-900/40"
           >
             <Loader2 className="w-3 h-3 text-status-pending animate-spin flex-shrink-0" />
             <div className="flex flex-col gap-0.5">
@@ -366,7 +366,7 @@ function ChatWindow() {
       </AnimatePresence>
 
       {/* Input */}
-      <div className="border-t border-surface-800/60 bg-surface-900/60 backdrop-blur-md flex-shrink-0">
+      <div className="border-t border-surface-700 bg-surface-900/60 backdrop-blur-md flex-shrink-0">
 
         {/* Attachment chips */}
         <AnimatePresence initial={false}>

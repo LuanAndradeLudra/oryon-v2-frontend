@@ -761,7 +761,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
                 {/* WhatsApp preview */}
                 <div className="order-1 md:order-2">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Pré-visualização</p>
-                  <div className="rounded-2xl bg-surface-950 border border-surface-800 p-4 flex items-center justify-center">
+                  <div className="rounded-2xl bg-surface-950 border border-surface-700 p-4 flex items-center justify-center">
                     <TemplatePreview template={previewTemplate} variables={templateVars} />
                   </div>
                 </div>

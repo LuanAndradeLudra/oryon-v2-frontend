@@ -10,7 +10,7 @@ const OPTIONS: { value: DateRange; label: string }[] = [
 
 export function DateRangePicker({ value, onChange }: { value: DateRange; onChange: (v: DateRange) => void }) {
   return (
-    <div className="flex items-center rounded-xl bg-surface-900 border border-surface-800 p-0.5 gap-0.5">
+    <div className="flex items-center rounded-xl bg-surface-900 border border-surface-700 p-0.5 gap-0.5">
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}

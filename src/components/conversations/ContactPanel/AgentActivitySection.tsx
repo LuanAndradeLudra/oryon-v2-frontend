@@ -43,7 +43,7 @@ export function AgentActivitySection({ conversationId }: { conversationId: strin
   // list shows up so the operator knows the agent has been quiet.
   if (loading && actions === null) {
     return (
-      <div className="px-4 py-3 border-t border-surface-800 flex items-center gap-2 text-xs text-surface-500">
+      <div className="px-4 py-3 border-t border-surface-700 flex items-center gap-2 text-xs text-surface-500">
         <Loader2 className="w-3 h-3 animate-spin" />
         Carregando atividade do agente…
       </div>
@@ -52,7 +52,7 @@ export function AgentActivitySection({ conversationId }: { conversationId: strin
 
   if (error) {
     return (
-      <div className="px-4 py-3 border-t border-surface-800 text-xs text-status-error-400 flex items-center gap-2">
+      <div className="px-4 py-3 border-t border-surface-700 text-xs text-status-error-400 flex items-center gap-2">
         <AlertCircle className="w-3 h-3" />
         {error}
       </div>
@@ -64,7 +64,7 @@ export function AgentActivitySection({ conversationId }: { conversationId: strin
   const hidden = list.length - visible.length
 
   return (
-    <div className="px-4 py-3 border-t border-surface-800">
+    <div className="px-4 py-3 border-t border-surface-700">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
           <Bot className="w-3 h-3" />

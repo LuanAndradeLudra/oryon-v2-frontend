@@ -51,7 +51,7 @@ function ProductRow({
       transition={{ duration: 0.15 }}
       className={cn(
         'flex items-center gap-3 px-3 py-2.5 rounded-lg border',
-        active ? 'bg-brand-600/10 border-brand-500/30' : 'bg-surface-900 border-surface-800',
+        active ? 'bg-brand-600/10 border-brand-500/30' : 'bg-surface-900 border-surface-700',
       )}
     >
       <div className="flex-1 min-w-0">
@@ -243,7 +243,7 @@ export function AgentCatalogTab({ agentId }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar produto..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-900 border border-surface-800 text-sm text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-900 border border-surface-700 text-sm text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50"
           />
         </div>
         {canManage && (
@@ -278,7 +278,7 @@ export function AgentCatalogTab({ agentId }: Props) {
             ))}
           </AnimatePresence>
           {!activeProducts.length && (
-            <p className="text-xs text-surface-600 px-3 py-4 rounded-lg border border-dashed border-surface-800 text-center">
+            <p className="text-xs text-surface-600 px-3 py-4 rounded-lg border border-dashed border-surface-700 text-center">
               {search
                 ? 'Nenhum produto ativo corresponde à busca.'
                 : 'Nenhum produto ativo ainda — ative na lista abaixo.'}
@@ -297,7 +297,7 @@ export function AgentCatalogTab({ agentId }: Props) {
             ))}
           </AnimatePresence>
           {!availableProducts.length && (
-            <p className="text-xs text-surface-600 px-3 py-4 rounded-lg border border-dashed border-surface-800 text-center">
+            <p className="text-xs text-surface-600 px-3 py-4 rounded-lg border border-dashed border-surface-700 text-center">
               {search
                 ? 'Nenhum produto disponível corresponde à busca.'
                 : 'Todos os produtos já estão ativos neste agente.'}

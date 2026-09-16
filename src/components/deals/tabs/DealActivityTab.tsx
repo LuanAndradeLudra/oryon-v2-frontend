@@ -136,7 +136,7 @@ function JudgeDecisionsSection({ conversationId }: { conversationId: string | nu
   if (!conversationId || (decisions !== null && decisions.length === 0 && !error)) return null
 
   return (
-    <div className="border-t border-surface-800 pt-4">
+    <div className="border-t border-surface-700 pt-4">
       <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5 mb-2">
         <Gavel className="w-3 h-3" />
         Decisões do CRM Judge

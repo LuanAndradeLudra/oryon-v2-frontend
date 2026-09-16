@@ -227,7 +227,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
       {/* Navegação única — text-first, sem ícones, sem pills. A hierarquia é
           100% tipográfica: DOMÍNIO (caps) > cluster (sentence, mudo) > item. */}
-      <aside className="w-full md:w-[248px] flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-800/60 py-3 md:py-5 px-3 overflow-y-auto max-h-60 md:max-h-none">
+      <aside className="w-full md:w-[248px] flex-shrink-0 md:border-r border-b md:border-b-0 border-surface-700 py-3 md:py-5 px-3 overflow-y-auto max-h-60 md:max-h-none">
         {/* Busca — encontra por rótulo OU sinônimo natural */}
         <div className="relative mb-4">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />

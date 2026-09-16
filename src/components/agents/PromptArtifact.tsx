@@ -76,7 +76,7 @@ export function renderPromptLine(line: string, i: number) {
   if (line.startsWith('# '))
     return <h1 key={i} className="text-base font-bold text-surface-50 mt-4 mb-1">{line.slice(2)}</h1>
   if (line.startsWith('## '))
-    return <h2 key={i} className="text-sm font-semibold text-surface-200 mt-4 mb-1 border-b border-surface-800 pb-1">{line.slice(3)}</h2>
+    return <h2 key={i} className="text-sm font-semibold text-surface-200 mt-4 mb-1 border-b border-surface-700 pb-1">{line.slice(3)}</h2>
   return renderBodyLine(line, i)
 }
 
@@ -121,7 +121,7 @@ export function PromptArtifact({
       fillHeight && 'flex flex-col flex-1 min-h-0',
     )}>
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-surface-800 flex-shrink-0">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-surface-700 flex-shrink-0">
         <Check className="w-3.5 h-3.5 text-status-active" />
         <span className="text-xs font-medium text-surface-300">System Prompt</span>
         <span className="text-[10px] text-surface-600 ml-1">
@@ -229,7 +229,7 @@ export function PromptArtifact({
             <button
               type="button"
               onClick={onExpand}
-              className="mt-3 w-full text-center text-[11px] text-surface-500 hover:text-brand-400 transition py-2 border-t border-dashed border-surface-800"
+              className="mt-3 w-full text-center text-[11px] text-surface-500 hover:text-brand-400 transition py-2 border-t border-dashed border-surface-700"
             >
               ↓ +{hiddenCount} linha{hiddenCount === 1 ? '' : 's'} oculta{hiddenCount === 1 ? '' : 's'} — clique para abrir em tela cheia
             </button>

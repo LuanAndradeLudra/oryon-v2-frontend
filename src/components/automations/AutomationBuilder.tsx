@@ -202,7 +202,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             className="fixed top-0 right-0 bottom-0 w-[min(880px,95vw)] z-50 bg-surface-950 border-l overlay-frame flex flex-col"
           >
             {/* Header + resumo vivo */}
-            <div className="flex items-start gap-3 px-6 min-h-14 py-2.5 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-start gap-3 px-6 min-h-14 py-2.5 border-b border-surface-700 flex-shrink-0">
               <div className="color-chip w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0" style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}>
                 {TypeIcon ?? <Zap className="w-4 h-4" />}
               </div>
@@ -218,7 +218,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             {/* Corpo: mini-fluxo vertical + seções */}
             <div className="flex-1 flex min-h-0 overflow-hidden">
               {/* Nav vertical (mini-fluxo) */}
-              <nav className="w-[200px] flex-shrink-0 border-r border-surface-800 bg-[var(--sf2)] p-3 overflow-y-auto hidden sm:block">
+              <nav className="w-[200px] flex-shrink-0 border-r border-surface-700 bg-[var(--sf2)] p-3 overflow-y-auto hidden sm:block">
                 <div className="flex flex-col gap-1">
                   {SECTIONS.map((s) => {
                     const Icon = s.icon
@@ -274,14 +274,14 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                     </div>
                     <div className="grid grid-cols-3 auto-rows-fr gap-2">
                       {onDescribeWithAI && (
-                        <button onClick={onDescribeWithAI} className="card-glow h-full text-left p-3 rounded-xl border border-surface-800 bg-surface-900">
+                        <button onClick={onDescribeWithAI} className="card-glow h-full text-left p-3 rounded-xl border border-surface-700 bg-surface-900">
                           <Wand2 className="w-4 h-4 text-brand-400 mb-1.5" />
                           <p className="text-xs font-semibold text-surface-100">Descrever com IA</p>
                           <p className="text-[10px] text-surface-400 mt-0.5 leading-relaxed">Explique o objetivo e o Copilot monta.</p>
                         </button>
                       )}
                       {RECIPES.map((r) => (
-                        <button key={r.title} onClick={() => applyRecipe(r)} className="card-glow h-full text-left p-3 rounded-xl border border-surface-800 bg-surface-900">
+                        <button key={r.title} onClick={() => applyRecipe(r)} className="card-glow h-full text-left p-3 rounded-xl border border-surface-700 bg-surface-900">
                           <p className="text-xs font-semibold text-surface-200">{r.title}</p>
                           <p className="text-[10px] text-surface-500 mt-1 leading-relaxed">{r.desc}</p>
                         </button>
@@ -349,7 +349,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             </div>
 
             {/* Footer — status decidido no fim */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-surface-700 flex-shrink-0">
               <p className="text-[11px] text-surface-500">
                 {draft.actions.length === 0 ? 'Adicione ao menos uma ação para ativar.' : `${draft.actions.length} ${draft.actions.length === 1 ? 'ação' : 'ações'} · pronto para ativar`}
               </p>
@@ -370,7 +370,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                       onClick={() => save('draft')}
                       disabled={!canDraft}
                       className={cn('px-4 py-2 rounded-xl text-xs font-medium border transition-colors',
-                        canDraft ? 'border-surface-700 text-surface-300 hover:text-surface-100 hover:border-surface-600' : 'border-surface-800 text-surface-600 cursor-not-allowed')}
+                        canDraft ? 'border-surface-700 text-surface-300 hover:text-surface-100 hover:border-surface-600' : 'border-surface-700 text-surface-600 cursor-not-allowed')}
                     >
                       Salvar rascunho
                     </button>

@@ -80,7 +80,7 @@ export function ConnectorsSettings() {
       />
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2.5 pb-4 mb-4 border-b border-surface-800/60">
+      <div className="flex flex-wrap items-center gap-2.5 pb-4 mb-4 border-b border-surface-700">
         <div className="relative w-[340px] max-w-full">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
           <input
@@ -169,7 +169,7 @@ export function ConnectorsSettings() {
           ))}
         </div>
       ) : (
-        <div className="border border-surface-800 rounded-lg divide-y divide-surface-800 overflow-hidden">
+        <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
           {filtered.map((c) => (
             <button
               key={c.id}

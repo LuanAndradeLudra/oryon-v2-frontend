@@ -250,7 +250,7 @@ export function TagsSettings() {
       )}
 
       {/* Tags list */}
-      <div className="divide-y divide-surface-800/60">
+      <div className="divide-y divide-surface-700">
         {tags.map((tag) => (
           <TagCard
             key={tag.id}

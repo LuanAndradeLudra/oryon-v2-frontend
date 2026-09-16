@@ -95,7 +95,7 @@ export function TopBarReadinessIndicator() {
       )}
       {open && (
         <div className="absolute right-0 top-full mt-2 z-50 w-[360px] overlay-surface border rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-warning" />
               <h3 className="text-sm font-semibold text-surface-100">
@@ -124,7 +124,7 @@ export function TopBarReadinessIndicator() {
 
 function IssueCard({ issue, onAction }: { issue: WorkspaceCheck; onAction: () => void }) {
   return (
-    <div className="rounded-xl border border-surface-800 bg-surface-900/40 p-3 flex items-start gap-3">
+    <div className="rounded-xl border border-surface-700 bg-surface-900/40 p-3 flex items-start gap-3">
       <span
         className="mt-0.5 w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 color-chip border"
         style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}

@@ -92,7 +92,7 @@ export function LineFilterChip({
                 {value === 'all' && <Check className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />}
               </button>
             </li>
-            <li className="mx-3 my-1 border-t border-surface-800/60" />
+            <li className="mx-3 my-1 border-t border-surface-700" />
 
             {numbers.map((n) => {
               const isActive = value === n.id

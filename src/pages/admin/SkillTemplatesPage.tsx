@@ -295,7 +295,7 @@ function TemplateCard({
         'p-4 rounded-xl border transition-colors flex flex-col h-full',
         template.enabled
           ? 'bg-surface-900 border-surface-700 hover:border-surface-600'
-          : 'bg-surface-900/40 border-surface-800 opacity-70',
+          : 'bg-surface-900/40 border-surface-700 opacity-70',
       )}
     >
       {/* Header: icon + name + badges. Description sits below so badges can
@@ -371,7 +371,7 @@ function TemplateCard({
           action carries its own label (F-ADM-10: the disable/reactivate
           toggle used to be icon-only, readable only via hover tooltip);
           tooltips add detail on top of the label, not instead of it. */}
-      <div className="mt-3 pt-3 border-t border-surface-800 flex items-center gap-1">
+      <div className="mt-3 pt-3 border-t border-surface-700 flex items-center gap-1">
         <Tooltip content="Editar template" side="top">
           <button
             onClick={onEdit}

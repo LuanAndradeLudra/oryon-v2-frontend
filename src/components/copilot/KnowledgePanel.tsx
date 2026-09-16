@@ -37,7 +37,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="border-b border-surface-800/60 last:border-0">
+    <div className="border-b border-surface-700 last:border-0">
       <button
         onClick={onToggle}
         className="w-full flex items-center gap-2.5 px-4 py-3.5 hover:bg-surface-800/30 transition-colors text-left group"
@@ -612,11 +612,11 @@ export function KnowledgePanel({ isOpen, onClose, tenantId }: KnowledgePanelProp
           animate={{ width: 340, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-          className="flex-shrink-0 flex flex-col border-l border-surface-800/60 bg-surface-950/80 backdrop-blur-sm overflow-hidden"
+          className="flex-shrink-0 flex flex-col border-l border-surface-700 bg-surface-950/80 backdrop-blur-sm overflow-hidden"
           style={{ minWidth: 0 }}
         >
           {/* Header */}
-          <div className="flex-shrink-0 flex items-center gap-2.5 px-4 py-3.5 border-b border-surface-800/60">
+          <div className="flex-shrink-0 flex items-center gap-2.5 px-4 py-3.5 border-b border-surface-700">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-600/20 to-violet-600/20 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
               <BookOpen className="w-3.5 h-3.5 text-brand-400" />
             </div>
@@ -673,7 +673,7 @@ export function KnowledgePanel({ isOpen, onClose, tenantId }: KnowledgePanelProp
           </div>
 
           {/* Footer hint */}
-          <div className="flex-shrink-0 px-4 py-3 border-t border-surface-800/60">
+          <div className="flex-shrink-0 px-4 py-3 border-t border-surface-700">
             <p className="text-3xs text-surface-600 leading-relaxed text-center">
               Informações aqui são injetadas automaticamente no contexto da Oryon AI
             </p>

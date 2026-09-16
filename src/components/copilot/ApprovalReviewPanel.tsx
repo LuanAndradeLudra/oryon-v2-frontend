@@ -95,7 +95,7 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
       className="flex h-full flex-col overflow-hidden rounded-xl border border-surface-700/50 bg-surface-900/70"
     >
       {/* Header */}
-      <div className="flex flex-shrink-0 items-center gap-2.5 border-b border-surface-800/60 px-4 py-3">
+      <div className="flex flex-shrink-0 items-center gap-2.5 border-b border-surface-700 px-4 py-3">
         <ShieldAlert className="h-3.5 w-3.5 flex-shrink-0 text-brand-400" />
         <span className="text-xs font-medium text-surface-300">
           {items.length === 1 ? 'Aprovação necessária' : `${items.length} ações requerem aprovação`}
@@ -115,7 +115,7 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
       </div>
 
       {/* Scrollable item list */}
-      <div className="flex-1 divide-y divide-surface-800/40 overflow-y-auto">
+      <div className="flex-1 divide-y divide-surface-700 overflow-y-auto">
         {items.map((item) => {
           const Icon = TOOL_ICON[item.name] ?? ShieldAlert
           const label = TOOL_LABEL[item.name] ?? item.name
@@ -161,7 +161,7 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
       </div>
 
       {/* Actions */}
-      <div className="flex flex-shrink-0 gap-2 border-t border-surface-800/60 bg-surface-900/40 px-4 py-3">
+      <div className="flex flex-shrink-0 gap-2 border-t border-surface-700 bg-surface-900/40 px-4 py-3">
         <button
           onClick={onReject}
           disabled={isSubmitting}

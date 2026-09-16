@@ -160,10 +160,10 @@ export function WelcomePage() {
   const isLight = theme === 'light'
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const navBg   = isLight ? 'bg-white/80 border-gray-200' : 'bg-surface-950/80 border-surface-800/60'
+  const navBg   = isLight ? 'bg-white/80 border-gray-200' : 'bg-surface-950/80 border-surface-700'
   const textPri = isLight ? 'text-gray-900' : 'text-surface-50'
   const textSec = isLight ? 'text-gray-500' : 'text-surface-400'
-  const cardBg  = isLight ? 'bg-white border-gray-200' : 'bg-surface-900 border-surface-800'
+  const cardBg  = isLight ? 'bg-white border-gray-200' : 'bg-surface-900 border-surface-700'
 
   return (
     <div className={`h-screen w-full overflow-y-auto ${isLight ? 'bg-white text-gray-900' : 'bg-surface-950 text-surface-50'}`}>
@@ -209,7 +209,7 @@ export function WelcomePage() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className={`md:hidden border-t ${isLight ? 'bg-white border-gray-200' : 'bg-surface-950 border-surface-800'}`}
+              className={`md:hidden border-t ${isLight ? 'bg-white border-gray-200' : 'bg-surface-950 border-surface-700'}`}
             >
               <div className="px-4 py-4 flex flex-col gap-3">
                 <a href="#como-funciona" onClick={() => setMenuOpen(false)} className={`text-sm font-medium ${textSec}`}>Como funciona</a>
@@ -417,7 +417,7 @@ export function WelcomePage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className={`border-t ${isLight ? 'bg-white border-gray-200' : 'bg-surface-900 border-surface-800'}`}>
+      <footer className={`border-t ${isLight ? 'bg-white border-gray-200' : 'bg-surface-900 border-surface-700'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
             {/* Brand */}
@@ -459,7 +459,7 @@ export function WelcomePage() {
             </div>
           </div>
 
-          <div className={`pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3 ${isLight ? 'border-gray-200' : 'border-surface-800'}`}>
+          <div className={`pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3 ${isLight ? 'border-gray-200' : 'border-surface-700'}`}>
             <p className={`text-xs ${isLight ? 'text-gray-400' : 'text-surface-600'}`}>
               © 2026 Oryon · Todos os direitos reservados
             </p>

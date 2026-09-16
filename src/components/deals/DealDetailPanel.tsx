@@ -292,7 +292,7 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
         onOpenBoard={onOpenBoard && deal && rotaAtual !== `/pipelines/${deal.pipelineId}` ? () => onOpenBoard(deal) : undefined}
       />
 
-      <div className="flex px-5 flex-shrink-0 border-b border-surface-800">
+      <div className="flex px-5 flex-shrink-0 border-b border-surface-700">
         {TABS.map((tab) => (
           <button
             key={tab.id}

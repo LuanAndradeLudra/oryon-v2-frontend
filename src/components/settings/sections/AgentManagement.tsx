@@ -99,7 +99,7 @@ function EditAgentModal({ user, onClose, onSaved }: { user: User; onClose: () =>
       loading={saving}
       error={error}
     >
-      <div className="flex items-center gap-3 py-3 border-b border-surface-800">
+      <div className="flex items-center gap-3 py-3 border-b border-surface-700">
         <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" />
         <div>
           <p className="text-sm font-medium text-surface-100">{user.firstName} {user.lastName}</p>
@@ -281,7 +281,7 @@ export function AgentManagement() {
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-800/60">
+              <tr className="border-b border-surface-700">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Usuário</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider hidden lg:table-cell">Setor</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Papel</th>
@@ -289,7 +289,7 @@ export function AgentManagement() {
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800/60">
+            <tbody className="divide-y divide-surface-700">
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-surface-900/60 transition-colors">
                   <td className="px-5 py-4">

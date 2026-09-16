@@ -78,7 +78,7 @@ export function SetPasswordPage() {
         {/* Card */}
         <form
           onSubmit={handleSubmit}
-          className="bg-surface-900 border border-surface-800 rounded-2xl p-6 flex flex-col gap-4 shadow-2xl"
+          className="bg-surface-900 border border-surface-700 rounded-2xl p-6 flex flex-col gap-4 shadow-2xl"
         >
           {/* Current password */}
           <div className="flex flex-col gap-1.5">

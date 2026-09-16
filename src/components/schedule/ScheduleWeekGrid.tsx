@@ -36,12 +36,12 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
         style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
       >
         {/* Cabeçalho de dia */}
-        <div className="h-11 border-b border-r border-surface-800" />
+        <div className="h-11 border-b border-r border-surface-700" />
         {days.map((day) => (
           <div
             key={day.dayIndex}
             className={cn(
-              'h-11 flex flex-col items-center justify-center border-b border-r border-surface-800 last:border-r-0',
+              'h-11 flex flex-col items-center justify-center border-b border-r border-surface-700 last:border-r-0',
               day.isToday && 'bg-accent-soft',
               day.isWeekend && !day.isToday && 'bg-[var(--sf2)]',
             )}
@@ -57,11 +57,11 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
         ))}
 
         {/* Rótulos de hora */}
-        <div className="border-r border-surface-800" style={{ height: GRID_HEIGHT }}>
+        <div className="border-r border-surface-700" style={{ height: GRID_HEIGHT }}>
           {HOURS.map((h) => (
             <div
               key={h}
-              className="border-b border-surface-800 text-right pr-1.5 text-2xs text-surface-500"
+              className="border-b border-surface-700 text-right pr-1.5 text-2xs text-surface-500"
               style={{ height: ROW_HEIGHT }}
             >
               {String(h).padStart(2, '0')}:00
@@ -77,7 +77,7 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
             <div
               key={day.dayIndex}
               className={cn(
-                'relative border-r border-surface-800 last:border-r-0',
+                'relative border-r border-surface-700 last:border-r-0',
                 day.isWeekend && 'bg-[var(--sf2)]',
               )}
               style={{ height: GRID_HEIGHT }}
@@ -85,7 +85,7 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
               {HOURS.map((h, i) => (
                 <div
                   key={h}
-                  className="absolute left-0 right-0 border-b border-surface-800"
+                  className="absolute left-0 right-0 border-b border-surface-700"
                   style={{ top: i * ROW_HEIGHT, height: ROW_HEIGHT }}
                 />
               ))}

@@ -236,7 +236,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
             className="fixed right-0 top-0 bottom-0 w-full max-w-[520px] bg-surface-950 border-l overlay-frame z-50 flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-surface-700 flex-shrink-0">
               <div>
                 <h2 className="text-base font-semibold text-surface-100">Criar usuário</h2>
                 <p className="text-xs text-surface-400 mt-0.5">Um convite por e-mail será enviado automaticamente</p>
@@ -250,7 +250,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
             </div>
 
             {/* Stepper */}
-            <div className="px-6 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="px-6 py-4 border-b border-surface-700 flex-shrink-0">
               <Stepper current={step} />
             </div>
 
@@ -354,7 +354,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                             key={role}
                             className={cn(
                               'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors',
-                              s2.role === role ? 'border-brand-500/60 bg-brand-900/20' : 'border-surface-800 hover:border-surface-700',
+                              s2.role === role ? 'border-brand-500/60 bg-brand-900/20' : 'border-surface-700 hover:border-surface-700',
                             )}
                           >
                             <input
@@ -388,7 +388,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Revisão</p>
 
                     {/* User data summary */}
-                    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4">
+                    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4">
                       <p className="text-xs font-semibold text-surface-500 mb-3">Dados do usuário</p>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -407,7 +407,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     </div>
 
                     {/* Role summary */}
-                    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4">
+                    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4">
                       <p className="text-xs font-semibold text-surface-500 mb-3">Acesso</p>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-surface-500">Papel</p>
@@ -421,7 +421,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
             </div>
 
             {/* Footer */}
-            <div className="border-t border-surface-800 flex-shrink-0">
+            <div className="border-t border-surface-700 flex-shrink-0">
               {submitError && step === 3 && (
                 <p role="alert" className="px-6 pt-3 text-xs text-danger">{submitError}</p>
               )}

@@ -251,7 +251,7 @@ export function VerticalSettings() {
             ]}
           />
         </FormField>
-        <p className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-800 rounded-md px-3 py-2">
+        <p className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 rounded-md px-3 py-2">
           Prévia: <span className="text-surface-300">"Novo {dealLower}"</span> · <span className="text-surface-300">"3 {dealsLower} em Proposta"</span> · <span className="text-surface-300">"{vocab.deal} {wonAgreement}"</span>
         </p>
       </SettingsSection>
@@ -325,14 +325,14 @@ export function VerticalSettings() {
 
       {/* Onde isso aparece — referência, não editável */}
       <SettingsSection title="Onde isso aparece" description="Referência, não editável.">
-        <div className="border border-surface-800 rounded-md overflow-hidden">
+        <div className="border border-surface-700 rounded-md overflow-hidden">
           {[
             ['Menu lateral', `Funis → coluna "${vocab.deals}"`],
             ['Ficha do contato', `Aba "${vocab.deals}" · botão "Novo ${dealLower}"`],
           ].map(([left, right], i) => (
             <div
               key={left}
-              className={`grid grid-cols-[160px_1fr] text-xs py-[7px] px-3 ${i > 0 ? 'border-t border-surface-800' : ''}`}
+              className={`grid grid-cols-[160px_1fr] text-xs py-[7px] px-3 ${i > 0 ? 'border-t border-surface-700' : ''}`}
             >
               <span className="text-surface-500">{left}</span>
               <span className="text-surface-300">{right}</span>
@@ -373,7 +373,7 @@ export function VerticalSettings() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.18 }}
-              className="mt-4 border-t border-surface-800/60 pt-4"
+              className="mt-4 border-t border-surface-700 pt-4"
             >
               <p className="text-sm font-semibold text-surface-100 mb-1">
                 Aplicar template <span style={{ color: pendingTemplate.color }}>{pendingTemplate.emoji} {pendingTemplate.label}</span>?
@@ -381,7 +381,7 @@ export function VerticalSettings() {
               <p className="text-xs text-surface-400">{pendingTemplate.description}</p>
               <VocabDiff current={vocab} next={pendingTemplate.vocabulary} />
 
-              <div className="mt-4 border-t border-surface-800 pt-4">
+              <div className="mt-4 border-t border-surface-700 pt-4">
                 <StagePreview templateId={pendingTemplateId!} />
               </div>
 

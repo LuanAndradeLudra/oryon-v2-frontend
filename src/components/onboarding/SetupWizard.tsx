@@ -208,7 +208,7 @@ function StepChrome({
 }) {
   return (
     <div className="h-full flex overflow-hidden">
-      <div className="w-80 flex-shrink-0 border-r border-surface-800/60 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
+      <div className="w-80 flex-shrink-0 border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
         <div className="flex items-center gap-3 mb-8">
           <motion.img
             src="/oryon-logo.svg"
@@ -251,7 +251,7 @@ function StepChrome({
 
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex-1 overflow-y-auto px-10 py-8">{children}</div>
-        <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-800/60">
+        <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-700">
           {onBack ? (
             <button
               type="button"
@@ -391,7 +391,7 @@ function HubStep({
   return (
     <div className="h-full flex overflow-hidden">
       {/* Left panel */}
-      <div className="w-80 flex-shrink-0 border-r border-surface-800/60 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
+      <div className="w-80 flex-shrink-0 border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm flex flex-col px-8 py-8">
         {/* Brand */}
         <div className="flex items-center gap-3 mb-8">
           <motion.img
@@ -554,7 +554,7 @@ function HubStep({
             </div>
 
             {/* Right col — brand files */}
-            <div className="w-72 flex-shrink-0 border-l border-surface-800/60 pl-8 flex flex-col gap-5">
+            <div className="w-72 flex-shrink-0 border-l border-surface-700 pl-8 flex flex-col gap-5">
               <div>
                 <label className="block text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">
                   Arquivos da marca <span className="normal-case text-surface-600 font-normal">(opcional)</span>
@@ -595,7 +595,7 @@ function HubStep({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-800/60">
+        <div className="flex-shrink-0 flex items-center justify-between px-10 py-5 border-t border-surface-700">
           <button
             type="button"
             onClick={onBack}
@@ -668,7 +668,7 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
           {multiPipeline && (
             <p
               data-testid="setup-done-pipeline"
-              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-900 border border-surface-800 text-xs text-surface-300"
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-900 border border-surface-700 text-xs text-surface-300"
             >
               <GitBranch className="w-3.5 h-3.5 text-brand-400" />
               Seu primeiro funil, <strong className="font-semibold text-surface-100">Vendas</strong>, já está pronto.

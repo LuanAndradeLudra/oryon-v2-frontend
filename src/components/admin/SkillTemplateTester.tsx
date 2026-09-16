@@ -230,7 +230,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+    <section className="bg-surface-900/50 border border-surface-700 rounded-xl p-5">
       <header className="mb-4">
         <h2 className="text-base font-semibold text-surface-100 mb-0.5 flex items-center gap-2">
           <Beaker className="w-4 h-4 text-brand-400" /> {title}

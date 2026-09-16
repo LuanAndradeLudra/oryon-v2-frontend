@@ -281,7 +281,7 @@ export function AdminAgentEditorPage() {
 
         {/* ── Modelo de IA (Phase 28) ──────────────────────────────────── */}
         {agentId && agentRec && (
-          <section className="bg-surface-900/50 border border-surface-800 rounded-xl p-5 mb-6">
+          <section className="bg-surface-900/50 border border-surface-700 rounded-xl p-5 mb-6">
             <header className="flex items-start justify-between mb-3">
               <div>
                 <h2 className="text-sm font-semibold text-surface-100">Modelo de IA</h2>
@@ -341,7 +341,7 @@ export function AdminAgentEditorPage() {
           ) : eff ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* ── LEFT: editor do system_prompt ───────────────────────── */}
-              <section className="bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+              <section className="bg-surface-900/50 border border-surface-700 rounded-xl p-5">
                 <header className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                     <Bot className="w-4 h-4 text-brand-400" />
@@ -404,7 +404,7 @@ export function AdminAgentEditorPage() {
               </section>
 
               {/* ── RIGHT: prompt efetivo (read-only preview) ───────────── */}
-              <section className="bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+              <section className="bg-surface-900/50 border border-surface-700 rounded-xl p-5">
                 <header className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                     <Eye className="w-4 h-4 text-brand-400" />
@@ -479,7 +479,7 @@ export function AdminAgentEditorPage() {
             customer uses, but with the chosen tenantId so all API calls
             scope to the target tenant. */}
         {agentId && tenantId && (
-          <section className="mt-6 bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+          <section className="mt-6 bg-surface-900/50 border border-surface-700 rounded-xl p-5">
             <header className="mb-4">
               <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-brand-400" />
@@ -502,7 +502,7 @@ export function AdminAgentEditorPage() {
 
 function PickerBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="bg-surface-900/50 border border-surface-800 rounded-xl p-4">
+    <div className="bg-surface-900/50 border border-surface-700 rounded-xl p-4">
       <label className="block text-xs uppercase tracking-wide text-surface-500 mb-2">{label}</label>
       {children}
     </div>
@@ -536,7 +536,7 @@ function PromptBlock({
       'rounded-lg border px-3 py-3',
       tone === 'brand'
         ? 'bg-brand-600/5 border-brand-600/30'
-        : 'bg-surface-900 border-surface-800',
+        : 'bg-surface-900 border-surface-700',
     )}>
       <header className="flex items-center justify-between mb-2">
         <div>

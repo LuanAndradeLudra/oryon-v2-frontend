@@ -190,7 +190,7 @@ function RenderProse({ lines }: { lines: string[] }) {
     const t = line.trim()
     if (!t) { nodes.push(<div key={key++} className="h-2" />); continue }
     if (t === '---' || t === '***' || t === '___') {
-      nodes.push(<hr key={key++} className="border-surface-800 my-2" />)
+      nodes.push(<hr key={key++} className="border-surface-700 my-2" />)
       continue
     }
     if (isHeadingLine(t)) {
@@ -304,7 +304,7 @@ function InlineCode({ lang, content }: { lang: string; content: string }) {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/50">
+            <div className="border-t border-surface-700">
               <pre className="text-xs font-mono text-surface-300 px-4 py-4 overflow-x-auto leading-relaxed">
                 <code>{content}</code>
               </pre>
@@ -342,7 +342,7 @@ function InlinePlan({ title, items }: { title: string; items: string[] }) {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/50 px-4 py-4 flex flex-col gap-3">
+            <div className="border-t border-surface-700 px-4 py-4 flex flex-col gap-3">
               {items.map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-brand-600/15 border border-brand-500/25 flex items-center justify-center text-3xs font-bold text-brand-400 mt-0.5">
@@ -385,10 +385,10 @@ function InlineTable({ headers, rows }: { headers: string[]; rows: string[][] })
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/50 overflow-x-auto">
+            <div className="border-t border-surface-700 overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-surface-800">
+                  <tr className="border-b border-surface-700">
                     {headers.map((h, i) => (
                       <th key={i} className="px-4 py-2.5 text-left font-semibold text-surface-300 whitespace-nowrap">
                         {stripInline(h)}
@@ -398,7 +398,7 @@ function InlineTable({ headers, rows }: { headers: string[]; rows: string[][] })
                 </thead>
                 <tbody>
                   {rows.map((row, ri) => (
-                    <tr key={ri} className={cn('border-b border-surface-800/40 last:border-0', ri % 2 === 1 && 'bg-surface-800/20')}>
+                    <tr key={ri} className={cn('border-b border-surface-700 last:border-0', ri % 2 === 1 && 'bg-surface-800/20')}>
                       {row.map((cell, ci) => (
                         <td key={ci} className="px-4 py-2.5 text-surface-300 leading-snug">{stripInline(cell)}</td>
                       ))}
@@ -502,7 +502,7 @@ function ArtifactBuilding({ content, type }: { content: string; type: ArtifactTy
             transition={{ duration: 0.22, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/50">
+            <div className="border-t border-surface-700">
               <div
                 ref={previewRef}
                 className="max-h-72 overflow-y-auto px-4 py-3 scroll-smooth"
@@ -615,7 +615,7 @@ function AnimatedStreamLine({ line }: { line: string }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="border-surface-800 my-2"
+        className="border-surface-700 my-2"
       />
     )
   }
@@ -2204,7 +2204,7 @@ function ChooseLineCard({
       animate={{ opacity: 1, y: 0 }}
       className="rounded-xl border border-surface-700/60 bg-surface-800/60 overflow-hidden"
     >
-      <div className="px-3 py-2.5 border-b border-surface-800/60">
+      <div className="px-3 py-2.5 border-b border-surface-700">
         <p className="text-xs text-surface-200 font-medium">Qual linha WhatsApp?</p>
         <p className="text-3xs text-surface-500 mt-0.5">
           {result.message ?? 'Este tenant tem mais de uma linha ativa. Escolha para continuar.'}
@@ -2242,7 +2242,7 @@ function ChooseLineCard({
         })}
       </div>
       {submitted && (
-        <div className="px-3 py-1.5 bg-surface-800/40 border-t border-surface-800/60">
+        <div className="px-3 py-1.5 bg-surface-800/40 border-t border-surface-700">
           <p className="text-3xs text-surface-500">Escolhida: <span className="text-surface-300">{submitted}</span></p>
         </div>
       )}
@@ -2339,7 +2339,7 @@ function WebSearchChip({ tc }: { tc: ToolCallRecord }) {
             transition={{ duration: 0.18, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface-800/40 px-3 py-2 flex flex-col gap-1.5">
+            <div className="border-t border-surface-700 px-3 py-2 flex flex-col gap-1.5">
               {isFetch && fetchUrl && (
                 <div className="flex items-start gap-1.5">
                   <Link2 className="w-3 h-3 text-surface-500 flex-shrink-0 mt-0.5" />

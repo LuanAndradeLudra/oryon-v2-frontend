@@ -30,7 +30,7 @@ export function KnowledgeDocArtifact({
   return (
     <div className="rounded-xl border border-surface-700 bg-surface-900/60 overflow-hidden flex flex-col">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-surface-800 flex-shrink-0">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-surface-700 flex-shrink-0">
         {title && (
           <>
             <FileText className="w-3.5 h-3.5 text-brand-400" />
@@ -89,7 +89,7 @@ export function KnowledgeDocArtifact({
 
       {/* Footer — save/cancel actions */}
       {!readOnly && (onSave || onCancel) && (
-        <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-surface-800 flex-shrink-0">
+        <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-surface-700 flex-shrink-0">
           {onCancel && (
             <button
               type="button"

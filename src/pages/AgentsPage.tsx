@@ -140,8 +140,8 @@ function AgentCard({
       className={cn(
         'relative w-full text-left pl-4 pr-3 py-3 rounded-2xl border transition-colors duration-150 group cursor-pointer',
         selected
-          ? 'bg-[var(--rowhover)] border-surface-800/60 shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
-          : 'bg-surface-900/50 border-surface-800/60 hover:bg-[var(--rowhover)] hover:border-surface-700',
+          ? 'bg-[var(--rowhover)] border-surface-700 shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
+          : 'bg-surface-900/50 border-surface-700 hover:bg-[var(--rowhover)] hover:border-surface-700',
       )}
     >
       <div className="flex items-center gap-3">
@@ -276,7 +276,7 @@ export function AgentsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* ── Left: Agent list — hidden when no agents ── */}
         {hasAgents && (
-          <div className="w-[300px] flex-shrink-0 flex flex-col border-r border-surface-800/60">
+          <div className="w-[300px] flex-shrink-0 flex flex-col border-r border-surface-700">
             {/* Cabeçalho da coluna — identifica a lista e o total sem depender do TopBar */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
               <h2 className="text-sm font-display font-bold text-surface-100">Agentes</h2>
@@ -287,7 +287,7 @@ export function AgentsPage() {
 
             {/* Status filter */}
             <div className="px-3 pb-2 flex-shrink-0">
-              <div className="flex items-center gap-0.5 bg-surface-900 border border-surface-800 rounded-xl p-1">
+              <div className="flex items-center gap-0.5 bg-surface-900 border border-surface-700 rounded-xl p-1">
                 {([['all', 'Todos'], ['active', 'Ativos'], ['draft', 'Rascunhos'], ['paused', 'Pausados']] as const).map(([val, label]) => (
                   <button
                     key={val}

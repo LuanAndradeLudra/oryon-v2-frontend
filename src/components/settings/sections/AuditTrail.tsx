@@ -117,7 +117,7 @@ export function AuditTrail() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-surface-400 text-xs uppercase tracking-wider">
-              <tr className="border-b border-surface-800/60">
+              <tr className="border-b border-surface-700">
                 <th className="text-left pl-0 pr-4 py-2.5 font-medium">Quando</th>
                 <th className="text-left px-4 py-2.5 font-medium">Quem</th>
                 <th className="text-left px-4 py-2.5 font-medium">Ação</th>
@@ -125,7 +125,7 @@ export function AuditTrail() {
                 <th className="text-left px-4 py-2.5 font-medium">Detalhes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-800/60">
+            <tbody className="divide-y divide-surface-700">
               {rows.map(r => (
                 <Row key={r.id} row={r} />
               ))}
@@ -344,7 +344,7 @@ function FilterBar({
   )
 
   return (
-    <div className="mb-4 pb-4 border-b border-surface-800/60 flex flex-wrap items-end gap-3">
+    <div className="mb-4 pb-4 border-b border-surface-700 flex flex-wrap items-end gap-3">
       <div className="flex items-center gap-2 text-xs text-surface-400">
         <Filter className="w-4 h-4" /> Filtros
       </div>

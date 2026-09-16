@@ -111,7 +111,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
             transition={{ duration: 0.18, ease: 'easeOut' }}
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
               {typeof title === 'string'
                 ? <h2 className="text-base font-display font-semibold text-surface-50">{title}</h2>
                 : title}
@@ -142,7 +142,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
               {children}
             </div>
             {footer && (
-              <div className="px-5 py-4 border-t border-surface-800 flex-shrink-0">
+              <div className="px-5 py-4 border-t border-surface-700 flex-shrink-0">
                 {footer}
               </div>
             )}

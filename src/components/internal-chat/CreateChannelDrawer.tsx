@@ -367,7 +367,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
           <div>
             <h2 className="text-sm font-bold text-surface-50">Criar canal</h2>
             <p className="text-[11px] text-surface-500 mt-0.5">
@@ -693,7 +693,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-surface-800 flex-shrink-0 space-y-2">
+        <div className="px-5 py-4 border-t border-surface-700 flex-shrink-0 space-y-2">
           {error && (
             <p className="text-xs text-red-400 text-center">{error}</p>
           )}

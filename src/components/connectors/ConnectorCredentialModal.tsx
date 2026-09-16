@@ -156,7 +156,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
           if (field.kind === 'permissions') {
             return (
               <FormField key={field.key} label={field.label}>
-                <div className="border border-surface-700 rounded-md divide-y divide-surface-800">
+                <div className="border border-surface-700 rounded-md divide-y divide-surface-700">
                   {field.items.map((item) => (
                     <label key={item.id} className="flex items-center gap-2.5 px-3 py-2 text-sm text-surface-200 cursor-pointer">
                       <input

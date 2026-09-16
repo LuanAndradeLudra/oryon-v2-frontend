@@ -137,11 +137,11 @@ export function ConversationList({
   // em max-w-[440px] + mx-auto, então segue centralizada em qualquer largura.
   return (
     <div className={cn(
-      'conv-surface flex flex-col h-full w-full sm:w-[360px] xl:w-[420px] 2xl:w-[480px] bg-surface-950 border-r border-surface-800 flex-shrink-0',
+      'conv-surface flex flex-col h-full w-full sm:w-[360px] xl:w-[420px] 2xl:w-[480px] bg-surface-950 border-r border-surface-700 flex-shrink-0',
       roundedBottomRight && 'overflow-hidden rounded-br-lg',
     )}>
       {/* Search header */}
-      <div className="px-3 pt-3 pb-3 border-b border-surface-800">
+      <div className="px-3 pt-3 pb-3 border-b border-surface-700">
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <ConversationSearch
@@ -225,7 +225,7 @@ export function ConversationList({
                 {/* README 3.3: linha cheia — hairline entre itens em vez do
                     gap (que, junto com a borda por item, produzia o
                     vocabulário de "card" que o resto do reestilo tirou). */}
-                <div className={cn('border-b border-surface-800/60', newConvIds.has(conv.id) && 'animate-conv-in')}>
+                <div className={cn('border-b border-surface-700', newConvIds.has(conv.id) && 'animate-conv-in')}>
                   <ConversationItem
                     conversation={conv}
                     isActive={conv.id === activeId}

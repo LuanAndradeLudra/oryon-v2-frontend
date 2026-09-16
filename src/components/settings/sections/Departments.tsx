@@ -414,7 +414,7 @@ export function Departments() {
       {creating && <DeptForm key="dept-form-new" title="Novo setor" initial={DEFAULT_FORM} saving={saving} waNumbers={waNumbers} onSave={handleCreate} onCancel={() => setCreating(false)} />}
       {editTarget && <DeptForm key={`dept-form-${editTarget.id}`} title="Editar setor" initial={editInitial} saving={saving} waNumbers={waNumbers} onSave={handleSaveEdit} onCancel={() => setEditTarget(null)} />}
 
-      <div className="divide-y divide-surface-800/60">
+      <div className="divide-y divide-surface-700">
         {departments.map((dept) => <DeptCard key={dept.id} dept={dept} waNumbers={waNumbers} onEdit={setEditTarget} onDelete={setDeleteTarget} />)}
       </div>
 

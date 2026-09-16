@@ -240,7 +240,7 @@ export function WhatsAppNumbers() {
       )}
 
       {/* Lista densa: linhas separadas por hairline — sem chrome de card. */}
-      <div className="divide-y divide-surface-800/60">
+      <div className="divide-y divide-surface-700">
         {numbers.map((num) => {
           const status = STATUS_CONFIG[num.status] ?? DEFAULT_STATUS
           const quality = QUALITY_CONFIG[num.qualityRating] ?? DEFAULT_QUALITY
@@ -298,7 +298,7 @@ export function WhatsAppNumbers() {
                     </div>
 
                     {/* Agent AI Assignment */}
-                    <div className="mt-4 pt-4 border-t border-surface-800/60">
+                    <div className="mt-4 pt-4 border-t border-surface-700">
                       <p className="text-[10px] uppercase tracking-widest text-surface-600 mb-2">Agente de IA</p>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-2 flex-1">

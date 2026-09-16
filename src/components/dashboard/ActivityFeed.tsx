@@ -48,9 +48,9 @@ export function ActivityFeed({ events }: { events: ActivityEvent[] }) {
   //
   // Net effect: panel == sibling table height, always. No magic numbers.
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden h-full relative min-h-[320px]">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden h-full relative min-h-[320px]">
       <div className="absolute inset-0 flex flex-col">
-        <div className="px-5 py-4 border-b border-surface-800 flex items-center justify-between flex-shrink-0">
+        <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between flex-shrink-0">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-surface-100">Atividade Recente</p>
             <p className="text-[10px] text-surface-500 mt-0.5">Últimas 4 horas</p>
@@ -76,7 +76,7 @@ export function ActivityFeed({ events }: { events: ActivityEvent[] }) {
           // topo do bloco direito; rodapé com timestamp à esquerda e
           // ActorChip (ícone monocromático + nome) à direita.
           return (
-            <div key={event.id} className="flex items-start gap-3 px-5 py-3 border-b border-surface-800/60 hover:bg-surface-800/30 transition-colors">
+            <div key={event.id} className="flex items-start gap-3 px-5 py-3 border-b border-surface-700 hover:bg-surface-800/30 transition-colors">
               <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5', cfg.bgClass, cfg.iconClass)}>
                 {cfg.icon}
               </div>

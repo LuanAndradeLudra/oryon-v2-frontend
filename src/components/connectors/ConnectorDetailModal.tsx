@@ -62,7 +62,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
           style={{ background: `color-mix(in srgb, ${connector.brandColor} ${comingSoon ? 5 : 7}%, var(--color-surface-900))` }}
           className={cn(
             'w-[240px] flex-shrink-0 flex flex-col p-4 border-r',
-            comingSoon ? 'border-dashed border-surface-700' : 'border-surface-800',
+            comingSoon ? 'border-dashed border-surface-700' : 'border-surface-700',
           )}
         >
           <div
@@ -94,7 +94,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
             )}
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto mt-3.5 divide-y divide-surface-800/70">
+          <div className="flex-1 min-h-0 overflow-y-auto mt-3.5 divide-y divide-surface-700">
             {comingSoon ? (
               <FichaRow label="Fila" value={`${connector.requestCount ?? 0} clientes pediram`} />
             ) : (
@@ -141,7 +141,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="border-b border-surface-800/60 flex-shrink-0" />
+          <div className="border-b border-surface-700 flex-shrink-0" />
 
           <div className="flex-1 overflow-y-auto px-5 py-[18px] text-[13px] leading-[1.55] text-surface-300">
             {blockedByPlan && (
@@ -169,7 +169,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
                           key={c.title}
                           className={cn(
                             'rounded-[7px] border p-2.5',
-                            comingSoon ? 'border-dashed border-surface-700' : 'border-surface-800 bg-surface-800/40',
+                            comingSoon ? 'border-dashed border-surface-700' : 'border-surface-700 bg-surface-800/40',
                           )}
                         >
                           <p className="text-xs font-semibold text-surface-200">{c.title}</p>
@@ -205,7 +205,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
           </div>
 
           {(connector.socialProof || connector.guideUrl) && (
-            <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-t border-surface-800/60 text-2xs text-surface-500 flex-shrink-0">
+            <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-t border-surface-700 text-2xs text-surface-500 flex-shrink-0">
               <span>{connector.socialProof}</span>
               {connector.guideUrl && (
                 <a href={connector.guideUrl} className="text-brand-400 hover:text-brand-300 font-medium">

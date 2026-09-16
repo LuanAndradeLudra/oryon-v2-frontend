@@ -226,7 +226,7 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
 
               {/* Cartão */}
               {method === 'CREDIT_CARD' && (
-                <div className="space-y-3 border-t border-surface-800 pt-3">
+                <div className="space-y-3 border-t border-surface-700 pt-3">
                   <Field label="Nome impresso no cartão">
                     <input value={card.holderName} onChange={(e) => setCard({ ...card, holderName: e.target.value })} className={inputCls} />
                   </Field>

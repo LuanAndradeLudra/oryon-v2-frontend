@@ -152,7 +152,7 @@ export function RegisterPage() {
         {/* Card */}
         <form
           onSubmit={handleSubmit}
-          className="bg-surface-900 border border-surface-800 rounded-2xl p-5 flex flex-col gap-3 shadow-2xl"
+          className="bg-surface-900 border border-surface-700 rounded-2xl p-5 flex flex-col gap-3 shadow-2xl"
         >
           {/* Section: company */}
           <div className="flex items-center gap-2">
@@ -174,9 +174,9 @@ export function RegisterPage() {
           </Field>
 
           {/* Divider */}
-          <div className="border-t border-surface-800 -mx-1" />
+          <div className="border-t border-surface-700 -mx-1" />
 
-          <div className="flex items-center gap-2 p-2 border border-surface-800 rounded-lg">
+          <div className="flex items-center gap-2 p-2 border border-surface-700 rounded-lg">
             <Zap className="w-3.5 h-3.5 text-surface-500" />
             <span className="text-[11px] font-bold text-surface-500 uppercase tracking-wider">
               Admin da conta

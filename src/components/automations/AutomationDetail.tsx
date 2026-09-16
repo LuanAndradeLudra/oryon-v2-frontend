@@ -168,7 +168,7 @@ function FlowCard({ automation, onEdit }: {
   const joiner = automation.conditionsLogic === 'or' ? 'ou' : 'e'
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-3.5 space-y-1">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-3.5 space-y-1">
       <FlowSection eyebrow="Quando" icon={<Zap className="w-3 h-3" />} onClick={() => onEdit('gatilho')}>
         {triggerSentence(automation)}
       </FlowSection>
@@ -199,7 +199,7 @@ function FlowCard({ automation, onEdit }: {
         )}
       </FlowSection>
 
-      <div className="pt-1.5 mt-1 border-t border-surface-800">
+      <div className="pt-1.5 mt-1 border-t border-surface-700">
         <button
           onClick={() => onEdit('ia')}
           className="w-full flex items-start gap-1.5 text-left rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-surface-800/60 transition-colors group/ia"
@@ -226,7 +226,7 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
   const canExpand = actions.length > 0 || !!run.errorMessage
 
   return (
-    <div className="border-b border-surface-800/60 last:border-0">
+    <div className="border-b border-surface-700 last:border-0">
       <button
         onClick={() => canExpand && setOpen((v) => !v)}
         className={cn('w-full flex items-center gap-2.5 py-2 text-left', canExpand && 'cursor-pointer')}
@@ -347,7 +347,7 @@ export function AutomationDetail({
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="flex items-start gap-2 px-4 py-3.5 border-b border-surface-800 flex-shrink-0">
+      <div className="flex items-start gap-2 px-4 py-3.5 border-b border-surface-700 flex-shrink-0">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-surface-100 truncate">{automation.name}</h2>
@@ -399,15 +399,15 @@ export function AutomationDetail({
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-surface-900 border border-surface-800 rounded-xl px-3 py-2.5">
+          <div className="bg-surface-900 border border-surface-700 rounded-xl px-3 py-2.5">
             <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Play className="w-2.5 h-2.5" /> Execuções</p>
             <p className="text-sm font-display font-bold text-surface-100 tabular-nums">{automation.executionCount.toLocaleString('pt-BR')}</p>
           </div>
-          <div className="bg-surface-900 border border-surface-800 rounded-xl px-3 py-2.5">
+          <div className="bg-surface-900 border border-surface-700 rounded-xl px-3 py-2.5">
             <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Última</p>
             <p className="text-xs font-medium text-surface-200 tabular-nums">{automation.lastExecutedAt ? relativeDate(automation.lastExecutedAt) : '—'}</p>
           </div>
-          <div className="bg-surface-900 border border-surface-800 rounded-xl px-3 py-2.5 min-w-0">
+          <div className="bg-surface-900 border border-surface-700 rounded-xl px-3 py-2.5 min-w-0">
             <p className="text-3xs text-surface-500 mb-1">Linha</p>
             <WhatsappLineChip whatsappNumberId={automation.whatsappNumberId} />
             {!automation.whatsappNumberId && <p className="text-xs text-surface-400">—</p>}
@@ -444,7 +444,7 @@ export function AutomationDetail({
               {failedOnly ? 'Nenhuma falha na janela recente. 🎉' : 'Ainda sem execuções registradas.'}
             </p>
           ) : (
-            <div className="bg-surface-900 border border-surface-800 rounded-xl px-3">
+            <div className="bg-surface-900 border border-surface-700 rounded-xl px-3">
               {runs.map((run) => (
                 <RunRow key={run.id} run={run} onOpenContact={openContact} onOpenConversation={openConversation} />
               ))}
@@ -452,7 +452,7 @@ export function AutomationDetail({
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="w-full py-2 text-2xs text-brand-400 hover:text-brand-300 transition-colors flex items-center justify-center gap-1.5 border-t border-surface-800/60"
+                  className="w-full py-2 text-2xs text-brand-400 hover:text-brand-300 transition-colors flex items-center justify-center gap-1.5 border-t border-surface-700"
                 >
                   {loadingMore ? <Loader2 className="w-3 h-3 animate-spin" /> : <ChevronDown className="w-3 h-3" />}
                   Carregar mais

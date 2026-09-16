@@ -619,7 +619,7 @@ function AgentConfigCard({
         </p>
       )}
 
-      <details className="mt-4 pt-3 border-t border-surface-800 group">
+      <details className="mt-4 pt-3 border-t border-surface-700 group">
         <summary className="text-[11px] text-surface-400 cursor-pointer select-none hover:text-surface-200">
           Customizar nome/descrição para a IA (opcional)
         </summary>
@@ -669,7 +669,7 @@ function Step({
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-surface-900/50 border border-surface-800 rounded-xl p-5">
+    <section className="bg-surface-900/50 border border-surface-700 rounded-xl p-5">
       <header className="flex items-center gap-3 mb-3">
         <span
           className={cn(

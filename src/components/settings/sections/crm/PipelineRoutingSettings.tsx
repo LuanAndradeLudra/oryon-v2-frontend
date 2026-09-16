@@ -160,7 +160,7 @@ export function PipelineRoutingSettings() {
             return (
               <div
                 key={n.id}
-                className="bg-surface-900 border border-surface-800 rounded-2xl p-4 space-y-3"
+                className="bg-surface-900 border border-surface-700 rounded-2xl p-4 space-y-3"
               >
                 <div className="flex items-center gap-2">
                   <Route className="w-4 h-4 text-surface-500 flex-shrink-0" />

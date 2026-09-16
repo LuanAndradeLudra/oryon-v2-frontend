@@ -18,7 +18,7 @@ interface SectionHeaderProps {
 // que os cards antigos tentavam dar com borda.
 export function SectionHeader({ title, description, action, className, breadcrumb, saved }: SectionHeaderProps) {
   return (
-    <div className={cn('pb-6 mb-2 border-b border-surface-800/60', className)}>
+    <div className={cn('pb-6 mb-2 border-b border-surface-700', className)}>
       {(breadcrumb?.length || saved) && (
         <div className="flex items-center justify-between gap-3 mb-2">
           {breadcrumb && breadcrumb.length > 0 && (

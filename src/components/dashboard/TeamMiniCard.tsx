@@ -18,8 +18,8 @@ export function TeamMiniCard({ agents }: { agents: AgentMetrics[] }) {
     .slice(0, 5)
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 min-h-10 border-b border-surface-800">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 min-h-10 border-b border-surface-700">
         <p className="text-sm font-semibold text-surface-100">Equipe</p>
         <span className="text-xs text-surface-500 tabular-nums">
           {agents.filter((a) => a.isOnline).length} online
@@ -36,7 +36,7 @@ export function TeamMiniCard({ agents }: { agents: AgentMetrics[] }) {
             <span className="w-12 text-right">TMR</span>
           </div>
           {top.map((agent) => (
-            <div key={agent.userId} className="flex items-center gap-2 px-4 h-8 border-t border-surface-800/60">
+            <div key={agent.userId} className="flex items-center gap-2 px-4 h-8 border-t border-surface-700">
               <Avatar name={agent.name} size="xs" online={agent.isOnline} kind="operator" />
               <span className="flex-1 min-w-0 truncate text-xs font-medium text-surface-200">{agent.name}</span>
               <span className="w-12 text-right text-xs tabular-nums text-surface-300">{agent.conversationsToday || '—'}</span>

@@ -174,12 +174,12 @@ export function WhatsAppBusinessProfile() {
       />
 
       {numbers.length === 0 ? (
-        <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 text-sm text-surface-400">
+        <div className="bg-surface-900 border border-surface-700 rounded-2xl p-6 text-sm text-surface-400">
           Nenhuma linha WhatsApp conectada. Conecte um número em Configurações → Números WhatsApp.
         </div>
       ) : (
         <>
-          <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
+          <div className="bg-surface-900 border border-surface-700 rounded-2xl p-6 mb-6">
             <FormField label="Linha WhatsApp">
               <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
                 {numbers.map((n) => (
@@ -223,7 +223,7 @@ export function WhatsAppBusinessProfile() {
           </div>
 
           <div className={loadingProfile ? 'opacity-50 pointer-events-none' : ''}>
-            <div className="bg-surface-900 border border-surface-800 rounded-2xl p-6 mb-6">
+            <div className="bg-surface-900 border border-surface-700 rounded-2xl p-6 mb-6">
               <h3 className="text-sm font-semibold text-surface-300 mb-4">Perfil de negócio</h3>
 
               <div className="grid grid-cols-1 gap-4">

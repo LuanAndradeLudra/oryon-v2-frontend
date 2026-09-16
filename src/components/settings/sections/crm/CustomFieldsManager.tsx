@@ -86,7 +86,7 @@ export function CustomFieldsManager() {
         </Button>
       </div>
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      <div className="bg-surface-900 border border-surface-700 rounded-2xl overflow-hidden">
         {fieldDefs.length === 0 ? (
           <EmptyState
             icon={ListPlus}
@@ -96,7 +96,7 @@ export function CustomFieldsManager() {
             action={{ label: 'Novo campo', onClick: () => { setEditField(null); setModalOpen(true) } }}
           />
         ) : (
-          <ul className="divide-y divide-surface-800">
+          <ul className="divide-y divide-surface-700">
             {fieldDefs.map((field) => (
               <li key={field.key} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-800/30 transition-colors group">
 

@@ -153,7 +153,7 @@ export function AiObservabilityPage() {
                 <div className="rounded-xl border border-surface-700 bg-surface-900 p-3 overflow-x-auto">
                   <h3 className="text-xs uppercase tracking-wider text-surface-400 mb-2">Por feature</h3>
                   <table className="w-full text-sm">
-                    <tbody className="divide-y divide-surface-800">
+                    <tbody className="divide-y divide-surface-700">
                       {byFeature.map(([feature, v]) => (
                         <tr key={feature}>
                           <td className="py-1.5 text-surface-200 font-mono text-xs">{feature}</td>
@@ -177,7 +177,7 @@ export function AiObservabilityPage() {
                         <th className="text-right py-1">$ usd</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-surface-800">
+                    <tbody className="divide-y divide-surface-700">
                       {rollup.slice(0, 100).map((r, i) => (
                         <tr key={i}>
                           <td className="py-1 text-surface-300">{r.day}</td>
@@ -243,7 +243,7 @@ export function AiObservabilityPage() {
                     <p className="text-xs text-surface-500">Sem chamadas no período.</p>
                   ) : (
                     <table className="w-full text-sm">
-                      <tbody className="divide-y divide-surface-800">
+                      <tbody className="divide-y divide-surface-700">
                         {agentSummary.top_tools.map(t => (
                           <tr key={t.tool_name}>
                             <td className="py-1.5 text-surface-200 font-mono text-xs">{t.tool_name}</td>

@@ -267,7 +267,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
   const showSkeleton = loadingChannels && channels.length === 0
 
   return (
-    <div className="flex flex-col h-full w-full sm:w-[380px] bg-surface-950 border-r border-surface-800 flex-shrink-0">
+    <div className="flex flex-col h-full w-full sm:w-[380px] bg-surface-950 border-r border-surface-700 flex-shrink-0">
       {/* Search */}
       <div className="px-3 pt-3 pb-3 flex-shrink-0">
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
@@ -460,8 +460,8 @@ function InfoPanel({ channel, currentUserId, onClose }: {
 
   return (
     <>
-    <div className="w-72 h-full border-l border-surface-800 flex flex-col bg-surface-950 flex-shrink-0 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-800 flex-shrink-0">
+    <div className="w-72 h-full border-l border-surface-700 flex flex-col bg-surface-950 flex-shrink-0 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-700 flex-shrink-0">
         <span className="text-sm font-semibold text-surface-100">
           {isDM ? 'Sobre esta pessoa' : 'Sobre o canal'}
         </span>
@@ -472,7 +472,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
 
       <div className="flex-1 overflow-y-auto p-4">
         {/* Identity */}
-        <div className="flex flex-col items-center gap-3 pb-4 border-b border-surface-800 mb-4">
+        <div className="flex flex-col items-center gap-3 pb-4 border-b border-surface-700 mb-4">
           {isDM ? (
             <>
               <div className="relative">
@@ -565,7 +565,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
 
         {/* Danger zone: leave / delete */}
         {(canDeleteChannel || (!isDM && !isCreator && channel.memberIds.includes(currentUserId))) && (
-          <div className="mt-6 pt-4 border-t border-surface-800 space-y-1.5">
+          <div className="mt-6 pt-4 border-t border-surface-700 space-y-1.5">
             {!isDM && !isCreator && channel.memberIds.includes(currentUserId) && (
               <button
                 onClick={handleLeave}
@@ -657,7 +657,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
   }
 
   return (
-    <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b border-surface-800 bg-surface-950">
+    <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 border-b border-surface-700 bg-surface-950">
       {showSearch ? (
         <div className="flex-1 flex items-center gap-3">
           <Search className="w-4 h-4 text-surface-400 flex-shrink-0" />

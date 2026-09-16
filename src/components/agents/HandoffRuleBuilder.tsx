@@ -68,7 +68,7 @@ function RuleModal({
         )}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
           {icon && (
             <div className="w-8 h-8 rounded-xl bg-brand-600/15 ring-1 ring-brand-500/25 flex items-center justify-center flex-shrink-0">
               {icon}
@@ -200,7 +200,7 @@ function RuleCard({
       layout
       className={cn(
         'bg-surface-900 border rounded-xl overflow-hidden transition-colors',
-        rule.enabled ? 'border-surface-700' : 'border-surface-800/40 opacity-60',
+        rule.enabled ? 'border-surface-700' : 'border-surface-700 opacity-60',
       )}
     >
       {/* Header row */}
@@ -269,7 +269,7 @@ function RuleCard({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="overflow-hidden border-t border-surface-800/60"
+            className="overflow-hidden border-t border-surface-700"
           >
             <div className="px-4 py-3 space-y-3">
               {/* Keywords */}
@@ -512,7 +512,7 @@ function DraftEditor({
   }
 
   return (
-    <div className="space-y-4 bg-surface-900/80 border border-surface-800 rounded-2xl p-4">
+    <div className="space-y-4 bg-surface-900/80 border border-surface-700 rounded-2xl p-4">
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-brand-400" />
         <p className="text-sm font-semibold text-surface-100">Revisar e salvar regra</p>
@@ -951,7 +951,7 @@ function AIRuleBuilder({
 
       {/* Input */}
       {!editingDraft && (
-        <div className="flex-shrink-0 border-t border-surface-800 px-4 py-3">
+        <div className="flex-shrink-0 border-t border-surface-700 px-4 py-3">
           <div className="flex items-end gap-2">
             <textarea
               ref={inputRef}
@@ -1127,7 +1127,7 @@ export function HandoffRulesPanel({
         {/* Rules list */}
         <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
           {rules.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-12 border border-dashed border-surface-800 rounded-xl">
+            <div className="flex flex-col items-center gap-4 py-12 border border-dashed border-surface-700 rounded-xl">
               <div className="w-12 h-12 rounded-2xl bg-brand-600/10 ring-1 ring-brand-500/20 flex items-center justify-center">
                 <ArrowRight className="w-6 h-6 text-brand-500" />
               </div>

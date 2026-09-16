@@ -158,7 +158,7 @@ export function WhatsAppHealth() {
       )}
 
       {/* Per-line rows — lista densa em largura total, divisores hairline */}
-      <div className="divide-y divide-surface-800/60">
+      <div className="divide-y divide-surface-700">
         {data.lines.map((line) => (
           <LineHealthRow
             key={line.id}

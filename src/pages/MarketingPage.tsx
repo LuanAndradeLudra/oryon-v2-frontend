@@ -371,7 +371,7 @@ function KpiStrip({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
           key={kpi.label}
           className={cn(
             'relative bg-surface-900 border rounded-xl px-3 py-3',
-            kpi.crm ? 'border-surface-700' : 'border-surface-800',
+            kpi.crm ? 'border-surface-700' : 'border-surface-700',
           )}
         >
           {kpi.crm && (
@@ -481,7 +481,7 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
   const [activeTab, setActiveTab] = useState<'funnel' | 'adsets'>('adsets')
 
   return (
-    <div className="bg-surface-800/20 border-t border-surface-800/60">
+    <div className="bg-surface-800/20 border-t border-surface-700">
 
       {/* Sub-tabs */}
       <div className="flex items-center gap-1 px-5 pt-4 pb-0">
@@ -658,8 +658,8 @@ function CampaignTable({
   }
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-surface-800 flex items-center justify-between">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-surface-100">Campanhas</p>
           <p className="text-xs text-surface-400 mt-0.5">
@@ -675,7 +675,7 @@ function CampaignTable({
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-surface-800">
+            <tr className="border-b border-surface-700">
               <th className="text-left px-5 py-3 text-surface-400 font-medium text-2xs">Campanha</th>
               {cols.map((c) => <Th key={c.key} c={c} />)}
               <th className="w-8" />
@@ -689,7 +689,7 @@ function CampaignTable({
                   <tr
                     key={camp.platformCampaignId}
                     className={cn(
-                      'border-b border-surface-800/50 transition-colors cursor-pointer',
+                      'border-b border-surface-700 transition-colors cursor-pointer',
                       isOpen ? 'bg-surface-800/40' : 'hover:bg-surface-800/20',
                     )}
                     onClick={() => setSelected(isOpen ? null : camp.platformCampaignId)}
@@ -751,7 +751,7 @@ function CampaignTable({
                   </tr>
 
                   {isOpen && (
-                    <tr key={`${camp.platformCampaignId}-detail`} className="border-b border-surface-800/40">
+                    <tr key={`${camp.platformCampaignId}-detail`} className="border-b border-surface-700">
                       <td colSpan={11}>
                         <CampaignDetail campaign={camp} />
                       </td>
@@ -780,7 +780,7 @@ function ConversionFunnel({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   const max = stages[0].value || 1
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
       <p className="text-sm font-semibold text-surface-100 mb-0.5">Funil de Conversão</p>
       <p className="text-xs text-surface-400 mb-4">Do clique no anúncio ao cliente no CRM</p>
       <div className="space-y-2.5">
@@ -831,7 +831,7 @@ function SummaryPanel({ campaigns, totals }: { campaigns: AdCampaignMetrics[]; t
   ]
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5 space-y-3">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5 space-y-3">
       <p className="text-sm font-semibold text-surface-100">Resumo do Período</p>
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-2.5">
@@ -848,7 +848,7 @@ function SummaryPanel({ campaigns, totals }: { campaigns: AdCampaignMetrics[]; t
         </div>
       ))}
       {totals && (
-        <div className="pt-2 border-t border-surface-800">
+        <div className="pt-2 border-t border-surface-700">
           <p className="text-3xs text-surface-600 mb-1">Conv. Lead → Cliente</p>
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-surface-800 rounded-full overflow-hidden">
@@ -902,9 +902,9 @@ function CapiEventsSection() {
   const failedCount  = events.filter((e) => e.status === 'failed').length
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700">
         <div className="w-8 h-8 rounded-lg bg-[#1877f2]/15 flex items-center justify-center flex-shrink-0">
           <Send className="w-4 h-4 text-[#1877f2]" />
         </div>
@@ -967,7 +967,7 @@ function CapiEventsSection() {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-surface-800">
+              <tr className="border-b border-surface-700">
                 <th className="text-left px-5 py-3 text-surface-500 font-medium text-2xs">Contato</th>
                 <th className="text-left px-3 py-3 text-surface-500 font-medium text-2xs">Campanha</th>
                 <th className="text-left px-3 py-3 text-surface-500 font-medium text-2xs">Evento</th>
@@ -981,7 +981,7 @@ function CapiEventsSection() {
               {events.map((evt) => {
                 const stCfg = STATUS_CFG[evt.status]
                 return (
-                  <tr key={evt.id} className="border-b border-surface-800/50 hover:bg-surface-800/20">
+                  <tr key={evt.id} className="border-b border-surface-700 hover:bg-surface-800/20">
                     <td className="px-5 py-3">
                       <p className="text-surface-200 font-medium">{evt.contactName}</p>
                       <p className="text-3xs text-surface-500 font-mono">{evt.contactId}</p>
@@ -1116,15 +1116,15 @@ function MarketingPageDesktop() {
               <div className="col-span-12 xl:col-span-8 space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-16 bg-surface-900 border border-surface-800 rounded-xl" />
+                    <div key={i} className="h-16 bg-surface-900 border border-surface-700 rounded-xl" />
                   ))}
                 </div>
-                <div className="h-72 bg-surface-900 border border-surface-800 rounded-xl" />
-                <div className="h-48 bg-surface-900 border border-surface-800 rounded-xl" />
+                <div className="h-72 bg-surface-900 border border-surface-700 rounded-xl" />
+                <div className="h-48 bg-surface-900 border border-surface-700 rounded-xl" />
               </div>
               <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
-                <div className="h-28 bg-surface-900 border border-surface-800 rounded-xl" />
-                <div className="h-56 bg-surface-900 border border-surface-800 rounded-xl" />
+                <div className="h-28 bg-surface-900 border border-surface-700 rounded-xl" />
+                <div className="h-56 bg-surface-900 border border-surface-700 rounded-xl" />
               </div>
             </div>
           ) : error ? (
@@ -1144,7 +1144,7 @@ function MarketingPageDesktop() {
               <KpiStrip campaigns={campaigns} />
 
               {/* Performance chart */}
-              <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+              <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm font-semibold text-surface-100">Desempenho — Últimos 30 dias</p>
@@ -1182,7 +1182,7 @@ function MarketingPageDesktop() {
               <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
                 {/* Conta conectada — status vivo da integração Meta */}
                 {account && (
-                  <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+                  <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="relative flex w-2 h-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-online opacity-60" />

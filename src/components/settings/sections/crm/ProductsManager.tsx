@@ -124,11 +124,11 @@ export function ProductsManager() {
         )}
       </div>
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      <div className="bg-surface-900 border border-surface-700 rounded-2xl overflow-hidden">
         {products.length === 0 ? (
           <p className="text-sm text-surface-500 text-center py-10">Nenhum produto cadastrado.</p>
         ) : (
-          <ul className="divide-y divide-surface-800">
+          <ul className="divide-y divide-surface-700">
             {products.map((p) => {
               const isActive = pendingActive[p.id] ?? p.active
               return (

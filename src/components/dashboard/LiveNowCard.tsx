@@ -53,7 +53,7 @@ export function LiveNowCard({ status }: { status: RealtimeStatus }) {
         // Mesmo padrão de sombreamento dos demais cards (card-glow: sombra
         // sutil em repouso no claro + glow teal no hover) + borda neutra
         // igual às cartas vizinhas do rail (StatusDonut, ActivityFeed).
-        'card-glow bg-surface-900 border border-surface-800 rounded-xl p-5 transition-colors',
+        'card-glow bg-surface-900 border border-surface-700 rounded-xl p-5 transition-colors',
       )}
     >
       <div className="flex items-center gap-2 mb-4">

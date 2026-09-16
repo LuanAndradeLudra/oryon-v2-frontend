@@ -140,7 +140,7 @@ export function DealDetailHeader({
   }
 
   return (
-    <div className="px-5 py-4 border-b border-surface-800 flex-shrink-0 flex flex-col gap-3">
+    <div className="px-5 py-4 border-b border-surface-700 flex-shrink-0 flex flex-col gap-3">
       {/* Linha 1 — título + fechar/expandir */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">

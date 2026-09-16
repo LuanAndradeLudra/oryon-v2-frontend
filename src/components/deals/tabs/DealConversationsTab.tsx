@@ -22,7 +22,7 @@ function ConversationRow({ conversation, isOrigin, onOpenBeside }: { conversatio
     <div
       className={cn(
         'flex items-start gap-2.5 px-3.5 py-3 rounded-xl border transition-colors',
-        isOrigin ? 'border-brand-500/40 bg-brand-500/5' : 'border-surface-800 bg-surface-900',
+        isOrigin ? 'border-brand-500/40 bg-brand-500/5' : 'border-surface-700 bg-surface-900',
       )}
       data-testid={isOrigin ? 'deal-origin-conversation' : 'deal-other-conversation'}
     >

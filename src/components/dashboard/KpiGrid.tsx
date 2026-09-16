@@ -96,7 +96,7 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
   const catColor = CATEGORY_COLORS[metric.category] ?? 'var(--color-accent-blue)'
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-800 rounded-xl flex flex-col p-3.5 gap-2">
+    <div className="card-glow bg-surface-900 border border-surface-700 rounded-xl flex flex-col p-3.5 gap-2">
       <div className="flex items-center gap-2">
         <div
           className="rounded-lg flex items-center justify-center flex-shrink-0 w-6 h-6"
@@ -179,7 +179,7 @@ function KpiStrip({ metrics }: { metrics: KpiMetric[] }) {
   return (
     <div
       className={cn(
-        'card-glow bg-surface-900 border border-surface-800 rounded-xl grid grid-cols-1 divide-y sm:divide-y-0 sm:divide-x divide-surface-800 overflow-hidden',
+        'card-glow bg-surface-900 border border-surface-700 rounded-xl grid grid-cols-1 divide-y sm:divide-y-0 sm:divide-x divide-surface-700 overflow-hidden',
         STRIP_COLS[metrics.length] ?? 'sm:grid-cols-5',
       )}
     >
@@ -232,7 +232,7 @@ function CustomizerPanel({
             transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
             className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface-950 border-l overlay-frame z-50 flex flex-col"
           >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700">
           <div>
             <p className="text-sm font-semibold text-surface-100">Personalizar KPIs</p>
             <p className="text-xs text-surface-400 mt-0.5">{count} de {MAX} selecionados (mín. {MIN})</p>
@@ -265,8 +265,8 @@ function CustomizerPanel({
                             ? 'border-transparent bg-brand-600/40 text-white/60 cursor-not-allowed'
                             : 'border-transparent bg-brand-600 text-white hover:bg-brand-500'
                           : disabled
-                            ? 'border-surface-800 text-surface-600 cursor-not-allowed'
-                            : 'border-surface-800 text-surface-300 hover:border-surface-700 hover:bg-surface-900/50',
+                            ? 'border-surface-700 text-surface-600 cursor-not-allowed'
+                            : 'border-surface-700 text-surface-300 hover:border-surface-700 hover:bg-surface-900/50',
                       )}
                     >
                       <span className={cn(
@@ -284,7 +284,7 @@ function CustomizerPanel({
           ))}
         </div>
 
-            <div className="px-5 py-4 border-t border-surface-800">
+            <div className="px-5 py-4 border-t border-surface-700">
               <button onClick={onReset} className="flex items-center gap-2 text-xs text-surface-400 hover:text-surface-200 transition-colors">
                 <RotateCcw className="w-3.5 h-3.5" />
                 Redefinir padrão

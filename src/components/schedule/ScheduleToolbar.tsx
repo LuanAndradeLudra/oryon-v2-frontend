@@ -87,7 +87,7 @@ export function ScheduleToolbar({
   onTypeFilterChange,
 }: ScheduleToolbarProps) {
   return (
-    <div className="flex items-center gap-3 h-11 px-4 border-b border-surface-800 flex-shrink-0 flex-wrap">
+    <div className="flex items-center gap-3 h-11 px-4 border-b border-surface-700 flex-shrink-0 flex-wrap">
       <div className="flex items-center gap-1">
         <button
           type="button"

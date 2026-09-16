@@ -48,12 +48,12 @@ export function SalesFunnelCard() {
   }, [])
 
   if (loading) {
-    return <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 h-56 animate-pulse" />
+    return <div className="bg-surface-900 border border-surface-700 rounded-xl p-4 h-56 animate-pulse" />
   }
 
   if (!pipeline) {
     return (
-      <div className="bg-surface-900 border border-surface-800 rounded-xl p-4">
+      <div className="bg-surface-900 border border-surface-700 rounded-xl p-4">
         <CardHeader title="Funil de vendas" description="por etapa · mês atual" />
         <EmptyState icon={Milestone} title="Nenhum funil configurado" className="py-8" />
       </div>
@@ -77,7 +77,7 @@ export function SalesFunnelCard() {
   const topCount = rows[0]?.count || 1
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4">
       <CardHeader
         title="Funil de vendas"
         description="por etapa · mês atual"
@@ -110,7 +110,7 @@ export function SalesFunnelCard() {
               const conversion = prevCount ? Math.round((row.count / prevCount) * 100) : null
               const width = Math.min(100, Math.round((row.count / topCount) * 100))
               return (
-                <tr key={row.stage.id} className="border-t border-surface-800/60">
+                <tr key={row.stage.id} className="border-t border-surface-700">
                   <td className="py-2.5 pr-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span

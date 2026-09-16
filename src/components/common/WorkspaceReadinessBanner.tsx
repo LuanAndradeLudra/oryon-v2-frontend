@@ -157,7 +157,7 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
 function ChecklistItem({ check }: { check: WorkspaceCheck }) {
   const isBlocker = check.severity === 'blocker'
   return (
-    <li className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-surface-900/40 border border-surface-800">
+    <li className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-surface-900/40 border border-surface-700">
       <span
         className="mt-0.5 w-5 h-5 rounded flex items-center justify-center flex-shrink-0 color-chip border"
         style={{ ['--chip']: isBlocker ? 'var(--color-danger)' : 'var(--color-warning)' } as React.CSSProperties}

@@ -123,8 +123,8 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
   )
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-surface-800 flex items-center justify-between">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-surface-100">Performance da Equipe</p>
           <p className="text-xs text-surface-400 mt-0.5">Métricas individuais do período</p>
@@ -153,7 +153,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-surface-800">
+            <tr className="border-b border-surface-700">
               <Th label="Agente"         sortKey="name"               />
               <Th label="Status"         sortKey="isOnline"           />
               <Th label="Conversas"      sortKey="conversationsToday" tooltip={COLUMN_TOOLTIPS.conversations}  />
@@ -165,7 +165,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               <Th label="Utilização"     sortKey="utilization"        tooltip={COLUMN_TOOLTIPS.utilization}    />
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-800">
+          <tbody className="divide-y divide-surface-700">
             {sorted.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-center text-xs text-surface-500">
@@ -246,7 +246,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
       </div>
 
       {sorted.length > 0 && (
-        <div className="px-5 py-3 border-t border-surface-800 flex items-center justify-between flex-wrap gap-2">
+        <div className="px-5 py-3 border-t border-surface-700 flex items-center justify-between flex-wrap gap-2">
           <p className="text-xs text-surface-500">
             Mostrando {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} de {sorted.length} agente{sorted.length === 1 ? '' : 's'}
           </p>

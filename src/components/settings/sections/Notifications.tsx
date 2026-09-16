@@ -106,7 +106,7 @@ export function Notifications() {
         if (!items || items.length === 0) return null
         return (
           <SettingsSection key={cat} title={CATEGORY_LABELS[cat]} description={CATEGORY_DESCRIPTIONS[cat]}>
-            <div className="divide-y divide-surface-800/60">
+            <div className="divide-y divide-surface-700">
               {items.map((pref) => (
                 <PreferenceRow
                   key={pref.type}

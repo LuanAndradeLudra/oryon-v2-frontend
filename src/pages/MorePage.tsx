@@ -123,7 +123,7 @@ export function MorePage() {
       <div className="flex-1 overflow-y-auto">
         {/* User card */}
         {user && (
-          <div className="px-4 py-4 border-b border-surface-800">
+          <div className="px-4 py-4 border-b border-surface-700">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0">
                 <UserIcon className="w-6 h-6 text-surface-950" />
@@ -140,7 +140,7 @@ export function MorePage() {
 
         {/* Sections */}
         {visibleSections.map((section) => (
-          <div key={section.label} className="border-b border-surface-800/60 py-1">
+          <div key={section.label} className="border-b border-surface-700 py-1">
             <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-surface-500">
               {section.label}
             </p>
@@ -153,7 +153,7 @@ export function MorePage() {
         ))}
 
         {/* Settings rapidas + logout */}
-        <div className="border-b border-surface-800/60 py-1">
+        <div className="border-b border-surface-700 py-1">
           <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-surface-500">
             Voce
           </p>

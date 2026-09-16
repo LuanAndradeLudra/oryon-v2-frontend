@@ -504,7 +504,7 @@ function Step3({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
         )}
       </div>
 
-      <div className="border-t border-surface-800" />
+      <div className="border-t border-surface-700" />
 
       <div>
         <div className="flex items-center gap-2 mb-3">
@@ -737,7 +737,7 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
               </div>
             </div>
 
-            <div className="border-t border-surface-800/60" />
+            <div className="border-t border-surface-700" />
 
             {/* Sobre */}
             <div className="space-y-3">
@@ -764,7 +764,7 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
               </div>
             </div>
 
-            <div className="border-t border-surface-800/60" />
+            <div className="border-t border-surface-700" />
 
             {/* Presença online */}
             <div className="space-y-3">
@@ -787,12 +787,12 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             {/* Materiais (read-only) */}
             {hub.brandFiles?.length > 0 && (
               <>
-                <div className="border-t border-surface-800/60" />
+                <div className="border-t border-surface-700" />
                 <div className="space-y-2">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Materiais da marca</p>
                   <div className="space-y-1.5">
                     {hub.brandFiles.map(f => (
-                      <div key={f.id} className="flex items-center gap-2 px-3 py-2 bg-surface-900/60 border border-surface-800 rounded-lg">
+                      <div key={f.id} className="flex items-center gap-2 px-3 py-2 bg-surface-900/60 border border-surface-700 rounded-lg">
                         <FileText className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
                         <span className="text-xs text-surface-300 flex-1 truncate">{f.name}</span>
                         <span className="text-[10px] text-surface-600 flex-shrink-0">{(f.size / 1024).toFixed(0)} KB</span>
@@ -960,7 +960,7 @@ function PromptGeneratingAnimation() {
       className="rounded-xl border border-brand-500/25 bg-surface-900/80 overflow-hidden"
     >
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-surface-800 bg-surface-900">
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-surface-700 bg-surface-900">
         {/* Pulsing orb */}
         <div className="relative flex-shrink-0">
           {[0, 1].map(ring => (
@@ -1085,7 +1085,7 @@ function PromptGeneratingAnimation() {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-t border-surface-800/60 bg-[var(--sf2)]">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-t border-surface-700 bg-[var(--sf2)]">
         <motion.div
           animate={{ opacity: [0.4, 1, 0.4] }}
           transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
@@ -1123,7 +1123,7 @@ function WizardKBProgress({ fileName }: { fileName: string }) {
   const progress = Math.min(95, elapsed * 1.2)
 
   return (
-    <div className="p-3 bg-surface-900/60 border border-surface-800 rounded-xl space-y-2">
+    <div className="p-3 bg-surface-900/60 border border-surface-700 rounded-xl space-y-2">
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-brand-400 flex-shrink-0" />
         <p className="text-xs text-surface-200 font-medium truncate">{fileName}</p>
@@ -1292,7 +1292,7 @@ function Step6KB({
           <p className="text-xs font-medium text-surface-400">{data.knowledge_docs.length} documento(s) adicionado(s)</p>
           {data.knowledge_docs.map(doc => (
             <div key={doc.id} className="space-y-2">
-              <div className="flex items-center gap-3 p-3 bg-surface-900/60 border border-surface-800 rounded-xl">
+              <div className="flex items-center gap-3 p-3 bg-surface-900/60 border border-surface-700 rounded-xl">
                 <FileText className="w-4 h-4 text-surface-500 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-surface-200 truncate">{doc.name}</p>
@@ -1491,7 +1491,7 @@ function Step6({
 
       <div className="grid grid-cols-3 gap-2">
         {summaryItems.map(({ label, value }) => (
-          <div key={label} className="bg-surface-900/60 border border-surface-800 rounded-xl px-3 py-2.5">
+          <div key={label} className="bg-surface-900/60 border border-surface-700 rounded-xl px-3 py-2.5">
             <p className="text-[10px] text-surface-600 uppercase tracking-wide">{label}</p>
             <p className="text-sm text-surface-200 font-medium truncate">{value}</p>
           </div>
@@ -1555,7 +1555,7 @@ function Step6({
             onChange={e => setData(d => ({ ...d, generated_prompt: e.target.value }))}
             rows={18} maxLength={10000}
             placeholder="Escreva o system prompt do agente aqui..."
-            className="w-full bg-surface-900/80 border border-surface-800 rounded-xl px-4 py-3 text-xs text-surface-300 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
+            className="w-full bg-surface-900/80 border border-surface-700 rounded-xl px-4 py-3 text-xs text-surface-300 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
           />
           <p className="text-right text-xs text-surface-700">{data.generated_prompt.length.toLocaleString()} caracteres</p>
         </div>
@@ -1617,7 +1617,7 @@ function CapabilitiesReview({
   const enabledCount = data.crm_capabilities.capabilities.filter((c) => c.enabled).length
 
   return (
-    <div className="bg-surface-900/60 border border-surface-800 rounded-xl px-4 py-3 flex-shrink-0">
+    <div className="bg-surface-900/60 border border-surface-700 rounded-xl px-4 py-3 flex-shrink-0">
       <div className="flex items-baseline justify-between mb-1">
         <p className="text-[11px] text-surface-300 font-semibold uppercase tracking-wide">
           Capacidades de CRM <span className="text-surface-600 font-normal normal-case">(opcional)</span>
@@ -1682,7 +1682,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
         <p className="text-sm text-surface-500 mt-0.5">Revise as configurações antes de ativar o agente.</p>
       </div>
 
-      <div className="bg-surface-900/60 border border-surface-800 rounded-xl p-4 flex-shrink-0">
+      <div className="bg-surface-900/60 border border-surface-700 rounded-xl p-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <AgentIcon iconId={data.icon} className="w-10 h-10" />
           <div className="flex-1 min-w-0">
@@ -1697,7 +1697,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           )}
         </div>
         {data.objective && (
-          <p className="text-xs text-surface-500 mt-2 p-2 border-t border-surface-800 rounded-lg">{data.objective}</p>
+          <p className="text-xs text-surface-500 mt-2 p-2 border-t border-surface-700 rounded-lg">{data.objective}</p>
         )}
       </div>
 
@@ -1710,7 +1710,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           { label: 'FAQs',           value: `${data.faqs.filter(f => f.question).length} perguntas` },
           { label: 'Encaminhamentos', value: data.handoff_rules.length > 0 ? `${data.handoff_rules.length} regra(s)` : 'Nenhuma' },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-surface-900/60 border border-surface-800 rounded-xl px-3 py-2.5">
+          <div key={label} className="bg-surface-900/60 border border-surface-700 rounded-xl px-3 py-2.5">
             <p className="text-[10px] text-surface-600 uppercase tracking-wide">{label}</p>
             <p className="text-xs font-medium text-surface-200 truncate">{value}</p>
           </div>
@@ -2050,9 +2050,9 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
             <BackgroundOrbs />
 
             {/* ── LEFT TUTOR PANEL ─────────────────────────────────────── */}
-            <div className="relative z-10 w-80 flex-shrink-0 flex flex-col border-r border-surface-800/60 bg-surface-950/80 backdrop-blur-sm">
+            <div className="relative z-10 w-80 flex-shrink-0 flex flex-col border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm">
               {/* Brand header + close */}
-              <div className="flex items-center gap-3 px-8 pt-8 pb-6 border-b border-surface-800/60 flex-shrink-0">
+              <div className="flex items-center gap-3 px-8 pt-8 pb-6 border-b border-surface-700 flex-shrink-0">
                 <motion.div
                   animate={{ scale: [1, 1.08, 1] }}
                   transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
@@ -2128,7 +2128,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   vista vertical compacta sempre visível no painel Tutor. É a
                   navegação por etapa da tela inteira (o header do painel à
                   direita só tem a barra de progresso fina, sem repetir isto). */}
-              <div className="px-8 py-4 border-t border-surface-800/60 flex-shrink-0">
+              <div className="px-8 py-4 border-t border-surface-700 flex-shrink-0">
                 <div className="flex flex-col gap-1">
                   {STEP_LABELS.map((label, i) => {
                     const s = i + 1
@@ -2168,7 +2168,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
               </div>
 
               {/* Nav buttons + errors */}
-              <div className="px-8 pt-4 pb-8 border-t border-surface-800/60 flex flex-col gap-2 flex-shrink-0">
+              <div className="px-8 pt-4 pb-8 border-t border-surface-700 flex flex-col gap-2 flex-shrink-0">
                 {step < 8 && validationError && (
                   <motion.p
                     initial={{ opacity: 0, y: -4 }}
@@ -2202,7 +2202,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                       type="button"
                       onClick={() => handlePublish('draft')}
                       disabled={publishing}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 border border-surface-800 transition-all disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 border border-surface-700 transition-all disabled:opacity-50"
                     >
                       Salvar como rascunho
                     </button>
@@ -2229,7 +2229,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                       <button
                         type="button"
                         onClick={back}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 border border-surface-800 transition-all"
+                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 border border-surface-700 transition-all"
                       >
                         <ChevronLeft className="w-4 h-4" /> Voltar
                       </button>
@@ -2249,7 +2249,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   aqui de propósito: aquele componente é o stepper horizontal
                   com círculos numerados — visual bem mais pesado que o traço
                   fino do mock, e duplicaria a trilha da esquerda. */}
-              <div className="flex-shrink-0 h-[52px] flex items-center gap-1 px-10 bg-surface-950/85 backdrop-blur-md border-b border-surface-800/40">
+              <div className="flex-shrink-0 h-[52px] flex items-center gap-1 px-10 bg-surface-950/85 backdrop-blur-md border-b border-surface-700">
                 {STEP_LABELS.map((_, i) => (
                   <div
                     key={i}

@@ -98,7 +98,7 @@ function LimitRow({
   const atCeiling = hasUsage && used >= limit
 
   return (
-    <div className="grid grid-cols-[1fr_160px_90px] items-center gap-3 h-9 border-b border-surface-800/50 last:border-0">
+    <div className="grid grid-cols-[1fr_160px_90px] items-center gap-3 h-9 border-b border-surface-700 last:border-0">
       <span className="flex items-center gap-2 text-sm text-surface-300 min-w-0">
         <span className="text-surface-500 flex-shrink-0">{icon}</span>
         <span className="truncate">{label}</span>
@@ -133,7 +133,7 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
   const desc = tx.feature ?? tx.source ?? label
 
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-surface-800/50 last:border-0">
+    <div className="flex items-center gap-4 py-3 border-b border-surface-700 last:border-0">
       <div className="flex-1 min-w-0">
         <p className="text-sm text-surface-200 truncate">{desc}</p>
         <p className="text-xs text-surface-500 mt-0.5">
@@ -205,7 +205,7 @@ function UpgradeTable({
             key={tier}
             style={isRecommended ? { boxShadow: 'inset 0 2px 0 var(--color-brand-500)' } : undefined}
             className={cn(
-              'flex-1 p-3.5 border-t sm:border-t-0 sm:border-l first:border-l-0 first:border-t-0 border-surface-800',
+              'flex-1 p-3.5 border-t sm:border-t-0 sm:border-l first:border-l-0 first:border-t-0 border-surface-700',
               isCurrent && 'bg-[var(--color-surface-800)]',
             )}
           >
@@ -438,7 +438,7 @@ export function BillingSettings() {
         <LimitRow icon={<Zap className="w-4 h-4" />}         label="Interações Copilot / mês" limit={plan.limits.copilotInteractions} />
 
         {canCancel && (
-          <div className="border-t border-surface-800/50 pt-3 mt-2 text-right">
+          <div className="border-t border-surface-700 pt-3 mt-2 text-right">
             <button
               onClick={() => setCancelOpen(true)}
               className="text-xs text-surface-500 hover:text-red-400 transition-colors"

@@ -40,7 +40,7 @@ export function ConnectorCard({ connector, onOpen }: ConnectorCardProps) {
         'group flex flex-col text-left rounded-lg border bg-surface-900/40 p-3.5 gap-2.5 transition-colors',
         comingSoon
           ? 'border-dashed border-surface-700 hover:border-surface-600'
-          : 'border-surface-800 hover:border-surface-700',
+          : 'border-surface-700 hover:border-surface-700',
       )}
     >
       <div className="flex items-start justify-between gap-2">

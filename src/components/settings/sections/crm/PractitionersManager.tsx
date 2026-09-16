@@ -115,11 +115,11 @@ export function PractitionersManager() {
         )}
       </div>
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      <div className="bg-surface-900 border border-surface-700 rounded-2xl overflow-hidden">
         {practitioners.length === 0 ? (
           <p className="text-sm text-surface-500 text-center py-10">Nenhum profissional cadastrado.</p>
         ) : (
-          <ul className="divide-y divide-surface-800">
+          <ul className="divide-y divide-surface-700">
             {practitioners.map((p) => {
               const isActive = pendingActive[p.id] ?? p.active
               return (

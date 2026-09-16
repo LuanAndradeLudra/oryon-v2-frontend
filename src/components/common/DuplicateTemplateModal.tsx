@@ -65,7 +65,7 @@ export function DuplicateTemplateModal({
         onClick={(e) => e.stopPropagation()}
         className="bg-surface-900 rounded-2xl border border-surface-700/60 w-full max-w-md overflow-hidden"
       >
-        <div className="flex items-start justify-between px-5 py-4 border-b border-surface-800/60">
+        <div className="flex items-start justify-between px-5 py-4 border-b border-surface-700">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-surface-100">Duplicar template</h2>
             <p className="text-xs text-surface-400 mt-0.5 truncate">"{template.name}"</p>
@@ -93,7 +93,7 @@ export function DuplicateTemplateModal({
                 <label className="block text-[10px] font-semibold uppercase tracking-wide text-surface-400 mb-1.5">
                   Linha de destino <span className="text-danger">*</span>
                 </label>
-                <ul className="rounded-xl border border-surface-700/60 overflow-hidden divide-y divide-surface-800/60">
+                <ul className="rounded-xl border border-surface-700/60 overflow-hidden divide-y divide-surface-700">
                   {otherLines.map((n) => {
                     const isPicked = pickedLineId === n.id
                     return (
@@ -156,7 +156,7 @@ export function DuplicateTemplateModal({
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-surface-800/60 bg-surface-950/30">
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-surface-700 bg-surface-950/30">
           <Button variant="ghost" size="sm" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>

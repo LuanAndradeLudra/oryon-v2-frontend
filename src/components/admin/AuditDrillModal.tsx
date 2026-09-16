@@ -89,7 +89,7 @@ export function AuditDrillModal({
         className="bg-surface-900 overlay-frame border rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        <header className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
+        <header className="flex items-center justify-between px-5 py-4 border-b border-surface-700">
           <div>
             <h2 className="text-base font-semibold text-surface-100">Timeline cross-service</h2>
             <p className="text-xs text-surface-400 font-mono mt-1">correlation_id: {correlationId}</p>
@@ -123,7 +123,7 @@ export function AuditDrillModal({
           {!loading && unified.length > 0 && (
             <ol className="space-y-2">
               {unified.map((entry, i) => (
-                <li key={i} className="rounded border border-surface-800 bg-surface-950/60 p-3">
+                <li key={i} className="rounded border border-surface-700 bg-surface-950/60 p-3">
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-surface-400 font-mono">{new Date(entry.at).toLocaleTimeString('pt-BR', { hour12: false })}</span>
                     {entry.kind === 'activity' ? (

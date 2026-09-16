@@ -106,7 +106,7 @@ export function StagesManager() {
         )}
       </div>
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      <div className="bg-surface-900 border border-surface-700 rounded-2xl overflow-hidden">
         {stages.length === 0 ? (
           <EmptyState
             icon={Layers}
@@ -116,7 +116,7 @@ export function StagesManager() {
             action={canManageStages ? { label: 'Novo estágio', onClick: () => { setEditStage(null); setModalOpen(true) } } : undefined}
           />
         ) : (
-          <ul className="divide-y divide-surface-800">
+          <ul className="divide-y divide-surface-700">
             {stages.map((stage, idx) => (
               <li
                 key={stage.id}

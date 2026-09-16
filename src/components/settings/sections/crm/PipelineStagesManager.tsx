@@ -133,11 +133,11 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
         )}
       </div>
 
-      <div className="bg-surface-900 border border-surface-800 rounded-2xl overflow-hidden">
+      <div className="bg-surface-900 border border-surface-700 rounded-2xl overflow-hidden">
         {stages.length === 0 ? (
           <p className="text-sm text-surface-500 text-center py-10">Nenhum estágio configurado neste funil.</p>
         ) : (
-          <ul className="divide-y divide-surface-800">
+          <ul className="divide-y divide-surface-700">
             {stages.map((stage, idx) => {
               const isLastWon = stage.isWon && wonCount <= 1
               const isLastLost = stage.isLost && lostCount <= 1

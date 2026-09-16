@@ -34,7 +34,7 @@ export function ScheduleListView({ days, events }: ScheduleListViewProps) {
             {day.label} · {formatDayLong(day.date)}
             {day.isToday && <span className="ml-1.5 text-brand-400">HOJE</span>}
           </div>
-          <div className="border border-surface-800 rounded-lg divide-y divide-surface-800 overflow-hidden">
+          <div className="border border-surface-700 rounded-lg divide-y divide-surface-700 overflow-hidden">
             {items.map((event) => (
               <div key={event.id} className="flex items-center gap-3 px-3 py-2.5 bg-surface-900/40">
                 <span

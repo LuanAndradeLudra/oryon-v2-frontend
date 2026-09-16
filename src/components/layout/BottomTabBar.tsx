@@ -71,7 +71,7 @@ export function BottomTabBar() {
       role="tablist"
       aria-label="NavegaÃ§Ã£o principal"
       className={cn(
-        'flex-shrink-0 grid bg-surface-950 border-t border-surface-800/80 pb-[env(safe-area-inset-bottom)]',
+        'flex-shrink-0 grid bg-surface-950 border-t border-surface-700 pb-[env(safe-area-inset-bottom)]',
         TABS.length === 5 ? 'grid-cols-5' : 'grid-cols-4',
       )}
     >
