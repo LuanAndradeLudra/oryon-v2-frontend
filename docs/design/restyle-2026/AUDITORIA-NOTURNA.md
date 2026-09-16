@@ -153,6 +153,53 @@ B–C pelo dono da leva. D pelo orquestrador (ou delegada, mas SEMPRE ao vivo).
   sistema inline; "Resumo da IA" beta. (GAPS-PENDENTES 1.x/2.x)
 - Contatos: campo Responsável/owner; filtro Meus/Todos; drawer URL `?contact=`.
 
+## Restrição descoberta às 06:00 — limite de sessão do orquestrador
+
+Os forks do orquestrador (Agent tool) compartilham a cota da sessão principal
+e caíram com HTTP 429 ("session limit, resets 09:20 America/Sao_Paulo") no
+meio da Fase B. **Até 09:20: zero forks.** Os 3 terminais Maestri têm cotas
+próprias e seguem. O orquestrador gasta o próprio orçamento só em: mesclar,
+gate, propagar, despachar, atualizar este arquivo, e provas ao vivo decisivas
+(poucas). Fase B e C ficam com os agentes; primitivos/index.css continuam
+sendo editados só pelo orquestrador, mas o MAPA (B) dos primitivos pode ser
+feito por agente (só leitura, reporta ❌).
+
+## Fase A — specs extraídas (todas commitadas no epic)
+
+| Spec | Itens | Fonte |
+|---|---|---|
+| spec/1a-primitivos.md | 165 | fork |
+| spec/1c-contatos.md | 95 | fork — referência tem cabeçalho/filtros/colunas ≠ app (ver cabeçalho) |
+| spec/1d-conversas.md | 115 | fork |
+| spec/2a-2b-agentes.md | 124 | fork |
+| spec/2c-campanhas.md | 81 | fork |
+| spec/1e-funis.md | 54 | Farol |
+| spec/conectores.md | 94 | Farol |
+| spec/1b-dashboard.md | 29 | Bússola |
+| spec/shell.md | 30 | Bússola |
+| spec/2d-agendamentos.md · 2e-configuracoes.md · 6a-faturamento.md | — | Cartógrafo (em andamento) |
+
+Divergências entre fontes registradas dentro de cada spec (DISC-*, EMPTY-06,
+CARD-08, título 14px vs README 16px, `--acs` escuro). Regra: **HTML do canvas
+é a autoridade**; README só onde o HTML não mostra o estado.
+
+## Fase B/C — atribuição atual
+
+| Tela | B (mapa) | C (correção) | Estado |
+|---|---|---|---|
+| 1a primitivos | Cartógrafo (após A) — só reporta | orquestrador | C parcial feita (`527a4e6`): --bd2, superfície clara 800/900, Card, EmptyState, Tabs, WizardProgress |
+| 1d Conversas | Bússola | Cartógrafo | B em andamento |
+| 1c Contatos | **feito** (fork, `1c-contatos.GAPS.md`, 95/95 + bloco "fora da referência") | Cartógrafo (após A) | B ✅ |
+| 2c Campanhas | **feito** (fork, `2c-campanhas.GAPS.md`, 83 itens + notas Step1–4) | Farol (após B de 1e/conn) | B ✅ |
+| 2a/2b Agentes | Bússola (após B de 1d) | Farol | — |
+| 1e Funis | Farol | Cartógrafo | B em andamento |
+| Conectores | Farol | Bússola | B em andamento |
+| 1b Dashboard · Shell | — | Farol · orquestrador | aguarda B |
+| 2d/2e/6a | — | Bússola | aguarda A do Cartógrafo |
+
 ## Log da noite
 
 - 05:50 — arquivo criado. Conversas lista plana mesclada (`aaf4ca1` + `712ba02`).
+- 05:55 — Fase A disparada: 5 forks + 3 agentes (cruzado). Specs 1a/1c/1d/2a-2b/2c chegam entre 06:00 e 06:08 (`b5a3131`, `d1dafa6`).
+- 06:00 — Fase C nos primitivos contra a spec 1a (`527a4e6`): descoberta e corrigida a inversão 900/800 do tema claro feita mais cedo (`67819b9`); EmptyState e Card `elevated` voltaram pro que a referência mostra (a reauditoria anterior tinha lido errado). Suite 617/621 após atualizar Tabs.test ao contrato TABS-03.
+- 06:02 — 5 forks de Fase B morrem por 429 (limite da sessão até 09:20). 2 deixaram arquivo (1c, 2c). Fase B redistribuída: Farol → 1e+conectores (em curso), Bússola → 1d (+1c se o arquivo do fork estiver incompleto). Specs de Farol (`36aaa3b`) e Bússola (`678b867`) mescladas; epic em `b59c70e`, propagado.
