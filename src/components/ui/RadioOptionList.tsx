@@ -16,7 +16,7 @@ function RadioOptionRow({ name, checked, label, onSelect }: { name: string; chec
   return (
     <label
       className={cn(
-        'flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors select-none',
+        'flex items-center gap-2.5 px-3 py-2 rounded-sm border cursor-pointer transition-colors select-none',
         checked ? 'border-brand-500/60 bg-brand-900/20' : 'border-surface-700 hover:border-surface-600',
       )}
     >

@@ -33,7 +33,7 @@ export function EmptyState({ icon: Icon, title, hint, action, className, iconSty
     <div
       className={cn(
         'flex flex-col items-center justify-center text-center',
-        'py-16 px-6 rounded-xl bg-surface-900/40 border border-dashed border-surface-700',
+        'py-[18px] px-4 rounded-lg bg-surface-900/40 border border-dashed border-surface-600',
         className,
       )}
     >

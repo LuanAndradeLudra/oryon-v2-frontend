@@ -25,9 +25,9 @@ export function TipCard({ icon, title, description, onDismiss, children, classNa
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.3 }}
-      className={cn('flex items-start gap-4 bg-brand-950/50 border border-brand-500/20 rounded-2xl px-5 py-4', className)}
+      className={cn('flex items-start gap-4 bg-brand-950/50 border border-brand-500/20 rounded-lg px-5 py-4', className)}
     >
-      <div className="w-8 h-8 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <div className="w-8 h-8 rounded-md bg-brand-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
         {icon}
       </div>
       <div className="flex-1 min-w-0">

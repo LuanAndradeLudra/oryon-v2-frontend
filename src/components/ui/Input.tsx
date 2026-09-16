@@ -2,13 +2,24 @@ import { forwardRef, type InputHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 import { useFormFieldAria, mergeFieldAria } from './formField.context'
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+// `size` nativo de <input> é number (nº de caracteres) — Omit pra reusar o
+// nome com o significado de variante (sm/md/lg) que o resto do DS já espera.
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   /** Marca o campo como inválido. Dentro de um `FormField` com `error`, isto já vem por contexto. */
   error?: string
+  /** SCRUM-1097: formaliza a régua canônica (sm 28 · md 36 · lg 44px), antes
+   *  só implementada pelo Button. `md` reproduz a altura de hoje. */
+  size?: 'sm' | 'md' | 'lg'
+}
+
+const sizeStyles = {
+  sm: 'h-7 px-2.5 text-xs',
+  md: 'h-9 px-3 text-sm',
+  lg: 'h-11 px-3.5 text-sm',
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, error, id, 'aria-describedby': describedBy, required, ...props }, ref) => {
+  ({ className, error, id, 'aria-describedby': describedBy, required, size = 'md', ...props }, ref) => {
     // Dentro de um `FormField`: recebe id (para o `htmlFor` do rótulo),
     // `aria-describedby` (hint/erro) e `aria-invalid` sem que a chamada precise
     // saber disso. Prop explícita sempre vence o contexto.
@@ -24,7 +35,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {...aria}
         required={required}
         className={cn(
-          'w-full bg-surface-800 border rounded-lg px-3 py-2 text-sm text-surface-100',
+          'w-full bg-surface-800 border rounded-sm text-surface-100',
+          sizeStyles[size],
           'placeholder:text-surface-400',
           'focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500',
           'disabled:opacity-50 disabled:cursor-not-allowed',

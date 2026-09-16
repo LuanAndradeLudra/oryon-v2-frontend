@@ -22,7 +22,10 @@ const plainVariants: Record<string, string> = {
 }
 
 export function Badge({ children, variant = 'default', className }: BadgeProps) {
-  const base = 'inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium'
+  // SCRUM-1097: badge de status de sistema sai da pílula (rounded-full) pra
+  // 6px — a pílula cheia fica reservada pra etiqueta/tag (.color-chip em
+  // TagPicker) e contador, que são componentes diferentes.
+  const base = 'inline-flex items-center justify-center rounded-xs px-2 py-0.5 text-xs font-medium'
   const chip = CHIP_VAR[variant]
 
   if (chip) {

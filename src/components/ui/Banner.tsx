@@ -36,7 +36,7 @@ export function Banner({ variant = 'warning', icon = true, action, className, ch
   return (
     <div
       role={variant === 'danger' || variant === 'warning' ? 'alert' : 'status'}
-      className={cn('color-chip flex items-start gap-2.5 rounded-xl border px-4 py-3 text-[13px] leading-snug', className)}
+      className={cn('color-chip flex items-start gap-2.5 rounded-xs border px-3.5 py-2.5 text-[13px] leading-snug', className)}
       style={{ ['--chip']: chip } as React.CSSProperties}
     >
       {iconNode}

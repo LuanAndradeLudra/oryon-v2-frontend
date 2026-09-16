@@ -14,17 +14,18 @@ interface CardProps {
 }
 
 export function Card({ children, className, elevated, glow, noPadding, onClick }: CardProps) {
+  // SCRUM-1097: elevação de card é borda, não sombra — `elevated` sobe pra
+  // borda de ênfase (surface-600) em vez de ganhar sombra. `glow` continua
+  // com sombra: é a única exceção reservada a card de destaque/IA.
   return (
     <div
       onClick={onClick}
       className={cn(
-        'bg-surface-800 border border-surface-700 rounded-2xl',
-        !noPadding && 'p-4',
-        elevated
-          ? 'shadow-[0_8px_24px_rgba(15,23,42,.08)]'
-          : 'shadow-[0_1px_3px_rgba(15,23,42,.06)]',
+        'bg-surface-800 border rounded-lg',
+        elevated ? 'border-surface-600' : 'border-surface-700',
+        !noPadding && 'p-3.5',
         glow && 'shadow-[0_6px_20px_rgba(20,184,166,.35)] border-brand-700/50',
-        onClick && 'cursor-pointer transition-all duration-150 hover:border-surface-600 hover:shadow-[0_4px_16px_rgba(15,23,42,.10)]',
+        onClick && 'cursor-pointer transition-all duration-150 hover:border-surface-600',
         className,
       )}
     >
@@ -42,9 +43,9 @@ interface CardHeaderProps {
 
 export function CardHeader({ title, description, action, className }: CardHeaderProps) {
   return (
-    <div className={cn('flex items-start justify-between gap-3 mb-4', className)}>
+    <div className={cn('flex items-center justify-between gap-3 min-h-10 pb-2.5 mb-3 border-b border-surface-700', className)}>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-surface-100">{title}</div>
+        <div className="text-sm font-semibold text-surface-100 truncate">{title}</div>
         {description && (
           <div className="text-xs text-surface-400 mt-0.5">{description}</div>
         )}

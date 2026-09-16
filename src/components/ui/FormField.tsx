@@ -75,12 +75,12 @@ export function FormField({ label, error, hint, required, requirement, filled, c
               obrigatoriedade por `aria-required`, não por ouvir "asterisco". */}
           {required && <span className="text-danger ml-0.5" aria-hidden="true">*</span>}
           {requirement === 'required' && !filled && (
-            <span className="ml-2 text-[10px] font-semibold text-danger normal-case tracking-normal">
+            <span className="ml-2 text-3xs font-semibold text-danger normal-case tracking-normal">
               Obrigatório
             </span>
           )}
           {requirement === 'optional' && !filled && (
-            <span className="ml-2 text-[10px] font-medium text-surface-500 normal-case tracking-normal">
+            <span className="ml-2 text-3xs font-medium text-surface-500 normal-case tracking-normal">
               Opcional
             </span>
           )}

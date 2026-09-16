@@ -25,7 +25,7 @@ export function SkeletonText({ lines = 3, className }: { lines?: number; classNa
 /** Card padrão — título + linhas de conteúdo. */
 export function SkeletonCard({ className, lines = 3 }: { className?: string; lines?: number }) {
   return (
-    <div className={cn('bg-surface-900 border border-surface-800 rounded-xl p-5', className)} aria-hidden="true">
+    <div className={cn('bg-surface-900 border border-surface-800 rounded-lg p-3.5', className)} aria-hidden="true">
       <div className="h-4 w-1/3 animate-pulse rounded bg-surface-800 mb-4" />
       <SkeletonText lines={lines} />
     </div>

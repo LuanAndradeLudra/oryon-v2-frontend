@@ -91,6 +91,11 @@
    * escuro (branco puro é a "janela" onde qualquer cor de marca funciona). */
   --connector-tile-mix: 0%;
 
+  /* SCRUM-1097: hover universal de linha/card clicável (DataTable, Sidebar,
+   * ConversationItem, Card com onClick) — usar `hover:bg-[var(--rowhover)]`
+   * em vez de reinventar `hover:bg-surface-800/50` caso a caso. */
+  --rowhover: rgba(255, 255, 255, 0.04);
+
   /* brand scale (dark defaults) — componentes usam bg-brand-500 etc. */
   --color-brand-50:  #F0FDFA;
   --color-brand-100: #CCFBF1;
@@ -845,6 +850,9 @@ code, pre, kbd, samp {
   /* SCRUM-1097: no claro, o branco do tile já é a superfície — 12% de marca
    * evita que o tile desapareça contra o card branco. */
   --connector-tile-mix: 12%;
+
+  /* SCRUM-1097 (claro): ver comentário dark. */
+  --rowhover: rgba(15, 23, 42, 0.035);
 
   --color-accent:       #14B8A6;
   --color-accent-dark:  #0F766E;

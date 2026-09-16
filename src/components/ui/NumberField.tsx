@@ -1,12 +1,14 @@
 import { forwardRef, type InputHTMLAttributes } from 'react'
 import { Input } from './Input'
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'> & {
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type' | 'size'> & {
   /** `null` = campo vazio. Evita o `NaN` que `Number('')` produz. */
   value: number | null
   onChange: (value: number | null) => void
   min?: number
   max?: number
+  /** SCRUM-1097: repassado ao `Input` — régua canônica sm/md/lg. */
+  size?: 'sm' | 'md' | 'lg'
 }
 
 /**
