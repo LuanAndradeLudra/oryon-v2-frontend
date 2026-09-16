@@ -359,7 +359,7 @@
   --color-bubble-out-time: rgba(255, 255, 255, 0.62);
   /* Sombra suave compartilhada (in/outbound) — invisível no escuro (0 0
      #0000 fica seguro pra combinar com outros box-shadow em lista). */
-  --bubble-shadow-soft: 0 0 #0000;
+  --bubble-shadow-soft: 0 0 #0000; /* legado: sem uso desde SCRUM-1097 (bolha in usa borda) */
   --color-bubble-in:       #161E1E;
   --color-bubble-in-fg:    #f1f5f9;
 
@@ -1017,9 +1017,10 @@ code, pre, kbd, samp {
   border-radius: 8px;
 }
 
-/* ── Conversas (tema claro) — lista e painel em branco sobre o canvas cinza;
-   hover/ativo dos itens em cinza (no dark o branco/50 sumia no fundo branco).
-   Escopado ao claro; o escuro mantém o comportamento por token. */
+/* ── Conversas — spec 1d CONV-FRAME-02/04: lista e painel em --sf (surface-800)
+   nos DOIS temas (só o chat fica em --bg). Os componentes já usam bg-surface-800;
+   este bloco só garante no claro o "sem sombra" (é painel de altura inteira,
+   não card) e a hairline em --bd. */
 [data-theme="light"] .conv-surface {
   background-color: var(--color-surface-800);
   border-color: var(--color-surface-700);
@@ -1033,13 +1034,12 @@ code, pre, kbd, samp {
 [data-theme="light"] .panel-divider {
   border-color: var(--color-surface-700);
 }
-/* Bubbles: sombra suave só no claro (sem borda), pra se destacar do canvas
-   quase-branco. No escuro --bubble-shadow-soft fica invisível (0 0 #0000). */
-[data-theme="light"] {
-  --bubble-shadow-soft: 0 1px 3px rgba(15, 23, 42, 0.10), 0 1px 2px rgba(15, 23, 42, 0.06);
-}
+/* Bolha inbound — spec 1d CONV-CHAT-17/28: --bin + borda 1px --bd, NENHUMA
+   sombra em nenhum tema (a separação no claro é pela borda, regra geral do
+   handoff). A sombra suave do claro foi removida. */
 .bubble-in-elevate {
-  box-shadow: var(--bubble-shadow-soft);
+  border: 1px solid var(--color-surface-700);
+  box-shadow: none;
 }
 /* Outbound bubble (light): cor sólida teal da marca (texto branco). Removido o
    gradiente menta pálido — ficava lavado e sem contraste sobre o canvas cinza.

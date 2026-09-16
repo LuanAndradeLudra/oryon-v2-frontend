@@ -8,6 +8,7 @@ import { ConversationList } from '@/components/conversations/ConversationList/Co
 import { ChatWindow } from '@/components/conversations/ChatWindow/ChatWindow'
 import { ContactPanel } from '@/components/conversations/ContactPanel/ContactPanel'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
+import { ConversationsTopBarSlot } from '@/components/layout/ConversationsTopBarSlot'
 import { Fab } from '@/components/common/Fab'
 import { useConversations } from '@/hooks/useConversations'
 import { useSocket } from '@/hooks/useSocket'
@@ -564,6 +565,9 @@ export function ConversationsPage() {
 
   return (
     <>
+      {/* CONV-HDR (spec 1d): contagens + chip da linha + "Nova conversa" na TopBar do Shell. */}
+      {!isMobile && <ConversationsTopBarSlot statusCounts={statusCounts} />}
+
       {/* 1 — Conversation list. Mobile and desktop render the SAME list with
           the same props — only the outer wrapper differs (mobile adds the
           page header + flex column). Props are extracted into `listProps` so

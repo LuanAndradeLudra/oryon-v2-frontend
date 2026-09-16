@@ -5,8 +5,8 @@ type Ctx = {
   setPageActions: (node: ReactNode) => void
   /** Subtítulo dinâmico da página (spec shell.md TOPBAR-02 / 1b DASH-HEADER-01:
    *  "atualizado há 20s"). `null` = a TopBar usa o subtítulo fixo da rota. */
-  pageSubtitle: string | null
-  setPageSubtitle: (text: string | null) => void
+  pageSubtitle: ReactNode
+  setPageSubtitle: (node: ReactNode) => void
 }
 
 const TopBarActionsContext = createContext<Ctx>({
@@ -18,7 +18,7 @@ const TopBarActionsContext = createContext<Ctx>({
 
 export function TopBarActionsProvider({ children }: { children: ReactNode }) {
   const [pageActions, setPageActions] = useState<ReactNode>(null)
-  const [pageSubtitle, setPageSubtitle] = useState<string | null>(null)
+  const [pageSubtitle, setPageSubtitle] = useState<ReactNode>(null)
   const value = useMemo(
     () => ({ pageActions, setPageActions, pageSubtitle, setPageSubtitle }),
     [pageActions, pageSubtitle],
@@ -52,9 +52,10 @@ export function useRegisterTopBarActions(actions: ReactNode, deps: unknown[]) {
 /**
  * Irmão do `useRegisterTopBarActions` para o subtítulo da página: a TopBar
  * mostra `subtitle` no lugar do texto fixo de `PAGE_SUBTITLES` enquanto a
- * página estiver montada. Passe `null` para voltar ao fixo.
+ * página estiver montada. Passe `null` para voltar ao fixo. Aceita ReactNode
+ * porque 1d Conversas põe o chip da linha ao lado das contagens (CONV-HDR-05).
  */
-export function useRegisterTopBarSubtitle(subtitle: string | null, deps: unknown[]) {
+export function useRegisterTopBarSubtitle(subtitle: ReactNode, deps: unknown[]) {
   const { setPageSubtitle } = useTopBarActions()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
