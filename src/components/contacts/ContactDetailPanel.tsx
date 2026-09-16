@@ -3,8 +3,10 @@ import { Loader2 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useToast } from '@/hooks/useToast'
+import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { ContactDetailHeader } from './ContactDetailHeader'
 import { ContactDetailTabs, type TabId } from './ContactDetailTabs'
+import { ContactIdentityPanel } from './ContactIdentityPanel'
 import { OverviewTab } from './tabs/OverviewTab'
 import { HistoryTab } from './tabs/HistoryTab'
 import { ConversationsTab } from './tabs/ConversationsTab'
@@ -29,6 +31,11 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? 'overview')
   const { toast } = useToast()
+  // Contagem real da aba "Negócios" (README 3.2: "Negócios 4") — mesmo hook
+  // que DealsSummaryCard/DealsTab já usam pra essa informação; nenhuma
+  // consulta nova. `requireMultiPipeline: false` porque a aba não pode sumir
+  // no tenant de funil único (mesmo motivo do DealsTab).
+  const { deals: pipelineDeals } = useContactPipelines(contactId, contact?.displayName ?? '', { requireMultiPipeline: false })
 
   // Reabre na aba pedida sempre que o contato ou a aba solicitada mudarem
   // (ex.: clicar num chip de negócio de OUTRO contato enquanto o painel já está aberto).
@@ -161,21 +168,35 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
             onDelete={handleDelete}
             onExpand={onExpand ? () => onExpand(contact) : undefined}
           />
-          <ContactDetailTabs activeTab={activeTab} onChange={setActiveTab} />
-          <div ref={bodyRef} className="flex-1 overflow-y-auto">
-            {activeTab === 'overview'      && <OverviewTab
+          <ContactDetailTabs
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            dealsCount={pipelineDeals?.length}
+            conversationsCount={contact.conversationCount}
+          />
+          {/* Reauditoria de fidelidade (item 4): painel de identidade fixo à
+              esquerda, persiste em QUALQUER aba (antes só existia dentro da
+              Visão Geral e sumia ao trocar de aba). */}
+          <div className="flex-1 min-h-0 flex flex-col md:flex-row">
+            <ContactIdentityPanel
               contact={contact}
               onSave={handleSave}
               onAddTag={handleAddTag}
               onRemoveTag={handleRemoveTag}
-              onRefresh={() => {
-                contactsApi.get(contactId).then((r) => { setContact(r.data); onContactUpdate?.(r.data) }).catch(() => {})
-              }}
-            />}
-            {activeTab === 'deals'         && <DealsTab contactId={contactId} contactName={contact.displayName} />}
-            {activeTab === 'history'       && <HistoryTab contactId={contactId} />}
-            {activeTab === 'conversations' && <ConversationsTab contactId={contactId} />}
-            {activeTab === 'campaigns'     && <CampaignsTab />}
+            />
+            <div ref={bodyRef} className="flex-1 min-w-0 overflow-y-auto">
+              {activeTab === 'overview'      && <OverviewTab
+                contact={contact}
+                onSave={handleSave}
+                onRefresh={() => {
+                  contactsApi.get(contactId).then((r) => { setContact(r.data); onContactUpdate?.(r.data) }).catch(() => {})
+                }}
+              />}
+              {activeTab === 'deals'         && <DealsTab contactId={contactId} contactName={contact.displayName} />}
+              {activeTab === 'history'       && <HistoryTab contactId={contactId} />}
+              {activeTab === 'conversations' && <ConversationsTab contactId={contactId} />}
+              {activeTab === 'campaigns'     && <CampaignsTab />}
+            </div>
           </div>
         </>
       )}
