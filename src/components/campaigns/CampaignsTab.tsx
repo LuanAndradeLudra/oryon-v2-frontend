@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from 'react'
 import {
-  Plus, Loader2, Send, Clock, FileText, CheckCircle2,
-  XCircle, AlertCircle, Trash2, BarChart3, Users, Copy, MoreHorizontal,
+  Plus, Loader2, Send,
+  Trash2, BarChart3, Users, Copy, MoreHorizontal,
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { campaignsApi } from '@/services/api'
@@ -24,17 +24,16 @@ import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequ
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { Campaign, CampaignStatus } from '@/types'
 
-const STATUS_CONFIG: Record<CampaignStatus, {
-  label: string
-  chip: string
-  icon: React.ComponentType<{ className?: string }>
-}> = {
-  draft:     { label: 'Rascunho',   chip: 'var(--color-status-muted)', icon: FileText },
-  scheduled: { label: 'Agendada',   chip: 'var(--color-status-open)',       icon: Clock },
-  sending:   { label: 'Enviando',   chip: 'var(--color-status-pending)',       icon: Send },
-  sent:      { label: 'Enviada',    chip: 'var(--color-status-active)', icon: CheckCircle2 },
-  failed:    { label: 'Falhou',     chip: 'var(--color-danger)',                icon: XCircle },
-  cancelled: { label: 'Cancelada',  chip: 'var(--color-status-muted)', icon: AlertCircle },
+// CAMP-TABLE-08: label do chip "Concluída" (não "Enviada") pro status `sent`
+// — texto do mock. `chip`/`icon` de cores/ícone por status saíram: o chip
+// virou STATUS_CHIP_CLASS (fundo tinta + texto colorido, sem ícone).
+const STATUS_CONFIG: Record<CampaignStatus, { label: string }> = {
+  draft:     { label: 'Rascunho' },
+  scheduled: { label: 'Agendada' },
+  sending:   { label: 'Enviando' },
+  sent:      { label: 'Concluída' },
+  failed:    { label: 'Falhou' },
+  cancelled: { label: 'Cancelada' },
 }
 
 const FILTER_OPTIONS: { value: CampaignStatus | 'all'; label: string }[] = [

@@ -41,7 +41,7 @@ Dono: `ui/`, `index.css`, `layout/` = orquestrador (marcado **[orq]**); resto = 
 | CAMP-TABLE-05 | ❌ | ui/DataTable.tsx:141,164-166 | td `px-3 py-2` (≈36px ✓); tr `border-b border-surface-800/60` (claro: invisível); sem zebra/raio ✓ | `border-surface-700`; `first:pl-4` **[orq]** |
 | CAMP-TABLE-06 | ✅ | ui/DataTable.tsx:143-147 | hover `bg-[var(--rowhover)]` ✓; ativa = `bg-brand-500/15` + inset brand-500 (spec: --rowhover + inset --ac) — campanhas não usa `activeKey` | opcional: ativa `bg-[var(--rowhover)]` **[orq]** |
 | CAMP-TABLE-07 | ❌ | CampaignsTab.tsx:336 | `text-[13px] font-semibold text-surface-100` ✓; rascunho não rebaixa pra --tx2 | `c.status==='draft' ? 'text-surface-400' : 'text-surface-100'` |
-| CAMP-TABLE-08 | ❌ | CampaignsTab.tsx:25-36,231-245; index.css:739 | `.color-chip` = fundo **sólido** (mix 85% preto) + texto branco, `rounded-full px-2 py-0.5 text-[11px] font-medium`, **ícone** em todos; scheduled→status-open (azul; spec âmbar), sending→status-pending (âmbar; spec teal acsoft/acs); "Enviada" (spec "Concluída") | chip local sem `.color-chip`: base `inline-flex h-5 px-[7px] rounded-xs text-[11px] font-semibold gap-[5px]`; sending `bg-accent-soft text-accent-dark` + `<i class="w-1.5 h-1.5 rounded-full bg-current"/>`; scheduled `bg-status-pending-bg text-status-pending`; sent `bg-status-active-bg text-status-active`; draft/cancelled `bg-surface-900 border border-surface-700 text-surface-400`; failed `bg-danger/10 text-danger`; sem ícones. (Se for virar variante "soft" do `.color-chip`: **[orq]**, ver NOTE-03) |
+| CAMP-TABLE-08 | FASE D ✅ | `CampaignsTab.tsx` `statusChip()`/`STATUS_CHIP_CLASS` | Farol (reconferência): chip local sem `.color-chip`, todas as cores/formas conferidas — `h-5 px-[7px] rounded-xs text-[11px] font-semibold gap-[5px]`, sending `bg-accent-soft text-accent-dark` + dot, scheduled `bg-status-pending-bg text-status-pending`, sent `bg-status-active-bg text-status-active`, draft/cancelled `bg-surface-900 border border-surface-700 text-surface-400`, failed `bg-danger/10 text-danger`, sem ícones — bate. **Achado na reconferência**: o rótulo do status `sent` ainda dizia "Enviada" em vez de "Concluída" (`STATUS_CONFIG`, não tocado na Fase C original) — corrigido agora. Campos `chip`/`icon` de `STATUS_CONFIG`, mortos desde a Fase C (sobraram do `.color-chip` antigo), removidos. |
 | CAMP-TABLE-09 | ❌ | CampaignsTab.tsx:351 | `font-mono text-[11.5px] text-surface-400` ✓; sem template renderiza vazio | fallback `c.templateName ?? <span className="text-xs text-surface-500">sem template</span>` |
 | CAMP-TABLE-10 | ❌ | CampaignsTab.tsx:358-388 | `tabular-nums text-surface-300` (spec --tx); número cru sem `1.240`; Entregues/Lidas mostram "600 · 95%" (spec só contagem); `—` em surface-300 (spec --tx3) | `text-surface-100`, `n.toLocaleString('pt-BR')`, `—` em `text-surface-500`; manter/retirar "· %" é decisão (fora do mock) |
 | CAMP-TABLE-11 | ❌ | CampaignsTab.tsx:251-259,393 | `text-surface-400` ✓; sem align right; formato `17/09` / `17/09 10:00` (spec "hoje 09:00", "17 set 10:00", "12 set") | `align:'right'`; formatter `{d} {mmm}` + "hoje HH:mm" quando hoje |
@@ -93,7 +93,7 @@ Dono: `ui/`, `index.css`, `layout/` = orquestrador (marcado **[orq]**); resto = 
 | CAMP-TPL-05 | ❌ | TemplatesTab.tsx:23-29,343-349 | `.color-chip border rounded-full px-1.5 py-0.5 text-[10.5px] font-medium` + ícone (sólido, pílula) | `h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold` + Aprovado `bg-status-active-bg text-status-active` / Em análise `bg-status-pending-bg text-status-pending` / Rejeitado `bg-danger/10 text-danger`; sem ícone/borda |
 | CAMP-TPL-06 | ❌ | TemplatesTab.tsx:403-427 | meta no **rodapé** como chips (categoria em pílula `bg-surface-700`, idioma, linha, contadores, data) | linha 2 do header `text-[11px] text-surface-500`: "{categoria} · {idioma} · {n botões}"; remover rodapé |
 | CAMP-TPL-07 | ✅ | TemplatesTab.tsx:394-400 | corpo `bg-[#EFE7DD] p-3` (12 vs 10/12), cantos via `overflow-hidden` do card | opcional `py-2.5 px-3 flex-1` |
-| CAMP-TPL-08 | ❌ | TemplatePreview.tsx:72-105 (compact) | bolha 13px `rounded-xl`, sem truncar, `max-h-[220px] overflow-y-auto` no card | variante "card": `rounded-[6px_6px_6px_2px] px-2 py-1.5 text-[11px] leading-[1.4] line-clamp-3` (placeholders `{{1}}` já ficam literais ✓) |
+| CAMP-TPL-08 | FASE D ✅ | `TemplatePreview.tsx` `MessageBubble` (`dense`) | Farol (reconferência): variante "card" (`TemplatesTab.tsx:418` passa `variant="card"`) confere — `rounded-[6px_6px_6px_2px]`, `text-[11px] leading-[1.4] line-clamp-3`. **Achado na reconferência**: padding do corpo estava assimétrico (`pt-1.5 pb-1`, spec pede `py-1.5` simétrico) — corrigido pra `pt-1.5 pb-1.5`. |
 | CAMP-TPL-09 | ✅ | — | dado real | — |
 | CAMP-TPL-10 | ✅ | — | rótulo só do canvas | — |
 | CAMP-TPL-11 | ✅ | TemplatesTab.tsx:116-124 | `TemplateCreator` substitui o conteúdo da aba ✓ | — |
@@ -122,7 +122,40 @@ Dono: `ui/`, `index.css`, `layout/` = orquestrador (marcado **[orq]**); resto = 
 
 ## Fora dos 81 itens (frame só cobre a Revisão) — registrar, não pontuar
 
-- Step1–Step4 e `FilterGroup`/`ContactListModal` seguem o vocabulário antigo: cartões `rounded-xl` com `bg-surface-800/50`, seleção `border-brand-500 bg-brand-500/10` (README 3.6: selecionada = borda `--ac` + anel 3px `--acsoft`), inputs `rounded-xl` (spec input 7px), mapeamento em caixas `bg-surface-800 rounded-xl p-4`. Candidatos ❌ numa spec de etapas 1–4 que a 2c não tem.
+- ~~Step1–Step4 e `FilterGroup`/`ContactListModal` seguem o vocabulário antigo~~ — **FASE C ✅** (fechado antes desta reconferência): seleção de cards virou `border-brand-500 ring-[3px] ring-accent-soft` (README 3.6), inputs de texto `rounded-xl` → `rounded-sm` (7px). Confirmado na reconferência de Fase D — os valores atuais em `CampaignWizard.tsx` (linhas ~713/837/1341 pros cards, ~674/689/938/1367/1778 pros inputs) batem.
 - `WhatsappLineRow` (callout no topo do wizard), `SegmentedControl` + `LineFilterChip` na toolbar e `TipCard` de setup não existem no mock — dado/produto real, sem item.
 - `AttributionTab`/`CampaignLeadsDrawer` (raio 10, `bg-surface-900 border-surface-800`, tooltip `shadow-lg` legítimo) e `SubcategoryPreview` (`shadow-2xl`, `shadow-inner`, `rounded-2xl`) não têm mockup — só nota.
 - Taxonomia das etapas: código Template·Segmento·Variáveis·Agendar·Revisão vs mock Nome·Template·Público·Agendamento·Revisão → [!] decisão de produto (o estilo de cada etapa foi avaliado mesmo assim: WIZ-08..13 ✅).
+
+## Fase D — reconferência linha a linha (Farol, sem navegador)
+
+Pedido do usuário: reler cada item marcado como corrigido contra o `arquivo:linha`
+atual do epic e conferir o valor exato (px/hex/peso/raio). Prioridade: modal do
+wizard e preview do template (itens citados como as piores divergências
+percebidas pelo usuário).
+
+**Conferidos e batem exatamente com a spec** (sem mudança):
+WIZ-02/03/04/06/07/14/15/16/17/18/19/20/21/22/24/25/26/27/29 · PREVIEW-01/02/03/04/06/07 ·
+TABS-01..06 · TABLE-04/07/09/10/11 · TPL-02/03/04/05.
+
+**Achados e corrigidos nesta reconferência** (não estavam no radar da Fase C
+porque a "menor mudança" original não cobria, ou porque o campo ficou morto
+depois da própria Fase C):
+- CAMP-TABLE-08: rótulo do chip `sent` = "Enviada" → "Concluída" (o valor
+  certo já estava documentado na coluna "O que o código faz hoje" da Fase B,
+  mas a "menor mudança" prescrita não tinha incluído a troca de texto —
+  ficou pra trás). Campos `chip`/`icon` mortos em `STATUS_CONFIG` (Campaigns
+  e Templates) removidos — sobraram de antes do chip virar `STATUS_CHIP_CLASS`.
+- CAMP-TPL-08: padding do corpo da bolha densa assimétrico (`pt-1.5 pb-1`)
+  corrigido pra simétrico (`pt-1.5 pb-1.5`, spec `py-1.5`).
+- Nota "Fora dos 81 itens" (Step1-4): já estava fechada desde a Fase C
+  original, só não tinha sido riscada aqui — confirmado.
+
+**Não verificável sem navegador** (Fase D "com" browser continua bloqueada —
+sessão caiu pro /login): CAMP-HDR-08 (peso/tamanho da inicial do avatar),
+CAMP-TABLE-01 (fundo herdado do AppShell nos 2 temas) — ambos já eram `❓`
+antes desta reconferência, sem mudança de status.
+
+Nenhuma outra divergência de valor exato encontrada nos itens Farol de
+CampaignWizard.tsx/TemplatePreview.tsx/CampaignsTab.tsx/CampaignsPage.tsx/
+TemplatesTab.tsx além dos 2 achados acima.

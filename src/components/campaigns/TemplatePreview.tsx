@@ -128,8 +128,10 @@ function MessageBubble({ template, bodyText, headerText, variables, dense = fals
           </div>
         )}
 
-        {/* Body — CAMP-PREVIEW-01 dense (TPL-08): 11px/1.4, clamp de 3 linhas. */}
-        <div className={dense ? 'px-2 pt-1.5 pb-1' : 'px-2 pt-1.5 pb-1'}>
+        {/* Body — CAMP-PREVIEW-01 dense (TPL-08): 11px/1.4, clamp de 3 linhas,
+            padding vertical simétrico (py-1.5) só quando não há header —
+            com header o pb permanece 1 pra não duplicar respiro. */}
+        <div className={dense ? 'px-2 pt-1.5 pb-1.5' : 'px-2 pt-1.5 pb-1'}>
           <p
             className={cn('text-[#111B21]', dense ? 'text-[11px] leading-[1.4] line-clamp-3' : 'text-xs leading-[1.4]')}
             dangerouslySetInnerHTML={{ __html: renderBody(bodyText, variables) }}
