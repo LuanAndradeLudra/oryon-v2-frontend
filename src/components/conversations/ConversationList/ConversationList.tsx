@@ -222,7 +222,10 @@ export function ConversationList({
                 }}
                 className="overflow-hidden"
               >
-                <div className={cn('pb-1.5', newConvIds.has(conv.id) && 'animate-conv-in')}>
+                {/* README 3.3: linha cheia — hairline entre itens em vez do
+                    gap (que, junto com a borda por item, produzia o
+                    vocabulário de "card" que o resto do reestilo tirou). */}
+                <div className={cn('border-b border-surface-800/60', newConvIds.has(conv.id) && 'animate-conv-in')}>
                   <ConversationItem
                     conversation={conv}
                     isActive={conv.id === activeId}

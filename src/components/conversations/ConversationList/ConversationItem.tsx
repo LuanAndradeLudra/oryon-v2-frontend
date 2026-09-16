@@ -119,10 +119,14 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
       data-conv-id={conversation.id}
       title={hoverTitle}
       className={cn(
-        'conv-item relative w-full flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-left transition-all duration-100 rounded-xl',
+        // README 3.3: linha cheia, sem caixa/raio por item — só um estado de
+        // fundo sutil. Ativa = --rowhover + acento inset 2px à esquerda
+        // (substitui o hack de gradiente de borda do tema claro, removido de
+        // index.css — CollapsibleSection/DataTable já usam este mesmo par).
+        'relative w-full flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-left transition-colors duration-100',
         isActive
-          ? 'conv-item-active bg-surface-800 border-[2.0px] border-surface-700'
-          : 'border border-surface-700/60 hover:border-surface-600',
+          ? 'bg-[var(--rowhover)] shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
+          : 'hover:bg-[var(--rowhover)]',
         offFilter && 'opacity-70',
       )}
     >
