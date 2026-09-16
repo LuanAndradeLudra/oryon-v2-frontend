@@ -74,7 +74,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, label, className
             aria-selected={active}
             onClick={() => onChange(tab.id)}
             className={cn(
-              'inline-flex items-center gap-1.5 pb-2 whitespace-nowrap transition-colors cursor-pointer',
+              'inline-flex items-center gap-1.5 pb-[9px] whitespace-nowrap transition-colors cursor-pointer',
               active
                 ? cn('font-semibold shadow-[inset_0_-2px_0_currentColor]', tab.accent ? ACCENT_CLASSES[tab.accent] : 'text-surface-100')
                 : 'hover:text-surface-100',

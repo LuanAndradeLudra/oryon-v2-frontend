@@ -89,13 +89,14 @@ export function DataTable<Row>({
 
   return (
     <div className={cn('overflow-x-auto overflow-y-auto', className)}>
-      <table className="w-full text-sm border-collapse">
+      {/* TABLE-10/23 (spec 1a): números tabulares na tabela inteira. */}
+      <table className="w-full text-sm border-collapse tabular-nums">
         <thead className="sticky top-0 z-10 bg-surface-900">
-          {/* TABLE-02/03 (spec 1a): hairlines em --bd (surface-700). Com
-              surface-800 = #FFFFFF no claro, a linha sumia. */}
+          {/* TABLE-02/03/04 (spec 1a): hairlines em --bd (surface-700); cabeçalho
+              faixa --sf2 30px, 11px/600 --tx2, SEM uppercase/tracking. */}
           <tr className="border-b border-surface-700">
             {selectable && (
-              <th className="w-10 px-3 py-2">
+              <th className="w-10 px-3 h-[30px]">
                 <input
                   type="checkbox"
                   aria-label="Selecionar todos"
@@ -109,7 +110,7 @@ export function DataTable<Row>({
               <th
                 key={col.key}
                 className={cn(
-                  'px-3 py-2 text-2xs font-medium text-surface-500 uppercase tracking-wide whitespace-nowrap',
+                  'px-3 h-[30px] text-2xs font-semibold text-surface-400 whitespace-nowrap',
                   alignClass(col.align),
                   col.widthClass,
                   col.responsiveClass,
