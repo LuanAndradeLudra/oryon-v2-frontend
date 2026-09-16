@@ -42,13 +42,17 @@ function CreditBar({ used, total }: { used: number; total: number | null }) {
   const pct = total ? Math.min((used / total) * 100, 100) : 0
   const warning = pct >= 80 && pct < 100
   const danger  = pct >= 100
+  const numCls = danger ? 'text-red-400' : warning ? 'text-status-pending' : 'text-surface-200'
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-surface-400">Créditos de IA utilizados</span>
-        <span className={`font-semibold ${danger ? 'text-red-400' : warning ? 'text-status-pending' : 'text-surface-200'}`}>
-          {used.toLocaleString('pt-BR')} / {total ? total.toLocaleString('pt-BR') : '∞'}
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-surface-500">Créditos de IA utilizados</span>
+        <span className="text-surface-500">
+          <span className={cn('font-semibold', numCls)}>{used.toLocaleString('pt-BR')}</span>
+          {' / '}
+          <span className={cn('font-semibold', numCls)}>{total ? total.toLocaleString('pt-BR') : '∞'}</span>
+          {total ? <> · <span className={cn('font-semibold', numCls)}>{Math.round(pct)}</span>%</> : null}
         </span>
       </div>
       <div className="h-1.5 bg-surface-800 border border-surface-700 rounded-[3px] overflow-hidden">
@@ -98,12 +102,12 @@ function LimitRow({
   const atCeiling = hasUsage && used >= limit
 
   return (
-    <div className="grid grid-cols-[1fr_160px_90px] items-center gap-3 h-9 border-b border-surface-700 last:border-0">
+    <div className="grid grid-cols-[1fr_160px_90px] items-center gap-3 h-9">
       <span className="flex items-center gap-2 text-sm text-surface-300 min-w-0">
         <span className="text-surface-500 flex-shrink-0">{icon}</span>
         <span className="truncate">{label}</span>
       </span>
-      <span className="h-1 rounded-full bg-surface-800 overflow-hidden">
+      <span className="h-1 rounded-full bg-surface-700 overflow-hidden">
         {hasUsage && (
           <span
             className={cn('block h-full rounded-full', atCeiling ? 'bg-warning' : 'bg-brand-500')}
@@ -206,14 +210,14 @@ function UpgradeTable({
             style={isRecommended ? { boxShadow: 'inset 0 2px 0 var(--color-brand-500)' } : undefined}
             className={cn(
               'flex-1 p-3.5 border-t sm:border-t-0 sm:border-l first:border-l-0 first:border-t-0 border-surface-700',
-              isCurrent && 'bg-[var(--color-surface-800)]',
+              isCurrent && 'bg-[var(--sf2)]',
             )}
           >
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-semibold text-surface-300">{name}</span>
               {isCurrent && <span className="text-2xs text-surface-500">· atual</span>}
               {isRecommended && (
-                <span className="color-chip text-2xs font-semibold px-1.5 py-px rounded-xs border" style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}>
+                <span className="bg-accent-soft text-accent-dark text-2xs font-semibold px-1.5 py-px rounded-xs">
                   Recomendado
                 </span>
               )}
@@ -320,6 +324,12 @@ export function BillingSettings() {
     ? new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
     : null
   const canCancel = isSubscribed && !isCanceled
+  // PLAN-04/PLAN-14 (spec/6a-faturamento.GAPS.md): "Avaliação · N dias
+  // restantes" e "Renova em N dias" vêm do mesmo dado real (planResetsAt),
+  // não é número inventado.
+  const daysUntilReset = billing.planResetsAt
+    ? Math.max(0, Math.ceil((new Date(billing.planResetsAt).getTime() - Date.now()) / 86_400_000))
+    : null
 
   return (
     <div>
@@ -362,16 +372,21 @@ export function BillingSettings() {
       {status && !statusError && !isSubscribed && !isCanceled && (
         <div className="mt-2 flex items-center justify-between gap-4 rounded-xs border border-brand-500/40 bg-accent-soft px-3.5 py-2.5">
           <div className="flex items-start gap-2.5">
-            <Zap className="w-[18px] h-[18px] text-brand-400 flex-shrink-0 mt-px" />
+            <span className="w-7 h-7 rounded-xs bg-brand-500/20 flex items-center justify-center flex-shrink-0">
+              <Zap className="w-[18px] h-[18px] text-brand-400" />
+            </span>
             <div>
               <p className="text-[13px] font-semibold text-surface-100">Ative sua assinatura</p>
-              <p className="text-xs text-surface-400 mt-0.5">Contrate o plano {billing.plan.displayName} (gateway mock confirma na hora).</p>
+              <p className="text-xs text-surface-400 mt-0.5">
+                Você está em um período de avaliação. Contrate o plano {billing.plan.displayName} para manter os agentes ativos
+                {billing.planResetsAt && <> após {new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</>}.
+              </p>
             </div>
           </div>
           <Button
             size="sm"
             variant="primary"
-            className="flex-shrink-0"
+            className="flex-shrink-0 h-8"
             onClick={() => setIntent({
               kind: 'subscribe', tier: backendTier,
               plan: plans.find((p) => p.tier === backendTier) ?? {
@@ -398,20 +413,28 @@ export function BillingSettings() {
               <Zap className="w-4 h-4 text-accent-dark" fill="currentColor" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
-              <p className="text-sm text-surface-400 mt-0.5">
-                {billing.planResetsAt
-                  ? <>Próxima renovação: {new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</>
-                  : 'Cobrança mensal'}
-                {atendimentos != null && <> {' · '} ≈ {atendimentos.toLocaleString('pt-BR')} atendimentos/mês</>}
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
+                {!isSubscribed && !isCanceled && daysUntilReset != null && (
+                  <span
+                    className="color-chip text-2xs font-semibold px-1.5 py-px rounded-xs border"
+                    style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
+                  >
+                    Avaliação · {daysUntilReset} dia{daysUntilReset === 1 ? '' : 's'} restante{daysUntilReset === 1 ? '' : 's'}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-surface-500 mt-0.5">
+                Cobrança mensal
+                {atendimentos != null && <> · ≈ {atendimentos.toLocaleString('pt-BR')} atendimentos/mês</>}
+                {billing.planResetsAt && <> · próximo ciclo {new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</>}
               </p>
             </div>
           </div>
           <div className="text-right flex-shrink-0">
             <p className="text-[22px] font-extrabold text-surface-50 tabular-nums leading-none">
-              R$&nbsp;{priceMonthly.toLocaleString('pt-BR')}
+              R$&nbsp;{priceMonthly.toLocaleString('pt-BR')}<span className="text-[11.5px] text-surface-500 font-normal">/mês</span>
             </p>
-            <p className="text-[11.5px] text-surface-500 mt-1">/mês</p>
           </div>
         </div>
 
@@ -420,9 +443,16 @@ export function BillingSettings() {
           <CreditBar used={billing.creditsUsed} total={billing.creditsTotal} />
         </div>
 
-        <p className="text-xs text-surface-500 mt-3">
-          1 crédito ≈ 1 atendimento (~7.000 tokens de conteúdo). Os créditos não acumulam entre períodos.
-        </p>
+        <div className="flex items-center justify-between gap-3 mt-3">
+          <p className="text-xs text-surface-500">
+            1 crédito ≈ 1 atendimento (~7.000 tokens de conteúdo). Os créditos não acumulam entre períodos.
+          </p>
+          {daysUntilReset != null && (
+            <span className="text-[11.5px] text-surface-500 flex-shrink-0">
+              Renova em {daysUntilReset} dia{daysUntilReset === 1 ? '' : 's'}
+            </span>
+          )}
+        </div>
       </SettingsSection>
 
       {/* Limits */}
@@ -430,12 +460,12 @@ export function BillingSettings() {
         title="Limites do plano"
         description="Recursos incluídos na sua assinatura atual."
       >
-        <LimitRow icon={<TrendingUp className="w-4 h-4" />}  label="Créditos de IA / mês"    limit={billing.creditsTotal} used={billing.creditsUsed} />
-        <LimitRow icon={<Users className="w-4 h-4" />}       label="Usuários"                 limit={plan.limits.users} />
-        <LimitRow icon={<Smartphone className="w-4 h-4" />}  label="Números WhatsApp"         limit={plan.limits.waNumbers} />
-        <LimitRow icon={<Bot className="w-4 h-4" />}         label="Agentes de IA"            limit={plan.limits.agents} />
-        <LimitRow icon={<RefreshCw className="w-4 h-4" />}   label="Automações ativas"        limit={plan.limits.automations} />
-        <LimitRow icon={<Zap className="w-4 h-4" />}         label="Interações Copilot / mês" limit={plan.limits.copilotInteractions} />
+        <LimitRow icon={<TrendingUp className="w-3.5 h-3.5" />}  label="Créditos de IA / mês"    limit={billing.creditsTotal} used={billing.creditsUsed} />
+        <LimitRow icon={<Users className="w-3.5 h-3.5" />}       label="Usuários"                 limit={plan.limits.users} />
+        <LimitRow icon={<Smartphone className="w-3.5 h-3.5" />}  label="Números WhatsApp"         limit={plan.limits.waNumbers} />
+        <LimitRow icon={<Bot className="w-3.5 h-3.5" />}         label="Agentes de IA"            limit={plan.limits.agents} />
+        <LimitRow icon={<RefreshCw className="w-3.5 h-3.5" />}   label="Automações ativas"        limit={plan.limits.automations} />
+        <LimitRow icon={<Zap className="w-3.5 h-3.5" />}         label="Interações Copilot / mês" limit={plan.limits.copilotInteractions} />
 
         {canCancel && (
           <div className="border-t border-surface-700 pt-3 mt-2 text-right">

@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
-import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
+import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { ScheduleToolbar, type ScheduleViewMode } from '@/components/schedule/ScheduleToolbar'
 import { ScheduleWeekGrid } from '@/components/schedule/ScheduleWeekGrid'
 import { ScheduleListView } from '@/components/schedule/ScheduleListView'
@@ -42,6 +42,14 @@ export function SchedulePage() {
     [],
   )
 
+  // SCHED-HEADER-02 (spec/2d-agendamentos.GAPS.md): as contagens vivem no
+  // subtítulo do TopBar, não concatenadas no período da toolbar (esse fica
+  // só com a data — ver `periodLabel` abaixo).
+  useRegisterTopBarSubtitle(
+    `${events.length} esta semana${aguardandoCount ? ` · ${aguardandoCount} aguardando confirmação` : ''}`,
+    [events.length, aguardandoCount],
+  )
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="px-4 pt-3">
@@ -51,7 +59,7 @@ export function SchedulePage() {
       </div>
 
       <ScheduleToolbar
-        periodLabel={`${formatWeekPeriod(days)} · ${events.length} esta semana${aguardandoCount ? ` · ${aguardandoCount} aguardando confirmação` : ''}`}
+        periodLabel={formatWeekPeriod(days)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onPrev={() => setWeekOffset((w) => w - 1)}
