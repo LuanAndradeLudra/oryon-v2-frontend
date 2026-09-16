@@ -817,8 +817,10 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             // (ver index.css) — por isso a cor base não vem de bg-surface-800/
             // border-surface-700 aqui. `relative` é necessário pro overlay
             // absolute do dropzone (abaixo) se posicionar contra este container.
-            'relative msg-composer rounded-2xl px-3 py-2.5 transition-all shadow-lg',
-            'border focus-within:border-brand-500/50 focus-within:shadow-brand-500/20',
+            // CONV-CHAT-32/41 (spec/1d-conversas.GAPS.md): sem sombra — o mock
+            // é explícito ("Composer não tem sombra").
+            'relative msg-composer rounded-2xl px-3 py-2.5 transition-all',
+            'border focus-within:border-brand-500/50',
             dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
           )}
         >
@@ -882,8 +884,6 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             </div>
           )}
 
-          {/* Linha de composição (anexar · textarea · emoji · enviar) */}
-          <div className="flex items-center gap-2">
           {/* Hidden file inputs — `multiple` lets the operator pick a whole
               batch in one go; handleFileSelect stages them (preview) and
               handleSend dispatches one POST per file, so each gets its own
@@ -913,57 +913,10 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             onChange={handleFileSelect}
           />
 
-          {/* Attachments menu */}
-          <div className="relative">
-            <button
-              ref={attachButtonRef}
-              onClick={() => setShowAttachMenu(!showAttachMenu)}
-              className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors flex-shrink-0"
-              title="Anexar arquivo"
-            >
-              <Paperclip className="w-4 h-4" />
-            </button>
-
-            {showAttachMenu && (
-              <div
-                ref={attachMenuRef}
-                className="absolute bottom-full left-0 mb-2 overlay-surface border rounded-xl overflow-hidden z-50"
-              >
-                <button
-                  onClick={() => {
-                    imageInputRef.current?.click()
-                    setShowAttachMenu(false)
-                  }}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
-                >
-                  <Image className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm text-surface-200">Imagem</span>
-                </button>
-                <button
-                  onClick={() => {
-                    documentInputRef.current?.click()
-                    setShowAttachMenu(false)
-                  }}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
-                >
-                  <FileText className="w-4 h-4 text-green-400" />
-                  <span className="text-sm text-surface-200">Documento</span>
-                </button>
-                <button
-                  onClick={() => {
-                    videoInputRef.current?.click()
-                    setShowAttachMenu(false)
-                  }}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
-                >
-                  <Video className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm text-surface-200">Vídeo</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Textarea */}
+          {/* CONV-CHAT-35/36 (spec/1d-conversas.GAPS.md): composer em 2
+              partes — texto numa linha própria, barra de ações (anexar ·
+              contador · emoji · enviar) embaixo, em vez de tudo espremido
+              numa linha só. */}
           <textarea
             ref={textareaRef}
             value={text}
@@ -972,50 +925,104 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             onInput={handleInput}
             onContextMenu={onInputContextMenu}
             onPaste={handlePaste}
-            placeholder="Digite uma mensagem ou / para respostas rápidas..."
+            placeholder="Escreva uma mensagem… / para respostas rápidas"
             aria-label="Mensagem"
             rows={1}
             maxLength={WA_TEXT_LIMIT}
             disabled={disabled || sending}
             className={cn(
-              'flex-1 bg-transparent text-sm text-surface-100 placeholder:text-surface-500',
+              'w-full bg-transparent text-sm text-surface-100 placeholder:text-surface-500',
               'resize-none outline-none leading-relaxed',
               'min-h-[24px] max-h-[120px]'
             )}
           />
 
-          {/* Contador de caracteres — só aparece perto do limite do WhatsApp
-              (4096); antes disso é ruído. Âmbar ao se aproximar, vermelho no teto. */}
-          {text.length >= WA_TEXT_LIMIT - 300 && (
-            <span
-              aria-live="polite"
-              className={cn(
-                'self-end pb-1 text-[10px] tabular-nums flex-shrink-0',
-                text.length >= WA_TEXT_LIMIT ? 'text-danger font-semibold' : 'text-warning',
+          <div className="flex items-center gap-2 mt-1.5">
+            {/* Attachments menu */}
+            <div className="relative">
+              <button
+                ref={attachButtonRef}
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors flex-shrink-0"
+                title="Anexar arquivo"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+
+              {showAttachMenu && (
+                <div
+                  ref={attachMenuRef}
+                  className="absolute bottom-full left-0 mb-2 overlay-surface border rounded-xl overflow-hidden z-50"
+                >
+                  <button
+                    onClick={() => {
+                      imageInputRef.current?.click()
+                      setShowAttachMenu(false)
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
+                  >
+                    <Image className="w-4 h-4 text-blue-400" />
+                    <span className="text-sm text-surface-200">Imagem</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      documentInputRef.current?.click()
+                      setShowAttachMenu(false)
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
+                  >
+                    <FileText className="w-4 h-4 text-green-400" />
+                    <span className="text-sm text-surface-200">Documento</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      videoInputRef.current?.click()
+                      setShowAttachMenu(false)
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
+                  >
+                    <Video className="w-4 h-4 text-purple-400" />
+                    <span className="text-sm text-surface-200">Vídeo</span>
+                  </button>
+                </div>
               )}
-            >
-              {text.length}/{WA_TEXT_LIMIT}
-            </span>
-          )}
+            </div>
 
-          {/* Emoji */}
-          <EmojiPickerButton
-            textareaRef={textareaRef}
-            onEmojiInsert={(newValue) => setText(newValue)}
-            className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
-          />
+            {/* Contador de caracteres — só aparece perto do limite do WhatsApp
+                (4096); antes disso é ruído. Âmbar ao se aproximar, vermelho no teto. */}
+            {text.length >= WA_TEXT_LIMIT - 300 && (
+              <span
+                aria-live="polite"
+                className={cn(
+                  'text-[10px] tabular-nums flex-shrink-0',
+                  text.length >= WA_TEXT_LIMIT ? 'text-danger font-semibold' : 'text-warning',
+                )}
+              >
+                {text.length}/{WA_TEXT_LIMIT}
+              </span>
+            )}
 
-          {/* Send — aparece com texto E/OU anexos em espera */}
-          {(text.trim() || attachments.length > 0) && (
-            <button
-              onClick={handleSend}
-              disabled={sending || disabled}
-              aria-label="Enviar mensagem"
-              className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 shadow-sm flex items-center justify-center flex-shrink-0 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          )}
+            <div className="ml-auto flex items-center gap-2">
+              {/* Emoji */}
+              <EmojiPickerButton
+                textareaRef={textareaRef}
+                onEmojiInsert={(newValue) => setText(newValue)}
+                className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
+              />
+
+              {/* Send — aparece com texto E/OU anexos em espera */}
+              {(text.trim() || attachments.length > 0) && (
+                <button
+                  onClick={handleSend}
+                  disabled={sending || disabled}
+                  aria-label="Enviar mensagem"
+                  className="h-8 px-3 [@media(pointer:coarse)]:h-11 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 flex items-center gap-1.5 justify-center flex-shrink-0 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  <span className="text-xs font-semibold">Enviar</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

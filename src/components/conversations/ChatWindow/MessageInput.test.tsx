@@ -45,7 +45,7 @@ describe('MessageInput — anexo grande demais (P6, sem alert())', () => {
 
   it('arquivo acima de 16MB: mostra toast de erro explicando o limite, nunca window.alert', async () => {
     render(<Harness />)
-    const textarea = screen.getByPlaceholderText('Digite uma mensagem ou / para respostas rápidas...')
+    const textarea = screen.getByPlaceholderText('Escreva uma mensagem… / para respostas rápidas')
     const dropzone = textarea.closest('.msg-composer') as HTMLElement
     expect(dropzone).toBeTruthy()
 
@@ -57,7 +57,7 @@ describe('MessageInput — anexo grande demais (P6, sem alert())', () => {
 
   it('2+ arquivos grandes: uma mensagem só, cita os nomes', async () => {
     render(<Harness />)
-    const textarea = screen.getByPlaceholderText('Digite uma mensagem ou / para respostas rápidas...')
+    const textarea = screen.getByPlaceholderText('Escreva uma mensagem… / para respostas rápidas')
     const dropzone = textarea.closest('.msg-composer') as HTMLElement
 
     fireEvent.drop(dropzone, {
@@ -70,7 +70,7 @@ describe('MessageInput — anexo grande demais (P6, sem alert())', () => {
 
   it('arquivo dentro do limite: anexa sem passar pelo caminho de erro (sem alert, sem novo toast de tamanho)', async () => {
     render(<Harness />)
-    const textarea = screen.getByPlaceholderText('Digite uma mensagem ou / para respostas rápidas...')
+    const textarea = screen.getByPlaceholderText('Escreva uma mensagem… / para respostas rápidas')
     const dropzone = textarea.closest('.msg-composer') as HTMLElement
 
     // `toast` é um singleton global (F9 · SCRUM-879, propositalmente — evita

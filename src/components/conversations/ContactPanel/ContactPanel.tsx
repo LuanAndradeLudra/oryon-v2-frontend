@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, UserCheck, Search, Check, UserX,
@@ -81,12 +81,12 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
 
 function InfoTable({ rows }: { rows: { label: string; value: React.ReactNode }[] }) {
   return (
-    <div className="divide-y divide-surface-700">
+    <div className="grid grid-cols-[82px_1fr] gap-x-2 gap-y-1.5">
       {rows.map(({ label, value }) => (
-        <div key={label} className="flex items-baseline justify-between gap-2 py-2 first:pt-0 last:pb-0">
-          <span className="text-[11px] text-surface-500 flex-shrink-0">{label}</span>
+        <Fragment key={label}>
+          <span className="text-[11px] text-surface-500">{label}</span>
           <span className="text-[12px] text-surface-200 text-right">{value}</span>
-        </div>
+        </Fragment>
       ))}
     </div>
   )
@@ -203,8 +203,13 @@ export function ContactPanel({
             className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <ExternalLink className="w-4 h-4" />
           </button>
+          {/* CONV-PANEL-05 (spec/1d-conversas.GAPS.md): o mock não tem ícone
+              de fechar no painel — a coluna é persistente e some pelo toggle
+              "Info" do ChatHeader. Mantido só no MOBILE (`md:hidden`), onde o
+              painel é um drawer de tela cheia sem esse toggle visível por
+              trás — sem ele, fechar dependeria só de tocar no backdrop. */}
           <button onClick={onClose} title="Fechar" aria-label="Fechar"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
+            className="md:hidden w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -281,7 +286,7 @@ export function ContactPanel({
           {tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span key={tag.id} className="color-chip flex items-center gap-1 whitespace-nowrap flex-shrink-0 text-xs px-2 py-1 rounded-full font-medium"
+                <span key={tag.id} className="color-chip flex items-center gap-1 whitespace-nowrap flex-shrink-0 text-xs px-2 py-1 rounded-xs font-medium"
                   style={{ ['--chip']: tag.color } as React.CSSProperties}
                   title={tag.name}>
                   <span className="w-1.5 h-1.5 rounded-full chip-dot flex-shrink-0" />

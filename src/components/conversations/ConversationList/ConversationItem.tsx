@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
 import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
@@ -142,10 +143,10 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
       <div className="flex-1 min-w-0">
         {/* Row 1: name + time */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
-          <span className={cn(
-            'text-sm truncate',
-            (hasUnread || isActive) ? 'font-semibold text-surface-50' : 'font-medium text-surface-200'
-          )}>
+          {/* CONV-LIST-16/17 (spec/1d-conversas.GAPS.md): peso 600 sempre —
+              não-lida se sinaliza só pelo badge, o mock é explícito que o
+              nome NÃO muda de peso/cor entre lida/não-lida. */}
+          <span className="text-sm font-semibold text-surface-50 truncate">
             {contact.displayName}
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -179,9 +180,9 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             </span>
           </div>
           {hasUnread && (
-            <span className="flex-shrink-0 min-w-[18px] h-[18px] bg-brand-500 text-surface-950 text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+            <Badge variant="unread" className="flex-shrink-0">
               {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
+            </Badge>
           )}
         </div>
 
@@ -198,9 +199,12 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                 saturação aos sinais de ESTADO, que são os únicos que exigem
                 ação. O nome completo vive no painel do contato, que desde
                 09/09 é o dono das etiquetas. */}
+            {/* CONV-LIST-27: só os pontos de cor — sem o texto do nome da
+                etiqueta ao lado (o mock é explícito: "só pontos... sem
+                texto"). O nome completo continua acessível via `title`. */}
             {tags && tags.length > 0 && (
               <span
-                className="inline-flex items-center gap-1.5 min-w-0"
+                className="inline-flex items-center gap-1 min-w-0 flex-shrink-0"
                 title={tags.map((t) => t.name).join(' · ')}
               >
                 {tags.slice(0, 2).map((tag) => (
@@ -211,10 +215,6 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
                     aria-hidden
                   />
                 ))}
-                <span className="text-[10.5px] text-surface-500 truncate">
-                  {tags.slice(0, 2).map((t) => t.name).join(', ')}
-                  {tags.length > 2 && ` +${tags.length - 2}`}
-                </span>
               </span>
             )}
 
