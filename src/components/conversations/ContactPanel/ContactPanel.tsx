@@ -10,6 +10,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { TagPickerContent } from '@/components/ui/TagPicker'
 import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { isAiActive } from '@/lib/conversationSignals'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
@@ -69,20 +70,6 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
           )
         })}
       </div>
-    </div>
-  )
-}
-
-// ─── Section wrapper ──────────────────────────────────────────────────────────
-
-function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="panel-divider px-4 pt-4 pb-3 border-t border-surface-800">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-widest">{title}</p>
-        {action}
-      </div>
-      {children}
     </div>
   )
 }
@@ -254,9 +241,11 @@ export function ContactPanel({
         )}
 
         {/* Etiquetas — logo abaixo dos negócios */}
-        <Section
+        <CollapsibleSection
           title="Etiquetas"
-          action={
+          storageKey="conv-panel.tags"
+          className="border-t border-surface-800"
+          actions={
             <button onClick={() => setTagOpen(true)} className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-300 font-medium transition-colors">
               <TagIcon className="w-3 h-3" />
               Gerenciar
@@ -283,13 +272,15 @@ export function ContactPanel({
           ) : (
             <p className="text-xs text-surface-600">Nenhuma etiqueta. Clique em "Gerenciar" para adicionar.</p>
           )}
-        </Section>
+        </CollapsibleSection>
 
         {/* Agente responsável — ação mais frequente do atendente; vive logo
             após etiquetas, acima da dobra (antes ficava depois da timeline). */}
-        <Section
+        <CollapsibleSection
           title="Agente responsável"
-          action={
+          storageKey="conv-panel.assignee"
+          className="border-t border-surface-800"
+          actions={
             <div className="flex items-center gap-2">
               {assignedUser && (
                 <button
@@ -341,7 +332,7 @@ export function ContactPanel({
             <UserPickerList users={allUsers.filter((u) => u.id !== assignedUser?.id)}
               onSelect={(user) => { if (user) onTransfer(user); setTransferOpen(false) }} />
           </Modal>
-        </Section>
+        </CollapsibleSection>
 
         {/* Hidden when conversionAnalysisPanel is off — covers both the
             "Analisar conversa com IA" CTA and any previously-rendered
@@ -352,9 +343,9 @@ export function ContactPanel({
         )}
 
         {/* Informações — referência estática, acima da timeline dinâmica */}
-        <Section title="Informações">
+        <CollapsibleSection title="Informações" storageKey="conv-panel.info" className="border-t border-surface-800">
           <InfoTable rows={infoRows} />
-        </Section>
+        </CollapsibleSection>
 
         {/* Timeline */}
         <ConversationActivitySection conversationId={conversation.id} />

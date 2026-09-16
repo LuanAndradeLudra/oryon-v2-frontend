@@ -186,11 +186,12 @@ export function ContactPanelDeals({
 
       {salesDeals.length > 0 && (
         <div className="grid grid-cols-2 gap-2 mb-2" data-testid="panel-pipelines-money">
-          <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
+          {/* README 3.3: "Negócios como mini-cards de 6px de raio" — --radius-xs. */}
+          <div className="bg-surface-800/60 border border-surface-700/50 rounded-xs px-2.5 py-1.5">
             <p className="text-[9px] text-surface-500 uppercase tracking-wide">Em aberto</p>
             <p className="text-sm font-semibold text-surface-100 tabular-nums">{formatBRL(openCents)}</p>
           </div>
-          <div className="bg-surface-800/60 border border-surface-700/50 rounded-lg px-2.5 py-1.5">
+          <div className="bg-surface-800/60 border border-surface-700/50 rounded-xs px-2.5 py-1.5">
             <p className="text-[9px] text-surface-500 uppercase tracking-wide">Ganho</p>
             <p className="text-sm font-semibold text-success tabular-nums">{formatBRL(wonCents)}</p>
           </div>
