@@ -82,9 +82,9 @@ function loadSlots(): KpiId[] {
   return DEFAULT_KPI_SLOTS
 }
 
-// ── KPI Card ──────────────────────────────────────────────────────────────────
+// ── KPI Card (grade secundária, slots 5+) ──────────────────────────────────────
 
-function KpiCard({ metric, hero }: { metric: KpiMetric; hero?: boolean }) {
+function KpiCard({ metric }: { metric: KpiMetric }) {
   const isGood =
     (metric.trend > 0 && metric.trendIsGood === 'up') ||
     (metric.trend < 0 && metric.trendIsGood === 'down')
@@ -93,48 +93,99 @@ function KpiCard({ metric, hero }: { metric: KpiMetric; hero?: boolean }) {
     (metric.trend < 0 && metric.trendIsGood === 'up')
 
   const trendColor = isGood ? 'text-online' : isBad ? 'text-danger' : 'text-surface-500'
-  const catColor = hero ? 'var(--color-accent-dark)' : (CATEGORY_COLORS[metric.category] ?? 'var(--color-accent-blue)')
+  const catColor = CATEGORY_COLORS[metric.category] ?? 'var(--color-accent-blue)'
 
   return (
-    <div
-      className={cn(
-        'card-glow bg-surface-900 border rounded-xl flex flex-col',
-        hero
-          ? 'border-surface-700/80 p-5 gap-3'
-          : 'border-surface-800 p-3.5 gap-2',
-      )}
-    >
+    <div className="card-glow bg-surface-900 border border-surface-800 rounded-xl flex flex-col p-3.5 gap-2">
       <div className="flex items-center gap-2">
         <div
-          className={cn('rounded-lg flex items-center justify-center flex-shrink-0', hero ? 'w-8 h-8' : 'w-6 h-6')}
+          className="rounded-lg flex items-center justify-center flex-shrink-0 w-6 h-6"
           style={{ backgroundColor: `color-mix(in srgb, ${catColor} 10%, transparent)`, color: catColor }}
         >
           {KPI_ICONS[metric.id]}
         </div>
-        <span className={cn('font-medium leading-tight text-surface-400', hero ? 'text-sm' : 'text-xs')}>
+        <span className="font-medium leading-tight text-surface-400 text-xs">
           {metric.label}
         </span>
       </div>
 
-      <div className={cn(
-        'font-bold tabular-nums leading-none font-display',
-        hero ? 'text-3xl kpi-hero-value' : 'text-xl text-surface-50',
-      )}>
+      <div className="font-bold tabular-nums leading-none font-display text-xl text-surface-50">
         {formatKpiValue(metric.value, metric.unit)}
         {metric.unit === 'csat_score' && (
-          <span className={cn('font-normal text-surface-400 ml-1 font-sans', hero ? 'text-base' : 'text-sm')}>/ 5</span>
+          <span className="font-normal text-surface-400 ml-1 font-sans text-sm">/ 5</span>
         )}
       </div>
 
       {metric.trend !== 0 && (
-        <div className={cn('relative flex items-center gap-1 font-medium', hero ? 'text-sm' : 'text-xs', trendColor)}>
+        <div className={cn('relative flex items-center gap-1 font-medium text-xs', trendColor)}>
           {metric.trend > 0
-            ? <TrendingUp className={hero ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
-            : <TrendingDown className={hero ? 'w-3.5 h-3.5' : 'w-3 h-3'} />}
+            ? <TrendingUp className="w-3 h-3" />
+            : <TrendingDown className="w-3 h-3" />}
           <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1)}%</span>
-          {hero && <span className="text-surface-600 font-normal">vs. período anterior</span>}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Faixa de KPI (hero) — card único dividido por hairlines ───────────────────
+// SCRUM-1104 (tela 1b): os primeiros slots deixam de ser N cards soltos e
+// passam a ser células de um único card, separadas por `border-right` (linha
+// vira `border-bottom` no empilhamento mobile). Sem ícone — só rótulo, valor
+// e linha de apoio (delta + contexto).
+
+function KpiStripCell({ metric }: { metric: KpiMetric }) {
+  const isGood =
+    (metric.trend > 0 && metric.trendIsGood === 'up') ||
+    (metric.trend < 0 && metric.trendIsGood === 'down')
+  const isBad =
+    (metric.trend > 0 && metric.trendIsGood === 'down') ||
+    (metric.trend < 0 && metric.trendIsGood === 'up')
+  const trendColor = isGood ? 'text-online' : isBad ? 'text-danger' : 'text-surface-500'
+
+  return (
+    <div className="flex flex-col gap-1 px-3.5 py-3 min-w-0">
+      <span className="text-[11px] font-medium text-surface-400 truncate">{metric.label}</span>
+      <div className="font-extrabold tabular-nums leading-none font-display text-[26px] text-surface-50">
+        {formatKpiValue(metric.value, metric.unit)}
+        {metric.unit === 'csat_score' && (
+          <span className="font-normal text-surface-400 ml-1 font-sans text-sm">/ 5</span>
+        )}
+      </div>
+      {metric.trend !== 0 ? (
+        <div className={cn('flex items-center gap-1 font-medium text-[11.5px]', trendColor)}>
+          {metric.trend > 0
+            ? <TrendingUp className="w-3 h-3" />
+            : <TrendingDown className="w-3 h-3" />}
+          <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1)}%</span>
+          <span className="text-surface-600 font-normal truncate">vs. período anterior</span>
+        </div>
+      ) : (
+        <span className="text-[11.5px] text-surface-600">&nbsp;</span>
+      )}
+    </div>
+  )
+}
+
+// Colunas da faixa = quantidade real de slots (mín. 4, máx. 5 — ver MIN/MAX
+// do CustomizerPanel) — evita hairline de coluna vazia quando o usuário
+// reduz a seleção abaixo de 5.
+const STRIP_COLS: Record<number, string> = {
+  4: 'sm:grid-cols-4',
+  5: 'sm:grid-cols-5',
+}
+
+function KpiStrip({ metrics }: { metrics: KpiMetric[] }) {
+  return (
+    <div
+      className={cn(
+        'card-glow bg-surface-900 border border-surface-800 rounded-xl grid grid-cols-1 divide-y sm:divide-y-0 sm:divide-x divide-surface-800 overflow-hidden',
+        STRIP_COLS[metrics.length] ?? 'sm:grid-cols-5',
+      )}
+    >
+      {metrics.map((metric) => (
+        <KpiStripCell key={metric.id} metric={metric} />
+      ))}
     </div>
   )
 }
@@ -292,19 +343,15 @@ export function KpiGrid({
         </div>
       </div>
 
-      {/* Hierarquia visual: os 4 primeiros KPIs da seleção do usuário são o
-          "hero row" (maiores, com contexto de tendência); o restante fica
-          compacto abaixo. A ordem dos slots continua sendo a do usuário —
+      {/* Hierarquia visual: os 5 primeiros KPIs da seleção do usuário formam a
+          faixa (card único, hairlines); o restante fica compacto abaixo em
+          cards soltos. A ordem dos slots continua sendo a do usuário —
           reordenar no customizer muda o que é destaque. */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        {activeMetrics.slice(0, 4).map((metric) => (
-          <KpiCard key={metric.id} metric={metric} hero />
-        ))}
-      </div>
+      <KpiStrip metrics={activeMetrics.slice(0, 5)} />
 
-      {activeMetrics.length > 4 && (
+      {activeMetrics.length > 5 && (
         <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 mt-3">
-          {activeMetrics.slice(4).map((metric) => (
+          {activeMetrics.slice(5).map((metric) => (
             <KpiCard key={metric.id} metric={metric} />
           ))}
         </div>

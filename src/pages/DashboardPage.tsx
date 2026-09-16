@@ -9,6 +9,8 @@ import { LiveNowCard }      from '@/components/dashboard/LiveNowCard'
 import { DateRangePicker }  from '@/components/dashboard/DateRangePicker'
 import { KpiGrid }          from '@/components/dashboard/KpiGrid'
 import { VolumeChart }      from '@/components/dashboard/VolumeChart'
+import { SalesFunnelCard }  from '@/components/dashboard/SalesFunnelCard'
+import { TeamMiniCard }     from '@/components/dashboard/TeamMiniCard'
 import { StatusDonut }      from '@/components/dashboard/StatusDonut'
 import { TagsChart }        from '@/components/dashboard/TagsChart'
 import { CsatChart }        from '@/components/dashboard/CsatChart'
@@ -287,11 +289,7 @@ export function DashboardPage() {
                       <div className="h-8 w-[104px] bg-surface-800 border border-surface-700/60 rounded-lg animate-pulse shrink-0" />
                     </div>
                   </div>
-                  <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="h-32 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
-                    ))}
-                  </div>
+                  <div className="h-[104px] bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
                   <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                     {Array.from({ length: 6 }).map((_, i) => (
                       <div key={i} className="h-24 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
@@ -323,6 +321,8 @@ export function DashboardPage() {
 
                   <VolumeChart data={snapshot.volumeChart} />
 
+                  <SalesFunnelCard />
+
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <TagsChart data={snapshot.tagVolumes} />
                     <CsatChart data={snapshot.csatChart} />
@@ -337,6 +337,7 @@ export function DashboardPage() {
 
                 <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
                   <LiveNowCard status={snapshot.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
+                  <TeamMiniCard agents={snapshot.agentMetrics} />
                   <StatusDonut data={snapshot.statusDistribution} />
                   <ActivityFeed events={snapshot.activityFeed} />
                 </div>
