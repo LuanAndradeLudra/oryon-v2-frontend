@@ -1023,26 +1023,10 @@ code, pre, kbd, samp {
 [data-theme="light"] .bubble-out-surface {
   background: var(--color-bubble-out);
 }
-[data-theme="light"] .conv-item { background-color: #FFFFFF; }
-/* Hover: only the border reacts — no fill change (intense teal). */
-[data-theme="light"] .conv-item:hover { border-color: #4ECBB8; }
-/* Active (conversa aberta): borda com gradiente teal escuro. A largura é
-   fixada aqui (não vem do Tailwind) porque o truque de gradiente exige um
-   border-color: transparent — mantenha em sincronia com o border-[Npx] do
-   componente (ConversationItem.tsx) sempre que ajustar a espessura. */
-[data-theme="light"] .conv-item.conv-item-active {
-  border-width: 2.0px;
-  border-style: solid;
-  border-color: transparent;
-  background-image:
-    linear-gradient(#FFFFFF, #FFFFFF),
-    linear-gradient(135deg, #00A896 0%, #0A4A44 100%);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-}
-
-/* (Conversation list "background container"/lane removed — the previews now sit
-   directly on the white list surface as shadowed cards.) */
+/* (Hack de gradiente de borda do .conv-item removido — SCRUM-1097 tirou a
+   caixa/borda por linha da lista de conversas, README 3.3: hover/ativa usam
+   --rowhover + inset, mesmo padrão de DataTable/AgentsPage. Órfão desde
+   ConversationItem.tsx aaf4ca1.) */
 
 /* Faceta "Situação comercial" (Contatos) — pedido do usuário: o chip ativo usa
    o mesmo verde escuro do CTA "Novo {lead/contato}" (brand-600) no tema claro,
