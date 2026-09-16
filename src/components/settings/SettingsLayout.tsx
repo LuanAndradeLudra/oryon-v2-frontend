@@ -44,6 +44,7 @@ const SEARCH_KEYWORDS: Record<string, string[]> = {
   'pipeline-stages':   ['funil', 'estágios', 'pipeline', 'negócios', 'deals'],
   'pipeline-routing':  ['roteamento', 'funil', 'linha', 'canal'],
   billing:             ['plano', 'fatura', 'cobrança', 'pagamento', 'assinatura'],
+  connectors:          ['integrações', 'integração', 'api', 'feegow', 'doctoralia', 'webhook'],
   security:            ['segurança', 'sessões', 'logs de acesso', '2fa'],
   audit:               ['auditoria', 'logs', 'histórico', 'atividade'],
 }
@@ -144,6 +145,13 @@ export const SETTINGS_NAV: NavDomain[] = [
         label: 'Inteligência',
         items: [
           { section: 'company-brain', label: 'Contexto da IA', supervisorOnly: true },
+        ],
+      },
+      {
+        label: 'Integrações',
+        items: [
+          // Leva 12 (SCRUM-1110) — Conectores, tela nova (README §3.10).
+          { section: 'connectors', label: 'Conectores', adminOnly: true },
         ],
       },
       {

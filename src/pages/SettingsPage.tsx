@@ -37,6 +37,7 @@ import { PipelineRoutingSettings } from '@/components/settings/sections/crm/Pipe
 import { FunnelsSettings } from '@/components/settings/sections/crm/FunnelsSettings'
 import { ContactStagesSettings } from '@/components/settings/sections/crm/ContactStagesSettings'
 import { CustomFieldsManager } from '@/components/settings/sections/crm/CustomFieldsManager'
+import { ConnectorsSettings } from '@/components/settings/sections/ConnectorsSettings'
 const VALID_SECTIONS = [
   'account', 'notifications', 'company', 'company-brain', 'agents', 'departments', 'numbers',
   'whatsapp-health', 'whatsapp-profile',
@@ -47,6 +48,8 @@ const VALID_SECTIONS = [
   // não havia NENHUMA forma de configurar campos pela interface. Ganha rota
   // canônica aqui, junto do resto do CRM.
   'custom-fields',
+  // Leva 12 (SCRUM-1110) — Conectores, tela nova (README §3.10).
+  'connectors',
 ]
 
 const OWNER_ONLY_SECTIONS = new Set<string>(['billing'])
@@ -106,6 +109,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   'custom-fields':  CustomFieldsManager,
   'pipeline-stages': FunnelsSettings,
   'pipeline-routing': PipelineRoutingSettings,
+  connectors:       ConnectorsSettings,
 }
 
 export function SettingsPage() {
