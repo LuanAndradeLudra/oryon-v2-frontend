@@ -18,30 +18,28 @@ export function LiveNowCard({ status }: { status: RealtimeStatus }) {
   const waitAlert = status.avgWaitSeconds > 180
   const critical = queueAlert || waitAlert
 
-  // Mesmos gradientes já usados nos KPIs do Dashboard (mesmas classes,
-  // mesmos valores — nada de variante nova): teal para as métricas neutras
-  // (usuários/conversas), laranja fixo para as de fila/espera — sem
-  // recolorir por alerta, isso já é o badge "Atenção".
+  // DASH-QUEUE-01/CARD-11: gradiente em texto de KPI é proibido pela README —
+  // cor sólida neutra pras métricas de volume, `--warning` pras de fila/espera.
   const metrics = [
     {
       icon: Users, label: 'Usuários online',
       value: `${status.agentsOnline}/${status.agentsTotal}`,
-      valueClass: 'kpi-hero-value',
+      valueClass: 'text-surface-100',
     },
     {
       icon: MessageSquare, label: 'Conversas ativas',
       value: status.activeConversations.toLocaleString('pt-BR'),
-      valueClass: 'kpi-hero-value',
+      valueClass: 'text-surface-100',
     },
     {
       icon: Clock, label: 'Em fila',
       value: String(status.queued),
-      valueClass: 'kpi-hero-orange',
+      valueClass: 'text-warning',
     },
     {
       icon: CheckCircle2, label: 'Espera média',
       value: formatWait(status.avgWaitSeconds),
-      valueClass: 'kpi-hero-orange',
+      valueClass: 'text-warning',
     },
   ]
 
@@ -50,10 +48,8 @@ export function LiveNowCard({ status }: { status: RealtimeStatus }) {
       role="status"
       aria-label="Métricas em tempo real"
       className={cn(
-        // Mesmo padrão de sombreamento dos demais cards (card-glow: sombra
-        // sutil em repouso no claro + glow teal no hover) + borda neutra
-        // igual às cartas vizinhas do rail (StatusDonut, ActivityFeed).
-        'card-glow bg-surface-900 border border-surface-700 rounded-xl p-5 transition-colors',
+        // DASH-* transversal: --sf/--bd/raio 8, sem sombra/glow fora de overlay.
+        'bg-surface-800 border border-surface-700 rounded-lg p-5 transition-colors',
       )}
     >
       <div className="flex items-center gap-2 mb-4">

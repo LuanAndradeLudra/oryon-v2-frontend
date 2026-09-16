@@ -6,7 +6,6 @@ import { isMoneyBucket } from '@/types/pipelineAnalytics'
 import type { PipelineOverview } from '@/types/pipelineAnalytics'
 import type { Pipeline, PipelineStage } from '@/types'
 import { tintaDaEtapa } from '@/lib/utils'
-import { CardHeader } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 function brl(cents: number): string {
@@ -48,13 +47,16 @@ export function SalesFunnelCard() {
   }, [])
 
   if (loading) {
-    return <div className="bg-surface-900 border border-surface-700 rounded-xl p-4 h-56 animate-pulse" />
+    return <div className="bg-surface-800 border border-surface-700 rounded-lg h-56 animate-pulse" />
   }
 
   if (!pipeline) {
     return (
-      <div className="bg-surface-900 border border-surface-700 rounded-xl p-4">
-        <CardHeader title="Funil de vendas" description="por etapa · mês atual" />
+      <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+        <div className="flex items-center min-h-10 px-3.5 border-b border-surface-700">
+          <p className="text-[13px] font-semibold text-surface-100">Funil de vendas</p>
+          <span className="text-[11.5px] text-surface-500 ml-2">por etapa · mês atual</span>
+        </div>
         <EmptyState icon={Milestone} title="Nenhum funil configurado" className="py-8" />
       </div>
     )
@@ -77,31 +79,30 @@ export function SalesFunnelCard() {
   const topCount = rows[0]?.count || 1
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4">
-      <CardHeader
-        title="Funil de vendas"
-        description="por etapa · mês atual"
-        action={
-          <Link
-            to={`/pipelines/${pipeline.id}`}
-            className="flex items-center gap-1 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors"
-          >
-            Abrir funil <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        }
-      />
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+      <div className="flex items-center min-h-10 px-3.5 border-b border-surface-700">
+        <p className="text-[13px] font-semibold text-surface-100">Funil de vendas</p>
+        <span className="text-[11.5px] text-surface-500 ml-2">por etapa · mês atual</span>
+        <Link
+          to={`/pipelines/${pipeline.id}`}
+          className="ml-auto flex items-center gap-1 text-xs font-semibold text-accent-dark hover:text-brand-300 transition-colors"
+        >
+          Abrir funil <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
 
       {rows.length === 0 ? (
         <EmptyState icon={Milestone} title="Sem etapas em aberto" className="py-8" />
       ) : (
         <table className="w-full">
           <thead>
-            <tr className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider">
-              <th className="text-left pb-2 font-semibold">Etapa</th>
-              <th className="text-right pb-2 font-semibold">Negócios</th>
-              <th className="text-right pb-2 font-semibold">Valor</th>
-              <th className="text-left pb-2 pl-4 font-semibold">Distribuição</th>
-              <th className="text-right pb-2 font-semibold">Conversão</th>
+            {/* DASH-FUNNEL-02: faixa --sf2 de 30px, sem uppercase/tracking. */}
+            <tr className="h-[30px] bg-[var(--sf2)] border-b border-surface-700 text-[11px] font-semibold text-surface-400">
+              <th className="text-left px-3.5 font-semibold">Etapa</th>
+              <th className="text-right font-semibold">Negócios</th>
+              <th className="text-right font-semibold">Valor</th>
+              <th className="text-left pl-4 font-semibold">Distribuição</th>
+              <th className="text-right px-3.5 font-semibold">Conversão</th>
             </tr>
           </thead>
           <tbody>
@@ -110,8 +111,8 @@ export function SalesFunnelCard() {
               const conversion = prevCount ? Math.round((row.count / prevCount) * 100) : null
               const width = Math.min(100, Math.round((row.count / topCount) * 100))
               return (
-                <tr key={row.stage.id} className="border-t border-surface-700">
-                  <td className="py-2.5 pr-2">
+                <tr key={row.stage.id} className="border-b border-surface-700 last:border-b-0">
+                  <td className="py-2.5 pl-3.5 pr-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span
                         className="w-2 h-2 rounded-full flex-shrink-0"
@@ -125,14 +126,14 @@ export function SalesFunnelCard() {
                     {row.amountCents !== null ? brl(row.amountCents) : '—'}
                   </td>
                   <td className="py-2.5 pl-4">
-                    <div className="h-1.5 rounded-full bg-surface-800 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-[var(--sf2)] overflow-hidden">
                       <div
                         className="h-full rounded-full"
                         style={{ width: `${width}%`, backgroundColor: tintaDaEtapa(row.stage.color, 0.85) }}
                       />
                     </div>
                   </td>
-                  <td className="py-2.5 text-right text-[13px] tabular-nums text-surface-400">
+                  <td className="py-2.5 text-right text-[13px] tabular-nums text-surface-400 pr-3.5">
                     {conversion !== null ? `${conversion}%` : '—'}
                   </td>
                 </tr>

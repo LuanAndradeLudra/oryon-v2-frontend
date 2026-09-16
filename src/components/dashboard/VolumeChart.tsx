@@ -33,9 +33,9 @@ function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?:
 export const VolumeChart = memo(function VolumeChart({ data }: { data: VolumeDataPoint[] }) {
   const C = useChartColors()
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between min-h-10 pb-2.5 mb-2.5 border-b border-surface-700 flex-shrink-0 flex-wrap gap-2">
-        <p className="text-sm font-semibold text-surface-100">Volume de Mensagens</p>
+        <p className="text-[13px] font-semibold text-surface-100">Volume de Mensagens</p>
         <div className="flex items-center gap-4 text-xs text-surface-400">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-[2px] inline-block" style={{ backgroundColor: C.brand }} />
