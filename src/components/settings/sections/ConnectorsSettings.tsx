@@ -144,7 +144,7 @@ export function ConnectorsSettings() {
             onClick={() => setView('grid')}
             aria-label="Ver em grade"
             aria-pressed={view === 'grid'}
-            className={`w-7 h-7 rounded-xs flex items-center justify-center transition-colors ${view === 'grid' ? 'bg-surface-700 text-surface-100' : 'text-surface-500 hover:text-surface-300'}`}
+            className={`w-8 h-8 rounded-xs flex items-center justify-center transition-colors ${view === 'grid' ? 'bg-surface-700 text-surface-100' : 'text-surface-500 hover:text-surface-300'}`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
           </button>
@@ -153,7 +153,7 @@ export function ConnectorsSettings() {
             onClick={() => setView('list')}
             aria-label="Ver em lista"
             aria-pressed={view === 'list'}
-            className={`w-7 h-7 rounded-xs flex items-center justify-center transition-colors ${view === 'list' ? 'bg-surface-700 text-surface-100' : 'text-surface-500 hover:text-surface-300'}`}
+            className={`w-8 h-8 rounded-xs flex items-center justify-center transition-colors ${view === 'list' ? 'bg-surface-700 text-surface-100' : 'text-surface-500 hover:text-surface-300'}`}
           >
             <ListIcon className="w-3.5 h-3.5" />
           </button>

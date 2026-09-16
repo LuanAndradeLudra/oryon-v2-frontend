@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
@@ -42,6 +43,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
   const [values, setValues] = useState<Record<string, string>>(() => defaultValues(schema?.fields ?? []))
   const [permissions, setPermissions] = useState<Record<string, boolean>>(() => defaultPermissions(schema?.fields ?? []))
   const [revealSecret, setRevealSecret] = useState<Record<string, boolean>>({})
+  const [editingSecret, setEditingSecret] = useState<Record<string, boolean>>({})
   const [testState, setTestState] = useState<TestState>('idle')
   const [testedAt, setTestedAt] = useState<string | null>(null)
 
@@ -85,11 +87,13 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
             </button>
           )}
           <span className="flex-1" />
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          {testState !== 'success' && (
+            <span className="text-2xs text-surface-500">Salvar libera após um teste OK</span>
+          )}
+          <Button variant="neutral" onClick={onClose}>Cancelar</Button>
           <Button
             variant="primary"
             disabled={testState !== 'success'}
-            title={testState !== 'success' ? 'Salvar libera após um teste OK' : undefined}
             onClick={onSaved}
           >
             {connector.status === 'installed' ? 'Salvar credencial' : 'Salvar e conectar'}
@@ -131,13 +135,29 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
                 error={erroredField === field.key && schema.testResult.ok === false ? schema.testResult.message : undefined}
               >
                 <div className="relative">
-                  <Input
-                    type={revealed ? 'text' : 'password'}
-                    className="font-mono pr-9"
-                    value={values[field.key]}
-                    placeholder="••••••••••••"
-                    onChange={(e) => { setValues((s) => ({ ...s, [field.key]: e.target.value })); setTestState('idle') }}
-                  />
+                  {/* Segredo já salvo (conector instalado), ainda não editado nesta
+                      sessão: mostra a prévia mascarada com prefixo/sufixo visíveis
+                      (mock), não um campo vazio nem o mascaramento nativo do
+                      `type="password"` (esconde tudo, sem pista do valor). Ao
+                      digitar, vira campo normal — a prévia representa o valor
+                      salvo, não o que está sendo digitado agora. */}
+                  {!revealed && field.savedPreview && values[field.key] === '' && !editingSecret[field.key] ? (
+                    <button
+                      type="button"
+                      onClick={() => setEditingSecret((s) => ({ ...s, [field.key]: true }))}
+                      className="w-full h-9 flex items-center px-3 rounded-lg border border-surface-700 bg-surface-800 font-mono text-sm text-surface-300 pr-9 text-left"
+                    >
+                      {field.savedPreview}
+                    </button>
+                  ) : (
+                    <Input
+                      type={revealed ? 'text' : 'password'}
+                      className="font-mono pr-9"
+                      value={values[field.key]}
+                      placeholder="••••••••••••"
+                      onChange={(e) => { setValues((s) => ({ ...s, [field.key]: e.target.value })); setTestState('idle') }}
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={() => setRevealSecret((s) => ({ ...s, [field.key]: !s[field.key] }))}
@@ -156,19 +176,31 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
           if (field.kind === 'permissions') {
             return (
               <FormField key={field.key} label={field.label}>
-                <div className="border border-surface-700 rounded-md divide-y divide-surface-700">
-                  {field.items.map((item) => (
-                    <label key={item.id} className="flex items-center gap-2.5 px-3 py-2 text-sm text-surface-200 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={permissions[item.id]}
-                        onChange={(e) => setPermissions((s) => ({ ...s, [item.id]: e.target.checked }))}
-                        className="w-3.5 h-3.5 rounded-xs accent-brand-500"
-                      />
-                      <span className="flex-1">{item.label}</span>
-                      {item.optional && <span className="text-2xs text-surface-500">opcional</span>}
-                    </label>
-                  ))}
+                <div className="border border-surface-700 rounded-[7px] divide-y divide-surface-700">
+                  {field.items.map((item) => {
+                    const checked = permissions[item.id]
+                    return (
+                      <label key={item.id} className="flex items-center gap-2.5 px-3 py-2 text-sm text-surface-200 cursor-pointer">
+                        <span
+                          className={cn(
+                            'w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0',
+                            checked ? 'border-success bg-success/15 text-success' : 'border-surface-600',
+                          )}
+                          aria-hidden
+                        >
+                          {checked && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => setPermissions((s) => ({ ...s, [item.id]: e.target.checked }))}
+                          className="sr-only"
+                        />
+                        <span className="flex-1">{item.label}</span>
+                        {item.optional && <span className="text-2xs text-surface-500">opcional</span>}
+                      </label>
+                    )
+                  })}
                 </div>
               </FormField>
             )
@@ -176,6 +208,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
           return (
             <FormField key={field.key} label={field.label} hint={field.hint}>
               <Input
+                className="font-mono"
                 value={values[field.key]}
                 placeholder={field.placeholder}
                 onChange={(e) => { setValues((s) => ({ ...s, [field.key]: e.target.value })); setTestState('idle') }}
@@ -186,7 +219,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
 
         <div className="flex items-center gap-3 pt-1">
           <Button size="sm" variant="neutral" onClick={runTest} loading={testState === 'testing'}>
-            Testar conexão
+            {testState === 'error' ? 'Testar de novo' : 'Testar conexão'}
           </Button>
           {testState === 'success' && schema.testResult.ok && (
             <span className="flex items-center gap-1.5 text-xs text-success">

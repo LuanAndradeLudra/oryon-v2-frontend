@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
-import { X, Clock } from 'lucide-react'
+import { X, ChevronUp } from 'lucide-react'
 import { useLayer } from '@/contexts/LayerContext'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
 import { Tabs } from '@/components/ui/Tabs'
-import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
+import { ConnectorStatusChip, ConnectorComingSoonChip } from './ConnectorBadges'
 import type { Connector } from './connectorsMock'
 
 type TabId = 'overview' | 'how' | 'requirements'
@@ -67,7 +67,10 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
         >
           <div
             style={{ boxShadow: comingSoon ? undefined : `inset 0 -3px 0 ${connector.brandColor}` }}
-            className="w-[52px] h-[52px] rounded-[10px] bg-white flex items-center justify-center flex-shrink-0"
+            className={cn(
+              'w-[52px] h-[52px] rounded-[10px] bg-white flex items-center justify-center flex-shrink-0',
+              comingSoon && 'opacity-70',
+            )}
           >
             <span style={{ color: connector.brandColor, fontSize: 22 }} className="font-extrabold">
               {connector.logoInitial}
@@ -83,14 +86,12 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
               {connector.category}
             </span>
             {comingSoon ? (
-              <ComingSoonBadge />
+              <ConnectorComingSoonChip />
             ) : (
-              <span
-                className="color-chip inline-flex items-center rounded-xs border px-1.5 py-px text-[10.5px] font-semibold"
-                style={{ ['--chip' as string]: connector.status === 'installed' ? 'var(--color-success)' : 'var(--color-brand-500)' }}
-              >
-                {connector.status === 'installed' ? 'Instalado' : 'Disponível'}
-              </span>
+              <ConnectorStatusChip
+                tone="success"
+                label={connector.status === 'installed' ? 'Instalado' : 'Disponível'}
+              />
             )}
           </div>
 
@@ -111,7 +112,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
             size="md"
             variant={comingSoon ? 'neutral' : connector.status === 'installed' ? 'neutral' : 'primary'}
             className="w-full mt-3 flex-shrink-0"
-            leftIcon={comingSoon ? <Clock className="w-3.5 h-3.5" /> : undefined}
+            leftIcon={comingSoon ? <ChevronUp className="w-3.5 h-3.5" /> : undefined}
             onClick={onConnect}
           >
             {comingSoon ? 'Priorizar' : connector.status === 'installed' ? 'Gerenciar' : blockedByPlan ? 'Ver planos' : 'Conectar'}
@@ -160,8 +161,11 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
                 <p>{connector.howItWorks}</p>
                 {connector.capabilities.length > 0 && (
                   <>
-                    <p className="text-2xs font-bold uppercase tracking-wide text-surface-500 mt-5 mb-2.5">
-                      O que o agente passa a fazer
+                    <p className={cn(
+                      'text-2xs font-bold uppercase tracking-wide mt-5 mb-2.5',
+                      comingSoon ? 'text-surface-500' : 'text-accent-dark',
+                    )}>
+                      {comingSoon ? 'Previsto' : 'O que o agente passa a fazer'}
                     </p>
                     <div className="grid grid-cols-2 gap-2.5">
                       {connector.capabilities.map((c) => (
@@ -225,7 +229,7 @@ function FichaRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="py-2 first:pt-0">
       <p className="text-2xs text-surface-500">{label}</p>
-      <p className="text-xs text-surface-300 mt-0.5">{value}</p>
+      <p className="text-xs font-medium text-surface-300 mt-0.5">{value}</p>
     </div>
   )
 }
