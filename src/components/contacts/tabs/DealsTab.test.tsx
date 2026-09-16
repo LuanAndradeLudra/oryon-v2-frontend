@@ -4,6 +4,10 @@
 // dinheiro só em funil de venda, "Mover" com motivo no terminal, fechados com
 // histórico — e, sem o flag, a aba NÃO some: continua sendo a lista de negócios
 // do tenant de funil único.
+//
+// SCRUM-1097 (DRAWER-25/26/27): a UI virou uma tabela bordeada por linha (era
+// um card por registro do DealSummary) com um menu "···" agrupando
+// mover/editar/excluir — os testes abaixo seguem essa estrutura nova.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
@@ -70,12 +74,12 @@ const renderTab = () => render(<DealsTab contactId="c1" contactName="Mariana" />
 describe('DealsTab no Modelo B (SCRUM-921)', () => {
   it('mostra a ETAPA de cada registro e a contagem de abertos', async () => {
     renderTab()
-    await waitFor(() => expect(screen.getByTestId('deals-open-count')).toHaveTextContent('2 abertos'))
+    await waitFor(() => expect(screen.getByTestId('deals-open-count')).toHaveTextContent('2 Negócios abertos'))
     expect(api.list).toHaveBeenCalledWith('c1')
-    expect(screen.getByTestId('deal-stage-d1')).toHaveTextContent('Em atendimento')
-    expect(screen.getByTestId('deal-stage-d2')).toHaveTextContent('Proposta')
     expect(screen.getByTestId('deal-open-d1')).toHaveTextContent('Suporte')
-    expect(screen.getByTestId('deal-meta-d2')).toHaveTextContent('movido por Renata C. · origem Campanha · Promo Agosto')
+    expect(screen.getByTestId('deal-open-d1')).not.toHaveTextContent('Mariana')
+    expect(screen.getByTestId('deal-open-d2')).toHaveTextContent('Vendas')
+    expect(screen.getByTestId('deal-open-d2')).toHaveTextContent('Proposta')
   })
 
   it('dinheiro só em funil de VENDA — registro de processo não mostra R$ 0,00', async () => {
@@ -85,11 +89,11 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     expect(screen.getByTestId('deal-money-d2')).toHaveTextContent('2.500,00')
     expect(screen.getByTestId('deal-money-d2')).toHaveTextContent('1 item')
     // e o título próprio do negócio aparece; o do registro de processo (= nome
-    // do contato) não se repete dentro da ficha do próprio contato.
+    // do contato) não se repete dentro da linha do próprio contato.
     expect(screen.getByTestId('deal-open-d2')).toHaveTextContent('Plano Anual')
   })
 
-  it('"Mover" para etapa normal faz PATCH /deals/:id/stage e recarrega; "Abrir negócio" abre a FICHA (B2/928)', async () => {
+  it('"Mover" para etapa normal faz PATCH /deals/:id/stage e recarrega; a linha abre a FICHA (B2/928)', async () => {
     renderTab()
     await waitFor(() => expect(screen.getByTestId('deal-move-d1')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('deal-move-d1'))
@@ -115,7 +119,7 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
     await waitFor(() => expect(api.setStatus).toHaveBeenCalledWith('d1', { status: 'lost', closeReason: 'cancelado_pelo_cliente', closeNote: undefined }))
   })
 
-  it('fechados mostram terminal e motivo, e "ver histórico" busca as passagens', async () => {
+  it('fechados mostram terminal e motivo, e "histórico" busca as passagens', async () => {
     renderTab()
     await waitFor(() => expect(screen.getByTestId('deals-closed')).toBeInTheDocument())
     expect(screen.getByTestId('deals-closed')).toHaveTextContent('Suporte · Cancelado')
@@ -129,24 +133,27 @@ describe('DealsTab no Modelo B (SCRUM-921)', () => {
 
   it('excluir chama DELETE /deals/:id e recarrega', async () => {
     renderTab()
-    await waitFor(() => expect(screen.getByTestId('deal-delete-d2')).toBeInTheDocument())
-    fireEvent.click(screen.getByTestId('deal-delete-d2'))
+    await waitFor(() => expect(screen.getByTestId('deal-move-d2')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('deal-move-d2'))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Excluir' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Excluir' }))
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith('d2'))
     await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
   })
 
-  it('sem o flag a aba NÃO some: lista os negócios, sem etapa nem mover, com "Novo"', async () => {
+  it('sem o flag a aba NÃO some: lista os negócios, sem etapa, com "Novo" e ainda pode editar/excluir', async () => {
     multi.mockReturnValue(false)
     renderTab()
     await waitFor(() => expect(api.list).toHaveBeenCalledWith('c1'))
     expect(await screen.findByTestId('deal-open-d2')).toBeInTheDocument()
-    expect(screen.queryByTestId('deal-stage-d2')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('deal-move-d2')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('deal-board-d2')).not.toBeInTheDocument()
+    expect(screen.getByTestId('deal-open-d2')).not.toHaveTextContent('Proposta')
     // sem funil no cache todo negócio é comercial — o valor continua aparecendo
     expect(screen.getByTestId('deal-money-d1')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Novo negócio/i })).toBeInTheDocument()
+    // "···" continua disponível (editar/excluir não dependem de funil), só sem itens de mover etapa
+    fireEvent.click(screen.getByTestId('deal-move-d2'))
+    expect(screen.getByRole('menuitem', { name: 'Editar' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Excluir' })).toBeInTheDocument()
   })
 })
 

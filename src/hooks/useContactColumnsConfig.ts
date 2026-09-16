@@ -15,29 +15,37 @@ export interface ContactColumnDef {
 
 export const CONTACT_COLUMN_DEFS: ContactColumnDef[] = [
   { key: 'phone', label: 'Telefone' },
-  { key: 'email', label: 'E-mail' },
   { key: 'stage', label: 'Situação' },
+  { key: 'tags', label: 'Etiquetas' },
+  { key: 'lastContactedAt', label: 'Último contato' },
+  { key: 'deals', label: 'Negócios' },
   { key: 'score', label: 'Score' },
   { key: 'intent', label: 'Intenção' },
   { key: 'sentiment', label: 'Sentimento' },
-  { key: 'tags', label: 'Etiquetas' },
   { key: 'pipelines', label: 'Funis', gated: true },
   { key: 'source', label: 'Fonte' },
-  { key: 'lastContactedAt', label: 'Último contato' },
   { key: 'optIn', label: 'Opt-in' },
+  { key: 'email', label: 'E-mail' },
 ]
 
 const DEFAULT_ORDER = CONTACT_COLUMN_DEFS.map((c) => c.key)
-const STORAGE_KEY = 'oryon.contacts.columns.v1'
+const STORAGE_KEY = 'oryon.contacts.columns.v2'
 
 interface StoredConfig {
   order: string[]
   hidden: string[]
 }
 
-// README 3.2 (modal "Configurar colunas"): E-mail existe na lista mas começa
-// desligado — as outras colunas do default vêm todas ligadas.
-const DEFAULT_CONFIG: StoredConfig = { order: DEFAULT_ORDER, hidden: ['email'] }
+// spec/1c-contatos.GAPS.md CONT-TABLE-02/COLS-12: a referência só mostra
+// Telefone·Situação·Etiquetas·Último contato·Negócios por padrão — as demais
+// (Score, Intenção, Sentimento, Funis, Fonte, Opt-in, E-mail) são feature já
+// existente no produto e continuam disponíveis aqui, só que off por padrão
+// em vez de removidas (opção (a) do bloco "fora da referência" do mapa de
+// gaps — decisão de produto, não perda de dado).
+const DEFAULT_CONFIG: StoredConfig = {
+  order: DEFAULT_ORDER,
+  hidden: ['score', 'intent', 'sentiment', 'pipelines', 'source', 'optIn', 'email'],
+}
 
 /** Reconcilia com STORED contra os defs atuais — colunas removidas do código
  *  desaparecem, colunas novas entram no fim, sem derrubar a preferência salva. */

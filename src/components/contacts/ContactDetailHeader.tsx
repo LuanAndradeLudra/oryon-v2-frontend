@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Copy, Trash2, Maximize2, MessageSquare, Handshake } from 'lucide-react'
+import { X, MoreHorizontal, Trash2, MessageSquare } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
+import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { StageBadge } from './StageBadge'
 import { SendTemplateDrawer } from './SendTemplateDrawer'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
@@ -12,25 +13,23 @@ import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { contactsApi } from '@/services/api'
+import { formatPhoneBR } from '@/lib/utils'
 import type { Contact } from '@/types'
 
 interface ContactDetailHeaderProps {
   contact: Contact
   onClose: () => void
   onDelete?: () => void
-  /** Abre a página completa do contato (/contacts/:id). O gate da feature
-   *  flag fica no caller — o header só renderiza o botão quando recebe o prop. */
-  onExpand?: () => void
 }
 
-export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: ContactDetailHeaderProps) {
+export function ContactDetailHeader({ contact, onClose, onDelete }: ContactDetailHeaderProps) {
   const { stages, pipelines } = useCRMConfig()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [lastConvId, setLastConvId] = useState<string | null>(null)
   const [templateDrawerOpen, setTemplateDrawerOpen] = useState(false)
-  const handleCopyWa = () => navigator.clipboard.writeText(contact.waId)
   const canDelete = isAdminTier(user?.role)
   const addToPipeline = useAddToPipeline()
   const salesPipeline = defaultSalesPipeline(pipelines)
@@ -51,37 +50,16 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
   }
 
   return (
-    <div className="flex items-start gap-3 px-5 pt-5 pb-4 flex-shrink-0">
-      <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="lg" />
+    <div className="flex items-center gap-3 px-[18px] pt-3.5 pb-0 flex-shrink-0">
+      <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-2 mb-1">
-          <h2 className="text-base font-semibold text-surface-50 truncate">{contact.displayName}</h2>
+        <div className="flex items-center gap-2 mb-1">
+          <h2 className="text-base font-bold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h2>
           {contact.stage && <StageBadge stage={contact.stage} stages={stages} />}
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-surface-400">{contact.waId}</span>
-          <button onClick={handleCopyWa} aria-label="Copiar número do WhatsApp" className="text-surface-500 hover:text-surface-200 transition-colors">
-            <Copy className="w-3.5 h-3.5" />
-          </button>
-          {contact.email && (
-            <>
-              <span className="text-surface-600 text-sm">·</span>
-              <span className="text-sm text-surface-400 truncate">{contact.email}</span>
-            </>
-          )}
-          <span className="text-surface-600 text-sm">·</span>
-          <span className="text-sm text-surface-400 whitespace-nowrap">
-            cliente desde {new Date(contact.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
-          </span>
-        </div>
-
-        {contact.company && (
-          <p className="text-xs text-surface-500 mt-1 truncate">
-            {contact.jobTitle ? `${contact.jobTitle} · ` : ''}{contact.company}
-          </p>
-        )}
+        <p className="text-xs text-surface-400">{formatPhoneBR(contact.waId)}</p>
 
         <div className="flex items-center gap-2 mt-3">
           <Button size="sm" variant="primary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={handleOpenChat}>
@@ -91,7 +69,6 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
             <Button
               size="sm"
               variant="neutral"
-              leftIcon={<Handshake className="w-3.5 h-3.5" />}
               onClick={() => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline: salesPipeline })}
             >
               Novo negócio
@@ -101,27 +78,29 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
       </div>
 
       <div className="flex items-center gap-1.5 flex-shrink-0">
-        {onExpand && (
-          <button
-            onClick={onExpand}
-            title="Abrir o perfil completo do contato"
-            aria-label="Abrir o perfil completo do contato"
-            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-semibold text-surface-200 bg-surface-800 border border-surface-700 hover:bg-surface-700 hover:text-surface-50 transition-all cursor-pointer"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-            Perfil completo
-          </button>
-        )}
-        {canDelete && onDelete && (
+        {canDelete && onDelete ? (
           <>
-            <button
-              onClick={() => setConfirmDelete(true)}
-              title="Excluir contato"
-              aria-label="Excluir contato"
-              className="p-1.5 rounded-lg text-surface-600 hover:text-red-400 hover:bg-surface-800 transition-all"
+            <Dropdown
+              open={menuOpen}
+              onClose={() => setMenuOpen(false)}
+              align="right"
+              className="w-44"
+              anchor={
+                <button
+                  onClick={() => setMenuOpen((v) => !v)}
+                  aria-label="Mais ações"
+                  className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-all"
+                >
+                  <MoreHorizontal className="w-[15px] h-[15px]" />
+                </button>
+              }
             >
-              <Trash2 className="w-4 h-4" />
-            </button>
+              <div className="px-1 py-1 flex flex-col gap-0.5">
+                <DropdownItem onClick={() => { setMenuOpen(false); setConfirmDelete(true) }} danger>
+                  <Trash2 className="w-3.5 h-3.5" /> Excluir contato
+                </DropdownItem>
+              </div>
+            </Dropdown>
             <ConfirmModal
               open={confirmDelete}
               onClose={() => setConfirmDelete(false)}
@@ -132,11 +111,11 @@ export function ContactDetailHeader({ contact, onClose, onDelete, onExpand }: Co
               danger
             />
           </>
-        )}
+        ) : null}
         <button
           onClick={onClose}
           aria-label="Fechar"
-          className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+          className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
         >
           <X className="w-4 h-4" />
         </button>

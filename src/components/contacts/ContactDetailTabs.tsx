@@ -10,9 +10,13 @@ interface ContactDetailTabsProps {
    *  carregou (nunca um número inventado). */
   dealsCount?: number
   conversationsCount?: number
+  /** DRAWER-13 (spec/1c-contatos.GAPS.md): "Perfil completo" saiu do header
+   *  e virou este link na faixa de abas — mesmo gate de feature flag do
+   *  caller, que só passa a prop quando a página completa existe. */
+  onExpand?: () => void
 }
 
-export function ContactDetailTabs({ activeTab, onChange, dealsCount, conversationsCount }: ContactDetailTabsProps) {
+export function ContactDetailTabs({ activeTab, onChange, dealsCount, conversationsCount, onExpand }: ContactDetailTabsProps) {
   const { vocab } = useTenantVocab()
   // O rótulo de "Negócios" vem do vocabulário do tenant (vertical-agnostic).
   const tabs: TabOption<TabId>[] = [
@@ -24,13 +28,24 @@ export function ContactDetailTabs({ activeTab, onChange, dealsCount, conversatio
   ]
 
   return (
-    <Tabs
-      tabs={tabs}
-      value={activeTab}
-      onChange={onChange}
-      label="Seções do contato"
-      className="px-5 flex-shrink-0"
-    />
+    <div className="flex items-center gap-3 px-[18px] pt-3.5">
+      <Tabs
+        tabs={tabs}
+        value={activeTab}
+        onChange={onChange}
+        label="Seções do contato"
+        className="flex-shrink-0"
+      />
+      {onExpand && (
+        <button
+          type="button"
+          onClick={onExpand}
+          className="ml-auto pb-[9px] text-xs font-semibold text-accent-dark hover:underline whitespace-nowrap"
+        >
+          Abrir ficha completa ↗
+        </button>
+      )}
+    </div>
   )
 }
 

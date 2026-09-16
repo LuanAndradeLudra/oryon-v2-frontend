@@ -20,10 +20,10 @@ interface ContactIdentityPanelProps {
  */
 export function ContactIdentityPanel({ contact, onSave, onAddTag, onRemoveTag }: ContactIdentityPanelProps) {
   return (
-    <div className="flex flex-col gap-4 w-full md:w-[260px] flex-shrink-0 md:border-r border-surface-800 p-4 overflow-y-auto">
-      <TagsCard contact={contact} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
-      <ContactInfoCard contact={contact} onSave={onSave} />
-      <CustomFieldsCard contact={contact} onSave={onSave} />
+    <div className="flex flex-col gap-3.5 w-full md:w-[260px] flex-shrink-0 md:border-r border-surface-700 px-[18px] py-3.5 overflow-y-auto">
+      <TagsCard contact={contact} onAddTag={onAddTag} onRemoveTag={onRemoveTag} flat />
+      <ContactInfoCard contact={contact} onSave={onSave} flat />
+      <CustomFieldsCard contact={contact} onSave={onSave} flat />
     </div>
   )
 }

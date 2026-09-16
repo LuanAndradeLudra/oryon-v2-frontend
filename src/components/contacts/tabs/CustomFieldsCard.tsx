@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Pencil, Save, X as XIcon, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Save, X as XIcon, Plus, Trash2, Check } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import { cn } from '@/lib/utils'
 import { contactsApi } from '@/services/api'
 import type { Contact, ContactCustomField, ContactCustomFieldDef } from '@/types'
 
@@ -11,6 +12,9 @@ interface CustomFieldsCardProps {
   onSave: (patch: Partial<Contact>) => Promise<void>
   /** Esconde o título "Campos Personalizados" quando uma seção já o rotula. */
   hideTitle?: boolean
+  /** DRAWER-15/16/21 (spec/1c-contatos.GAPS.md): seção plana do drawer de
+   *  contato — eyebrow sem acordeão, boolean com check verde "Sim". */
+  flat?: boolean
 }
 
 function FieldInput({
@@ -97,9 +101,19 @@ function FieldInput({
   }
 }
 
-function FieldDisplay({ field }: { field: ContactCustomField }) {
+function FieldDisplay({ field, flat }: { field: ContactCustomField; flat?: boolean }) {
   if (field.type === 'boolean') {
-    return <p className="text-sm text-surface-200">{field.value === 'true' ? 'Sim' : 'Não'}</p>
+    const yes = field.value === 'true'
+    if (flat) {
+      return yes ? (
+        <p className="flex items-center gap-1 text-[12.5px] font-semibold text-success">
+          <Check className="w-3 h-3" strokeWidth={2.5} /> Sim
+        </p>
+      ) : (
+        <p className="text-[12.5px] font-medium text-surface-100">Não</p>
+      )
+    }
+    return <p className="text-sm text-surface-200">{yes ? 'Sim' : 'Não'}</p>
   }
   if (field.type === 'multiselect') {
     const items = field.value ? field.value.split('|').filter(Boolean) : []
@@ -122,7 +136,7 @@ function FieldDisplay({ field }: { field: ContactCustomField }) {
   return <p className="text-sm text-surface-200">{field.value || '—'}</p>
 }
 
-export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomFieldsCardProps) {
+export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = false }: CustomFieldsCardProps) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [defs, setDefs] = useState<ContactCustomFieldDef[]>([])
@@ -199,7 +213,9 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomF
           return (
             <div key={field.key}>
               <div className="flex items-center justify-between mb-1">
-                <p className="text-[11px] text-surface-500 font-medium uppercase tracking-wide">{field.label}</p>
+                <p className={cn(
+                  flat ? 'text-[11px] text-surface-500 font-semibold uppercase tracking-wide' : 'text-[11px] text-surface-500 font-medium uppercase tracking-wide',
+                )}>{field.label}</p>
                 {editing && (
                   <button onClick={() => handleRemoveField(field.key)} className="text-surface-600 hover:text-red-400 transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
@@ -208,14 +224,14 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomF
               </div>
               {editing
                 ? <FieldInput field={field} def={def} onChange={(v) => handleValueChange(field.key, v)} />
-                : <FieldDisplay field={field} />
+                : <FieldDisplay field={field} flat={flat} />
               }
             </div>
           )
         })}
 
         {editing && availableDefs.length > 0 && (
-          <div className="pt-2 border-t border-surface-800">
+          <div className="pt-2 border-t border-surface-700">
             <p className="text-[11px] text-surface-500 font-medium mb-2">Adicionar campo:</p>
             <div className="flex flex-wrap gap-1.5">
               {availableDefs.map((def) => (
@@ -232,6 +248,18 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false }: CustomF
         )}
     </div>
   )
+
+  if (flat) {
+    return (
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Campos personalizados</p>
+          {actions}
+        </div>
+        {body}
+      </section>
+    )
+  }
 
   // ContactProfilePage já rotula a seção por fora (hideTitle) — nesse caso o
   // card entrega só as ações + conteúdo, sem duplicar o cabeçalho colapsável.

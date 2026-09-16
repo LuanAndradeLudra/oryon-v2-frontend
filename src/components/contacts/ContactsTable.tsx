@@ -13,7 +13,7 @@ import { DealsSummaryChips } from './ContactRow'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { type ContactColumnsConfig } from '@/hooks/useContactColumnsConfig'
-import { relativeDate, getActivePipelines } from '@/lib/utils'
+import { relativeDate, getActivePipelines, formatPhoneBR, cn } from '@/lib/utils'
 import { pipelineKindOption, pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import type { Contact, ContactStage, Pipeline } from '@/types'
 
@@ -91,6 +91,8 @@ interface ContactsTableProps {
   onOpenDeals?: (contact: Contact) => void
   /** F9 (SCRUM-875): repassado à linha — "Adicionar ao funil" no menu de contexto. */
   onAddToPipeline?: (contact: Contact, pipeline: Pipeline) => void
+  /** Contato com o drawer aberto — pinta a linha como ativa (README 3.2). */
+  activeKey?: string | null
   selectedIds?: Set<string>
   onToggleSelect?: (id: string) => void
   onSelectAll?: (ids: string[]) => void
@@ -114,6 +116,7 @@ export function ContactsTable({
   onOpenConversation,
   onMoveStage,
   onAddToPipeline,
+  activeKey,
   selectedIds,
   onToggleSelect,
   onSelectAll,
@@ -260,7 +263,7 @@ export function ContactsTable({
     phone: {
       key: 'phone',
       header: 'Telefone',
-      render: (c) => <span className="text-xs text-surface-400 whitespace-nowrap">{c.waId || '—'}</span>,
+      render: (c) => <span className="text-[13px] text-surface-400 whitespace-nowrap">{formatPhoneBR(c.waId)}</span>,
     },
     email: {
       key: 'email',
@@ -310,7 +313,7 @@ export function ContactsTable({
           {(c.tags ?? []).slice(0, 2).map((tag) => (
             <span
               key={tag.id}
-              className="color-chip inline-flex items-center h-[18px] whitespace-nowrap align-middle text-[10px] font-medium px-1.5 rounded-full border"
+              className="color-chip inline-flex items-center h-[18px] whitespace-nowrap align-middle text-[10.5px] font-semibold px-[7px] rounded-xs border"
               style={{ ['--chip']: tag.color } as React.CSSProperties}
               title={tag.name}
             >
@@ -318,9 +321,9 @@ export function ContactsTable({
             </span>
           ))}
           {(c.tags ?? []).length > 2 && (
-            <span className="text-[10px] text-surface-500">+{(c.tags ?? []).length - 2}</span>
+            <span className="text-[11px] text-surface-500">+{(c.tags ?? []).length - 2}</span>
           )}
-          {(c.tags ?? []).length === 0 && <span className="text-surface-600 text-xs">—</span>}
+          {(c.tags ?? []).length === 0 && <span className="text-surface-500 text-xs">—</span>}
         </div>
       ),
     },
@@ -347,7 +350,21 @@ export function ContactsTable({
       key: 'lastContactedAt',
       header: 'Último contato',
       sortable: true,
-      render: (c) => <span className="text-xs text-surface-400 whitespace-nowrap">{relativeDate(c.lastContactedAt)}</span>,
+      align: 'right',
+      render: (c) => <span className="text-[13px] text-surface-400 whitespace-nowrap">{relativeDate(c.lastContactedAt)}</span>,
+    },
+    deals: {
+      key: 'deals',
+      header: 'Negócios',
+      align: 'right',
+      render: (c) => {
+        const openCount = (c.dealsSummary?.byPipeline ?? []).reduce((sum, p) => sum + p.openCount, 0)
+        return (
+          <span className={cn('text-[13px] tabular-nums', openCount > 0 ? 'text-surface-200' : 'text-surface-500')}>
+            {openCount}
+          </span>
+        )
+      },
     },
     optIn: {
       key: 'optIn',
@@ -363,7 +380,7 @@ export function ContactsTable({
     header: 'Nome',
     sortable: true,
     render: (c) => (
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-[9px]">
         <Avatar name={c.displayName} imageUrl={c.profilePicUrl} size="xs" />
         <p className="text-[13px] font-semibold text-surface-100 truncate">{c.displayName}</p>
       </div>
@@ -373,7 +390,7 @@ export function ContactsTable({
   const actionsColumn: DataTableColumn<Contact> = {
     key: 'actions',
     header: '',
-    widthClass: 'w-10',
+    widthClass: 'w-9',
     render: (c) => <ActionsMenuCell contact={c} onOpenPanel={onOpenPanel} onOpenConversation={onOpenConversation} />,
   }
 
@@ -423,6 +440,7 @@ export function ContactsTable({
         onSortChange={handleSortChange}
         onRowClick={handleRowClick}
         onRowContextMenu={handleRowContextMenu}
+        activeKey={activeKey}
         selectedKeys={onToggleSelect ? selectedIds ?? new Set() : undefined}
         onToggleSelect={onToggleSelect}
         onToggleSelectAll={onSelectAll ? handleToggleSelectAll : undefined}

@@ -167,13 +167,13 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
             contact={contact}
             onClose={onClose}
             onDelete={handleDelete}
-            onExpand={onExpand ? () => onExpand(contact) : undefined}
           />
           <ContactDetailTabs
             activeTab={activeTab}
             onChange={setActiveTab}
             dealsCount={dealsCount}
             conversationsCount={contact.conversationCount}
+            onExpand={onExpand ? () => onExpand(contact) : undefined}
           />
           {/* Reauditoria de fidelidade (item 4): painel de identidade fixo à
               esquerda, persiste em QUALQUER aba (antes só existia dentro da

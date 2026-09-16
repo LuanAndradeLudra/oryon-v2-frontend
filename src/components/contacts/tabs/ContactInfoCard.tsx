@@ -13,9 +13,12 @@ interface ContactInfoCardProps {
   onSave: (patch: Partial<Contact>) => Promise<void>
   /** Esconde o título "Dados" quando uma seção já o rotula (ex.: acordeão "Perfil" da ficha completa). */
   hideTitle?: boolean
+  /** DRAWER-15/16/17/18 (spec/1c-contatos.GAPS.md): seção plana do drawer de
+   *  contato, com Origem/Cidade·UF combinada/Criado em somadas à leitura. */
+  flat?: boolean
 }
 
-export function ContactInfoCard({ contact, onSave, hideTitle = false }: ContactInfoCardProps) {
+export function ContactInfoCard({ contact, onSave, hideTitle = false, flat = false }: ContactInfoCardProps) {
   const { vocab } = useTenantVocab()
   const FIELDS: { key: keyof InfoFields; label: string; placeholder: string }[] = [
     { key: 'email',    label: 'E-mail',       placeholder: 'nome@empresa.com' },
@@ -90,6 +93,42 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false }: ContactI
             </FormField>
           ))}
         </div>
+      ) : flat ? (
+        <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-1.5">
+          {FIELDS.map((f) => {
+            if (f.key === 'city' || f.key === 'state') return null
+            const val = contact[f.key]
+            if (!val) return null
+            return (
+              <Fragment key={f.key}>
+                <p className="text-[12.5px] text-surface-400 truncate">{f.label}</p>
+                <p className="text-[12.5px] font-medium text-surface-100 truncate">{val}</p>
+              </Fragment>
+            )
+          })}
+          {contact.source && (
+            <Fragment>
+              <p className="text-[12.5px] text-surface-400 truncate">Origem</p>
+              <p className="text-[12.5px] font-medium text-surface-100 truncate capitalize">
+                {contact.source === 'meta_ads' ? 'Meta Ads' : contact.source}
+              </p>
+            </Fragment>
+          )}
+          {(contact.city || contact.state) && (
+            <Fragment>
+              <p className="text-[12.5px] text-surface-400 truncate">Cidade</p>
+              <p className="text-[12.5px] font-medium text-surface-100 truncate">
+                {[contact.city, contact.state].filter(Boolean).join(' · ')}
+              </p>
+            </Fragment>
+          )}
+          <Fragment>
+            <p className="text-[12.5px] text-surface-400 truncate">Criado em</p>
+            <p className="text-[12.5px] font-medium text-surface-100 truncate">
+              {new Date(contact.createdAt).toLocaleDateString('pt-BR')}
+            </p>
+          </Fragment>
+        </div>
       ) : (
         <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-2.5">
           {FIELDS.map((f) => {
@@ -109,6 +148,18 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false }: ContactI
       )}
     </>
   )
+
+  if (flat) {
+    return (
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Dados</p>
+          {actions}
+        </div>
+        {body}
+      </section>
+    )
+  }
 
   if (hideTitle) {
     return (

@@ -20,6 +20,7 @@ import { BulkActionBar } from '@/components/contacts/BulkActionBar'
 import { CampaignWizard } from '@/components/campaigns/CampaignWizard'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
@@ -208,20 +209,22 @@ export function ContactsPage() {
         <Settings2 className="w-3.5 h-3.5" />
         Configurar
       </button>
-      <button
+      <Button
+        size="sm"
+        variant="neutral"
+        leftIcon={<Upload className="w-3.5 h-3.5" />}
         onClick={() => setShowImport(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors"
       >
-        <Upload className="w-3.5 h-3.5" />
         Importar
-      </button>
-      <button
+      </Button>
+      <Button
+        size="sm"
+        variant="primary"
+        leftIcon={<Plus className="w-3.5 h-3.5" />}
         onClick={() => setShowNewContact(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-colors shadow-sm"
       >
-        <Plus className="w-3.5 h-3.5" />
         Novo {vocab.contact}
-      </button>
+      </Button>
     </div>,
     // ATENÇÃO: o nó é registrado na topbar por um efeito com dependências, e o
     // que ela renderiza é a árvore capturada na última registração. Qualquer
@@ -336,7 +339,7 @@ export function ContactsPage() {
 
         {/* Faceta "Situação comercial" (D-10) */}
         {multiPipeline && (
-        <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto border-b border-surface-800/60">
+        <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto border-b border-surface-700/60">
           {COMMERCIAL_OPTIONS.map((opt) => (
             <button
               key={opt.key}
@@ -355,8 +358,7 @@ export function ContactsPage() {
         </div>
         )}
 
-        <div className="flex-1 overflow-hidden min-w-0 flex flex-col mx-4 mb-4 mt-1 bg-surface-900 border border-surface-800 rounded-xl">
-          <div className="flex-1 overflow-hidden min-w-0 flex flex-col">
+        <div className="flex-1 min-h-0 flex flex-col bg-surface-800">
           {error ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
               <AlertTriangle className="w-8 h-8 text-red-400" />
@@ -388,6 +390,7 @@ export function ContactsPage() {
               onMoveStage={handleMoveStage}
               onOpenDeals={handleOpenDealContact ? (c) => handleOpenDealContact(c.id) : undefined}
               onAddToPipeline={(c, p) => addToPipeline.requestAdd({ contactId: c.id, contactName: c.displayName || c.waId, pipeline: p })}
+              activeKey={selectedContactId}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelect}
               onSelectAll={selectAll}
@@ -401,7 +404,6 @@ export function ContactsPage() {
               onSortChange={(sortBy, sortDir) => setFilters({ ...filters, sortBy, sortDir })}
             />
           )}
-          </div>
         </div>
       </div>
 
@@ -452,7 +454,7 @@ export function ContactsPage() {
             <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider mb-2">
               Contatos ({selectedContacts.length})
             </p>
-            <div className="max-h-64 overflow-y-auto pr-1 space-y-1 rounded-lg border border-surface-800 bg-surface-950/50 p-1.5">
+            <div className="max-h-64 overflow-y-auto pr-1 space-y-1 rounded-lg border border-surface-700 bg-surface-950/50 p-1.5">
               {selectedContacts.slice(0, 50).map((c) => (
                 <div
                   key={c.id}
@@ -569,7 +571,7 @@ export function ContactsPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 bg-black/40 z-[39]"
+              className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[39]"
               onClick={() => setSelectedContactId(null)}
             />
             <motion.div
@@ -578,7 +580,7 @@ export function ContactsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-40 bg-surface-800 border-l overlay-frame flex flex-col"
             >
               <ContactDetailPanel
                 contactId={selectedContactId}
