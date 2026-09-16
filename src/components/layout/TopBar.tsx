@@ -1492,7 +1492,7 @@ export function TopBar() {
     [userEmail],
   )
   const { open: openCopilot } = useCopilotContext()
-  const { pageActions } = useTopBarActions()
+  const { pageActions, pageSubtitle: dynamicSubtitle } = useTopBarActions()
   const { unreadCount } = useNotifications()
 
   const [query,       setQuery]       = useState('')
@@ -1507,7 +1507,9 @@ export function TopBar() {
   // Derived
   const segment      = '/' + location.pathname.split('/')[1]
   const pageTitle    = PAGE_TITLES[segment] ?? ''
-  const pageSubtitle = PAGE_SUBTITLES[segment] ?? ''
+  // Subtítulo dinâmico registrado pela página (useRegisterTopBarSubtitle)
+  // vence o fixo da rota — TOPBAR-02 / DASH-HEADER-01.
+  const pageSubtitle = dynamicSubtitle ?? PAGE_SUBTITLES[segment] ?? ''
 
   // Global "/" shortcut to pop the search palette open. Skip while the user
   // is typing in any input/textarea so the slash stays usable as a literal
