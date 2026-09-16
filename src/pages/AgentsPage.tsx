@@ -140,33 +140,33 @@ function AgentCard({
       className={cn(
         'relative w-full text-left pl-4 pr-3 py-3 rounded-2xl border transition-colors duration-150 group cursor-pointer',
         selected
-          ? 'bg-brand-600/10 border-brand-500/30'
-          : 'bg-surface-900/50 border-surface-800/60 hover:bg-surface-800/60 hover:border-surface-700',
+          ? 'bg-[var(--rowhover)] border-surface-800/60 shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
+          : 'bg-surface-900/50 border-surface-800/60 hover:bg-[var(--rowhover)] hover:border-surface-700',
       )}
     >
-      {/* Accent bar de seleção — sinal periférico que não depende de cor de fundo */}
-      <span
-        aria-hidden
-        className={cn(
-          'absolute left-0 top-3 bottom-3 w-[3px] rounded-full transition-colors',
-          selected ? 'bg-brand-500' : 'bg-transparent',
-        )}
-      />
       <div className="flex items-center gap-3">
-        <AgentIcon iconId={agent.icon} className="w-9 h-9" />
+        <AgentIcon iconId={agent.icon} className="w-[34px] h-[34px]" />
         <div className="flex-1 min-w-0">
-          {/* Nome em linha própria — status desceu p/ a meta row, então o
-              nome não trunca mais por competir com o badge */}
-          <span className="block text-sm font-semibold text-surface-100 truncate">{agent.name}</span>
-          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-surface-500">
+          {/* Nome + chip de estado na mesma linha (tela 2a); métricas reais
+              (conversas atendidas, última atividade) nas duas linhas abaixo —
+              nada de sparkline/CSAT fictício, o AgentConfig de hoje só tem
+              conversation_count/updated_at. */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[13px] font-semibold text-surface-100 truncate">{agent.name}</span>
             <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: statusCfg.chip }}
-            />
-            <span>{statusCfg.label}</span>
-            <span className="text-surface-700">·</span>
-            <span className="truncate">{relativeTime(agent.updated_at)}</span>
+              className="flex items-center gap-1 text-[10.5px] font-medium flex-shrink-0"
+              style={{ color: statusCfg.chip }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusCfg.chip }} />
+              {statusCfg.label}
+            </span>
           </div>
+          <p className="text-[11.5px] text-surface-500 truncate mt-0.5">
+            {agent.conversation_count.toLocaleString('pt-BR')} conversa{agent.conversation_count === 1 ? '' : 's'}
+          </p>
+          <p className="text-[11px] text-surface-600 truncate">
+            atualizado {relativeTime(agent.updated_at)}
+          </p>
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           {stale && (
@@ -276,7 +276,7 @@ export function AgentsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* ── Left: Agent list — hidden when no agents ── */}
         {hasAgents && (
-          <div className="w-80 flex-shrink-0 flex flex-col border-r border-surface-800/60">
+          <div className="w-[300px] flex-shrink-0 flex flex-col border-r border-surface-800/60">
             {/* Cabeçalho da coluna — identifica a lista e o total sem depender do TopBar */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
               <h2 className="text-sm font-display font-bold text-surface-100">Agentes</h2>
