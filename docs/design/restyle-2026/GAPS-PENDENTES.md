@@ -36,6 +36,21 @@ rodapé do mockup quebraria um padrão de UX já testado e usado em outras lista
 Contatos? Se não, o rodapé de seleção do mockup não se aplica; a `BulkActionBar` flutuante
 já cobre a mesma necessidade.
 
+### 1.3 Drawer com estado em `?contact=&tab=`
+
+As notas de implementação do mockup (`telas/01-1c-modal-configurar-colunas.png`) pedem
+explicitamente que o drawer do contato tenha seu estado (aberto/fechado + aba ativa)
+refletido na URL (`?contact=&tab=`), para permitir voltar/compartilhar/atualizar a página
+sem perder o contexto. Hoje `ContactsPage` só LÊ `?contact=` uma vez no mount (pra abrir o
+drawer vindo de um link) e nunca escreve `?tab=` — trocar de aba ou abrir/fechar o drawer
+pela UI não atualiza a URL.
+
+**Para desbloquear:** não é falta de dado, é escopo — implementar exige sincronizar
+`useSearchParams` nos dois sentidos (URL → estado E estado → URL) com cuidado para não
+conflitar com `useListScrollMemory` e com a navegação do botão "Voltar" do browser. Dá pra
+fazer sem decisão de produto nenhuma; ficou de fora desta leva por ser mudança de
+comportamento (não só visual) e por risco de regressão em fluxos de navegação já testados.
+
 ## 2. Conversas/Inbox (leva 4, README 3.3)
 
 ### 2.1 SegmentedControl "Minhas/Fila/Todas" como eixo primário da lista
@@ -91,12 +106,16 @@ estimar o tamanho do trabalho.
 
 ### 3.2 Chips de etiqueta de 16px no card de negócio
 
-O mockup mostra chips de etiqueta no card do board. `Deal` não tem campo de tags — só
-`Contact` e `Conversation` têm etiquetas hoje.
+O mockup mostra chips de etiqueta no card do board (`telas/01-1e-funis-kanban-modal.png`,
+ex. "VIP"/"Indicação" no card "Plano Pro anual"). Reexaminando a imagem, são provavelmente
+etiquetas do CONTATO do negócio (não um conceito novo de "etiqueta de negócio") — mas
+mesmo assim é um gap de dado: `Deal.contact` no board é uma projeção enxuta (`{ id,
+displayName, profilePicUrl, phone }`, ver `src/types/index.ts`), sem `tags`. A listagem do
+board (`GET /deals?pipelineId=`) não traz as etiquetas do contato junto.
 
-**Para desbloquear:** decisão de produto — etiquetas fazem sentido no NEGÓCIO (ex.:
-"upsell", "renovação") como conceito distinto das etiquetas do contato/conversa? Se sim,
-precisa de campo novo no backend.
+**Para desbloquear:** confirmar se são mesmo etiquetas do contato (mais provável) ou um
+conceito novo de etiqueta do negócio; no primeiro caso, o backend precisa incluir `tags` na
+projeção de contato que o board recebe.
 
 ### 3.3 Avatar de 18px `rounded-[30%]` para o dono do negócio (card de venda)
 
@@ -131,3 +150,38 @@ errada é pior que informação ausente).
 **Para desbloquear:** confirmar com o backend/PO se fechar um negócio de fato encerra a
 conversa de origem e pausa automações vinculadas. Se sim, o banner é uma adição de baixo
 risco (reusa `Banner` do `ui/`, já usado em `ConfirmModal`).
+
+### 3.6 "Tempo/alerta de parado" em cor de perigo
+
+README 3.4 pede que o tempo na etapa vire cor de perigo quando o negócio está "parado" —
+confirmado visualmente (`telas/01-1e-funis-kanban-modal.png` mostra "parado 6d"/"parado 9d"
+em vermelho em 2 cards). O dado (tempo na etapa) já existe e já é exibido
+(`timeInStage(deal)`, cinza, sempre) — falta só a REGRA de quando ele deixa de ser "tempo
+normal" e vira "parado". Sem um limiar definido eu inventaria um número (quantos dias?
+mesmo limiar pra todo funil/etapa, ou por etapa?), que é exatamente o tipo de regra de
+negócio que não deveria sair de um chute meu.
+
+**Para desbloquear:** decisão de produto — qual o limiar de "parado"? É fixo (ex. 5 dias) ou
+configurável por etapa/funil (algumas etapas são naturalmente mais lentas que outras)?
+
+### 3.7 `CloseDealReasonModal`: botão desabilitado × erro inline
+
+As notas de implementação do mockup (`telas/01-1e-card-negocio-estados.png`) são
+explícitas: "Ganho/Perdido não são alvo de clique direto; a 'porta única' continua sendo o
+CloseDealReasonModal, **com o erro inline do FormField no lugar de bloquear o botão**" — ou
+seja, o botão de confirmar deveria ficar sempre clicável, e tentar confirmar sem motivo
+escolhido é o que dispara o erro inline (`Select` com borda vermelha + "Informe o motivo
+para continuar"), em vez de o botão nascer desabilitado.
+
+O comportamento atual é o oposto: o botão fica `disabled` até um motivo ser escolhido
+(`canConfirm`), e isso é intencional e **testado** — `CloseDealReasonModal.test.tsx` tem
+casos com nome descrevendo exatamente esse comportamento ("confirmar fica desabilitado até
+escolher"). Trocar unilateralmente o padrão de validação (bloquear × validar-ao-tentar) é
+uma decisão de UX, não um bug — os dois padrões são defensáveis e este já foi escolhido,
+testado e usado em produção.
+
+**Para desbloquear:** decisão de produto/UX — vale trocar o padrão de validação deste modal
+(e possivelmente do `ResolveOutcomePopover` do inbox, que compartilha `CloseReasonFields`)
+de "bloqueado até válido" para "clicável, valida ao tentar"? Se sim, dá pra fazer sem
+depender de nenhum dado novo — só precisa atualizar os testes que hoje afirmam o
+comportamento antigo.

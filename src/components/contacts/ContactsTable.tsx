@@ -262,6 +262,11 @@ export function ContactsTable({
       header: 'Telefone',
       render: (c) => <span className="text-xs text-surface-400 whitespace-nowrap">{c.waId || '—'}</span>,
     },
+    email: {
+      key: 'email',
+      header: 'E-mail',
+      render: (c) => <span className="text-xs text-surface-400 truncate">{c.email || '—'}</span>,
+    },
     stage: {
       key: 'stage',
       header: 'Situação',
