@@ -3,7 +3,6 @@ import { Loader2 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
 import { useToast } from '@/hooks/useToast'
-import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { ContactDetailHeader } from './ContactDetailHeader'
 import { ContactDetailTabs, type TabId } from './ContactDetailTabs'
 import { ContactIdentityPanel } from './ContactIdentityPanel'
@@ -31,11 +30,12 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? 'overview')
   const { toast } = useToast()
-  // Contagem real da aba "Negócios" (README 3.2: "Negócios 4") — mesmo hook
-  // que DealsSummaryCard/DealsTab já usam pra essa informação; nenhuma
-  // consulta nova. `requireMultiPipeline: false` porque a aba não pode sumir
-  // no tenant de funil único (mesmo motivo do DealsTab).
-  const { deals: pipelineDeals } = useContactPipelines(contactId, contact?.displayName ?? '', { requireMultiPipeline: false })
+  // Contagem real da aba "Negócios" (README 3.2: "Negócios 4") — reportada
+  // pelo DealsSummaryCard (Visão Geral), que já é o único lugar que busca os
+  // funis do contato aqui dentro. NÃO chama useContactPipelines de novo — uma
+  // segunda instância duplicaria fetch + listener de socket (`deal:changed`)
+  // + listener de evento local (`DEALS_INVALIDATE_EVENT`) só pra este número.
+  const [dealsCount, setDealsCount] = useState<number | undefined>(undefined)
 
   // Reabre na aba pedida sempre que o contato ou a aba solicitada mudarem
   // (ex.: clicar num chip de negócio de OUTRO contato enquanto o painel já está aberto).
@@ -47,6 +47,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
   useEffect(() => {
     setLoading(true)
     setContact(null)
+    setDealsCount(undefined)
     contactsApi.get(contactId)
       .then((r) => setContact(r.data))
       .catch(() => toast('Erro ao carregar contato.', 'error'))
@@ -171,7 +172,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
           <ContactDetailTabs
             activeTab={activeTab}
             onChange={setActiveTab}
-            dealsCount={pipelineDeals?.length}
+            dealsCount={dealsCount}
             conversationsCount={contact.conversationCount}
           />
           {/* Reauditoria de fidelidade (item 4): painel de identidade fixo à
@@ -191,6 +192,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
                 onRefresh={() => {
                   contactsApi.get(contactId).then((r) => { setContact(r.data); onContactUpdate?.(r.data) }).catch(() => {})
                 }}
+                onDealsCountChange={setDealsCount}
               />}
               {activeTab === 'deals'         && <DealsTab contactId={contactId} contactName={contact.displayName} />}
               {activeTab === 'history'       && <HistoryTab contactId={contactId} />}

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
@@ -27,7 +28,19 @@ import type { Deal, Pipeline } from '@/types'
  * move o contato para OUTRO funil (desabilita os que ele já está, com "já
  * está · <etapa>"), então não some assim que existe 1 negócio.
  */
-export function DealsSummaryCard({ contactId, contactName }: { contactId: string; contactName: string }) {
+export function DealsSummaryCard({
+  contactId, contactName, onCountChange,
+}: {
+  contactId: string
+  contactName: string
+  /** Reauditoria de fidelidade (item 3, "Negócios N" na aba) — este card já
+   *  é o único lugar que busca os funis do contato na Visão Geral; em vez de
+   *  `ContactDetailPanel` chamar `useContactPipelines` de novo (subscrição
+   *  duplicada: fetch, socket `deal:changed` e listener de
+   *  `DEALS_INVALIDATE_EVENT`, tudo em dobro), ele só reporta a contagem pra
+   *  cima quando muda. */
+  onCountChange?: (count: number) => void
+}) {
   const { vocab } = useTenantVocab()
   const multiPipeline = useMultiPipeline()
   // Overview precisa mostrar algo mesmo no tenant legado de funil único —
@@ -35,6 +48,10 @@ export function DealsSummaryCard({ contactId, contactName }: { contactId: string
   const { enabled, deals, open, pipelines, pipelineOf } = useContactPipelines(contactId, contactName, { requireMultiPipeline: false })
   const addToPipeline = useAddToPipeline({ onCreated: () => {} })
   const salesPipeline = defaultSalesPipeline(pipelines)
+
+  useEffect(() => {
+    if (deals) onCountChange?.(deals.length)
+  }, [deals, onCountChange])
 
   if (!enabled) return null
 

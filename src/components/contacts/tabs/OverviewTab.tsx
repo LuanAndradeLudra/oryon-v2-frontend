@@ -11,6 +11,8 @@ interface OverviewTabProps {
   contact: Contact
   onSave: (patch: Partial<Contact>) => Promise<void>
   onRefresh?: () => void
+  /** Repassado pro DealsSummaryCard — ver comentário lá. */
+  onDealsCountChange?: (count: number) => void
 }
 
 // Fase 1 (plano de UI do drawer, achado do usuário): o `StageCard` full-size
@@ -25,7 +27,7 @@ interface OverviewTabProps {
 // `ContactDetailPanel` que persiste entre TODAS as abas (o mockup mostra
 // esse painel sempre visível, não só na Visão Geral). Esta aba agora é só a
 // pilha de leitura derivada/negócio.
-export function OverviewTab({ contact, onSave, onRefresh }: OverviewTabProps) {
+export function OverviewTab({ contact, onSave, onRefresh, onDealsCountChange }: OverviewTabProps) {
   // Card "Contexto da IA" gateado por feature flag — escondido enquanto a
   // geração automática está desligada (FF_AUTO_AI_PROFILE_ON_RESOLVE=false
   // no backend). Para reativar, basta flippar `aiContextCard` em
@@ -37,7 +39,7 @@ export function OverviewTab({ contact, onSave, onRefresh }: OverviewTabProps) {
       <AttributionCard contact={contact} />
       <ContactInsightsCard contact={contact} />
       <EngagementCard contactId={contact.id} />
-      <DealsSummaryCard contactId={contact.id} contactName={contact.displayName} />
+      <DealsSummaryCard contactId={contact.id} contactName={contact.displayName} onCountChange={onDealsCountChange} />
       <QualificationCard contact={contact} onSave={onSave} />
     </div>
   )
