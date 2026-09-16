@@ -315,7 +315,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
         className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[600px] bg-surface-950 border-l overlay-frame flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
           <div className="w-8 h-8 rounded-xl bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
             <BarChart3 className="w-4 h-4 text-brand-400" />
           </div>
@@ -338,7 +338,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
         ) : (
           <>
             {/* KPI Strip */}
-            <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
+            <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
               <div className="grid grid-cols-4 gap-2">
                 <KpiCard label="Lidas"        value={`${readRate}%`}  sub={`${stats.read} de ${stats.sent}`}      color="var(--color-accent-amber)" icon={<BarChart3 className="w-3.5 h-3.5" />} />
                 <KpiCard label="Responderam"  value={`${replyRate}%`} sub={`${stats.replied ?? 0} respostas`}       color="var(--color-accent-violet)" icon={<MessageCircle className="w-3.5 h-3.5" />} />
@@ -365,7 +365,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
             </div>
 
             {/* Tab bar */}
-            <div className="flex items-center gap-1 px-5 py-2 border-b border-surface-800 flex-shrink-0">
+            <div className="flex items-center gap-1 px-5 py-2 border-b border-surface-700 flex-shrink-0">
               {tabs.map((t) => (
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
@@ -637,7 +637,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                 const cfg = getPlatformCfg(ab.source)
                                 const isLast = i === analytics.attributionBreakdown.length - 1
                                 return (
-                                  <tr key={ab.source} className={cn('transition-colors hover:bg-surface-800/50', !isLast && 'border-b border-surface-800')}>
+                                  <tr key={ab.source} className={cn('transition-colors hover:bg-surface-800/50', !isLast && 'border-b border-surface-700')}>
                                     <td className="px-3 py-2">
                                       <div className="flex items-center gap-1.5">
                                         <span style={{ color: cfg.color }}>{cfg.icon}</span>
@@ -705,7 +705,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                               'px-2 py-0.5 rounded-full text-3xs font-medium border transition-all',
                               sentimentFilter === s
                                 ? 'bg-surface-700 border-surface-500 text-surface-200'
-                                : 'border-surface-800 text-surface-500 hover:text-surface-300',
+                                : 'border-surface-700 text-surface-500 hover:text-surface-300',
                             )}
                           >
                             {s === 'all' ? 'Todos' : SENTIMENT_CONFIG[s]?.label ?? s}

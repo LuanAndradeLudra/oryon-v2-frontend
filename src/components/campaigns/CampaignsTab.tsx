@@ -9,6 +9,8 @@ import { CampaignWizard } from './CampaignWizard'
 import { CampaignReport } from './CampaignReport'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
+import { cn } from '@/lib/utils'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -65,6 +67,23 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
   // reporta em vez de duplicar o fetch lá em cima.
   useEffect(() => { onCountChange?.(campaigns.length) }, [campaigns.length, onCountChange])
 
+  // CAMP-HDR-04/05 (spec 2c): "Nova campanha" vive no TopBar, não numa
+  // toolbar própria — mesmo slot que AgentsPage já usa pra "Novo agente".
+  // sm (32px) + ícone 14px, mesma lógica de gate de linha WhatsApp de sempre.
+  useRegisterTopBarActions(
+    <Button
+      size="sm"
+      variant="neutral"
+      onClick={() => hasWhatsappLine && setWizardOpen(true)}
+      disabled={!hasWhatsappLine}
+      title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar campanhas' : undefined}
+      leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}
+    >
+      Nova campanha
+    </Button>,
+    [hasWhatsappLine],
+  )
+
   const handleCreated = useCallback((camp: Campaign) => {
     setCampaigns((prev) => {
       // Remove duplicata caso o wizard já tenha feito o envio e
@@ -118,11 +137,11 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
         </div>
       )}
 
-      {/* Toolbar. flex-wrap (SCRUM-1070): sem isto, em ~375px o SegmentedControl
-          + LineFilterChip já consumiam a largura útil e "Nova campanha" — o
-          CTA primário da tela — ficava cortado fora da barra em vez de
-          quebrar linha. */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-800 flex-shrink-0 flex-wrap">
+      {/* Toolbar — CTA principal saiu daqui pro TopBar (CAMP-HDR-04),
+          fica só o filtro de status/linha. flex-wrap (SCRUM-1070): em telas
+          estreitas o SegmentedControl + LineFilterChip quebram linha em vez
+          de sair cortados da barra. */}
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0 flex-wrap">
         <SegmentedControl
           options={FILTER_OPTIONS}
           value={statusFilter}
@@ -131,21 +150,6 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
         />
 
         <LineFilterChip value={lineFilter} onChange={setLineFilter} />
-
-        <div className="flex-1 min-w-0" />
-
-        {/* `neutral` no lugar do teal (10/09): mesma conversão dos botões de
-            criação do funil. O teal aqui não dizia "importante", dizia "botão" —
-            e ele já é o único elemento cheio da barra. */}
-        <Button
-          variant="neutral"
-          onClick={() => hasWhatsappLine && setWizardOpen(true)}
-          disabled={!hasWhatsappLine}
-          title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar campanhas' : undefined}
-          leftIcon={<Plus className="w-4 h-4" />}
-        >
-          Nova campanha
-        </Button>
       </div>
 
       {/* Content — tabela compartilhada (SCRUM-1106, tela 2c): mesma migração
@@ -228,17 +232,26 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
 // (Campanha, Status, Template, Público, Entregues, Lidas, Respostas, Envio,
 // menu). Numéricos à direita/tabulares; `Falhou · N%` quando há falhas.
 
+// CAMP-TABLE-08 (spec 2c): chip suave (fundo tinta + texto colorido), não o
+// pill sólido escurecido do `.color-chip` — esse mixin é certo pra OUTRA
+// categoria de elemento (tag/etapa), não pro status de campanha. Sem ícone;
+// "Enviando" ganha um pontinho (dot) em vez de ícone.
+const STATUS_CHIP_CLASS: Record<CampaignStatus, string> = {
+  draft:     'bg-surface-900 border border-surface-700 text-surface-400',
+  scheduled: 'bg-status-pending-bg text-status-pending',
+  sending:   'bg-accent-soft text-accent-dark',
+  sent:      'bg-status-active-bg text-status-active',
+  failed:    'bg-danger/10 text-danger',
+  cancelled: 'bg-surface-900 border border-surface-700 text-surface-400',
+}
+
 function statusChip(campaign: Campaign) {
   const cfg = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft
-  const Icon = cfg.icon
   const failRate = campaign.stats.sent > 0 ? Math.round((campaign.stats.failed / campaign.stats.sent) * 100) : 0
   const label = campaign.status === 'failed' && failRate > 0 ? `Falhou · ${failRate}%` : cfg.label
   return (
-    <span
-      className="color-chip border inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
-      style={{ ['--chip']: cfg.chip } as React.CSSProperties}
-    >
-      <Icon className="w-3 h-3" />
+    <span className={cn('inline-flex items-center h-5 px-[7px] rounded-xs text-[11px] font-semibold gap-[5px]', STATUS_CHIP_CLASS[campaign.status] ?? STATUS_CHIP_CLASS.draft)}>
+      {campaign.status === 'sending' && <i className="w-1.5 h-1.5 rounded-full bg-current not-italic" />}
       {label}
     </span>
   )
@@ -248,14 +261,24 @@ function rate(part: number, total: number): string {
   return total > 0 ? `${Math.round((part / total) * 100)}%` : '—'
 }
 
+// CAMP-TABLE-11: "hoje HH:mm" quando a data cai no dia de hoje, senão
+// "DD mmm" (curto, sem hora) — mais perto do formato do mock ("hoje 09:00",
+// "17 set 10:00") do que o DD/MM cru de antes.
+const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+function isToday(d: Date): boolean {
+  const now = new Date()
+  return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+}
+
 function sendDate(campaign: Campaign): string {
-  if (campaign.sentAt) {
-    return new Date(campaign.sentAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-  }
-  if (campaign.scheduledAt) {
-    return new Date(campaign.scheduledAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-  }
-  return '—'
+  const iso = campaign.sentAt ?? campaign.scheduledAt
+  if (!iso) return '—'
+  const d = new Date(iso)
+  const hhmm = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  if (isToday(d)) return `hoje ${hhmm}`
+  const dia = `${d.getDate()} ${MESES_ABREV[d.getMonth()]}`
+  return campaign.scheduledAt && !campaign.sentAt ? `${dia} ${hhmm}` : dia
 }
 
 function MenuCell({ campaign, onSend, onDelete, onReport, onAssignWaba, sending, deleting }: {
@@ -333,7 +356,9 @@ function campaignColumns({ onSend, onDelete, onReport, onAssignWaba, sendingId, 
       header: 'Campanha',
       render: (c) => (
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[13px] font-semibold text-surface-100 truncate">{c.name}</span>
+          {/* CAMP-TABLE-07: rascunho rebaixa pra --tx2, não compete com os
+              nomes de campanha ativa/enviada. */}
+          <span className={cn('text-[13px] font-semibold truncate', c.status === 'draft' ? 'text-surface-400' : 'text-surface-100')}>{c.name}</span>
           <WhatsappLineChip whatsappNumberId={c.whatsappNumberId} />
           {c.needsWabaAssignment && <WabaAssignmentBadge onClick={() => onAssignWaba(c)} />}
         </div>
@@ -348,48 +373,51 @@ function campaignColumns({ onSend, onDelete, onReport, onAssignWaba, sendingId, 
     {
       key: 'template',
       header: 'Template',
-      render: (c) => <span className="font-mono text-[11.5px] text-surface-400 truncate">{c.templateName}</span>,
+      render: (c) => c.templateName
+        ? <span className="font-mono text-[11.5px] text-surface-400 truncate">{c.templateName}</span>
+        : <span className="text-xs text-surface-500">sem template</span>,
     },
     {
       key: 'total',
       header: 'Público',
       widthClass: 'w-[90px]',
       align: 'right',
-      render: (c) => <span className="tabular-nums text-surface-300">{c.stats.total > 0 ? c.stats.total : '—'}</span>,
+      render: (c) => c.stats.total > 0
+        ? <span className="tabular-nums text-surface-100">{c.stats.total.toLocaleString('pt-BR')}</span>
+        : <span className="tabular-nums text-surface-500">—</span>,
     },
     {
       key: 'delivered',
       header: 'Entregues',
       widthClass: 'w-[90px]',
       align: 'right',
-      render: (c) => (
-        <span className="tabular-nums text-surface-300">
-          {c.stats.sent > 0 ? `${c.stats.delivered} · ${rate(c.stats.delivered, c.stats.sent)}` : '—'}
-        </span>
-      ),
+      render: (c) => c.stats.sent > 0
+        ? <span className="tabular-nums text-surface-100">{c.stats.delivered.toLocaleString('pt-BR')} · {rate(c.stats.delivered, c.stats.sent)}</span>
+        : <span className="tabular-nums text-surface-500">—</span>,
     },
     {
       key: 'read',
       header: 'Lidas',
       widthClass: 'w-[90px]',
       align: 'right',
-      render: (c) => (
-        <span className="tabular-nums text-surface-300">
-          {c.stats.sent > 0 ? `${c.stats.read} · ${rate(c.stats.read, c.stats.sent)}` : '—'}
-        </span>
-      ),
+      render: (c) => c.stats.sent > 0
+        ? <span className="tabular-nums text-surface-100">{c.stats.read.toLocaleString('pt-BR')} · {rate(c.stats.read, c.stats.sent)}</span>
+        : <span className="tabular-nums text-surface-500">—</span>,
     },
     {
       key: 'replied',
       header: 'Respostas',
       widthClass: 'w-[90px]',
       align: 'right',
-      render: (c) => <span className="tabular-nums text-surface-300">{c.stats.replied ?? '—'}</span>,
+      render: (c) => typeof c.stats.replied === 'number'
+        ? <span className="tabular-nums text-surface-100">{c.stats.replied.toLocaleString('pt-BR')}</span>
+        : <span className="tabular-nums text-surface-500">—</span>,
     },
     {
       key: 'sendDate',
       header: 'Envio',
       widthClass: 'w-[120px]',
+      align: 'right',
       render: (c) => <span className="text-surface-400">{sendDate(c)}</span>,
     },
     {

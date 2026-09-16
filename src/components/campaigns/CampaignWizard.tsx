@@ -16,10 +16,11 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   X, ChevronRight, ChevronLeft, Check, Search, Loader2, Calendar,
   Users, Tag as TagIcon, BarChart2, UserCheck, SlidersHorizontal, Info,
-  Sparkles, MessageCircle, Send, Clock,
+  Sparkles, MessageCircle, Send, Clock, AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
+import { Button } from '@/components/ui/Button'
 import { WizardProgress } from '@/components/ui/WizardProgress'
 import { getReadableTextColor } from '@/lib/colorPalette'
 import { Emoji } from '@/lib/emojiText'
@@ -28,7 +29,6 @@ import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
 import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { TemplatePreview } from './TemplatePreview'
-import { CATEGORY_LABELS } from './constants'
 import type {
   Campaign, Contact, ContactIntent, ContactSource, ContactSentiment,
   WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
@@ -432,13 +432,14 @@ export function CampaignWizard({
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-surface-900 overlay-frame border rounded-2xl w-full max-w-3xl pointer-events-auto flex flex-col max-h-[90vh]"
+              className="bg-surface-800 overlay-frame border rounded-2xl w-full max-w-3xl pointer-events-auto flex flex-col max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
-                <h2 className="text-base font-semibold text-surface-50">Nova campanha</h2>
-                <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+              {/* Header — CAMP-WIZ-03/04/06: sem border-b (o breadcrumb logo
+                  abaixo já separa visualmente), título 15px/700, X mais sutil. */}
+              <div className="flex items-center justify-between px-5 pt-4 pb-0 flex-shrink-0">
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-100">Nova campanha</h2>
+                <button onClick={onClose} className="p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -457,7 +458,7 @@ export function CampaignWizard({
                   (era redundante, removido). px-5 py-3 iguala o padding do
                   header/footer do modal — o componente novo não traz padding
                   próprio (era o antigo, mais alto, que trazia). */}
-              <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
+              <div className="px-5 py-3.5 border-b border-surface-700 flex-shrink-0">
                 <WizardProgress
                   steps={STEP_LABELS}
                   currentStep={step}
@@ -466,7 +467,7 @@ export function CampaignWizard({
               </div>
 
               {/* Step content */}
-              <div className="flex-1 overflow-y-auto p-5">
+              <div className="flex-1 overflow-y-auto px-5 py-[18px]">
                 {step === 1 && (
                   <>
                     <Step1
@@ -567,9 +568,12 @@ export function CampaignWizard({
                 )}
               </div>
 
-              {/* Footer */}
-              <div className="flex items-center justify-between px-5 py-4 border-t border-surface-800 flex-shrink-0">
-                <button
+              {/* Footer — CAMP-WIZ-26/27/29: padding/borda ajustados, botões
+                  viram Button do sistema (ghost/primary) em vez de invertido
+                  neutro artesanal com raio 10. */}
+              <div className="flex items-center justify-between px-5 pt-3.5 pb-4 gap-2 border-t border-surface-700 flex-shrink-0">
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     const { userId, tenantId } = readSession()
                     appLogger.logWizardEvent({
@@ -580,17 +584,15 @@ export function CampaignWizard({
                     setStep((s) => Math.max(1, s - 1) as Step)
                   }}
                   disabled={step === 1}
-                  className={cn(
-                    'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all',
-                    step === 1 ? 'invisible' : 'text-surface-400 hover:text-surface-200'
-                  )}
+                  className={step === 1 ? 'invisible' : undefined}
+                  leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
-                  <ChevronLeft className="w-4 h-4" />
                   Voltar
-                </button>
+                </Button>
 
                 {step < 5 ? (
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={() => {
                       const { userId, tenantId } = readSession()
                       appLogger.logWizardEvent({
@@ -606,36 +608,22 @@ export function CampaignWizard({
                       !canAdvance && step === 3 ? 'Preencha o mapeamento de todas as variáveis para continuar' :
                       undefined
                     }
-                    /* Avanço/criação do assistente em `neutral` (10/09) — o teal
-                       aqui só dizia "botão", e o estado desabilitado já é quem
-                       carrega a informação real (pode ou não avançar). */
-                    className={cn(
-                      'flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium transition-all',
-                      canAdvance
-                        ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
-                        : 'bg-surface-700 text-surface-500 cursor-not-allowed'
-                    )}
+                    rightIcon={<ChevronRight className="w-4 h-4" />}
                   >
                     Próximo
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={handleSubmit}
                     disabled={saving || (waNumbers.length > 1 && !whatsappNumberId)}
                     title={waNumbers.length > 1 && !whatsappNumberId ? 'Escolha a linha WhatsApp antes de criar' : undefined}
-                    className={cn(
-                      'flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-medium transition-all',
-                      !saving && !(waNumbers.length > 1 && !whatsappNumberId)
-                        ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
-                        : 'bg-surface-700 text-surface-500 cursor-not-allowed'
-                    )}
+                    loading={saving}
                   >
-                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                     {scheduleMode === 'later'
                       ? 'Agendar campanha'
                       : saving ? 'Enviando...' : 'Criar e enviar agora'}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -683,7 +671,7 @@ function Step1({
           value={campaignName}
           onChange={(e) => onNameChange(e.target.value)}
           placeholder="Ex: Campanha Black Friday 2026"
-          className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+          className="w-full bg-surface-800 border border-surface-700 rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
         />
         <p className="text-[11px] text-surface-600 mt-1">Use um nome descritivo para identificar a campanha no histórico.</p>
       </div>
@@ -698,7 +686,7 @@ function Step1({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nome ou conteúdo..."
-            className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full bg-surface-800 border border-surface-700 rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
           />
         </div>
 
@@ -722,7 +710,7 @@ function Step1({
                 className={cn(
                   'w-full text-left p-3 rounded-xl border transition-all',
                   selected?.id === tpl.id
-                    ? 'border-brand-500 bg-brand-500/10'
+                    ? 'border-brand-500 ring-[3px] ring-accent-soft'
                     : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
                 )}
               >
@@ -846,7 +834,7 @@ function Step2({
                 className={cn(
                   'w-full text-left px-3 py-2.5 rounded-xl border transition-all flex items-center gap-3',
                   segmentType === opt.value
-                    ? 'border-brand-500 bg-brand-500/10'
+                    ? 'border-brand-500 ring-[3px] ring-accent-soft'
                     : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
                 )}
               >
@@ -947,7 +935,7 @@ function Step2({
               value={contactSearch}
               onChange={(e) => setContactSearch(e.target.value)}
               placeholder="Buscar por nome ou número..."
-              className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+              className="w-full bg-surface-800 border border-surface-700 rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
             />
           </div>
           {loadingContacts ? (
@@ -1350,7 +1338,7 @@ function Step4({
               className={cn(
                 'p-3 rounded-xl border text-left transition-colors',
                 scheduleMode === opt.value
-                  ? 'border-brand-500 bg-brand-500/10'
+                  ? 'border-brand-500 ring-[3px] ring-accent-soft'
                   : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
               )}
             >
@@ -1376,7 +1364,7 @@ function Step4({
                   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
                   return local.toISOString().slice(0, 16)
                 })()}
-                className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                className="w-full bg-surface-800 border border-surface-700 rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
               />
             </div>
             <p className="text-[11px] text-surface-600 mt-1.5">
@@ -1397,20 +1385,37 @@ function Step4({
   )
 }
 
-function SummaryRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+// CAMP-WIZ-15/16/18/21 (spec 2c): 1 linha do resumo — grid 120px|1fr|auto,
+// hairline --bd (surface-700), sem grupo/eyebrow em volta.
+function SummaryRow({ label, value, action }: { label: string; value: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs text-surface-500">{label}</span>
-      <span className={cn('text-xs text-surface-200', mono && 'font-mono')}>{value}</span>
+    <div className="grid grid-cols-[120px_1fr_auto] items-center gap-2.5 py-[9px] border-b border-surface-700 last:border-b-0">
+      <span className="text-xs text-surface-400">{label}</span>
+      <span className="text-[13px] font-medium text-surface-100 min-w-0 truncate">{value}</span>
+      {action}
     </div>
   )
 }
 
 // ─── Step 5: Review ────────────────────────────────────────────────────────────
 
+// CAMP-WIZ-19 (spec 2c): chip "Aprovado · Meta" na linha Template do resumo —
+// mesmo padrão suave (fundo tinta + texto colorido) do statusChip de
+// CampaignsTab.tsx/TemplatesTab.tsx.
+const TEMPLATE_STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Em análise', APPROVED: 'Aprovado', REJECTED: 'Rejeitado', PAUSED: 'Pausado', DISABLED: 'Desativado',
+}
+const TEMPLATE_STATUS_CLASS: Record<string, string> = {
+  APPROVED: 'bg-status-active-bg text-status-active',
+  PENDING:  'bg-status-pending-bg text-status-pending',
+  REJECTED: 'bg-danger/10 text-danger',
+  PAUSED:   'bg-surface-900 border border-surface-700 text-surface-400',
+  DISABLED: 'bg-danger/10 text-danger',
+}
+
 function EditLink({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="text-[11.5px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">
+    <button onClick={onClick} className="text-[11.5px] font-semibold text-accent-dark hover:opacity-80 transition-opacity">
       Editar
     </button>
   )
@@ -1507,85 +1512,41 @@ function Step5({
   const scheduleDisplay = scheduleMode === 'now'
     ? 'Imediatamente após criar'
     : scheduledAt
-      ? new Date(scheduledAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      // CAMP-WIZ-22: "Qua, 17 set · 10:00" em vez do dd/mm/yy hh:mm cru.
+      ? new Date(scheduledAt).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }).replace('.', '') + ' · ' + new Date(scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       : '—'
+
+  const publicLabel = estimatedReach !== null
+    ? <><b className="text-surface-100">{estimatedReach} contato{estimatedReach === 1 ? '' : 's'}</b> · {segmentLabels[segmentType]}</>
+    : segmentLabels[segmentType]
 
   return (
     <div className="flex gap-5">
-      {/* Left column — lista plana com hairline entre linhas (tela 2c),
-          mesmo padrão do InfoTable em ContactPanel.tsx: sem caixa/card em
-          volta dos grupos, só um eyebrow acima de cada grupo. */}
-      <div className="flex-1 space-y-5">
-        {/* Campanha */}
+      {/* Left column — lista plana com hairline entre linhas (tela 2c,
+          CAMP-WIZ-15): sem caixa/card nem eyebrow de grupo em volta, 1 lista
+          só (Nome·Template·Público·Linha·Envio — Custo estimado não existe,
+          sem dado de preço por mensagem no frontend). */}
+      <div className="flex-1">
         <div>
-          <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-1.5">Campanha</p>
-          <div className="divide-y divide-surface-800/60">
-            <div className="flex items-baseline justify-between gap-2 py-2 first:pt-0">
-              <span className="text-[11px] text-surface-500 flex-shrink-0">Nome</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-surface-100">{campaignName}</span>
-                <EditLink onClick={() => onEditStep(1)} />
-              </div>
-            </div>
-            <div className="flex items-baseline justify-between gap-2 py-2">
-              <span className="text-[11px] text-surface-500 flex-shrink-0">Template</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-brand-300 bg-brand-400/10 px-2 py-0.5 rounded">{template.name}</span>
-                <EditLink onClick={() => onEditStep(1)} />
-              </div>
-            </div>
-            <div className="flex items-baseline justify-between gap-2 py-2">
-              <span className="text-[11px] text-surface-500 flex-shrink-0">Categoria</span>
-              <span className="text-xs text-surface-300 bg-surface-700 px-2 py-0.5 rounded">{CATEGORY_LABELS[template.category] ?? template.category}</span>
-            </div>
-            {lineLabel && (
-              <div className="flex items-baseline justify-between gap-2 py-2">
-                <span className="text-[11px] text-surface-500 flex-shrink-0">Linha</span>
-                <span className="text-xs text-surface-300">{lineLabel}</span>
-              </div>
-            )}
-            <div className="flex items-baseline justify-between gap-2 py-2">
-              <span className="text-[11px] text-surface-500 flex-shrink-0">Envio</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-surface-300">{scheduleDisplay}</span>
-                <EditLink onClick={() => onEditStep(4)} />
-              </div>
-            </div>
-            {mappings.length > 0 && (
-              <div className="flex items-baseline justify-between gap-2 py-2 last:pb-0">
-                <span className="text-[11px] text-surface-500 flex-shrink-0">Variáveis</span>
-                <span className="text-xs text-surface-300">{mappings.length} variáve{mappings.length === 1 ? 'l' : 'is'} mapeada{mappings.length === 1 ? '' : 's'}</span>
-              </div>
-            )}
-          </div>
+          <SummaryRow label="Nome" value={campaignName} action={<EditLink onClick={() => onEditStep(1)} />} />
+          <SummaryRow
+            label="Template"
+            value={
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="font-mono truncate">{template.name}</span>
+                <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0', TEMPLATE_STATUS_CLASS[template.status] ?? TEMPLATE_STATUS_CLASS.PENDING)}>
+                  {TEMPLATE_STATUS_LABEL[template.status] ?? template.status} · Meta
+                </span>
+              </span>
+            }
+            action={<EditLink onClick={() => onEditStep(1)} />}
+          />
+          <SummaryRow label="Público" value={publicLabel} action={<EditLink onClick={() => onEditStep(2)} />} />
+          {lineLabel && <SummaryRow label="Linha" value={lineLabel} />}
+          <SummaryRow label="Envio" value={scheduleDisplay} action={<EditLink onClick={() => onEditStep(4)} />} />
         </div>
 
-        {/* Segmento */}
-        <div>
-          <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-1.5">Segmento</p>
-          <div className="divide-y divide-surface-800/60">
-            <div className="flex items-baseline justify-between gap-2 py-2 first:pt-0">
-              <span className="text-[11px] text-surface-500 flex-shrink-0">Tipo</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-surface-300">{segmentLabels[segmentType]}</span>
-                <EditLink onClick={() => onEditStep(2)} />
-              </div>
-            </div>
-            {estimatedReach !== null && (
-              <div className="flex items-baseline justify-between gap-2 py-2">
-                <span className="text-[11px] text-surface-500 flex-shrink-0">Alcance estimado</span>
-                <span className={cn(
-                  'text-xs font-semibold px-2 py-0.5 rounded-full',
-                  estimatedReach === 0
-                    ? 'text-danger bg-danger/10'
-                    : 'text-status-active bg-status-active-bg'
-                )}>
-                  {estimatedReach} contato{estimatedReach === 1 ? '' : 's'}
-                </span>
-              </div>
-            )}
-          </div>
-
+        <div className="mt-3">
           {/* Manual contacts preview */}
           {segmentType === 'manual' && selectedContactIds.length > 0 && (
             <div className="mt-3">
@@ -1674,18 +1635,24 @@ function Step5({
         </div>
 
         {/* Banner de limite diário (tela 2c) — só quando o dado real da
-            linha (messagingLimit, tier Meta) está disponível. */}
+            linha (messagingLimit, tier Meta) está disponível. CAMP-WIZ-24:
+            `Banner variant="warning"` é sólido laranja ([orq], ui/Banner.tsx)
+            — o mock quer âmbar suave, então monto inline em vez de editar o
+            primitivo. */}
         {messagingLimit && (
-          <Banner variant="warning">
-            Limite diário de mensagens desta linha: <strong>{messagingLimit}</strong>. Campanhas grandes podem
-            ultrapassar o limite e ter parte do envio adiada para o próximo dia.
-          </Banner>
+          <div className="flex items-start gap-2 mt-3 px-2.5 py-[9px] rounded-sm bg-status-pending-bg text-status-pending text-xs leading-[1.45]">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-px" strokeWidth={2} />
+            <span>
+              Limite diário de mensagens desta linha: <strong>{messagingLimit}</strong>. Campanhas grandes podem
+              ultrapassar o limite e ter parte do envio adiada para o próximo dia.
+            </span>
+          </div>
         )}
       </div>
 
-      {/* Right column: message preview */}
-      <div className="w-[240px] flex-shrink-0">
-        <p className="text-xs text-surface-500 mb-3 text-center">Prévia da mensagem</p>
+      {/* Right column: message preview — CAMP-WIZ-25. */}
+      <div className="w-[250px] flex-shrink-0">
+        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-1.5">Prévia no WhatsApp</p>
         <TemplatePreview template={template} variables={previewVars} compact />
       </div>
 
@@ -1787,7 +1754,7 @@ function ContactListModal({
         className="relative bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg flex flex-col max-h-[80vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
           <div>
             <h3 className="text-sm font-semibold text-surface-50">Lista de contatos</h3>
             <p className="text-xs text-surface-500 mt-0.5">{segmented.length} contato{segmented.length === 1 ? '' : 's'} na segmentação</p>
@@ -1801,14 +1768,14 @@ function ContactListModal({
         </div>
 
         {/* Search */}
-        <div className="px-4 py-3 border-b border-surface-800 flex-shrink-0">
+        <div className="px-4 py-3 border-b border-surface-700 flex-shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar nesta lista..."
-              className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+              className="w-full bg-surface-800 border border-surface-700 rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
             />
           </div>
         </div>
@@ -1850,7 +1817,7 @@ function ContactListModal({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-surface-800 flex-shrink-0">
+        <div className="px-5 py-3 border-t border-surface-700 flex-shrink-0">
           <button
             onClick={onClose}
             className="w-full py-2 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 text-sm font-medium transition-all"

@@ -26,10 +26,10 @@ function AttributedLeadsChart() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="h-52 bg-surface-900 border border-surface-800 rounded-xl animate-pulse" />
+  if (loading) return <div className="h-52 bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-5">
+    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm font-semibold text-surface-100">Leads Gerados por Anúncios</p>
@@ -87,7 +87,7 @@ function PerCampaignBreakdown({
       {campaigns.map((camp) => {
         const isOpen = expanded === camp.platformCampaignId
         return (
-          <div key={camp.platformCampaignId} className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
+          <div key={camp.platformCampaignId} className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
             <button
               className="w-full px-4 py-3 flex items-center gap-3 hover:bg-surface-800/40 transition-colors"
               onClick={() => setExpanded(isOpen ? null : camp.platformCampaignId)}
@@ -103,7 +103,7 @@ function PerCampaignBreakdown({
             </button>
 
             {isOpen && (
-              <div className="px-4 pb-4 border-t border-surface-800 pt-3 space-y-3">
+              <div className="px-4 pb-4 border-t border-surface-700 pt-3 space-y-3">
                 {/* Funnel breakdown */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {camp.funnelBreakdown.map((stage, i) => (
@@ -179,7 +179,7 @@ function TotalsStrip({
         <div
           key={item.label}
           className={cn(
-            'bg-surface-900 border border-surface-800 rounded-xl px-4 py-3 flex items-center gap-3',
+            'bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 flex items-center gap-3',
             item.clickable && 'cursor-pointer hover:border-accent-amber/40 hover:bg-surface-800/50 transition-all group',
           )}
           onClick={item.clickable ? onLeadsClick : undefined}
