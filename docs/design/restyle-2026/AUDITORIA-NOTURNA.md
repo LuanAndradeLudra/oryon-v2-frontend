@@ -153,12 +153,17 @@ B–C pelo dono da leva. D pelo orquestrador (ou delegada, mas SEMPRE ao vivo).
   sistema inline; "Resumo da IA" beta. (GAPS-PENDENTES 1.x/2.x)
 - Contatos: campo Responsável/owner; filtro Meus/Todos; drawer URL `?contact=`.
 
-## Restrição descoberta às 06:00 — limite de sessão do orquestrador
+## Restrição descoberta às 06:02 — limite de sessão do orquestrador
 
 Os forks do orquestrador (Agent tool) compartilham a cota da sessão principal
 e caíram com HTTP 429 ("session limit, resets 09:20 America/Sao_Paulo") no
-meio da Fase B. **Até 09:20: zero forks.** Os 3 terminais Maestri têm cotas
-próprias e seguem. O orquestrador gasta o próprio orçamento só em: mesclar,
+meio da Fase B. **A sessão inteira do orquestrador ficou parada de ~06:02 até
+09:20** (3h18 perdidas; retomou sozinha às 09:2x — os commits `527a4e6`…
+`1a2c844` são de 09:25–09:30, não de 06:xx como o log abaixo dizia antes da
+correção). Desde 09:20 forks voltaram, mas 5 forks pesados (~600k tokens cada)
+esgotam a cota em ~10 min: usar poucos, magros, e mandar escrever o arquivo
+de saída INCREMENTALMENTE (por região) pra progresso parcial sobreviver. Os 3
+terminais Maestri têm cotas próprias e seguem. O orquestrador gasta o próprio orçamento só em: mesclar,
 gate, propagar, despachar, atualizar este arquivo, e provas ao vivo decisivas
 (poucas). Fase B e C ficam com os agentes; primitivos/index.css continuam
 sendo editados só pelo orquestrador, mas o MAPA (B) dos primitivos pode ser
@@ -202,5 +207,6 @@ CARD-08, título 14px vs README 16px, `--acs` escuro). Regra: **HTML do canvas
 - 05:50 — arquivo criado. Conversas lista plana mesclada (`aaf4ca1` + `712ba02`).
 - 05:55 — Fase A disparada: 5 forks + 3 agentes (cruzado). Specs 1a/1c/1d/2a-2b/2c chegam entre 06:00 e 06:08 (`b5a3131`, `d1dafa6`).
 - 06:00 — Fase C nos primitivos contra a spec 1a (`527a4e6`): descoberta e corrigida a inversão 900/800 do tema claro feita mais cedo (`67819b9`); EmptyState e Card `elevated` voltaram pro que a referência mostra (a reauditoria anterior tinha lido errado). Suite 617/621 após atualizar Tabs.test ao contrato TABS-03.
-- 06:10 — **Fase D ✅ TOK-01..04 (claro)** ao vivo em /dashboard: página #FAFAFC, cards brancos por cima com hairline — relação fundo/superfície da spec; antes do `527a4e6` os cards saíam mais cinzas que a página (invertido). Escuro intacto. Specs 2d/2e/6a mescladas (`d488064`), Cartógrafo → Fase C de 1c.
-- 06:02 — 5 forks de Fase B morrem por 429 (limite da sessão até 09:20). 2 deixaram arquivo (1c, 2c). Fase B redistribuída: Farol → 1e+conectores (em curso), Bússola → 1d (+1c se o arquivo do fork estiver incompleto). Specs de Farol (`36aaa3b`) e Bússola (`678b867`) mescladas; epic em `b59c70e`, propagado.
+- 09:31 — Farol entregou B de 1e+conectores (`660f48d`, mesclado) e já está na C de 2c; Cartógrafo abriu `fix/SCRUM-1097-fase-c-contatos`; Bússola na B de 1d. Forks de volta: 3 magros lançados pra B de 1a, 1b+shell, 2d/2e/6a. Memória 530 MB — sem suite do orquestrador agora.
+- 09:30 (log anterior dizia 06:10) — **Fase D ✅ TOK-01..04 (claro)** ao vivo em /dashboard: página #FAFAFC, cards brancos por cima com hairline — relação fundo/superfície da spec; antes do `527a4e6` os cards saíam mais cinzas que a página (invertido). Escuro intacto. Specs 2d/2e/6a mescladas (`d488064`), Cartógrafo → Fase C de 1c.
+- 06:02 — 5 forks de Fase B morrem por 429; **sessão do orquestrador parada até 09:20** (limite da sessão até 09:20). 2 deixaram arquivo (1c, 2c). Fase B redistribuída: Farol → 1e+conectores (em curso), Bússola → 1d (+1c se o arquivo do fork estiver incompleto). Specs de Farol (`36aaa3b`) e Bússola (`678b867`) mescladas; epic em `b59c70e`, propagado.
