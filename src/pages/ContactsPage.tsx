@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Upload, Settings2, AlertTriangle } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { useRegisterTopBarActions } from '@/contexts/TopBarActionsContext'
+import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
@@ -181,14 +181,16 @@ export function ContactsPage() {
 
   const handleFiltersChange = (f: ContactFilters) => setFilters(f)
 
+  // CONT-HDR-03/09 (spec/1c-contatos.GAPS.md): subtítulo dinâmico da TopBar
+  // substitui o badge de contagem solto entre os botões. Só "N contatos"
+  // (dado real, já filtrado pela faceta comercial) — "N novos esta semana"
+  // fica de fora: `ContactsStatsBar.newThisWeek` só conta a página carregada,
+  // não o total do tenant (GAPS-PENDENTES 1.3), e inventar o número seria
+  // pior que omiti-lo.
+  useRegisterTopBarSubtitle(`${total.toLocaleString('pt-BR')} contatos`, [total])
+
   useRegisterTopBarActions(
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Count badge — total de contatos, já refletindo a faceta "Situação
-          comercial" ativa (SCRUM-293: `total` vem do backend já filtrado). */}
-      <span className="text-xs text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full border border-surface-700 font-medium">
-        {total.toLocaleString('pt-BR')}
-      </span>
-
       {/* Abre o DRAWER de configuração do CRM, não a página de Configurações.
 
           Cheguei a trocar por atalhos para /settings, argumentando que duas
