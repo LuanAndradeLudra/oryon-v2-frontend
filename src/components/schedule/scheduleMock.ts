@@ -135,6 +135,19 @@ export const MOCK_EVENTS: ScheduleEvent[] = [
     detail: { contact: 'Eduardo Martins', origin: 'Site', channel: 'Google Meet' },
   },
   {
+    // SCHED-EVENT-13: sobrepõe evt-4 (11h-12h) pra exercitar o layoutLanes() de fato.
+    id: 'evt-10',
+    title: 'Retorno · Camila Duarte',
+    type: 'Retorno',
+    dayIndex: 3,
+    startMinutes: H * 3 + 30,
+    endMinutes: H * 4 + 30,
+    agent: 'Ana Nunes',
+    color: '#F59E0B',
+    status: 'aguardando',
+    detail: { contact: 'Camila Duarte', origin: 'Conversa', channel: 'WhatsApp' },
+  },
+  {
     id: 'evt-5',
     title: 'Suporte · Lab Vida',
     type: 'Suporte',
