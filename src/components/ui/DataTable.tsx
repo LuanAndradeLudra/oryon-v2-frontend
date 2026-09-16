@@ -42,7 +42,11 @@ interface DataTableProps<Row> {
   emptyHint?: string
   sort?: DataTableSort | null
   onSortChange?: (sort: DataTableSort) => void
-  onRowClick?: (row: Row) => void
+  /** 2º argumento (MouseEvent) é aditivo — quem já usa `(row) => ...` sem ler
+   *  o evento continua funcionando igual. Necessário pra callers que
+   *  precisam de `e.ctrlKey`/`e.metaKey` (ex.: alternar seleção com o
+   *  clique em vez de abrir o painel). */
+  onRowClick?: (row: Row, e: React.MouseEvent<HTMLTableRowElement>) => void
   /** Menu de contexto por linha (integrar com useContextMenu no caller). */
   onRowContextMenu?: (row: Row, e: React.MouseEvent) => void
   /** Seleção múltipla opcional. */
@@ -131,7 +135,7 @@ export function DataTable<Row>({
             return (
               <tr
                 key={key}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onClick={onRowClick ? (e) => onRowClick(row, e) : undefined}
                 onContextMenu={onRowContextMenu ? (e) => onRowContextMenu(row, e) : undefined}
                 className={cn(
                   'border-b border-surface-800/60 transition-colors',

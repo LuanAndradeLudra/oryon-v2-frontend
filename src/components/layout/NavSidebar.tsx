@@ -3,8 +3,6 @@ import {
   MessageSquare,
   Users,
   BarChart3,
-  Settings,
-  LogOut,
   Zap,
   Home,
   Send,
@@ -15,18 +13,14 @@ import {
   ShieldCheck,
   Activity,
   LineChart,
-  Sun,
-  Moon,
   Pin,
   PinOff,
   Handshake,
 } from 'lucide-react'
 import { CopilotMark } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/hooks/useTheme'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Avatar } from '@/components/ui/Avatar'
+import { useLocation } from 'react-router-dom'
 import { Sidebar, SidebarBody, SidebarLink, SidebarSectionLabel, useSidebar } from '@/components/ui/sidebar'
 import { useAuth } from '@/contexts/AuthContext'
 import { isOryonStaff as isOryonStaffHelper } from '@/lib/roleHelpers'
@@ -36,10 +30,10 @@ import { useInternalChat } from '@/contexts/InternalChatContext'
 import { conversationsApi } from '@/services/api'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
+import { AiCreditsIndicator } from './AiCreditsIndicator'
 
 interface NavSidebarProps {
   totalUnread?: number
-  currentUser?: { firstName: string; lastName: string; avatarUrl?: string }
   /**
    * When true, renders fully expanded (no hover-collapse) and overrides the
    * primitive's fixed width to fill the parent. Used by AppShell to embed the
@@ -80,116 +74,7 @@ function LogoSection() {
   )
 }
 
-function UserFooter({
-  currentUser,
-  onLogout,
-}: {
-  currentUser?: NavSidebarProps['currentUser']
-  onLogout: () => void
-}) {
-  const { open, animate } = useSidebar()
-  const { user } = useAuth()
-  const { theme, toggle } = useTheme()
-
-  const name = currentUser
-    ? `${currentUser.firstName} ${currentUser.lastName}`
-    : user
-      ? `${user.firstName} ${user.lastName}`
-      : ''
-
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div className="mx-3 mb-2 border-t border-surface-800/60" />
-
-      {/* Theme toggle */}
-      <button
-        onClick={toggle}
-        title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-        aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-        className="w-full text-left"
-      >
-        <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-white hover:bg-white/10">
-          <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
-            {theme === 'dark' ? <Sun className="w-[14.7px] h-[14.7px]" /> : <Moon className="w-[14.7px] h-[14.7px]" />}
-          </span>
-          <AnimatePresence>
-            {(!animate || open) && (
-              <motion.span
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
-                transition={{ duration: 0.15 }}
-                className="text-sm font-medium whitespace-pre overflow-hidden"
-              >
-                {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
-      </button>
-
-      {/* Logout */}
-      <button
-        onClick={onLogout}
-        aria-label="Sair da conta"
-        className="w-full text-left"
-      >
-        <span className="flex items-center gap-3 px-3 py-2 rounded-xl w-full transition-colors duration-150 text-danger hover:bg-danger/10">
-          <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
-            <LogOut className="w-[18.4px] h-[18.4px]" />
-          </span>
-          <AnimatePresence>
-            {(!animate || open) && (
-              <motion.span
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
-                transition={{ duration: 0.15 }}
-                className="text-sm font-medium whitespace-pre overflow-hidden"
-              >
-                Sair
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
-      </button>
-
-      {/* User profile */}
-      {name && (
-        <div className="flex items-center gap-3 px-3 py-3 mt-1">
-          <Avatar
-            name={name}
-            imageUrl={currentUser?.avatarUrl}
-            size="sm"
-            kind="operator"
-          />
-          <AnimatePresence>
-            {(!animate || open) && (
-              <motion.div
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
-                transition={{ duration: 0.15 }}
-                className="flex flex-col min-w-0 overflow-hidden"
-              >
-                <span className="text-xs font-semibold text-surface-200 truncate whitespace-pre">
-                  {name}
-                </span>
-                {user?.email && (
-                  <span className="text-[10px] text-surface-600 truncate whitespace-pre">
-                    {user.email}
-                  </span>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-    </div>
-  )
-}
-
-export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false }: NavSidebarProps) {
+export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSidebarProps) {
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(() => {
     try { return localStorage.getItem('oryon:sidebar-pinned') === '1' } catch { return false }
@@ -201,9 +86,11 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
   })
   const [whatsappUnread, setWhatsappUnread] = useState(totalUnread)
   const location = useLocation()
-  const navigate = useNavigate()
   const activeHref = '/' + location.pathname.split('/')[1]
-  const { user, organizationConfigured, logout } = useAuth()
+  // Configurações e logout saíram da sidebar (SCRUM-1100 · rodapé agora é só
+  // o consumo de créditos de IA) — `useAuth` aqui só precisa do usuário/flags
+  // que ainda decidem quais itens de navegação aparecem.
+  const { user, organizationConfigured } = useAuth()
   const { isRouteVisible, isFeatureVisible } = useFeatureVisibility()
   const { checklist } = useSetupChecklist(user?.id)
   const { vocab } = useTenantVocab()
@@ -239,11 +126,6 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
       socket?.off('conversation:updated')
     }
   }, [refreshUnread])
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login', { replace: true })
-  }
 
   const geralItems = [
     { icon: <Home className="w-[16.5px] h-[16.5px]" />,          label: 'Home',       href: '/home' },
@@ -296,7 +178,6 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
     badge: internalUnread > 0 ? internalUnread : undefined,
   }
   const internalChatVisible = isRouteVisible(internalChatItem.href)
-  const settingsVisible = isRouteVisible('/settings')
   // Oryon staff only — never shown to a customer's business_admin even if
   // they discover the URL (the route guard + agent-server gate also block them).
   const isOryonStaff = isOryonStaffHelper(user?.role)
@@ -430,25 +311,14 @@ export function NavSidebar({ totalUnread = 0, currentUser, forceExpanded = false
             </>
           )}
 
-          {/* CONFIGURAÇÕES */}
-          {settingsVisible && (
-            <>
-              <SidebarSectionLabel label="Configurações" />
-              <nav className="flex flex-col gap-0.5 px-1.5">
-                <SidebarLink
-                  href="/settings"
-                  icon={<Settings className="w-[16.5px] h-[16.5px]" />}
-                  label="Configurações"
-                  active={activeHref === '/settings'}
-                  nudge={(!checklist.company || !checklist.profile) ? 'Setup' : undefined}
-                />
-              </nav>
-            </>
-          )}
+          {/* Configurações saiu da sidebar (SCRUM-1100 · 3.13): agora é item
+              do menu do usuário na TopBar, que navega para a mesma rota
+              `/settings` — o contrato de URL não muda, só a porta de entrada. */}
         </div>
 
-        {/* User footer */}
-        <UserFooter currentUser={currentUser} onLogout={handleLogout} />
+        {/* Rodapé: só o consumo de créditos de IA (SCRUM-1100 · 3.12).
+            Configurações e avatar saíram para o menu do usuário na TopBar. */}
+        <AiCreditsIndicator />
       </SidebarBody>
     </Sidebar>
   )

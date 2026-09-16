@@ -10,6 +10,7 @@ import {
   LayoutGrid, KanbanSquare, FileText, Inbox,
   Globe, Users2, BellRing, Plug, BookOpen,
   AlertCircle, AtSign, Megaphone as MegaphoneIcon, ShieldAlert, UserCheck,
+  User, LogOut,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
@@ -22,10 +23,14 @@ import {
   type NotificationMetaKnown,
   type NotificationSourceKind,
 } from '@/hooks/useNotifications'
-import { cn } from '@/lib/utils'
-import { isAdminTier } from '@/lib/roleHelpers'
+import { cn, getInitials } from '@/lib/utils'
+import { isAdminTier, roleLabel } from '@/lib/roleHelpers'
 import { isRouteVisible } from '@/config/featureFlags'
 import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
+import { useTheme, type Theme } from '@/hooks/useTheme'
+import { Avatar } from '@/components/ui/Avatar'
+import { Dropdown, DropdownItem, DropdownSeparator } from '@/components/ui/Dropdown'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import {
   categoryOf,
   CATEGORY_STYLE,
@@ -1331,6 +1336,145 @@ function FilterTab({ active, onClick, count, children }: {
   )
 }
 
+// ── User menu ──────────────────────────────────────────────────────────────────
+//
+// SCRUM-1100 (Leva 2 · handoff 3.13 "Shell final"): Configurações e avatar
+// saíram do rodapé da NavSidebar — este menu é a nova porta de entrada.
+// `/settings` continua sendo a rota real; o menu só oferece outro caminho até
+// ela. Tema e Sair reaproveitam a MESMA lógica que já existia na sidebar
+// (useTheme / useAuth().logout) — só a UI foi realocada.
+
+const THEME_OPTIONS: { value: Theme; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'light', label: 'Claro' },
+  { value: 'dark', label: 'Escuro' },
+]
+
+/** Avatar de 28px `rounded-[30%]` do gatilho do menu — o componente `Avatar`
+ *  compartilhado só tem tamanhos fixos (24/32/40/48px, ver Avatar.tsx), então
+ *  o gatilho replica seu visual "operador" (mesmas classes/tokens) no tamanho
+ *  exato pedido pelo handoff. O header do menu (32px) já usa `Avatar` direto. */
+function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: string; active: boolean }) {
+  return (
+    <span
+      className="relative inline-flex flex-shrink-0 w-7 h-7 rounded-[30%] overflow-hidden transition-shadow duration-150"
+      // Anel teal — único estado em que o avatar recebe cor, sinaliza "menu aberto" (handoff 3.13).
+      style={active ? { boxShadow: '0 0 0 2px var(--color-surface-950), 0 0 0 4px var(--color-accent)' } : undefined}
+    >
+      {imageUrl ? (
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <span className="avatar-operador w-full h-full flex items-center justify-center text-[11px] font-semibold">
+          {getInitials(name)}
+        </span>
+      )}
+    </span>
+  )
+}
+
+function UserMenu() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const { theme, setTheme } = useTheme()
+  const [open, setOpen] = useState(false)
+
+  const name = user ? `${user.firstName} ${user.lastName}` : ''
+  const settingsVisible = isRouteVisible('/settings', user?.email ?? null)
+
+  const close = () => setOpen(false)
+  const go = (href: string) => { navigate(href); close() }
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
+
+  return (
+    <Dropdown
+      open={open}
+      onClose={close}
+      align="right"
+      className="w-60"
+      anchor={
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          title="Menu do usuário"
+          aria-label="Menu do usuário"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-surface-800 transition-colors"
+        >
+          <UserMenuTrigger name={name} imageUrl={user?.avatarUrl} active={open} />
+        </button>
+      }
+    >
+      {/* Header: avatar 32px + nome + e-mail · papel */}
+      <div className="flex items-center gap-3 px-3 py-3 border-b border-surface-700">
+        <Avatar name={name} imageUrl={user?.avatarUrl} size="sm" kind="operator" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-surface-100 truncate">{name}</p>
+          <p className="text-[11px] text-surface-500 truncate">
+            {user?.email}{user?.role ? ` · ${roleLabel(user.role)}` : ''}
+          </p>
+        </div>
+      </div>
+
+      <DropdownItem icon={User} onClick={() => go('/settings/account')}>
+        Meu perfil
+      </DropdownItem>
+
+      {settingsVisible && (
+        <DropdownItem icon={Settings} onClick={() => go('/settings')}>
+          <span className="flex-1">Configurações</span>
+          <kbd className="font-mono text-3xs text-surface-500">⌘,</kbd>
+        </DropdownItem>
+      )}
+
+      {/* Tema — único item que NÃO fecha o menu ao interagir (handoff 3.13).
+          Não é um DropdownItem: o SegmentedControl é interativo por dentro,
+          e DropdownItem é um <button> — não dá para aninhar botão em botão. */}
+      <div role="none" className="px-3 py-2.5 flex items-center justify-between gap-3">
+        <span className="text-sm text-surface-200">Tema</span>
+        <SegmentedControl
+          label="Tema"
+          size="sm"
+          value={theme}
+          onChange={setTheme}
+          options={THEME_OPTIONS}
+        />
+      </div>
+
+      <DropdownSeparator />
+
+      {/* Linha de workspace — produto hoje é single-tenant por login (não há
+          troca de workspace implementada em nenhum outro lugar da UI); o link
+          fica desabilitado em vez de simular uma ação que não existe. */}
+      <div role="none" className="px-3 py-2.5 flex items-center gap-2.5">
+        <span
+          className="w-5 h-5 rounded-[6px] flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-dark))' }}
+          aria-hidden
+        />
+        <span className="text-sm text-surface-200 truncate flex-1">Meu workspace</span>
+        <button
+          type="button"
+          disabled
+          title="Troca de workspace ainda não disponível"
+          className="text-2xs font-medium text-surface-600 cursor-not-allowed flex-shrink-0"
+        >
+          Trocar ›
+        </button>
+      </div>
+
+      <DropdownSeparator />
+
+      <DropdownItem icon={LogOut} danger onClick={handleLogout}>
+        Sair
+      </DropdownItem>
+    </Dropdown>
+  )
+}
+
 // ── TopBar ─────────────────────────────────────────────────────────────────────
 
 export function TopBar() {
@@ -1575,6 +1719,10 @@ export function TopBar() {
             </>
           )}
         </div>
+
+        {/* User menu — última coisa à direita (handoff 3.13). Configurações
+            e avatar vieram da NavSidebar; ver `UserMenu` acima. */}
+        <UserMenu />
       </div>
 
       {/* Command palette overlay — portal-rendered so it covers the whole
