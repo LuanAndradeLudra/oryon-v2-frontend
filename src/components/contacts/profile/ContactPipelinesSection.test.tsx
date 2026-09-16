@@ -84,7 +84,7 @@ describe('ContactPipelinesSection (F11)', () => {
     await waitFor(() => expect(screen.getByTestId('pipeline-move-p')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('pipeline-move-p'))
     fireEvent.click(screen.getByRole('menuitem', { name: /Cancelado \(com motivo\)/ }))
-    await waitFor(() => expect(screen.getByText('Mover para Cancelado')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mover para Cancelado' })).toBeInTheDocument())
     expect(api.setStatus).not.toHaveBeenCalled()
     fireEvent.change(screen.getByRole('combobox', { name: 'Motivo do desfecho' }), { target: { value: 'cancelado_pelo_cliente' } })
     fireEvent.click(screen.getByTestId('close-deal-confirm'))

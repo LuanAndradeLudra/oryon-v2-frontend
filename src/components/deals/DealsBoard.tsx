@@ -4,7 +4,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { cn, hexToRgba, tintaDaEtapa, getActivePipelines } from '@/lib/utils'
+import { cn, tintaDaEtapa, getActivePipelines } from '@/lib/utils'
 import { pipelineKindOf, pipelineKindOption, terminalLabelsOf, pipelineNoun, TERMINAL_CHIP_STYLE } from '@/lib/pipelineKinds'
 import { originInfo, movedByChip, timeInStage, boardStats, entrySources } from '@/lib/dealCard'
 import { dealProbability } from '@/lib/dealProbability'
@@ -237,8 +237,8 @@ export function DealsBoard({
         </div>
       )}
       <div
-        className="flex gap-3 p-4 h-full min-h-0"
-        style={{ minWidth: isDesktop ? stages.length * 280 : undefined }}
+        className="flex gap-[10px] p-4 h-full min-h-0"
+        style={{ minWidth: isDesktop ? stages.length * 260 : undefined }}
       >
         {stages.map((stage) => {
           const cards = dealsByStage[stage.id] ?? []
@@ -252,7 +252,7 @@ export function DealsBoard({
           return (
             <div
               key={stage.id}
-              className="flex flex-col w-[85vw] md:w-72 flex-shrink-0 snap-start"
+              className="flex flex-col w-[85vw] md:w-[250px] flex-shrink-0 snap-start"
               onDragOver={(e) => { e.preventDefault(); setOverStageId(stage.id) }}
               onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStageId(null) }}
               onDrop={() => handleDrop(stage.id)}
@@ -283,11 +283,19 @@ export function DealsBoard({
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <span
-                    className="text-xs font-medium px-2 py-0.5 rounded-full transition-all"
-                    style={{ color: tintaDaEtapa(stage.color), backgroundColor: hexToRgba(stage.color, isOver ? 0.2 : 0.1) }}
-                  >
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* DEAL-COL-17 (spec/1e-funis.GAPS.md): soma inline na MESMA
+                      linha do cabeçalho, não numa linha separada abaixo. */}
+                  {!isProcess && totalCents > 0 && (
+                    <span
+                      className="text-2xs text-surface-500 tabular-nums whitespace-nowrap"
+                      title={weightedCents !== totalCents ? `${brl(weightedCents)} ponderado` : undefined}
+                    >
+                      {brl(totalCents)}
+                    </span>
+                  )}
+                  {/* DEAL-COL-16: contagem como texto solto, não um badge pill. */}
+                  <span className="text-[11.5px] font-semibold text-surface-500 tabular-nums">
                     {cards.length}
                   </span>
                   {/* A3: criar já nesta etapa. Fora dos terminais — negócio não
@@ -305,14 +313,6 @@ export function DealsBoard({
                   )}
                 </div>
               </div>
-
-              {/* Total (+ ponderado) da coluna — só em funil de venda (processo não tem valor) */}
-              {!isProcess && totalCents > 0 && (
-                <div className="px-1 mb-2 text-2xs text-surface-500">
-                  {brl(totalCents)}
-                  {weightedCents !== totalCents && <span className="text-surface-600"> · {brl(weightedCents)} ponderado</span>}
-                </div>
-              )}
 
               {/* Lista de cards */}
               <div
@@ -373,7 +373,7 @@ export function DealsBoard({
                         'relative group/card rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-surface-700 hover:bg-[var(--rowhover)]',
                         onOpenDeal && 'cursor-pointer',
                         // Em arraste: única sombra fora de overlay (o card É um overlay enquanto flutua).
-                        draggingId === deal.id && 'opacity-40 shadow-lg',
+                        draggingId === deal.id && 'opacity-95 shadow-lg',
                         highlightDealId === deal.id && 'ring-[3px] ring-brand-500 border-brand-500',
                       )}
                     >
@@ -396,7 +396,7 @@ export function DealsBoard({
                               setStageMenuDealId(stageMenuDealId === deal.id ? null : deal.id)
                             }}
                             className={cn(
-                              'flex items-center gap-0.5 px-1.5 py-1 rounded-md text-3xs font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                              'flex items-center gap-0.5 h-[22px] px-[7px] rounded-md border border-[var(--bd2)] text-3xs font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
                               stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                             )}
                             aria-label={`Mover ${noun} para outra etapa`}
@@ -560,7 +560,7 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
           <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
         </span>
         {by === 'ia' && (
-          <span className="text-3xs text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
+          <span className="text-3xs text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
         )}
         {by === 'auto' && (
           <span className="text-3xs text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded flex-shrink-0" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
@@ -614,7 +614,7 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
         <span className="text-[13px] font-bold text-surface-100">{brl(deal.amountCents ?? 0)}</span>
         <div className="flex items-center gap-1">
           {by === 'ia' && (
-            <span className="text-3xs text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
+            <span className="text-3xs text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
           )}
           {by === 'auto' && (
             <span className="text-3xs text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
