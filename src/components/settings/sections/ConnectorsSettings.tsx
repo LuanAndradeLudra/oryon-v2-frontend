@@ -163,7 +163,7 @@ export function ConnectorsSettings() {
       {filtered.length === 0 ? (
         <EmptyState icon={Search} title="Nenhum conector encontrado" hint="Ajuste a busca ou a categoria." />
       ) : view === 'grid' ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
           {filtered.map((c) => (
             <ConnectorCard key={c.id} connector={c} onOpen={() => setOpenConnector(c)} />
           ))}

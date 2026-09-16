@@ -326,9 +326,74 @@ exatamente o grid `260px | 1fr`, gap 24px e padding vertical 22px do README; o �
 ("Obrigatório — usado no modal de motivo") e o texto da prévia batem literalmente com o
 PNG.
 
-## 9. Plano & Faturamento (leva 11, README 3.11) — auditoria pendente
+## 9. Plano & Faturamento (leva 11, README 3.11)
 
-Ver nota no topo desta seção: o commit da leva 11 não está mesclado no branch do épico
-(está órfão em `SCRUM-1107-leva9-agendamentos`). Auditar agora produziria gaps baseados em
-código que o épico não tem. Repetir esta auditoria assim que o commit estiver no lugar
-certo.
+Commit `f2e45f9` recuperado pro branch do épico — auditoria feita contra o código real
+(`BillingPlan.tsx`, `BillingSettings.tsx`) e `telas/01-6a-plano-faturamento.png`.
+
+**Nenhum gap novo encontrado.** A leva bate com alta fidelidade: `SettingsSection` (zero
+cards) em todas as 5 seções, com o Banner de ativação como única exceção documentada no
+próprio README (borda acento + fundo acento suave, ícone 18px, título 13px/600, CTA
+primary); trilha de créditos 6px com borda e raio 3px; tabela de Upgrade em 3 colunas
+dentro de 1 borda só, com o meio marcado `Recomendado` (inset accent + chip) — tudo
+conferindo com o PNG, incluindo o índice "Nesta página" à direita (que aparece de graça
+via `SettingsOutline`, o mesmo mecanismo compartilhado da leva 10 — bastou a página usar
+`SettingsSection`, não precisou de código novo).
+
+Uma divergência aparece na imagem — a grade "Limites do plano" do mockup mostra barra de
+uso preenchida em TODAS as linhas (créditos, usuários, números, agentes, automações,
+Copilot), mas o código só preenche a barra da linha de créditos (única com dado real de
+uso hoje, `billing.creditsUsed`); as demais mostram só o limite. Isso **já está
+documentado no próprio commit da leva** ("fabricar uso que a API não expõe seria KPI
+sabidamente falso, mesma cautela do Dashboard") — decisão correta e consistente com o
+resto do épico, só registrando aqui pra fechar o ciclo de auditoria, não é gap novo.
+
+## Auditoria 3 — Levas 11, 12 (Faturamento, Conectores)
+
+Terceira e última rodada, pedida como gate final antes do PR do épico contra `developer`.
+Leva 11 (recuperada da branch órfã — ver nota da Auditoria 2) e leva 12 (tela nova,
+`/settings/connectors`) auditadas contra `telas/01-6a-*`, `01-5b-*`, `01-4a-*`, `01-3d-*`,
+`01-3e-*.png` e o código real. A seção 9 (Plano & Faturamento) já foi atualizada acima com
+o resultado da leva 11 — **nenhum gap novo**, alta fidelidade. O restante desta seção cobre
+a leva 12.
+
+## 10. Conectores (leva 12, README 3.10)
+
+Leva 12 é a tela mais fiel ao mockup do épico inteiro — modal de detalhe e modal de
+credencial batem quase literalmente com o README (inclusive as mensagens de teste de
+conexão, ex. "Chave recusada pela Doctoralia (401)"), e a decisão de arquitetura visual do
+tile (`--connector-tile-mix`, cor da marca só no tile do logo, nunca em faixa/hero de
+card) foi seguida à risca. Confirmado deliberadamente sem backend real (dados em
+`connectorsMock.ts`, mesmo padrão da leva 9 Agendamentos) — não é gap, é escopo já
+documentado no próprio commit `5acae4e`.
+
+2 dos 3 achados abaixo eram bugs concretos (não dúvidas de produto) e já foram corrigidos
+nesta mesma auditoria — ver commit desta branch.
+
+### 10.1 Estado do catálogo não vive na URL
+
+README 3.10 (Catálogo, `5b`) é explícito: "busca e filtro de categoria combinam (AND), e
+**o estado vive na URL**". `ConnectorsSettings.tsx` implementa a combinação AND
+corretamente, mas busca, categoria, status e modo de visualização são só `useState`
+local — recarregar a página ou compartilhar um link com filtro aplicado perde tudo.
+
+**Para desbloquear:** não é decisão de produto — é sincronizar os 4 filtros com
+`useSearchParams`, mesmo padrão que já falta em outras telas (ver gap 1.3, drawer de
+Contatos). Não corrigido aqui pelo mesmo motivo do 1.3: mudança de comportamento de
+navegação, não só visual, com risco de regressão fora do escopo de uma auditoria.
+
+### 10.2 Grade parava em 5 colunas, mockup pedia até 6 — CORRIGIDO
+
+README: "grade responsiva de 2 a 6 colunas". `ConnectorsSettings.tsx` não tinha breakpoint
+para 6 colunas em telas largas (`xl:grid-cols-5` era o teto). Ajuste mecânico, sem risco —
+adicionado `2xl:grid-cols-6`.
+
+### 10.3 Card mostrava "Conectar" pra conector bloqueado por plano — CORRIGIDO
+
+README 3.10 (Card, `4a`) lista os 4 CTAs possíveis, incluindo `Ver planos (neutral sm)`
+para o caso bloqueado por plano. `ConnectorCard.tsx` usava "Conectar" (primary) pro status
+`business`, mas o clique já navegava pra `/settings/billing` (nunca abria um fluxo de
+conexão) — rótulo e ação não combinavam. O `ConnectorDetailModal.tsx`, construído no MESMO
+commit, já tinha a lógica certa (`blockedByPlan ? 'Ver planos' : 'Conectar'`): inconsistência
+entre dois componentes irmãos, não dúvida de produto. `ConnectorCard.tsx` corrigido para
+espelhar a lógica que o modal já tinha certa.

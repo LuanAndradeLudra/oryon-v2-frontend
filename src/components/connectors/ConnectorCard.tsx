@@ -21,7 +21,7 @@ export function ConnectorCard({ connector, onOpen }: ConnectorCardProps) {
 
   const cta = (() => {
     if (connector.status === 'installed') return { label: 'Gerenciar', variant: 'neutral' as const }
-    if (connector.status === 'business') return { label: 'Conectar', variant: 'primary' as const }
+    if (connector.status === 'business') return { label: 'Ver planos', variant: 'neutral' as const }
     if (connector.status === 'comingSoon') return { label: 'Priorizar', variant: 'ghost' as const }
     return { label: 'Conectar', variant: 'primary' as const }
   })()
