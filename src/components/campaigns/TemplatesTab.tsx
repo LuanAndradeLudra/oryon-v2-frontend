@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Eye, Pencil, Trash2, Clock, CheckCircle2, XCircle, PauseCircle, AlertCircle, Loader2, RefreshCw, Copy, FileText } from 'lucide-react'
+import { Plus, Search, Eye, Pencil, Trash2, Clock, CheckCircle2, XCircle, PauseCircle, AlertCircle, Loader2, RefreshCw, Copy, FileText, MoreHorizontal } from 'lucide-react'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonList } from '@/components/ui/Skeleton'
+import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { cn } from '@/lib/utils'
 import { templatesApi } from '@/services/api'
 import { TemplateCreator } from './TemplateCreator'
@@ -12,7 +13,6 @@ import { TemplatePreview } from './TemplatePreview'
 import { CATEGORY_LABELS } from './constants'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
-import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
 import { AssignWabaModal } from '@/components/common/AssignWabaModal'
 import { DuplicateTemplateModal } from '@/components/common/DuplicateTemplateModal'
 import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/common/LineFilterChip'
@@ -222,7 +222,10 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
             }
           />
         ) : (
-          <div className="grid grid-cols-1 gap-3">
+          // SCRUM-1106 (tela 2c): grade de 4 cards — a lista virou linhas
+          // densas demais pra caber num card estreito, então a prévia some
+          // de vista; o mock quer a mensagem visível de cara.
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {filtered.map((tpl) => (
               <TemplateCard
                 key={tpl.id}
@@ -330,95 +333,98 @@ function TemplateCard({
 }) {
   const cfg = STATUS_CONFIG[template.status]
   const StatusIcon = cfg.icon
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <div className="flex items-start gap-4 p-4 bg-surface-800/50 hover:bg-surface-800 border border-surface-800 rounded-xl transition-all group">
-      {/* Main info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="text-sm font-medium text-surface-100 font-mono">{template.name}</span>
-          <span
-            className="color-chip border flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
-            style={{ ['--chip']: cfg.chip } as React.CSSProperties}
+    <div className="flex flex-col bg-surface-800/50 hover:bg-surface-800 border border-surface-800 rounded-xl overflow-hidden transition-all group">
+      {/* Header — nome em mono + chip de status Meta (tela 2c) */}
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-surface-800">
+        <span className="flex-1 min-w-0 text-[13px] font-medium text-surface-100 font-mono truncate">{template.name}</span>
+        <span
+          className="color-chip border flex items-center gap-1 text-[10.5px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0"
+          style={{ ['--chip']: cfg.chip } as React.CSSProperties}
+        >
+          <StatusIcon className="w-3 h-3" />
+          {cfg.label}
+        </span>
+        <span onClick={(e) => e.stopPropagation()} className="inline-flex flex-shrink-0">
+          <Dropdown
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            align="right"
+            className="w-48"
+            anchor={
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label="Mais ações"
+                className="p-1 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </button>
+            }
           >
-            <StatusIcon className="w-3 h-3" />
-            {cfg.label}
-          </span>
-          <span className="text-[11px] text-surface-500 bg-surface-700 px-2 py-0.5 rounded-full">
+            <div className="px-1 py-1 flex flex-col gap-0.5">
+              <DropdownItem onClick={() => { onPreview(); setMenuOpen(false) }}>
+                <Eye className="w-3.5 h-3.5" /> Preview
+              </DropdownItem>
+              {canEdit && (
+                <DropdownItem onClick={() => { onEdit(); setMenuOpen(false) }}>
+                  <Pencil className="w-3.5 h-3.5" /> Editar
+                </DropdownItem>
+              )}
+              {template.needsWabaAssignment && (
+                <DropdownItem onClick={() => { onAssignWaba(); setMenuOpen(false) }}>
+                  <FileText className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
+                </DropdownItem>
+              )}
+              {onDuplicate && (
+                <DropdownItem onClick={() => { onDuplicate(); setMenuOpen(false) }}>
+                  <Copy className="w-3.5 h-3.5" /> Duplicar para outra linha
+                </DropdownItem>
+              )}
+              <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setMenuOpen(false) }}>
+                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Excluir
+              </DropdownItem>
+            </div>
+          </Dropdown>
+        </span>
+      </div>
+
+      {/* Corpo — prévia em fundo #EFE7DD (hex fixo, mockup do WhatsApp) */}
+      <button
+        onClick={onPreview}
+        className="bg-[#EFE7DD] p-3 max-h-[220px] overflow-y-auto text-left cursor-zoom-in"
+        title="Ver prévia completa"
+      >
+        <TemplatePreview template={template} compact />
+      </button>
+
+      {/* Rodapé — categoria/idioma/linha + contadores */}
+      <div className="p-3 flex flex-col gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[10.5px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded-full">
             {CATEGORY_LABELS[template.category]}
           </span>
-          <span className="text-[11px] text-surface-600">{template.language}</span>
-          {template.needsWabaAssignment && <WabaAssignmentBadge onClick={onAssignWaba} />}
+          <span className="text-[10.5px] text-surface-600">{template.language}</span>
           <WhatsappLineChip whatsappNumberId={template.whatsappNumberId} />
         </div>
 
-        <p className="text-xs text-surface-400 line-clamp-2 mt-1">
-          {template.body}
-        </p>
-
         {template.status === 'REJECTED' && template.rejectionReason && (
-          <p className="text-[11px] text-danger mt-1.5 flex items-start gap-1">
+          <p className="text-[11px] text-danger flex items-start gap-1 line-clamp-2">
             <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
             {template.rejectionReason}
           </p>
         )}
 
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex items-center gap-2 text-[10.5px] text-surface-600">
           {template.bodyVariables && template.bodyVariables.length > 0 && (
-            <span className="text-[11px] text-surface-500">
-              {template.bodyVariables.length} variáve{template.bodyVariables.length === 1 ? 'l' : 'is'}
-            </span>
+            <span>{template.bodyVariables.length} variáve{template.bodyVariables.length === 1 ? 'l' : 'is'}</span>
           )}
           {template.buttons && template.buttons.length > 0 && (
-            <span className="text-[11px] text-surface-500">
-              {template.buttons.length} botã{template.buttons.length === 1 ? 'o' : 'oes'}
-            </span>
+            <span>{template.buttons.length} botã{template.buttons.length === 1 ? 'o' : 'oes'}</span>
           )}
-          <span className="text-[11px] text-surface-600">
-            {new Date(template.createdAt).toLocaleDateString('pt-BR')}
-          </span>
+          <span className="ml-auto">{new Date(template.createdAt).toLocaleDateString('pt-BR')}</span>
         </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        <button
-          onClick={onPreview}
-          aria-label="Preview"
-          className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-          title="Preview"
-        >
-          <Eye className="w-3.5 h-3.5" />
-        </button>
-        {canEdit && (
-          <button
-            onClick={onEdit}
-            aria-label="Editar"
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-            title="Editar"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-        )}
-        {onDuplicate && (
-          <button
-            onClick={onDuplicate}
-            aria-label="Duplicar para outra linha"
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-            title="Duplicar para outra linha"
-          >
-            <Copy className="w-3.5 h-3.5" />
-          </button>
-        )}
-        <button
-          onClick={onDelete}
-          disabled={deleting}
-          aria-label="Excluir"
-          className="p-1.5 rounded-lg text-surface-500 hover:text-danger hover:bg-danger/10 transition-all"
-          title="Excluir"
-        >
-          {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-        </button>
       </div>
     </div>
   )

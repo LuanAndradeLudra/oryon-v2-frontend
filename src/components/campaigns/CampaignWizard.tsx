@@ -160,6 +160,11 @@ export function CampaignWizard({
   const smartDefault = useSmartLineDefault()
   const [waNumbers, setWaNumbers]             = useState<Array<{ id: string; displayPhoneNumber: string; label?: string }>>([])
   const [whatsappNumberId, setWhatsappNumberId] = useState('')
+  // Limite diário de mensagens por linha (banner âmbar da Revisão, tela 2c) —
+  // fetch à parte do Promise.all principal: é só decoração da etapa 5, não
+  // deve bloquear o carregamento de templates/contatos se `/whatsapp/numbers`
+  // falhar (não-admin pode receber 403 nesse endpoint em alguns tenants).
+  const [messagingLimits, setMessagingLimits] = useState<Record<string, string>>({})
 
   // Submit
   const [saving, setSaving]                   = useState(false)
@@ -225,6 +230,10 @@ export function CampaignWizard({
         setLoadingContacts(false)
       }
     })
+    whatsappNumbersApi.listDetailed().then(({ data }) => {
+      if (staleRef.current) return
+      setMessagingLimits(Object.fromEntries(data.filter((n) => n.messagingLimit).map((n) => [n.id, n.messagingLimit])))
+    }).catch(() => { if (!staleRef.current) setMessagingLimits({}) })
 
     return () => { staleRef.current = true }
   }, [open])
@@ -569,6 +578,7 @@ export function CampaignWizard({
                     scheduledAt={scheduledAt}
                     campaignName={campaignName}
                     onEditStep={(s) => setStep(s)}
+                    messagingLimit={messagingLimits[whatsappNumberId]}
                   />
                 )}
                 {error && (
@@ -1431,7 +1441,7 @@ function Step5({
   selectedTagIds, selectedStages, selectedContactIds,
   filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
   filterSentiment, filterContactSearch, filterHasConversations,
-  estimatedReach, scheduleMode, scheduledAt, campaignName, onEditStep,
+  estimatedReach, scheduleMode, scheduledAt, campaignName, onEditStep, messagingLimit,
 }: {
   template: WhatsAppTemplate
   mappings: CampaignVariableMapping[]
@@ -1457,6 +1467,10 @@ function Step5({
   campaignName: string
   /** SCRUM-1106 (tela 2c) — link "Editar" por linha, volta pra etapa de origem. */
   onEditStep: (step: 1 | 2 | 4) => void
+  /** `WhatsAppNumberDetailed.messagingLimit` da linha escolhida (tier Meta,
+   *  ex. "1K"/"10K"/"100K"/"Unlimited") — indisponível = sem banner, não
+   *  inventamos um número. */
+  messagingLimit?: string
 }) {
   const [showContactsModal, setShowContactsModal] = useState(false)
 
@@ -1660,6 +1674,15 @@ function Step5({
             </button>
           )}
         </div>
+
+        {/* Banner de limite diário (tela 2c) — só quando o dado real da
+            linha (messagingLimit, tier Meta) está disponível. */}
+        {messagingLimit && (
+          <Banner variant="warning">
+            Limite diário de mensagens desta linha: <strong>{messagingLimit}</strong>. Campanhas grandes podem
+            ultrapassar o limite e ter parte do envio adiada para o próximo dia.
+          </Banner>
+        )}
       </div>
 
       {/* Right column: message preview */}
