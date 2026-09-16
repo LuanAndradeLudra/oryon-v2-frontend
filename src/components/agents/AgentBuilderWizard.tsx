@@ -2146,17 +2146,18 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                           !done && 'cursor-default',
                         )}
                       >
+                        {/* AGT-WIZ-08: concluída --acsoft/--acs, ativa --btn/--btntx, futura borda --bd2. */}
                         <span className={cn(
                           'w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0 border',
-                          done && 'bg-brand-500/15 border-transparent text-brand-400',
-                          active && 'bg-brand-600 border-transparent text-surface-950',
-                          !done && !active && 'border-surface-700 text-surface-600',
+                          done && 'bg-accent-soft border-transparent text-accent-dark',
+                          active && 'bg-[var(--color-btn-primary-bg)] border-transparent text-[var(--color-btn-primary-fg)]',
+                          !done && !active && 'border-surface-600 text-surface-500',
                         )}>
-                          {done ? <Check className="w-3 h-3" /> : <span className="text-[9px] font-bold">{s}</span>}
+                          {done ? <Check className="w-3 h-3" strokeWidth={3} /> : <span className="text-[10px] font-bold">{s}</span>}
                         </span>
                         <span className={cn(
                           'text-xs truncate',
-                          active ? 'text-surface-100 font-semibold' : done ? 'text-surface-400' : 'text-surface-600',
+                          active ? 'text-surface-100 font-semibold' : done ? 'text-surface-400' : 'text-surface-500',
                         )}>
                           {label}
                         </span>
@@ -2249,13 +2250,13 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   aqui de propósito: aquele componente é o stepper horizontal
                   com círculos numerados — visual bem mais pesado que o traço
                   fino do mock, e duplicaria a trilha da esquerda. */}
-              <div className="flex-shrink-0 h-[52px] flex items-center gap-1 px-10 bg-surface-950/85 backdrop-blur-md border-b border-surface-700">
+              <div className="flex-shrink-0 h-[52px] flex items-center gap-1 px-6 bg-surface-950/85 backdrop-blur-md border-b border-surface-700">
                 {STEP_LABELS.map((_, i) => (
                   <div
                     key={i}
                     className={cn(
                       'h-[3px] flex-1 rounded-full transition-colors duration-300',
-                      i < step ? 'bg-brand-500' : 'bg-surface-800',
+                      i < step ? 'bg-brand-500' : 'bg-surface-700',
                     )}
                   />
                 ))}
@@ -2274,7 +2275,8 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                       exit={{ opacity: 0, x: -24 }}
                       transition={{ duration: 0.25, ease: 'easeOut' }}
                     >
-                      <div className="bg-surface-900/70 backdrop-blur-sm overlay-frame border rounded-2xl p-6">
+                      {/* AGT-WIZ-27: nenhum card em volta do formulário. */}
+                      <>
                         {step === 1 && <Step1 data={data} setData={setData} />}
                         {step === 2 && <Step2 data={data} setData={setData} />}
                         {step === 3 && <Step3 data={data} setData={setData} />}
@@ -2283,7 +2285,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                         {step === 6 && <Step6KB data={data} setData={setData} />}
                         {step === 7 && <Step6 data={data} setData={setData} />}
                         {step === 8 && <Step7 data={data} setData={setData} />}
-                      </div>
+                      </>
                     </motion.div>
                   </AnimatePresence>
                 </div>

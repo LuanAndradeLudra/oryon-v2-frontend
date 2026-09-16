@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { loadHub, hubHasContent, isAgentStale, injectHubIntoPrompt } from '@/services/companyContextService'
 import { cn } from '@/lib/utils'
-import { Tabs, type TabAccent } from '@/components/ui/Tabs'
+import { Tabs } from '@/components/ui/Tabs'
 import {
   updateAgent,
   addTool, updateTool, deleteTool,
@@ -157,6 +157,27 @@ const DEBOUNCE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: '30', label: '30 segundos' },
 ]
 
+// AGT-DET-16/17: grupo de configuração (SettingsSection) — coluna de rótulo
+// (título + descrição) + coluna de campos, sem card (zero fundo/borda/raio
+// próprios). Separador é uma hairline por baixo do grupo; o último grupo do
+// painel não leva.
+function SettingsGroup({ title, description, children, last = false }: {
+  title: string
+  description?: string
+  children: React.ReactNode
+  last?: boolean
+}) {
+  return (
+    <div className={cn('grid grid-cols-[200px_1fr] gap-4', !last && 'pb-[18px] border-b border-surface-700')}>
+      <div>
+        <p className="text-[13px] font-semibold text-surface-100">{title}</p>
+        {description && <p className="text-xs text-surface-400 leading-[1.5] mt-0.5">{description}</p>}
+      </div>
+      <div className="min-w-0">{children}</div>
+    </div>
+  )
+}
+
 function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate: (a: AgentConfig) => void }) {
   const toStr = (n: number | null | undefined): string => (n == null ? '' : String(n))
   const initialPause = toStr(agent.ai_handoff_pause_minutes)
@@ -193,12 +214,7 @@ function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUp
   }
 
   return (
-    <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Bot className="w-3.5 h-3.5 text-surface-500" />
-        <p className="text-xs font-medium text-surface-500">Comportamento da IA</p>
-      </div>
-
+    <div className="space-y-4">
       <FormField
         label="Pausar IA quando um atendente humano intervém"
         hint="Quando um atendente envia uma mensagem na conversa, a IA pausa automaticamente por este período. O atendente pode reativar a IA a qualquer momento na própria conversa."
@@ -317,82 +333,92 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Status controls */}
-      <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
-        <p className="text-xs font-medium text-surface-500 mb-3">Status do agente</p>
-        <div className="flex items-center gap-2">
-          {(['active', 'paused', 'draft'] as const).map((s) => {
-            const cfg = STATUS_CONFIG[s]
-            const active = agent.status === s
-            return (
-              <button
-                key={s}
-                onClick={() => !active && setStatus(s)}
-                disabled={savingStatus || active}
-                className={cn(
-                  'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
-                  active
-                    ? 'color-chip cursor-default'
-                    : 'border-surface-700 text-surface-500 hover:border-surface-700 hover:text-surface-300 bg-surface-900 cursor-pointer',
-                )}
-                style={active ? { ['--chip']: cfg.chip } as React.CSSProperties : undefined}
-              >
-                {s === 'active'  && <Power       className="w-3.5 h-3.5" />}
-                {s === 'paused'  && <PauseCircle className="w-3.5 h-3.5" />}
-                {s === 'draft'   && <FileText    className="w-3.5 h-3.5" />}
-                {cfg.label}
-              </button>
-            )
-          })}
-        </div>
+    // AGT-DET-14/25: corpo em 2 colunas (painel esquerdo de grupos + rail
+    // direito). O rail (AGT-DET-27..30, KPIs "de hoje" e "Sugestão do
+    // sistema") continua [!] — precisa de agregados que o backend não expõe
+    // hoje; aqui o rail carrega só dado real já existente (Atividade,
+    // Informações), como único bloco --sf2 (AGT-DET-25).
+    <div className="grid grid-cols-[1fr_320px] gap-0 -mx-6 -my-5">
+      <div className="px-6 py-5 border-r border-surface-700 space-y-[18px]">
+        <SettingsGroup title="Status do agente">
+          <div className="flex items-center gap-2">
+            {(['active', 'paused', 'draft'] as const).map((s) => {
+              const cfg = STATUS_CONFIG[s]
+              const active = agent.status === s
+              return (
+                <button
+                  key={s}
+                  onClick={() => !active && setStatus(s)}
+                  disabled={savingStatus || active}
+                  className={cn(
+                    'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
+                    active
+                      ? 'color-chip cursor-default'
+                      : 'border-surface-700 text-surface-500 hover:border-surface-700 hover:text-surface-300 bg-surface-900 cursor-pointer',
+                  )}
+                  style={active ? { ['--chip']: cfg.chip } as React.CSSProperties : undefined}
+                >
+                  {s === 'active'  && <Power       className="w-3.5 h-3.5" />}
+                  {s === 'paused'  && <PauseCircle className="w-3.5 h-3.5" />}
+                  {s === 'draft'   && <FileText    className="w-3.5 h-3.5" />}
+                  {cfg.label}
+                </button>
+              )
+            })}
+          </div>
+        </SettingsGroup>
+
+        <SettingsGroup
+          title="Comportamento da IA"
+          description="Pausa por handoff humano e espera por mensagens fragmentadas."
+          last
+        >
+          <AiBehaviorCard agent={agent} onUpdate={onUpdate} />
+        </SettingsGroup>
       </div>
 
-      {/* AI behaviour (Phase 34) */}
-      <AiBehaviorCard agent={agent} onUpdate={onUpdate} />
-
-      {/* Activity */}
-      <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
-        <p className="text-xs font-medium text-surface-500 mb-3">Atividade</p>
-        <div className="space-y-2">
-          {activityRows.map(row => (
-            <div key={row.label} className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors',
-              row.highlighted ? 'border-status-active-border/60 bg-status-active-bg/40' : 'border-surface-700 bg-surface-950/40',
-            )}>
-              <span className={row.highlighted ? 'text-status-active' : 'text-surface-600'}>{row.icon}</span>
-              <div className="flex-1 min-w-0">
-                <p className={cn('text-sm font-medium', row.highlighted ? 'text-surface-200' : 'text-surface-500')}>
-                  {row.label}
-                </p>
+      <div className="bg-[var(--sf2)] px-5 py-[18px] space-y-4">
+        <div>
+          <p className="text-xs font-medium text-surface-500 mb-3">Atividade</p>
+          <div className="space-y-2">
+            {activityRows.map(row => (
+              <div key={row.label} className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors',
+                row.highlighted ? 'border-status-active-border/60 bg-status-active-bg/40' : 'border-surface-700 bg-surface-950/40',
+              )}>
+                <span className={row.highlighted ? 'text-status-active' : 'text-surface-600'}>{row.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className={cn('text-sm font-medium', row.highlighted ? 'text-surface-200' : 'text-surface-500')}>
+                    {row.label}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    'text-xs px-2 py-0.5 rounded-full font-medium',
+                    row.highlighted
+                      ? 'color-chip border'
+                      : 'text-surface-500 bg-surface-800/40 ring-1 ring-surface-700/30',
+                  )}
+                  style={row.highlighted ? { ['--chip']: 'var(--color-status-active)' } as React.CSSProperties : undefined}
+                >
+                  {row.value}
+                </span>
               </div>
-              <span
-                className={cn(
-                  'text-xs px-2 py-0.5 rounded-full font-medium',
-                  row.highlighted
-                    ? 'color-chip border'
-                    : 'text-surface-500 bg-surface-800/40 ring-1 ring-surface-700/30',
-                )}
-                style={row.highlighted ? { ['--chip']: 'var(--color-status-active)' } as React.CSSProperties : undefined}
-              >
-                {row.value}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Info rows */}
-      <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
-        <p className="text-xs font-medium text-surface-500 mb-3">Informações</p>
-        <div className="space-y-2">
-          {infoRows.map(r => (
-            <div key={r.label} className="flex items-center gap-2 text-xs">
-              <span className="text-surface-600">{r.icon}</span>
-              <span className="text-surface-500 w-20 flex-shrink-0">{r.label}</span>
-              <span className="text-surface-300">{r.value}</span>
-            </div>
-          ))}
+        <div>
+          <p className="text-xs font-medium text-surface-500 mb-3">Informações</p>
+          <div className="space-y-2">
+            {infoRows.map(r => (
+              <div key={r.label} className="flex items-center gap-2 text-xs">
+                <span className="text-surface-600">{r.icon}</span>
+                <span className="text-surface-500 w-20 flex-shrink-0">{r.label}</span>
+                <span className="text-surface-300">{r.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -2105,26 +2131,25 @@ export function AgentDetail({
   // Fase 5a: `accent` dá identidade categórica pra cada seção (só a aba
   // ATIVA fica colorida — inativas continuam neutras, então nunca aparecem
   // duas cores ao mesmo tempo). Escolhas por afinidade semântica, não por
-  // ordem mecânica: "Visão geral" fica sem accent (cor da marca, é a aba-
-  // -padrão/casa); Skills/Ferramentas usam os mesmos tons já convencionados
-  // pra essas categorias em outras telas deste arquivo (âmbar = destaque/
-  // integração, azul = técnico/bruto, ver `METHOD_COLOR` acima).
-  const tabs: { id: Tab; label: string; icon: React.ReactNode; accent?: TabAccent }[] = [
+  // AGT-DET-11/12/13: sublinhado neutro (cor do texto) pra todas as abas —
+  // sem accent por categoria. O primitivo `Tabs` já faz o inset
+  // `currentColor` em `--tx` quando nenhum `accent` é passado.
+  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Visão geral', icon: <Bot className="w-3.5 h-3.5" /> },
-    { id: 'prompt',   label: 'System Prompt', icon: <FileText className="w-3.5 h-3.5" />, accent: 'violet' },
-    { id: 'capabilities', label: 'Capacidades', icon: <ShieldCheck className="w-3.5 h-3.5" />, accent: 'green' },
-    { id: 'criteria', label: 'Critérios', icon: <Info className="w-3.5 h-3.5" />, accent: 'cyan' },
+    { id: 'prompt',   label: 'System Prompt', icon: <FileText className="w-3.5 h-3.5" /> },
+    { id: 'capabilities', label: 'Capacidades', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    { id: 'criteria', label: 'Critérios', icon: <Info className="w-3.5 h-3.5" /> },
     ...(skillsVisible
-      ? [{ id: 'skills' as Tab, label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" />, accent: 'amber' as TabAccent }]
+      ? [{ id: 'skills' as Tab, label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" /> }]
       : []),
     // Legacy raw-HTTP tools — only visible to users that flipped Advanced Mode.
     ...(advancedMode
-      ? [{ id: 'tools' as Tab, label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" />, accent: 'blue' as TabAccent }]
+      ? [{ id: 'tools' as Tab, label: `Ferramentas${agent.tools.length > 0 ? ` (${agent.tools.length})` : ''}`, icon: <Wrench className="w-3.5 h-3.5" /> }]
       : []),
-    { id: 'rules',    label: 'Regras', icon: <Workflow className="w-3.5 h-3.5" />, accent: 'rose' },
-    { id: 'knowledge', label: 'Conhecimento', icon: <BookOpen className="w-3.5 h-3.5" />, accent: 'cyan' },
-    { id: 'catalog',  label: 'Catálogo', icon: <Package className="w-3.5 h-3.5" />, accent: 'green' },
-    { id: 'metrics',  label: 'Métricas', icon: <BarChart3 className="w-3.5 h-3.5" />, accent: 'blue' },
+    { id: 'rules',    label: 'Regras', icon: <Workflow className="w-3.5 h-3.5" /> },
+    { id: 'knowledge', label: 'Conhecimento', icon: <BookOpen className="w-3.5 h-3.5" /> },
+    { id: 'catalog',  label: 'Catálogo', icon: <Package className="w-3.5 h-3.5" /> },
+    { id: 'metrics',  label: 'Métricas', icon: <BarChart3 className="w-3.5 h-3.5" /> },
   ]
 
   // If the user lands on `tools` while Advanced Mode is off, bounce them to
