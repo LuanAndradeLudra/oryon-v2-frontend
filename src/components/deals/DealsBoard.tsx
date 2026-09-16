@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
-import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock, UserRound } from 'lucide-react'
+import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { cn, tintaDaEtapa, getActivePipelines } from '@/lib/utils'
+import { cn, tintaDaEtapa, getActivePipelines, getInitials } from '@/lib/utils'
 import { pipelineKindOf, pipelineKindOption, terminalLabelsOf, pipelineNoun, TERMINAL_CHIP_STYLE } from '@/lib/pipelineKinds'
 import { originInfo, movedByChip, timeInStage, boardStats, entrySources } from '@/lib/dealCard'
 import { dealProbability } from '@/lib/dealProbability'
@@ -579,6 +579,23 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
 }
 
 /**
+ * DEAL-CARD-12/13 (spec/1e-funis.GAPS.md): avatar do RESPONSÁVEL pelo negócio,
+ * 18px `rounded-[30%]`, tracejado/vazio quando não há dono resolvido — nunca
+ * inventa iniciais quando só existe `ownerUserId` sem `User` correspondente
+ * em `users` (caso "Atribuído").
+ */
+function OwnerAvatar({ owner }: { owner: User | null }) {
+  if (!owner) {
+    return <span className="w-[18px] h-[18px] rounded-[30%] border border-dashed border-[var(--bd2)] flex-shrink-0" aria-hidden />
+  }
+  return (
+    <span className="w-[18px] h-[18px] rounded-[30%] bg-avatar-surface text-avatar-initials flex items-center justify-center text-[8px] font-bold flex-shrink-0">
+      {getInitials(`${owner.firstName} ${owner.lastName ?? ''}`.trim())}
+    </span>
+  )
+}
+
+/**
  * Corpo do card em funil de VENDA (D2 · SCRUM-935/F-FUNIL-11): além do título
  * e valor de sempre, agora mostra dono, previsão de fechamento, tempo na
  * etapa e origem — o mesmo conjunto de sinais que o card de processo já
@@ -608,6 +625,22 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
         <span className="text-[13px] font-semibold leading-[1.3] text-surface-100 truncate flex-1">{deal.title}</span>
         <SiblingBadge siblings={siblings} />
       </div>
+      {/* DEAL-CARD-06: linha de contato 12px secundária — reaproveita o
+          "ver contato" que antes vivia solto no rodapé (mesma ação, posição
+          da spec). Empresa/cidade do mock não entram: `deal.contact` (resumo
+          do board) não traz esse dado — [!] em spec/1e-funis.GAPS.md. */}
+      {deal.contact && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onOpenContact?.(deal.contact!.id) }}
+          className="flex items-center gap-1 text-[12px] text-surface-400 hover:text-brand-400 transition-colors group/contact w-full text-left"
+        >
+          <span className="truncate flex-1">{deal.contact.displayName}</span>
+          <span className="flex items-center gap-0.5 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
+            ver <ArrowRight className="w-3 h-3" />
+          </span>
+        </button>
+      )}
       <CardScope description={deal.description} />
       <div className="mt-1 flex items-center justify-between">
         {/* README 3.4: "rodapé com valor 13px/700". */}
@@ -628,7 +661,7 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
             espaço. Cada um diz o CAMPO, não só o valor, porque o valor já
             está escrito ao lado ("Admin Local" sozinho não ensina nada). */}
         <span className="inline-flex items-center gap-1 truncate" title={`Dono do negócio: ${ownerLabel}`} data-testid="sales-card-owner">
-          <UserRound className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{ownerLabel}</span>
+          <OwnerAvatar owner={owner} /> <span className="truncate">{ownerLabel}</span>
         </span>
         <span className="inline-flex items-center gap-1 flex-shrink-0" title={forecast ? `Previsão de fechamento: ${forecast}` : 'Sem previsão de fechamento'} data-testid="sales-card-forecast">
           <CalendarClock className="w-3 h-3" /> {forecast ?? 'sem previsão'}
@@ -644,19 +677,6 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
           </span>
         )}
       </div>
-      {deal.contact && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onOpenContact?.(deal.contact!.id) }}
-          className="mt-2 flex items-center gap-1.5 text-2xs text-surface-500 hover:text-brand-400 transition-colors group/contact w-full"
-        >
-          <Avatar name={deal.contact.displayName} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />
-          <span className="truncate flex-1 text-left">{deal.contact.displayName}</span>
-          <span className="flex items-center gap-0.5 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
-            ver contato <ArrowRight className="w-3 h-3" />
-          </span>
-        </button>
-      )}
     </>
   )
 }

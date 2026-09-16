@@ -82,7 +82,9 @@ describe('DealsBoard — funil de VENDA continua como antes (regressão)', () =>
     expect(screen.getByText('ganho')).toBeInTheDocument()
     expect(screen.getByText('perdido')).toBeInTheDocument()
     expect(screen.queryByTestId('process-card-title')).toBeNull()
-    expect(within(screen.getByText('Mariana Souza').closest('button')!).getByText('ver contato')).toBeInTheDocument()
+    // DEAL-CARD-06 (Fase C): a linha de contato saiu do rodapé e virou a
+    // linha secundária logo abaixo do título ("ver", não mais "ver contato").
+    expect(within(screen.getByText('Mariana Souza').closest('button')!).getByText('ver')).toBeInTheDocument()
     expect(screen.getAllByText('Nenhum negócio').length).toBeGreaterThan(0)
   })
 
@@ -122,11 +124,12 @@ describe('DealsBoard — card de VENDA com dono, previsão, tempo na etapa e ori
     expect(screen.getByTestId('sales-card-owner')).toHaveAttribute('title', 'Dono do negócio: Ana Souza')
     expect(screen.getByTestId('sales-card-origin')).toHaveAttribute('title', 'Origem: Manual')
 
-    // Se os dois ícones voltarem a ser o mesmo, a ambiguidade volta com eles.
-    const svgDono = screen.getByTestId('sales-card-owner').querySelector('svg')
+    // DEAL-CARD-12 (Fase C): o ícone de pessoa do dono virou o avatar real
+    // (iniciais do `owner` resolvido) — a distinção com a origem continua:
+    // uma é um avatar com iniciais, a outra segue com ícone SVG.
+    expect(within(screen.getByTestId('sales-card-owner')).getByText('AS')).toBeInTheDocument()
     const svgOrigem = screen.getByTestId('sales-card-origin').querySelector('svg')
-    expect(svgDono?.innerHTML).toBeTruthy()
-    expect(svgOrigem?.innerHTML).not.toEqual(svgDono?.innerHTML)
+    expect(svgOrigem?.innerHTML).toBeTruthy()
   })
 
   it('sem dono/previsão: "Sem dono" e "sem previsão" — nada inventado', () => {
