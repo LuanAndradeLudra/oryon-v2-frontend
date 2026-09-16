@@ -174,7 +174,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               </tr>
             )}
             {paged.map((agent) => (
-              <tr key={agent.userId} className="hover:bg-surface-800/50 transition-colors">
+              <tr key={agent.userId} className="hover:bg-[var(--rowhover)] transition-colors">
                 {/* Agent */}
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">

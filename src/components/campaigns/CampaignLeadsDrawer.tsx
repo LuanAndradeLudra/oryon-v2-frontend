@@ -146,7 +146,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                 return (
                   <div
                     key={lead.id + lead.adName}
-                    className="group flex items-center gap-3 px-5 py-3 hover:bg-surface-900/60 transition-colors cursor-pointer"
+                    className="group flex items-center gap-3 px-5 py-3 hover:bg-[var(--rowhover)] transition-colors cursor-pointer"
                     onClick={() => handleOpenCRM(lead.id)}
                   >
                     {/* Stage color dot */}

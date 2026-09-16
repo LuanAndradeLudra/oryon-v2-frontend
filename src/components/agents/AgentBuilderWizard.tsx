@@ -1086,7 +1086,7 @@ function PromptGeneratingAnimation() {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-t border-surface-800/60 bg-surface-900/40">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-t border-surface-800/60 bg-[var(--sf2)]">
         <motion.div
           animate={{ opacity: [0.4, 1, 0.4] }}
           transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}

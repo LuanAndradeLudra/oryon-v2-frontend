@@ -1824,7 +1824,7 @@ function ContactListModal({
               {displayed.map((c) => {
                 const stageDef = stages.find((s) => s.key === c.stage)
                 return (
-                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-surface-800/50 transition-colors">
+                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[var(--rowhover)] transition-colors">
                     <div className="w-8 h-8 rounded-full bg-brand-500/15 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
                       {c.displayName.slice(0, 1).toUpperCase()}
                     </div>

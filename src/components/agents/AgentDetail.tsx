@@ -193,7 +193,7 @@ function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUp
   }
 
   return (
-    <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-4">
+    <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <Bot className="w-3.5 h-3.5 text-surface-500" />
         <p className="text-xs font-medium text-surface-500">Comportamento da IA</p>
@@ -319,7 +319,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
   return (
     <div className="space-y-6">
       {/* Status controls */}
-      <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-4">
+      <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
         <p className="text-xs font-medium text-surface-500 mb-3">Status do agente</p>
         <div className="flex items-center gap-2">
           {(['active', 'paused', 'draft'] as const).map((s) => {
@@ -352,7 +352,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
       <AiBehaviorCard agent={agent} onUpdate={onUpdate} />
 
       {/* Activity */}
-      <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-4">
+      <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
         <p className="text-xs font-medium text-surface-500 mb-3">Atividade</p>
         <div className="space-y-2">
           {activityRows.map(row => (
@@ -383,7 +383,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
       </div>
 
       {/* Info rows */}
-      <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-4">
+      <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
         <p className="text-xs font-medium text-surface-500 mb-3">Informações</p>
         <div className="space-y-2">
           {infoRows.map(r => (
@@ -566,7 +566,7 @@ function ToolForm({
   const textareaCls = "w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
 
   return (
-    <div className="space-y-4 bg-surface-900/60 border border-surface-800/60 rounded-xl p-4">
+    <div className="space-y-4 bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-2">
         <Wrench className="w-4 h-4 text-brand-400" />
         <p className="text-sm font-medium text-surface-200">{initial?.name ? 'Editar ferramenta' : 'Nova ferramenta'}</p>
@@ -732,7 +732,7 @@ function ToolsTab({
 
       <div className="space-y-2">
         {agent.tools.map(tool => (
-          <motion.div key={tool.id} layout className="bg-surface-900/60 border border-surface-800/60 rounded-xl overflow-hidden">
+          <motion.div key={tool.id} layout className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl overflow-hidden">
             {editingId === tool.id ? (
               <ToolForm
                 initial={{
@@ -1013,7 +1013,7 @@ function KBUploadProgress({ fileName }: { fileName: string }) {
   const progress = Math.min(95, elapsed * 1.2)
 
   return (
-    <div className="p-3 bg-surface-900/60 border border-surface-800 rounded-xl space-y-2">
+    <div className="p-3 bg-[var(--sf2)] border border-surface-800 rounded-xl space-y-2">
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-brand-400 flex-shrink-0" />
         <p className="text-xs text-surface-200 font-medium truncate">{fileName}</p>
@@ -1299,7 +1299,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
             const isLoadingThis = editLoading && editingDocId === doc.id && editContent === ''
             const previewText = (doc.content_preview ?? '').split('\n').slice(0, 8).join('\n').trim()
             return (
-              <div key={doc.id} className="bg-surface-900/60 border border-surface-800 rounded-xl p-3">
+              <div key={doc.id} className="bg-[var(--sf2)] border border-surface-800 rounded-xl p-3">
                 <div className="flex items-center gap-3">
                   <FileText className="w-4 h-4 text-surface-500 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -1492,7 +1492,7 @@ function RulesTab({
   return (
     <div className={cn('flex flex-col gap-4', subTab === 'handoff' && 'h-full min-h-0')}>
       {/* Sub-tab selector (pill style, nested inside the main tab area) */}
-      <div className="flex items-center gap-1 p-1 bg-surface-900/60 border border-surface-800/60 rounded-xl w-fit flex-shrink-0">
+      <div className="flex items-center gap-1 p-1 bg-[var(--sf2)] border border-surface-800/60 rounded-xl w-fit flex-shrink-0">
         {subTabs.map(t => (
           <button
             key={t.id}
@@ -1584,7 +1584,7 @@ function FaqRuleForm({
   }
 
   return (
-    <div className="bg-surface-900/60 border border-brand-500/30 rounded-xl p-4 space-y-3">
+    <div className="bg-[var(--sf2)] border border-brand-500/30 rounded-xl p-4 space-y-3">
       {/* Name */}
       <div>
         <label className="block text-xs font-medium text-surface-400 mb-1">Nome da regra</label>
@@ -1792,7 +1792,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
 
       <div className="space-y-2">
         {rules.map(rule => (
-          <motion.div key={rule.id} layout className="bg-surface-900/60 border border-surface-800/60 rounded-xl overflow-hidden">
+          <motion.div key={rule.id} layout className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl overflow-hidden">
             {editingId === rule.id ? (
               <FaqRuleForm
                 initial={{
@@ -1958,17 +1958,17 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
       {/* Summary cards */}
       {!loading && !error && totals.total > 0 && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-3">
+          <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Total de chamadas</p>
             <p className="text-xl font-bold text-surface-100">{totals.total.toLocaleString('pt-BR')}</p>
           </div>
-          <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-3">
+          <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Taxa de sucesso</p>
             <p className={cn('text-xl font-bold', successRate !== null && successRate >= 95 ? 'text-status-active' : successRate !== null && successRate >= 80 ? 'text-status-pending' : 'text-danger')}>
               {successRate !== null ? `${successRate}%` : '—'}
             </p>
           </div>
-          <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl p-3">
+          <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Falhas</p>
             <p className={cn('text-xl font-bold', totals.failures === 0 ? 'text-surface-400' : 'text-danger')}>
               {totals.failures.toLocaleString('pt-BR')}
@@ -2007,7 +2007,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
       {/* Per-tool table */}
       {!loading && !error && rows.length > 0 && (
-        <div className="bg-surface-900/60 border border-surface-800/60 rounded-xl overflow-hidden">
+        <div className="bg-[var(--sf2)] border border-surface-800/60 rounded-xl overflow-hidden">
           <table className="w-full text-xs">
             <thead className="bg-surface-950/60 text-surface-500 uppercase tracking-wide text-[10px]">
               <tr>
@@ -2023,7 +2023,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
               {rows.map(r => {
                 const rate = r.total > 0 ? (r.successes / r.total) * 100 : 0
                 return (
-                  <tr key={r.tool_name} className="hover:bg-surface-800/30 transition">
+                  <tr key={r.tool_name} className="hover:bg-[var(--rowhover)] transition">
                     <td className="px-4 py-2.5 font-mono text-surface-200">{r.tool_name}</td>
                     <td className="px-4 py-2.5 text-right text-surface-300">{r.total}</td>
                     <td className={cn('px-4 py-2.5 text-right font-medium', rate >= 95 ? 'text-status-active' : rate >= 80 ? 'text-status-pending' : 'text-danger')}>
