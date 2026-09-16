@@ -249,7 +249,7 @@ reestilo.
 das 6 do mockup (ex. capabilities+criteria+skills+tools+rules dentro de "Comportamento"?),
 e se algo se perde nesse agrupamento.
 
-### 5.2 `AgentDetail.tsx` não foi atualizado para o token `--sf2` (já existe, ficou pendente)
+### 5.2 `AgentDetail.tsx` não foi atualizado para o token `--sf2` (já existe, ficou pendente) — CORRIGIDO
 
 A leva 7 flagou pro Maestro que o token `--sf2` (fundo de rail/nav secundário, usado em
 5+ telas) não existia em `index.css` e aproximou com `surface-800/60`/`surface-900/60` como
@@ -268,9 +268,41 @@ leva 10) — nenhuma das telas que o comentário de `--sf2` em `index.css` lista
 (`bg-surface-900/60` ou `bg-surface-900/40` → `bg-[var(--sf2)]`) nos 3+ lugares
 encontrados. Baixo risco, puramente visual; vale fazer de uma vez só, não tela por tela.
 
+Corrigido na revisão de consistência de tokens (commit `ceb70ff`): as 15 ocorrências em
+`AgentDetail.tsx` e a de `AgentBuilderWizard.tsx` migraram pro token de verdade.
+
+### 5.3 Painel "HOJE" do header do agente não existe — falta dado agregado por agente
+
+O mockup (`telas/01-2a-agentes-ia.png`) mostra, no header do detalhe, um bloco "HOJE" com
+4 números: **Conversas** (total do dia), **Sem humano** (% resolvidas sem handoff),
+**Handoffs** (contagem) e **CSAT** (média) — tudo escopado ao agente de IA aberto, não ao
+tenant inteiro. `AgentDetail.tsx` não tem nada parecido hoje (confirmado: zero ocorrências
+de qualquer um desses 4 rótulos no arquivo).
+
+Investiguei se o dado existe antes de descartar, em vez de assumir. `AgentConfig` (o shape
+que `agentsApi.ts` já consome) só tem `conversation_count`/`test_count`/`last_tested_at` —
+contadores **acumulados desde sempre**, não "hoje", e sem handoffs/CSAT. Procurei em
+`src/services/api.ts` e `src/services/agentsApi.ts` por qualquer endpoint de estatística
+diária por agente (`csat`, `handoff`, `today`, `agentConfigId` cruzado com conversas) — nada.
+O runtime de agentes de IA é um microsserviço à parte (`agent-server`, porta 3002 via
+`VITE_AGENT_SERVER_URL`, comentário em `agentsApi.ts`: "Mirror of
+backend/src/services/agentConfigService.ts") cujo código-fonte **não está neste workspace**
+(busquei em `backend/src` inteiro por `agentConfigService`/`agent-builder`/módulo de agente
+— nada encontrado; é repositório separado, não posso confirmar nem descartar o endpoint por
+leitura de código). Dashboard tem KPIs adjacentes (`bot_resolved`/`bot_deflection`,
+README leva 6) mas são agregados do TENANT, não por agente individual, e hoje vêm zerados
+no snapshot.
+
+**Para desbloquear:** não é decisão de produto pura — é primeiro confirmar com quem tem
+acesso ao `agent-server` se esse endpoint (conversas/handoffs/CSAT do dia, por agente) já
+existe ou precisa ser criado. Só depois disso dá pra saber se é "só consumir" (leva de
+frontend, baixo risco) ou "feature de backend nova" (escopo maior, outro time). Não fiz o
+painel com números fictícios nem com o `conversation_count` acumulado disfarçado de "hoje"
+— seria pior que não ter o painel.
+
 ## 6. Disparos/Campanhas (leva 8, README 3.7)
 
-### 6.1 Aba Templates continua em lista, não na "grade de 4 cards"
+### 6.1 Aba Templates continua em lista, não na "grade de 4 cards" — CORRIGIDO
 
 O mockup (`telas/01-2c-templates-preview-whatsapp.png`) mostra a aba Templates como uma
 grade de 4 cards (header com nome em mono + chip de status Meta, corpo com a prévia em
@@ -284,7 +316,11 @@ atual e a imagem).
 decidir onde cabem as ações hoje disponíveis por linha (edição/exclusão/duplicar/atribuir
 linha/motivo de rejeição) dentro de um card menor.
 
-### 6.2 Banner âmbar de limite diário do WABA não aparece no CampaignWizard
+Corrigido no follow-up da leva 8 (commit `bfaee02`): grade de 4 cards com header (nome mono
++ chip de status), corpo com `TemplatePreview` real em fundo `#EFE7DD`, e as ações movidas
+pro menu "···" (Preview/Editar/Duplicar/Atribuir linha/Excluir) — nenhuma perdida.
+
+### 6.2 Banner âmbar de limite diário do WABA não aparece no CampaignWizard — CORRIGIDO
 
 O mockup mostra, na etapa Revisão do wizard, um banner de aviso quando o envio ultrapassa
 o limite diário da linha WhatsApp ("Envio ultrapassa o limite diário (1.000). A campanha
@@ -296,6 +332,13 @@ só para isso ficou fora do escopo da leva (registrado no commit `d6cc939`).
 **Para desbloquear:** não é decisão de produto, é trabalho técnico — expor
 `messagingLimit` no contexto que o wizard consome (ou buscar sob demanda na etapa de
 Revisão).
+
+Corrigido no follow-up da leva 8 (commit `bfaee02`): `whatsappNumbersApi.listDetailed()`
+novo (bate em `/whatsapp/numbers`, mesmo endpoint que Settings já usa), buscado à parte do
+`Promise.all` principal do wizard pra não travar o fluxo se o tenant não tiver permissão
+nesse endpoint. Mantive a redação do banner mais conservadora que a do mockup — não afirmo
+"a campanha será dividida em 3 dias automaticamente" porque não confirmei esse
+comportamento específico no backend (mesmo cuidado do achado 3.5 acima).
 
 ## 7. Agendamentos (leva 9, README 3.8)
 

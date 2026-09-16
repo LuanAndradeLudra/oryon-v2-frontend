@@ -53,17 +53,6 @@ type Step = 1 | 2 | 3 | 4 | 5
 
 const STEP_LABELS = ['Template', 'Segmento', 'Variáveis', 'Agendar', 'Revisão']
 
-// Um acento categórico por etapa — só para orientação visual dentro do
-// wizard (não carrega o mesmo significado do accent-rose em CampaignReport,
-// que marca resultado negativo de campanha).
-const STEP_ACCENTS: { icon: typeof Sparkles; color: string }[] = [
-  { icon: Sparkles,          color: 'var(--color-accent-blue)' },
-  { icon: Users,             color: 'var(--color-accent-green)' },
-  { icon: SlidersHorizontal, color: 'var(--color-accent-violet)' },
-  { icon: Calendar,          color: 'var(--color-accent-amber)' },
-  { icon: Check,             color: 'var(--color-accent-rose)' },
-]
-
 const CONTACT_FIELDS = [
   { value: 'displayName', label: 'Nome do contato' },
   { value: 'company',     label: 'Empresa' },
@@ -463,8 +452,12 @@ export function CampaignWizard({
                 />
               </div>
 
-              {/* Progress */}
-              <div className="border-b border-surface-800 flex-shrink-0">
+              {/* Progress — breadcrumb já mostra o nome da etapa atual (tela
+                  2c), então não repetimos ícone+título acima do conteúdo
+                  (era redundante, removido). px-5 py-3 iguala o padding do
+                  header/footer do modal — o componente novo não traz padding
+                  próprio (era o antigo, mais alto, que trazia). */}
+              <div className="px-5 py-3 border-b border-surface-800 flex-shrink-0">
                 <WizardProgress
                   steps={STEP_LABELS}
                   currentStep={step}
@@ -474,20 +467,6 @@ export function CampaignWizard({
 
               {/* Step content */}
               <div className="flex-1 overflow-y-auto p-5">
-                {(() => {
-                  const { icon: StepIcon, color } = STEP_ACCENTS[step - 1]
-                  return (
-                    <div className="flex items-center gap-2 mb-4">
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
-                      >
-                        <StepIcon className="w-4 h-4" />
-                      </div>
-                      <h3 className="text-sm font-semibold text-surface-100">{STEP_LABELS[step - 1]}</h3>
-                    </div>
-                  )
-                })()}
                 {step === 1 && (
                   <>
                     <Step1
@@ -1533,79 +1512,83 @@ function Step5({
 
   return (
     <div className="flex gap-5">
-      {/* Left column */}
-      <div className="flex-1 space-y-4">
-        {/* Card: Campaign info */}
-        <div className="bg-surface-800/50 border border-surface-700 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-bold text-surface-300 uppercase tracking-wider">Campanha</p>
-          <div className="space-y-2 divide-y divide-surface-800">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-surface-500">Nome</span>
+      {/* Left column — lista plana com hairline entre linhas (tela 2c),
+          mesmo padrão do InfoTable em ContactPanel.tsx: sem caixa/card em
+          volta dos grupos, só um eyebrow acima de cada grupo. */}
+      <div className="flex-1 space-y-5">
+        {/* Campanha */}
+        <div>
+          <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-1.5">Campanha</p>
+          <div className="divide-y divide-surface-800/60">
+            <div className="flex items-baseline justify-between gap-2 py-2 first:pt-0">
+              <span className="text-[11px] text-surface-500 flex-shrink-0">Nome</span>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-surface-100">{campaignName}</span>
                 <EditLink onClick={() => onEditStep(1)} />
               </div>
             </div>
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-surface-500">Template</span>
+            <div className="flex items-baseline justify-between gap-2 py-2">
+              <span className="text-[11px] text-surface-500 flex-shrink-0">Template</span>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono text-brand-300 bg-brand-400/10 px-2 py-0.5 rounded">{template.name}</span>
                 <EditLink onClick={() => onEditStep(1)} />
               </div>
             </div>
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-surface-500">Categoria</span>
+            <div className="flex items-baseline justify-between gap-2 py-2">
+              <span className="text-[11px] text-surface-500 flex-shrink-0">Categoria</span>
               <span className="text-xs text-surface-300 bg-surface-700 px-2 py-0.5 rounded">{CATEGORY_LABELS[template.category] ?? template.category}</span>
             </div>
             {lineLabel && (
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-surface-500">Linha</span>
+              <div className="flex items-baseline justify-between gap-2 py-2">
+                <span className="text-[11px] text-surface-500 flex-shrink-0">Linha</span>
                 <span className="text-xs text-surface-300">{lineLabel}</span>
               </div>
             )}
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-surface-500">Envio</span>
+            <div className="flex items-baseline justify-between gap-2 py-2">
+              <span className="text-[11px] text-surface-500 flex-shrink-0">Envio</span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-surface-300">{scheduleDisplay}</span>
                 <EditLink onClick={() => onEditStep(4)} />
               </div>
             </div>
             {mappings.length > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-surface-500">Variáveis</span>
+              <div className="flex items-baseline justify-between gap-2 py-2 last:pb-0">
+                <span className="text-[11px] text-surface-500 flex-shrink-0">Variáveis</span>
                 <span className="text-xs text-surface-300">{mappings.length} variáve{mappings.length === 1 ? 'l' : 'is'} mapeada{mappings.length === 1 ? '' : 's'}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Card: Segment info */}
-        <div className="bg-surface-800/50 border border-surface-700 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-bold text-surface-300 uppercase tracking-wider">Segmento</p>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-surface-500">Tipo</span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-surface-300">{segmentLabels[segmentType]}</span>
-              <EditLink onClick={() => onEditStep(2)} />
+        {/* Segmento */}
+        <div>
+          <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-1.5">Segmento</p>
+          <div className="divide-y divide-surface-800/60">
+            <div className="flex items-baseline justify-between gap-2 py-2 first:pt-0">
+              <span className="text-[11px] text-surface-500 flex-shrink-0">Tipo</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-surface-300">{segmentLabels[segmentType]}</span>
+                <EditLink onClick={() => onEditStep(2)} />
+              </div>
             </div>
+            {estimatedReach !== null && (
+              <div className="flex items-baseline justify-between gap-2 py-2">
+                <span className="text-[11px] text-surface-500 flex-shrink-0">Alcance estimado</span>
+                <span className={cn(
+                  'text-xs font-semibold px-2 py-0.5 rounded-full',
+                  estimatedReach === 0
+                    ? 'text-danger bg-danger/10'
+                    : 'text-status-active bg-status-active-bg'
+                )}>
+                  {estimatedReach} contato{estimatedReach === 1 ? '' : 's'}
+                </span>
+              </div>
+            )}
           </div>
-          {estimatedReach !== null && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-surface-500">Alcance estimado</span>
-              <span className={cn(
-                'text-xs font-semibold px-2 py-0.5 rounded-full',
-                estimatedReach === 0
-                  ? 'text-danger bg-danger/10'
-                  : 'text-status-active bg-status-active-bg'
-              )}>
-                {estimatedReach} contato{estimatedReach === 1 ? '' : 's'}
-              </span>
-            </div>
-          )}
 
           {/* Manual contacts preview */}
           {segmentType === 'manual' && selectedContactIds.length > 0 && (
-            <div>
+            <div className="mt-3">
               <p className="text-[11px] text-surface-500 mb-1.5">Contatos selecionados:</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedContactIds.slice(0, 5).map((id) => {
@@ -1625,7 +1608,7 @@ function Step5({
 
           {/* Tag segment */}
           {segmentType === 'tag' && selectedTagIds.length > 0 && (
-            <div>
+            <div className="mt-3">
               <p className="text-[11px] text-surface-500 mb-1.5">Tags:</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedTagIds.map((id) => {
@@ -1642,7 +1625,7 @@ function Step5({
 
           {/* Stage segment */}
           {segmentType === 'stage' && selectedStages.length > 0 && (
-            <div>
+            <div className="mt-3">
               <p className="text-[11px] text-surface-500 mb-1.5">Estágios:</p>
               <div className="flex flex-wrap gap-1.5">
                 {selectedStages.map((key) => {
@@ -1659,7 +1642,7 @@ function Step5({
 
           {/* Filter pills */}
           {segmentType === 'filter' && filterPills.length > 0 && (
-            <div>
+            <div className="mt-3">
               <p className="text-[11px] text-surface-500 mb-1.5">{filterPills.length} filtro{filterPills.length === 1 ? '' : 's'} ativo{filterPills.length === 1 ? '' : 's'}:</p>
               <div className="flex flex-wrap gap-1.5">
                 {filterPills.map((pill, i) => (
@@ -1682,7 +1665,7 @@ function Step5({
           {estimatedReach !== null && estimatedReach > 0 && (
             <button
               onClick={() => setShowContactsModal(true)}
-              className="w-full mt-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-surface-600 text-xs text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
+              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-surface-600 text-xs text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
             >
               <Users className="w-3.5 h-3.5" />
               Verificar lista de contatos ({estimatedReach} contato{estimatedReach === 1 ? '' : 's'})
