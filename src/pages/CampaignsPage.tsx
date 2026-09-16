@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { Send, FileText, X, Target } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -23,6 +24,12 @@ export function CampaignsPage() {
   const { user } = useAuth()
   const { isFeatureVisible } = useFeatureVisibility()
   const { checklist, markDone } = useSetupChecklist(user?.id)
+  // SCRUM-1106 (tela 2c) — "Disparos (14) · Templates (9)": contagem real
+  // reportada pelas próprias abas (evita duplicar o fetch aqui). Atribuição
+  // não tem lista própria no mock — sem contador.
+  const [campaignsCount, setCampaignsCount] = useState<number | null>(null)
+  const [templatesCount, setTemplatesCount] = useState<number | null>(null)
+  const tabCount: Partial<Record<Tab, number | null>> = { campaigns: campaignsCount, templates: templatesCount }
   // Tab na URL (?tab=) — deep-linkável e sobrevive a reload; os tabs vivem
   // IN-PAGE (padrão underline do app), não no TopBar global, onde eram
   // invisíveis para quem escaneia a página.
@@ -62,6 +69,9 @@ export function CampaignsPage() {
               >
                 <Icon className="w-3.5 h-3.5" />
                 {tab.label}
+                {typeof tabCount[tab.id] === 'number' && (
+                  <span className="text-surface-600 tabular-nums">({tabCount[tab.id]})</span>
+                )}
               </button>
             )
           })}
@@ -90,8 +100,8 @@ export function CampaignsPage() {
 
         {/* Tab content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {activeTab === 'campaigns'   && <CampaignsTab />}
-          {activeTab === 'templates'   && <TemplatesTab />}
+          {activeTab === 'campaigns'   && <CampaignsTab onCountChange={setCampaignsCount} />}
+          {activeTab === 'templates'   && <TemplatesTab onCountChange={setTemplatesCount} />}
           {activeTab === 'attribution' && <AttributionTab />}
         </div>
     </main>
