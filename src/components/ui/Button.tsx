@@ -31,10 +31,13 @@ const variantStyles = {
     'focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-40',
   ],
+  // spec/1a-primitivos.md BTN-02/06: neutral = fundo --sf + borda de ênfase
+  // --bd2 (não --bd); hover escurece 1 passo. ghost = texto --tx2, hover 1
+  // passo em --rowhover (não teal).
   neutral: [
     'bg-surface-800 text-surface-100 font-semibold',
-    'border border-surface-700',
-    'hover:bg-surface-700 hover:border-surface-600',
+    'border border-[var(--bd2)]',
+    'hover:bg-surface-700',
     'focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-40',
   ],
@@ -45,8 +48,8 @@ const variantStyles = {
     'disabled:opacity-40',
   ],
   ghost: [
-    'bg-transparent text-surface-300 font-medium px-3',
-    'hover:bg-accent-soft hover:text-surface-100',
+    'bg-transparent text-surface-400 font-medium px-3',
+    'hover:bg-[var(--rowhover)] hover:text-surface-100',
     'focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-40',
   ],
@@ -58,10 +61,11 @@ const variantStyles = {
   ],
 }
 
+// BTN-10/12: sm 12px · md 13px · lg 14px (HTML do canvas).
 const sizeStyles = {
   sm: 'h-7 px-3 text-xs gap-1.5 rounded-sm',
-  md: 'h-9 px-4 text-sm gap-2  rounded-sm',
-  lg: 'h-11 px-5 text-sm gap-2  rounded-sm',
+  md: 'h-9 px-4 text-[13px] gap-2 rounded-sm',
+  lg: 'h-11 px-5 text-sm gap-2 rounded-sm',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -89,6 +93,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           'cursor-pointer select-none',
           'disabled:cursor-not-allowed',
           'focus-visible:outline-none',
+          loading && 'opacity-60',
           sizeStyles[size],
           variantStyles[variant],
           className,

@@ -91,7 +91,9 @@ export function DataTable<Row>({
     <div className={cn('overflow-x-auto overflow-y-auto', className)}>
       <table className="w-full text-sm border-collapse">
         <thead className="sticky top-0 z-10 bg-surface-900">
-          <tr className="border-b border-surface-800">
+          {/* TABLE-02/03 (spec 1a): hairlines em --bd (surface-700). Com
+              surface-800 = #FFFFFF no claro, a linha sumia. */}
+          <tr className="border-b border-surface-700">
             {selectable && (
               <th className="w-10 px-3 py-2">
                 <input
@@ -138,7 +140,7 @@ export function DataTable<Row>({
                 onClick={onRowClick ? (e) => onRowClick(row, e) : undefined}
                 onContextMenu={onRowContextMenu ? (e) => onRowContextMenu(row, e) : undefined}
                 className={cn(
-                  'border-b border-surface-800/60 transition-colors',
+                  'border-b border-surface-700 transition-colors',
                   onRowClick && 'cursor-pointer',
                   activeKey === key
                     ? 'bg-brand-500/15 [&>td:first-child]:shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
