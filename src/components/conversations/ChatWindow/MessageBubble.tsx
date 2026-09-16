@@ -771,9 +771,9 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         </button>
       )}
 
-      {/* Column wrapper — keeps the bubble at max 72% width, aligned to the
+      {/* Column wrapper — keeps the bubble at max 70% width, aligned to the
           sender's side. */}
-      <div className={cn('flex flex-col max-w-[72%] min-w-0', isOutbound ? 'items-end' : 'items-start')}>
+      <div className={cn('flex flex-col max-w-[70%] min-w-0', isOutbound ? 'items-end' : 'items-start')}>
         {/* Bubble — soft drop shadow only in light theme (invisible token in
             dark). The sender (AI / operator / campaign / rule) is conveyed by a
             discreet inline icon in the meta row below, outbound only. */}

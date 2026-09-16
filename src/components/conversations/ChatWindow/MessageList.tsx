@@ -41,11 +41,11 @@ function DateSeparator({ date }: { date: string }) {
 
   return (
     <div className="flex items-center gap-3 my-4 px-4">
-      <div className="flex-1 h-px bg-surface-800" />
-      <span className="text-[11px] text-surface-500 font-semibold px-2 py-0.5 bg-surface-900 rounded-full border border-surface-700">
+      <div className="flex-1 h-px bg-surface-700" />
+      <span className="text-[10.5px] text-surface-500 font-semibold px-2 py-0.5 bg-surface-800 rounded-full border border-surface-700">
         {label}
       </span>
-      <div className="flex-1 h-px bg-surface-800" />
+      <div className="flex-1 h-px bg-surface-700" />
     </div>
   )
 }
