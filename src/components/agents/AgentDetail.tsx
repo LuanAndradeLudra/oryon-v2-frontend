@@ -2166,6 +2166,15 @@ export function AgentDetail({
             )}
           </div>
         </div>
+        {/* Indicador textual de auto-save (tela 2a) — "✓ Salvo às HH:MM".
+            Sem barra de save fixa nova: `agent.updated_at` já reflete o
+            último save bem-sucedido de QUALQUER aba (handleAgentUpdate
+            sempre mescla a resposta fresca da API), então não precisa de
+            estado próprio nem de plumbing entre abas. */}
+        <span className="text-[11.5px] text-surface-600 flex items-center gap-1 flex-shrink-0">
+          <Check className="w-3 h-3 text-online" />
+          Salvo às {new Date(agent.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        </span>
         {/* Testar Agente */}
         <button
           onClick={() => setShowTest(true)}

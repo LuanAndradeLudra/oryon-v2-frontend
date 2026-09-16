@@ -579,6 +579,8 @@ export function CampaignWizard({
                     campaignName={campaignName}
                     onEditStep={(s) => setStep(s)}
                     messagingLimit={messagingLimits[whatsappNumberId]}
+                    lineLabel={waNumbers.find((n) => n.id === whatsappNumberId)?.label
+                      ?? waNumbers.find((n) => n.id === whatsappNumberId)?.displayPhoneNumber}
                   />
                 )}
                 {error && (
@@ -1441,7 +1443,7 @@ function Step5({
   selectedTagIds, selectedStages, selectedContactIds,
   filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
   filterSentiment, filterContactSearch, filterHasConversations,
-  estimatedReach, scheduleMode, scheduledAt, campaignName, onEditStep, messagingLimit,
+  estimatedReach, scheduleMode, scheduledAt, campaignName, onEditStep, messagingLimit, lineLabel,
 }: {
   template: WhatsAppTemplate
   mappings: CampaignVariableMapping[]
@@ -1471,6 +1473,10 @@ function Step5({
    *  ex. "1K"/"10K"/"100K"/"Unlimited") — indisponível = sem banner, não
    *  inventamos um número. */
   messagingLimit?: string
+  /** Rótulo/telefone da linha WhatsApp resolvida — a linha não é editável
+   *  nesta etapa (o seletor fica sempre visível no topo do wizard, fora do
+   *  fluxo por etapas), então essa linha do resumo não tem "Editar". */
+  lineLabel?: string
 }) {
   const [showContactsModal, setShowContactsModal] = useState(false)
 
@@ -1535,7 +1541,10 @@ function Step5({
           <div className="space-y-2 divide-y divide-surface-800">
             <div className="flex items-center justify-between">
               <span className="text-xs text-surface-500">Nome</span>
-              <span className="text-xs font-medium text-surface-100">{campaignName}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-surface-100">{campaignName}</span>
+                <EditLink onClick={() => onEditStep(1)} />
+              </div>
             </div>
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-surface-500">Template</span>
@@ -1548,6 +1557,12 @@ function Step5({
               <span className="text-xs text-surface-500">Categoria</span>
               <span className="text-xs text-surface-300 bg-surface-700 px-2 py-0.5 rounded">{CATEGORY_LABELS[template.category] ?? template.category}</span>
             </div>
+            {lineLabel && (
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-xs text-surface-500">Linha</span>
+                <span className="text-xs text-surface-300">{lineLabel}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-surface-500">Envio</span>
               <div className="flex items-center gap-2">

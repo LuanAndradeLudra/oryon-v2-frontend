@@ -224,6 +224,12 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                     const Icon = s.icon
                     const isActive = active === s.key
                     const status = sectionStatus(s.key)
+                    // Contagem no nav (tela 2b, "Ações · 3") — só pras 2
+                    // seções com lista real (condições/ações); "1 · pendente"
+                    // etc não existe, então mostro só quando > 0.
+                    const count = s.key === 'acoes' ? draft.actions.length
+                      : s.key === 'condicoes' ? (draft.conditions?.length ?? 0)
+                      : 0
                     return (
                       <button
                         key={s.key}
@@ -239,6 +245,9 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                         <span className={cn('flex-1 min-w-0 truncate text-xs font-medium transition-colors', isActive ? 'text-surface-100' : 'text-surface-400')}>
                           {s.label}
                         </span>
+                        {count > 0 && (
+                          <span className="text-[10.5px] tabular-nums text-surface-600 flex-shrink-0">{count}</span>
+                        )}
                         <span
                           aria-hidden
                           className={cn(

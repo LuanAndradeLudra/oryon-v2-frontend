@@ -33,7 +33,6 @@ import { HandoffRulesPanel } from '@/components/agents/HandoffRuleBuilder'
 import { PromptArtifact } from '@/components/agents/PromptArtifact'
 import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
-import { WizardProgress } from '@/components/ui/WizardProgress'
 import { Banner } from '@/components/ui/Banner'
 import { AGENT_ICONS, AgentIcon } from '@/components/agents/AgentIcons'
 import { STEP_TEACHINGS } from './agentBuilderTeachings'
@@ -2125,10 +2124,10 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                 </AnimatePresence>
               </div>
 
-              {/* Trilha de etapas (tela 2b) — só concluídas são clicáveis,
-                  mesmo gate de WizardProgress (ui/, à direita); esta é a
-                  vista vertical compacta que fica sempre visível no painel
-                  Tutor, sem competir com o stepper horizontal de cima. */}
+              {/* Trilha de etapas (tela 2b) — só concluídas são clicáveis;
+                  vista vertical compacta sempre visível no painel Tutor. É a
+                  navegação por etapa da tela inteira (o header do painel à
+                  direita só tem a barra de progresso fina, sem repetir isto). */}
               <div className="px-8 py-4 border-t border-surface-800/60 flex-shrink-0">
                 <div className="flex flex-col gap-1">
                   {STEP_LABELS.map((label, i) => {
@@ -2242,17 +2241,31 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
 
             {/* ── RIGHT FORM PANEL ─────────────────────────────────────── */}
             <div className="relative z-10 flex-1 flex flex-col">
-              {/* Sticky top: progress bar + horizontal stepper */}
-              <WizardProgress
-                steps={STEP_LABELS}
-                currentStep={step}
-                onStepClick={s => { setValidationError(null); setStep(s) }}
-                className="flex-shrink-0 bg-surface-950/85 backdrop-blur-md border-b border-surface-800/40"
-              />
+              {/* Header de 52px com barra de progresso segmentada de 3px
+                  (tela 2b) — a trilha vertical do painel Tutor à esquerda já
+                  cobre a navegação por etapa (nomes + clique pra concluídas),
+                  então este header fica só com o indicador de progresso puro,
+                  sem repetir números/labels. Não uso `WizardProgress` (ui/)
+                  aqui de propósito: aquele componente é o stepper horizontal
+                  com círculos numerados — visual bem mais pesado que o traço
+                  fino do mock, e duplicaria a trilha da esquerda. */}
+              <div className="flex-shrink-0 h-[52px] flex items-center gap-1 px-10 bg-surface-950/85 backdrop-blur-md border-b border-surface-800/40">
+                {STEP_LABELS.map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'h-[3px] flex-1 rounded-full transition-colors duration-300',
+                      i < step ? 'bg-brand-500' : 'bg-surface-800',
+                    )}
+                  />
+                ))}
+              </div>
 
-              {/* Scrollable form content */}
+              {/* Scrollable form content — max-width 720px (tela 2b): sem
+                  isto, campos de texto/grades de opção esticavam até a
+                  largura toda do painel em telas grandes. */}
               <div className="flex-1 overflow-y-auto">
-                <div className="px-10 py-8">
+                <div className="max-w-[720px] px-10 py-8">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={`form-${step}`}
