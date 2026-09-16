@@ -93,14 +93,15 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
         >
-          {/* Backdrop — blur sutil separa o modal do contexto sem apagá-lo */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+          {/* MODAL-07 (spec 1a): scrim = token --scrim (rgba(15,23,42,.18) claro /
+              rgba(0,0,0,.4) escuro), sem blur. */}
+          <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" />
 
           {/* Panel — flex column with capped height so the body scrolls
-              while the header/footer stay pinned. */}
+              while the header/footer stay pinned. MODAL-01: fundo --sf. */}
           <motion.div
             className={cn(
-              'relative z-10 bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg',
+              'relative z-10 bg-surface-800 overlay-frame border rounded-2xl w-full max-w-lg',
               'flex flex-col max-h-[90vh] overflow-hidden',
               className,
             )}
@@ -110,10 +111,10 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
             exit={{ opacity: 0, scale: 0.97, y: 4 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
           >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
+            {/* Header — MODAL-02: padding 16 18 0, SEM hairline; título 15/700 -.01em. */}
+            <div className="flex items-start justify-between gap-3 px-[18px] pt-4 pb-0 flex-shrink-0">
               {typeof title === 'string'
-                ? <h2 className="text-base font-display font-semibold text-surface-50">{title}</h2>
+                ? <h2 className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">{title}</h2>
                 : title}
               <button
                 onClick={onClose}
@@ -132,8 +133,9 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
                 Footer presence trims bottom padding because the footer's
                 own border + padding provide the visual breathing room. */}
             <div className={cn(
-              'px-5',
-              footer ? 'py-4' : 'pt-4 pb-6',
+              // MODAL-06: corpo 14 18.
+              'px-[18px]',
+              footer ? 'py-3.5' : 'pt-3.5 pb-[18px]',
               fillHeight
                 ? 'flex flex-col flex-1 min-h-0 overflow-hidden'
                 : 'overflow-y-auto flex-1 min-h-0',
@@ -142,7 +144,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
               {children}
             </div>
             {footer && (
-              <div className="px-5 py-4 border-t border-surface-700 flex-shrink-0">
+              <div className="px-[18px] py-3.5 border-t border-surface-700 flex-shrink-0">
                 {footer}
               </div>
             )}
@@ -204,9 +206,10 @@ export function ConfirmModal({
           </p>
         </Banner>
       )}
-      <p className="text-sm text-surface-400 mb-5">{description}</p>
+      {/* MODAL-02/05: descrição 12.5px; "Cancelar" é neutral, não ghost. */}
+      <p className="text-[12.5px] text-surface-400 mt-1 mb-4">{description}</p>
       <div className="flex gap-2 justify-end">
-        <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+        <Button variant="neutral" onClick={onClose}>Cancelar</Button>
         <Button
           variant={danger ? 'danger' : 'primary'}
           onClick={onConfirm}
