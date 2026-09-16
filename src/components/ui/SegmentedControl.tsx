@@ -59,10 +59,11 @@ export function SegmentedControl<T extends string>({
             className={cn(
               'inline-flex items-center gap-1.5 rounded-lg font-medium transition-all cursor-pointer',
               size === 'sm' ? 'px-3 py-1 text-xs' : 'px-3.5 py-1.5 text-sm',
+              // ELEV-02 (spec 1a): sem sombra fora de overlay.
               active
                 ? solid
-                  ? 'color-chip border shadow-sm'
-                  : 'bg-surface-700 text-surface-100 shadow-sm'
+                  ? 'color-chip border'
+                  : 'bg-surface-700 text-surface-100'
                 : 'text-surface-500 hover:text-surface-300',
             )}
           >
@@ -71,7 +72,7 @@ export function SegmentedControl<T extends string>({
             {typeof opt.count === 'number' && (
               <span
                 className={cn(
-                  'min-w-[18px] px-1 rounded-full text-[10px] font-semibold text-center tabular-nums',
+                  'min-w-[18px] px-1 rounded-full text-3xs font-semibold text-center tabular-nums',
                   active
                     ? solid
                       ? 'bg-white text-black'

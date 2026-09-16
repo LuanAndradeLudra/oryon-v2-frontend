@@ -67,11 +67,13 @@ export function Tooltip({ content, children, side = 'right', wide = false }: Too
         <div
           role="tooltip"
           style={{ position: 'fixed', top: coords.top, left: coords.left }}
+          // TIP-01 (spec 1a): superfície invertida (--toast/--toasttx), 24px,
+          // raio 5, 11.5/500, sem borda nem sombra.
           className={cn(
-            'z-[9999] rounded-md px-2.5 py-1.5 overlay-surface border',
-            'text-xs text-surface-100',
+            'z-[9999] flex items-center rounded-[5px] px-2 bg-[var(--toast)] text-[var(--toasttx)]',
+            'text-[11.5px] font-medium',
             'pointer-events-none',
-            wide ? 'whitespace-normal max-w-xs leading-snug' : 'whitespace-nowrap',
+            wide ? 'min-h-6 py-1 whitespace-normal max-w-xs leading-snug' : 'h-6 whitespace-nowrap w-max',
             transforms[side],
           )}
         >

@@ -47,7 +47,8 @@ export function CardHeader({ title, description, action, className }: CardHeader
   return (
     <div className={cn('flex items-center justify-between gap-3 min-h-10 pb-2.5 mb-3 border-b border-surface-700', className)}>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-surface-100 truncate">{title}</div>
+        {/* TYPE-04 (spec 1a): título de card 13/600. */}
+        <div className="text-[13px] font-semibold text-surface-100 truncate">{title}</div>
         {description && (
           <div className="text-xs text-surface-400 mt-0.5">{description}</div>
         )}

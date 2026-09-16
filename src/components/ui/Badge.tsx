@@ -18,7 +18,7 @@ const CHIP_VAR: Partial<Record<NonNullable<BadgeProps['variant']>, string>> = {
   danger:    'var(--color-danger)',
 }
 
-const BASE = 'inline-flex items-center justify-center h-5 px-[7px] rounded-xs text-[11px] font-semibold whitespace-nowrap'
+const BASE = 'inline-flex items-center justify-center h-5 px-[7px] rounded-xs text-2xs font-semibold whitespace-nowrap'
 
 export function Badge({ children, variant = 'default', className }: BadgeProps) {
   // BADGE-09: contador não-lido é outro componente — disco 18px, 10.5/700.
