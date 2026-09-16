@@ -6,7 +6,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn, tintaDaEtapa, getActivePipelines, getInitials } from '@/lib/utils'
 import { pipelineKindOf, pipelineKindOption, terminalLabelsOf, pipelineNoun, TERMINAL_CHIP_STYLE } from '@/lib/pipelineKinds'
-import { originInfo, movedByChip, timeInStage, boardStats, entrySources } from '@/lib/dealCard'
+import { originInfo, movedByChip, timeInStage, stuckDaysInStage, boardStats, entrySources } from '@/lib/dealCard'
 import { dealProbability } from '@/lib/dealProbability'
 import type { Deal, Pipeline, PipelineStage, User } from '@/types'
 
@@ -535,6 +535,7 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
   const OriginIcon = origin.icon
   const by = movedByChip(deal)
   const time = timeInStage(deal)
+  const stuckDays = stuckDaysInStage(deal)
   const name = deal.contact?.displayName ?? deal.title
   const phone = deal.contact?.phone ?? null
   return (
@@ -568,7 +569,15 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-2xs text-surface-500">
         {time ? (
-          <span className="inline-flex items-center gap-1" title={`Nesta etapa há ${time}`} data-testid="process-card-time"><Clock className="w-3 h-3" /> {time}</span>
+          // DEAL-CARD-11 (spec/1e-funis.GAPS.md): "parado Nd" em cor de
+          // perigo/600 quando a etapa passa do limiar de "parado".
+          <span
+            className={cn('inline-flex items-center gap-1', stuckDays !== null && 'text-danger font-semibold')}
+            title={`Nesta etapa há ${time}`}
+            data-testid="process-card-time"
+          >
+            <Clock className="w-3 h-3" /> {stuckDays !== null ? `parado ${stuckDays} d` : time}
+          </span>
         ) : <span />}
         {phone && (
           <span className="inline-flex items-center gap-1 tabular-nums"><Phone className="w-3 h-3" /> {phone}</span>
@@ -613,6 +622,7 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
   const OriginIcon = origin.icon
   const by = movedByChip(deal)
   const time = timeInStage(deal)
+  const stuckDays = stuckDaysInStage(deal)
   const owner = deal.ownerUserId ? users.find((u) => u.id === deal.ownerUserId) ?? null : null
   const ownerLabel = !deal.ownerUserId ? 'Sem dono' : owner ? `${owner.firstName} ${owner.lastName ?? ''}`.trim() : 'Atribuído'
   const forecast = deal.expectedCloseAt
@@ -672,8 +682,13 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
           <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
         </span>
         {time && (
-          <span className="inline-flex items-center gap-1 flex-shrink-0" title={`Nesta etapa há ${time}`} data-testid="sales-card-time">
-            <Clock className="w-3 h-3" /> {time}
+          // DEAL-CARD-11: mesma regra de "parado Nd" em cor de perigo.
+          <span
+            className={cn('inline-flex items-center gap-1 flex-shrink-0', stuckDays !== null && 'text-danger font-semibold')}
+            title={`Nesta etapa há ${time}`}
+            data-testid="sales-card-time"
+          >
+            <Clock className="w-3 h-3" /> {stuckDays !== null ? `parado ${stuckDays} d` : time}
           </span>
         )}
       </div>
