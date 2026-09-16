@@ -22,9 +22,12 @@ export interface ConnectorCapability {
 }
 
 export type CredentialFieldSchema =
-  | { key: string; kind: 'text'; label: string; placeholder?: string; hint?: string; optional?: boolean }
+  // `pairWithNext`: CONN-CRED-13 — campos curtos (ex. "ID da clínica" +
+  // "Unidade padrão") ficam lado a lado em vez de empilhados; marca o
+  // PRIMEIRO campo do par, o próximo da lista entra na mesma linha.
+  | { key: string; kind: 'text'; label: string; placeholder?: string; hint?: string; optional?: boolean; pairWithNext?: boolean }
   | { key: string; kind: 'secret'; label: string; hint?: string; savedPreview?: string }
-  | { key: string; kind: 'select'; label: string; options: string[]; optional?: boolean }
+  | { key: string; kind: 'select'; label: string; options: string[]; optional?: boolean; pairWithNext?: boolean }
   | { key: string; kind: 'segmented'; label: string; options: string[] }
   | { key: string; kind: 'permissions'; label: string; items: Array<{ id: string; label: string; defaultChecked: boolean; optional?: boolean }> }
 
@@ -92,7 +95,7 @@ export const CONNECTORS: Connector[] = [
         { key: 'environment', kind: 'segmented', label: 'Ambiente', options: ['Produção', 'Sandbox'] },
         { key: 'apiUrl', kind: 'text', label: 'URL da API', placeholder: 'https://api.feegow.com/v1' },
         { key: 'accessToken', kind: 'secret', label: 'Token de acesso', hint: 'Feegow · Configurações › API', savedPreview: 'fg_live_••••7k2Q' },
-        { key: 'clinicId', kind: 'text', label: 'ID da clínica', placeholder: '48211' },
+        { key: 'clinicId', kind: 'text', label: 'ID da clínica', placeholder: '48211', pairWithNext: true },
         { key: 'defaultUnit', kind: 'select', label: 'Unidade padrão', options: ['Todas', 'Unidade Centro', 'Unidade Norte'], optional: true },
       ],
       testResult: { ok: true, detail: '3 unidades, 14 profissionais', ms: 240 },

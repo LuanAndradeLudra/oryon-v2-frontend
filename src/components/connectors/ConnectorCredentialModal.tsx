@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/Modal'
@@ -49,14 +49,15 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
 
   if (!schema) return null
 
+  const testResult = schema.testResult
   const errored = testState === 'error'
-  const erroredField = errored && schema.testResult.ok === false ? schema.testResult.fieldKey : null
+  const erroredField = errored && testResult.ok === false ? testResult.fieldKey : null
 
   function runTest() {
     setTestState('testing')
     // Casca visual — resultado fixo do mock (connectorsMock.ts), sem chamada real.
     setTimeout(() => {
-      setTestState(schema!.testResult.ok ? 'success' : 'error')
+      setTestState(testResult.ok ? 'success' : 'error')
       setTestedAt('agora')
     }, 700)
   }
@@ -102,7 +103,31 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
       }
     >
       <div className="flex flex-col gap-3.5">
-        {schema.fields.map((field) => {
+        {(() => {
+          // CONN-CRED-13: campo marcado `pairWithNext` entra numa grade de 2
+          // colunas com o campo seguinte (ex. "ID da clínica" + "Unidade
+          // padrão") em vez de empilhado — os dois continuam FormField
+          // independentes, só a moldura externa muda.
+          const nodes: ReactNode[] = []
+          for (let i = 0; i < schema.fields.length; i++) {
+            const field = schema.fields[i]
+            const pairNext = (field.kind === 'text' || field.kind === 'select') && field.pairWithNext
+            if (pairNext && i + 1 < schema.fields.length) {
+              const next = schema.fields[i + 1]
+              nodes.push(
+                <div key={field.key} className="grid grid-cols-2 gap-3">
+                  {renderField(field)}
+                  {renderField(next)}
+                </div>,
+              )
+              i++ // pula o campo já renderizado no par
+            } else {
+              nodes.push(renderField(field))
+            }
+          }
+          return nodes
+
+          function renderField(field: CredentialFieldSchema): ReactNode {
           if (field.kind === 'segmented') {
             return (
               <FormField key={field.key} label={field.label}>
@@ -132,7 +157,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
                 key={field.key}
                 label={field.label}
                 hint={field.hint}
-                error={erroredField === field.key && schema.testResult.ok === false ? schema.testResult.message : undefined}
+                error={erroredField === field.key && testResult.ok === false ? testResult.message : undefined}
               >
                 <div className="relative">
                   {/* Segredo já salvo (conector instalado), ainda não editado nesta
@@ -215,20 +240,21 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
               />
             </FormField>
           )
-        })}
+          }
+        })()}
 
         <div className="flex items-center gap-3 pt-1">
           <Button size="sm" variant="neutral" onClick={runTest} loading={testState === 'testing'}>
             {testState === 'error' ? 'Testar de novo' : 'Testar conexão'}
           </Button>
-          {testState === 'success' && schema.testResult.ok && (
+          {testState === 'success' && testResult.ok && (
             <span className="flex items-center gap-1.5 text-xs text-success">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Conexão OK · {schema.testResult.detail} · {schema.testResult.ms} ms · {testedAt}
+              <CheckCircle2 className="w-3.5 h-3.5" /> Conexão OK · {testResult.detail} · {testResult.ms} ms · {testedAt}
             </span>
           )}
-          {testState === 'error' && !schema.testResult.ok && (
+          {testState === 'error' && !testResult.ok && (
             <span className="flex items-center gap-1.5 text-xs text-danger">
-              <XCircle className="w-3.5 h-3.5" /> Falhou · {schema.testResult.code} · há 5 s
+              <XCircle className="w-3.5 h-3.5" /> Falhou · {testResult.code} · há 5 s
             </span>
           )}
           {testState === 'testing' && (
