@@ -36,7 +36,7 @@ const FILTER_OPTIONS: { value: TemplateStatus | 'all'; label: string }[] = [
   { value: 'PAUSED',   label: 'Pausados' },
 ]
 
-export function TemplatesTab() {
+export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) => void } = {}) {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -89,6 +89,9 @@ export function TemplatesTab() {
   }, [])
 
   useEffect(() => { fetchTemplates() }, [fetchTemplates])
+
+  // SCRUM-1106 (tela 2c): contagem no rótulo da aba, no CampaignsPage.
+  useEffect(() => { onCountChange?.(templates.length) }, [templates.length, onCountChange])
 
   const handleSync = async () => {
     setSyncing(true)

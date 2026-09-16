@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from 'react'
 import {
   Plus, Loader2, Send, Clock, FileText, CheckCircle2,
-  XCircle, AlertCircle, Trash2, BarChart3, Users, Copy
+  XCircle, AlertCircle, Trash2, BarChart3, Users, Copy, MoreHorizontal,
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { campaignsApi } from '@/services/api'
@@ -12,16 +12,14 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { SkeletonList } from '@/components/ui/Skeleton'
-import { useContextMenu } from '@/hooks/useContextMenu'
+import { DataTable, type DataTableColumn } from '@/components/ui/DataTable'
+import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
 import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
 import { AssignWabaModal } from '@/components/common/AssignWabaModal'
 import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/common/LineFilterChip'
 import { WhatsappLineRequiredBanner } from '@/components/shared/WhatsappLineRequiredBanner'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
-import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Campaign, CampaignStatus } from '@/types'
 
 const STATUS_CONFIG: Record<CampaignStatus, {
@@ -44,7 +42,7 @@ const FILTER_OPTIONS: { value: CampaignStatus | 'all'; label: string }[] = [
   { value: 'sent',      label: 'Enviadas' },
 ]
 
-export function CampaignsTab() {
+export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) => void } = {}) {
   // Gate on WhatsApp line availability — the backend rejects
   // create_campaign with 400 when no line is connected.
   const { numbers: whatsappLines, loading: waLoading } = useWorkspaceNumber()
@@ -62,6 +60,10 @@ export function CampaignsTab() {
   useEffect(() => {
     campaignsApi.list().then((r) => setCampaigns(r.data)).finally(() => setLoading(false))
   }, [])
+
+  // SCRUM-1106 (tela 2c): contagem no rótulo da aba, no CampaignsPage —
+  // reporta em vez de duplicar o fetch lá em cima.
+  useEffect(() => { onCountChange?.(campaigns.length) }, [campaigns.length, onCountChange])
 
   const handleCreated = useCallback((camp: Campaign) => {
     setCampaigns((prev) => {
@@ -146,37 +148,27 @@ export function CampaignsTab() {
         </Button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5">
-        {loading ? (
-          <SkeletonList items={4} />
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={Send}
-            title="Nenhuma campanha de disparo encontrada"
-            hint="Os modelos ativos no Gerenciador do WhatsApp ficam na aba Templates. Aqui você cria disparos em massa que usam esses templates."
-            action={
-              campaigns.length === 0 && hasWhatsappLine
-                ? { label: 'Criar primeira campanha', onClick: () => setWizardOpen(true) }
-                : undefined
-            }
-          />
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((camp) => (
-              <CampaignCard
-                key={camp.id}
-                campaign={camp}
-                onSend={() => handleSend(camp.id)}
-                onDelete={() => setDeleteTarget(camp.id)}
-                onReport={() => setReportCampaign(camp)}
-                onAssignWaba={() => setAssignWabaTarget(camp)}
-                sending={sending === camp.id}
-                deleting={deleting === camp.id}
-              />
-            ))}
-          </div>
-        )}
+      {/* Content — tabela compartilhada (SCRUM-1106, tela 2c): mesma migração
+          pro DataTable já feita em Contatos (leva 3). Colunas por spec:
+          Campanha | Status | Template | Público | Entregues | Lidas |
+          Respostas | Envio | menu. */}
+      <div className="flex-1 overflow-auto">
+        <DataTable
+          columns={campaignColumns({
+            onSend: (id) => handleSend(id),
+            onDelete: (id) => setDeleteTarget(id),
+            onReport: setReportCampaign,
+            onAssignWaba: setAssignWabaTarget,
+            sendingId: sending,
+            deletingId: deleting,
+          })}
+          rows={filtered}
+          rowKey={(c) => c.id}
+          loading={loading}
+          emptyIcon={Send}
+          emptyTitle="Nenhuma campanha de disparo encontrada"
+          emptyHint="Os modelos ativos no Gerenciador do WhatsApp ficam na aba Templates. Aqui você cria disparos em massa que usam esses templates."
+        />
       </div>
 
       {isMobile ? (
@@ -231,9 +223,42 @@ export function CampaignsTab() {
   )
 }
 
-function CampaignCard({
-  campaign, onSend, onDelete, onReport, onAssignWaba, sending, deleting,
-}: {
+// ─── Colunas da tabela ────────────────────────────────────────────────────────
+// SCRUM-1106 (tela 2c): grid `1.6fr 120px 1fr 90px 90px 90px 90px 120px 36px`
+// (Campanha, Status, Template, Público, Entregues, Lidas, Respostas, Envio,
+// menu). Numéricos à direita/tabulares; `Falhou · N%` quando há falhas.
+
+function statusChip(campaign: Campaign) {
+  const cfg = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft
+  const Icon = cfg.icon
+  const failRate = campaign.stats.sent > 0 ? Math.round((campaign.stats.failed / campaign.stats.sent) * 100) : 0
+  const label = campaign.status === 'failed' && failRate > 0 ? `Falhou · ${failRate}%` : cfg.label
+  return (
+    <span
+      className="color-chip border inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
+      style={{ ['--chip']: cfg.chip } as React.CSSProperties}
+    >
+      <Icon className="w-3 h-3" />
+      {label}
+    </span>
+  )
+}
+
+function rate(part: number, total: number): string {
+  return total > 0 ? `${Math.round((part / total) * 100)}%` : '—'
+}
+
+function sendDate(campaign: Campaign): string {
+  if (campaign.sentAt) {
+    return new Date(campaign.sentAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  }
+  if (campaign.scheduledAt) {
+    return new Date(campaign.scheduledAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  }
+  return '—'
+}
+
+function MenuCell({ campaign, onSend, onDelete, onReport, onAssignWaba, sending, deleting }: {
   campaign: Campaign
   onSend: () => void
   onDelete: () => void
@@ -242,159 +267,146 @@ function CampaignCard({
   sending: boolean
   deleting: boolean
 }) {
-  const cfg = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft
-  const StatusIcon = cfg.icon
-  const { stats } = campaign
+  const [open, setOpen] = useState(false)
   const isSent = campaign.status === 'sent'
   const canSend = campaign.status === 'draft' || campaign.status === 'scheduled'
 
-  const readRate = stats.sent > 0 ? Math.round((stats.read / stats.sent) * 100) : 0
-  const deliveredRate = stats.sent > 0 ? Math.round((stats.delivered / stats.sent) * 100) : 0
-
-  const buildContextMenu = useCallback((): ContextMenuEntry[] => {
-    const items: ContextMenuEntry[] = [
-      {
-        label: 'Copiar nome',
-        icon: Copy,
-        onClick: () => navigator.clipboard.writeText(campaign.name).catch(() => {}),
-      },
-    ]
-    if (isSent) {
-      items.push({ label: 'Ver relatório', icon: BarChart3, onClick: onReport })
-    }
-    if (canSend && !sending) {
-      items.push({ label: 'Enviar agora', icon: Send, onClick: onSend })
-    }
-    if (canSend) {
-      items.push({ separator: true })
-      items.push({ label: 'Excluir', icon: Trash2, danger: true, onClick: onDelete })
-    }
-    return items
-  }, [campaign.name, isSent, canSend, sending, onReport, onSend, onDelete])
-
-  const { onContextMenu } = useContextMenu(buildContextMenu)
-
   return (
-    <div
-      onContextMenu={onContextMenu}
-      className="p-4 bg-surface-800/50 hover:bg-surface-800 border border-surface-800 rounded-xl transition-all group"
-    >
-      <div className="flex items-start gap-4">
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-sm font-semibold text-surface-100">{campaign.name}</span>
-            <span
-              className="color-chip border flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
-              style={{ ['--chip']: cfg.chip } as React.CSSProperties}
-            >
-              <StatusIcon className="w-3 h-3" />
-              {cfg.label}
-            </span>
-            {campaign.needsWabaAssignment && <WabaAssignmentBadge onClick={onAssignWaba} />}
-            <WhatsappLineChip whatsappNumberId={campaign.whatsappNumberId} />
-          </div>
-
-          <div className="flex items-center gap-3 text-[11px] text-surface-500 mb-3">
-            <span className="font-mono">{campaign.templateName}</span>
-            <span>·</span>
-            <span className="flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              {stats.total > 0 ? `${stats.total} contatos` : 'Contagem pendente'}
-            </span>
-            {campaign.scheduledAt && (
-              <>
-                <span>·</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {new Date(campaign.scheduledAt).toLocaleString('pt-BR', {
-                    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-                  })}
-                </span>
-              </>
-            )}
-            {campaign.sentAt && (
-              <>
-                <span>·</span>
-                <span>Enviada em {new Date(campaign.sentAt).toLocaleString('pt-BR', {
-                  day: '2-digit', month: '2-digit',
-                })}</span>
-              </>
-            )}
-          </div>
-
-          {/* Stats (only when sent) — mesmas cores do relatório da campanha
-              (CampaignReport.tsx) por consistência entre as duas telas. */}
-          {isSent && stats.total > 0 && (
-            <div className="flex items-center gap-4">
-              <StatChip label="Enviadas" value={stats.sent} color="var(--color-accent-blue)" />
-              <StatChip label="Entregues" value={stats.delivered} color="var(--color-accent-cyan)" suffix={`${deliveredRate}%`} />
-              <StatChip label="Lidas" value={stats.read} color="var(--color-accent-amber)" suffix={`${readRate}%`} />
-              {stats.failed > 0 && (
-                <StatChip label="Falhas" value={stats.failed} color="var(--color-danger)" />
-              )}
-              {/* Progress bar */}
-              <div className="flex-1 max-w-xs">
-                <div className="h-1.5 bg-surface-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-brand-600 to-emerald-500 rounded-full"
-                    style={{ width: `${readRate}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+    <span onClick={(e) => e.stopPropagation()} className="inline-flex">
+      <Dropdown
+        open={open}
+        onClose={() => setOpen(false)}
+        align="right"
+        className="w-48"
+        anchor={
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
+            aria-label="Mais ações"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+        }
+      >
+        <div className="px-1 py-1 flex flex-col gap-0.5">
+          <DropdownItem onClick={() => { navigator.clipboard.writeText(campaign.name).catch(() => {}); setOpen(false) }}>
+            <Copy className="w-3.5 h-3.5" /> Copiar nome
+          </DropdownItem>
+          {campaign.needsWabaAssignment && (
+            <DropdownItem onClick={() => { onAssignWaba(); setOpen(false) }}>
+              <Users className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
+            </DropdownItem>
           )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1 flex-shrink-0">
           {isSent && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onReport}
-              leftIcon={<BarChart3 className="w-3.5 h-3.5" />}
-            >
-              Relatório
-            </Button>
+            <DropdownItem onClick={() => { onReport(); setOpen(false) }}>
+              <BarChart3 className="w-3.5 h-3.5" /> Ver relatório
+            </DropdownItem>
           )}
           {canSend && (
-            <Button
-              variant="neutral"
-              size="sm"
-              onClick={onSend}
-              loading={sending}
-              leftIcon={<Send className="w-3.5 h-3.5" />}
-            >
-              {sending ? 'Enviando...' : campaign.status === 'scheduled' ? 'Enviar agora' : 'Enviar'}
-            </Button>
+            <DropdownItem disabled={sending} onClick={() => { onSend(); setOpen(false) }}>
+              {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              {sending ? 'Enviando…' : 'Enviar agora'}
+            </DropdownItem>
           )}
           {canSend && (
-            <button
-              onClick={onDelete}
-              disabled={deleting}
-              className="p-1.5 rounded-lg text-surface-500 hover:text-danger hover:bg-danger/10 transition-all opacity-0 group-hover:opacity-100"
-            >
-              {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            </button>
+            <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setOpen(false) }}>
+              <Trash2 className="w-3.5 h-3.5" /> Excluir
+            </DropdownItem>
           )}
         </div>
-      </div>
-    </div>
+      </Dropdown>
+    </span>
   )
 }
 
-function StatChip({ label, value, color, suffix }: {
-  label: string
-  value: number
-  /** CSS color value (design-token `var(--color-*)`), not a Tailwind class. */
-  color: string
-  suffix?: string
-}) {
-  return (
-    <div className="text-center">
-      <p className="text-sm font-bold" style={{ color }}>{suffix ?? value}</p>
-      <p className="text-[10px] text-surface-600">{label}</p>
-    </div>
-  )
+function campaignColumns({ onSend, onDelete, onReport, onAssignWaba, sendingId, deletingId }: {
+  onSend: (id: string) => void
+  onDelete: (id: string) => void
+  onReport: (c: Campaign) => void
+  onAssignWaba: (c: Campaign) => void
+  sendingId: string | null
+  deletingId: string | null
+}): DataTableColumn<Campaign>[] {
+  return [
+    {
+      key: 'name',
+      header: 'Campanha',
+      render: (c) => (
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[13px] font-semibold text-surface-100 truncate">{c.name}</span>
+          <WhatsappLineChip whatsappNumberId={c.whatsappNumberId} />
+          {c.needsWabaAssignment && <WabaAssignmentBadge onClick={() => onAssignWaba(c)} />}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      widthClass: 'w-[120px]',
+      render: statusChip,
+    },
+    {
+      key: 'template',
+      header: 'Template',
+      render: (c) => <span className="font-mono text-[11.5px] text-surface-400 truncate">{c.templateName}</span>,
+    },
+    {
+      key: 'total',
+      header: 'Público',
+      widthClass: 'w-[90px]',
+      align: 'right',
+      render: (c) => <span className="tabular-nums text-surface-300">{c.stats.total > 0 ? c.stats.total : '—'}</span>,
+    },
+    {
+      key: 'delivered',
+      header: 'Entregues',
+      widthClass: 'w-[90px]',
+      align: 'right',
+      render: (c) => (
+        <span className="tabular-nums text-surface-300">
+          {c.stats.sent > 0 ? `${c.stats.delivered} · ${rate(c.stats.delivered, c.stats.sent)}` : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'read',
+      header: 'Lidas',
+      widthClass: 'w-[90px]',
+      align: 'right',
+      render: (c) => (
+        <span className="tabular-nums text-surface-300">
+          {c.stats.sent > 0 ? `${c.stats.read} · ${rate(c.stats.read, c.stats.sent)}` : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'replied',
+      header: 'Respostas',
+      widthClass: 'w-[90px]',
+      align: 'right',
+      render: (c) => <span className="tabular-nums text-surface-300">{c.stats.replied ?? '—'}</span>,
+    },
+    {
+      key: 'sendDate',
+      header: 'Envio',
+      widthClass: 'w-[120px]',
+      render: (c) => <span className="text-surface-400">{sendDate(c)}</span>,
+    },
+    {
+      key: 'menu',
+      header: '',
+      widthClass: 'w-9',
+      render: (c) => (
+        <MenuCell
+          campaign={c}
+          onSend={() => onSend(c.id)}
+          onDelete={() => onDelete(c.id)}
+          onReport={() => onReport(c)}
+          onAssignWaba={() => onAssignWaba(c)}
+          sending={sendingId === c.id}
+          deleting={deletingId === c.id}
+        />
+      ),
+    },
+  ]
 }

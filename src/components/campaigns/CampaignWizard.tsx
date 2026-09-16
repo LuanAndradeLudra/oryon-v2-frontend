@@ -568,6 +568,7 @@ export function CampaignWizard({
                     scheduleMode={scheduleMode}
                     scheduledAt={scheduledAt}
                     campaignName={campaignName}
+                    onEditStep={(s) => setStep(s)}
                   />
                 )}
                 {error && (
@@ -1416,13 +1417,21 @@ function SummaryRow({ label, value, mono }: { label: string; value: string; mono
 
 // ─── Step 5: Review ────────────────────────────────────────────────────────────
 
+function EditLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="text-[11.5px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">
+      Editar
+    </button>
+  )
+}
+
 function Step5({
   template, mappings, fieldDefs, segmentType,
   tags, stages, contacts,
   selectedTagIds, selectedStages, selectedContactIds,
   filterStages, filterTagIds, filterIntent, filterSource, filterOptIn,
   filterSentiment, filterContactSearch, filterHasConversations,
-  estimatedReach, scheduleMode, scheduledAt, campaignName,
+  estimatedReach, scheduleMode, scheduledAt, campaignName, onEditStep,
 }: {
   template: WhatsAppTemplate
   mappings: CampaignVariableMapping[]
@@ -1446,6 +1455,8 @@ function Step5({
   scheduleMode: 'now' | 'later'
   scheduledAt: string
   campaignName: string
+  /** SCRUM-1106 (tela 2c) — link "Editar" por linha, volta pra etapa de origem. */
+  onEditStep: (step: 1 | 2 | 4) => void
 }) {
   const [showContactsModal, setShowContactsModal] = useState(false)
 
@@ -1507,22 +1518,28 @@ function Step5({
         {/* Card: Campaign info */}
         <div className="bg-surface-800/50 border border-surface-700 rounded-xl p-4 space-y-3">
           <p className="text-xs font-bold text-surface-300 uppercase tracking-wider">Campanha</p>
-          <div className="space-y-2">
+          <div className="space-y-2 divide-y divide-surface-800">
             <div className="flex items-center justify-between">
               <span className="text-xs text-surface-500">Nome</span>
               <span className="text-xs font-medium text-surface-100">{campaignName}</span>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-surface-500">Template</span>
-              <span className="text-xs font-mono text-brand-300 bg-brand-400/10 px-2 py-0.5 rounded">{template.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-brand-300 bg-brand-400/10 px-2 py-0.5 rounded">{template.name}</span>
+                <EditLink onClick={() => onEditStep(1)} />
+              </div>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-surface-500">Categoria</span>
               <span className="text-xs text-surface-300 bg-surface-700 px-2 py-0.5 rounded">{CATEGORY_LABELS[template.category] ?? template.category}</span>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-surface-500">Envio</span>
-              <span className="text-xs text-surface-300">{scheduleDisplay}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-surface-300">{scheduleDisplay}</span>
+                <EditLink onClick={() => onEditStep(4)} />
+              </div>
             </div>
             {mappings.length > 0 && (
               <div className="flex items-center justify-between">
@@ -1538,7 +1555,10 @@ function Step5({
           <p className="text-xs font-bold text-surface-300 uppercase tracking-wider">Segmento</p>
           <div className="flex items-center justify-between">
             <span className="text-xs text-surface-500">Tipo</span>
-            <span className="text-xs text-surface-300">{segmentLabels[segmentType]}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-surface-300">{segmentLabels[segmentType]}</span>
+              <EditLink onClick={() => onEditStep(2)} />
+            </div>
           </div>
           {estimatedReach !== null && (
             <div className="flex items-center justify-between">
