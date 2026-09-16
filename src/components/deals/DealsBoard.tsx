@@ -257,8 +257,12 @@ export function DealsBoard({
               onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStageId(null) }}
               onDrop={() => handleDrop(stage.id)}
             >
-              {/* Header da coluna */}
-              <div className="flex items-center justify-between mb-3 px-1">
+              {/* Header da coluna — README 3.4: 28px, border-bottom 2px na cor
+                  crua da etapa. */}
+              <div
+                className="flex items-center justify-between h-7 px-1 mb-3 border-b-2"
+                style={{ borderColor: stage.color }}
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} />
                   <span className="text-xs font-semibold truncate" style={{ color: tintaDaEtapa(stage.color) }}>{stage.label}</span>
@@ -343,7 +347,8 @@ export function DealsBoard({
                   <div key="carregando" className="h-16 rounded-xl bg-surface-700/50 animate-pulse" aria-hidden />
                 ) : cards.length === 0 ? (
                   <div key="vazia" className={cn(
-                    'border-2 border-dashed rounded-xl h-20 flex items-center justify-center transition-colors',
+                    // README 3.4: slot de drop, retângulo tracejado de 88px.
+                    'border-2 border-dashed rounded-xl h-[88px] flex items-center justify-center transition-colors',
                     isOver ? 'border-brand-500/50 bg-brand-500/5' : 'border-surface-700',
                   )}>
                     <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-600')}>
@@ -364,10 +369,12 @@ export function DealsBoard({
                       onClick={() => onOpenDeal?.(deal.id)}
                       data-testid={highlightDealId === deal.id ? 'deal-card-highlighted' : undefined}
                       className={cn(
-                        'relative group/card rounded-xl border border-surface-800 bg-surface-900 p-3 cursor-grab active:cursor-grabbing transition-opacity duration-100 hover:border-surface-700',
+                        // README 3.4: borda 1px, raio 8px, padding 10px 12px.
+                        'relative group/card rounded-lg border border-surface-800 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-surface-700 hover:bg-[var(--rowhover)]',
                         onOpenDeal && 'cursor-pointer',
-                        draggingId === deal.id && 'opacity-40',
-                        highlightDealId === deal.id && 'ring-2 ring-brand-500 border-brand-500',
+                        // Em arraste: única sombra fora de overlay (o card É um overlay enquanto flutua).
+                        draggingId === deal.id && 'opacity-40 shadow-lg',
+                        highlightDealId === deal.id && 'ring-[3px] ring-brand-500 border-brand-500',
                       )}
                     >
                       {/* Ações do card — SEMPRE visíveis no mobile (não só no
@@ -539,7 +546,7 @@ function ProcessCardBody({ deal, onOpenContact, siblings = 1 }: { deal: Deal; on
         data-testid="process-card-title"
       >
         {deal.contact && <Avatar name={name} imageUrl={deal.contact.profilePicUrl ?? undefined} size="xs" />}
-        <span className="text-sm font-medium text-surface-100 truncate flex-1">{name}</span>
+        <span className="text-[13px] font-semibold leading-[1.3] text-surface-100 truncate flex-1">{name}</span>
         <SiblingBadge siblings={siblings} />
         {deal.contact && (
           <span className="flex items-center gap-0.5 text-3xs text-surface-500 opacity-0 group-hover/contact:opacity-100 transition-opacity flex-shrink-0">
@@ -598,12 +605,13 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
   return (
     <>
       <div className="flex items-start gap-1.5 pr-20">
-        <span className="text-sm font-medium text-surface-100 truncate flex-1">{deal.title}</span>
+        <span className="text-[13px] font-semibold leading-[1.3] text-surface-100 truncate flex-1">{deal.title}</span>
         <SiblingBadge siblings={siblings} />
       </div>
       <CardScope description={deal.description} />
       <div className="mt-1 flex items-center justify-between">
-        <span className="text-xs text-surface-400">{brl(deal.amountCents ?? 0)}</span>
+        {/* README 3.4: "rodapé com valor 13px/700". */}
+        <span className="text-[13px] font-bold text-surface-100">{brl(deal.amountCents ?? 0)}</span>
         <div className="flex items-center gap-1">
           {by === 'ia' && (
             <span className="text-3xs text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
