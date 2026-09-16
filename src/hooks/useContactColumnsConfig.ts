@@ -15,6 +15,7 @@ export interface ContactColumnDef {
 
 export const CONTACT_COLUMN_DEFS: ContactColumnDef[] = [
   { key: 'phone', label: 'Telefone' },
+  { key: 'email', label: 'E-mail' },
   { key: 'stage', label: 'Situação' },
   { key: 'score', label: 'Score' },
   { key: 'intent', label: 'Intenção' },
@@ -34,7 +35,9 @@ interface StoredConfig {
   hidden: string[]
 }
 
-const DEFAULT_CONFIG: StoredConfig = { order: DEFAULT_ORDER, hidden: [] }
+// README 3.2 (modal "Configurar colunas"): E-mail existe na lista mas começa
+// desligado — as outras colunas do default vêm todas ligadas.
+const DEFAULT_CONFIG: StoredConfig = { order: DEFAULT_ORDER, hidden: ['email'] }
 
 /** Reconcilia com STORED contra os defs atuais — colunas removidas do código
  *  desaparecem, colunas novas entram no fim, sem derrubar a preferência salva. */
