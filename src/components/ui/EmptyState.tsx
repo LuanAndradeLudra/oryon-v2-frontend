@@ -1,10 +1,15 @@
 // ─── Empty State ───────────────────────────────────────────────────────────
 // Replaces three near-duplicates that lived inline in SkillsTab,
-// SkillTemplatesPage and AssignSkillPage. Keeps the same dashed-border card
-// look the project already used; just hoists the props and the action area
-// so each caller stays declarative.
+// SkillTemplatesPage and AssignSkillPage.
+//
+// SCRUM-1097 (reauditoria de fidelidade) — tela 1a mostra ícone + texto +
+// botão soltos no fundo do painel, sem moldura nenhuma; a caixa tracejada
+// era vocabulário antigo. O CTA agora reusa o `Button` real (variant
+// secondary — mesmo peso visual do exemplo "Iniciar conversa" do mockup),
+// não um botão escrito à mão.
 
 import type { LucideIcon } from 'lucide-react'
+import { Button } from './Button'
 import { cn } from '@/lib/utils'
 
 type Action =
@@ -32,8 +37,7 @@ export function EmptyState({ icon: Icon, title, hint, action, className, iconSty
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center text-center',
-        'py-[18px] px-4 rounded-lg bg-surface-900/40 border border-dashed border-surface-600',
+        'flex flex-col items-center justify-center text-center py-[18px] px-4',
         className,
       )}
     >
@@ -45,26 +49,14 @@ export function EmptyState({ icon: Icon, title, hint, action, className, iconSty
           {'href' in action && action.href ? (
             <a
               href={action.href}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium transition-colors"
+              className="inline-flex items-center justify-center h-7 px-3 text-xs gap-1.5 rounded-sm bg-accent-soft text-accent-dark font-medium hover:brightness-110 transition-all"
             >
               {action.label}
             </a>
           ) : (
-            /* `neutral`, não teal (10/09): o CTA de um estado vazio é a mesma
-               classe de botão do "Novo negócio" do cabeçalho, e os dois
-               apareciam lado a lado na mesma tela com cores diferentes.
-
-               É a continuação da conversão que tirou o teal dos botões de
-               confirmação: aqui o teal não marcava importância, marcava
-               "botão" — e num estado vazio, onde ele é o único elemento
-               interativo, não precisava marcar nada. */
-            <button
-              type="button"
-              onClick={action.onClick}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-100 hover:bg-surface-50 text-surface-950 text-xs font-semibold transition-colors"
-            >
+            <Button type="button" variant="secondary" size="sm" onClick={action.onClick}>
               {action.label}
-            </button>
+            </Button>
           )}
         </div>
       )}
