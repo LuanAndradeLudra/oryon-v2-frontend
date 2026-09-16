@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import { useLayer } from '@/contexts/LayerContext'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -46,11 +46,25 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
     }
   }, [onClose])
 
+  // README 3.8: ancora à DIREITA do bloco por padrão (não embaixo) — cai pra
+  // esquerda se não couber à direita, e só desce abaixo do bloco como
+  // último recurso (bloco no fim da grade, sem espaço lateral).
   const gap = 8
-  const left = Math.min(Math.max(anchorRect.left, 12), window.innerWidth - POPOVER_WIDTH - 12)
-  const fitsBelow = anchorRect.bottom + gap + 220 < window.innerHeight
-  const top = fitsBelow ? anchorRect.bottom + gap : undefined
-  const bottom = fitsBelow ? undefined : window.innerHeight - anchorRect.top + gap
+  const ESTIMATED_HEIGHT = 220
+  const fitsRight = anchorRect.right + gap + POPOVER_WIDTH <= window.innerWidth - 12
+  const fitsLeft = anchorRect.left - gap - POPOVER_WIDTH >= 12
+  let left: number | undefined
+  let top: number | undefined
+  let bottom: number | undefined
+  if (fitsRight || fitsLeft) {
+    left = fitsRight ? anchorRect.right + gap : anchorRect.left - gap - POPOVER_WIDTH
+    top = Math.min(Math.max(anchorRect.top, 12), window.innerHeight - ESTIMATED_HEIGHT - 12)
+  } else {
+    left = Math.min(Math.max(anchorRect.left, 12), window.innerWidth - POPOVER_WIDTH - 12)
+    const fitsBelow = anchorRect.bottom + gap + ESTIMATED_HEIGHT < window.innerHeight
+    top = fitsBelow ? anchorRect.bottom + gap : undefined
+    bottom = fitsBelow ? undefined : window.innerHeight - anchorRect.top + gap
+  }
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex }}>
@@ -79,11 +93,11 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
           </div>
           <button
             type="button"
-            onClick={onClose}
-            aria-label="Fechar"
+            aria-label="Mais ações"
+            title="Exemplo — menu de ações extras fica para outro épico"
             className="text-surface-500 hover:text-surface-300 flex-shrink-0"
           >
-            <X className="w-3.5 h-3.5" />
+            <MoreHorizontal className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -91,7 +105,7 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
           {event.detail.contact && (
             <>
               <span className="text-surface-500">Contato</span>
-              <span className="text-surface-200 truncate">{event.detail.contact}</span>
+              <span className="text-accent-dark truncate">{event.detail.contact}</span>
             </>
           )}
           <span className="text-surface-500">Responsável</span>
@@ -103,9 +117,22 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
             <>
               <span className="text-surface-500">Origem</span>
               <span>
-                <span className="inline-flex items-center rounded-xs border border-surface-700 bg-surface-800 px-1.5 py-px text-[11px] font-medium text-surface-300">
-                  {event.detail.origin}
-                </span>
+                {/* Só "Agente Vendas" tem cor confirmada no mock (laranja/âmbar,
+                    README/PNG) — os demais valores de origem não têm um
+                    exemplo de cor no material de referência, então ficam no
+                    chip neutro em vez de uma paleta inventada. */}
+                {event.detail.origin === 'Agente Vendas' ? (
+                  <span
+                    className="color-chip inline-flex items-center rounded-xs border px-1.5 py-px text-[11px] font-medium"
+                    style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
+                  >
+                    {event.detail.origin}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-xs border border-surface-700 bg-surface-800 px-1.5 py-px text-[11px] font-medium text-surface-300">
+                    {event.detail.origin}
+                  </span>
+                )}
               </span>
             </>
           )}
