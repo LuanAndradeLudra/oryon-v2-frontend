@@ -18,6 +18,7 @@ import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type {
   Campaign, Contact, WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
+  WhatsAppNumber,
 } from '@/types'
 import type { CampaignSegmentDefinition } from '@/types/campaignsV2'
 
@@ -128,10 +129,22 @@ export function useCampaignDraftCore({ active, initialName }: CampaignDraftCoreO
       whatsappNumbersApi.list(),
     ]).then(([tplRes, tagRes, ctRes, waRes]) => {
       if (staleRef.current) return
-      setTemplates(tplRes.data)
-      setTags(tagRes.data)
-      setContacts(ctRes.data.data)
-      const nums: DraftLineOption[] = waRes.data.map((n) => ({
+      // As quatro leituras sao GUARDADAS porque o shape vem do servidor e o
+      // tipo do `api.ts` AFIRMA sem conferir. Nao e' hipotese: o
+      // `campaignsApi.list` (api.ts:1565) ja' defende contra exatamente isto,
+      // com o comentario "Backend returns {data, total, page, limit} — extract
+      // array for backward compat". Este backend devolve as DUAS formas
+      // conforme o endpoint; a defesa existia num lugar so'.
+      //
+      // E A ORDEM IMPORTAVA. Antes, o `setContacts` commitava `undefined` e so'
+      // ENTAO o `.map` estourava — a carga parava no meio (sem `setWaNumbers`,
+      // sem o padrao inteligente) e, no render seguinte, o `useMemo` do
+      // `useWizardDraft:105` lia `contacts.length` e derrubava a tela no
+      // ErrorBoundary. Com as guardas nenhuma escrita fica meio-feita.
+      setTemplates(asArray<WhatsAppTemplate>(tplRes.data))
+      setTags(asArray<Tag>(tagRes.data))
+      setContacts(asArray<Contact>(ctRes.data?.data))
+      const nums: DraftLineOption[] = asArray<WhatsAppNumber>(waRes.data).map((n) => ({
         id: n.id, displayPhoneNumber: n.displayPhoneNumber, label: n.label,
       }))
       setWaNumbers(nums)
@@ -143,6 +156,15 @@ export function useCampaignDraftCore({ active, initialName }: CampaignDraftCoreO
         setWhatsappNumberId(smartDefault.lineId)
       } else if (nums.length === 1) {
         setWhatsappNumberId(nums[0].id)
+      }
+    }).catch(() => {
+      // Sem isto, QUALQUER falha (rede, 401, 500) vira rejeicao nao tratada e a
+      // tela fica vazia sem dizer nada: o `.finally` devolve `loading` a false e
+      // o operador le' "nenhum template, nenhuma linha" como se fosse verdade.
+      // Estado desconhecido nao e' estado vazio — mesma regra que o
+      // `useAudiencePreview` ja' aplica para o publico.
+      if (!staleRef.current) {
+        setError('Nao foi possivel carregar os dados do disparo. Tente de novo.')
       }
     }).finally(() => {
       if (!staleRef.current) {
@@ -264,4 +286,12 @@ export function useCampaignDraftCore({ active, initialName }: CampaignDraftCoreO
 function messageOf(err: unknown): string | undefined {
   const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
   return Array.isArray(msg) ? msg.join('; ') : msg
+}
+
+/** Resposta que o TIPO afirma ser lista, mas que ninguem confere em runtime.
+ *  Quando nao e' lista — 200 com envelope no lugar do array, ou o contrario —
+ *  vale lista VAZIA em vez de estourar no meio da carga. A tela sabe dizer
+ *  "nenhum"; ela nao sabe se recuperar de um throw entre dois `set`. */
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : []
 }
