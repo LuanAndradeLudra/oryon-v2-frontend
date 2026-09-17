@@ -122,6 +122,49 @@ describe('useStudioDraft.generatePrompt · o deployment que sai pela rede', () =
     expect(req.deployment.channels).toEqual(['WhatsApp', 'Instagram'])
   })
 
+  // ── GUARDA DE LOCAL, não de comportamento ────────────────────────────────
+  // Este caso não existe para provar o filtro — o `wizardConfigToPrompt.test`
+  // já o prova. Existe para provar que o filtro está no lugar CERTO.
+  //
+  // A Régua mutou movendo o filtro de volta para o `listaDeRegras` (retrato e
+  // estado vivo seguem filtrando, só o WIZARD fica sem) e os 5 casos deste
+  // arquivo ficaram VERDES, porque o fixture nasce com `enabled: true` e não
+  // havia caso com regra desligada aqui.
+  //
+  // O risco não é alguém reabrir o defeito de propósito: é alguém ver um filtro
+  // numa função compartilhada e um normalizador no `listaDeRegras`, JUNTAR OS
+  // DOIS ACHANDO QUE SIMPLIFICA, e reabrir o defeito no caminho do wizard com a
+  // suíte verde. A regressão se disfarça de arrumação.
+  //
+  // O wizard passa `data.handoff_rules` direto para `derivarDeployment` e nunca
+  // toca no `listaDeRegras` — é por isso que o filtro tem de morar na função
+  // compartilhada, e é isso que este caso trava.
+  it('regra DESLIGADA no wizard não entra no prompt (guarda o local do filtro)', async () => {
+    const { result } = renderHook(() => useStudioDraft())
+
+    act(() => {
+      result.current.setData((d) => ({
+        ...d,
+        name: 'Sofia',
+        handoff_rules: [
+          regra({ id: 'on', name: 'Reembolso', description: 'quer reembolso',
+            department: 'Financeiro', keywords: ['reembolso'] }),
+          regra({ id: 'off', name: 'Cancelamento', description: 'quer cancelar',
+            department: 'Retenção', keywords: ['cancelar'], enabled: false }),
+        ],
+        channels_whatsapp: true,
+      }))
+    })
+    await act(async () => { await result.current.generatePrompt() })
+
+    const req = generateAgentPrompt.mock.calls.at(-1)![0]
+    expect(req.deployment.escalation_keywords).toEqual(['reembolso'])
+    expect(req.deployment.escalation_conditions).toEqual(['quer reembolso'])
+    // O departamento é o mais fácil de perder: sem o filtro, o `find` devolve
+    // o da PRIMEIRA regra da lista mesmo desligada.
+    expect(req.deployment.escalation_department).toBe('Financeiro')
+  })
+
   it('sem regra nenhuma, os três campos ficam vazios em vez de sumirem', async () => {
     const { result } = renderHook(() => useStudioDraft())
     act(() => {

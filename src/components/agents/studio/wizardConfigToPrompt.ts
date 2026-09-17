@@ -37,9 +37,23 @@ const MAX_KEYWORDS = 20
 /** Regra de handoff reduzida ao que o prompt usa. O resto do `HandoffRule`
  *  (id, prioridade, ação, template…) não participa da derivação. */
 export type RegraParaPrompt = Pick<HandoffRule, 'name' | 'description' | 'keywords' | 'department'> & {
-  /** Ausente = LIGADA. Só o `false` explícito desqualifica — mesma regra do
-   *  `isActive` das linhas nos arquétipos. Retrato velho, gravado antes de a
-   *  flag existir, não pode perder todas as regras em silêncio. */
+  /**
+   * Ausente = LIGADA. Só o `false` explícito desqualifica: um retrato gravado
+   * antes de a flag existir não pode perder todas as regras em silêncio.
+   *
+   * PRECEDENTE, corrigido — a versão anterior deste comentário citava os
+   * arquétipos, e lá NÃO há filtro nenhum: o `applyArchetype.ts` grava
+   * `enabled: true` cravado. A convenção existe, mas nas LINHAS DE WHATSAPP:
+   * `onboardingState.ts:45` e `:71`, `WorkspaceNumberContext.tsx:57`, os três
+   * com `isActive !== false`.
+   *
+   * E ela NÃO é universal, o que também vale saber: `CapabilitiesTab.tsx:422`
+   * filtra `users.filter((u) => u.isActive)` — truthy, ausente = EXCLUÍDO. A
+   * diferença parece ser de risco, não descuido: linha sem a flag ainda dá para
+   * usar, mas oferecer como responsável um usuário cujo estado se desconhece é
+   * pior que não oferecer. Quem for aplicar a convenção de novo precisa
+   * escolher o lado com esse critério, não por analogia.
+   */
   enabled?: boolean
 }
 
