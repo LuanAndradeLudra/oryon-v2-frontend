@@ -6,7 +6,7 @@ import {
   ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Shield,
   Link2, RefreshCw, Sparkles, BookOpen, FileUp, Loader2,
   Pencil, CheckCircle2, Upload, MessageCircleQuestion, BarChart3,
-  Workflow, Info, ShieldCheck, Package,
+  Workflow, Info, ShieldCheck, Package, Users,
 } from 'lucide-react'
 import { CapabilitiesTab } from './CapabilitiesTab'
 import { DecisionCriteriaTab } from './DecisionCriteriaTab'
@@ -40,6 +40,7 @@ import { AgentIcon } from '@/components/agents/AgentIcons'
 import { AgentTestModal } from '@/components/agents/AgentTestModal'
 import { SkillsTab } from '@/components/agents/SkillsTab'
 import { AgentCatalogTab } from '@/components/agents/AgentCatalogTab'
+import { AgentPractitionerTab } from '@/components/agents/AgentPractitionerTab'
 import { useAdvancedMode } from '@/hooks/useAdvancedMode'
 import { isFeatureVisible } from '@/config/featureFlags'
 
@@ -1527,6 +1528,54 @@ function RulesTab({
   )
 }
 
+// ─── Catalog Tab ──────────────────────────────────────────────────────────────
+// Produtos e Profissionais entram no contexto do mesmo agente pela mesma porta
+// ("o que ele pode oferecer/citar"), então vivem como sub-abas de uma aba só —
+// mesmo padrão de composição de RulesTab acima (subTab/onSubTabChange lifted
+// pro AgentDetail).
+
+type CatalogSubTab = 'products' | 'practitioners'
+
+function CatalogTab({
+  agent,
+  subTab,
+  onSubTabChange,
+}: {
+  agent: AgentConfigWithTools
+  subTab: CatalogSubTab
+  onSubTabChange: (s: CatalogSubTab) => void
+}) {
+  const subTabs: Array<{ id: CatalogSubTab; label: string; icon: React.ReactNode }> = [
+    { id: 'products', label: 'Produtos', icon: <Package className="w-3.5 h-3.5" /> },
+    { id: 'practitioners', label: 'Profissionais', icon: <Users className="w-3.5 h-3.5" /> },
+  ]
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-1 p-1 bg-surface-900/60 border border-surface-800/60 rounded-xl w-fit flex-shrink-0">
+        {subTabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => onSubTabChange(t.id)}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+              subTab === t.id
+                ? 'bg-surface-800 text-surface-100 ring-1 ring-surface-700'
+                : 'text-surface-500 hover:text-surface-300 hover:bg-surface-900',
+            )}
+          >
+            {t.icon}
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === 'products'      && <AgentCatalogTab agentId={agent.id} />}
+      {subTab === 'practitioners' && <AgentPractitionerTab agentId={agent.id} />}
+    </div>
+  )
+}
+
 // ─── FAQ Rules Tab ────────────────────────────────────────────────────────────
 // Keyword rules that short-circuit the LLM with a static template.
 // Matches the patterns used by ToolsTab: inline add/edit form, expand/collapse
@@ -2074,6 +2123,7 @@ export function AgentDetail({
   // Sub-tab state for the unified "Regras" tab — lifted here because the
   // outer scroll/flex layout depends on which sub-panel is active.
   const [rulesSubTab, setRulesSubTab] = useState<RulesSubTab>('handoff')
+  const [catalogSubTab, setCatalogSubTab] = useState<CatalogSubTab>('products')
   const [deletingAgent, setDeletingAgent] = useState(false)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -2328,7 +2378,13 @@ export function AgentDetail({
                   />
                 )}
                 {activeTab === 'knowledge' && <KnowledgeBaseTab agent={agent} />}
-                {activeTab === 'catalog'  && <AgentCatalogTab agentId={agent.id} />}
+                {activeTab === 'catalog'  && (
+                  <CatalogTab
+                    agent={agent}
+                    subTab={catalogSubTab}
+                    onSubTabChange={setCatalogSubTab}
+                  />
+                )}
                 {activeTab === 'metrics'  && <MetricsTab agent={agent} />}
               </motion.div>
             </AnimatePresence>
