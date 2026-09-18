@@ -127,6 +127,7 @@ export function PractitionerModal({ open, onClose, onSave, editPractitioner }: P
         <FormField
           label="Observações"
           requirement="optional"
+          filled={!!notes.trim()}
           error={notesError}
           hint={notes.length > 0 ? `${notes.length}/${MAX_NOTES}` : undefined}
         >
