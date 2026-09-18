@@ -1295,6 +1295,16 @@ export const practitionersApi = {
   },
 }
 
+/** Catálogo de profissionais por agente — espelha agentCatalogApi (produtos). */
+export const agentPractitionerCatalogApi = {
+  get(agentId: string) {
+    return api.get<Practitioner[]>(`/agent-practitioner-catalog/${agentId}`)
+  },
+  set(agentId: string, practitionerIds: string[]) {
+    return api.put<Practitioner[]>(`/agent-practitioner-catalog/${agentId}`, { practitionerIds })
+  },
+}
+
 /** Pipelines de negócio (múltiplos pipelines, Fase 2). Lista já vem com os estágios embutidos. */
 export const pipelinesApi = {
   list() {

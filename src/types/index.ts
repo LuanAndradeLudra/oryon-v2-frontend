@@ -205,6 +205,7 @@ export interface Practitioner {
   category?: string | null // especialidade
   active: boolean
   order: number
+  notes?: string | null // observações — escala de atendimento, particularidades
   createdAt?: string
   updatedAt?: string
 }
