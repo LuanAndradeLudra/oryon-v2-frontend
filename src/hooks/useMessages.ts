@@ -1,12 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { messagesApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
-import type { Message, SendMessageDto, SocketAnomalyReviewed, SocketMessageStatus } from '@/types'
+import type { Message, MessageType, SendMessageDto, SocketAnomalyReviewed, SocketMessageStatus } from '@/types'
+
+/** Mesma classificação que o backend usa (conversations.service.ts) — só
+ *  pra decidir que tipo de bolha a mensagem otimista deve nascer como. */
+function inferMessageType(mimeType: string): MessageType {
+  if (mimeType.startsWith('image/')) return 'image'
+  if (mimeType.startsWith('audio/')) return 'audio'
+  if (mimeType.startsWith('video/')) return 'video'
+  return 'document'
+}
 
 export function useMessages(conversationId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
-  const [sending, setSending] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const pageRef = useRef(1)
 
@@ -78,27 +86,66 @@ export function useMessages(conversationId: string | null) {
   const sendMessage = useCallback(
     async (dto: SendMessageDto) => {
       if (!conversationId) return
-      setSending(true)
+
+      // Eco otimista — texto E anexo, do mesmo jeito: a bolha (com a mídia
+      // já visível, via blob: local) aparece na hora, com status `sending`
+      // (cai no ícone de relógio que `StatusIcon` já usa como fallback). O
+      // POST é síncrono até a API do WhatsApp responder (pode levar
+      // segundos) e SÓ ENTÃO devolve a mensagem salva; sem isto a bolha não
+      // aparecia até o fim desse round-trip inteiro. Reconciliada com a
+      // mensagem real — ou marcada `failed` — quando a resposta chega.
+      const tempId = `pending-${crypto.randomUUID()}`
+      // blob: local do arquivo — o mesmo <img>/<audio>/link da bolha real
+      // já aceita sem nenhuma mudança (useAuthenticatedMediaSrc devolve a
+      // blob: URL tal como está, ver mediaUrls.ts). Só revogada no sucesso;
+      // numa falha ela continua servindo de preview na bolha `failed`.
+      const objectUrl = dto.file ? URL.createObjectURL(dto.file) : null
+      const now = new Date().toISOString()
+      setMessages((prev) => [...prev, {
+        id: tempId,
+        conversationId,
+        direction: 'outbound',
+        type: dto.file ? inferMessageType(dto.file.type) : 'text',
+        status: 'sending',
+        body: dto.body,
+        mediaUrl: objectUrl ?? undefined,
+        mediaCaption: dto.mediaCaption,
+        contextWamid: dto.replyToWamid,
+        senderKind: 'operator',
+        sentAt: now,
+        createdAt: now,
+      }])
+
       try {
         const { data } = await messagesApi.send(conversationId, dto)
-        addIncomingMessage(data)
+        // Substitui a bolha otimista pela real. Se o socket `message:new`
+        // já tiver entregue a mesma mensagem enquanto o POST ainda estava em
+        // voo (self-echo — ver handler em ChatWindow), ela já está na lista
+        // por id: só tira a temporária, sem duplicar.
+        setMessages((prev) => {
+          const withoutTemp = prev.filter((m) => m.id !== tempId)
+          if (withoutTemp.some((m) => m.id === data.id)) return withoutTemp
+          return [...withoutTemp, data]
+        })
+        if (objectUrl) URL.revokeObjectURL(objectUrl)
       } catch (err) {
+        // A bolha fica marcada como falha em vez de sumir — o operador vê o
+        // que tentou mandar (texto ou mídia) e decide reenviar, em vez de
+        // perder de vista (o backend nunca chega a salvar nada quando a
+        // chamada à Meta falha, então não há mensagem real para reconciliar
+        // aqui — e o objectUrl não é revogado, a bolha falha ainda usa ele).
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m)))
         // Re-throw so the caller (MessageInput / ChatWindow) can show a
-        // toast and decide whether to keep the typed text. The previous
-        // try/finally swallowed the error silently — user typed, message
-        // disappeared, no feedback.
+        // toast and decide whether to keep the typed text.
         throw err
-      } finally {
-        setSending(false)
       }
     },
-    [conversationId, addIncomingMessage]
+    [conversationId],
   )
 
   return {
     messages,
     loading,
-    sending,
     hasMore,
     fetchMore: () => fetchMessages(false),
     addIncomingMessage,
