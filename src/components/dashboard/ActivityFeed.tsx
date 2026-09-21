@@ -48,7 +48,7 @@ export function ActivityFeed({ events }: { events: ActivityEvent[] }) {
   //
   // Net effect: panel == sibling table height, always. No magic numbers.
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden h-full relative min-h-[320px]">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden h-full relative min-h-[320px]">
       <div className="absolute inset-0 flex flex-col">
         <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between flex-shrink-0">
           <div className="min-w-0">

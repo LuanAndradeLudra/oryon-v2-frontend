@@ -9,6 +9,7 @@ import { KpiGrid }          from '@/components/dashboard/KpiGrid'
 import { VolumeChart }      from '@/components/dashboard/VolumeChart'
 import { SalesFunnelCard }  from '@/components/dashboard/SalesFunnelCard'
 import { TeamMiniCard }     from '@/components/dashboard/TeamMiniCard'
+import { FilaAgoraCard }    from '@/components/dashboard/FilaAgoraCard'
 import { StatusDonut }      from '@/components/dashboard/StatusDonut'
 import { TagsChart }        from '@/components/dashboard/TagsChart'
 import { CsatChart }        from '@/components/dashboard/CsatChart'
@@ -261,7 +262,7 @@ export function DashboardPage() {
       <DateRangePicker value={dateRange} onChange={setDateRange} />
       <button
         onClick={refresh}
-        className="p-1.5 rounded-lg border border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-colors"
+        className="w-7 h-7 inline-flex items-center justify-center rounded-sm border border-[var(--bd2)] text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
         title="Atualizar"
       >
         <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -309,17 +310,17 @@ export function DashboardPage() {
                     <div className="flex-1" />
                     <div className="h-8 w-[104px] bg-surface-800 border border-surface-700/60 rounded-lg animate-pulse shrink-0" />
                   </div>
-                  <div className="h-[104px] bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />
+                  <div className="h-[104px] bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
                   <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                     {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="h-24 bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />
+                      <div key={i} className="h-24 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
                     ))}
                   </div>
-                  <div className="h-72 bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />
+                  <div className="h-72 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
                 </div>
                 <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
-                  <div className="h-40 bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />
-                  <div className="h-72 bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />
+                  <div className="h-40 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
+                  <div className="h-72 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
                 </div>
               </div>
             ) : snapshot && (
@@ -339,7 +340,7 @@ export function DashboardPage() {
                     <AiInsightsSection kpis={snapshot.kpis} />
                   )}
 
-                  <VolumeChart data={snapshot.volumeChart} />
+                  <VolumeChart data={snapshot.volumeChart} range={dateRange} onRangeChange={setDateRange} />
 
                   <SalesFunnelCard />
 
@@ -356,8 +357,9 @@ export function DashboardPage() {
                 </div>
 
                 <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
-                  <LiveNowCard status={snapshot.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
+                  <FilaAgoraCard />
                   <TeamMiniCard agents={snapshot.agentMetrics} />
+                  <LiveNowCard status={snapshot.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
                   <StatusDonut data={snapshot.statusDistribution} />
                   <ActivityFeed events={snapshot.activityFeed} />
                 </div>

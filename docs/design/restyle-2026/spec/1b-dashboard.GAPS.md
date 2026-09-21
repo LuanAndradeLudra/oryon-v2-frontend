@@ -86,3 +86,20 @@ borda por linha do `TeamMiniCard` confere, `Avatar size="2xs"` confere
 `useRegisterTopBarSubtitle` confere (DASH-HEADER-01 fechado). Nenhuma
 divergência de valor exato encontrada nesta reconferência — zero achados
 novos, zero correções necessárias.
+
+## Rodada 2 — inventário por imagem (Farol, 2026-09-21)
+
+PNG claro+escuro abertos como imagem; elementos que a spec NÃO listou ou que ficaram `[!]` cedo demais:
+
+| ID | Elemento (mock) | App antes | Ação |
+|---|---|---|---|
+| R2-DASH-01 | Card "Fila agora" (dot ao vivo, contagem, itens de 44px com avatar 26, nome+trecho, tempo colorido, chip de ator, "Ver todas as N") | não existia (só o "Ao Vivo" agregado) — era `[!]` QUEUE-01..04 | **✅ código** `FilaAgoraCard.tsx`: fila = `status:'pending'` (mesma definição de `queueCount`), `Conversation.contact/lastMessagePreview/lastMessageAt/lastMessageSenderKind` — dado real. Cortes de cor do tempo (5/15 min) são constantes visuais (não há SLA configurável; 15 min = o limiar que o próprio mock cita). Chip só p/ `ai`→"IA" e `campaign/rule`→"auto". ❓ ao vivo |
+| R2-DASH-02 | Linha de apoio dos KPIs ("12 aguardando") | linha vazia (`&nbsp;`) | **✅ código**: `active_conversations` mostra "N aguardando" (âmbar) com o KPI `queued` do snapshot. Demais apoios (delta vs ontem, meta, "sem resposta > 15 min", % IA) seguem `[!]` — grep: `HomeStats` não tem histórico/meta/bot |
+| R2-DASH-03 | Período no TopBar = UMA pílula "Hoje ⌄" (h28, raio 7, borda --bd2) | grupo de 4 botões brand | **✅ código** `DateRangePicker` = pílula + Dropdown |
+| R2-DASH-04 | Segmentado Hoje/7 dias/30 dias no header do gráfico; legenda 11.5/gap 14; 2ª série `--bd2` opaca; sem grid/eixo Y; barras raio 2 | ausente | **✅ código** ligado ao período global (sem fetch novo). Barras "futuras" tracejadas + split Humano/IA por hora seguem `[!]` (backend só volume diário; grep `VolumeDataPoint`) |
+| R2-DASH-05 | Sem eyebrow "Métricas Principais" acima da faixa | eyebrow uppercase + botão | eyebrow removido; "Personalizar" mantido (feature real) |
+| R2-DASH-06 | Todos os cards do rail/coluna com o mesmo container (--sf/--bd/raio 8) | 8 cards ainda `bg-surface-900 rounded-xl` (TagsChart, CsatChart, PeakHours, AgentTable, StatusDonut, ActivityFeed, AiInsights, Marketing) + `KpiCard` com `card-glow` | **✅ código** unificados |
+| R2-DASH-07 | "WhatsApp conectado" no header | — | fora do meu domínio (`layout/`) — escalado |
+| — | Linha do agente de IA em "Equipe" | omitida | `[!]` mantido: `AgentConfig` só tem `conversation_count` total (sem abertas/TMR) |
+
+Tudo `❓ ao vivo` (sem navegador).
