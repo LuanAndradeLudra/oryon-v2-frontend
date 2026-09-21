@@ -8,19 +8,20 @@ interface StatusChipProps {
   label: string
   tone: 'success' | 'warning'
   icon?: React.ReactNode
+  /** `lg` = chips do modal de detalhe (canvas 3d: h20 px7 11px). */
+  size?: 'sm' | 'lg'
   className?: string
 }
 
-export function ConnectorStatusChip({ label, tone, icon, className }: StatusChipProps) {
+export function ConnectorStatusChip({ label, tone, icon, size = 'sm', className }: StatusChipProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 h-[18px] rounded-[5px] border px-1.5 text-[10.5px] font-bold flex-shrink-0',
-        tone === 'success'
-          ? 'bg-status-active-bg text-status-active border-status-active-border'
-          : 'bg-status-pending-bg text-status-pending border-status-pending-border',
+        'color-chip-soft inline-flex items-center gap-1 rounded-[5px] border font-bold flex-shrink-0',
+        size === 'lg' ? 'h-5 px-[7px] text-[11px]' : 'h-[18px] px-1.5 text-[10.5px]',
         className,
       )}
+      style={{ ['--chip']: tone === 'success' ? 'var(--color-success)' : 'var(--color-warning)' } as React.CSSProperties}
     >
       {icon}
       {label}
@@ -28,11 +29,12 @@ export function ConnectorStatusChip({ label, tone, icon, className }: StatusChip
   )
 }
 
-export function ConnectorComingSoonChip({ className }: { className?: string }) {
+export function ConnectorComingSoonChip({ size = 'sm', className }: { size?: 'sm' | 'lg'; className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 h-[18px] rounded-[5px] border border-surface-700 bg-[var(--sf2)] px-1.5 text-[10.5px] font-bold text-surface-400 flex-shrink-0',
+        'inline-flex items-center gap-1 rounded-[5px] border border-surface-700 bg-[var(--sf2)] font-bold text-surface-400 flex-shrink-0',
+          size === 'lg' ? 'h-5 px-[7px] text-[11px]' : 'h-[18px] px-1.5 text-[10.5px]',
         className,
       )}
     >

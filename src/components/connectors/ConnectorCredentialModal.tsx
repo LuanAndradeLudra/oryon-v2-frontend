@@ -73,7 +73,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
             <h2 className="text-[15px] font-bold text-surface-50 truncate">
               {connector.status === 'installed' ? 'Credencial' : 'Conectar'} · {connector.name}
             </h2>
-            <p className="text-2xs text-surface-500 mt-0.5">
+            <p className="text-xs text-surface-400 mt-px">
               Válida para todo o workspace. Agentes escolhem usar ou não.
             </p>
           </div>
@@ -82,7 +82,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
       footer={
         <div className="flex items-center gap-2">
           {connector.status === 'installed' && (
-            <button type="button" className="text-xs font-medium text-danger hover:opacity-80 mr-auto">
+            <button type="button" className="text-xs font-semibold text-danger hover:opacity-80 mr-auto">
               Remover credencial
             </button>
           )}
@@ -101,7 +101,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
         </div>
       }
     >
-      <div className="flex flex-col gap-3.5">
+      <div className="flex flex-col gap-3">
         {(() => {
           // CONN-CRED-13: campo marcado `pairWithNext` entra numa grade de 2
           // colunas com o campo seguinte (ex. "ID da clínica" + "Unidade
@@ -192,7 +192,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
                   </button>
                 </div>
                 {!erroredField && (
-                  <p className="text-2xs text-surface-600">Armazenado criptografado. Nunca mostrado inteiro depois de salvo.</p>
+                  <p className="text-[11.5px] text-surface-500">Armazenado criptografado. Nunca mostrado inteiro depois de salvo.</p>
                 )}
               </FormField>
             )
@@ -240,7 +240,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
         })()}
 
         <div className="flex items-center gap-3 pt-1">
-          <Button size="sm" variant="neutral" onClick={runTest} loading={testState === 'testing'}>
+          <Button size="sm" variant="neutral" className="h-8 px-3 text-[12.5px]" onClick={runTest} loading={testState === 'testing'}>
             {testState === 'error' ? 'Testar de novo' : 'Testar conexão'}
           </Button>
           {testState === 'success' && testResult.ok && (

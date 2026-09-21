@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
-import { X, ChevronUp } from 'lucide-react'
+import { X, ChevronUp, User } from 'lucide-react'
 import { useLayer } from '@/contexts/LayerContext'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
@@ -55,14 +55,14 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 4 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
-        className="relative z-10 w-[760px] max-w-full h-[460px] max-h-[90vh] bg-surface-900 overlay-frame border rounded-[10px] overflow-hidden flex"
+        className="relative z-10 w-[760px] max-w-full h-[460px] max-h-[90vh] bg-surface-800 overlay-frame border rounded-[10px] overflow-hidden flex"
       >
         {/* Coluna de identidade */}
         <div
-          style={{ background: `color-mix(in srgb, ${connector.brandColor} ${comingSoon ? 5 : 7}%, var(--color-surface-900))` }}
+          style={{ background: `color-mix(in srgb, ${connector.brandColor} ${comingSoon ? 5 : 7}%, var(--color-surface-800))` }}
           className={cn(
-            'w-[240px] flex-shrink-0 flex flex-col p-4 border-r',
-            comingSoon ? 'border-dashed border-surface-700' : 'border-surface-700',
+            'w-[240px] flex-shrink-0 flex flex-col pt-5 px-[18px] pb-[18px] border-r',
+            comingSoon ? 'border-dashed border-[var(--bd2)]' : 'border-surface-700',
           )}
         >
           <div
@@ -77,25 +77,26 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
             </span>
           </div>
           <h2 className="text-[17px] font-bold text-surface-50 mt-3">{connector.name}</h2>
-          <p className="text-2xs text-surface-500 mt-0.5">
+          <p className="text-xs text-surface-400 mt-0.5">
             por {connector.vendor}{connector.version ? ` · ${connector.version}` : ''}
           </p>
 
-          <div className="flex flex-wrap gap-1.5 mt-2.5">
-            <span className="inline-flex items-center rounded-xs border border-surface-700 bg-surface-800 px-1.5 py-px text-[10.5px] font-medium text-surface-400">
+          <div className="flex flex-wrap gap-1 mt-2">
+            <span className="inline-flex items-center h-5 rounded-[5px] border border-surface-700 bg-surface-800 px-[7px] text-[11px] font-semibold text-surface-400">
               {connector.category}
             </span>
             {comingSoon ? (
-              <ConnectorComingSoonChip />
+              <ConnectorComingSoonChip size="lg" />
             ) : (
               <ConnectorStatusChip
+                size="lg"
                 tone="success"
                 label={connector.status === 'installed' ? 'Instalado' : 'Disponível'}
               />
             )}
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto mt-3.5 divide-y divide-surface-700">
+          <div className="flex-1 min-h-0 overflow-y-auto mt-[18px] text-xs">
             {comingSoon ? (
               <FichaRow label="Fila" value={`${connector.requestCount ?? 0} clientes pediram`} />
             ) : (
@@ -144,14 +145,14 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
           </div>
           <div className="border-b border-surface-700 flex-shrink-0" />
 
-          <div className="flex-1 overflow-y-auto px-5 py-[18px] text-[13px] leading-[1.55] text-surface-300">
+          <div className="flex-1 overflow-y-auto px-5 py-[18px] text-[13px] leading-[1.55] text-surface-100 flex flex-col gap-4">
             {blockedByPlan && (
-              <Banner variant="warning" className="mb-4">
+              <Banner variant="warning">
                 Disponível no plano Business — o conteúdo abaixo continua legível, conectar exige upgrade.
               </Banner>
             )}
             {comingSoon && (
-              <Banner variant="neutral" className="mb-4">
+              <Banner variant="neutral">
                 Ainda não construída. Ao priorizar, você recebe um aviso quando ficar disponível — e o pedido conta na nossa fila.
               </Banner>
             )}
@@ -160,30 +161,42 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
               <>
                 <p>{connector.howItWorks}</p>
                 {connector.capabilities.length > 0 && (
-                  <>
+                  <div>
                     <p className={cn(
-                      'text-2xs font-bold uppercase tracking-wide mt-5 mb-2.5',
+                      'text-[10px] font-bold uppercase mb-2 tracking-[.14em]',
                       comingSoon ? 'text-surface-500' : 'text-accent-dark',
                     )}>
                       {comingSoon ? 'Previsto' : 'O que o agente passa a fazer'}
                     </p>
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-2 gap-2">
                       {connector.capabilities.map((c) => (
                         <div
                           key={c.title}
                           className={cn(
-                            'rounded-[7px] border p-2.5',
-                            comingSoon ? 'border-dashed border-surface-700' : 'border-surface-700 bg-surface-800/40',
+                            'rounded-[7px] border px-3 py-2.5',
+                            comingSoon ? 'border-dashed border-[var(--bd2)]' : 'border-surface-700',
                           )}
                         >
-                          <p className="text-xs font-semibold text-surface-200">{c.title}</p>
-                          <p className="text-2xs text-surface-500 mt-0.5 leading-relaxed">{c.description}</p>
+                          <p className="text-[12.5px] font-semibold text-surface-100">{c.title}</p>
+                          <p className="text-xs text-surface-400 mt-0.5 leading-[1.45]">{c.description}</p>
                         </div>
                       ))}
                     </div>
-                  </>
+                  </div>
                 )}
               </>
+            )}
+
+            {tab === 'overview' && (connector.socialProof || connector.guideUrl) && (
+              <div className="flex items-center gap-1.5 text-xs text-surface-400">
+                <User className="w-3 h-3 flex-shrink-0" />
+                <span>{connector.socialProof}</span>
+                {connector.guideUrl && (
+                  <a href={connector.guideUrl} className="text-accent-dark font-semibold hover:opacity-80">
+                    Guia de conexão ↗
+                  </a>
+                )}
+              </div>
             )}
 
             {tab === 'how' && (
@@ -208,16 +221,6 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
             )}
           </div>
 
-          {(connector.socialProof || connector.guideUrl) && (
-            <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-t border-surface-700 text-2xs text-surface-500 flex-shrink-0">
-              <span>{connector.socialProof}</span>
-              {connector.guideUrl && (
-                <a href={connector.guideUrl} className="text-brand-400 hover:text-brand-300 font-medium">
-                  Guia de conexão ↗
-                </a>
-              )}
-            </div>
-          )}
         </div>
       </motion.div>
     </div>,
@@ -227,9 +230,9 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
 
 function FichaRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="py-2 first:pt-0">
-      <p className="text-2xs text-surface-500">{label}</p>
-      <p className="text-xs font-medium text-surface-300 mt-0.5">{value}</p>
+    <div className="py-2 first:pt-0 border-b border-surface-700 last:border-b-0 last:pb-0">
+      <p className="text-surface-500">{label}</p>
+      <p className="font-medium text-surface-100 mt-px">{value}</p>
     </div>
   )
 }
