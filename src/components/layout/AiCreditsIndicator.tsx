@@ -21,7 +21,6 @@ import { useLayer } from '@/contexts/LayerContext'
 import { useBilling } from '@/hooks/useBilling'
 import { useCreditGate } from '@/hooks/usePlanGate'
 import { formatCredits } from '@/config/plans'
-import { Button } from '@/components/ui/Button'
 
 // Cores literais do handoff (3.12) — não são os tokens semânticos
 // --color-warning/--color-danger de uso geral (que têm outros valores no
@@ -51,15 +50,24 @@ function daysUntil(iso: string | null | undefined): number | null {
   return Math.max(0, Math.round(ms / 86_400_000))
 }
 
+const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+/** "01 out" — data de renovação como no canvas 6b. */
+function shortDate(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return `${String(d.getDate()).padStart(2, '0')} ${MONTHS[d.getMonth()]}`
+}
+
 /** Anel de progresso — mesma geometria em qualquer tamanho: o SVG usa sempre
  *  o viewBox 24x24 do handoff (r=9, stroke-width=2.5, dasharray=56.5) e só o
  *  `width`/`height` renderizado muda (24 colapsada, 22 expandida, 36 popover),
  *  o que escala o desenho inteiro sem recalcular a matemática do arco. */
-function CreditRing({ size, pct, color }: { size: number; pct: number; color: string }) {
+function CreditRing({ size, pct, color, track = TRACK_COLOR }: { size: number; pct: number; color: string; track?: string }) {
   const offset = RING_CIRC * (1 - Math.min(1, Math.max(0, pct)))
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className="flex-shrink-0" aria-hidden>
-      <circle cx="12" cy="12" r={RING_R} fill="none" stroke={TRACK_COLOR} strokeWidth={2.5} />
+      <circle cx="12" cy="12" r={RING_R} fill="none" stroke={track} strokeWidth={2.5} />
       <circle
         cx="12"
         cy="12"
@@ -178,14 +186,28 @@ export function AiCreditsIndicator() {
               <span className="text-xs font-semibold text-white truncate whitespace-pre">
                 Créditos de IA
               </span>
-              <span className="text-[10.5px] text-surface-500 truncate whitespace-pre">
+              {/* Canvas 6b (3 faixas): <70% "renova em N d" (tx3); >=70% âmbar "acaba
+                  antes do ciclo"; >=90% vermelho "agentes pausam em N" + "Comprar". */}
+              <span
+                className="text-[10.5px] text-surface-500 truncate whitespace-pre"
+                style={!noData && pct >= 0.7 ? { color } : undefined}
+              >
                 {noData
                   ? 'Indisponível'
-                  : `${formatCredits(used)} / ${total ? formatCredits(total) : '∞'}${days !== null ? ` · renova em ${days} d` : ''}`}
+                  : `${formatCredits(used)} / ${total ? formatCredits(total) : '∞'}${
+                      pct >= 0.9
+                        ? days !== null ? ` · agentes pausam em ${days}` : ' · no limite'
+                        : pct >= 0.7
+                          ? ' · acaba antes do ciclo'
+                          : days !== null ? ` · renova em ${days} d` : ''
+                    }`}
               </span>
             </motion.div>
           )}
         </AnimatePresence>
+        {expanded && !noData && pct >= 0.9 && (
+          <span className="text-[10.5px] font-bold flex-shrink-0" style={{ color: ACCENT }}>Comprar</span>
+        )}
       </button>
 
       {hovered && pos && !noData && typeof document !== 'undefined' && createPortal(
@@ -197,75 +219,70 @@ export function AiCreditsIndicator() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.13, ease: 'easeOut' }}
             style={{ position: 'fixed', left: pos.left, bottom: pos.bottom, width: 300, pointerEvents: 'auto' }}
-            className="overlay-surface border rounded-lg overflow-hidden"
+            className="overlay-surface border rounded-lg p-3.5 flex flex-col gap-2.5 text-[12.5px]"
           >
-            <div className="p-3.5 flex items-center gap-3 border-b border-surface-700">
-              <CreditRing size={36} pct={pct} color={color} />
+            {/* Canvas 6b: coluna única, padding 14, gap 10, 12.5px. Anel 36 com trilha --bd. */}
+            <div className="flex items-center gap-2.5">
+              <CreditRing size={36} pct={pct} color={color} track="var(--bd)" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-surface-100 truncate">
+                <p className="text-[13px] font-bold text-surface-100 truncate">
                   Créditos de IA{billing?.plan.displayName ? ` · ${billing.plan.displayName}` : ''}
                 </p>
-                <p className="text-2xs text-surface-500">
-                  {days !== null ? `Renova em ${days} ${days === 1 ? 'dia' : 'dias'}` : 'Ciclo em andamento'}
+                <p className="text-surface-400">
+                  {days !== null
+                    ? `Renova em ${days} ${days === 1 ? 'dia' : 'dias'}${shortDate(billing?.planResetsAt) ? ` · ${shortDate(billing?.planResetsAt)}` : ''}`
+                    : 'Ciclo em andamento'}
                 </p>
               </div>
-              <span className="text-base font-extrabold tabular-nums flex-shrink-0" style={{ color }}>
-                {pctLabel}%
+              <div className="text-right flex-shrink-0">
+                <div className="text-base font-extrabold tabular-nums tracking-[-0.02em] leading-[1.1]" style={{ color }}>
+                  {pctLabel}%
+                </div>
+                <div className="text-2xs text-surface-500">usado</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 pt-2 border-t border-surface-700 tabular-nums">
+              <span className="text-surface-400">Usados</span>
+              <span className="font-semibold text-surface-100 text-right">{formatCredits(used)}</span>
+              <span className="text-surface-400">Disponíveis</span>
+              <span className="font-semibold text-surface-100 text-right">
+                {total ? formatCredits(Math.max(total - used, 0)) : '∞'}
+              </span>
+              <span className="text-surface-400">Ritmo</span>
+              {/* Ritmo: aproximação (usados ÷ dias já passados de um ciclo
+                  assumido de 30 dias) — o backend expõe só a data de
+                  RENOVAÇÃO (planResetsAt), não a de início do ciclo. "sobra" /
+                  "acaba antes" vem da projeção desse mesmo ritmo até a renovação. */}
+              <span className="font-semibold text-surface-100 text-right">
+                {days !== null ? (() => {
+                  const rate = used / Math.max(1, 30 - days)
+                  const fits = !total || used + rate * days <= total
+                  return (
+                    <>
+                      {`≈ ${rate.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}/dia `}
+                      <span className={fits ? 'text-success' : 'text-warning'}>{fits ? '· sobra' : '· acaba antes'}</span>
+                    </>
+                  )
+                })() : '—'}
               </span>
             </div>
 
-            {pct >= 0.7 && (
-              <div
-                className={cn(
-                  'px-3.5 py-2 text-2xs font-medium flex items-center gap-2',
-                  pct >= 0.9 ? 'text-danger bg-danger/10' : 'text-warning bg-warning/10',
-                )}
+            <div className="flex gap-1.5 pt-2 border-t border-surface-700">
+              <button
+                type="button"
+                onClick={goBilling}
+                className="inline-flex items-center h-[26px] px-[9px] rounded-[6px] border border-[var(--bd2)] text-[11.5px] font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
-                <span className="flex-1">
-                  {pct >= 0.9
-                    ? days !== null
-                      ? `Agentes pausam em ${days} ${days === 1 ? 'dia' : 'dias'}`
-                      : 'Créditos no limite — agentes serão pausados'
-                    : 'Acaba antes do ciclo'}
-                </span>
-                {pct >= 0.9 && (
-                  <button type="button" onClick={goBilling} className="underline font-semibold flex-shrink-0">
-                    Comprar
-                  </button>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-3 gap-2 px-3.5 py-3 text-center border-b border-surface-700">
-              <div>
-                <p className="text-xs font-semibold text-surface-100 tabular-nums">{formatCredits(used)}</p>
-                <p className="text-3xs text-surface-500 mt-0.5">Usados</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-surface-100 tabular-nums">
-                  {total ? formatCredits(Math.max(total - used, 0)) : '∞'}
-                </p>
-                <p className="text-3xs text-surface-500 mt-0.5">Disponíveis</p>
-              </div>
-              <div>
-                {/* Ritmo: aproximação (usados ÷ dias já passados de um ciclo
-                    assumido de 30 dias) — o backend expõe só a data de
-                    RENOVAÇÃO (planResetsAt), não a de início do ciclo, então
-                    não há como calcular o ritmo real sem esse dado. */}
-                <p className="text-xs font-semibold text-surface-100 tabular-nums">
-                  {days !== null ? formatCredits(Math.round(used / Math.max(1, 30 - days))) : '—'}
-                </p>
-                <p className="text-3xs text-surface-500 mt-0.5">Ritmo/dia</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 p-2.5">
-              <Button variant="neutral" size="sm" className="flex-1" onClick={goBilling}>
                 Ver faturamento
-              </Button>
-              <Button variant="ghost" size="sm" className="flex-1 text-accent-dark" onClick={goBilling}>
+              </button>
+              <button
+                type="button"
+                onClick={goBilling}
+                className="inline-flex items-center h-[26px] px-[9px] rounded-[6px] text-[11.5px] font-semibold text-accent-dark hover:bg-[var(--rowhover)] transition-colors"
+              >
                 Comprar créditos
-              </Button>
+              </button>
             </div>
           </motion.div>
         </div>,

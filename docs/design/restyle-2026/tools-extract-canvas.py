@@ -2,6 +2,7 @@
 # Ex.:  python ...py 1d "Minhas"   -> imprime o HTML (sem SVG) do bloco da tela 1d ao redor da palavra.
 # O canvas guarda o HTML num <script type="__bundler/template"> como string JSON.
 import re, json, sys, os
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 here = os.path.dirname(os.path.abspath(__file__))
 s = open(os.path.join(here, 'Oryon-Reestilizacao-canvas.html'), encoding='utf-8').read()
 m = re.search(r'<script type="__bundler/template">(.*?)</script>', s, re.S)
