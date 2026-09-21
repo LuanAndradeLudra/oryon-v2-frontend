@@ -45,7 +45,7 @@ export function CopilotIcon({ spinning = false, size = 'sm' }: { spinning?: bool
   const dims = size === 'md' ? 'w-9 h-9' : 'w-6 h-6'
   const icon = size === 'md' ? 'w-4 h-4' : 'w-3 h-3'
   return (
-    <div className={`${dims} rounded-full copilot-icon flex items-center justify-center flex-shrink-0 shadow-sm shadow-brand-900/40`}>
+    <div className={`${dims} rounded-full copilot-icon flex items-center justify-center flex-shrink-0`}>
       <div
         style={spinning
           ? { animation: 'copilot-spin 3s linear infinite' }
@@ -275,7 +275,7 @@ function InlineCode({ lang, content }: { lang: string; content: string }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="rounded-xl overflow-hidden border border-surface-700/40 bg-surface-900/50 my-1.5">
+    <div className="rounded-lg overflow-hidden border border-surface-700/40 bg-surface-900/50 my-1.5">
       <div className="flex items-center gap-3 px-4 py-3">
         <Code2 className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
         <span className="text-[13px] font-medium text-surface-200 flex-1">{lang}</span>
@@ -319,7 +319,7 @@ function InlineCode({ lang, content }: { lang: string; content: string }) {
 function InlinePlan({ title, items }: { title: string; items: string[] }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="rounded-xl overflow-hidden border border-brand-500/15 bg-surface-900/50 my-1.5">
+    <div className="rounded-lg overflow-hidden border border-brand-500/15 bg-surface-900/50 my-1.5">
       <div className="flex items-center gap-3 px-4 py-3">
         <ListOrdered className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
         <span className="text-[13px] font-medium text-surface-200 flex-1">{title}</span>
@@ -362,7 +362,7 @@ function InlinePlan({ title, items }: { title: string; items: string[] }) {
 function InlineTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="rounded-xl overflow-hidden border border-surface-700/40 bg-surface-900/50 my-1.5">
+    <div className="rounded-lg overflow-hidden border border-surface-700/40 bg-surface-900/50 my-1.5">
       <div className="flex items-center gap-3 px-4 py-3">
         <Table2 className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
         <span className="text-[13px] font-medium text-surface-200 flex-1">Tabela</span>
@@ -455,7 +455,7 @@ function ArtifactBuilding({ content, type }: { content: string; type: ArtifactTy
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-surface-700/40 bg-surface-900/50 overflow-hidden"
+      className="rounded-lg border border-surface-700/40 bg-surface-900/50 overflow-hidden"
     >
       {/* Header row — clickable to expand */}
       <button
@@ -477,7 +477,7 @@ function ArtifactBuilding({ content, type }: { content: string; type: ArtifactTy
           {/* Animated progress bar */}
           <div className="h-1 bg-surface-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-brand-600 to-violet-600 rounded-full"
+              className="h-full bg-brand-500 rounded-full"
               animate={{ x: ['-100%', '100%'] }}
               transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
               style={{ width: '60%' }}
@@ -570,10 +570,10 @@ function ArtifactCard({ content, title, type }: { content: string; title: string
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
       onClick={handleOpen}
-      className="w-full text-left rounded-xl border border-surface-700/40 bg-surface-900/50 hover:border-surface-600/60 hover:bg-surface-900/80 transition-all overflow-hidden group"
+      className="w-full text-left rounded-lg border border-surface-700/40 bg-surface-900/50 hover:border-surface-600/60 hover:bg-surface-900/80 transition-all overflow-hidden group"
     >
       <div className="flex items-center gap-3 px-4 py-4">
-        <div className="w-9 h-9 rounded-xl bg-surface-800 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
+        <div className="w-9 h-9 rounded-lg bg-surface-800 border border-surface-700/50 flex items-center justify-center flex-shrink-0">
           <ArtifactTypeIcon type={type} className="w-4 h-4 text-surface-400" />
         </div>
         <div className="flex-1 min-w-0">
@@ -1217,7 +1217,7 @@ function TemplateApprovalPreview({
       )}
 
       {/* Body + footer */}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
+      <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
         <div className="flex flex-col gap-1">
           <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Mensagem</label>
           <textarea
@@ -1261,7 +1261,7 @@ function TemplateApprovalPreview({
           Surfaced explicitly so the operator can tell what the reviewer
           will see (and tweak it) before approving. */}
       {placeholderCount > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
+        <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
           <div>
             <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">
               Exemplos das variáveis
@@ -1344,7 +1344,7 @@ function CampaignApprovalPreview({
       )}
 
       {/* Segmentação */}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2.5">
+      <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3 space-y-2.5">
         <SelectField
           label="Segmentação"
           value={String(segment?.type ?? 'all')}
@@ -1368,7 +1368,7 @@ function CampaignApprovalPreview({
 
       {/* Variáveis */}
       {mappings && mappings.length > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
+        <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3">
           <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Mapeamento de variáveis</label>
           <div className="mt-1.5 space-y-1">
             {mappings.map((m, i) => (
@@ -1384,7 +1384,7 @@ function CampaignApprovalPreview({
       )}
 
       {/* Agendamento */}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
+      <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3">
         <div className="flex items-center gap-2 mb-1.5">
           <Clock className="w-3 h-3 text-surface-500" />
           <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Agendamento</label>
@@ -1431,7 +1431,7 @@ function ContactApprovalPreview({
           <span className="text-3xs text-surface-400">Contato: <span className="text-surface-300 font-mono">{String(input.contactId).slice(0, 12)}...</span></span>
         </div>
       )}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
+      <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
         <div className="grid grid-cols-2 gap-2">
           <EditableField label="Nome" value={String(input.displayName ?? '')} fieldKey="displayName" onChange={onChange} placeholder="Nome do contato" />
           <EditableField label="WhatsApp" value={String(input.waId ?? '')} fieldKey="waId" onChange={onChange} placeholder="5511999998888" />
@@ -1470,7 +1470,7 @@ function MessageApprovalPreview({
         <span className="text-3xs text-surface-400">Conversa: <span className="text-surface-300 font-mono">{String(input.conversationId ?? '').slice(0, 12)}...</span></span>
       </div>
       {/* WhatsApp-style bubble preview */}
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
+      <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3 space-y-2">
         <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Mensagem que será enviada</label>
         <textarea
           value={text}
@@ -1482,7 +1482,7 @@ function MessageApprovalPreview({
         {/* Live preview */}
         {text && (
           <div className="mt-2 flex justify-end">
-            <div className="max-w-[85%] px-3 py-2 rounded-xl rounded-br-sm bg-brand-600/20 border border-brand-500/20">
+            <div className="max-w-[85%] px-3 py-2 rounded-lg rounded-br-sm bg-brand-600/20 border border-brand-500/20">
               <p className="text-xs text-surface-200 whitespace-pre-wrap">{text}</p>
               <p className="text-[9px] text-surface-500 text-right mt-1">{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
@@ -1627,7 +1627,7 @@ function AutomationApprovalPreview({
 
       {/* Trigger */}
       {trigger && Object.keys(trigger).length > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
+        <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3">
           <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Gatilho</label>
           <div className="mt-1.5 space-y-1.5">
             {!!trigger.stageKey && (
@@ -1667,7 +1667,7 @@ function AutomationApprovalPreview({
 
       {/* Conditions */}
       {conditions.length > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
+        <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3">
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Condições</label>
             <div className="w-32">
@@ -1689,7 +1689,7 @@ function AutomationApprovalPreview({
 
       {/* Actions */}
       {actions.length > 0 && (
-        <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
+        <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3">
           <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Ações</label>
           <div className="mt-1.5 space-y-1.5">
             {actions.map((a, i) => {
@@ -1767,7 +1767,7 @@ function ConversationApprovalPreview({
 }) {
   return (
     <div className="space-y-2.5">
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3 space-y-2.5">
+      <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3 space-y-2.5">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
           <div>
@@ -1818,7 +1818,7 @@ function CannedResponseApprovalPreview({
         <EditableField label="Atalho" value={String(input.shortcut ?? '')} fieldKey="shortcut" onChange={onChange} placeholder="/atalho" />
         <EditableField label="Título" value={String(input.title ?? '')} fieldKey="title" onChange={onChange} placeholder="Título da resposta" />
       </div>
-      <div className="rounded-xl border border-surface-700/50 bg-surface-800/50 p-3">
+      <div className="rounded-lg border border-surface-700/50 bg-surface-800/50 p-3">
         <div className="flex flex-col gap-1">
           <label className="text-3xs font-medium text-surface-500 uppercase tracking-wider">Conteúdo da resposta</label>
           <textarea
@@ -1858,7 +1858,7 @@ function DestructiveApprovalPreview({
   const { type: itemType, icon: Icon } = labelMap[toolName] ?? { type: 'Item', icon: Trash2 }
 
   return (
-    <div className="rounded-xl border border-danger/20 bg-danger/5 overflow-hidden">
+    <div className="rounded-lg border border-danger/20 bg-danger/5 overflow-hidden">
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <div className="w-8 h-8 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center flex-shrink-0">
           <Icon className="w-4 h-4 text-danger" />
@@ -1885,7 +1885,7 @@ function SendCampaignApprovalPreview({
   input: Record<string, unknown>
 }) {
   return (
-    <div className="rounded-xl border border-status-pending-border bg-status-pending-bg overflow-hidden">
+    <div className="rounded-lg border border-status-pending-border bg-status-pending-bg overflow-hidden">
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <div className="w-8 h-8 rounded-lg bg-status-pending-bg border border-status-pending-border flex items-center justify-center flex-shrink-0">
           <Rocket className="w-4 h-4 text-status-pending" />
@@ -2100,7 +2100,7 @@ function SetupRequiredCard({
   setup: { reason: string; message: string; cta: { href: string; label: string } }
 }) {
   return (
-    <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+    <div className="rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
       <div className="flex items-start gap-3">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-warning/20 text-warning">
           <AlertTriangle className="h-4 w-4" />
@@ -2131,7 +2131,7 @@ function RequiresSetupCard({ tc }: { tc: ToolCallRecord }) {
   const message = result.message ?? 'Uma configuração prévia é necessária para concluir esta operação.'
 
   return (
-    <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+    <div className="rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
       <div className="flex items-start gap-3">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-warning/20 text-warning">
           <AlertTriangle className="h-4 w-4" />
@@ -2192,7 +2192,7 @@ function ChooseLineCard({
   if (lines.length === 0) {
     // Degenerate response — show the plain message and let the user type.
     return (
-      <div className="rounded-xl border border-status-pending-border bg-status-pending-bg/30 px-3 py-2.5">
+      <div className="rounded-lg border border-status-pending-border bg-status-pending-bg/30 px-3 py-2.5">
         <p className="text-xs text-status-pending">{result.message ?? 'Escolha uma linha WhatsApp.'}</p>
       </div>
     )
@@ -2202,7 +2202,7 @@ function ChooseLineCard({
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-surface-700/60 bg-surface-800/60 overflow-hidden"
+      className="rounded-lg border border-surface-700/60 bg-surface-800/60 overflow-hidden"
     >
       <div className="px-3 py-2.5 border-b border-surface-700">
         <p className="text-xs text-surface-200 font-medium">Qual linha WhatsApp?</p>
@@ -2614,13 +2614,13 @@ function UserAttachments({ attachments }: { attachments: CopilotAttachment[] }) 
           key={att.id}
           src={att.previewUrl}
           alt={att.name}
-          className="h-24 max-w-[160px] rounded-xl object-cover border border-white/10 shadow-md"
+          className="h-24 max-w-[160px] rounded-lg object-cover border border-white/10"
         />
       ))}
       {pdfs.map((att) => (
         <div
           key={att.id}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-700/60 border border-brand-500/30 max-w-[180px]"
+          className="flex items-center gap-2 px-3 py-2 rounded-sm bg-brand-700/60 border border-brand-500/30 max-w-[180px]"
         >
           <FileText className="w-4 h-4 text-accent-rose flex-shrink-0" />
           <span className="text-xs text-white truncate">{att.name}</span>
@@ -2680,7 +2680,7 @@ function UserMessageBubble({
               if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleEditSave()
               if (e.key === 'Escape') handleEditCancel()
             }}
-            className="w-full bg-surface-800 border border-brand-500/50 rounded-2xl px-4 py-3 text-sm text-white resize-none outline-none focus:border-brand-400/70 min-h-[80px] leading-relaxed"
+            className="w-full bg-surface-800 border border-brand-500/50 rounded-sm px-4 py-3 text-sm text-white resize-none outline-none focus:border-brand-400/70 min-h-[80px] leading-relaxed"
             rows={3}
           />
           <div className="flex justify-end gap-2">
@@ -2714,7 +2714,7 @@ function UserMessageBubble({
           <UserAttachments attachments={message.attachments} />
         )}
         {message.content && (
-          <div className="bg-bubble-out text-bubble-out-fg text-sm px-4 py-3 rounded-2xl rounded-tr-sm leading-relaxed shadow-md shadow-black/10">
+          <div className="bg-bubble-out text-bubble-out-fg text-sm px-4 py-3 rounded-xl rounded-tr-sm leading-relaxed">
             {message.content}
           </div>
         )}

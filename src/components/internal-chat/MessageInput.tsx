@@ -72,7 +72,7 @@ export function MessageInput({ channelId, replyTo, onClearReply, placeholder }: 
 
       {/* Input card — Google Chat style */}
       <div className={cn(
-        'rounded-2xl border bg-surface-700 transition-colors',
+        'rounded-lg border bg-surface-700 transition-colors',
         replyTo ? 'rounded-t-none border-t-0' : '',
         text ? 'border-blue-500/40' : 'border-surface-500',
       )}>

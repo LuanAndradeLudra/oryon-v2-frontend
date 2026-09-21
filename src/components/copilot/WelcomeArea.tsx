@@ -50,7 +50,7 @@ export function WelcomeArea({ onSend, atLimit, onNew, onOpenKnowledge, userId }:
           transition={{ duration: 0.55, ease: 'easeOut' }}
         >
           <motion.div
-            className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-2xl shadow-brand-900/50 mb-7"
+            className="inline-flex items-center justify-center rounded-lg bg-brand-600 shadow-2xl shadow-brand-900/50 mb-7"
             style={{ width: '53px', height: '53px' }}
             initial={{ scale: 0.75, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -64,11 +64,11 @@ export function WelcomeArea({ onSend, atLimit, onNew, onOpenKnowledge, userId }:
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <h1 className="text-5xl font-semibold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-surface-50 to-surface-300/70 pb-2 leading-tight">
+            <h1 className="text-5xl font-semibold tracking-tight text-surface-100 pb-2 leading-tight">
               Como posso ajudar o seu<br />negócio hoje?
             </h1>
             <motion.div
-              className="h-px bg-gradient-to-r from-transparent via-surface-600/40 to-transparent mt-3"
+              className="h-px bg-surface-700 mt-3"
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: '100%', opacity: 1 }}
               transition={{ delay: 0.55, duration: 0.9 }}

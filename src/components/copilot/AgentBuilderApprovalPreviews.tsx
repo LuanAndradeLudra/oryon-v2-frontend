@@ -129,7 +129,7 @@ function ExpandedEditorModal({
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="relative flex h-[88vh] w-[min(96vw,1100px)] flex-col overflow-hidden rounded-2xl border border-surface-700/60 bg-surface-900 shadow-2xl">
+      <div className="relative flex h-[88vh] w-[min(96vw,1100px)] flex-col overflow-hidden rounded-xl border border-surface-700/60 bg-surface-900 shadow-2xl">
         <div className="flex items-center justify-between border-b border-surface-700 px-5 py-3">
           <h3 className="text-sm font-medium text-surface-100">{label}</h3>
           <div className="flex items-center gap-3">

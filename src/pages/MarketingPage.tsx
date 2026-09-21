@@ -93,7 +93,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 p-4">
         {[1, 2].map((i) => (
-          <div key={i} className="h-40 bg-surface-800/60 rounded-xl animate-pulse" />
+          <div key={i} className="h-40 bg-surface-800/60 rounded-lg animate-pulse" />
         ))}
       </div>
     )
@@ -121,7 +121,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
           <div
             key={cr.id}
             className={cn(
-              'bg-surface-800 rounded-xl border overflow-hidden flex flex-col',
+              'bg-surface-800 rounded-lg border overflow-hidden flex flex-col',
               isHighFreq  ? 'border-danger/40'    :
               isWatchFreq ? 'border-warning/30'   : 'border-surface-700',
             )}
@@ -370,7 +370,7 @@ function KpiStrip({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
         <div
           key={kpi.label}
           className={cn(
-            'relative bg-surface-900 border rounded-xl px-3 py-3',
+            'relative bg-surface-900 border rounded-lg px-3 py-3',
             kpi.crm ? 'border-surface-700' : 'border-surface-700',
           )}
         >
@@ -396,7 +396,7 @@ function PerformanceChart({ data, metric }: { data: PerfPoint[]; metric: ChartMe
   const C = useChartColors()
   const dataKey = metric === 'spend' ? 'meta_spend' : 'meta_leads'
 
-  if (!data.length) return <div className="h-48 bg-surface-800 rounded-xl animate-pulse" />
+  if (!data.length) return <div className="h-48 bg-surface-800 rounded-lg animate-pulse" />
 
   return (
     <ResponsiveContainer width="100%" height={220}>
@@ -658,7 +658,7 @@ function CampaignTable({
   }
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
       <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-surface-100">Campanhas</p>
@@ -780,7 +780,7 @@ function ConversionFunnel({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
   const max = stages[0].value || 1
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
       <p className="text-sm font-semibold text-surface-100 mb-0.5">Funil de Conversão</p>
       <p className="text-xs text-surface-400 mb-4">Do clique no anúncio ao cliente no CRM</p>
       <div className="space-y-2.5">
@@ -831,7 +831,7 @@ function SummaryPanel({ campaigns, totals }: { campaigns: AdCampaignMetrics[]; t
   ]
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5 space-y-3">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 space-y-3">
       <p className="text-sm font-semibold text-surface-100">Resumo do Período</p>
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-2.5">
@@ -902,7 +902,7 @@ function CapiEventsSection() {
   const failedCount  = events.filter((e) => e.status === 'failed').length
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700">
         <div className="w-8 h-8 rounded-lg bg-[#1877f2]/15 flex items-center justify-center flex-shrink-0">
@@ -1116,15 +1116,15 @@ function MarketingPageDesktop() {
               <div className="col-span-12 xl:col-span-8 space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-16 bg-surface-900 border border-surface-700 rounded-xl" />
+                    <div key={i} className="h-16 bg-surface-800 border border-surface-700 rounded-lg" />
                   ))}
                 </div>
-                <div className="h-72 bg-surface-900 border border-surface-700 rounded-xl" />
-                <div className="h-48 bg-surface-900 border border-surface-700 rounded-xl" />
+                <div className="h-72 bg-surface-800 border border-surface-700 rounded-lg" />
+                <div className="h-48 bg-surface-800 border border-surface-700 rounded-lg" />
               </div>
               <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
-                <div className="h-28 bg-surface-900 border border-surface-700 rounded-xl" />
-                <div className="h-56 bg-surface-900 border border-surface-700 rounded-xl" />
+                <div className="h-28 bg-surface-800 border border-surface-700 rounded-lg" />
+                <div className="h-56 bg-surface-800 border border-surface-700 rounded-lg" />
               </div>
             </div>
           ) : error ? (
@@ -1144,7 +1144,7 @@ function MarketingPageDesktop() {
               <KpiStrip campaigns={campaigns} />
 
               {/* Performance chart */}
-              <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
+              <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm font-semibold text-surface-100">Desempenho — Últimos 30 dias</p>
@@ -1182,7 +1182,7 @@ function MarketingPageDesktop() {
               <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
                 {/* Conta conectada — status vivo da integração Meta */}
                 {account && (
-                  <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
+                  <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="relative flex w-2 h-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-online opacity-60" />

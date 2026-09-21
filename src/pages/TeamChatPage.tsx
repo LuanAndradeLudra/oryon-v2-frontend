@@ -176,7 +176,7 @@ function SectorCard({ channel, onClick }: {
   const onlineCount = channel.memberIds.filter((id) => presence[id] === 'online').length
 
   return (
-    <div className="mx-3 rounded-xl border border-surface-700 bg-surface-900 overflow-hidden hover:border-surface-600 transition-colors">
+    <div className="mx-3 rounded-lg border border-surface-700 bg-surface-900 overflow-hidden hover:border-surface-600 transition-colors">
       <div className="h-1" style={{ background: channel.departmentColor ?? '#6366f1' }} />
       <div className="p-3">
         <div className="flex items-center gap-2.5 mb-2">
@@ -270,7 +270,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
     <div className="flex flex-col h-full w-full sm:w-[380px] bg-surface-950 border-r border-surface-700 flex-shrink-0">
       {/* Search */}
       <div className="px-3 pt-3 pb-3 flex-shrink-0">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-sm bg-surface-800 border border-surface-700 focus-within:border-blue-500/50 transition-colors">
           <Search className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
           <input
             type="text"
@@ -490,7 +490,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
             </>
           ) : (
             <>
-              <div className="w-16 h-16 rounded-xl bg-surface-800 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-lg bg-surface-800 flex items-center justify-center">
                 {channel.emoji ? <Emoji native={channel.emoji} size="2.25rem" /> : <Hash className="w-6 h-6 text-surface-400" />}
               </div>
               <div className="text-center">
@@ -684,7 +684,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
                 {presenceStatus && <PresenceDot status={presenceStatus} size="md" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-xl bg-surface-800 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
                 {channel.emoji ? <Emoji native={channel.emoji} size="1.25rem" /> : <Hash className="w-4 h-4 text-surface-400" />}
               </div>
             )}
@@ -720,7 +720,7 @@ function EmptyState({ onNewChat }: { onNewChat: () => void }) {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-12">
-      <div className="w-20 h-20 rounded-2xl bg-surface-800 flex items-center justify-center">
+      <div className="w-20 h-20 rounded-lg bg-surface-800 flex items-center justify-center">
         <MessageSquareDot className="w-10 h-10 text-surface-500" />
       </div>
       <div>

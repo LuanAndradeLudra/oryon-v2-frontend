@@ -136,7 +136,7 @@ export function MessageThread({ channelId, currentUserId, onReply, searchQuery }
       {showScrollBtn && (
         <button
           onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' })}
-          className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-surface-700 border border-surface-600 flex items-center justify-center text-surface-300 hover:bg-surface-600 transition-all shadow-lg"
+          className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-surface-700 border border-surface-600 flex items-center justify-center text-surface-300 hover:bg-surface-600 transition-all"
         >
           <ArrowDown className="w-4 h-4" />
         </button>

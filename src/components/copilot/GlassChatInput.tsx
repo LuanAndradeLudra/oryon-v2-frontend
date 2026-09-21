@@ -201,7 +201,7 @@ export function GlassChatInput({
         {showCommands && (
           <motion.div
             ref={commandsRef}
-            className="absolute bottom-full mb-2 left-0 right-0 z-50 rounded-xl overflow-hidden overlay-frame border bg-surface-900/95 backdrop-blur-xl"
+            className="absolute bottom-full mb-2 left-0 right-0 z-50 rounded-xl overflow-hidden overlay-frame border bg-surface-900/95"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
@@ -246,10 +246,10 @@ export function GlassChatInput({
       {/* Glass card */}
       <div
         className={cn(
-          'relative rounded-2xl border transition-all duration-200',
+          'relative rounded-lg border transition-all duration-200',
           'backdrop-blur-2xl bg-surface-900/50',
           focused
-            ? 'border-brand-500/30 shadow-lg shadow-brand-900/20 ring-1 ring-brand-500/15'
+            ? 'border-brand-500/30 ring-1 ring-brand-500/15'
             : 'border-surface-700/40'
         )}
       >
@@ -267,7 +267,7 @@ export function GlassChatInput({
                 {attachments.map((att) => (
                   <div
                     key={att.id}
-                    className="relative flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-surface-600/50 bg-surface-800/60 max-w-[200px] group"
+                    className="relative flex items-center gap-2 px-2.5 py-1.5 rounded-sm border border-surface-600/50 bg-surface-800/60 max-w-[200px] group"
                   >
                     {att.kind === 'image' ? (
                       <img src={att.previewUrl} alt={att.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
@@ -353,7 +353,7 @@ export function GlassChatInput({
               type="button"
               onClick={onAbort}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-medium bg-surface-700 hover:bg-surface-600 text-surface-200 transition-colors"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium bg-surface-700 hover:bg-surface-600 text-surface-200 transition-colors"
             >
               <Square className="w-3.5 h-3.5" />
               <span>Parar</span>
@@ -366,9 +366,9 @@ export function GlassChatInput({
               whileHover={(value.trim() || attachments.length > 0) ? { scale: 1.02 } : {}}
               whileTap={(value.trim() || attachments.length > 0) ? { scale: 0.97 } : {}}
               className={cn(
-                'flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-medium transition-all',
+                'flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
                 (value.trim() || attachments.length > 0)
-                  ? 'bg-brand-600 hover:bg-brand-500 text-surface-950 shadow-md shadow-brand-900/30'
+                  ? 'bg-brand-600 hover:bg-brand-500 text-surface-950'
                   : 'bg-surface-800/60 text-surface-500 cursor-not-allowed'
               )}
             >
