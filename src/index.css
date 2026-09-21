@@ -361,7 +361,7 @@
      cinza neutro emprestado de outro componente). */
   --color-bubble-out:      #16443C;
   --color-bubble-out-fg:   #FFFFFF;
-  --color-bubble-out-time: rgba(255, 255, 255, 0.62);
+  --color-bubble-out-time: rgba(255, 255, 255, 0.70);
   /* Sombra suave compartilhada (in/outbound) — invisível no escuro (0 0
      #0000 fica seguro pra combinar com outros box-shadow em lista). */
   --bubble-shadow-soft: 0 0 #0000; /* legado: sem uso desde SCRUM-1097 (bolha in usa borda) */
