@@ -8,6 +8,7 @@ import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
+import { STATS_COLLAPSE_KEY, contactsSummaryText } from '@/lib/contactsSummary'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
 import { CRMConfigDrawer } from '@/components/contacts/CRMConfigDrawer'
 import { ContactsTable } from '@/components/contacts/ContactsTable'
@@ -187,7 +188,17 @@ export function ContactsPage() {
   // fica de fora: `ContactsStatsBar.newThisWeek` só conta a página carregada,
   // não o total do tenant (GAPS-PENDENTES 1.3), e inventar o número seria
   // pior que omiti-lo.
-  useRegisterTopBarSubtitle(`${total.toLocaleString('pt-BR')} contatos`, [total])
+  // R2-1C-FILT-02: o resumo (opt-in, c/ etiquetas, situação predominante) saiu da
+  // faixa de 36px e ficou no tooltip do subtítulo + no botão "Resumo" da barra de filtros.
+  const [statsOpen, setStatsOpen] = useState(() => {
+    try { return localStorage.getItem(STATS_COLLAPSE_KEY) === '0' } catch { return false }
+  })
+  const toggleStats = () => setStatsOpen((v) => {
+    try { localStorage.setItem(STATS_COLLAPSE_KEY, v ? '1' : '0') } catch { /* storage indisponível */ }
+    return !v
+  })
+  const summaryText = contactsSummaryText(contacts, total)
+  useRegisterTopBarSubtitle(<span title={summaryText}>{`${total.toLocaleString('pt-BR')} contatos`}</span>, [total, summaryText])
 
   useRegisterTopBarActions(
     <div className="flex items-center gap-2 flex-wrap">
@@ -326,10 +337,6 @@ export function ContactsPage() {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-surface-950">
         {isMobile && <MobilePageHeader title="Contatos" />}
 
-        <ContactsStatsBar
-          contacts={contacts}
-          total={total}
-        />
 
         {/* Busca + filtros: 2 mais usados inline (Fonte, Etiquetas) e o resto
             dentro do botão "Filtros". */}
@@ -337,28 +344,11 @@ export function ContactsPage() {
           filters={filters}
           onFiltersChange={handleFiltersChange}
           onOpenColumns={() => setShowColumnsModal(true)}
+          summary={{ open: statsOpen, title: summaryText, onToggle: toggleStats }}
+          commercial={multiPipeline ? { value: commercial, options: COMMERCIAL_OPTIONS, onChange: (k) => setCommercial(k as CommercialSituation) } : undefined}
         />
 
-        {/* Faceta "Situação comercial" (D-10) */}
-        {multiPipeline && (
-        <div className="flex items-center gap-2 px-4 h-11 flex-shrink-0 overflow-x-auto border-b border-surface-700">
-          {COMMERCIAL_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              type="button"
-              onClick={() => setCommercial(opt.key)}
-              className={cn(
-                'h-7 px-3 text-xs font-semibold rounded-sm whitespace-nowrap transition-colors border',
-                commercial === opt.key
-                  ? 'border-brand-500 bg-accent-soft text-accent-dark'
-                  : 'bg-surface-800 text-surface-400 border-[var(--bd2)] hover:text-surface-100',
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-        )}
+        <ContactsStatsBar open={statsOpen} contacts={contacts} total={total} />
 
         <div className="flex-1 min-h-0 flex flex-col bg-surface-800">
           {error ? (

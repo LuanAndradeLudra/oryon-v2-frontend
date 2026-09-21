@@ -6,15 +6,22 @@ import { CLOSE_FILTER_LABELS, type BoardSummary, type CloseFilter, type OwnerFil
 import type { User } from '@/types'
 
 interface BoardFilterBarProps {
-  users: User[]
-  owner: OwnerFilter
-  onOwnerChange: (o: OwnerFilter) => void
-  close: CloseFilter
-  onCloseChange: (c: CloseFilter) => void
-  summary: BoardSummary
+  /** Filtros + resumo só existem na aba do quadro; nos relatórios a barra é só lead/trail. */
+  users?: User[]
+  owner?: OwnerFilter
+  onOwnerChange?: (o: OwnerFilter) => void
+  close?: CloseFilter
+  onCloseChange?: (c: CloseFilter) => void
+  summary?: BoardSummary
   /** Funil de processo não tem valor — o resumo mostra só a contagem. */
-  isProcess: boolean
-  noun: string
+  isProcess?: boolean
+  noun?: string
+  /** Tooltip do resumo — contexto do funil (abertos/ganhos hoje/perdidos/entradas). */
+  summaryTitle?: string
+  /** Início da barra: segmentado de visão + busca (R2-1E-BAR-05: uma barra só). */
+  lead?: ReactNode
+  /** Fim da barra, depois do resumo: "Etapas". */
+  trail?: ReactNode
   /** Chips extras (ex.: "Com mais de um aberto"), depois dos filtros. */
   children?: ReactNode
 }
@@ -65,8 +72,10 @@ function FilterChip({
  * não tem etiquetas (GAPS [!]); Lista/Previsão idem, só o Kanban existe.
  */
 export function BoardFilterBar({
-  users, owner, onOwnerChange, close, onCloseChange, summary, isProcess, noun, children,
+  users = [], owner = 'all', onOwnerChange, close = 'all', onCloseChange, summary, isProcess = false, noun = 'negócio',
+  summaryTitle, lead, trail, children,
 }: BoardFilterBarProps) {
+  const withFilters = !!onOwnerChange && !!onCloseChange
   const [ownerOpen, setOwnerOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
 
@@ -80,6 +89,8 @@ export function BoardFilterBar({
       className="flex flex-wrap items-center gap-x-2 gap-y-1 min-h-11 px-4 py-1.5 border-b border-surface-700 bg-board-bar flex-shrink-0"
       data-testid="board-filter-bar"
     >
+      {lead}
+      {withFilters && (
       <Dropdown
         open={ownerOpen}
         onClose={() => setOwnerOpen(false)}
@@ -98,18 +109,20 @@ export function BoardFilterBar({
       >
         <div className="px-1 py-1 flex flex-col gap-0.5 max-h-72 overflow-y-auto">
           {([{ id: 'all', label: 'Todos' }, { id: 'none', label: 'Sem responsável' }] as const).map((o) => (
-            <DropdownItem key={o.id} active={owner === o.id} onClick={() => { onOwnerChange(o.id); setOwnerOpen(false) }}>
+            <DropdownItem key={o.id} active={owner === o.id} onClick={() => { onOwnerChange?.(o.id); setOwnerOpen(false) }}>
               {o.label}
             </DropdownItem>
           ))}
           {users.map((u) => (
-            <DropdownItem key={u.id} active={owner === u.id} onClick={() => { onOwnerChange(u.id); setOwnerOpen(false) }}>
+            <DropdownItem key={u.id} active={owner === u.id} onClick={() => { onOwnerChange?.(u.id); setOwnerOpen(false) }}>
               <span className="truncate">{fullName(u)}</span>
             </DropdownItem>
           ))}
         </div>
       </Dropdown>
+      )}
 
+      {withFilters && (
       <Dropdown
         open={closeOpen}
         onClose={() => setCloseOpen(false)}
@@ -128,18 +141,20 @@ export function BoardFilterBar({
       >
         <div className="px-1 py-1 flex flex-col gap-0.5">
           {(Object.keys(CLOSE_FILTER_LABELS) as CloseFilter[]).map((c) => (
-            <DropdownItem key={c} active={close === c} onClick={() => { onCloseChange(c); setCloseOpen(false) }}>
+            <DropdownItem key={c} active={close === c} onClick={() => { onCloseChange?.(c); setCloseOpen(false) }}>
               {CLOSE_FILTER_LABELS[c]}
             </DropdownItem>
           ))}
         </div>
       </Dropdown>
+      )}
 
       {children}
 
       <div className="flex-1" />
 
-      <p className="text-xs text-surface-400 tabular-nums" data-testid="board-summary">
+      {summary && (
+      <p className="text-xs text-surface-400 tabular-nums" data-testid="board-summary" title={summaryTitle}>
         <span className="font-semibold text-surface-200">
           {summary.total} {noun}{summary.total === 1 ? '' : 's'}
         </span>
@@ -151,6 +166,8 @@ export function BoardFilterBar({
           </>
         )}
       </p>
+      )}
+      {trail}
     </div>
   )
 }

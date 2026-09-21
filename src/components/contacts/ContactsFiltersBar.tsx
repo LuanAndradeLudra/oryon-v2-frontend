@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Search, X, ChevronDown, Tag, SlidersHorizontal, Plus } from 'lucide-react'
+import { Search, X, ChevronDown, Tag, SlidersHorizontal, Plus, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { tagsApi } from '@/services/api'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
@@ -272,9 +272,13 @@ interface ContactsFiltersBarProps {
   /** README 3.2 — botão "Colunas" (ghost, ícone sliders-horizontal) abre o
    *  modal "Configurar colunas". */
   onOpenColumns?: () => void
+  /** R2-1C-FILT-02: a faixa de resumo virou um botão ghost "Resumo" aqui (linha única do mock). */
+  summary?: { open: boolean; title: string; onToggle: () => void }
+  /** Faceta "Situação comercial" (só multi-funil) — vive no menu "+ Filtro". */
+  commercial?: { value: string; options: { key: string; label: string }[]; onChange: (key: string) => void }
 }
 
-export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns }: ContactsFiltersBarProps) {
+export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns, summary, commercial }: ContactsFiltersBarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -293,6 +297,8 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns }: 
   // Chips dos filtros avançados ativos — mantêm visível o que está aplicado sem
   // precisar reabrir o painel.
   const chips: { key: string; label: string; onRemove: () => void }[] = []
+  if (filters.source)        chips.push({ key: 'source',    label: labelOf(SOURCES, filters.source) ?? 'Fonte',             onRemove: () => set({ source: undefined }) })
+  if (commercial && commercial.value !== 'all') chips.push({ key: 'commercial', label: commercial.options.find((o) => o.key === commercial.value)?.label ?? 'Situação comercial', onRemove: () => commercial.onChange('all') })
   if (filters.intent)        chips.push({ key: 'intent',    label: labelOf(INTENTS, filters.intent) ?? 'Intenção',       onRemove: () => set({ intent: undefined }) })
   if (filters.sentiment)     chips.push({ key: 'sentiment', label: labelOf(SENTIMENTS, filters.sentiment) ?? 'Sentimento', onRemove: () => set({ sentiment: undefined }) })
   if (filters.leadScoreBand) chips.push({ key: 'lead',      label: labelOf(LEAD_BANDS, filters.leadScoreBand) ?? 'Lead score', onRemove: () => set({ leadScoreBand: undefined }) })
@@ -334,14 +340,6 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns }: 
           onChange={(keys) => set({ stage: keys.length > 0 ? keys : undefined })}
         />
 
-        <FilterSelect
-          value={filters.source ?? ''}
-          onChange={(v) => set({ source: (v || undefined) as ContactSource | undefined })}
-          placeholder="Fonte"
-        >
-          {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-        </FilterSelect>
-
         <TagFilter
           selected={filters.tagId ?? []}
           onChange={(ids) => set({ tagId: ids.length > 0 ? ids : undefined })}
@@ -361,6 +359,20 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns }: 
           )}
           {menuOpen && (
             <div className="absolute left-0 top-full mt-1 z-50 w-64 overlay-surface border rounded-xl p-3 flex flex-col gap-3">
+              <FilterGroup label="Origem">
+                <FilterSelect fullWidth value={filters.source ?? ''} onChange={(v) => set({ source: (v || undefined) as ContactSource | undefined })} placeholder="Fonte">
+                  {SOURCES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </FilterSelect>
+              </FilterGroup>
+
+              {commercial && (
+                <FilterGroup label="Situação comercial">
+                  <FilterSelect fullWidth value={commercial.value === 'all' ? '' : commercial.value} onChange={(v) => commercial.onChange(v || 'all')} placeholder="Todos">
+                    {commercial.options.filter((o) => o.key !== 'all').map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+                  </FilterSelect>
+                </FilterGroup>
+              )}
+
               <FilterGroup label="IA">
                 <FilterSelect fullWidth value={filters.intent ?? ''} onChange={(v) => set({ intent: (v || undefined) as ContactIntent | undefined })} placeholder="Intenção">
                   {INTENTS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
@@ -416,11 +428,27 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns }: 
         </div>
       )}
 
+      {summary && (
+        <button
+          type="button"
+          onClick={summary.onToggle}
+          aria-expanded={summary.open}
+          title={summary.title}
+          data-testid="contacts-summary-toggle"
+          className={cn(
+            'hidden md:flex items-center gap-1.5 h-7 px-2 rounded-sm text-xs font-semibold transition-colors ml-auto flex-shrink-0',
+            summary.open ? 'text-accent-dark bg-accent-soft' : 'text-surface-400 hover:text-surface-100',
+          )}
+        >
+          <TrendingUp className="w-3.5 h-3.5 flex-shrink-0" />
+          Resumo
+        </button>
+      )}
       {onOpenColumns && (
         <button
           onClick={onOpenColumns}
           title="Configurar colunas"
-          className="hidden md:flex items-center gap-1.5 h-7 px-2 rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 transition-colors ml-auto flex-shrink-0"
+          className="hidden md:flex items-center gap-1.5 h-7 px-2 rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 transition-colors flex-shrink-0 [&:only-child]:ml-auto"
         >
           <SlidersHorizontal className="w-3.5 h-3.5 flex-shrink-0" />
           Colunas

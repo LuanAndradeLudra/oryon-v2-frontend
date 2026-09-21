@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, type ReactNode } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, Layers } from 'lucide-react'
 import { DealsBoard } from '@/components/deals/DealsBoard'
@@ -12,6 +12,7 @@ import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { toastDealClosedWithUndo } from '@/lib/dealClose'
 import { pipelineKindOf, pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
+import { boardStats, entrySources } from '@/lib/dealCard'
 import { matchesCloseDate, matchesOwner, boardSummary, type CloseFilter, type OwnerFilter } from '@/lib/boardFilters'
 import { contactsApi } from '@/services/api'
 import { cn, getApiErrorMessage } from '@/lib/utils'
@@ -42,6 +43,9 @@ interface PipelineBoardTabProps {
   onNovoNegocioEtapa?: (stageId: string | null) => void
   novoContatoAberto?: boolean
   onNovoContato?: (aberto: boolean) => void
+  /** Barra única do funil: a página entrega o início (visão + busca) e o fim (Etapas). */
+  toolbarLead?: ReactNode
+  toolbarTrail?: ReactNode
 }
 
 /**
@@ -52,7 +56,7 @@ interface PipelineBoardTabProps {
  * motivo, "Novo negócio", "Adicionar contato ao funil") vive aqui agora —
  * fora do contexto da tabela de contatos, que não é mais irmã dela na tela.
  */
-export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, novoNegocioEtapaId, onNovoNegocioEtapa, novoContatoAberto, onNovoContato }: PipelineBoardTabProps) {
+export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, novoNegocioEtapaId, onNovoNegocioEtapa, novoContatoAberto, onNovoContato, toolbarLead, toolbarTrail }: PipelineBoardTabProps) {
   const { toast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -122,6 +126,20 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
     return { visibleDealsByStage: filtered, multiOpenContacts: repeated.size }
   }, [dealsByStage, multiOpenOnly, canFilterMultiOpen, ownerFilter, closeFilter])
   const summary = useMemo(() => boardSummary(Object.values(visibleDealsByStage).flat()), [visibleDealsByStage])
+  // O que a faixa de contexto dizia (abertos · ganhos hoje · perdidos · entradas)
+  // fica acessível no tooltip do resumo — a barra do funil é uma só.
+  const summaryTitle = useMemo(() => {
+    const all = Object.values(visibleDealsByStage).flat()
+    const st = boardStats(all)
+    const labels = terminalLabelsOf(pipeline)
+    const entradas = entrySources(all)
+    return [
+      `${st.open} aberto${st.open === 1 ? '' : 's'}`,
+      `${st.wonToday} ${labels.won.toLowerCase()}${st.wonToday === 1 ? '' : 's'} hoje`,
+      `${st.lost} ${labels.lost.toLowerCase()}${st.lost === 1 ? '' : 's'}`,
+      `Entradas: ${entradas.length > 0 ? entradas.join(', ') : 'nenhuma ainda'}`,
+    ].join(' · ')
+  }, [visibleDealsByStage, pipeline])
   const sortedStages = [...pipeline.stages].sort((a, b) => a.order - b.order)
   const isProcess = pipelineKindOf(pipeline) === 'process'
 
@@ -220,8 +238,11 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
         close={closeFilter}
         onCloseChange={setCloseFilter}
         summary={summary}
+        summaryTitle={summaryTitle}
         isProcess={isProcess}
         noun={pipelineNoun(pipeline)}
+        lead={toolbarLead}
+        trail={toolbarTrail}
       >
         {canFilterMultiOpen && (
           <>
@@ -263,6 +284,7 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
         users={users}
         highlightDealId={highlightDealId}
         selectedDealId={openDealId}
+        showContextStrip={false}
       />
 
       {newDealStageId && (

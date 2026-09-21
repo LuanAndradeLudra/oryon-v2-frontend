@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { PipelinePage } from './PipelinePage'
+import { TopBarActionsProvider, useTopBarActions } from '@/contexts/TopBarActionsContext'
 import { pipelinesApi } from '@/services/api'
 import type { Pipeline } from '@/types'
 
@@ -18,8 +19,10 @@ vi.mock('@/services/api', () => ({
 const { openDeal } = vi.hoisted(() => ({ openDeal: vi.fn() }))
 vi.mock('@/contexts/DealPanelContext', () => ({ useDealPanel: () => ({ openDeal }) }))
 vi.mock('@/components/deals/PipelineBoardTab', () => ({
-  PipelineBoardTab: ({ pipeline, search, novoNegocioEtapaId }: { pipeline: Pipeline; search?: string; novoNegocioEtapaId?: string | null }) => (
+  PipelineBoardTab: ({ pipeline, search, novoNegocioEtapaId, toolbarLead, toolbarTrail }: { pipeline: Pipeline; search?: string; novoNegocioEtapaId?: string | null; toolbarLead?: import('react').ReactNode; toolbarTrail?: import('react').ReactNode }) => (
     <div data-testid="board-tab">
+      {/* a barra única do funil (visão + busca + Etapas) é entregue pela página */}
+      <div>{toolbarLead}{toolbarTrail}</div>
       board de {pipeline.name}
       <span data-testid="board-search-recebida">{search ?? ''}</span>
       <span data-testid="board-nova-etapa">{novoNegocioEtapaId ?? ''}</span>
@@ -47,10 +50,18 @@ function Sonda({ testid = 'destino' }: { testid?: string }) {
   return <div data-testid={testid}>{`${loc.pathname}${loc.search}`}</div>
 }
 
+/** A TopBar real não monta aqui — este host renderiza o que a página registra nela (seletor de funil e "Novo negócio"). */
+function TopBarHost() {
+  const { pageSubtitle, pageActions } = useTopBarActions()
+  return <div data-testid="topbar-host">{pageSubtitle}{pageActions}</div>
+}
+
 function renderAt(path: string, pipelines: Pipeline[]) {
   vi.mocked(pipelinesApi.list).mockResolvedValue({ data: pipelines } as never)
   return render(
     <MemoryRouter initialEntries={[path]}>
+      <TopBarActionsProvider>
+      <TopBarHost />
       <Routes>
         <Route path="/pipelines/:id" element={<><Sonda testid="rota-atual" /><PipelinePage /></>} />
         <Route path="/home" element={<div data-testid="home-page">home</div>} />
@@ -58,6 +69,7 @@ function renderAt(path: string, pipelines: Pipeline[]) {
             querystring — é ela que carrega o funil e o caminho de volta. */}
         <Route path="/settings/:section" element={<Sonda />} />
       </Routes>
+      </TopBarActionsProvider>
     </MemoryRouter>,
   )
 }

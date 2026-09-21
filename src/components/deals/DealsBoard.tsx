@@ -42,6 +42,8 @@ interface DealsBoardProps {
   highlightDealId?: string | null
   /** R2-1E-CARD-01: negócio cuja ficha está aberta — o card ganha borda de acento + anel de 3px (estado "selecionado / painel aberto" do mock). */
   selectedDealId?: string | null
+  /** R2-1E-BAR-05: a faixa de contexto (tipo, contagens, entradas) vira tooltip do resumo da barra do funil — `false` a esconde. Default true (usos isolados e testes). */
+  showContextStrip?: boolean
   /** D2 (SCRUM-935/F-FUNIL): clicar no CORPO do card abre a ficha do negócio
    *  (B2/928). Omitido = card não abre nada ao clicar (compat com chamadores
    *  antigos/testes que não precisam desse comportamento). */
@@ -68,6 +70,7 @@ export function DealsBoard({
   stages, dealsByStage, onMoveStage, loading, onOpenContact, pipelines = [], onMovePipeline,
   highlightDealId,
   selectedDealId,
+  showContextStrip = true,
   onOpenDeal,
   users = [],
 }: DealsBoardProps) {
@@ -435,7 +438,7 @@ export function DealsBoard({
       // iOS/Android perto da borda da tela, sem desabilitar o scroll-snap.
       className="flex-1 overflow-x-auto kanban-scroll touch-pan-x snap-x snap-mandatory md:snap-none flex flex-col"
     >
-      {pipeline && stats && kindOption && (
+      {showContextStrip && pipeline && stats && kindOption && (
         <div className="border-b border-surface-700 bg-board-bar flex-shrink-0 px-4 py-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-surface-500" data-testid="board-context-strip">
           <span className="inline-flex items-center gap-1 text-3xs font-semibold px-1.5 py-0.5 rounded-full bg-surface-900 border border-surface-700 text-surface-300">
             <kindOption.icon className="w-3 h-3" /> {kindOption.label}

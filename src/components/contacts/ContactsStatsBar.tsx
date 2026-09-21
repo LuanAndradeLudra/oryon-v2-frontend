@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Users, TrendingUp, Sparkles, ChevronDown,
+  Users, TrendingUp, Sparkles,
   AlertTriangle, Lightbulb, ArrowRight, RefreshCw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -202,9 +202,10 @@ function StageCard({
 // detalhes (fonte / estágio) e os Insights da IA (quando a flag está ligada).
 // A escolha do usuário é lembrada em localStorage.
 
-const COLLAPSE_KEY = 'crm-stats-collapsed'
 
 interface ContactsStatsBarProps {
+  /** R2-1C-FILT-02: o painel abre pelo botão "Resumo" da barra de filtros (uma linha só). */
+  open: boolean
   contacts: Contact[]
   total: number
   /** Totais reais por estágio (do useKanbanContacts) — usados na linha-resumo
@@ -212,28 +213,11 @@ interface ContactsStatsBarProps {
   stageCounts?: Record<string, number>
 }
 
-export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStatsBarProps) {
+export function ContactsStatsBar({ open, contacts, total, stageCounts }: ContactsStatsBarProps) {
+  const collapsed = !open
   const insightsEnabled = isFeatureVisible('crmAiInsights')
   const [insights, setInsights] = useState<DashboardInsight[]>([])
   const [loading, setLoading]   = useState(true)
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof localStorage === 'undefined') return true
-    const saved = localStorage.getItem(COLLAPSE_KEY)
-    return saved === null ? true : saved === '1'
-  })
-
-  useEffect(() => {
-    try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0') } catch { /* storage indisponível */ }
-  }, [collapsed])
-
-  // ── Números da linha-resumo ──────────────────────────────────────────────
-  const withTags  = contacts.filter((c) => (c.tags?.length ?? 0) > 0).length
-  const withOptIn = contacts.filter((c) => c.optIn).length
-
-  const byStageTop: Record<string, number> = stageCounts ?? {}
-  if (!stageCounts) contacts.forEach((c) => { const s = c.stage ?? 'lead'; byStageTop[s] = (byStageTop[s] ?? 0) + 1 })
-  const topStage = Object.entries(byStageTop).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])[0]
-  const topStageLabel = topStage ? topStage[0].charAt(0).toUpperCase() + topStage[0].slice(1) : '—'
 
   // ── Insights da IA (só busca quando expandido, pra não gastar tokens à toa) ─
   const byStage: Record<string, number> = {}
@@ -272,29 +256,7 @@ export function ContactsStatsBar({ contacts, total, stageCounts }: ContactsStats
   }, [collapsed, contacts.length > 0, insightsEnabled])
 
   return (
-    <div className="border-b border-surface-700">
-      {/* Linha-resumo (sempre visível) — clique alterna o detalhe */}
-      <button
-        onClick={() => setCollapsed((c) => !c)}
-        aria-expanded={!collapsed}
-        className="w-full flex items-center gap-2.5 px-4 py-2 text-left hover:bg-surface-900/40 transition-colors"
-      >
-        <div className="w-5 h-5 rounded-md bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0">
-          <TrendingUp className="w-3 h-3 text-brand-400" />
-        </div>
-        <p className="text-xs text-surface-400 truncate min-w-0">
-          <span className="font-semibold text-surface-100">{total.toLocaleString('pt-BR')}</span> contatos
-          <span className="text-surface-600"> · </span>{withOptIn} opt-in
-          <span className="text-surface-600"> · </span>{withTags} c/ etiquetas
-          <span className="text-surface-600"> · predominante </span>
-          <span className="font-semibold text-surface-100">{topStageLabel}{topStage ? ` (${topStage[1].toLocaleString('pt-BR')})` : ''}</span>
-        </p>
-        <span className="ml-auto flex items-center gap-1 text-2xs text-surface-500 flex-shrink-0">
-          {collapsed ? 'Ver resumo' : 'Ocultar'}
-          <ChevronDown className={cn('w-4 h-4 transition-transform', !collapsed && 'rotate-180')} />
-        </span>
-      </button>
-
+    <div className={cn(!collapsed && "border-b border-surface-700")}>
       {/* Detalhe (colapsável) */}
       <AnimatePresence initial={false}>
         {!collapsed && (

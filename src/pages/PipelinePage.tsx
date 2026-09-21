@@ -3,7 +3,7 @@
 // control) para caber os relatórios (D1/934) sem espremer o board.
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams, Navigate } from 'react-router-dom'
-import { ArrowLeft, AlertTriangle, LayoutGrid, BarChart3, ChevronDown, Check, Search, X, Settings2, Plus } from 'lucide-react'
+import { AlertTriangle, ChevronDown, Check, Search, X, Settings2, Plus } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { pipelinesApi } from '@/services/api'
 import { getDefaultPipeline, getActivePipelines, getPipelineStages, cn } from '@/lib/utils'
@@ -11,6 +11,9 @@ import { pipelineKindOf, pipelineKindOption, pipelineNoun } from '@/lib/pipeline
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { Button } from '@/components/ui/Button'
+import { BoardFilterBar } from '@/components/deals/BoardFilterBar'
+import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { FunnelsConfigDrawer } from '@/components/deals/FunnelsConfigDrawer'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { PipelineBoardTab } from '@/components/deals/PipelineBoardTab'
@@ -125,6 +128,112 @@ export function PipelinePage() {
     }, { replace: true })
   }
 
+  /**
+   * R2-1E-BAR-05 (mock 1e): a TopBar carrega "Funis / [seletor do funil]" e o
+   * "Novo negócio" primary à direita; o que sobra da página é UMA barra só
+   * (visão + busca + filtros + resumo + Etapas). Antes eram duas barras
+   * empilhadas — o cabeçalho da página (Voltar, seletor, busca, Novo, abas,
+   * engrenagem) e a barra de filtros.
+   *
+   * No mobile a TopBar não existe (há o MobilePageHeader), então seletor e
+   * "Novo negócio" descem para dentro da barra — nada some.
+   */
+  const pipelineAtual = pipelines.find((p) => p.id === id)
+  const pipelineValido = pipelineAtual && !pipelineAtual.isArchived ? pipelineAtual : null
+  const ativos = getActivePipelines(pipelines)
+  const noTopo = !isMobile
+  const etapaInicial = pipelineValido ? getPipelineStages(pipelines, pipelineValido.id)[0] ?? null : null
+  const processoAtual = pipelineValido ? pipelineKindOf(pipelineValido) === 'process' : false
+  const substantivo = pipelineValido ? pipelineNoun(pipelineValido) : 'negócio'
+  const KindIconAtual = pipelineValido ? pipelineKindOption(pipelineKindOf(pipelineValido)).icon : null
+  const rotuloTipo = pipelineValido ? pipelineKindOption(pipelineKindOf(pipelineValido)).label : ''
+
+  const seletor = pipelineValido ? (
+    ativos.length > 1 ? (
+      <Dropdown
+        open={seletorAberto}
+        onClose={() => setSeletorAberto(false)}
+        align="left"
+        className="w-60"
+        anchor={
+          <button
+            type="button"
+            onClick={() => setSeletorAberto((v) => !v)}
+            aria-haspopup="menu"
+            aria-expanded={seletorAberto}
+            aria-label={`Trocar de funil — atual: ${pipelineValido.name}`}
+            data-testid="pipeline-switcher"
+            className="inline-flex items-center gap-2 h-7 pl-2 pr-1.5 rounded-sm text-xs font-semibold bg-surface-800 border border-[var(--bd2)] text-surface-100 hover:border-surface-500 transition-colors"
+          >
+            <span className="w-2 h-2 rounded-[2px] flex-shrink-0" style={{ backgroundColor: pipelineValido.color }} />
+            <span className="truncate max-w-[10rem]">{pipelineValido.name}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
+          </button>
+        }
+      >
+        <div className="px-1 py-1 flex flex-col gap-0.5">
+          {ativos.map((p) => {
+            const atual = p.id === pipelineValido.id
+            return (
+              <DropdownItem
+                key={p.id}
+                onClick={() => {
+                  setSeletorAberto(false)
+                  if (!atual) navigate(`/pipelines/${p.id}${tab === 'reports' ? '?tab=reports' : ''}`)
+                }}
+              >
+                <span className="w-2 h-2 rounded-[2px] flex-shrink-0" style={{ backgroundColor: p.color }} />
+                <span className="flex-1 min-w-0 truncate">{p.name}</span>
+                {atual && <Check className="w-3.5 h-3.5 flex-shrink-0 text-surface-400" />}
+              </DropdownItem>
+            )
+          })}
+        </div>
+      </Dropdown>
+    ) : (
+      <span className="inline-flex items-center gap-2 h-7 px-2 text-xs font-semibold text-surface-100">
+        <span className="w-2 h-2 rounded-[2px] flex-shrink-0" style={{ backgroundColor: pipelineValido.color }} />
+        {pipelineValido.name}
+      </span>
+    )
+  ) : null
+
+  const seletorComTipo = seletor ? (
+    <span className="inline-flex items-center gap-2">
+      {seletor}
+      {/* O ícone sozinho não ensina qual é qual: a legenda diferencia venda de processo de relance. */}
+      <span
+        className="inline-flex items-center gap-1 flex-shrink-0 rounded-[5px] border border-surface-700 bg-surface-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-surface-400"
+        data-testid="pipeline-kind-badge"
+      >
+        {KindIconAtual && <KindIconAtual className="w-3 h-3" aria-hidden />}
+        {rotuloTipo}
+      </span>
+    </span>
+  ) : null
+
+  const novoNegocioBtn = tab === 'board' && pipelineValido && (etapaInicial || processoAtual) ? (
+    <Button
+      size="sm"
+      variant="primary"
+      leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}
+      data-testid="pipeline-new-deal"
+      onClick={() => {
+        if (processoAtual) setNovoContatoAberto(true)
+        else if (etapaInicial) setNovoNegocioEtapa(etapaInicial.id)
+      }}
+    >
+      {processoAtual ? 'Adicionar contato' : `Novo ${substantivo}`}
+    </Button>
+  ) : null
+
+  useRegisterTopBarSubtitle(noTopo ? seletorComTipo : null, [
+    noTopo, pipelineValido?.id, pipelineValido?.name, pipelineValido?.color, ativos.length, seletorAberto, tab,
+  ])
+  useRegisterTopBarActions(noTopo ? novoNegocioBtn : null, [
+    noTopo, tab, pipelineValido?.id, etapaInicial?.id, processoAtual, substantivo,
+  ])
+
   if (!id) return <Navigate to="/home" replace />
 
   if (loading) {
@@ -158,138 +267,34 @@ export function PipelinePage() {
     return <Navigate to="/home" replace />
   }
 
-  const kindOption = pipelineKindOption(pipelineKindOf(pipeline))
-  const isProcess = pipelineKindOf(pipeline) === 'process'
-  const noun = pipelineNoun(pipeline)
-  // Primeira etapa NÃO-terminal: criar direto num terminal é 400 no backend
-  // (fechar exige motivo), então é dela que o negócio parte — a mesma regra do
-  // estado vazio do quadro.
-  const etapaDePartida = getPipelineStages(pipelines, pipeline.id)[0] ?? null
-  const KindIcon = kindOption.icon
+  // Início da barra: [seletor no mobile] · visão (Quadro | Relatórios — as visões
+  // que existem; substitui o Kanban/Lista/Previsão do mock) · busca do quadro.
+  const toolbarLead = (
+    <>
+      {isMobile && seletorComTipo}
+      <div className="inline-flex items-center gap-0.5 h-7 p-0.5 rounded-sm border border-[var(--bd2)] bg-surface-800 flex-shrink-0" role="group" aria-label="Visão do funil">
+        {([['board', 'Quadro'], ['reports', 'Relatórios']] as const).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            aria-pressed={tab === key}
+            className={cn(
+              'h-6 px-2.5 rounded-[5px] text-xs font-semibold transition-colors',
+              tab === key ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:text-surface-100',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
-  const header = (
-    /* O cabeçalho e a faixa de contexto logo abaixo formam a barra do funil, e
-       ela usa o token `board-bar` — não um degrau da escala. No CLARO a barra
-       sobe: branca sobre o chão cinza, que é o que separa o que informa do que
-       é conteúdo. No ESCURO não há o que subir — o chão já é o mais escuro que
-       existe, e elevar faria a barra destoar da TopBar logo acima; lá o token é
-       o próprio chão e quem separa é a BORDA.
-
-       A borda é `surface-700` (e não a 800 do divisor padrão) porque no claro a
-       800 é #FFFFFF, a mesma cor da barra — a linha sumiria. */
-    <div className="flex items-center gap-2 px-4 py-2.5 bg-board-bar border-b border-surface-700 flex-shrink-0 flex-wrap">
-      {!isMobile && (
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-surface-400 hover:text-surface-100 transition-colors mr-1"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Voltar
-        </button>
-      )}
-      {/* A IDENTIDADE do funil (cor, nome, tipo) atravessa a mesma troca que o
-          conteúdo, então acompanha o mesmo gesto — só que em opacidade pura: um
-          deslocamento aqui empurraria os controles ao lado. Sem
-          `AnimatePresence`: a chave remonta o bloco e o novo entra em fade, sem
-          esperar o antigo sair, para o cabeçalho nunca ficar vazio. */}
-      <motion.div
-        key={pipeline.id}
-        className="flex items-center gap-2 min-w-0"
-        initial={semMovimento ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: semMovimento ? 0 : 0.22, ease: 'easeOut' }}
-      >
-        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />
-        <h1 className="text-sm font-semibold text-surface-100 truncate">{pipeline.name}</h1>
-        {/* O ícone sozinho não ensina qual é qual — alvo e ciclo só dizem algo a
-            quem já sabe. A legenda é o que diferencia venda de processo de
-            relance; a COR fica por conta do funil (ponto ao lado e gradiente do
-            fundo), para os dois eixos não brigarem pelo mesmo recurso. */}
-        <span
-          className="inline-flex items-center gap-1 flex-shrink-0 rounded-md border border-surface-700 bg-surface-900 px-1.5 py-0.5 text-3xs uppercase tracking-wide text-surface-400"
-          data-testid="pipeline-kind-badge"
-        >
-          <KindIcon className="w-3 h-3" aria-hidden />
-          {kindOption.label}
-        </span>
-      </motion.div>
-
-      {/* Trocar de funil rápido — só quando há mais de um.
-
-          Era um `<select>` nativo, e o problema não era só estético: a LISTA de
-          um select é desenhada pelo sistema operacional, fora do alcance dos
-          nossos tokens. No tema escuro abria um menu branco do Windows por cima
-          da tela inteira escura, e o funil — que em todo o resto do produto se
-          apresenta com o ponto colorido dele — virava texto pelado.
-
-          Passa a usar o `Dropdown` do design system, o mesmo do menu de etapas
-          e do "adicionar ao funil": cada funil com a cor dele, o atual marcado.
-          O gatilho fala a língua dos outros controles do cabeçalho (mesma
-          altura, mesma superfície, mesma borda) e mostra o funil corrente em
-          vez de um rótulo genérico. */}
-      {getActivePipelines(pipelines).length > 1 && (
-        <Dropdown
-          open={seletorAberto}
-          onClose={() => setSeletorAberto(false)}
-          align="left"
-          className="w-60"
-          anchor={
-            <button
-              type="button"
-              onClick={() => setSeletorAberto((v) => !v)}
-              aria-haspopup="menu"
-              aria-expanded={seletorAberto}
-              aria-label={`Trocar de funil — atual: ${pipeline.name}`}
-              data-testid="pipeline-switcher"
-              className="inline-flex items-center gap-2 h-7 pl-2 pr-1.5 rounded-lg text-xs font-medium bg-surface-900 border border-surface-700 text-surface-200 hover:border-surface-600 hover:text-surface-100 transition-colors"
-            >
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pipeline.color }} />
-              <span className="truncate max-w-[10rem]">{pipeline.name}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
-            </button>
-          }
-        >
-          <div className="px-1 py-1 flex flex-col gap-0.5">
-            {getActivePipelines(pipelines).map((p) => {
-              const atual = p.id === pipeline.id
-              return (
-                <DropdownItem
-                  key={p.id}
-                  onClick={() => {
-                    setSeletorAberto(false)
-                    if (!atual) navigate(`/pipelines/${p.id}${tab === 'reports' ? '?tab=reports' : ''}`)
-                  }}
-                >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-                  <span className="flex-1 min-w-0 truncate">{p.name}</span>
-                  {/* Só o ✓ marca o atual — sem `active`, que pintaria o item
-                      inteiro de teal. A cor no menu é do FUNIL (o ponto), e um
-                      segundo uso dela para dizer "selecionado" competiria com
-                      isso. */}
-                  {atual && <Check className="w-3.5 h-3.5 flex-shrink-0 text-surface-400" />}
-                </DropdownItem>
-              )
-            })}
-          </div>
-        </Dropdown>
-      )}
-
-      {/* Busca — a mesma da tela de Contatos (lupa à esquerda, limpar à
-          direita), reduzida à altura desta barra para conviver com o seletor e
-          as abas. Superfície `surface-900` e não `surface-800` como lá: aqui a
-          barra JÁ é branca no tema claro, e a 800 é branca também — o campo
-          desapareceria dentro dela.
-
-          Só no QUADRO: a aba de relatórios agrega por etapa e período, e um
-          campo que some ao trocar de aba é mais honesto do que um que fica
-          visível sem fazer nada.
-
-          O texto do placeholder é mais curto que o de Contatos de propósito —
-          lá a busca também casa etiqueta; aqui o backend casa nome, telefone,
-          e-mail e empresa do CONTATO do negócio (deals.service.ts), e prometer
-          etiqueta seria mentira. O `title` diz os quatro campos por extenso. */}
+      {/* Busca — casa nome, telefone, e-mail e empresa do CONTATO do negócio
+          (deals.service.ts); só no QUADRO: a aba de relatórios agrega por
+          etapa e período, e um campo que some ao trocar de aba é mais honesto
+          do que um que fica visível sem fazer nada. */}
       {tab === 'board' && (
-        <div className="relative w-56 md:w-72 lg:w-96 flex-shrink-0">
+        <div className="relative w-56 flex-shrink-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
           <input
             type="search"
@@ -299,7 +304,7 @@ export function PipelinePage() {
             title="Busca pelo contato do negócio — nome, telefone, e-mail ou empresa"
             aria-label="Buscar negócio pelo contato"
             data-testid="board-search"
-            className="w-full h-7 pl-8 pr-7 rounded-lg text-xs bg-surface-900 border border-surface-700 text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all [&::-webkit-search-cancel-button]:appearance-none"
+            className="w-full h-7 pl-8 pr-7 rounded-sm text-xs bg-surface-800 border border-[var(--bd2)] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-all [&::-webkit-search-cancel-button]:appearance-none"
           />
           {busca && (
             <button
@@ -313,81 +318,27 @@ export function PipelinePage() {
           )}
         </div>
       )}
+    </>
+  )
 
-      <div className="flex-1" />
-
-      {/* "Novo negócio" — o MESMO gesto que o estado vazio já oferecia, agora
-          permanente. Ele desaparecia assim que o funil ganhava o primeiro card,
-          e a partir daí criar outro exigia sair da tela (CRM ou chat) e voltar.
-
-          Em funil de PROCESSO o verbo é outro, como no estado vazio: não se cria
-          negócio ali, adiciona-se um contato ao funil. Mesma decisão, mesma
-          origem (`isProcess`), para as duas superfícies não divergirem.
-
-          Só na aba do quadro: os diálogos moram nela, e um botão que não pode
-          abrir nada é pior que botão nenhum. */}
-      {tab === 'board' && (etapaDePartida || isProcess) && (
-        <button
-          type="button"
-          onClick={() => {
-            if (isProcess) setNovoContatoAberto(true)
-            else if (etapaDePartida) setNovoNegocioEtapa(etapaDePartida.id)
-          }}
-          data-testid="pipeline-new-deal"
-          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium bg-surface-100 text-surface-950 hover:bg-surface-50 transition-colors flex-shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          {isProcess ? 'Adicionar contato' : `Novo ${noun}`}
-        </button>
-      )}
-
-      <div className="flex items-center gap-1 bg-surface-900 border border-surface-700 rounded-lg p-1">
-        <button
-          type="button"
-          onClick={() => setTab('board')}
-          className={cn(
-            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
-            tab === 'board' ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:text-surface-200',
-          )}
-        >
-          <LayoutGrid className="w-3.5 h-3.5" /> Quadro
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('reports')}
-          className={cn(
-            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
-            tab === 'reports' ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:text-surface-200',
-          )}
-        >
-          <BarChart3 className="w-3.5 h-3.5" /> Relatórios
-        </button>
-      </div>
-
-      {/* Configuração do funil em PAINEL, não em outra tela.
-
-          A necessidade nasce olhando o quadro ("falta uma etapa entre Proposta
-          e Fechamento"), e sair daqui custa o contexto todo: aba, busca,
-          rolagem, o card que se estava lendo. O painel resolve ao lado e
-          devolve o quadro intacto.
-
-          `?config=funis` na URL, e não em `useState`: o painel sobrevive ao F5
-          e ao voltar do navegador, e o link pode ser passado para um colega
-          já aberto. `?pipeline=` acompanha para o painel abrir NESTE funil —
-          é o mesmo parâmetro que a tela de Configurações lê. */}
+  // Fim da barra: [Novo negócio no mobile] · Etapas (configuração em PAINEL — a
+  // necessidade nasce olhando o quadro; `?config=funis` na URL sobrevive ao F5
+  // e ao voltar do navegador).
+  const toolbarTrail = (
+    <>
+      {isMobile && novoNegocioBtn}
       <button
         type="button"
         onClick={() => abrirConfig(true)}
         title={`Configurar etapas, motivos e acesso de "${pipeline.name}"`}
         aria-label={`Configurar o funil ${pipeline.name}`}
         data-testid="pipeline-settings-link"
-        className="inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-sm text-xs font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-900 transition-colors"
+        className="inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
       >
         <Settings2 className="w-3.5 h-3.5" />
-        {/* R2-1E-BAR: o mock rotula o gesto ("Etapas"), não só o ícone. */}
         <span className="hidden md:inline">Etapas</span>
       </button>
-    </div>
+    </>
   )
 
   return (
@@ -401,7 +352,7 @@ export function PipelinePage() {
        `overflow-x-auto` das colunas. */
     <div className="flex-1 min-w-0 flex flex-col h-full bg-surface-950">
       {isMobile && <MobilePageHeader title={pipeline.name} />}
-      {header}
+      <h1 className="sr-only">{pipeline.name}</h1>
       {/* Trocar de funil é uma TROCA DE ASSUNTO, não um recarregamento: sai um
           quadro inteiro e entra outro, com outras etapas, outras cores e outros
           números. Sem transição os dois estados se sobrepunham num quadro só, e
@@ -445,9 +396,14 @@ export function PipelinePage() {
                 onNovoNegocioEtapa={setNovoNegocioEtapa}
                 novoContatoAberto={novoContatoAberto}
                 onNovoContato={setNovoContatoAberto}
+                toolbarLead={toolbarLead}
+                toolbarTrail={toolbarTrail}
               />
             ) : (
-              <PipelineReportsTab pipeline={pipeline} />
+              <>
+                <BoardFilterBar lead={toolbarLead} trail={toolbarTrail} />
+                <PipelineReportsTab pipeline={pipeline} />
+              </>
             )}
           </motion.div>
         </AnimatePresence>
