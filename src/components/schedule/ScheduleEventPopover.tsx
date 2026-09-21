@@ -5,7 +5,8 @@ import { MoreHorizontal } from 'lucide-react'
 import { useLayer } from '@/contexts/LayerContext'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
-import { formatDayLong, formatHourLabel, STATUS_CHIP_VAR, STATUS_LABEL, type ScheduleEvent } from './scheduleMock'
+import { formatDayLong, formatHourLabel, type ScheduleEvent } from './scheduleMock'
+import { ScheduleOriginChip, ScheduleStatusChip } from './ScheduleChips'
 
 interface ScheduleEventPopoverProps {
   event: ScheduleEvent
@@ -87,7 +88,7 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
           <div className="min-w-0 flex-1">
             <div className="text-sm font-bold text-surface-50 leading-snug truncate">{event.title}</div>
             <div className="text-2xs text-surface-400 mt-0.5">
-              {formatDayLong(date)} · {formatHourLabel(event.startMinutes)}–{formatHourLabel(event.endMinutes)}
+              {formatDayLong(date)} · {formatHourLabel(event.startMinutes)} – {formatHourLabel(event.endMinutes)}
               {event.detail.channel ? ` · ${event.detail.channel}` : ''}
             </div>
           </div>
@@ -122,14 +123,9 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
                     exemplo de cor no material de referência, então ficam no
                     chip neutro em vez de uma paleta inventada. */}
                 {event.detail.origin === 'Agente Vendas' ? (
-                  <span
-                    className="color-chip inline-flex items-center rounded-xs border px-1.5 py-px text-[11px] font-medium"
-                    style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
-                  >
-                    {event.detail.origin}
-                  </span>
+                  <ScheduleOriginChip className="text-[11px]">{event.detail.origin}</ScheduleOriginChip>
                 ) : (
-                  <span className="inline-flex items-center rounded-xs border border-surface-700 bg-surface-800 px-1.5 py-px text-[11px] font-medium text-surface-300">
+                  <span className="inline-flex items-center rounded-xs border border-surface-700 bg-[var(--sf2)] px-1.5 py-px text-[11px] font-medium text-surface-300">
                     {event.detail.origin}
                   </span>
                 )}
@@ -138,12 +134,7 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
           )}
           <span className="text-surface-500">Status</span>
           <span>
-            <span
-              className="color-chip inline-flex items-center rounded-xs border px-1.5 py-px text-[11px] font-semibold"
-              style={{ ['--chip']: STATUS_CHIP_VAR[event.status] } as React.CSSProperties}
-            >
-              {STATUS_LABEL[event.status]}
-            </span>
+            <ScheduleStatusChip status={event.status} className="text-[11px]" />
           </span>
         </div>
 
