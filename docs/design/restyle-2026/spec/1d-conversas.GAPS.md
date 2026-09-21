@@ -145,3 +145,5 @@ depender de estado ao vivo, não por terem sido pulados.
 - **R2-1D-FILT-03** Funil (QuickFiltersMenu 28px) agora guarda Status, Período (com calendário inline), IA pausada, Equipe, Sem etiqueta, Verificação; pílulas removíveis abaixo dos chips. Abas de status e faixa de período saíram da lista. ❓ ao vivo.
 - **R2-1D-FILT-04** [!] só contagens por segmento/chip (API só tem statusCounts).
 - Busca da lista mantida (28px), pois o mock a põe no TopBar (slot do Maestro).
+- **R2-1D-LIST-01** Linha 3 da lista: chip de ator UNICO mutuamente exclusivo (Resolvida neutro / IA ambar / humano verde, "Voce" quando e o usuario logado) + pontos de etiqueta; sinais de estado a direita so em texto colorido ("N min sem resposta", "Verificacao pendente"). Nome 13/600, prefixo "Voce:" no preview de mensagem de operador. ❓ ao vivo.
+- **R2-1D-LIST-02** [!] confirmado por grep: check duplo (status de entrega) e nome do agente no chip IA — o DTO da lista nao traz status da ultima mensagem nem nome do agente. "Janela fecha em N h" fica ❓ (derivavel de lastMessageAt, mas o limiar de exibicao nao esta na spec).
