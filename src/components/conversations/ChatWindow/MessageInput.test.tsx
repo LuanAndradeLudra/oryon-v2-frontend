@@ -22,7 +22,6 @@ function Harness() {
       <MessageInput
         onSend={vi.fn(async () => {})}
         contactId="c1"
-        sending={false}
         windowOpen
       />
       <ToastContainer toasts={toasts} onDismiss={dismiss} />

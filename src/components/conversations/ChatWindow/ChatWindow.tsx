@@ -56,7 +56,7 @@ export function ChatWindow({
   onSendError, sendBlockedReason,
   onBack,
 }: ChatWindowProps) {
-  const { messages, loading, sending, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, markAnomaliesReviewed } =
+  const { messages, loading, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, markAnomaliesReviewed } =
     useMessages(conversation?.id ?? null)
 
   // Outbound quoted reply: which message the operator is replying to. Cleared
@@ -200,7 +200,6 @@ export function ChatWindow({
       <MessageInput
         onSend={handleSendWithErrorReporting}
         contactId={conversation.contact.id}
-        sending={sending}
         windowOpen={windowOpen}
         blockedReason={sendBlockedReason}
         replyTo={replyTo}

@@ -1002,8 +1002,16 @@ export const messagesApi = {
       if (dto.mediaCaption) formData.append('mediaCaption', dto.mediaCaption)
       if (dto.replyToWamid) formData.append('replyToWamid', dto.replyToWamid)
 
+      // `Content-Type: multipart/form-data` fixo (sem `boundary=...`) quebrava
+      // TODO envio de arquivo: sem o boundary o backend nunca consegue nem
+      // começar a interpretar o corpo multipart (busboy/multer explode antes
+      // do controller rodar — 500 em produção/homologação/local, sempre).
+      // `undefined` remove o default `application/json` da instância `api` e
+      // deixa o axios computar o Content-Type certo (com boundary) sozinho a
+      // partir do FormData, que é o único jeito confiável de acertar o
+      // boundary — ele muda a cada requisição.
       return api.post<Message>(`/conversations/${conversationId}/messages`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       })
     }
 
@@ -1292,6 +1300,16 @@ export const practitionersApi = {
   },
   remove(id: string) {
     return api.delete(`/practitioners/${id}`)
+  },
+}
+
+/** Catálogo de profissionais por agente — espelha agentCatalogApi (produtos). */
+export const agentPractitionerCatalogApi = {
+  get(agentId: string) {
+    return api.get<Practitioner[]>(`/agent-practitioner-catalog/${agentId}`)
+  },
+  set(agentId: string, practitionerIds: string[]) {
+    return api.put<Practitioner[]>(`/agent-practitioner-catalog/${agentId}`, { practitionerIds })
   },
 }
 

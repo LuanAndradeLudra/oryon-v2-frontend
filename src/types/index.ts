@@ -64,7 +64,10 @@ export type MessageType =
   | 'template'
   | 'unsupported'
 
-export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed'
+/** `sending` nunca vem do backend — é o eco otimista local enquanto a
+ *  requisição está em voo (ver `useMessages.sendMessage`), substituído pela
+ *  mensagem real do servidor (ou por `failed`) assim que ela resolve. */
+export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed' | 'sending'
 
 export type UserRole = 'super_admin' | 'business_admin' | 'admin' | 'agent' | 'supervisor'
 
@@ -205,6 +208,7 @@ export interface Practitioner {
   category?: string | null // especialidade
   active: boolean
   order: number
+  notes?: string | null // observações — escala de atendimento, particularidades
   createdAt?: string
   updatedAt?: string
 }

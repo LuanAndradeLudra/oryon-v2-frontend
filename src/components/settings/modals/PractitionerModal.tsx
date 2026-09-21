@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
 import { Button } from '@/components/ui/Button'
 import type { Practitioner } from '@/types'
@@ -16,11 +17,13 @@ interface PractitionerModalProps {
 /** Limites de caracteres (espelham os @MaxLength do backend). */
 const MAX_NAME = 100
 const MAX_CATEGORY = 100
+const MAX_NOTES = 1000
 
 export function PractitionerModal({ open, onClose, onSave, editPractitioner }: PractitionerModalProps) {
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [active, setActive] = useState(true)
+  const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -29,6 +32,7 @@ export function PractitionerModal({ open, onClose, onSave, editPractitioner }: P
       setName(editPractitioner?.name ?? '')
       setCategory(editPractitioner?.category ?? '')
       setActive(editPractitioner?.active ?? true)
+      setNotes(editPractitioner?.notes ?? '')
       setError('')
     }
   }, [open, editPractitioner])
@@ -38,7 +42,9 @@ export function PractitionerModal({ open, onClose, onSave, editPractitioner }: P
     name.length > MAX_NAME ? `O nome deve ter no máximo ${MAX_NAME} caracteres.` : ''
   const categoryError =
     category.length > MAX_CATEGORY ? `A especialidade deve ter no máximo ${MAX_CATEGORY} caracteres.` : ''
-  const hasLimitError = !!(nameError || categoryError)
+  const notesError =
+    notes.length > MAX_NOTES ? `As observações devem ter no máximo ${MAX_NOTES} caracteres.` : ''
+  const hasLimitError = !!(nameError || categoryError || notesError)
 
   const handleSave = async () => {
     if (name.trim().length < 2) {
@@ -56,6 +62,12 @@ export function PractitionerModal({ open, onClose, onSave, editPractitioner }: P
         name: name.trim(),
         category: category.trim(),
         active,
+        // Manda mesmo vazia (não `undefined`): é como se limpa uma observação
+        // existente. `JSON.stringify` descarta chave `undefined` do corpo, e
+        // o backend só atualiza o campo quando a chave está presente
+        // (`dto.notes !== undefined`) — undefined aqui deixaria uma
+        // observação antiga "presa" ao tentar apagá-la.
+        notes: notes.trim(),
       })
       onClose()
     } catch (e: unknown) {
@@ -109,6 +121,21 @@ export function PractitionerModal({ open, onClose, onSave, editPractitioner }: P
               setError('')
             }}
             placeholder="Ex: Cardiologia"
+          />
+        </FormField>
+
+        <FormField
+          label="Observações"
+          requirement="optional"
+          filled={!!notes.trim()}
+          error={notesError}
+          hint={notes.length > 0 ? `${notes.length}/${MAX_NOTES}` : undefined}
+        >
+          <Textarea
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Escala de atendimento, particularidades..."
           />
         </FormField>
 

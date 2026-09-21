@@ -714,7 +714,10 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
   // scrolling is never hijacked. No preventDefault → native scroll preserved.
   const [dragX, setDragX] = useState(0)
   const touchStart = useRef<{ x: number; y: number } | null>(null)
-  const canReply = !!onReply && message.status !== 'failed'
+  // `sending` é o eco otimista local (useMessages.sendMessage) — ainda não
+  // tem wamid real pra uma resposta citar, então não oferece o atalho até
+  // ela virar a mensagem definitiva.
+  const canReply = !!onReply && message.status !== 'failed' && message.status !== 'sending'
 
   // Mensagens recebidas ficam coladas à borda esquerda — exatamente onde o
   // gesto nativo de "voltar" do iOS/Android intercepta o toque. Um gesto que

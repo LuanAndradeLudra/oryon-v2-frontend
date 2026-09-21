@@ -53,15 +53,16 @@ const WA_TEXT_LIMIT = 4096
 interface MessageInputProps {
   /**
    * Returns a promise that rejects on send failure (e.g. backend rejected
-   * with 403 because the user has no department configured). The input
-   * preserves the typed text on rejection so the operator can retry or
-   * copy it elsewhere.
+   * with 403 because the user has no department configured). On rejection
+   * the text-only path leaves the typed text gone from the input — the
+   * optimistic bubble it already rendered (see `useMessages.sendMessage`)
+   * flips to `failed` instead, so the attempt stays visible in the thread
+   * rather than dumped back into the composer.
    */
   onSend: (dto: SendMessageDto) => Promise<unknown> | void
   /** Used only by the "Escolher template" flow (24h window closed) to call
    *  contactsApi.sendTemplate — a real WhatsApp template, not a text message. */
   contactId: string
-  sending: boolean
   windowOpen: boolean
   disabled?: boolean
   /**
@@ -148,7 +149,7 @@ function QuickReplyPicker({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MessageInput({ onSend, contactId, sending, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
+export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
   const { toast } = useToast()
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
@@ -183,19 +184,6 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
     window.addEventListener('cap:keyboardShow', handleKeyboardShow)
     return () => window.removeEventListener('cap:keyboardShow', handleKeyboardShow)
   }, [])
-
-  // A textarea fica `disabled` enquanto `sending` está em voo (linha do
-  // <textarea> abaixo) — e um elemento desabilitado não pode reter foco, o
-  // navegador o solta sozinho. Sem isto o campo reabilitava mas ficava sem
-  // foco, e o operador precisava clicar de novo pra digitar a próxima
-  // mensagem (padrão WhatsApp é o foco nunca sair). O efeito roda DEPOIS do
-  // commit com `disabled=false`, que é o que falha ao tentar focar logo após
-  // o `await` em `handleSend` — o DOM ainda não re-renderizou.
-  const wasSendingRef = useRef(false)
-  useEffect(() => {
-    if (wasSendingRef.current && !sending) textareaRef.current?.focus()
-    wasSendingRef.current = sending
-  }, [sending])
 
   const buildInputContextMenu = useCallback((): ContextMenuEntry[] => {
     const el = textareaRef.current
@@ -330,10 +318,13 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
 
   const handleSend = async () => {
     const trimmed = text.trim()
-    // Envia com texto E/OU anexos. Só bloqueia quando não há nada dos dois.
-    if ((!trimmed && attachments.length === 0) || sending || disabled) return
+    // Envia com texto E/OU anexos. Só bloqueia quando não há nada dos dois —
+    // NÃO espera o envio anterior terminar: várias mensagens podem estar em
+    // voo ao mesmo tempo (eco otimista trata cada uma como sua própria bolha,
+    // ver useMessages.sendMessage), então o campo não trava entre elas.
+    if ((!trimmed && attachments.length === 0) || disabled) return
 
-    // Snapshot para restaurar em caso de falha total.
+    // Snapshot para restaurar em caso de falha total do caminho com anexos.
     const previousText = text
     const staged = attachments
 
@@ -347,9 +338,10 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
         await onSend({ body: trimmed, replyToWamid: replyTo?.wamid ?? undefined })
         onCancelReply?.()
       } catch {
-        // Falha (ex.: 403 sem setor) — restaura o texto para retry/cópia; o
-        // toast é exibido pelo handler no nível da página.
-        setText(previousText)
+        // Falha (ex.: 403 sem setor) — a bolha otimista já virou `failed` no
+        // hook (useMessages.sendMessage); o texto NÃO volta pro campo, fica
+        // visível na própria bolha da conversa. O toast é exibido pelo
+        // handler no nível da página.
       }
       return
     }
@@ -976,7 +968,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             aria-label="Mensagem"
             rows={1}
             maxLength={WA_TEXT_LIMIT}
-            disabled={disabled || sending}
+            disabled={disabled}
             className={cn(
               'flex-1 bg-transparent text-sm text-surface-100 placeholder:text-surface-500',
               'resize-none outline-none leading-relaxed',
@@ -1009,7 +1001,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
           {(text.trim() || attachments.length > 0) && (
             <button
               onClick={handleSend}
-              disabled={sending || disabled}
+              disabled={disabled}
               aria-label="Enviar mensagem"
               className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 shadow-sm flex items-center justify-center flex-shrink-0 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >

@@ -141,8 +141,12 @@ export function WhatsAppBusinessProfile() {
     formData.append('file', file)
     setUploadingPhoto(true)
     try {
+      // Mesmo bug do upload de mídia do chat (api.ts messagesApi.send): sem
+      // boundary o backend nunca interpreta o corpo multipart. `undefined`
+      // remove o `application/json` default da instância e deixa o axios
+      // calcular o Content-Type certo sozinho a partir do FormData.
       await api.post(`/meta/numbers/${selectedId}/business-profile/photo`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       })
       toast('Foto de perfil atualizada.', 'success')
       await loadProfile(selectedId)

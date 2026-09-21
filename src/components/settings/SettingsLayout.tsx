@@ -130,7 +130,7 @@ export const SETTINGS_NAV: NavDomain[] = [
         label: 'CRM',
         items: [
           { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
-          { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true, hidden: true },
+          { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true },
           // F13-903: a situação do contato ganha seção própria — o wizard apontava
           // para uma tela que não existia. Vale para todo tenant (não é do funil).
           { section: 'stages',            label: 'Situação do contato',   adminOnly: true },
