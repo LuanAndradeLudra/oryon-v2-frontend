@@ -100,7 +100,7 @@ export function NewChatModal({ currentUserId, onClose }: NewChatModalProps) {
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-800 transition-all text-left group"
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-sm font-semibold text-surface-200">
+                    <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center text-sm font-semibold text-surface-200">
                       {u.firstName.charAt(0)}
                     </div>
                     <PresenceDot status={presenceStatus} className="absolute -bottom-0.5 -right-0.5" />

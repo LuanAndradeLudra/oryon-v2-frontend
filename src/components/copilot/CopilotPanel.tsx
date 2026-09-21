@@ -504,7 +504,7 @@ function ChatWindow() {
             <button
               type="button"
               onClick={abort}
-              className="w-9 h-9 rounded-full bg-surface-700 hover:bg-surface-600 text-surface-300 transition-colors flex items-center justify-center flex-shrink-0"
+              className="w-9 h-9 rounded-full bg-[var(--sf2)] hover:bg-surface-600 text-surface-300 transition-colors flex items-center justify-center flex-shrink-0"
               title="Interromper"
               aria-label="Interromper resposta"
             >

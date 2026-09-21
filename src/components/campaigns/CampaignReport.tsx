@@ -184,7 +184,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
                     'text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0',
                     ins.priority === 'high' ? 'bg-danger/20 text-danger' :
                     ins.priority === 'medium' ? 'bg-status-pending-bg text-status-pending' :
-                    'bg-surface-700 text-surface-400',
+                    'bg-[var(--sf2)] text-surface-400',
                   )}>
                     {ins.priority === 'high' ? 'ALTA' : ins.priority === 'medium' ? 'MÉD' : 'BAIXA'}
                   </span>
@@ -704,7 +704,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                             className={cn(
                               'px-2 py-0.5 rounded-full text-3xs font-medium border transition-all',
                               sentimentFilter === s
-                                ? 'bg-surface-700 border-surface-500 text-surface-200'
+                                ? 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-200'
                                 : 'border-surface-700 text-surface-500 hover:text-surface-300',
                             )}
                           >

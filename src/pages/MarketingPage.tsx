@@ -495,7 +495,7 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
               activeTab === t.id
-                ? 'bg-surface-700 text-surface-100'
+                ? 'bg-[var(--sf2)] text-surface-100'
                 : 'text-surface-500 hover:text-surface-300',
             )}
           >
@@ -1157,7 +1157,7 @@ function MarketingPageDesktop() {
                         onClick={() => setChartMetric(m)}
                         className={cn(
                           'px-3 py-1 rounded-md text-xs font-medium transition-colors',
-                          chartMetric === m ? 'bg-surface-700 text-surface-100' : 'text-surface-500 hover:text-surface-300',
+                          chartMetric === m ? 'bg-[var(--sf2)] text-surface-100' : 'text-surface-500 hover:text-surface-300',
                         )}
                       >
                         {m === 'leads' ? 'Leads' : 'Investimento'}

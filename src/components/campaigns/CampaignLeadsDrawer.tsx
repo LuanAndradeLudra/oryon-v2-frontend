@@ -86,7 +86,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
                 className={cn(
                   'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
                   outcomeFilter === 'all'
-                    ? 'bg-surface-700 border-surface-500 text-surface-100'
+                    ? 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-100'
                     : 'border-surface-700 text-surface-400 hover:text-surface-200',
                 )}
               >

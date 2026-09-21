@@ -178,7 +178,7 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
               const item = items.find((i) => i.id === id)
               return item && DESTRUCTIVE_TOOLS.has(item.name)
             }))
-              ? 'border border-surface-600/60 bg-surface-700 text-surface-200 hover:bg-surface-600'
+              ? 'border border-surface-600/60 bg-[var(--sf2)] text-surface-200 hover:bg-surface-600'
               : 'bg-brand-600 text-surface-950 hover:bg-brand-500',
           )}
         >

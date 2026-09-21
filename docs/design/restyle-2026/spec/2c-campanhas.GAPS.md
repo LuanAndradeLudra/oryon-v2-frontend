@@ -213,3 +213,8 @@ PNG claro+escuro (`2c-disparos-wizard-revisao`, `2c-templates-preview-whatsapp`)
 | — | Subtítulo TopBar "limite diário 1.000 · 412 usados" | — | `[!]` parcial: limite existe por linha (`messagingLimit`), "usados hoje" não |
 
 Templates (grade): card já conferido na Rodada 1 (nome mono + chip Meta + meta em linha + prévia em fundo #EFE7DD); sem divergência nova visível no PNG. Tudo `❓ ao vivo`.
+
+### Rodada 2 — comparação numérica com o canvas (2c)
+
+Conferido no HTML exato: abas `padding 12/16/0`; modal 760px; resumo (grid 120px|1fr|auto, padding 9/0, Nome/Público 600 e demais 500, template mono 11.5, banner âmbar raio 6 padding 9/10 12px lh1.45), prévia (frame 230/12-10/gap6/raio 10; bolha 6/8/4 raio 8/8/8/2 12px lh1.4; botões padding 8), footer 14/20/16 gap 8 botões h36, grade de templates gap 10 / cabeçalho 10/12 gap4 / bolha 6/8 raio 6/6/6/2 11px lh1.4.
+Corrigidos: **R2-CAMP-05** abas `px-4 pt-3`; modal `max-w-[760px]`; pesos do resumo (Nome 600) e template mono 11.5; banner raio 6; grade de templates `gap-2.5`. O resto já batia. Tabela (cabeçalho h32, linhas h36, colunas `1.6fr 120 1fr 90×4 120 36`) é `ui/DataTable` (orq) — só o conteúdo das células é meu e confere.

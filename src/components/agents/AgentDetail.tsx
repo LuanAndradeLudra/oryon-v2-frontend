@@ -1330,7 +1330,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
                     onClick={() => handleEdit(doc.id)}
                     disabled={isLoadingThis}
                     title="Visualizar / Editar conteúdo"
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] bg-surface-700 text-surface-200 hover:bg-surface-600 transition-colors disabled:opacity-50 flex-shrink-0"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] bg-[var(--sf2)] text-surface-200 hover:bg-surface-600 transition-colors disabled:opacity-50 flex-shrink-0"
                   >
                     {isLoadingThis ? (
                       <Loader2 className="w-3 h-3 animate-spin" />

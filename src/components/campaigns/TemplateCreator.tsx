@@ -908,7 +908,7 @@ function StepMensagem({
                     value={varExamples[i] ?? ''}
                     onChange={(e) => onVarExamples(varExamples.map((x, idx) => idx === i ? e.target.value : x))}
                     placeholder={`Valor de exemplo para a variável ${pos}`}
-                    className="flex-1 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
+                    className="flex-1 bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
                   />
                 </div>
               ))}
@@ -1140,11 +1140,11 @@ function StepRevisao({
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-surface-400">Categoria</span>
-          <span className="text-xs text-surface-300 bg-surface-700 px-2 py-0.5 rounded">{CATEGORY_LABELS[category]}</span>
+          <span className="text-xs text-surface-300 bg-[var(--sf2)] px-2 py-0.5 rounded">{CATEGORY_LABELS[category]}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-surface-400">Subcategoria</span>
-          <span className="text-xs text-surface-300 bg-surface-700 px-2 py-0.5 rounded">{SUBCATEGORY_LABELS[subCategory]}</span>
+          <span className="text-xs text-surface-300 bg-[var(--sf2)] px-2 py-0.5 rounded">{SUBCATEGORY_LABELS[subCategory]}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-surface-400">Idioma</span>
@@ -1256,7 +1256,7 @@ function InputRow({ value, onChange, placeholder, label, maxLength }: {
           value={value}
           onChange={(e) => onChange(maxLength ? e.target.value.slice(0, maxLength) : e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
+          className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
         />
         {maxLength && (
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-surface-400">

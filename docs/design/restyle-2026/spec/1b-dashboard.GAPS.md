@@ -115,3 +115,17 @@ Tudo `❓ ao vivo` (sem navegador).
 
 Home: containers `card-glow bg-surface-900 rounded-2xl` → vocabulário do `Card` (`--sf/--bd/8`, sem glow); "Seu desempenho hoje" é agora `<Card>`; KPIs da Home em faixa única sem tile; chip de papel soft; ações rápidas raio 7 + `--rowhover`.
 Censo em TeamChat, Copilot, Marketing, Automações (lista/detalhe): sombras fora de overlay, `backdrop-blur`, gradientes decorativos (tiles violeta, título, divisórias, barras), raios ≥ 11 (controles 7 / caixas 8 / modais 10) e chips sólidos de status → soft. Overlays (modais de aprovação, popover do Copilot, tooltip do Marketing) mantêm a sombra. `WhatsappLineRow.tsx` não tocado (orquestrador). `❓ ao vivo`.
+
+### Rodada 2 — comparação numérica com o HTML exato do canvas (Farol)
+
+Ferramenta: `tools-extract-canvas.py` + outline por elemento (padding/altura/gap/raio/fonte). Divergências corrigidas:
+
+| ID | Canvas 1b | App antes | Ação |
+|---|---|---|---|
+| R2-DASH-09 | Conversas por hora: card sem padding; header h40 px14 gap16; legenda gap14/11.5; segmentado raio 6, células h24 px9 11.5/600 (ativa --sf2/--tx, demais --tx2 + border-left); corpo h170 pad 14/14/8 | card `p-3.5` + header com `mb`, `SegmentedControl` do sistema (raio 12, p-1) | **✅ código** `VolumeChart` reescrito |
+| R2-DASH-10 | Funil: grid `1.4fr 80px 120px 1.6fr 90px`, cab. h30 --sf2 11/600, linhas h36 13px, números à direita, barra h6 r3 com hex cru a .85, "—" --tx2 e % em --tx | `<table>` auto, % em --tx2, barra com tinta | **✅ código** grid exato |
+| R2-DASH-11 | Fila: chip de ator h16 px5 r5 10/700 (IA âmbar; atendente = 1º nome em verde), tempo 11/600, rodapé 12/600 --tx2, contagem 12px | chip 9.5px/r4 só IA/auto | **✅ código** (chip humano usa `assignedUser.firstName`, dado real) |
+| R2-DASH-12 | Equipe: linhas 12.5px, Abertas em --tx | 12px/--tx | **✅ código**; dot de presença 7px/borda 1.5 no avatar 20px = primitivo `Avatar` (orq) |
+| R2-DASH-13 | Página `padding:16px`, gap 14, sem container máx.; célula de KPI sem margens entre blocos, apoio 600 | `px-6 py-6 max-w-[1440px] space-y-5`, `mt-0.5` | **✅ código** |
+
+Tema claro (surface-700 mais escuro): preenchimentos `bg-surface-700` (inputs, chips, pílulas, avatares, segmentados ativos) nas minhas telas → `--sf2`/`--sf` (63 ocorrências); `bg-surface-700` só ficou onde é hairline/segmento inativo (= `--bd`).

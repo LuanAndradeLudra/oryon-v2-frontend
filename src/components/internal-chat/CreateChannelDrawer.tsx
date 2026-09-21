@@ -191,7 +191,7 @@ function Steps({ current, total }: { current: number; total: number }) {
             'h-1 rounded-full transition-all duration-300',
             i < current ? 'bg-blue-500 flex-1' :
             i === current ? 'bg-blue-500 flex-[2]' :
-            'bg-surface-700 flex-1',
+            'bg-[var(--sf2)] flex-1',
           )}
         />
       ))}
@@ -419,7 +419,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                 >
                   <div className={cn(
                     'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
-                    channelType === 'group' ? 'bg-blue-500/20' : 'bg-surface-700',
+                    channelType === 'group' ? 'bg-blue-500/20' : 'bg-[var(--sf2)]',
                   )}>
                     <Hash className={cn('w-5 h-5', channelType === 'group' ? 'text-blue-400' : 'text-surface-400')} />
                   </div>
@@ -450,7 +450,7 @@ export function CreateChannelDrawer({ onClose, onCreated }: CreateChannelDrawerP
                 >
                   <div className={cn(
                     'w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
-                    channelType === 'department_room' ? 'bg-blue-500/20' : 'bg-surface-700',
+                    channelType === 'department_room' ? 'bg-blue-500/20' : 'bg-[var(--sf2)]',
                   )}>
                     <Building2 className={cn('w-5 h-5', channelType === 'department_room' ? 'text-blue-400' : 'text-surface-400')} />
                   </div>

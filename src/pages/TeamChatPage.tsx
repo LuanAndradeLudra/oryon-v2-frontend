@@ -101,7 +101,7 @@ function ChannelRow({ channel, currentUserId, isActive, onClick }: {
               {status && <PresenceDot status={status} size="sm" className="absolute -bottom-0.5 -right-0.5 ring-surface-900" />}
             </>
           ) : (
-            <div className="w-9 h-9 rounded-full bg-surface-700 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-[var(--sf2)] flex items-center justify-center">
               {channel.emoji ? <Emoji native={channel.emoji} size="1.25rem" /> : <Hash className="w-4 h-4 text-surface-400" />}
             </div>
           )}

@@ -432,7 +432,7 @@ export function CampaignWizard({
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-surface-800 overlay-frame border rounded-xl w-full max-w-3xl pointer-events-auto flex flex-col max-h-[90vh]"
+              className="bg-surface-800 overlay-frame border rounded-xl w-full max-w-[760px] pointer-events-auto flex flex-col max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header — CAMP-WIZ-03/04/06: sem border-b (o breadcrumb logo
@@ -717,7 +717,7 @@ function Step1({
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium font-mono text-surface-100">{tpl.name}</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded">{tpl.category}</span>
+                    <span className="text-[11px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">{tpl.category}</span>
                     <span className="text-[11px] text-surface-600">{tpl.language}</span>
                   </div>
                 </div>
@@ -981,7 +981,7 @@ function Step2({
                         </span>
                       )}
                       {contact.tags && contact.tags.length > 0 && (
-                        <span className="text-[10px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
                           {contact.tags[0].name}
                           {contact.tags.length > 1 && ` +${contact.tags.length - 1}`}
                         </span>
@@ -1143,7 +1143,7 @@ function Step2({
                 value={filterContactSearch}
                 onChange={(e) => onFilterContactSearch(e.target.value)}
                 placeholder="Buscar por nome ou número..."
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg pl-7 pr-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg pl-7 pr-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
               />
             </div>
             <p className="text-[10px] text-surface-600 mt-1">Inclui contatos cujo nome ou número de WhatsApp correspondam à busca.</p>
@@ -1260,7 +1260,7 @@ function Step3({
               <select
                 value={m.contactField ?? 'displayName'}
                 onChange={(e) => onUpdate(m.position, { contactField: e.target.value })}
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
               >
                 {CONTACT_FIELDS.map((f) => (
                   <option key={f.value} value={f.value}>{f.label}</option>
@@ -1273,7 +1273,7 @@ function Step3({
                 <select
                   value={m.customFieldKey ?? ''}
                   onChange={(e) => onUpdate(m.position, { customFieldKey: e.target.value })}
-                  className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
                 >
                   <option value="" disabled>Selecione um campo…</option>
                   {fieldDefs.map((f) => (
@@ -1295,7 +1295,7 @@ function Step3({
                 value={m.literal ?? ''}
                 onChange={(e) => onUpdate(m.position, { literal: e.target.value })}
                 placeholder="Digite o valor fixo para todos os destinatários..."
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
               />
             )}
           </div>
@@ -1387,11 +1387,11 @@ function Step4({
 
 // CAMP-WIZ-15/16/18/21 (spec 2c): 1 linha do resumo — grid 120px|1fr|auto,
 // hairline --bd (surface-700), sem grupo/eyebrow em volta.
-function SummaryRow({ label, value, action }: { label: string; value: React.ReactNode; action?: React.ReactNode }) {
+function SummaryRow({ label, value, action, strong }: { label: string; value: React.ReactNode; action?: React.ReactNode; strong?: boolean }) {
   return (
     <div className="grid grid-cols-[120px_1fr_auto] items-baseline gap-2.5 py-[9px] border-b border-surface-700 last:border-b-0">
       <span className="text-xs text-surface-400">{label}</span>
-      <span className="text-[13px] font-medium text-surface-100 min-w-0 break-words">{value}</span>
+      <span className={cn('text-[13px] text-surface-100 min-w-0 break-words', strong ? 'font-semibold' : 'font-medium')}>{value}</span>
       {action}
     </div>
   )
@@ -1541,12 +1541,12 @@ function Step5({
           sem dado de preço por mensagem no frontend). */}
       <div className="flex-1">
         <div>
-          <SummaryRow label="Nome" value={campaignName} action={<EditLink onClick={() => onEditStep(1)} />} />
+          <SummaryRow label="Nome" strong value={campaignName} action={<EditLink onClick={() => onEditStep(1)} />} />
           <SummaryRow
             label="Template"
             value={
               <span className="flex items-center gap-2 min-w-0">
-                <span className="font-mono truncate">{template.name}</span>
+                <span className="font-mono text-[11.5px] truncate">{template.name}</span>
                 <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0', TEMPLATE_STATUS_CLASS[template.status] ?? TEMPLATE_STATUS_CLASS.PENDING)}>
                   {TEMPLATE_STATUS_LABEL[template.status] ?? template.status} · Meta
                 </span>
@@ -1568,7 +1568,7 @@ function Step5({
                 {selectedContactIds.slice(0, 5).map((id) => {
                   const c = contacts.find((ct) => ct.id === id)
                   return (
-                    <span key={id} className="text-[10px] text-surface-300 bg-surface-700 px-1.5 py-0.5 rounded">
+                    <span key={id} className="text-[10px] text-surface-300 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
                       {c?.displayName ?? id}
                     </span>
                   )
@@ -1653,7 +1653,7 @@ function Step5({
             — o mock quer âmbar suave, então monto inline em vez de editar o
             primitivo. */}
         {messagingLimit && (
-          <div className="flex items-start gap-2 mt-3 px-2.5 py-[9px] rounded-sm bg-status-pending-bg text-status-pending text-xs leading-[1.45]">
+          <div className="flex items-start gap-2 mt-3 px-2.5 py-[9px] rounded-xs bg-status-pending-bg text-status-pending text-xs leading-[1.45]">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-px" strokeWidth={2} />
             <span>
               Limite diário de mensagens desta linha: <strong>{messagingLimit}</strong>. Campanhas grandes podem
@@ -1817,7 +1817,7 @@ function ContactListModal({
                         </span>
                       )}
                       {c.tags && c.tags.length > 0 && (
-                        <span className="text-[10px] text-surface-500 bg-surface-700 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">
                           {c.tags[0].name}{c.tags.length > 1 ? ` +${c.tags.length - 1}` : ''}
                         </span>
                       )}
