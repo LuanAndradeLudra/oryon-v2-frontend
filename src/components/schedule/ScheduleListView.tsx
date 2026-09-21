@@ -52,7 +52,7 @@ export function ScheduleListView({ days, events }: ScheduleListViewProps) {
                   </div>
                   <div className="text-2xs text-surface-500 truncate">{event.agent}</div>
                 </div>
-                <ScheduleStatusChip status={event.status} className="text-[11px] flex-shrink-0" />
+                <ScheduleStatusChip status={event.status} className="flex-shrink-0" />
               </div>
             ))}
           </div>

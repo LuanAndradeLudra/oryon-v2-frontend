@@ -21,7 +21,7 @@ interface ScheduleEventBlockProps {
 export const ScheduleEventBlock = forwardRef<HTMLButtonElement, ScheduleEventBlockProps>(
   function ScheduleEventBlock({ event, top, height, lane, selected, onClick }, ref) {
     const cancelled = event.status === 'cancelado'
-    const showChip = !cancelled && height >= 46
+    const showChip = !!event.chip && !cancelled
     const compact = height < 40
 
     return (
@@ -37,31 +37,31 @@ export const ScheduleEventBlock = forwardRef<HTMLButtonElement, ScheduleEventBlo
           borderLeftColor: event.isCampaign ? undefined : event.color,
         }}
         className={cn(
-          'absolute rounded-xs border bg-surface-800/95 px-2 py-[5px] text-left overflow-hidden transition-colors',
+          'absolute rounded-xs border bg-surface-800 text-surface-100 px-2 py-[5px] text-left text-[11.5px] leading-[1.3] overflow-hidden transition-colors',
           'border-surface-700 border-l-[3px] hover:border-surface-600',
-          event.isCampaign && 'border-dashed border-l bg-surface-800/50',
+          event.isCampaign && 'border-dashed border-l border-[var(--bd2)] bg-[var(--sf2)] text-surface-400',
           cancelled && 'opacity-55',
           selected && 'border-brand-500 ring-[3px] ring-accent-soft',
         )}
       >
         {compact ? (
           // Bloco curto (mock: "Suporte · Lab Vida 14:00"): título + hora na mesma linha.
-          <div className="text-[11.5px] font-semibold text-surface-100 truncate">
+          <div className="font-semibold truncate">
             <span className={cn(cancelled && 'line-through')}>{event.title}</span>{' '}
             <span className="font-normal text-surface-400">{formatHourLabel(event.startMinutes)}</span>
           </div>
         ) : (
           <>
-            <div className={cn('text-[11.5px] font-semibold text-surface-100 truncate', cancelled && 'line-through')}>
+            <div className={cn('font-semibold truncate', cancelled && 'line-through')}>
               {event.title}
             </div>
-            <div className={cn('text-2xs text-surface-400 mt-px', cancelled ? 'line-clamp-2' : 'truncate')}>
+            <div className={cn('text-surface-400', cancelled ? 'line-clamp-2' : 'truncate')}>
               {formatHourLabel(event.startMinutes)} – {formatHourLabel(event.endMinutes)}
               {cancelled ? ' · cancelado pelo contato' : ` · ${event.agent}`}
             </div>
           </>
         )}
-        {showChip && <ScheduleStatusChip status={event.status} className="text-[10px] px-1 mt-1" />}
+        {showChip && <ScheduleStatusChip status={event.status} className="h-4 px-[5px] text-[10px] mt-1" />}
       </button>
     )
   },
