@@ -4,8 +4,6 @@ import { Loader2, MessageSquareOff } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
 import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
-import { QuickFiltersMenu } from './QuickFiltersMenu'
-import { TagFilterMenu } from './TagFilterMenu'
 import { cn } from '@/lib/utils'
 import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
 
@@ -141,7 +139,7 @@ export function ConversationList({
       roundedBottomRight && 'overflow-hidden rounded-br-lg',
     )}>
       {/* Search header */}
-      <div className="px-3 pt-3 pb-3 border-b border-surface-700">
+      <div className="px-3 pt-2.5 pb-0">
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <ConversationSearch
@@ -151,33 +149,18 @@ export function ConversationList({
           </div>
           {loading && <Loader2 className="w-4 h-4 text-surface-400 animate-spin flex-shrink-0" />}
 
-          {/* O filtro "Precisam de verificação" vive só no menu de filtros
-              (com o contador ao lado do item) — o botão dedicado que ficava
-              aqui, entre a busca e as etiquetas, foi removido a pedido do PO
-              para desafogar o cabeçalho. */}
-          <TagFilterMenu
-            filters={filters}
-            onFiltersChange={onFiltersChange}
-            allTags={allTags}
-          />
-
-          <QuickFiltersMenu
-            filters={filters}
-            onFiltersChange={onFiltersChange}
-            allUsers={allUsers}
-            needsReviewCount={needsReviewCount}
-          />
         </div>
       </div>
 
       {/* Filters */}
-      <div className="pt-2">
+      <div className="border-b border-surface-700">
         <ConversationFiltersBar
           filters={filters}
           onFiltersChange={onFiltersChange}
           counts={counts}
           allTags={allTags}
           allUsers={allUsers}
+          needsReviewCount={needsReviewCount}
         />
       </div>
 

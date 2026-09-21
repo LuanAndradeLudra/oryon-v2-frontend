@@ -137,3 +137,11 @@ Ver `spec/shell.md` pro que É do Shell.
 ~15 ❓ · 3 `[!]`** (2 novos + 1 já catalogado, não duplicado no total). Nenhum item ficou
 fora da varredura — os marcados `❓` são explicitamente por arquivo não lido ou por
 depender de estado ao vivo, não por terem sido pulados.
+
+## Rodada 2 (2026-09-21)
+
+- **R2-1D-FILT-01** Segmentado Minhas/Fila/Todas (assignedTo me/unassigned/all) na barra da lista — feito. ❓ ao vivo.
+- **R2-1D-FILT-02** Chips Não lidas (unreadOnly), Com IA (aiHandling active), SLA (awaitingReply), Etiqueta ▾ (tagId) — feito. ❓ ao vivo.
+- **R2-1D-FILT-03** Funil (QuickFiltersMenu 28px) agora guarda Status, Período (com calendário inline), IA pausada, Equipe, Sem etiqueta, Verificação; pílulas removíveis abaixo dos chips. Abas de status e faixa de período saíram da lista. ❓ ao vivo.
+- **R2-1D-FILT-04** [!] só contagens por segmento/chip (API só tem statusCounts).
+- Busca da lista mantida (28px), pois o mock a põe no TopBar (slot do Maestro).
