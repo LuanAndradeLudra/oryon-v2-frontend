@@ -54,30 +54,36 @@ export function ContactDetailHeader({ contact, onClose, onDelete }: ContactDetai
       <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-0.5">
           <h2 className="text-base font-bold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h2>
           {contact.stage && <StageBadge stage={contact.stage} stages={stages} />}
         </div>
 
-        <p className="text-xs text-surface-400">{formatPhoneBR(contact.waId)}</p>
-
-        <div className="flex items-center gap-2 mt-3">
-          <Button size="sm" variant="primary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={handleOpenChat}>
-            Conversar
-          </Button>
-          {salesPipeline && (
-            <Button
-              size="sm"
-              variant="neutral"
-              onClick={() => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline: salesPipeline })}
-            >
-              Novo negócio
-            </Button>
-          )}
-        </div>
+        {/* R2-1C-DRAWER-01 (RODADA-2.md): "telefone · e-mail · cliente desde
+            mês/ano" numa linha só, como no mock (a Fase C tinha cortado e-mail
+            e "cliente desde" — o dado existe). */}
+        <p className="text-xs text-surface-400 truncate">
+          {[
+            formatPhoneBR(contact.waId),
+            contact.email,
+            contact.createdAt ? `cliente desde ${new Date(contact.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '')}` : null,
+          ].filter(Boolean).join(' · ')}
+        </p>
       </div>
 
       <div className="flex items-center gap-1.5 flex-shrink-0">
+        <Button size="sm" variant="primary" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={handleOpenChat}>
+          Conversar
+        </Button>
+        {salesPipeline && (
+          <Button
+            size="sm"
+            variant="neutral"
+            onClick={() => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline: salesPipeline })}
+          >
+            Novo negócio
+          </Button>
+        )}
         {canDelete && onDelete ? (
           <>
             <Dropdown

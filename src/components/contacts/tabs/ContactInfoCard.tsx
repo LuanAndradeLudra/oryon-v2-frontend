@@ -95,8 +95,17 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false, flat = fal
         </div>
       ) : flat ? (
         <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-1.5">
+          {contact.source && (
+            <Fragment>
+              <p className="text-[12.5px] text-surface-400 truncate">Origem</p>
+              <p className="text-[12.5px] font-medium text-surface-100 truncate capitalize">
+                {contact.source === 'meta_ads' ? 'Meta Ads' : contact.source}
+              </p>
+            </Fragment>
+          )}
           {FIELDS.map((f) => {
-            if (f.key === 'city' || f.key === 'state') return null
+            // R2-1C-DRAWER-02: e-mail já está na linha 2 do header (mock).
+            if (f.key === 'city' || f.key === 'state' || f.key === 'email') return null
             const val = contact[f.key]
             if (!val) return null
             return (
@@ -106,14 +115,6 @@ export function ContactInfoCard({ contact, onSave, hideTitle = false, flat = fal
               </Fragment>
             )
           })}
-          {contact.source && (
-            <Fragment>
-              <p className="text-[12.5px] text-surface-400 truncate">Origem</p>
-              <p className="text-[12.5px] font-medium text-surface-100 truncate capitalize">
-                {contact.source === 'meta_ads' ? 'Meta Ads' : contact.source}
-              </p>
-            </Fragment>
-          )}
           {(contact.city || contact.state) && (
             <Fragment>
               <p className="text-[12.5px] text-surface-400 truncate">Cidade</p>

@@ -154,3 +154,9 @@ Existem no app, com dado real, e o mockup 1c não os mostra. Opções: (a) mante
 - **`DealSummary` card**: stepper de etapas, "Mover etapa ▾", "Abrir negócio", Editar/Excluir por card — precisam de nova casa (menu por linha) se DRAWER-25 for aplicado.
 - **`ContactsHeader.tsx`** (título xl + toggle Tabela/Kanban + Configurar/Importar/Novo Contato): não é importado por `ContactsPage.tsx` — aparentemente órfão; confirmar uso antes de remover.
 - **Mobile**: `ContactsMobileList`, `MobilePageHeader`, `Fab` — frame da referência é 1440px; sem spec mobile.
+
+## Rodada 2 (2026-09-21) — drawer de contato
+
+- **R2-1C-DRAWER-01** Header: Conversar / Novo negocio / ··· / X na linha do nome (antes ficavam abaixo); linha 2 volta a ser "telefone · e-mail · cliente desde mes/ano" (Fase C tinha cortado e-mail e cliente desde — dado existe). ❓ ao vivo.
+- **R2-1C-DRAWER-02** DADOS na ordem do mock: Origem, Empresa, Cargo/Setor (quando ha), Cidade · UF, Criado em; e-mail sobe pro header. Responsavel continua [!] (Contact sem owner — confirmado por grep). ❓ ao vivo.
+- **R2-1C-DRAWER-03** CAMPOS PERSONALIZADOS: leitura em grade rotulo | valor (88px/1fr), numero/telefone em mono, boolean com check verde. ❓ ao vivo.
