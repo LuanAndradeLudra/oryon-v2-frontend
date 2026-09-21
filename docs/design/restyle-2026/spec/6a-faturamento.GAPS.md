@@ -97,3 +97,15 @@ upgrade, fundo da coluna atual, trilha das mini-barras e hairlines das linhas.
 4. **`BillingSettings.tsx` — Banner**: ícone sem tile (BANNER-02), copy
    (BANNER-04), botão 28→32 (BANNER-05).
 5. `SettingsOutline` (compartilhado, ver 2e).
+
+## Rodada 2 (2026-09-21) — reconferência estática feita
+
+| ID | Achado (PNG) | Correção | Status |
+|---|---|---|---|
+| R2-6A-01 | ícone do banner "Ative sua assinatura" sem tile; copy "no período de avaliação"; datas "30 set"/"01 out" | BillingSettings.tsx (`formatDayMonth`) | ✅ código · ❓ ao vivo |
+| R2-6A-02 | chip "Avaliação · N dias restantes" era `.color-chip` sólido; mock é soft | classes `status-pending-*` | ✅ código · ❓ ao vivo |
+| R2-6A-03 | coluna do rótulo ~198px no 6a | `SettingsSection labelWidth={198}` | ✅ código · ❓ ao vivo |
+
+Breadcrumb do 6a no PNG é "Administração / Plano & faturamento"; o app deriva
+da nav ("Conta / Plano & faturamento") — conflito de mocks, ver 2e-GAPS.
+Seções "Créditos avulsos" e "Extrato" (abaixo da dobra no PNG) existem no app.

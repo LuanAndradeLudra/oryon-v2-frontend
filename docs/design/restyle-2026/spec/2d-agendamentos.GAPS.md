@@ -100,3 +100,13 @@ era correto mas nunca exercitado visualmente. `ScheduleListView.tsx:37`
 
 **Conferidos:** 61/61 · **Corrigidos nesta reconferência:** 1 (dado de mock
 em `scheduleMock.ts`, sem mudança de spec/verdito) · **[!]:** 0.
+
+## Rodada 2 (2026-09-21)
+
+| ID | Achado (PNG) | Correção | Status |
+|---|---|---|---|
+| R2-2D-01 | chips de status/origem do mock são SOFT; `.color-chip` é sólido | `ScheduleChips.tsx` (bloco, popover, lista) | ✅ código · ❓ ao vivo |
+| R2-2D-02 | bloco de 30 min: linha única "Suporte · Lab Vida 14:00" | `compact` em ScheduleEventBlock.tsx | ✅ código · ❓ ao vivo |
+| R2-2D-03 | horário "08:00 – 09:00" com espaços; cancelado na mesma linha ("· cancelado pelo contato", esmaecido) | ScheduleEventBlock/Popover/ListView | ✅ código · ❓ ao vivo |
+
+Os ✅ da Fase C acima passam a valer só como "código × spec"; ao vivo segue ❓.
