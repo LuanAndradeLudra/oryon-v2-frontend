@@ -2116,7 +2116,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   <div
                     key={i}
                     className={cn(
-                      'h-[3px] flex-1 rounded-full transition-colors duration-300',
+                      'h-[3px] flex-1 rounded-[2px] transition-colors duration-300',
                       i < step ? 'bg-brand-500' : 'bg-surface-700',
                     )}
                   />

@@ -74,7 +74,8 @@ function StatusBadge({ status }: { status: AgentConfig['status'] }) {
       ? 'color-chip-soft border [--chip:var(--color-status-pending)]'
       : 'bg-[var(--sf2)] border border-surface-700 text-surface-400'
   return (
-    <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold', cls)}>
+    <span className={cn('inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold', cls)}>
+      {status === 'active' && <i className="w-[5px] h-[5px] rounded-full bg-current not-italic" />}
       {cfg.label}
     </span>
   )
@@ -342,7 +343,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
     // hoje; aqui o rail carrega só dado real já existente (Atividade,
     // Informações), como único bloco --sf2 (AGT-DET-25).
     <div className="grid grid-cols-[1fr_320px] gap-0 -mx-6 -my-5">
-      <div className="px-6 py-5 border-r border-surface-700 space-y-[18px]">
+      <div className="px-5 py-[18px] border-r border-surface-700 space-y-[18px]">
         <SettingsGroup title="Status do agente">
           <div className="flex items-center gap-2">
             {(['active', 'paused', 'draft'] as const).map((s) => {
@@ -381,7 +382,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
         </SettingsGroup>
       </div>
 
-      <div className="bg-[var(--sf2)] px-5 py-[18px] space-y-4">
+      <div className="bg-[var(--sf2)] px-5 py-[18px] space-y-3.5">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[.14em] text-accent-dark mb-2">Atividade</p>
           <div>
@@ -2155,7 +2156,7 @@ export function AgentDetail({
           hierarquizadas: Testar (primária), Ativar/Pausar (estado) e o
           destrutivo escondido no menu "..." (padrão enterprise: excluir
           nunca fica a 1 clique na superfície). */}
-      <div className="flex items-center gap-4 px-6 pt-5 pb-4 flex-shrink-0">
+      <div className="flex items-center gap-3 px-5 pt-3.5 flex-shrink-0">
         <AgentIcon iconId={agent.icon} className="w-10 h-10" />
         <div className="flex-1 min-w-0">
           <InlineEdit
@@ -2170,7 +2171,7 @@ export function AgentDetail({
             <StatusBadge status={agent.status} />
             {agent.objective && (
               <>
-                <span className="text-xs text-surface-500 truncate min-w-0">{agent.objective}</span>
+                <span className="text-xs text-surface-400 truncate min-w-0">{agent.objective}</span>
                 <span className="text-xs text-surface-500 flex-shrink-0">·</span>
               </>
             )}
@@ -2318,7 +2319,7 @@ export function AgentDetail({
         value={activeTab}
         onChange={setActiveTab}
         label="Seções do agente"
-        className="px-6"
+        className="px-5 pt-3.5"
       />
 
       {/* Tab content — "Regras" with Roteamento sub-tab needs flex-contained

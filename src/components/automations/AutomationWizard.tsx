@@ -844,7 +844,7 @@ function ActionSubForm({
                 const tpl = templates.find((t) => t.id === e.target.value)
                 onUpdate({ type: 'send_message', templateId: e.target.value, templateName: tpl?.name ?? '' })
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione um template…</option>
               {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -899,7 +899,7 @@ function ActionSubForm({
                     ...(scope !== 'user' ? { notifyUserId: undefined, notifyUserName: undefined } : {}),
                   })
                 }}
-                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
               >
                 <option value="admins">Apenas administradores</option>
                 <option value="department">Um departamento</option>
@@ -925,7 +925,7 @@ function ActionSubForm({
                       departmentName: d?.name ?? '',
                     })
                   }}
-                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
                 >
                   <option value="">Selecione um departamento…</option>
                   {depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -947,7 +947,7 @@ function ActionSubForm({
                       notifyUserName: u?.name ?? '',
                     })
                   }}
-                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
                 >
                   <option value="">Selecione um usuário…</option>
                   {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -965,7 +965,7 @@ function ActionSubForm({
                 const u = users.find((u) => u.id === e.target.value)
                 onUpdate({ type: 'assign_agent', userId: e.target.value, userName: u?.name ?? '' })
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione um agente…</option>
               {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -981,7 +981,7 @@ function ActionSubForm({
                 const d = depts.find((d) => d.id === e.target.value)
                 onUpdate({ type: 'assign_dept', departmentId: e.target.value, departmentName: d?.name ?? '' })
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione um departamento…</option>
               {depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -998,7 +998,7 @@ function ActionSubForm({
                 const tag = tags.find((t) => t.id === e.target.value)
                 onUpdate({ type: action.type, tagId: e.target.value, tagName: tag?.name ?? '' } as AutomationAction)
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione uma tag…</option>
               {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -1014,7 +1014,7 @@ function ActionSubForm({
                 const s = stages.find((s) => s.key === e.target.value)
                 onUpdate({ type: 'change_stage', stageKey: e.target.value, stageLabel: s?.label ?? '' })
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione uma situação…</option>
               {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -1051,7 +1051,7 @@ function ActionSubForm({
               <label className="block text-3xs font-medium text-surface-400 mb-1">URL do endpoint</label>
               <input placeholder="https://sua-api.com/webhook" value={action.url}
                 onChange={(e) => onUpdate({ type: 'send_webhook', url: e.target.value, method: action.method })}
-                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
               />
             </div>
             <div className="flex gap-2">
