@@ -61,3 +61,41 @@ orquestrador (escale); commits só na própria branch; sem backtick em `maestri 
 | SLA | `awaitingReply` (mais próximo) | confirmar no código; se não bater, `[!]` só este chip |
 | Etiqueta ▾ | `tagId` (`TagFilterMenu`) | |
 | ícone de filtro (funil) | menu de filtros avançados (`QuickFiltersMenu`: Equipe, status, período…) | mover o que hoje está espalhado pra dentro dele |
+
+---
+
+## Adendo 2026-09-21 ~20:00 — medições ao vivo (portal Maestri) e mudanças globais
+
+**Portal:** o orquestrador tem um navegador logado em `localhost:3011` (portal Maestri "localhost").
+Screenshot do portal expira (janela encoberta), mas `snapshot`/`evaluate` (estilos computados) funcionam.
+Os agentes NÃO têm portal: peçam medições ao orquestrador ou marquem `❓ ao vivo`.
+
+**Mudanças globais (afetam TODAS as telas — remeça o que vocês ajustaram em px):**
+1. `:root` de 110% → **100%** (`873d553`). Antes, tudo em rem renderizava 10% maior que o mock
+   (controle 28px virava 31px, texto 12px virava 13,2px). Agora `h-7`=28, `text-xs`=12.
+2. `text-sm` de 14px → **13px / lh 1.5** (`9ab37e1`, spec TYPE-05). Título de card 13/600 = `text-sm font-semibold`.
+3. `chat-shell-bg` chapado em `--bg` (`2bff3d4`); lista de Conversas 360px fixa; header do chat 52px em `--sf`.
+4. `.color-chip-soft` (chip de status suave) e `ConnectedLineChip`/`usePrimaryConnectedLine` disponíveis.
+
+**Detector de resíduo (censo)** rodado em cada rota: sombras, cantos ≥11px, gradientes, tamanhos de fonte.
+Limpas: /dashboard, /contacts, /pipelines, /campaigns (lista e templates), /schedule, /settings, /settings/connectors.
+Achados a corrigir:
+- **Dashboard (Farol):** `KpiGrid` ainda é grade de cards com tile de ícone e valor `text-xl` 20/700.
+  Mock (1b, DASH-KPI-01/02): **UM card** `--sf`/`--bd`/raio 8, `grid repeat(5,1fr)`, célula `padding 12px 14px`,
+  `border-right 1px --bd` (menos a última), rótulo 11/500 `--tx2` SEM ícone, valor **26/800** `-.02em` lh 1.15 `--tx`,
+  apoio 11.5px. A faixa vai em LARGURA TOTAL acima do grid 2/3+1/3 (hoje está dentro da coluna esquerda).
+  Coluna esquerda depois: Conversas por hora, Funil de vendas; direita: Fila agora, Equipe. As seções extras que o
+  app tem e o mock não (Tags, Horários de pico, Performance da equipe, Ao vivo, Status, Atividade) ficam ABAIXO.
+- **Home (Farol):** card "Seu desempenho hoje" com `card-glow bg-surface-900 rounded-2xl` → primitivo Card (`--sf`, `--bd`, raio 8, sem glow).
+- **Agentes (Farol):** empty state legado (tile `w-20 h-20 rounded-3xl` + botão grande 195x39) → `EmptyState` + `Button sm`.
+- **Conversas:** empty state "Pronto para atender" e barra de atalhos J/K seguem o vocabulário? conferir (Cartógrafo).
+
+## Cobertura de telas SEM mock (o usuário pediu "não esqueça de revisar nenhuma tela")
+Telas que não têm PNG devem seguir o vocabulário da 1a (Card `--sf/--bd/8`, tabela sem card, chips soft, botões
+neutral/primary do sistema, hairlines `surface-700`, sem sombra/gradiente/glow, raios 7/8/10). Passem o censo mental:
+procurem `rounded-xl|2xl|3xl`, `shadow-`, `card-glow`, `bg-gradient`, `bg-surface-900` como card, botões `bg-brand-*` tintados.
+| Agente | Telas sem mock |
+|---|---|
+| Farol | Home, Dashboard (extras), TeamChat, Copilot, Marketing, Automações (lista) |
+| Bússola | Login/Onboarding, /admin/* (Skills, Agentes cross-tenant, Auditoria, AI Observability, AI Executions), Configurações (todas as sub-rotas) |
+| Cartógrafo | ContactProfilePage (`/contacts/:id`), Funis (páginas de config), modais de Contatos/Negócios, importação |
