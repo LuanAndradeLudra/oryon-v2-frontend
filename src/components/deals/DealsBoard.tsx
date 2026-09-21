@@ -40,6 +40,8 @@ interface DealsBoardProps {
    *  ficha em si abre pelo mesmo param, globalmente (`DealPanelContext`);
    *  aqui é só o realce visual. */
   highlightDealId?: string | null
+  /** R2-1E-CARD-01: negócio cuja ficha está aberta — o card ganha borda de acento + anel de 3px (estado "selecionado / painel aberto" do mock). */
+  selectedDealId?: string | null
   /** D2 (SCRUM-935/F-FUNIL): clicar no CORPO do card abre a ficha do negócio
    *  (B2/928). Omitido = card não abre nada ao clicar (compat com chamadores
    *  antigos/testes que não precisam desse comportamento). */
@@ -65,6 +67,7 @@ export function DealsBoard({
   pipeline,
   stages, dealsByStage, onMoveStage, loading, onOpenContact, pipelines = [], onMovePipeline,
   highlightDealId,
+  selectedDealId,
   onOpenDeal,
   users = [],
 }: DealsBoardProps) {
@@ -316,10 +319,11 @@ export function DealsBoard({
                 data-testid={highlightDealId === deal.id ? 'deal-card-highlighted' : undefined}
                 className={cn(
                   // README 3.4: borda 1px, raio 8px, padding 10px 12px.
-                  'relative group/card rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-surface-700 hover:bg-[var(--rowhover)]',
+                  'relative group/card rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-[var(--bd2)] hover:bg-[var(--rowhover)]',
                   onOpenDeal && 'cursor-pointer',
                   // Em arraste: única sombra fora de overlay (o card É um overlay enquanto flutua).
                   draggingId === deal.id && 'opacity-95 shadow-lg',
+                  selectedDealId === deal.id && 'border-brand-500 hover:border-brand-500 ring-[3px] ring-brand-500/20',
                   highlightDealId === deal.id && 'ring-[3px] ring-brand-500 border-brand-500',
                 )}
               >

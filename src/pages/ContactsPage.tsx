@@ -341,17 +341,17 @@ export function ContactsPage() {
 
         {/* Faceta "Situação comercial" (D-10) */}
         {multiPipeline && (
-        <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto border-b border-surface-700/60">
+        <div className="flex items-center gap-2 px-4 h-11 flex-shrink-0 overflow-x-auto border-b border-surface-700">
           {COMMERCIAL_OPTIONS.map((opt) => (
             <button
               key={opt.key}
               type="button"
               onClick={() => setCommercial(opt.key)}
               className={cn(
-                'text-xs px-3 py-1 rounded-full whitespace-nowrap transition-colors border',
+                'h-7 px-3 text-xs font-semibold rounded-sm whitespace-nowrap transition-colors border',
                 commercial === opt.key
-                  ? 'commercial-filter-chip-active bg-brand-500/15 text-brand-300 border-brand-500/40'
-                  : 'bg-surface-900 text-surface-400 border-surface-800 hover:text-surface-200',
+                  ? 'border-brand-500 bg-accent-soft text-accent-dark'
+                  : 'bg-surface-800 text-surface-400 border-[var(--bd2)] hover:text-surface-100',
               )}
             >
               {opt.label}

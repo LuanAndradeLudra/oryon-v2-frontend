@@ -373,7 +373,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
 
         {!isProcess && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-surface-300 uppercase tracking-wider">
+          <span className="text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">
             Itens
           </span>
           <DealItemsEditor

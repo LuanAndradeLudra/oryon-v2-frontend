@@ -466,7 +466,7 @@ export function NewDealDialog({
     <div className="flex flex-col gap-3">
       {!semFunis && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Funil</span>
+          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Funil</span>
           <AttributeChip
             label="Funil"
             value={selectedPipeline?.name}
@@ -492,7 +492,7 @@ export function NewDealDialog({
       )}
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Dono</span>
+        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Dono</span>
         <AttributeChip
           label="Dono"
           value={donoValor}
@@ -516,7 +516,7 @@ export function NewDealDialog({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Previsão</span>
+        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Previsão</span>
         <AttributeChip
           label="Previsão"
           value={expectedCloseAt ? dataCurta(expectedCloseAt) : null}
@@ -581,7 +581,7 @@ export function NewDealDialog({
         {(hasItems || mostraCampoValor) && (
           <div className="flex flex-col gap-1.5">
             <div className="flex items-end justify-between gap-3">
-              <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">
+              <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">
                 Valor do {noun}
               </span>
               <span className="text-[11px] leading-snug text-right text-surface-500">
@@ -616,7 +616,7 @@ export function NewDealDialog({
         <div className="flex flex-col gap-1.5">
           {/* Sem `FormField` em volta: o contexto dele injeta o mesmo id em todos
               os campos descendentes e quebra os rótulos das linhas (A1/153). */}
-          <span className="text-3xs font-mono uppercase tracking-wider text-surface-500">Itens</span>
+          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Itens</span>
           <DealItemsEditor
             value={items}
             onChange={(next) => { setItems(next); setError('') }}
@@ -760,7 +760,7 @@ export function NewDealDialog({
         <HeadIcon className="w-4 h-4 text-surface-300" aria-hidden />
       </span>
       <span className="flex flex-col min-w-0">
-        <span className="text-base font-display font-semibold text-surface-50 leading-tight">{headingText}</span>
+        <span className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50 leading-tight">{headingText}</span>
         {contextoLinha && (
           <span className="text-xs text-surface-400 truncate leading-tight mt-0.5">{contextoLinha}</span>
         )}

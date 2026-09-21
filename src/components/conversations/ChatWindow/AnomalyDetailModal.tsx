@@ -40,7 +40,7 @@ function BlockTitle({ icon: Icon, children, tone = 'default' }: {
   icon: typeof Quote; children: ReactNode; tone?: 'default' | 'warn' | 'ok'
 }) {
   return (
-    <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium flex items-center gap-1.5 mb-2">
+    <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 flex items-center gap-1.5 mb-2">
       <Icon className={cn('w-3.5 h-3.5',
         tone === 'warn' ? 'text-[var(--color-warning)]' : tone === 'ok' ? 'text-emerald-400' : 'text-surface-500')} />
       {children}
@@ -53,7 +53,7 @@ function Detail({ icon: Icon, label, children }: { icon: typeof Quote; label: st
     <div className="flex items-start gap-2.5">
       <Icon className="w-4 h-4 text-surface-500 flex-shrink-0 mt-0.5" />
       <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-surface-500 font-medium">{label}</p>
+        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">{label}</p>
         <div className="text-sm text-surface-200 break-words">{children}</div>
       </div>
     </div>

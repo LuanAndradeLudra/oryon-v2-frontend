@@ -66,7 +66,7 @@ export function AgentActivitySection({ conversationId }: { conversationId: strin
   return (
     <div className="px-4 py-3 border-t border-surface-700">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
+        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 flex items-center gap-1.5">
           <Bot className="w-3 h-3" />
           Atividade do agente IA
         </p>
