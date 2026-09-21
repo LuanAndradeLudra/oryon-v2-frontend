@@ -23,10 +23,10 @@ export function DealActivityTab({ deal, pipeline, history }: DealActivityTabProp
   const terminalLabels = terminalLabelsOf(pipeline)
 
   return (
-    <div className="flex flex-col gap-4 px-5 py-5">
+    <div className="flex flex-col gap-4 px-[18px] py-4">
       {deal.status !== 'open' && (
         <div
-          className="flex items-start gap-2 rounded-xl border px-3.5 py-3"
+          className="flex items-start gap-2 rounded-lg border px-3.5 py-3"
           style={deal.status === 'won'
             ? { borderColor: 'var(--color-status-active-border, #16a34a55)', backgroundColor: 'var(--color-status-active-bg, #16a34a14)' }
             : { borderColor: 'var(--color-surface-700)', backgroundColor: 'var(--color-surface-900)' }}

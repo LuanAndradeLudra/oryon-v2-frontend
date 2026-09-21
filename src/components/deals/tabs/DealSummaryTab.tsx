@@ -58,7 +58,7 @@ export function DealSummaryTab({ deal, pipeline, onPatch }: DealSummaryTabProps)
   const total = itemsTotalCents(items)
 
   return (
-    <div className="flex flex-col gap-6 px-5 py-5">
+    <div className="flex flex-col gap-5 px-[18px] py-4">
       {/* "Escopo" virou "Observações" (10/09). O nome antigo prometia um
           documento — o escopo de uma proposta — que o produto não gera, e o
           que está sendo VENDIDO já tem campo estruturado logo abaixo (os
@@ -69,7 +69,7 @@ export function DealSummaryTab({ deal, pipeline, onPatch }: DealSummaryTabProps)
           anotação livre do negócio que sobrevive a um reload em todo o CRM. */}
       <div>
         <div className="flex items-center gap-1.5 mb-1.5">
-          <label htmlFor="deal-observacoes" className="text-xs font-semibold text-surface-400">Observações</label>
+          <label htmlFor="deal-observacoes" className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Observações</label>
           <Tooltip
             wide
             side="bottom"
@@ -101,7 +101,7 @@ export function DealSummaryTab({ deal, pipeline, onPatch }: DealSummaryTabProps)
       {isSales && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-surface-400">Itens</span>
+            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Itens</span>
             {savingItems && <span className="text-[11px] text-surface-500">salvando…</span>}
           </div>
           <DealItemsEditor value={items} onChange={(next) => void handleItemsChange(next)} error={itemsError} showTotal={false} />

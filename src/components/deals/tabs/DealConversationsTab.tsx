@@ -21,7 +21,7 @@ function ConversationRow({ conversation, isOrigin, onOpenBeside }: { conversatio
   return (
     <div
       className={cn(
-        'flex items-start gap-2.5 px-3.5 py-3 rounded-xl border transition-colors',
+        'flex items-start gap-2.5 px-3.5 py-3 rounded-lg border transition-colors',
         isOrigin ? 'border-brand-500/40 bg-brand-500/5' : 'border-surface-700 bg-surface-900',
       )}
       data-testid={isOrigin ? 'deal-origin-conversation' : 'deal-other-conversation'}
@@ -96,7 +96,7 @@ export function DealConversationsTab({ contactId, originConversationId }: DealCo
   const others = conversations.filter((c) => c.id !== originConversationId)
 
   return (
-    <div className="flex flex-col gap-2.5 px-5 py-5">
+    <div className="flex flex-col gap-2.5 px-[18px] py-4">
       {origin && <ConversationRow conversation={origin} isOrigin onOpenBeside={() => openConversationBeside(origin.id)} />}
       {others.map((c) => (
         <ConversationRow key={c.id} conversation={c} isOrigin={false} onOpenBeside={() => openConversationBeside(c.id)} />
