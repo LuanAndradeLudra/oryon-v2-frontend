@@ -32,7 +32,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
               viewMode === 'table'
-                ? 'bg-surface-700 text-surface-100'
+                ? 'bg-surface-900 text-surface-100'
                 : 'text-surface-400 hover:text-surface-200'
             )}
           >
@@ -44,7 +44,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
               viewMode === 'kanban'
-                ? 'bg-surface-700 text-surface-100'
+                ? 'bg-surface-900 text-surface-100'
                 : 'text-surface-400 hover:text-surface-200'
             )}
           >

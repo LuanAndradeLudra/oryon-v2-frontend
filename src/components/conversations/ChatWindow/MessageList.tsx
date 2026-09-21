@@ -43,12 +43,11 @@ function DateSeparator({ date }: { date: string }) {
   else label = format(d, "d 'de' MMMM 'de' yyyy", { locale: ptBR })
 
   return (
-    <div className="flex items-center gap-3 my-4 px-4">
-      <div className="flex-1 h-px bg-surface-700" />
-      <span className="text-[10.5px] text-surface-500 font-semibold px-2 py-0.5 bg-surface-800 rounded-full border border-surface-700">
+    // canvas 1d: só o chip centrado (10.5/600 tx3, padding 2/8, borda, raio 6, mb 8) — sem as linhas laterais.
+    <div className="flex justify-center mt-2 mb-2">
+      <span className="text-[10.5px] text-surface-500 font-semibold px-2 py-0.5 bg-surface-800 rounded-xs border border-surface-700">
         {label}
       </span>
-      <div className="flex-1 h-px bg-surface-700" />
     </div>
   )
 }
@@ -137,7 +136,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto px-4 py-2"
+      className="flex-1 overflow-y-auto px-5 py-4"
       onScroll={handleScroll}
       style={{ contain: 'layout style', willChange: 'transform' }}
     >

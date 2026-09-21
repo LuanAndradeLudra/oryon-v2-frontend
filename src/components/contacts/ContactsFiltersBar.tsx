@@ -123,14 +123,14 @@ function TagFilter({ selected, onChange }: {
       <button
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'flex items-center gap-1.5 h-7 pl-3 pr-2.5 rounded-sm text-xs font-semibold border transition-all',
+          'flex items-center gap-[5px] h-7 px-[9px] rounded-sm text-xs font-semibold border transition-all',
           selected.length > 0
             ? 'border-brand-500 bg-accent-soft text-accent-dark'
             : 'border-[var(--bd2)] bg-surface-800 text-surface-100 hover:border-surface-500',
         )}
       >
         <Tag className="w-3.5 h-3.5 flex-shrink-0" />
-        <span>{selected.length > 0 ? `${selected.length} etiqueta${selected.length > 1 ? 's' : ''}` : 'Etiquetas'}</span>
+        <span>{selected.length > 0 ? `${selected.length} etiqueta${selected.length > 1 ? 's' : ''}` : 'Etiqueta'}</span>
         <ChevronDown className={cn('w-3 h-3 flex-shrink-0 transition-transform', open && 'rotate-180')} />
       </button>
 
@@ -221,7 +221,7 @@ function StageFilter({ selected, onChange }: { selected: string[]; onChange: (ke
           aria-expanded={open}
           data-testid="contacts-filter-stage"
           className={cn(
-            'flex items-center gap-1.5 h-7 pl-3 pr-2.5 rounded-sm text-xs font-semibold border transition-all whitespace-nowrap',
+            'flex items-center gap-[5px] h-7 px-[9px] rounded-sm text-xs font-semibold border transition-all whitespace-nowrap',
             selected.length > 0
               ? 'border-brand-500 bg-accent-soft text-accent-dark'
               : 'border-[var(--bd2)] bg-surface-800 text-surface-100 hover:border-surface-500',
@@ -348,7 +348,7 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns, su
         <div ref={menuRef} className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-1 h-7 px-2 rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 transition-colors"
+            className="flex items-center gap-[5px] h-7 px-[9px] rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 transition-colors"
           >
             <Plus className="w-[13px] h-[13px] flex-shrink-0" />
             <span>Filtro</span>

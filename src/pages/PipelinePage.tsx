@@ -281,7 +281,7 @@ export function PipelinePage() {
             aria-pressed={tab === key}
             className={cn(
               'h-6 px-2.5 rounded-[5px] text-xs font-semibold transition-colors',
-              tab === key ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:text-surface-100',
+              tab === key ? 'bg-surface-900 text-surface-100' : 'text-surface-400 hover:text-surface-100',
             )}
           >
             {label}

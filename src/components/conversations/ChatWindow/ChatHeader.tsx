@@ -311,7 +311,7 @@ export function ChatHeader({
                 aria-label="Mais ações"
                 className={cn(
                   'w-9 h-9 flex items-center justify-center rounded-lg transition-all',
-                  moreOpen ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200',
+                  moreOpen ? 'bg-surface-900 text-surface-100' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200',
                 )}
               >
                 <MoreVertical className="w-5 h-5" />
@@ -400,7 +400,7 @@ export function ChatHeader({
 
   // ─── Desktop layout (original) ──────────────────────────────────────────
   return (
-    <div className="conv-surface h-[52px] flex items-center justify-between px-4 border-b border-surface-700 bg-surface-800 flex-shrink-0 gap-3">
+    <div className="conv-surface h-[52px] flex items-center justify-between px-4 border-b border-surface-700 bg-surface-800 flex-shrink-0 gap-2.5">
 
       {/* ── Left: contact info ────────────────────────────────── */}
       <div className="flex items-center gap-2.5 min-w-0">
@@ -410,7 +410,7 @@ export function ChatHeader({
             <h2 className="text-[13.5px] font-bold text-surface-100 truncate">{contact.displayName}</h2>
             {/* CONV-CHAT-05 (spec/1d-conversas.GAPS.md): situação do contato
                 no cabeçalho do chat — existia no ContactPanel, faltava aqui. */}
-            {contact.stage && <StageBadge stage={contact.stage} stages={stages} />}
+            {contact.stage && <StageBadge stage={contact.stage} stages={stages} size="xs" />}
           </div>
           {/* R2-1D-HDR: "telefone formatado · visto por último há N" (mock).
               O número da LINHA saiu (já é o ConnectedLineChip da TopBar) e o
@@ -428,7 +428,7 @@ export function ChatHeader({
       </div>
 
       {/* ── Right: actions ────────────────────────────────────── */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-2 flex-shrink-0">
         {/* "Novo negócio" NÃO mora mais aqui. A A3 (SCRUM-925) o trouxe para o
             cabeçalho quando criar negócio só existia escondido dentro do menu
             de funis; desde então o painel da direita ganhou a mesma ação, com
@@ -515,7 +515,7 @@ export function ChatHeader({
             aria-expanded={infoOpen}
             className={cn(
               'w-7 h-7 rounded-sm flex items-center justify-center transition-all',
-              infoOpen ? 'bg-surface-700 text-surface-200' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
+              infoOpen ? 'bg-surface-900 text-surface-200' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
             )}
           >
             <div className="relative">

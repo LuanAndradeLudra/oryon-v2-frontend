@@ -80,11 +80,11 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
 
 function InfoTable({ rows }: { rows: { label: string; value: React.ReactNode }[] }) {
   return (
-    <div className="grid grid-cols-[82px_1fr] gap-x-2 gap-y-1.5">
+    <div className="grid grid-cols-[82px_1fr] gap-x-2 gap-y-[5px] text-[12.5px]">
       {rows.map(({ label, value }) => (
         <Fragment key={label}>
-          <span className="text-xs text-surface-400">{label}</span>
-          <span className="text-xs font-medium text-surface-100 min-w-0">{value}</span>
+          <span className="text-surface-400">{label}</span>
+          <span className="font-medium text-surface-100 min-w-0">{value}</span>
         </Fragment>
       ))}
     </div>
@@ -144,7 +144,7 @@ export function ContactPanel({
       label: 'Situação',
       value: (
         <span className="flex items-center gap-1.5">
-          {localStage ? <StageBadge stage={localStage} stages={stages} /> : <span className="text-surface-500 font-normal">Sem situação</span>}
+          {localStage ? <StageBadge stage={localStage} stages={stages} size="xs" /> : <span className="text-surface-500 font-normal">Sem situação</span>}
           {/* SCRUM-929 (F-FICHA-08): "Mudar situação" é do CONTATO (ciclo de
               vida), não da etapa do negócio. */}
           <button onClick={() => setStageOpen(true)} title="Mudar situação" aria-label="Mudar situação"
@@ -209,25 +209,25 @@ export function ContactPanel({
 
       <div className="flex-1 overflow-y-auto">
         {/* Identidade */}
-        <div className="px-4 pt-4 pb-3.5 flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="44" className="flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <h4 className="text-sm font-bold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h4>
-              {subtitle && <p className="text-xs text-surface-400 mt-0.5 truncate">{subtitle}</p>}
-              {contact.lastSeenAt && (
-                <p className="text-[10px] text-surface-500 mt-0.5">Visto {formatRelativeTime(contact.lastSeenAt)}</p>
-              )}
-            </div>
+        {/* canvas 1d: avatar 44 no topo, nome 14/700, sub 11.5 — coluna com gap 8, padding 16/14. */}
+        <div className="px-4 pt-4 pb-3.5 flex flex-col items-start gap-2">
+          <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="44" className="flex-shrink-0" />
+          <div className="min-w-0 max-w-full">
+            <h4 className="text-[14px] font-bold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h4>
+            {subtitle && <p className="text-[11.5px] text-surface-400 truncate">{subtitle}</p>}
+            {contact.lastSeenAt && (
+              <p className="text-[10px] text-surface-500 mt-0.5">Visto {formatRelativeTime(contact.lastSeenAt)}</p>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="neutral" onClick={() => navigate(`/contacts?contact=${contact.id}`)}>
+          <div className="flex items-center gap-1.5">
+            <Button size="sm" variant="neutral" className="!h-[26px] !px-[9px] !text-[11.5px] !rounded-xs" onClick={() => navigate(`/contacts?contact=${contact.id}`)}>
               Ver contato
             </Button>
             {salesPipeline && (
               <Button
                 size="sm"
                 variant="neutral"
+                className="!h-[26px] !px-[9px] !text-[11.5px] !rounded-xs"
                 onClick={() => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline: salesPipeline, conversationId: conversation.id })}
               >
                 Novo negócio

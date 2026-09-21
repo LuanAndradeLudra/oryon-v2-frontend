@@ -204,7 +204,7 @@ export function DealsBoard({
     return (
       <div
         key={stage.id}
-        className={terminal ? 'flex flex-col flex-1 min-h-0' : 'flex flex-col w-[85vw] md:w-[250px] flex-shrink-0 snap-start'}
+        className={terminal ? cn('flex flex-col flex-1 min-h-0', stage.isLost && 'mt-2') : 'flex flex-col w-[85vw] md:w-[250px] flex-shrink-0 snap-start'}
         onDragOver={(e) => { e.preventDefault(); setOverStageId(stage.id) }}
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStageId(null) }}
         onDrop={() => handleDrop(stage.id)}
@@ -212,13 +212,18 @@ export function DealsBoard({
         {/* Header da coluna — README 3.4: 28px, border-bottom 2px na cor
             crua da etapa. */}
         <div
-          className="flex items-center justify-between h-7 px-1 mb-3 border-b-2"
+          className={cn('flex items-center justify-between gap-[7px] h-7 px-1 mb-2 border-b-2', terminal && stage.isLost && 'rounded-t-[4px]')}
           style={{ borderColor: stage.color, ...(terminal && stage.isLost ? { backgroundColor: 'color-mix(in srgb, var(--color-danger) 10%, transparent)' } : null) }}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} />
-            <span className="text-xs font-semibold truncate" style={{ color: tintaDaEtapa(stage.color) }}>{stage.label}</span>
-            {stage.isWon && (
+          <div className="flex items-center gap-[7px] min-w-0">
+            {/* canvas 1e: sem ponto colorido — a cor vive na linha de 2px e no texto. Terminais usam ok/perigo. */}
+            <span
+              className={cn('text-[12.5px] font-bold truncate', terminal && (stage.isWon ? 'text-success' : 'text-danger'))}
+              style={terminal ? undefined : { color: tintaDaEtapa(stage.color) }}
+            >
+              {stage.label}
+            </span>
+            {stage.isWon && stage.label.toLowerCase() !== terminalLabels.won.toLowerCase() && (
               <span
                 className="text-3xs px-1.5 py-0.5 rounded border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.won}
@@ -226,7 +231,7 @@ export function DealsBoard({
                 {terminalLabels.won.toLowerCase()}
               </span>
             )}
-            {stage.isLost && (
+            {stage.isLost && stage.label.toLowerCase() !== terminalLabels.lost.toLowerCase() && (
               <span
                 className="text-3xs px-1.5 py-0.5 rounded border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.lost}
@@ -234,22 +239,22 @@ export function DealsBoard({
                 {terminalLabels.lost.toLowerCase()}
               </span>
             )}
+            {/* DEAL-COL-16: contagem como texto solto ao lado do título. */}
+            <span className="text-[11.5px] font-semibold text-surface-500 tabular-nums">
+              {cards.length}
+            </span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* DEAL-COL-17 (spec/1e-funis.GAPS.md): soma inline na MESMA
                 linha do cabeçalho, não numa linha separada abaixo. */}
             {!isProcess && totalCents > 0 && (
               <span
-                className="text-2xs text-surface-500 tabular-nums whitespace-nowrap"
+                className="text-[11.5px] text-surface-400 tabular-nums whitespace-nowrap"
                 title={weightedCents !== totalCents ? `${brl(weightedCents)} ponderado` : undefined}
               >
                 {brl(totalCents)}
               </span>
             )}
-            {/* DEAL-COL-16: contagem como texto solto, não um badge pill. */}
-            <span className="text-[11.5px] font-semibold text-surface-500 tabular-nums">
-              {cards.length}
-            </span>
             {/* A3: criar já nesta etapa. Fora dos terminais — negócio não
                 nasce fechado (a A4 exige motivo, e o backend responde 400). */}
             {onNewDeal && !stage.isWon && !stage.isLost && (
@@ -269,7 +274,7 @@ export function DealsBoard({
         {/* Lista de cards */}
         <div
           className={cn(
-            'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-xl transition-all duration-200 min-h-[80px] p-2',
+            'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-lg transition-all duration-200 min-h-[80px]',
             isOver ? 'bg-brand-500/5 ring-2 ring-brand-500/30 ring-inset' : 'bg-transparent',
             loading && cards.length > 0 && 'opacity-50',
           )}
@@ -298,15 +303,25 @@ export function DealsBoard({
                claro no claro (#D9DCE5) e escuro no escuro (#243333). */
             <div key="carregando" className="h-16 rounded-xl bg-surface-700/50 animate-pulse" aria-hidden />
           ) : cards.length === 0 ? (
-            <div key="vazia" className={cn(
-              // README 3.4: slot de drop, retângulo tracejado de 88px.
-              'border-2 border-dashed rounded-xl h-[88px] flex items-center justify-center transition-colors',
-              isOver ? 'border-brand-500/50 bg-brand-500/5' : 'border-surface-700',
-            )}>
-              <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-600')}>
-                {isOver ? 'Soltar aqui' : terminal ? `Solte aqui para marcar como ${stage.isWon ? terminalLabels.won : terminalLabels.lost}` : `Nenhum ${noun}`}
-              </span>
-            </div>
+            terminal && stage.isWon && !isOver ? (
+              <div key="vazia" className="border border-surface-700 rounded-lg bg-surface-900 px-3 py-2.5 text-xs text-surface-400 leading-[1.5]">
+                Solte aqui para marcar como <b className="font-bold text-surface-100">{terminalLabels.won}</b>. Etapas terminais pedem motivo.
+              </div>
+            ) : (
+              <div key="vazia" className={cn(
+                // canvas 1e: slot de drop = retângulo tracejado 1px, raio 8, 88px (Perdido: borda e fundo de perigo).
+                'border border-dashed rounded-lg h-[88px] flex items-center justify-center px-3 text-center transition-colors',
+                isOver
+                  ? 'border-brand-500/60 bg-brand-500/5'
+                  : terminal && stage.isLost
+                    ? 'border-danger bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)]'
+                    : 'border-[var(--bd2)] bg-surface-900',
+              )}>
+                <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-500')}>
+                  {isOver ? 'Soltar aqui' : terminal ? `Solte aqui para marcar como ${stage.isWon ? terminalLabels.won : terminalLabels.lost}` : `Nenhum ${noun}`}
+                </span>
+              </div>
+            )
           ) : (
             cards.map((deal) => (
               <div
@@ -325,7 +340,7 @@ export function DealsBoard({
                   'relative group/card rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-[var(--bd2)] hover:bg-[var(--rowhover)]',
                   onOpenDeal && 'cursor-pointer',
                   // Em arraste: única sombra fora de overlay (o card É um overlay enquanto flutua).
-                  draggingId === deal.id && 'opacity-95 shadow-lg',
+                  draggingId === deal.id && 'opacity-95 shadow-[var(--shadow-overlay)] rotate-[-1.5deg] border-[var(--bd2)]',
                   selectedDealId === deal.id && 'border-brand-500 hover:border-brand-500 ring-[3px] ring-brand-500/20',
                   highlightDealId === deal.id && 'ring-[3px] ring-brand-500 border-brand-500',
                 )}
@@ -486,13 +501,13 @@ export function DealsBoard({
         </div>
       )}
       <div
-        className="flex gap-[10px] p-4 h-full min-h-0"
-        style={{ minWidth: isDesktop ? openStages.length * 260 + (terminalStages.length > 0 ? 272 : 0) : undefined }}
+        className="flex gap-[10px] px-4 py-3 h-full min-h-0"
+        style={{ minWidth: isDesktop ? openStages.length * 260 + (terminalStages.length > 0 ? 190 : 0) : undefined }}
       >
         {openStages.map((stage) => renderColumn(stage))}
         {terminalStages.length > 0 && (
           <div
-            className="flex flex-col gap-3 w-[85vw] md:w-[250px] flex-shrink-0 snap-start min-h-0 border-l-2 border-dashed border-surface-700 pl-[10px] ml-[2px]"
+            className="flex flex-col gap-2 w-[85vw] md:w-auto md:flex-1 md:min-w-[180px] flex-shrink-0 md:flex-shrink snap-start min-h-0 border-l border-dashed border-[var(--bd2)] pl-[10px]"
             data-testid="board-terminal-column"
           >
             {terminalStages.map((stage) => renderColumn(stage, true))}
@@ -640,7 +655,6 @@ function OwnerAvatar({ owner }: { owner: User | null }) {
  */
 function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Deal; onOpenContact?: (contactId: string) => void; users: User[]; siblings?: number }) {
   const origin = originInfo(deal)
-  const OriginIcon = origin.icon
   const by = movedByChip(deal)
   const time = timeInStage(deal)
   const stuckDays = stuckDaysInStage(deal)
@@ -673,45 +687,36 @@ function SalesCardBody({ deal, onOpenContact, users, siblings = 1 }: { deal: Dea
         </button>
       )}
       <CardScope description={deal.description} />
-      <div className="mt-1 flex items-center justify-between">
-        {/* README 3.4: "rodapé com valor 13px/700". */}
+      {/* R2-1E-CARD-02 (canvas 1e): UM rodapé — valor 13/700 · chip IA · previsão ·
+          tempo à direita · avatar do dono 18px. Antes eram três linhas (valor;
+          dono + previsão; origem + tempo). Nome do dono e origem descem para o
+          tooltip (o canvas não os mostra no card; a ficha tem os dois). */}
+      <div className="mt-0.5 flex items-center gap-1.5" title={`Origem: ${origin.label}`} data-testid="sales-card-origin">
         <span className="text-[13px] font-bold text-surface-100">{brl(deal.amountCents ?? 0)}</span>
-        <div className="flex items-center gap-1">
-          {by === 'ia' && (
-            <span className="text-3xs text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
-          )}
-          {by === 'auto' && (
-            <span className="text-3xs text-surface-400 bg-surface-800 px-1.5 py-0.5 rounded" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
-          )}
-        </div>
-      </div>
-      <div className="mt-1.5 flex items-center justify-between gap-2 text-2xs text-surface-500">
-        {/* As quatro linhas de metadado do card não têm rótulo — o ícone é o
-            rótulo, e num card de 4 linhas isso é o certo. O `title` é a rede:
-            quem não decifrar o ícone descobre passando o mouse, sem gastar
-            espaço. Cada um diz o CAMPO, não só o valor, porque o valor já
-            está escrito ao lado ("Admin Local" sozinho não ensina nada). */}
-        <span className="inline-flex items-center gap-1 truncate" title={`Dono do negócio: ${ownerLabel}`} data-testid="sales-card-owner">
-          <OwnerAvatar owner={owner} /> <span className="truncate">{ownerLabel}</span>
-        </span>
-        <span className="inline-flex items-center gap-1 flex-shrink-0" title={forecast ? `Previsão de fechamento: ${forecast}` : 'Sem previsão de fechamento'} data-testid="sales-card-forecast">
-          <CalendarClock className="w-3 h-3" /> {forecast ?? 'sem previsão'}
-        </span>
-      </div>
-      <div className="mt-1 flex items-center justify-between gap-2 text-2xs text-surface-500">
-        <span className="inline-flex items-center gap-1 truncate" title={`Origem: ${origin.label}`} data-testid="sales-card-origin">
-          <OriginIcon className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{origin.label}</span>
-        </span>
+        {by === 'ia' && (
+          <span className="inline-flex items-center h-4 px-[5px] rounded-[5px] text-[10px] font-bold text-accent-amber bg-accent-amber/[.12]" title={deal.lastMovedByActorName ?? 'IA'}>IA</span>
+        )}
+        {by === 'auto' && (
+          <span className="inline-flex items-center h-4 px-[5px] rounded-[5px] text-[10px] font-bold text-surface-400 bg-surface-800" title={deal.lastMovedByActorName ?? 'automático'}>auto</span>
+        )}
+        {forecast && (
+          <span className="inline-flex items-center gap-[3px] text-[11px] text-surface-400" title={`Previsão de fechamento: ${forecast}`} data-testid="sales-card-forecast">
+            <CalendarClock className="w-3 h-3" /> {forecast}
+          </span>
+        )}
         {time && (
-          // DEAL-CARD-11: mesma regra de "parado Nd" em cor de perigo.
+          // DEAL-CARD-11: "parado Nd" em cor de perigo quando passa do limiar.
           <span
-            className={cn('inline-flex items-center gap-1 flex-shrink-0', stuckDays !== null && 'text-danger font-semibold')}
+            className={cn('ml-auto text-[11px] whitespace-nowrap', stuckDays !== null ? 'text-danger font-semibold' : 'text-surface-500')}
             title={`Nesta etapa há ${time}`}
             data-testid="sales-card-time"
           >
-            <Clock className="w-3 h-3" /> {stuckDays !== null ? `parado ${stuckDays} d` : time}
+            {stuckDays !== null ? `parado ${stuckDays} d` : time}
           </span>
         )}
+        <span className={cn('inline-flex', !time && 'ml-auto')} title={`Dono do negócio: ${ownerLabel}`} data-testid="sales-card-owner">
+          <OwnerAvatar owner={owner} />
+        </span>
       </div>
     </>
   )

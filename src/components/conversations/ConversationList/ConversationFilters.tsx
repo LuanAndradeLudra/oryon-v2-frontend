@@ -55,10 +55,11 @@ function Chip({
       aria-pressed={active}
       title={title}
       className={cn(
-        'inline-flex items-center h-6 px-2 rounded-sm border text-[11.5px] font-semibold whitespace-nowrap transition-colors flex-shrink-0',
+        // canvas 1d: chip 22px, raio 6, 11/600; ativo = acsoft sem borda; inativo = borda --bd + tx2.
+        'inline-flex items-center h-[22px] px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0',
         active
-          ? 'border-brand-500 bg-accent-soft text-accent-dark'
-          : 'border-[var(--bd2)] bg-surface-800 text-surface-300 hover:text-surface-100',
+          ? 'border-transparent bg-accent-soft text-accent-dark'
+          : 'border-surface-700 text-surface-400 hover:text-surface-100',
       )}
     >
       {children}
@@ -115,7 +116,7 @@ export function ConversationFiltersBar({
     : (!filters.assignedTo || filters.assignedTo === 'all') ? 'all' : null
 
   return (
-    <div className="px-3 pt-2.5 pb-2 space-y-2">
+    <div className="px-3 pt-2.5 pb-2.5 space-y-2">
       {/* Segmentado + funil */}
       <div className="flex items-center gap-2">
         {/* Primitivo SegmentedControl (barra unida do canvas 1d, CONV-LIST-02..05). */}

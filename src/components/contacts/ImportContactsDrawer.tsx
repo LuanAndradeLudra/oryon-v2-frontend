@@ -560,7 +560,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       className={cn(
                         'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                         uploadMode === 'file'
-                          ? 'bg-surface-700 text-surface-100'
+                          ? 'bg-surface-900 text-surface-100'
                           : 'text-surface-400 hover:text-surface-200',
                       )}
                     >
@@ -572,7 +572,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       className={cn(
                         'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                         uploadMode === 'paste'
-                          ? 'bg-surface-700 text-surface-100'
+                          ? 'bg-surface-900 text-surface-100'
                           : 'text-surface-400 hover:text-surface-200',
                       )}
                     >

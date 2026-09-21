@@ -70,7 +70,7 @@ function SenderAvatar({ message, contact }: { message: Message; contact: { displ
   if (message.senderKind === 'campaign' || message.senderKind === 'rule') {
     const Icon = message.senderKind === 'campaign' ? Megaphone : Workflow
     return (
-      <div className="w-6 h-6 rounded-full bg-surface-800 border border-surface-700 text-surface-400 flex items-center justify-center flex-shrink-0">
+      <div className="w-6 h-6 rounded-xs bg-surface-800 border border-surface-700 text-surface-400 flex items-center justify-center flex-shrink-0">
         <Icon className="w-3.5 h-3.5" />
       </div>
     )
@@ -80,7 +80,7 @@ function SenderAvatar({ message, contact }: { message: Message; contact: { displ
   }
   // IA (senderKind === 'ai', ou ausência de senderKind/sentByUserId).
   return (
-    <div className="w-6 h-6 rounded-full bg-accent-soft text-accent-dark flex items-center justify-center flex-shrink-0">
+    <div className="w-6 h-6 rounded-xs bg-accent-soft text-accent-dark flex items-center justify-center flex-shrink-0">
       <Bot className="w-3.5 h-3.5" />
     </div>
   )
@@ -663,7 +663,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
   // Extra top spacing when a new sender run starts (the avatar sits above).
-  const gap = showAvatar ? 'mt-2' : isSameDirection ? 'mt-1' : 'mt-2'
+  const gap = showAvatar ? 'mt-3' : isSameDirection ? 'mt-1' : 'mt-3'
 
   // Transcription toggle lives here so the "Ver transcrição" control can sit
   // next to the timestamp in the footer; the MediaContent component
@@ -840,7 +840,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
         {/* Footer: [Ver transcrição (audio com texto Whisper)] … [hora] [status]
             Control only shows when Whisper text exists
             and is still collapsed; expanding is one-way until remount. */}
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-[3px]">
           {audioTranscription && !showTranscription && (
             <button
               type="button"

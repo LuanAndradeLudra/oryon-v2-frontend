@@ -159,8 +159,8 @@ export function ContactPanelDeals({
   const wonCents = salesDeals.filter((d) => d.status === 'won').reduce((s, d) => s + (d.amountCents ?? 0), 0)
 
   return (
-    <div className="panel-divider px-4 py-3 border-t border-surface-700" data-testid="panel-pipelines">
-      <div className="flex items-center justify-between mb-2">
+    <div className="panel-divider px-4 py-2.5 border-t border-surface-700" data-testid="panel-pipelines">
+      <div className="flex items-center justify-between h-6 mb-1">
         <p className="text-[10px] text-surface-500 uppercase tracking-[.14em] font-bold flex items-center gap-1.5">
           Negócios
           <span data-testid="panel-pipelines-count">
@@ -198,7 +198,7 @@ export function ContactPanelDeals({
         </div>
       )}
 
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-1.5">
         {open.map((deal) => {
           const pipeline = pipelineOf(deal)
           if (!pipeline) return null

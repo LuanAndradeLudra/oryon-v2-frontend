@@ -4,7 +4,7 @@ import type { TenantStage } from '@/types'
 interface StageBadgeProps {
   stage: string
   stages: TenantStage[]
-  size?: 'sm' | 'md'
+  size?: 'xs' | 'sm' | 'md'
   className?: string
 }
 
@@ -34,7 +34,7 @@ export function StageBadge({ stage, stages, size = 'sm', className }: StageBadge
   const shell = cn(
     'inline-flex items-center gap-1.5 font-semibold rounded-[5px] border',
     'bg-surface-800 border-surface-700',
-    size === 'sm' ? 'text-[11px] px-[7px] py-0.5' : 'text-xs px-2.5 py-1',
+    size === 'xs' ? 'h-[18px] gap-[5px] text-[10.5px] px-1.5' : size === 'sm' ? 'text-[11px] px-[7px] py-0.5' : 'text-xs px-2.5 py-1',
     className,
   )
 
@@ -51,7 +51,7 @@ export function StageBadge({ stage, stages, size = 'sm', className }: StageBadge
   return (
     <span className={cn(shell, 'text-surface-100')} title={`Situação: ${def.label}`}>
       <span
-        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+        className={cn('rounded-full flex-shrink-0', size === 'xs' ? 'w-[5px] h-[5px]' : 'w-1.5 h-1.5')}
         style={{ backgroundColor: def.color }}
         aria-hidden
       />

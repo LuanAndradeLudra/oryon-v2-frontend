@@ -778,7 +778,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
   const slashQuery = text.match(/^\/(\S*)$/)?.[1] ?? ''
 
   return (
-    <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
+    <div className="px-4 pt-0 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
       <div className="relative">
         {pickerActive && (
           <QuickReplyPicker
@@ -821,7 +821,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
             // absolute do dropzone (abaixo) se posicionar contra este container.
             // CONV-CHAT-32/41 (spec/1d-conversas.GAPS.md): sem sombra — o mock
             // é explícito ("Composer não tem sombra").
-            'relative msg-composer rounded-lg px-3 py-2.5 transition-all',
+            'relative msg-composer rounded-lg px-3 pt-2.5 pb-2 transition-all',
             'border focus-within:border-brand-500/50',
             dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
           )}
@@ -939,7 +939,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
             )}
           />
 
-          <div className="flex items-center gap-2 mt-1.5">
+          <div className="flex items-center gap-1 mt-2.5 -mx-1">
             {/* Attachments menu */}
             <div className="relative">
               <button

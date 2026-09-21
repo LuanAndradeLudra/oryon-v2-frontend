@@ -137,7 +137,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           lista É WhatsApp (whatsappNumber é campo obrigatório em Conversation,
           e `channel` nunca é lido em nenhum lugar da UI hoje) — o selo
           repetia a mesma informação em 100% das linhas, sem distinguir nada. */}
-      <div className="relative mt-0.5 flex-shrink-0">
+      <div className="relative flex-shrink-0">
         <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="36" />
       </div>
 
@@ -196,12 +196,12 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
         <div className="flex items-center gap-1.5 mt-1">
           <div className="flex items-center gap-1.5 min-w-0">
             {status === "resolved" ? (
-              <span className="inline-flex items-center h-[18px] px-1.5 rounded-xs border border-surface-700 bg-surface-900 text-[10.5px] font-semibold text-surface-400 flex-shrink-0">
+              <span className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] border border-surface-700 bg-surface-900 text-[10.5px] font-semibold text-surface-400 flex-shrink-0">
                 Resolvida
               </span>
             ) : aiActive ? (
               <span
-                className="inline-flex items-center gap-1 h-[18px] px-1.5 rounded-xs text-[10.5px] font-semibold text-accent-amber bg-accent-amber/[.12] flex-shrink-0"
+                className="inline-flex items-center gap-1 h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-accent-amber bg-accent-amber/[.12] flex-shrink-0"
                 title="IA respondendo nesta conversa"
               >
                 <Bot className="w-3 h-3" />
@@ -209,7 +209,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               </span>
             ) : assignment === "human" && assignedUser ? (
               <span
-                className="inline-flex items-center h-[18px] px-1.5 rounded-xs text-[10.5px] font-semibold text-accent-green bg-accent-green/[.12] truncate"
+                className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-accent-green bg-accent-green/[.12] truncate"
                 title={`Atribuída a ${assignedUser.firstName}${assignedUser.lastName ? " " + assignedUser.lastName : ""}`}
               >
                 {assignedUser.id === currentUserId ? "Você" : truncate(assignedUser.firstName, 12)}

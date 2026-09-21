@@ -175,7 +175,7 @@ export function HistoryTab({ contactId }: HistoryTabProps) {
             className={cn(
               'flex-1 text-xs font-medium px-2 py-1.5 rounded-md transition-colors',
               filter === t.key
-                ? 'bg-surface-700 text-surface-100'
+                ? 'bg-surface-900 text-surface-100'
                 : 'text-surface-400 hover:text-surface-200',
             )}
           >

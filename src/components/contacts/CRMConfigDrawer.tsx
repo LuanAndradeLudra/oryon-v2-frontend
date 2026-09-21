@@ -98,7 +98,7 @@ export function CRMConfigDrawer({
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         active
-                          ? 'bg-surface-700 text-surface-50'
+                          ? 'bg-surface-900 text-surface-50'
                           : 'text-surface-400 hover:text-surface-200'
                       }`}
                     >

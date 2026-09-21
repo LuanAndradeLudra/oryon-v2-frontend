@@ -106,9 +106,10 @@ describe('DealsBoard — card de VENDA com dono, previsão, tempo na etapa e ori
       originKind: 'manual',
     })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} users={USERS} />)
-    expect(screen.getByTestId('sales-card-owner')).toHaveTextContent('Ana Souza')
+    // R2-1E-CARD-02: nome do dono e origem viram tooltip (o rodapé do canvas só tem avatar).
+    expect(screen.getByTestId('sales-card-owner')).toHaveAttribute('title', 'Dono do negócio: Ana Souza')
     expect(screen.getByTestId('sales-card-forecast')).toHaveTextContent('20/09')
-    expect(screen.getByTestId('sales-card-origin')).toHaveTextContent('Manual')
+    expect(screen.getByTestId('sales-card-origin')).toHaveAttribute('title', 'Origem: Manual')
     expect(screen.getByTestId('sales-card-time')).toHaveTextContent('3 h na etapa')
   })
 
@@ -124,19 +125,16 @@ describe('DealsBoard — card de VENDA com dono, previsão, tempo na etapa e ori
     expect(screen.getByTestId('sales-card-owner')).toHaveAttribute('title', 'Dono do negócio: Ana Souza')
     expect(screen.getByTestId('sales-card-origin')).toHaveAttribute('title', 'Origem: Manual')
 
-    // DEAL-CARD-12 (Fase C): o ícone de pessoa do dono virou o avatar real
-    // (iniciais do `owner` resolvido) — a distinção com a origem continua:
-    // uma é um avatar com iniciais, a outra segue com ícone SVG.
+    // DEAL-CARD-12: o dono é o avatar real (iniciais do `owner` resolvido).
     expect(within(screen.getByTestId('sales-card-owner')).getByText('AS')).toBeInTheDocument()
-    const svgOrigem = screen.getByTestId('sales-card-origin').querySelector('svg')
-    expect(svgOrigem?.innerHTML).toBeTruthy()
   })
 
   it('sem dono/previsão: "Sem dono" e "sem previsão" — nada inventado', () => {
     const sales = deal({ pipelineId: 'ps', ownerUserId: undefined, expectedCloseAt: undefined })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={vi.fn()} pipeline={SALES} />)
-    expect(screen.getByTestId('sales-card-owner')).toHaveTextContent('Sem dono')
-    expect(screen.getByTestId('sales-card-forecast')).toHaveTextContent('sem previsão')
+    expect(screen.getByTestId('sales-card-owner')).toHaveAttribute('title', 'Dono do negócio: Sem dono')
+    // sem previsão o chip da previsão nem aparece (nada inventado)
+    expect(screen.queryByTestId('sales-card-forecast')).toBeNull()
   })
 })
 
@@ -230,8 +228,8 @@ describe('DealsBoard — coluna terminal única (R2-1E-COL)', () => {
     expect(within(terminal).getByText('Confirmado')).toBeInTheDocument()
     expect(within(terminal).getByText('Não confirmou')).toBeInTheDocument()
     expect(within(terminal).queryByText('Enviado')).toBeNull()
-    expect(within(terminal).getByText('Solte aqui para marcar como Ganho')).toBeInTheDocument()
-    expect(within(terminal).getByText('Solte aqui para marcar como Perdido')).toBeInTheDocument()
+    expect(terminal).toHaveTextContent('Solte aqui para marcar como Ganho')
+    expect(terminal).toHaveTextContent('Solte aqui para marcar como Perdido')
   })
 
   it('soltar um card na etapa terminal continua chamando onMoveStage (o modal de motivo abre no pai)', async () => {
