@@ -210,19 +210,19 @@ function NavClusterGroup({ cluster, activeSection, searching, currentRole }: {
   // aberto): abre sozinho quando contém a seção ativa; o rótulo alterna.
   const open = !cluster.label || searching || (override ?? containsActive)
   return (
-    <div className={cluster.label ? 'mt-1 first:mt-0' : ''}>
+    <div className="flex flex-col gap-[2px]">
       {cluster.label && (
         <button
           type="button"
           aria-expanded={open}
           onClick={() => setOverride(!open)}
-          className="w-full h-[26px] pl-[22px] pr-2 flex items-center text-left text-[13px] font-medium text-surface-200 hover:text-surface-50 transition-colors"
+          className="w-full h-7 px-[10px] flex items-center text-left text-[12.5px] font-semibold text-surface-100 transition-colors"
         >
           {cluster.label}
         </button>
       )}
       {open && (
-        <nav className="flex flex-col">
+        <nav className="flex flex-col gap-[2px]">
           {cluster.items.map((item) => (
             <SettingsSidebarItem
               key={item.section}
@@ -269,16 +269,16 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
       {/* Navegação única — text-first, sem ícones, sem pills. A hierarquia é
           100% tipográfica: DOMÍNIO (caps) > cluster (sentence, mudo) > item. */}
-      <aside className="w-full md:w-[248px] flex-shrink-0 bg-surface-800 border-b md:border-b-0 md:border-r border-surface-700 py-3 md:py-5 px-3 overflow-y-auto max-h-60 md:max-h-none">
+      <aside className="w-full md:w-[248px] flex-shrink-0 bg-surface-800 border-b md:border-b-0 md:border-r border-surface-700 py-[14px] px-3 flex flex-col gap-[2px] overflow-y-auto max-h-60 md:max-h-none">
         {/* Busca — encontra por rótulo OU sinônimo natural */}
-        <div className="relative mb-4">
+        <div className="relative mb-[10px] flex-shrink-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar configuração..."
             aria-label="Buscar configuração"
-            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-lg pl-8 pr-2 text-sm text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-[7px] pl-8 pr-2.5 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
           />
         </div>
 
@@ -286,9 +286,9 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
           <p className="px-2 py-4 text-xs text-surface-500">Nenhuma configuração encontrada.</p>
         )}
 
-        {nav.map((d) => (
-          <div key={d.domain} className="mb-5">
-            <p className="px-2 mb-2 text-[10px] font-bold uppercase text-surface-500" style={{ letterSpacing: '.14em' }}>
+        {nav.map((d, di) => (
+          <div key={d.domain} className="flex flex-col gap-[2px]">
+            <p className={di === 0 ? 'px-[10px] pt-[6px] pb-1 text-[10px] font-bold uppercase text-surface-500' : 'px-[10px] pt-[14px] pb-1 text-[10px] font-bold uppercase text-surface-500'} style={{ letterSpacing: '.14em' }}>
               {d.domain}
             </p>
             {d.clusters.map((cluster, i) => (
@@ -311,7 +311,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
       <main className="flex-1 overflow-y-auto py-6 px-4 md:pt-[26px] md:pb-8 md:px-10">
         <SettingsSectionsProvider>
           <SettingsBreadcrumbCtx.Provider value={breadcrumb}>
-            <div className="flex justify-center gap-10">
+            <div className="flex justify-start gap-10">
               <div className="max-w-4xl w-full min-w-0">
                 {children}
               </div>

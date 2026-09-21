@@ -37,10 +37,10 @@ export function ConnectorCard({ connector, onOpen }: ConnectorCardProps) {
       type="button"
       onClick={onOpen}
       className={cn(
-        'group flex flex-col text-left rounded-lg border bg-surface-900 p-3.5 gap-2.5 transition-colors',
+        'group flex flex-col text-left rounded-lg border bg-surface-800 p-3.5 gap-2.5 transition-colors',
         comingSoon
-          ? 'border-dashed border-surface-700 hover:border-surface-600'
-          : 'border-surface-700 hover:border-surface-700',
+          ? 'border-dashed border-[var(--bd2)]'
+          : 'border-surface-700',
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -59,12 +59,12 @@ export function ConnectorCard({ connector, onOpen }: ConnectorCardProps) {
         <p className="text-2xs text-surface-500 truncate">{connector.category} · por {connector.vendor}</p>
       </div>
 
-      <p className={cn('text-xs leading-[1.45] flex-1', comingSoon ? 'text-surface-600' : 'text-surface-400')}>
+      <p className={cn('text-xs leading-[1.45] flex-1', comingSoon ? 'text-surface-500' : 'text-surface-400')}>
         {connector.description}
       </p>
 
       <div className={cn('flex items-center gap-2 pt-0.5', metric ? 'justify-between' : 'justify-end')}>
-        {metric && <span className="text-2xs text-surface-500">{metric}</span>}
+        {metric && <span className={cn('text-2xs', comingSoon ? 'text-surface-500' : 'text-surface-400')}>{metric}</span>}
         <Button
           size="sm"
           variant={cta.variant}

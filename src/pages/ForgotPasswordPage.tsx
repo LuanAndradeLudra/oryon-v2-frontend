@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Banner } from '@/components/ui/Banner'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { api, SKIP_AUTH_REFRESH } from '@/services/api'
 
 
@@ -79,14 +81,13 @@ export function ForgotPasswordPage() {
                 <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">
                   E-mail
                 </label>
-                <input
+                <Input
                   type="email"
                   autoComplete="email"
                   autoFocus
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu@email.com"
-                  className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
                 />
               </div>
 
@@ -94,13 +95,7 @@ export function ForgotPasswordPage() {
                 <Banner variant="danger">{error}</Banner>
               )}
 
-              <button
-                type="submit"
-                disabled={loading || !email.trim()}
-                className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mt-1"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar link'}
-              </button>
+              <Button type="submit" variant="primary" size="lg" loading={loading} disabled={loading || !email.trim()} className="w-full mt-1">Enviar link</Button>
             </form>
 
             <div className="mt-6 text-center">

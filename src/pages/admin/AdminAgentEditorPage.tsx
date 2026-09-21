@@ -15,6 +15,7 @@ import {
   AlertCircle, ArrowLeft, Bot, Eye, RefreshCcw, Save,
   ShieldCheck, Sparkles,
 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
@@ -219,12 +220,15 @@ export function AdminAgentEditorPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => navigate('/admin/skill-templates')}
-          className="inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-200 mb-4 transition-colors"
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
+          className="mb-4 -ml-3"
         >
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </button>
+          Voltar
+        </Button>
 
         <header className="mb-6">
           <h1 className="text-xl font-semibold text-surface-100 flex items-center gap-2">
@@ -281,7 +285,7 @@ export function AdminAgentEditorPage() {
 
         {/* ── Modelo de IA (Phase 28) ──────────────────────────────────── */}
         {agentId && agentRec && (
-          <section className="bg-surface-900/50 border border-surface-700 rounded-xl p-5 mb-6">
+          <section className="bg-surface-800 border border-surface-700 rounded-lg p-5 mb-6">
             <header className="flex items-start justify-between mb-3">
               <div>
                 <h2 className="text-sm font-semibold text-surface-100">Modelo de IA</h2>
@@ -341,7 +345,7 @@ export function AdminAgentEditorPage() {
           ) : eff ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* ── LEFT: editor do system_prompt ───────────────────────── */}
-              <section className="bg-surface-900/50 border border-surface-700 rounded-xl p-5">
+              <section className="bg-surface-800 border border-surface-700 rounded-lg p-5">
                 <header className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                     <Bot className="w-4 h-4 text-brand-400" />
@@ -371,40 +375,31 @@ export function AdminAgentEditorPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={handleDiscard}
                       disabled={!isDirty || saving}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors',
-                        isDirty && !saving
-                          ? 'text-surface-300 hover:bg-surface-800'
-                          : 'text-surface-600 cursor-not-allowed',
-                      )}
+                      leftIcon={<RefreshCcw className="w-3.5 h-3.5" />}
                     >
-                      <RefreshCcw className="w-3.5 h-3.5" /> Descartar
-                    </button>
-                    <button
-                      type="button"
+                      Descartar
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
                       onClick={handleSave}
                       disabled={!isDirty || saving}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-                        isDirty && !saving
-                          ? 'bg-brand-600 text-surface-950 hover:bg-brand-500 active:scale-[0.98]'
-                          : 'bg-surface-800 text-surface-500 cursor-not-allowed',
-                      )}
+                      loading={saving}
+                      leftIcon={saving ? undefined : <Save className="w-3.5 h-3.5" />}
                     >
-                      {saving
-                        ? <><Spinner className="w-3.5 h-3.5" /> Salvando…</>
-                        : <><Save className="w-3.5 h-3.5" /> Salvar</>}
-                    </button>
+                      {saving ? 'Salvando…' : 'Salvar'}
+                    </Button>
                   </div>
                 </div>
               </section>
 
               {/* ── RIGHT: prompt efetivo (read-only preview) ───────────── */}
-              <section className="bg-surface-900/50 border border-surface-700 rounded-xl p-5">
+              <section className="bg-surface-800 border border-surface-700 rounded-lg p-5">
                 <header className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                     <Eye className="w-4 h-4 text-brand-400" />
@@ -437,7 +432,7 @@ export function AdminAgentEditorPage() {
                   </PromptBlock>
 
                   {eff.fragments.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-surface-700 bg-surface-900/30 px-3 py-4 text-center text-2xs text-surface-500">
+                    <div className="rounded-lg border border-dashed border-surface-700 bg-[var(--sf2)] px-3 py-4 text-center text-2xs text-surface-500">
                       Nenhuma skill com instruções injetadas. Cadastre <code>prompt_fragment</code> em
                       um template e atribua ao agente para vê-las aqui.
                     </div>
@@ -479,7 +474,7 @@ export function AdminAgentEditorPage() {
             customer uses, but with the chosen tenantId so all API calls
             scope to the target tenant. */}
         {agentId && tenantId && (
-          <section className="mt-6 bg-surface-900/50 border border-surface-700 rounded-xl p-5">
+          <section className="mt-6 bg-surface-800 border border-surface-700 rounded-lg p-5">
             <header className="mb-4">
               <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-brand-400" />
@@ -502,7 +497,7 @@ export function AdminAgentEditorPage() {
 
 function PickerBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="bg-surface-900/50 border border-surface-700 rounded-xl p-4">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-4">
       <label className="block text-xs uppercase tracking-wide text-surface-500 mb-2">{label}</label>
       {children}
     </div>
@@ -535,8 +530,8 @@ function PromptBlock({
     <div className={cn(
       'rounded-lg border px-3 py-3',
       tone === 'brand'
-        ? 'bg-brand-600/5 border-brand-600/30'
-        : 'bg-surface-900 border-surface-700',
+        ? 'bg-accent-soft border-brand-500/30'
+        : 'bg-[var(--sf2)] border-surface-700',
     )}>
       <header className="flex items-center justify-between mb-2">
         <div>

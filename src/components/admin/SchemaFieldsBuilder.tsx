@@ -6,8 +6,8 @@
 
 import { useState, useMemo } from 'react'
 import { Plus, Trash2, Edit3, Lock } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { SchemaFieldModal, type SchemaFieldDraft } from './SchemaFieldModal'
-import { cn } from '@/lib/utils'
 import type { JsonSchemaObject, JsonSchemaProperty } from '@/types/skills'
 
 interface Props {
@@ -89,20 +89,13 @@ export function SchemaFieldsBuilder({
   return (
     <div>
       {fields.length === 0 ? (
-        <div className="border border-dashed border-surface-700 rounded-lg p-6 text-center bg-surface-900/40">
+        <div className="border border-dashed border-surface-700 rounded-lg p-6 text-center bg-[var(--sf2)]">
           <p className="text-sm text-surface-400 mb-3">
             {emptyHint ?? 'Nenhum campo ainda. Adicione o primeiro abaixo.'}
           </p>
-          <button
-            type="button"
-            onClick={openNew}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold',
-              'bg-brand-600 text-surface-950 hover:bg-brand-500 transition-colors',
-            )}
-          >
-            <Plus className="w-3.5 h-3.5" /> Adicionar campo
-          </button>
+          <Button variant="primary" size="sm" onClick={openNew} leftIcon={<Plus className="w-3.5 h-3.5" />}>
+            Adicionar campo
+          </Button>
         </div>
       ) : (
         <>
@@ -116,13 +109,9 @@ export function SchemaFieldsBuilder({
               />
             ))}
           </div>
-          <button
-            type="button"
-            onClick={openNew}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" /> Adicionar campo
-          </button>
+          <Button variant="neutral" size="sm" onClick={openNew} leftIcon={<Plus className="w-3.5 h-3.5" />}>
+            Adicionar campo
+          </Button>
         </>
       )}
 
@@ -152,21 +141,21 @@ function FieldRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap mb-0.5">
           <span className="font-mono text-sm text-surface-100">{field.name}</span>
-          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-surface-800 text-surface-400">
+          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-xs border border-surface-700 bg-[var(--sf2)] text-surface-400">
             {field.prop.type}
           </span>
           {field.required && (
-            <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-status-active-bg text-status-active">
+            <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-xs border border-status-active-border bg-status-active-bg text-status-active">
               obrigatório
             </span>
           )}
           {field.prop.enum && field.prop.enum.length > 0 && (
-            <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-brand-600/15 text-brand-400">
+            <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-xs border border-brand-500/30 bg-accent-soft text-accent-dark">
               enum
             </span>
           )}
           {field.prop.secret && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-status-pending-bg text-status-pending">
+            <span className="inline-flex items-center gap-0.5 text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-xs border border-status-pending-border bg-status-pending-bg text-status-pending">
               <Lock className="w-2.5 h-2.5" /> sensível
             </span>
           )}
@@ -181,20 +170,18 @@ function FieldRow({
         )}
       </div>
       <div className="flex flex-col gap-1 flex-shrink-0">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs text-surface-300 hover:bg-surface-800 transition-colors"
-        >
-          <Edit3 className="w-3 h-3" /> Editar
-        </button>
-        <button
-          type="button"
+        <Button variant="ghost" size="sm" onClick={onEdit} leftIcon={<Edit3 className="w-3 h-3" />}>
+          Editar
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onRemove}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs text-danger hover:bg-danger/10 transition-colors"
+          leftIcon={<Trash2 className="w-3 h-3" />}
+          className="text-danger hover:text-danger hover:bg-danger/10"
         >
-          <Trash2 className="w-3 h-3" /> Remover
-        </button>
+          Remover
+        </Button>
       </div>
     </div>
   )

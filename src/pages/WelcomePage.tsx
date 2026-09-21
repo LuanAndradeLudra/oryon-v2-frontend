@@ -186,7 +186,7 @@ export function WelcomePage() {
               {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
             <Link to="/login"
-              className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-colors">
+              className="px-4 py-2 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-colors">
               Entrar
             </Link>
           </nav>
@@ -214,7 +214,7 @@ export function WelcomePage() {
               <div className="px-4 py-4 flex flex-col gap-3">
                 <a href="#como-funciona" onClick={() => setMenuOpen(false)} className={`text-sm font-medium ${textSec}`}>Como funciona</a>
                 <a href="#planos"        onClick={() => setMenuOpen(false)} className={`text-sm font-medium ${textSec}`}>Planos</a>
-                <Link to="/login" className="mt-1 px-4 py-2.5 rounded-xl bg-brand-600 text-surface-950 text-sm font-semibold text-center">
+                <Link to="/login" className="mt-1 px-4 py-2.5 rounded-lg bg-brand-600 text-surface-950 text-sm font-semibold text-center">
                   Entrar
                 </Link>
               </div>
@@ -241,7 +241,7 @@ export function WelcomePage() {
             <img
               src="/oryon-logo.svg"
               alt="Oryon"
-              className="relative w-32 h-32 sm:w-40 sm:h-40 lg:w-52 lg:h-52 select-none drop-shadow-2xl"
+              className="relative w-32 h-32 sm:w-40 sm:h-40 lg:w-52 lg:h-52 select-none"
               draggable={false}
             />
           </motion.div>
@@ -284,7 +284,7 @@ export function WelcomePage() {
             className="flex flex-col sm:flex-row items-center gap-4"
           >
             <Link to="/login"
-              className="px-7 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-base font-semibold transition-all shadow-[0_6px_20px_rgba(20,184,166,.35)] hover:shadow-[0_8px_28px_rgba(20,184,166,.5)] hover:-translate-y-0.5">
+              className="px-7 py-3.5 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-base font-semibold transition-all">
               Começar agora
             </Link>
             <a href="#como-funciona"
@@ -327,8 +327,8 @@ export function WelcomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {FEATURES.map((f, i) => (
               <FadeIn key={f.title} delay={i * 0.1}>
-                <div className={`group h-full rounded-2xl border p-6 transition-all duration-300 hover:border-brand-500/40 hover:shadow-[0_6px_20px_rgba(20,184,166,.20)] ${cardBg}`}>
-                  <div className="w-11 h-11 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-5 group-hover:bg-brand-500/20 transition-colors">
+                <div className={`group h-full rounded-lg border p-6 transition-all duration-300 hover:border-brand-500/40 ${cardBg}`}>
+                  <div className="w-11 h-11 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-5 group-hover:bg-brand-500/20 transition-colors">
                     {f.icon}
                   </div>
                   <h3 className={`font-semibold mb-2 ${textPri}`}>{f.title}</h3>
@@ -354,10 +354,10 @@ export function WelcomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             {PLANS.map((plan, i) => (
               <FadeIn key={plan.name} delay={i * 0.1}>
-                <div className={`relative rounded-2xl border p-7 flex flex-col transition-all duration-300 ${
+                <div className={`relative rounded-lg border p-7 flex flex-col transition-all duration-300 ${
                   plan.highlight
-                    ? 'border-brand-500/60 shadow-[0_6px_20px_rgba(20,184,166,.35)] scale-105 bg-surface-900'
-                    : `${cardBg} hover:border-brand-500/30 hover:shadow-[0_4px_16px_rgba(20,184,166,.15)]`
+                    ? 'border-brand-500/60 bg-surface-900'
+                    : `${cardBg} hover:border-brand-500/30`
                 }`}>
                   {plan.badge && (
                     <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-brand-400 text-surface-950 text-xs font-bold uppercase tracking-wide">
@@ -384,9 +384,9 @@ export function WelcomePage() {
                   </ul>
 
                   <Link to="/login"
-                    className={`w-full py-3 rounded-xl text-sm font-semibold text-center transition-all ${
+                    className={`w-full py-3 rounded-lg text-sm font-semibold text-center transition-all ${
                       plan.highlight
-                        ? 'bg-brand-600 hover:bg-brand-500 text-surface-950 shadow-[0_4px_12px_rgba(20,184,166,.3)]'
+                        ? 'bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)]'
                         : `border ${isLight ? 'border-gray-200 text-gray-700 hover:border-brand-500/60 hover:text-brand-400' : 'border-surface-700 text-surface-300 hover:border-brand-500/60 hover:text-brand-400'}`
                     }`}>
                     {plan.cta}
@@ -410,7 +410,7 @@ export function WelcomePage() {
             Junte-se a centenas de empresas que já usam a Oryon para converter conversas em resultados.
           </p>
           <Link to="/login"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-base font-semibold transition-all shadow-[0_6px_20px_rgba(20,184,166,.35)] hover:shadow-[0_8px_28px_rgba(20,184,166,.5)] hover:-translate-y-0.5">
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-base font-semibold transition-all">
             Começar agora <ArrowRight className="w-4 h-4" />
           </Link>
         </FadeIn>

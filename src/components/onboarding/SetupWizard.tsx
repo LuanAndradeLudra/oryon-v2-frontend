@@ -97,7 +97,7 @@ function BrandFilesSection({ files, onChange }: { files: BrandFile[]; onChange: 
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onClick={() => inputRef.current?.click()}
-        className={`flex items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
+        className={`flex items-center gap-3 rounded-lg border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
           dragOver ? 'border-brand-500 bg-brand-500/8' : 'border-surface-700 bg-surface-800/40 hover:border-surface-600 hover:bg-surface-800/70'
         }`}
       >
@@ -115,7 +115,7 @@ function BrandFilesSection({ files, onChange }: { files: BrandFile[]; onChange: 
       {entries.length > 0 && (
         <div className="space-y-2">
           {entries.map(({ file, status, error }) => (
-            <div key={file.id} className="flex items-start gap-3 rounded-xl bg-surface-800/60 border border-surface-700/60 px-3 py-2.5">
+            <div key={file.id} className="flex items-start gap-3 rounded-lg bg-surface-800/60 border border-surface-700/60 px-3 py-2.5">
               <div className="flex-shrink-0 mt-0.5">{fileIcon(file.mimeType)}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -164,7 +164,7 @@ function PillToggle({ label, selected, onClick }: { label: string; selected: boo
       onClick={onClick}
       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
         selected
-          ? 'bg-brand-600 border-brand-500 text-surface-950'
+          ? 'bg-accent-soft border-brand-500/40 text-accent-dark'
           : 'bg-surface-800 border-surface-700 text-surface-300 hover:border-surface-500 hover:text-surface-100'
       }`}
     >
@@ -173,7 +173,7 @@ function PillToggle({ label, selected, onClick }: { label: string; selected: boo
   )
 }
 
-const INPUT = 'w-full px-3 py-2.5 rounded-xl bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors'
+const INPUT = 'w-full h-9 px-2.5 rounded-sm bg-surface-800 border border-[var(--bd2)] text-[13px] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-[3px] focus:ring-accent-soft focus:border-brand-500 transition-colors'
 const SELECT = `${INPUT} cursor-pointer`
 
 // ─── Chrome comum dos passos ──────────────────────────────────────────────────
@@ -277,7 +277,7 @@ function StepChrome({
               type="button"
               onClick={onContinue}
               data-testid="setup-continue"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-all shadow-lg shadow-brand-900/40"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-all"
             >
               {continueLabel} <ArrowRight className="w-4 h-4" />
             </button>
@@ -569,7 +569,7 @@ function HubStep({
               </div>
 
               {/* Tips card */}
-              <div className="rounded-xl bg-surface-800/50 border border-surface-700/60 p-4">
+              <div className="rounded-lg bg-surface-800/50 border border-surface-700/60 p-4">
                 <p className="text-xs font-semibold text-surface-300 mb-3">Bons arquivos para começar</p>
                 <div className="space-y-2.5">
                   {[
@@ -618,7 +618,7 @@ function HubStep({
               onClick={onContinue}
               disabled={!canContinue}
               data-testid="setup-continue"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-all shadow-lg shadow-brand-900/40"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-all"
             >
               Concluir <ArrowRight className="w-4 h-4" />
             </button>
@@ -655,7 +655,7 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.15 }}
-          className="w-20 h-20 rounded-3xl bg-status-active-bg ring-1 ring-status-active-border flex items-center justify-center"
+          className="w-20 h-20 rounded-lg bg-status-active-bg ring-1 ring-status-active-border flex items-center justify-center"
         >
           <CheckCircle2 className="w-10 h-10 text-status-active" />
         </motion.div>
@@ -679,14 +679,14 @@ function DoneStep({ onComplete }: { onComplete: () => void }) {
         <div className="flex flex-col gap-3 w-full">
           <button
             onClick={() => goTo('/agents')}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-all shadow-lg shadow-brand-900/40"
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-all"
           >
             <Bot className="w-4 h-4" />
             Criar meu primeiro agente de IA
           </button>
           <button
             onClick={() => goTo('/home')}
-            className="w-full px-6 py-2.5 rounded-xl border border-surface-700 text-sm text-surface-300 hover:text-surface-100 hover:border-surface-600 transition-all"
+            className="w-full px-6 py-2.5 rounded-lg border border-surface-700 text-sm text-surface-300 hover:text-surface-100 hover:border-surface-600 transition-all"
           >
             Explorar a plataforma
           </button>

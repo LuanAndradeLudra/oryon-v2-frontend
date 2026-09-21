@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Beaker, Loader2, AlertCircle, Edit3 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { getSkillTemplate } from '@/services/skillTemplatesApi'
 import type { SkillTemplate } from '@/types/skills'
 import { SkillTemplateTester } from '@/components/admin/SkillTemplateTester'
@@ -29,12 +30,15 @@ export function SkillTemplateTesterPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 py-8">
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => navigate('/admin/skill-templates')}
-        className="inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-200 mb-4 transition-colors"
+        leftIcon={<ArrowLeft className="w-4 h-4" />}
+        className="mb-4 -ml-3"
       >
-        <ArrowLeft className="w-4 h-4" /> Voltar para o catálogo
-      </button>
+        Voltar para o catálogo
+      </Button>
 
       <header className="flex items-start justify-between gap-6 mb-6">
         <div className="min-w-0 flex-1">
@@ -52,12 +56,15 @@ export function SkillTemplateTesterPage() {
           )}
         </div>
         {template && (
-          <button
+          <Button
+            variant="neutral"
+            size="sm"
             onClick={() => navigate(`/admin/skill-templates/${template.id}`)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs font-medium transition-colors flex-shrink-0 self-start"
+            leftIcon={<Edit3 className="w-3.5 h-3.5" />}
+            className="flex-shrink-0 self-start"
           >
-            <Edit3 className="w-3.5 h-3.5" /> Editar template
-          </button>
+            Editar template
+          </Button>
         )}
       </header>
 

@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { getSkillTemplate } from '@/services/skillTemplatesApi'
 import type { SkillTemplate } from '@/types/skills'
 import { SkillTemplateForm } from '@/components/admin/SkillTemplateForm'
@@ -33,12 +34,15 @@ export function SkillTemplateEditorPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 py-8">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => navigate('/admin/skill-templates')}
-          className="inline-flex items-center gap-2 text-sm text-surface-400 hover:text-surface-200 mb-4 transition-colors"
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
+          className="mb-4 -ml-3"
         >
-          <ArrowLeft className="w-4 h-4" /> Voltar para o catálogo
-        </button>
+          Voltar para o catálogo
+        </Button>
 
         <header className="mb-6">
           <h1 className="text-xl font-semibold text-surface-100">

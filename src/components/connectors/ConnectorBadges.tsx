@@ -15,7 +15,7 @@ export function ConnectorStatusChip({ label, tone, icon, className }: StatusChip
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-xs border px-1.5 py-px text-[10.5px] font-semibold flex-shrink-0',
+        'inline-flex items-center gap-1 h-[18px] rounded-[5px] border px-1.5 text-[10.5px] font-bold flex-shrink-0',
         tone === 'success'
           ? 'bg-status-active-bg text-status-active border-status-active-border'
           : 'bg-status-pending-bg text-status-pending border-status-pending-border',
@@ -32,7 +32,7 @@ export function ConnectorComingSoonChip({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-xs border border-surface-700 bg-[var(--sf2)] px-1.5 py-px text-[10.5px] font-semibold text-surface-400 flex-shrink-0',
+        'inline-flex items-center gap-1 h-[18px] rounded-[5px] border border-surface-700 bg-[var(--sf2)] px-1.5 text-[10.5px] font-bold text-surface-400 flex-shrink-0',
         className,
       )}
     >
