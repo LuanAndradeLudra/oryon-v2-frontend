@@ -135,7 +135,7 @@ export function ConversationList({
   // em max-w-[440px] + mx-auto, então segue centralizada em qualquer largura.
   return (
     <div className={cn(
-      'conv-surface flex flex-col h-full w-full sm:w-[360px] xl:w-[420px] 2xl:w-[480px] bg-surface-800 border-r border-surface-700 flex-shrink-0',
+      'conv-surface flex flex-col h-full w-full sm:w-[360px] bg-surface-800 border-r border-surface-700 flex-shrink-0',
       roundedBottomRight && 'overflow-hidden rounded-br-lg',
     )}>
       {/* Search header */}
