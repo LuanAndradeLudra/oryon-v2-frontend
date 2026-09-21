@@ -821,14 +821,14 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
             // absolute do dropzone (abaixo) se posicionar contra este container.
             // CONV-CHAT-32/41 (spec/1d-conversas.GAPS.md): sem sombra — o mock
             // é explícito ("Composer não tem sombra").
-            'relative msg-composer rounded-2xl px-3 py-2.5 transition-all',
+            'relative msg-composer rounded-lg px-3 py-2.5 transition-all',
             'border focus-within:border-brand-500/50',
             dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
           )}
         >
           {/* Dropzone: feedback "solte aqui" durante o arraste (SCRUM-275) */}
           {dragOver && (
-            <div className="absolute inset-0 z-10 rounded-2xl bg-brand-950/50 border-2 border-dashed border-brand-500 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 z-10 rounded-lg bg-brand-950/50 border-2 border-dashed border-brand-500 flex items-center justify-center pointer-events-none">
               <span className="text-xs font-semibold text-brand-200">Solte para anexar</span>
             </div>
           )}
@@ -945,7 +945,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
               <button
                 ref={attachButtonRef}
                 onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors flex-shrink-0"
+                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors flex-shrink-0"
                 title="Anexar arquivo"
               >
                 <Paperclip className="w-4 h-4" />
@@ -954,37 +954,37 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
               {showAttachMenu && (
                 <div
                   ref={attachMenuRef}
-                  className="absolute bottom-full left-0 mb-2 overlay-surface border rounded-xl overflow-hidden z-50"
+                  className="absolute bottom-full left-0 mb-2 overlay-surface border rounded-lg p-1 z-50 w-40"
                 >
                   <button
                     onClick={() => {
                       imageInputRef.current?.click()
                       setShowAttachMenu(false)
                     }}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
+                    className="flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
                   >
-                    <Image className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm text-surface-200">Imagem</span>
+                    <Image className="w-4 h-4 text-surface-400" />
+                    <span className="text-[13px] text-surface-100">Imagem</span>
                   </button>
                   <button
                     onClick={() => {
                       documentInputRef.current?.click()
                       setShowAttachMenu(false)
                     }}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
+                    className="flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
                   >
-                    <FileText className="w-4 h-4 text-green-400" />
-                    <span className="text-sm text-surface-200">Documento</span>
+                    <FileText className="w-4 h-4 text-surface-400" />
+                    <span className="text-[13px] text-surface-100">Documento</span>
                   </button>
                   <button
                     onClick={() => {
                       videoInputRef.current?.click()
                       setShowAttachMenu(false)
                     }}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-surface-700 transition-colors w-full text-left"
+                    className="flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] hover:bg-[var(--rowhover)] transition-colors w-full text-left"
                   >
-                    <Video className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm text-surface-200">Vídeo</span>
+                    <Video className="w-4 h-4 text-surface-400" />
+                    <span className="text-[13px] text-surface-100">Vídeo</span>
                   </button>
                 </div>
               )}
@@ -1014,20 +1014,22 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
               <EmojiPickerButton
                 textareaRef={textareaRef}
                 onEmojiInsert={(newValue) => setText(newValue)}
-                className="w-8 h-8 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
+                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
               />
 
               {/* Send — aparece com texto E/OU anexos em espera */}
               {(text.trim() || attachments.length > 0) && (
-                <button
+                <Button
+                  size="sm"
+                  variant="primary"
                   onClick={handleSend}
                   disabled={sending || disabled}
                   aria-label="Enviar mensagem"
-                  className="h-8 px-3 [@media(pointer:coarse)]:h-11 rounded-xl bg-brand-600 text-surface-950 hover:bg-brand-500 flex items-center gap-1.5 justify-center flex-shrink-0 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  leftIcon={<Send className="w-3.5 h-3.5" />}
+                  className="[@media(pointer:coarse)]:h-11"
                 >
-                  <Send className="w-4 h-4" />
-                  <span className="text-xs font-semibold">Enviar</span>
-                </button>
+                  Enviar
+                </Button>
               )}
             </div>
           </div>

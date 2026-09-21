@@ -283,7 +283,7 @@ function AnalysisResult({
       <div className="flex gap-2">
         {(analysis.conversionValue || analysis.outcome === 'converted') && (
           <div className="flex-1 bg-surface-800 rounded-lg px-2.5 py-2">
-            <p className="text-[9px] text-surface-500 uppercase tracking-wide mb-0.5">Valor detectado</p>
+            <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-0.5">Valor detectado</p>
             {isPending ? (
               <div className="flex items-center gap-1">
                 <span className="text-3xs text-surface-500">R$</span>
@@ -307,7 +307,7 @@ function AnalysisResult({
       {/* Stage suggestion + action buttons (hidden after confirm/reject) */}
       {isPending && analysis.suggestedStage && (
         <div className="flex-1 bg-surface-800 rounded-lg px-2.5 py-2">
-          <p className="text-[9px] text-surface-500 uppercase tracking-wide mb-0.5">Estágio sugerido</p>
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-0.5">Estágio sugerido</p>
           <p className="text-sm font-bold text-surface-100 capitalize">{analysis.suggestedStage}</p>
         </div>
       )}
@@ -454,7 +454,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
           <Sparkles className="w-3.5 h-3.5 text-brand-400" />
         </div>
         <div>
-          <p className="text-3xs text-surface-500 uppercase tracking-wide font-semibold">Análise de Conversão IA</p>
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">Análise de Conversão IA</p>
           {hasAttribution && platformName && (
             <p className="text-3xs mt-0.5" style={{ color: platformColor }}>
               {platformName}{campaignName ? ` · ${campaignName}` : ''}
