@@ -1495,6 +1495,32 @@ export interface CampaignConversationSummary {
   adCampaignName?:  string
 }
 
+/** Falhas de entrega agrupadas por código da Meta (BE.1 — `failures[]`). */
+export interface CampaignFailureReason {
+  code:   string
+  reason: string
+  count:  number
+}
+
+/** Resposta de um destinatário à campanha (BE.1 — `replies[]`). */
+export interface CampaignReply {
+  contactId: string
+  name:      string | null
+  text:      string | null
+  at:        string | null
+}
+
+export interface CampaignReadHeatmapCell {
+  dayOffset: number
+  hour:      number
+  count:     number
+}
+
+/**
+ * Payload de `GET /campaigns/:id/analytics` DEPOIS de `normalizeCampaignAnalytics`
+ * (lib/campaignAnalytics.ts): os campos legados que o backend não devolve chegam
+ * como vazio/zero, então o relatório os lê sem guarda.
+ */
 export interface CampaignAnalytics {
   campaignId:         string
   churnBreakdown:     CampaignChurnBreakdown
@@ -1502,6 +1528,12 @@ export interface CampaignAnalytics {
   engagementTimeline: CampaignEngagementPoint[]
   attributionBreakdown: CampaignAttributionBreakdown[]
   aiInsights:         string[]
+  /** Novos (BE.1/SCRUM-1142) */
+  failures:           CampaignFailureReason[]
+  replies:            CampaignReply[]
+  readHeatmap:        CampaignReadHeatmapCell[]
+  /** `null` quando ninguém leu ainda (não é "0 minutos"). */
+  avgTimeToReadMinutes: number | null
 }
 
 export interface Campaign {
