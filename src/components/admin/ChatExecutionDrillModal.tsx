@@ -111,7 +111,7 @@ function ExecutionHeader({ detail }: { detail: ChatExecutionDetail }) {
     <section>
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <span
-          className={cn('px-2 py-0.5 rounded text-xs font-medium', !statusChip && 'bg-surface-700 text-surface-200', statusChip && 'color-chip')}
+          className={cn('px-2 py-0.5 rounded text-xs font-medium', !statusChip && 'bg-[var(--sf2)] text-surface-200', statusChip && 'color-chip')}
           style={statusChip ? ({ ['--chip']: statusChip } as React.CSSProperties) : undefined}
         >
           {e.final_status}

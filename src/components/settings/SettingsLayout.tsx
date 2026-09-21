@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Search } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
 import { SettingsSectionsProvider, SettingsOutline } from './SettingsSection'
 import { SettingsBreadcrumbCtx } from './settingsBreadcrumb'
@@ -216,7 +217,10 @@ function NavClusterGroup({ cluster, activeSection, searching, currentRole }: {
           type="button"
           aria-expanded={open}
           onClick={() => setOverride(!open)}
-          className="w-full h-7 px-[10px] flex items-center text-left text-[12.5px] font-semibold text-surface-100 transition-colors"
+          className={cn(
+            'w-full h-7 px-[10px] flex items-center text-left text-[12.5px] transition-colors',
+            containsActive ? 'font-semibold text-surface-100' : 'text-surface-400 hover:text-surface-100',
+          )}
         >
           {cluster.label}
         </button>
@@ -241,6 +245,8 @@ function NavClusterGroup({ cluster, activeSection, searching, currentRole }: {
 export function SettingsLayout({ children, currentRole = 'admin', multiPipeline = false }: SettingsLayoutProps) {
   const isMobile = useIsMobile()
   const { section: activeSection } = useParams()
+  // Canvas 5b: Conectores usa a coluna inteira (padding 26/32/24, sem max-width).
+  const wide = activeSection === 'connectors'
   const breadcrumb = (() => {
     for (const d of SETTINGS_NAV) for (const c of d.clusters) for (const i of c.items) {
       if (i.section === activeSection) return [d.domain, ...(c.label ? [c.label] : []), i.label]
@@ -308,11 +314,11 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
           outline "Nesta página" (dir., 2xl+). O outline é gerado sozinho
           pelas SettingsSection registradas — em telas largas o espaço que
           sobrava vira navegação intra-página (padrão Stripe/docs). */}
-      <main className="flex-1 overflow-y-auto py-6 px-4 md:pt-[26px] md:pb-8 md:px-10">
+      <main className={cn('flex-1 overflow-y-auto py-6 px-4 md:pt-[26px]', wide ? 'md:pb-6 md:px-8' : 'md:pb-8 md:px-10')}>
         <SettingsSectionsProvider>
           <SettingsBreadcrumbCtx.Provider value={breadcrumb}>
             <div className="flex justify-start gap-10">
-              <div className="max-w-4xl w-full min-w-0">
+              <div className={cn('w-full min-w-0', !wide && 'max-w-4xl')}>
                 {children}
               </div>
               <SettingsOutline />

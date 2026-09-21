@@ -83,7 +83,7 @@ export function LoginPage() {
       <button
         onClick={toggle}
         title={isLight ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-800 hover:bg-surface-700 transition-colors"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors"
       >
         <div className="relative w-8 h-4 rounded-full bg-surface-700 flex-shrink-0">
           <motion.div
