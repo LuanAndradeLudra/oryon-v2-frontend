@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from 'react'
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Check } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
@@ -206,14 +205,11 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
                     const checked = permissions[item.id]
                     return (
                       <label key={item.id} className="flex items-center gap-2.5 px-3 py-2 text-sm text-surface-200 cursor-pointer">
-                        <span
-                          className={cn(
-                            'w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0',
-                            checked ? 'border-success bg-success/15 text-success' : 'border-surface-600',
-                          )}
-                          aria-hidden
-                        >
-                          {checked && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
+                        {/* Mock 3e: marcada = ✓ verde solto (sem círculo); desmarcada = círculo vazio. */}
+                        <span className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0" aria-hidden>
+                          {checked
+                            ? <Check className="w-3.5 h-3.5 text-success" strokeWidth={2.5} />
+                            : <span className="w-3.5 h-3.5 rounded-full border border-surface-600" />}
                         </span>
                         <input
                           type="checkbox"
