@@ -67,7 +67,7 @@ export type MessageType =
 /** `sending` nunca vem do backend — é o eco otimista local enquanto a
  *  requisição está em voo (ver `useMessages.sendMessage`), substituído pela
  *  mensagem real do servidor (ou por `failed`) assim que ela resolve. */
-export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed' | 'sending'
+export type MessageStatus = 'queued' | 'sent' | 'delivered' | 'read' | 'failed' | 'sending'
 
 export type UserRole = 'super_admin' | 'business_admin' | 'admin' | 'agent' | 'supervisor'
 
@@ -1039,6 +1039,10 @@ export interface Message {
   readAt?: string
   failedAt?: string
   errorCode?: string
+  /** Motivo curto da falha (vem do socket `message:status`). */
+  errorTitle?: string
+  /** Payload bruto de falha gravado pelo backend (`errors[]` da Meta). */
+  deliveryError?: { errors?: Array<{ title?: string; message?: string }> } | null
   /** Populated by the backend for outbound messages typed by a human operator
    *  (`sentByUserId` not null). Stays null/undefined for AI-generated outbound
    *  and any inbound. The bubble uses presence to render either the
@@ -1576,9 +1580,15 @@ export interface SocketConversationStatusUpdated {
 }
 
 export interface SocketMessageStatus {
-  messageId: string
+  messageId?: string
+  wamid?: string | null
   status: MessageStatus
-  timestamp: string
+  conversationId?: string
+  deliveredAt?: string | null
+  readAt?: string | null
+  failedAt?: string | null
+  errorCode?: string | null
+  errorTitle?: string | null
 }
 
 export interface SocketConversationAssigned {
