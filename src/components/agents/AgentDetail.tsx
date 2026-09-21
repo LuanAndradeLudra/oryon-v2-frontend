@@ -66,12 +66,15 @@ const METHOD_COLOR: Record<string, string> = {
 
 function StatusBadge({ status }: { status: AgentConfig['status'] }) {
   const cfg = STATUS_CONFIG[status]
+  // R2-AGT-02 (mock 2a): chip suave h18 raio 5 — Ativo --okbg/--ok, Rascunho
+  // --sf2 + borda --bd, sem pílula nem dot sólido.
+  const cls = status === 'active'
+    ? 'bg-status-active-bg text-status-active'
+    : status === 'paused'
+      ? 'bg-status-pending-bg text-status-pending'
+      : 'bg-[var(--sf2)] border border-surface-700 text-surface-400'
   return (
-    <span
-      className="color-chip inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border"
-      style={{ ['--chip']: cfg.chip } as React.CSSProperties}
-    >
-      <span className="chip-dot w-1.5 h-1.5 rounded-full" />
+    <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold', cls)}>
       {cfg.label}
     </span>
   )
@@ -351,12 +354,13 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
                   onClick={() => !active && setStatus(s)}
                   disabled={savingStatus || active}
                   className={cn(
-                    'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
+                    // R2-AGT-03 (mock 2a "Tom de voz"): chip h28 raio 7 — selecionado
+                    // borda --ac + fundo --acsoft + texto --acs; demais borda --bd2.
+                    'inline-flex items-center gap-1.5 px-2.5 h-7 rounded-sm text-xs font-semibold border transition-colors',
                     active
-                      ? 'color-chip cursor-default'
-                      : 'border-surface-700 text-surface-500 hover:border-surface-700 hover:text-surface-300 bg-surface-900 cursor-pointer',
+                      ? 'border-brand-500 bg-accent-soft text-accent-dark cursor-default'
+                      : 'border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)] cursor-pointer',
                   )}
-                  style={active ? { ['--chip']: cfg.chip } as React.CSSProperties : undefined}
                 >
                   {s === 'active'  && <Power       className="w-3.5 h-3.5" />}
                   {s === 'paused'  && <PauseCircle className="w-3.5 h-3.5" />}
@@ -379,28 +383,13 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
 
       <div className="bg-[var(--sf2)] px-5 py-[18px] space-y-4">
         <div>
-          <p className="text-xs font-medium text-surface-500 mb-3">Atividade</p>
-          <div className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-accent-dark mb-2">Atividade</p>
+          <div>
             {activityRows.map(row => (
-              <div key={row.label} className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors',
-                row.highlighted ? 'border-status-active-border/60 bg-status-active-bg/40' : 'border-surface-700 bg-surface-950/40',
-              )}>
-                <span className={row.highlighted ? 'text-status-active' : 'text-surface-600'}>{row.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className={cn('text-sm font-medium', row.highlighted ? 'text-surface-200' : 'text-surface-500')}>
-                    {row.label}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    'text-xs px-2 py-0.5 rounded-full font-medium',
-                    row.highlighted
-                      ? 'color-chip border'
-                      : 'text-surface-500 bg-surface-800/40 ring-1 ring-surface-700/30',
-                  )}
-                  style={row.highlighted ? { ['--chip']: 'var(--color-status-active)' } as React.CSSProperties : undefined}
-                >
+              <div key={row.label} className="flex items-center gap-2.5 h-8 border-b border-surface-700 last:border-b-0">
+                <span className={row.highlighted ? 'text-accent-dark' : 'text-surface-500'}>{row.icon}</span>
+                <p className="flex-1 min-w-0 text-xs text-surface-400 truncate">{row.label}</p>
+                <span className={cn('text-[13px] font-semibold tabular-nums', row.highlighted ? 'text-surface-100' : 'text-surface-500')}>
                   {row.value}
                 </span>
               </div>
@@ -409,7 +398,7 @@ function OverviewTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdat
         </div>
 
         <div>
-          <p className="text-xs font-medium text-surface-500 mb-3">Informações</p>
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500 mb-2">Informações</p>
           <div className="space-y-2">
             {infoRows.map(r => (
               <div key={r.label} className="flex items-center gap-2 text-xs">
@@ -2175,17 +2164,22 @@ export function AgentDetail({
               const updated = await updateAgent(agent.id, { name })
               handleAgentUpdate(updated)
             }}
-            className="text-lg font-display font-bold text-surface-50"
+            className="text-base tracking-[-0.01em] font-display font-bold text-surface-100"
           />
-          <div className="flex items-center gap-2.5 mt-1">
+          <div className="flex items-center gap-2 mt-1 min-w-0">
             <StatusBadge status={agent.status} />
-            <span className="text-xs text-surface-600">·</span>
-            <span className="text-xs text-surface-500">
+            {agent.objective && (
+              <>
+                <span className="text-xs text-surface-500 truncate min-w-0">{agent.objective}</span>
+                <span className="text-xs text-surface-500 flex-shrink-0">·</span>
+              </>
+            )}
+            <span className="text-xs text-surface-500 flex-shrink-0">
               Atualizado {new Date(agent.updated_at).toLocaleDateString('pt-BR')}
             </span>
             {advancedMode && agent.tools.length > 0 && (
               <>
-                <span className="text-xs text-surface-600">·</span>
+                <span className="text-xs text-surface-500">·</span>
                 <span className="text-xs text-surface-500">{agent.tools.length} ferramenta(s)</span>
               </>
             )}
@@ -2196,14 +2190,14 @@ export function AgentDetail({
             último save bem-sucedido de QUALQUER aba (handleAgentUpdate
             sempre mescla a resposta fresca da API), então não precisa de
             estado próprio nem de plumbing entre abas. */}
-        <span className="text-[11.5px] text-surface-600 flex items-center gap-1 flex-shrink-0">
+        <span className="text-[11.5px] text-surface-500 flex items-center gap-1 flex-shrink-0">
           <Check className="w-3 h-3 text-online" />
           Salvo às {new Date(agent.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
         </span>
         {/* Testar Agente */}
         <button
           onClick={() => setShowTest(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-xl bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-semibold ring-1 ring-brand-500/30 transition-colors hover:ring-brand-500/50 cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-sm border border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)] text-xs font-semibold transition-colors cursor-pointer"
         >
           <Sparkles className="w-3.5 h-3.5" />
           Testar
@@ -2213,7 +2207,7 @@ export function AgentDetail({
             active, igual o botão antigo fazia). */}
         <div className="flex items-center gap-2 px-1">
           {togglingStatus && <RefreshCw className="w-3.5 h-3.5 animate-spin text-surface-500" />}
-          <span className="text-xs font-medium text-surface-400">
+          <span className={cn('text-xs font-semibold', agent.status === 'active' ? 'text-surface-100' : 'text-surface-400')}>
             {agent.status === 'active' ? 'Ligado' : 'Desligado'}
           </span>
           <Switch
@@ -2228,10 +2222,10 @@ export function AgentDetail({
             onClick={() => setMoreOpen((v) => !v)}
             aria-label="Mais ações"
             className={cn(
-              'w-9 h-9 rounded-xl border flex items-center justify-center transition-colors cursor-pointer',
+              'w-7 h-7 rounded-sm border flex items-center justify-center transition-colors cursor-pointer',
               moreOpen
-                ? 'border-surface-600 bg-surface-800 text-surface-200'
-                : 'border-surface-700 text-surface-500 hover:border-surface-700 hover:text-surface-300',
+                ? 'border-[var(--bd2)] bg-[var(--rowhover)] text-surface-200'
+                : 'border-[var(--bd2)] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-200',
             )}
           >
             <MoreHorizontal className="w-4 h-4" />

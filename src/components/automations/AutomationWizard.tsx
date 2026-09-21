@@ -83,7 +83,7 @@ function KeywordInput({ onAdd }: { onAdd: (kw: string) => void }) {
         onChange={(e) => setVal(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit() } }}
         placeholder="Digite e pressione Enter…"
-        className="flex-1 bg-surface-700 border border-surface-600 rounded-lg px-3 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-600"
+        className="flex-1 bg-surface-700 border border-surface-600 rounded-lg px-3 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
       />
       <button onClick={submit} title="Adicionar palavra-chave" aria-label="Adicionar palavra-chave" className="px-3 py-1.5 bg-surface-700 border border-surface-600 rounded-lg text-xs text-surface-300 hover:text-surface-100 transition-colors">
         <Plus className="w-3.5 h-3.5" />
@@ -217,10 +217,10 @@ function CustomTriggerForm({
               key={def.key}
               onClick={() => selectEvent(def)}
               className={cn(
-                'w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-colors',
+                'w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-colors',
                 isSelected
-                  ? 'border-brand-600 bg-brand-600/10'
-                  : 'border-surface-700 bg-surface-800 hover:border-surface-600 hover:bg-surface-800',
+                  ? 'border-brand-500 ring-[3px] ring-accent-soft'
+                  : 'border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)]',
               )}
             >
               <div className={cn(
@@ -240,7 +240,7 @@ function CustomTriggerForm({
 
       {/* Params form */}
       {selectedDef?.params && selectedDef.params.length > 0 && (
-        <div className="bg-surface-800/60 border border-surface-700 rounded-xl p-3 space-y-3">
+        <div className="bg-surface-800 border border-surface-700 rounded-lg p-3 space-y-3">
           <p className="text-3xs font-semibold text-surface-400 uppercase tracking-wider">Configuração do evento</p>
 
           {selectedDef.params.includes('minutes') && (
@@ -251,7 +251,7 @@ function CustomTriggerForm({
                   type="number" min={1} max={1440}
                   value={trigger.params?.minutes ?? 30}
                   onChange={(e) => updateParam({ minutes: Math.max(1, Number(e.target.value)) })}
-                  className="w-20 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 focus:outline-none focus:border-brand-600"
+                  className="w-20 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 focus:outline-none focus:border-brand-500"
                 />
                 <div className="flex gap-1.5">
                   {[15, 30, 60, 120].map((m) => (
@@ -276,7 +276,7 @@ function CustomTriggerForm({
                 value={trigger.params?.tagName ?? ''}
                 onChange={(e) => updateParam({ tagName: e.target.value })}
                 placeholder="Ex: VIP, Urgente, Prospect..."
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-600"
+                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
               />
               <p className="text-3xs text-surface-500 mt-1">Deixe em branco para disparar com qualquer tag.</p>
             </div>
@@ -289,7 +289,7 @@ function CustomTriggerForm({
                 value={trigger.params?.fieldName ?? ''}
                 onChange={(e) => updateParam({ fieldName: e.target.value })}
                 placeholder="Ex: email, telefone, empresa... (vazio = qualquer campo)"
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-600"
+                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
               />
             </div>
           )}
@@ -304,7 +304,7 @@ function CustomTriggerForm({
                   type="number" min={0} max={100}
                   value={trigger.params?.threshold ?? 70}
                   onChange={(e) => updateParam({ threshold: Math.min(100, Math.max(0, Number(e.target.value))) })}
-                  className="w-20 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 focus:outline-none focus:border-brand-600"
+                  className="w-20 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 focus:outline-none focus:border-brand-500"
                 />
                 {trigger.eventKey !== 'campanha_falha_alta' && (
                   <div className="flex gap-1.5">
@@ -348,7 +348,7 @@ function CustomTriggerForm({
               <select
                 value={trigger.params?.stageKey ?? ''}
                 onChange={(e) => updateParam({ stageKey: e.target.value })}
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
               >
                 <option value="">Qualquer estágio</option>
                 {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -394,7 +394,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
           value={draft.name}
           onChange={(e) => onChange({ name: e.target.value })}
           placeholder="Ex: Follow-up de leads qualificados"
-          className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3.5 py-2.5 text-sm text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-600 transition-colors"
+          className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-[13px] text-surface-100 placeholder-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
         />
       </div>
 
@@ -405,7 +405,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
           value={draft.description}
           onChange={(e) => onChange({ description: e.target.value })}
           placeholder="Descreva o objetivo desta automação"
-          className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3.5 py-2.5 text-sm text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-600 transition-colors"
+          className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-[13px] text-surface-100 placeholder-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
         />
       </div>
 
@@ -444,8 +444,8 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                 key={t}
                 onClick={() => setType(t)}
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl border text-left transition-colors',
-                  active ? 'border-brand-600 bg-brand-600/10' : 'border-surface-700 bg-surface-800 hover:border-surface-600',
+                  'flex items-center gap-3 p-3 rounded-lg border text-left transition-colors',
+                  active ? 'border-brand-500 ring-[3px] ring-accent-soft' : 'border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)]',
                 )}
               >
                 <span className="text-surface-400 flex-shrink-0">{cfg.icon}</span>
@@ -461,7 +461,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
 
       {/* Trigger config */}
       {trigger && (
-        <div key={trigger.type} className="bg-surface-800/60 border border-surface-700 rounded-xl p-4 space-y-3">
+        <div key={trigger.type} className="bg-surface-800 border border-surface-700 rounded-lg p-4 space-y-3">
             {(trigger.type === 'boas_vindas') && (
               <p className="text-xs text-surface-400">Dispara na <strong className="text-surface-200">primeira mensagem</strong> de qualquer contato novo. Ideal para saudações personalizadas.</p>
             )}
@@ -480,7 +480,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                       type="number" min={1} max={168}
                       value={(trigger as Extract<AutomationTrigger, { type: 'follow_up' }>).afterHours}
                       onChange={(e) => onChange({ trigger: { type: 'follow_up', afterHours: Math.max(1, Number(e.target.value)) } })}
-                      className="w-24 bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-600"
+                      className="w-24 bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500"
                     />
                     <div className="flex gap-1.5">
                       {[6, 12, 24, 48, 72].map((h) => (
@@ -508,7 +508,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                       type="number" min={1} max={90}
                       value={(trigger as Extract<AutomationTrigger, { type: 'inatividade' }>).afterDays}
                       onChange={(e) => onChange({ trigger: { type: 'inatividade', afterDays: Math.max(1, Number(e.target.value)) } })}
-                      className="w-24 bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-600"
+                      className="w-24 bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500"
                     />
                     <div className="flex gap-1.5">
                       {[3, 7, 14, 30].map((d) => (
@@ -567,7 +567,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                 <select
                   value={(trigger as Extract<AutomationTrigger, { type: 'estagio_crm' }>).stageKey}
                   onChange={(e) => onChange({ trigger: { type: 'estagio_crm', stageKey: e.target.value } })}
-                  className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-600"
+                  className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500"
                 >
                   <option value="">Selecione uma situação…</option>
                   {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -653,7 +653,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
   const noValueOps: AutomationConditionOperator[] = ['is_set', 'is_not_set']
 
   const renderValueInput = (cond: AutomationCondition, i: number) => {
-    const selectClass = "w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+    const selectClass = "w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
 
     switch (cond.field) {
       case 'stage':
@@ -723,7 +723,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
   return (
     <div className="space-y-4">
       {/* Info */}
-      <div className="flex items-start gap-2.5 p-3.5 bg-surface-800/60 border border-surface-700 rounded-xl">
+      <div className="flex items-start gap-2.5 p-3.5 bg-surface-800 border border-surface-700 rounded-lg">
         <div>
           <p className="text-xs font-semibold text-surface-200">Passo opcional</p>
           <p className="text-xs text-surface-400 mt-0.5 leading-relaxed">
@@ -755,7 +755,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
           const ops = OPERATORS_FOR_FIELD[cond.field] ?? []
           const hideValue = noValueOps.includes(cond.operator)
           return (
-            <div key={i} className="bg-surface-800 border border-surface-700 rounded-xl p-3 space-y-2">
+            <div key={i} className="bg-surface-800 border border-surface-700 rounded-lg p-3 space-y-2">
               <div className="flex items-center gap-2">
                 {/* Field */}
                 <select
@@ -765,7 +765,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
                     const newOp = (OPERATORS_FOR_FIELD[f]?.[0]?.value ?? 'equals') as AutomationConditionOperator
                     updateCondition(i, { field: f, operator: newOp, value: '' })
                   }}
-                  className="flex-1 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+                  className="flex-1 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
                 >
                   {CONDITION_FIELDS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
                 </select>
@@ -773,7 +773,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
                 <select
                   value={cond.operator}
                   onChange={(e) => updateCondition(i, { operator: e.target.value as AutomationConditionOperator })}
-                  className="w-36 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+                  className="w-36 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
                 >
                   {ops.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
                 </select>
@@ -844,7 +844,7 @@ function ActionSubForm({
                 const tpl = templates.find((t) => t.id === e.target.value)
                 onUpdate({ type: 'send_message', templateId: e.target.value, templateName: tpl?.name ?? '' })
               }}
-              className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione um template…</option>
               {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -858,7 +858,7 @@ function ActionSubForm({
             <textarea rows={3} value={action.body}
               onChange={(e) => onUpdate({ type: 'send_text', body: e.target.value })}
               placeholder="Olá! Estamos aqui para ajudar..."
-              className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-600 resize-none"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500 resize-none"
             />
             <p className="text-3xs text-surface-600 mt-0.5">Apenas em conversas abertas dentro da janela de 24h.</p>
           </div>
@@ -870,7 +870,7 @@ function ActionSubForm({
               <textarea rows={2} value={action.note}
                 onChange={(e) => onUpdate({ ...action, type: 'send_note', note: e.target.value })}
                 placeholder="Opcional. Se deixar vazio, o Oryon gera o texto a partir do contexto."
-                className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-600 resize-none"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500 resize-none"
               />
               <p className="text-3xs text-surface-500 mt-1 leading-relaxed">
                 O sistema já gera título e descrição com a origem real (ex: &quot;disparada manualmente por João&quot;).
@@ -899,7 +899,7 @@ function ActionSubForm({
                     ...(scope !== 'user' ? { notifyUserId: undefined, notifyUserName: undefined } : {}),
                   })
                 }}
-                className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
               >
                 <option value="admins">Apenas administradores</option>
                 <option value="department">Um departamento</option>
@@ -925,7 +925,7 @@ function ActionSubForm({
                       departmentName: d?.name ?? '',
                     })
                   }}
-                  className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
                 >
                   <option value="">Selecione um departamento…</option>
                   {depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -947,7 +947,7 @@ function ActionSubForm({
                       notifyUserName: u?.name ?? '',
                     })
                   }}
-                  className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
                 >
                   <option value="">Selecione um usuário…</option>
                   {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -965,7 +965,7 @@ function ActionSubForm({
                 const u = users.find((u) => u.id === e.target.value)
                 onUpdate({ type: 'assign_agent', userId: e.target.value, userName: u?.name ?? '' })
               }}
-              className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione um agente…</option>
               {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -981,7 +981,7 @@ function ActionSubForm({
                 const d = depts.find((d) => d.id === e.target.value)
                 onUpdate({ type: 'assign_dept', departmentId: e.target.value, departmentName: d?.name ?? '' })
               }}
-              className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione um departamento…</option>
               {depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -998,7 +998,7 @@ function ActionSubForm({
                 const tag = tags.find((t) => t.id === e.target.value)
                 onUpdate({ type: action.type, tagId: e.target.value, tagName: tag?.name ?? '' } as AutomationAction)
               }}
-              className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione uma tag…</option>
               {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -1014,7 +1014,7 @@ function ActionSubForm({
                 const s = stages.find((s) => s.key === e.target.value)
                 onUpdate({ type: 'change_stage', stageKey: e.target.value, stageLabel: s?.label ?? '' })
               }}
-              className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione uma situação…</option>
               {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -1027,7 +1027,7 @@ function ActionSubForm({
             <div className="flex items-center gap-3">
               <input type="number" min={0} max={100} value={action.score}
                 onChange={(e) => onUpdate({ type: 'set_lead_score', score: Math.min(100, Math.max(0, Number(e.target.value))) })}
-                className="w-20 bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-600"
+                className="w-20 bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
               />
               <div className="flex gap-1.5">
                 {[0, 25, 50, 75, 100].map((v) => (
@@ -1051,7 +1051,7 @@ function ActionSubForm({
               <label className="block text-3xs font-medium text-surface-400 mb-1">URL do endpoint</label>
               <input placeholder="https://sua-api.com/webhook" value={action.url}
                 onChange={(e) => onUpdate({ type: 'send_webhook', url: e.target.value, method: action.method })}
-                className="w-full bg-surface-900 border border-surface-700 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-600"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
               />
             </div>
             <div className="flex gap-2">
@@ -1115,7 +1115,7 @@ export function Step3({ draft, onChange, hideAgentBehavior }: { draft: WizardDra
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-2 p-3 bg-surface-800/60 border border-surface-700 rounded-xl">
+      <div className="flex items-start gap-2 p-3 bg-surface-800 border border-surface-700 rounded-lg">
         <p className="text-xs text-surface-400 leading-relaxed">
           Adicione <strong className="text-surface-200">uma ou mais ações</strong> que serão executadas em sequência quando o gatilho disparar.
         </p>
@@ -1128,7 +1128,7 @@ export function Step3({ draft, onChange, hideAgentBehavior }: { draft: WizardDra
             const opt = ACTION_OPTIONS.find((o) => o.type === action.type)
             if (!opt) return null
             return (
-              <div key={i} className="bg-surface-800 border border-surface-700 rounded-xl p-3">
+              <div key={i} className="bg-surface-800 border border-surface-700 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: opt.color + '20', color: opt.color }}>
                     {opt.icon}
@@ -1160,7 +1160,7 @@ export function Step3({ draft, onChange, hideAgentBehavior }: { draft: WizardDra
               <button
                 key={opt.type}
                 onClick={() => addAction(opt.type)}
-                className="flex items-center gap-2 p-2.5 rounded-xl border border-surface-700 bg-surface-800 hover:border-surface-600 text-left transition-colors"
+                className="flex items-center gap-2 p-2.5 rounded-lg border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] text-left transition-colors"
               >
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: opt.color + '20', color: opt.color }}>
                   {opt.icon}
@@ -1232,10 +1232,10 @@ export function AgentBehaviorSelector({
               type="button"
               onClick={() => onChange({ agentBehavior: opt.value })}
               className={cn(
-                'w-full text-left p-2.5 rounded-xl border transition-colors',
+                'w-full text-left p-2.5 rounded-lg border transition-colors',
                 active
-                  ? 'border-brand-600 bg-brand-600/10'
-                  : 'border-surface-700 bg-surface-800 hover:border-surface-600',
+                  ? 'border-brand-500 ring-[3px] ring-accent-soft'
+                  : 'border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)]',
               )}
             >
               <div className="flex items-center gap-2">
