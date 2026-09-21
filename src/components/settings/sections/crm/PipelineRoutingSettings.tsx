@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Route } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { SectionHeader } from '@/components/settings/SectionHeader'
 import { Switch } from '@/components/ui/Switch'
 import { Select } from '@/components/ui/Select'
 import { useToast } from '@/hooks/useToast'
@@ -132,18 +134,15 @@ export function PipelineRoutingSettings() {
 
   return (
     <>
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold text-surface-100">Roteamento por canal</h3>
-        <p className="text-xs text-surface-500 mt-0.5">
-          Define em qual pipeline um negócio é auto-criado quando chega mensagem em cada linha WhatsApp.
-          Linhas sem roteamento configurado usam o pipeline default do tenant e não criam negócio automaticamente.
-        </p>
-      </div>
+      <SectionHeader
+        title="Roteamento por canal"
+        description="Define em qual pipeline um negócio é auto-criado quando chega mensagem em cada linha WhatsApp. Linhas sem roteamento configurado usam o pipeline default do tenant e não criam negócio automaticamente."
+      />
 
       {numbers.length === 0 ? (
         <p className="text-sm text-surface-500 text-center py-10">Nenhuma linha WhatsApp conectada.</p>
       ) : (
-        <div className="space-y-3">
+        <div className="border-y border-surface-700 divide-y divide-surface-700">
           {numbers.map((n) => {
             const draft = drafts[n.id]
             if (!draft) return null
@@ -160,14 +159,17 @@ export function PipelineRoutingSettings() {
             return (
               <div
                 key={n.id}
-                className="bg-surface-900 border border-surface-700 rounded-2xl p-4 space-y-3"
+                className="py-4 space-y-3"
               >
                 <div className="flex items-center gap-2">
                   <Route className="w-4 h-4 text-surface-500 flex-shrink-0" />
                   <span className="text-sm font-medium text-surface-100">{n.label || n.displayPhoneNumber}</span>
                   <span className="text-xs text-surface-500">{n.displayPhoneNumber}</span>
                   {hasRouting && (
-                    <span className="text-[10px] text-brand-400 bg-brand-900/20 border border-brand-800/50 px-1.5 py-0.5 rounded-full ml-auto">
+                    <span
+                      className="text-[10px] font-semibold color-chip border px-1.5 py-0.5 rounded-xs ml-auto"
+                      style={{ ['--chip']: 'var(--color-success)', ['--chip-mix']: '70%' } as React.CSSProperties}
+                    >
                       Roteado
                     </span>
                   )}
@@ -175,7 +177,7 @@ export function PipelineRoutingSettings() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
-                    <label className="text-[11px] text-surface-500 mb-1 block">Pipeline</label>
+                    <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Pipeline</label>
                     <Select
                       value={draft.pipelineId}
                       disabled={!canManage}
@@ -189,7 +191,7 @@ export function PipelineRoutingSettings() {
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-surface-500 mb-1 block">Estágio inicial</label>
+                    <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Estágio inicial</label>
                     <Select
                       value={draft.defaultStageId}
                       disabled={!canManage}
@@ -206,7 +208,7 @@ export function PipelineRoutingSettings() {
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-surface-500 mb-1 block">Dono do negócio</label>
+                    <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Dono do negócio</label>
                     <Select
                       value={draft.ownerRule}
                       disabled={!canManage}
@@ -220,7 +222,7 @@ export function PipelineRoutingSettings() {
 
                   {draft.ownerRule === 'fixed_user' ? (
                     <div>
-                      <label className="text-[11px] text-surface-500 mb-1 block">Usuário</label>
+                      <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Usuário</label>
                       <Select
                         value={draft.ownerUserId}
                         disabled={!canManage}
@@ -258,21 +260,13 @@ export function PipelineRoutingSettings() {
                 {canManage && (
                   <div className="flex items-center gap-2 justify-end pt-1">
                     {hasRouting && (
-                      <button
-                        onClick={() => handleRemove(n.id)}
-                        disabled={removing === n.id}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-50"
-                      >
+                      <Button size="sm" variant="ghost" className="text-danger hover:bg-danger/10" onClick={() => handleRemove(n.id)} disabled={removing === n.id}>
                         {removing === n.id ? 'Removendo…' : 'Remover roteamento'}
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      onClick={() => handleSave(n.id)}
-                      disabled={saving === n.id}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all disabled:opacity-50"
-                    >
+                    <Button size="sm" variant="primary" onClick={() => handleSave(n.id)} disabled={saving === n.id}>
                       {saving === n.id ? 'Salvando…' : 'Salvar'}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

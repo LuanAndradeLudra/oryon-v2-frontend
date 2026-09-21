@@ -26,6 +26,14 @@ import { ConfirmModal } from '@/components/ui/Modal'
 // self-serve). O próximo tier de upgrade sai daqui, não do PLAN_ORDER do front.
 const BACKEND_ORDER: BackendPlanTier[] = ['start', 'professional', 'scale', 'enterprise']
 
+/** "01 out" / "30 set" — formato curto do mock 6a (sem "de" nem ponto). */
+function formatDayMonth(iso: string): string {
+  const parts = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).formatToParts(new Date(iso))
+  const day = parts.find((x) => x.type === 'day')?.value ?? ''
+  const month = (parts.find((x) => x.type === 'month')?.value ?? '').replace('.', '')
+  return `${day} ${month}`
+}
+
 function nextBackendTier(current: BackendPlanTier): BackendPlanTier | null {
   const i = BACKEND_ORDER.indexOf(current)
   const next = BACKEND_ORDER[i + 1]
@@ -372,14 +380,12 @@ export function BillingSettings() {
       {status && !statusError && !isSubscribed && !isCanceled && (
         <div className="mt-2 flex items-center justify-between gap-4 rounded-xs border border-brand-500/40 bg-accent-soft px-3.5 py-2.5">
           <div className="flex items-start gap-2.5">
-            <span className="w-7 h-7 rounded-xs bg-brand-500/20 flex items-center justify-center flex-shrink-0">
-              <Zap className="w-[18px] h-[18px] text-brand-400" />
-            </span>
+            <Zap className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-[13px] font-semibold text-surface-100">Ative sua assinatura</p>
               <p className="text-xs text-surface-400 mt-0.5">
-                Você está em um período de avaliação. Contrate o plano {billing.plan.displayName} para manter os agentes ativos
-                {billing.planResetsAt && <> após {new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</>}.
+                Você está no período de avaliação. Contrate o plano {billing.plan.displayName} para manter os agentes ativos
+                {billing.planResetsAt && <> após {formatDayMonth(billing.planResetsAt)}</>}.
               </p>
             </div>
           </div>
@@ -404,6 +410,7 @@ export function BillingSettings() {
 
       {/* Current plan */}
       <SettingsSection
+        labelWidth={198}
         title="Plano atual"
         description="Sua assinatura, ciclo de cobrança e consumo de créditos de IA."
       >
@@ -416,10 +423,7 @@ export function BillingSettings() {
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
                 {!isSubscribed && !isCanceled && daysUntilReset != null && (
-                  <span
-                    className="color-chip text-2xs font-semibold px-1.5 py-px rounded-xs border"
-                    style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
-                  >
+                  <span className="text-2xs font-semibold px-1.5 py-px rounded-xs border bg-status-pending-bg text-status-pending border-status-pending-border">
                     Avaliação · {daysUntilReset} dia{daysUntilReset === 1 ? '' : 's'} restante{daysUntilReset === 1 ? '' : 's'}
                   </span>
                 )}
@@ -427,7 +431,7 @@ export function BillingSettings() {
               <p className="text-xs text-surface-500 mt-0.5">
                 Cobrança mensal
                 {atendimentos != null && <> · ≈ {atendimentos.toLocaleString('pt-BR')} atendimentos/mês</>}
-                {billing.planResetsAt && <> · próximo ciclo {new Date(billing.planResetsAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</>}
+                {billing.planResetsAt && <> · próximo ciclo {formatDayMonth(billing.planResetsAt)}</>}
               </p>
             </div>
           </div>
@@ -457,6 +461,7 @@ export function BillingSettings() {
 
       {/* Limits */}
       <SettingsSection
+        labelWidth={198}
         title="Limites do plano"
         description="Recursos incluídos na sua assinatura atual."
       >
@@ -482,7 +487,8 @@ export function BillingSettings() {
       {/* Upgrade CTA */}
       {nextPlan && (
         <SettingsSection
-          title="Upgrade"
+          labelWidth={198}
+        title="Upgrade"
           description="O próximo plano libera mais usuários, números e agentes."
         >
           <UpgradeTable
@@ -499,6 +505,7 @@ export function BillingSettings() {
 
       {/* Pacotes de crédito */}
       <SettingsSection
+        labelWidth={198}
         title="Comprar créditos avulsos"
         description="Pacotes não renovam — somam ao saldo atual. Ideal para picos de atendimento."
       >
@@ -526,6 +533,7 @@ export function BillingSettings() {
 
       {/* Extrato de créditos */}
       <SettingsSection
+        labelWidth={198}
         title="Extrato de créditos"
         description="Consumo e recargas de crédito, mais recentes primeiro."
       >

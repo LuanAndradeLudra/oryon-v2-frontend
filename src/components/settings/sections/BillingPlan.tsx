@@ -7,7 +7,6 @@ export function BillingPlan() {
       <SectionHeader
         title="Plano & Faturamento"
         description="Gerencie sua assinatura, créditos de IA e histórico de pagamentos."
-        breadcrumb={['Workspace', 'Administração', 'Plano & faturamento']}
       />
       <BillingSettings />
     </div>

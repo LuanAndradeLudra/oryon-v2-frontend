@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Info } from 'lucide-react'
+import { Banner } from '@/components/ui/Banner'
+import { Button } from '@/components/ui/Button'
 import { useToast } from '@/hooks/useToast'
 import { pipelinesApi, departmentsApi } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -81,22 +82,21 @@ export function PipelineAccessManager({ pipeline, onChanged }: PipelineAccessMan
   return (
     <div className="flex flex-col gap-4">
       {implicitAll && (
-        <div className="flex items-start gap-2 bg-warning/10 border border-warning/30 rounded-xl px-3 py-2.5 text-xs text-surface-300">
-          <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-warning" />
+        <Banner variant="warning">
           <p>
             Este é o funil padrão do tenant — <strong>todo setor enxerga</strong> além do que está marcado abaixo.
             Desmarcar um setor aqui não revoga o acesso dele a este funil.
           </p>
-        </div>
+        </Banner>
       )}
 
       {departments.length === 0 ? (
         <p className="text-sm text-surface-500 text-center py-6">Nenhum setor cadastrado.</p>
       ) : (
-        <ul className="flex flex-col gap-1">
+        <ul className="border-y border-surface-700 divide-y divide-surface-700">
           {departments.map((d) => (
             <li key={d.id}>
-              <label className={cn('flex items-center gap-2.5 px-3 py-2 rounded-lg', canManage && 'cursor-pointer hover:bg-surface-800/60')}>
+              <label className={cn('flex items-center gap-2.5 px-1 py-2.5', canManage && 'cursor-pointer hover:bg-[var(--rowhover)]')}>
                 <input
                   type="checkbox"
                   checked={selected.has(d.id)}
@@ -113,13 +113,9 @@ export function PipelineAccessManager({ pipeline, onChanged }: PipelineAccessMan
       )}
 
       {canManage && (
-        <button
-          onClick={handleSave}
-          disabled={!dirty || saving}
-          className="self-start px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-50 transition-all"
-        >
+        <Button size="sm" variant="primary" className="self-start" onClick={handleSave} disabled={!dirty || saving}>
           {saving ? 'Salvando...' : 'Salvar acesso'}
-        </button>
+        </Button>
       )}
 
     </div>

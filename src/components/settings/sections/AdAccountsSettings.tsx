@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Megaphone, RefreshCw, Trash2, CheckCircle2, PlusCircle,
-  Loader2, ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { adAccountsApi } from '@/services/api'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Banner } from '@/components/ui/Banner'
+import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
+import { Input } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionHeader } from '../SectionHeader'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -52,13 +56,13 @@ function ConnectDrawer({
           <p className="text-sm font-semibold text-surface-100">
             Conectar {isMeta ? 'Meta Ads' : 'Google Ads'}
           </p>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors">
             ✕
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-6 space-y-4">
-          <div className="p-4 rounded-xl border border-surface-700 bg-surface-900 text-xs text-surface-400 space-y-2">
+          <div className="p-3 rounded-sm border border-surface-700 bg-[var(--sf2)] text-xs text-surface-400 space-y-2">
             {isMeta ? (
               <>
                 <p>1. Acesse o <strong className="text-surface-300">Meta Business Manager</strong> e crie um token de acesso com permissão <code className="text-brand-400">ads_read</code></p>
@@ -75,29 +79,21 @@ function ConnectDrawer({
           </div>
 
           <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-surface-300 uppercase tracking-wide block mb-1.5">
-                ID da Conta
-              </label>
-              <input
+            <FormField label="ID da conta">
+              <Input
                 value={accountId}
                 onChange={(e) => setAccountId(e.target.value)}
                 placeholder={isMeta ? 'act_1234567890' : '123-456-7890'}
-                className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
               />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-surface-300 uppercase tracking-wide block mb-1.5">
-                {isMeta ? 'Access Token' : 'Código OAuth'}
-              </label>
-              <input
+            </FormField>
+            <FormField label={isMeta ? 'Access Token' : 'Código OAuth'}>
+              <Input
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 type="password"
                 placeholder={isMeta ? 'EAAxxxxxxx...' : '4/0AQSTxxxxxx...'}
-                className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
               />
-            </div>
+            </FormField>
           </div>
 
           {error && (
@@ -105,20 +101,16 @@ function ConnectDrawer({
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-surface-700 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-surface-700 text-surface-300 text-sm font-medium hover:border-surface-600 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
+        <div className="px-5 py-4 border-t border-surface-700 flex gap-3 justify-end">
+          <Button variant="neutral" onClick={onClose}>Cancelar</Button>
+          <Button
+            variant="primary"
             onClick={() => void handleConnect()}
-            disabled={loading || !accountId.trim()}
-            className="flex-1 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            disabled={!accountId.trim()}
+            loading={loading}
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Conectar'}
-          </button>
+            Conectar
+          </Button>
         </div>
       </div>
     </>
@@ -154,7 +146,7 @@ function ConnectedCard({
   return (
     <div className="py-1">
       <div className="py-4 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+        <div className="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: color + '1a', color }}>
           <CheckCircle2 className="w-5 h-5" />
         </div>
@@ -166,14 +158,14 @@ function ConnectedCard({
           <button
             onClick={() => void handleSync()}
             disabled={syncing}
-            className="p-2 rounded-lg border border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-colors"
+            className="p-2 rounded-sm border border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-colors"
             title="Sincronizar"
           >
             <RefreshCw className={cn('w-3.5 h-3.5', syncing && 'animate-spin')} />
           </button>
           <button
             onClick={() => setConfirmDisconnect(true)}
-            className="p-2 rounded-lg border border-danger/30 text-danger/60 hover:text-danger hover:border-danger/60 transition-colors"
+            className="p-2 rounded-sm border border-danger/30 text-danger/60 hover:text-danger hover:border-danger/60 transition-colors"
             title="Desconectar"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -243,7 +235,6 @@ function PlatformTab({ platform, accounts, onAccountsChange }: {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [campaigns, setCampaigns] = useState<Record<string, AdCampaignMetrics[]>>({})
   const isMeta = platform === 'meta'
-  const color = isMeta ? '#1877f2' : '#EA4335'
   const platAccounts = accounts.filter((a) => a.platform === platform)
 
   useEffect(() => {
@@ -277,29 +268,14 @@ function PlatformTab({ platform, accounts, onAccountsChange }: {
   return (
     <div className="space-y-4">
       {platAccounts.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-surface-700 p-8 flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: color + '15', color }}>
-            <Megaphone className="w-6 h-6" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-surface-200">
-              Nenhuma conta {isMeta ? 'Meta Ads' : 'Google Ads'} conectada
-            </p>
-            <p className="text-xs text-surface-500 mt-1 max-w-xs">
-              {isMeta
-                ? 'Conecte sua conta do Meta Ads para rastrear leads gerados por anúncios CTWA (Click-to-WhatsApp) no CRM.'
-                : 'Conecte sua conta do Google Ads para rastrear leads via UTM parameters no CRM.'}
-            </p>
-          </div>
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors"
-            style={{ backgroundColor: color }}
-          >
-            <PlusCircle className="w-4 h-4" />
-            Conectar {isMeta ? 'Meta Ads' : 'Google Ads'}
-          </button>
-        </div>
+        <EmptyState
+          icon={Megaphone}
+          title={`Nenhuma conta ${isMeta ? 'Meta Ads' : 'Google Ads'} conectada`}
+          hint={isMeta
+            ? 'Conecte sua conta do Meta Ads para rastrear leads gerados por anúncios CTWA (Click-to-WhatsApp) no CRM.'
+            : 'Conecte sua conta do Google Ads para rastrear leads via UTM parameters no CRM.'}
+          action={{ label: `Conectar ${isMeta ? 'Meta Ads' : 'Google Ads'}`, onClick: () => setDrawerOpen(true) }}
+        />
       ) : (
         <>
           <div className="divide-y divide-surface-700">
@@ -362,7 +338,7 @@ export function AdAccountsSettings() {
 
       <div className="space-y-6">
       <div className="flex items-center gap-2 border-b border-surface-700 pb-3">
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md"
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-xs"
           style={{ backgroundColor: '#1877f21a', color: '#1877f2' }}>
           Meta Ads
         </span>

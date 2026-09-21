@@ -22,6 +22,7 @@ interface OutlineEntry { id: string; title: string }
 type RegisterFn = (e: OutlineEntry) => () => void
 
 const RegisterCtx = createContext<RegisterFn | null>(null)
+
 const EntriesCtx = createContext<OutlineEntry[]>([])
 
 export function SettingsSectionsProvider({ children }: { children: ReactNode }) {
@@ -103,6 +104,8 @@ interface SettingsSectionProps {
   description?: string
   children: ReactNode
   className?: string
+  /** Largura da coluna do rótulo em px (default 236 — medido no PNG 2e; o 6a mede ~198). */
+  labelWidth?: number
   /** Ícone exclusivo do eixo conceitual desta seção, tingido com `accentColor`.
    *  Omitido na maioria das seções (identidade puramente tipográfica) — só
    *  vale a pena quando a seção precisa se diferenciar de uma vizinha visualmente
@@ -113,7 +116,7 @@ interface SettingsSectionProps {
   accentColor?: string
 }
 
-export function SettingsSection({ title, description, children, className, icon: Icon, accentColor }: SettingsSectionProps) {
+export function SettingsSection({ title, description, children, className, labelWidth = 236, icon: Icon, accentColor }: SettingsSectionProps) {
   const register = useContext(RegisterCtx)
   const id = slugify(title)
   // register é estável (useCallback []) → roda 1x por montagem da seção.
@@ -124,9 +127,10 @@ export function SettingsSection({ title, description, children, className, icon:
       id={id}
       className={cn(
         'py-[22px] first:pt-2 border-b border-surface-700 last:border-0 scroll-mt-6',
-        'md:grid md:grid-cols-[260px_1fr] md:gap-6 md:items-start',
+        'md:grid md:grid-cols-[var(--label-w)_1fr] md:gap-6 md:items-start',
         className,
       )}
+      style={{ ['--label-w' as string]: `${labelWidth}px` }}
     >
       <div className="mb-4 md:mb-0 md:sticky md:top-2">
         <h3 className="text-[13px] font-semibold text-surface-100 flex items-center gap-2">

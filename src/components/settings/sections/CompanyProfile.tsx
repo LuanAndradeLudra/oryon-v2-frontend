@@ -82,10 +82,10 @@ export function CompanyProfile() {
   }
 
   const planBadge: Record<string, string> = {
-    free: 'bg-surface-700 text-surface-300',
-    starter: 'bg-brand-900/40 text-brand-300',
-    pro: 'bg-status-active-bg text-status-active',
-    enterprise: 'bg-status-pending-bg text-status-pending',
+    free: 'bg-[var(--sf2)] text-surface-400 border border-surface-700',
+    starter: 'bg-accent-soft text-accent-dark border border-brand-500/25',
+    pro: 'bg-status-active-bg text-status-active border border-status-active-border',
+    enterprise: 'bg-status-pending-bg text-status-pending border border-status-pending-border',
   }
 
   if (error) {
@@ -146,12 +146,12 @@ export function CompanyProfile() {
       >
         {/* Logo + plan */}
         <div className="flex items-center gap-5 mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-brand-600 flex items-center justify-center text-xl font-bold text-surface-950 select-none">
+          <div className="w-16 h-16 rounded-lg bg-brand-600 flex items-center justify-center text-xl font-bold text-surface-950 select-none">
             {tenant.name.slice(0, 2).toUpperCase()}
           </div>
           <div>
             <p className="text-base font-semibold text-surface-50">{tenant.name}</p>
-            <span className={`mt-1 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${planBadge[tenant.plan]}`}>
+            <span className={`mt-1 inline-flex px-1.5 py-px rounded-xs text-[11px] font-semibold uppercase tracking-wide ${planBadge[tenant.plan]}`}>
               {tenant.plan}
             </span>
             <p className="mt-1.5 flex items-center gap-1.5 text-xs text-surface-500">

@@ -71,7 +71,6 @@ export function ConnectorsSettings() {
       <SectionHeader
         title="Conectores"
         description="Conecte sistemas externos aos agentes de IA. Instale uma vez aqui; depois ative por agente na aba Skills de cada um."
-        breadcrumb={['Automação', 'Integrações', 'Conectores']}
         action={
           <Button size="sm" variant="neutral" leftIcon={<MessageSquarePlus className="w-3.5 h-3.5" />}>
             Solicitar integração

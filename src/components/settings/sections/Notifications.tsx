@@ -90,7 +90,7 @@ export function Notifications() {
               <Volume2 className="w-4 h-4" />
             </span>
             <div>
-              <p className="text-sm font-medium text-surface-100">Tocar som</p>
+              <p className="text-[13px] font-medium text-surface-100">Tocar som</p>
               <p className="text-xs text-surface-400">
                 Som curto toca a cada notificação nova.
               </p>
@@ -153,10 +153,10 @@ function PreferenceRow({
           </span>
         )}
         <div className="min-w-0">
-          <p className="text-sm font-medium text-surface-100 flex items-center gap-2">
+          <p className="text-[13px] font-medium text-surface-100 flex items-center gap-2">
             {pref.label}
             {pref.isOverride && !pref.mandatory && (
-              <span className="text-[10px] font-normal text-brand-300 bg-brand-600/15 border border-brand-600/30 rounded px-1.5 py-0.5">
+              <span className="text-[10px] font-medium text-accent-dark bg-accent-soft border border-brand-500/25 rounded-xs px-1.5 py-px">
                 customizado
               </span>
             )}

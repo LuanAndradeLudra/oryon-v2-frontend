@@ -1,7 +1,8 @@
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { CalendarX } from 'lucide-react'
-import { formatDayLong, formatHourLabel, STATUS_CHIP_VAR, STATUS_LABEL, type ScheduleEvent, type ScheduleWeekDay } from './scheduleMock'
+import { formatDayLong, formatHourLabel, type ScheduleEvent, type ScheduleWeekDay } from './scheduleMock'
+import { ScheduleStatusChip } from './ScheduleChips'
 
 interface ScheduleListViewProps {
   days: ScheduleWeekDay[]
@@ -43,7 +44,7 @@ export function ScheduleListView({ days, events }: ScheduleListViewProps) {
                   aria-hidden
                 />
                 <div className="w-[104px] flex-shrink-0 text-2xs text-surface-400 tabular-nums">
-                  {formatHourLabel(event.startMinutes)}–{formatHourLabel(event.endMinutes)}
+                  {formatHourLabel(event.startMinutes)} – {formatHourLabel(event.endMinutes)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className={cn('text-[13px] font-semibold text-surface-100 truncate', event.status === 'cancelado' && 'line-through opacity-70')}>
@@ -51,12 +52,7 @@ export function ScheduleListView({ days, events }: ScheduleListViewProps) {
                   </div>
                   <div className="text-2xs text-surface-500 truncate">{event.agent}</div>
                 </div>
-                <span
-                  className="color-chip inline-flex items-center rounded-xs border px-1.5 py-px text-[11px] font-semibold flex-shrink-0"
-                  style={{ ['--chip']: STATUS_CHIP_VAR[event.status] } as React.CSSProperties}
-                >
-                  {STATUS_LABEL[event.status]}
-                </span>
+                <ScheduleStatusChip status={event.status} className="text-[11px] flex-shrink-0" />
               </div>
             ))}
           </div>

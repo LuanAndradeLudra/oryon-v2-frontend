@@ -92,3 +92,32 @@ fora do meu escopo de edição — reportado, não corrigido.
 comportamento dinâmico do scroll-spy (SETT-OUTLINE-04) e a aparência exata nos
 2 temas (SETT-THEME-*) — a lógica/tokens conferem por leitura de código, mas
 não foram vistos renderizados nesta sessão.
+
+## Rodada 2 (2026-09-21) — inventário por imagem + TODAS as seções
+
+Medido por pixel nos PNGs 2e/5b/6a (claro+escuro). O spec e o meu "✅" da Fase C
+estavam errados em vários pontos — `❓ ao vivo` em tudo (sem navegador).
+
+| ID | Achado (PNG) | Correção | Status |
+|---|---|---|---|
+| R2-2E-01 | nav com fundo `--sf` e borda direita 1px `--bd` (NAV-12 do spec estava errado); busca com borda `--bd2` e fundo `--sf`; SEM hairline entre grupos; header da página SEM hairline abaixo | SettingsLayout.tsx aside/busca/grupos; SectionHeader.tsx | ✅ código · ❓ ao vivo |
+| R2-2E-02 | "CRM"/"Integrações" são sub-grupos-acordeão (rótulo 13px/500 + itens recuados 29px; recolhido quando não contém a seção ativa — 5b mostra CRM fechado e Integrações aberto) | `NavClusterGroup` em SettingsLayout.tsx; Conectores movido p/ Automação > Integrações | ✅ código · ❓ ao vivo |
+| R2-2E-03 | breadcrumb "Domínio / Sub-grupo / Seção" em toda página | `SettingsBreadcrumbCtx` (derivado da nav) consumido por SectionHeader | ✅ código · ❓ ao vivo |
+| R2-2E-04 | coluna do rótulo: 2e mede 260 total (236+gap 24); 6a mede ~222 (198+24) | `SettingsSection labelWidth` | ✅ código · ❓ ao vivo |
+| R2-2E-* por arquivo | ver commit `268a4c1` (cards → hairlines, chips soft `rounded-xs`, primitivos, SectionHeader nas páginas de CRM) — IDs R2-2E-COMPANY/ACCOUNT/NOTIF/AUDIT/WABP/WANUM/WAHEALTH/ADACC/DEPT/TAGS/BRAIN/USER-nn | | ✅ código · ❓ ao vivo |
+
+**Conflito entre mocks (decisão do Maestro):** a nav do 6a mostra ADMINISTRAÇÃO
+(Plano & faturamento, Segurança, Auditoria) e "Perfil da empresa/Usuários e
+setores"; a do 2e/5b mostra CONTA (Faturamento, Segurança e acesso) e "Geral/
+Departamentos e time". Adotei 2e/5b para a estrutura e mantive os rótulos reais
+do app; itens do mock sem rota (Etapas e funis, Horário de atendimento, Regras
+de handoff, Webhooks, Chaves de API) seguem `[!]` de produto (sem tela).
+
+**Pendências reportadas (não feitas):** `<input>/<select>` crus em Departments/
+Tags (:162-234), `<textarea>` cru em CompanyBrain (sem primitivo Textarea em
+`ui/`), botão `Link` sólido em Departments:236, tag de atalho de QuickReplies:57,
+Access checkbox sem primitivo; páginas de lista ainda não usam a grade
+`SettingsSection` 2 colunas (é lista/tabela — o mock só desenha a de formulário).
+`.color-chip` (index.css) é SÓLIDO e o mock de 2d/6a usa chip SOFT: resolvi
+localmente (ScheduleChips, ConnectorBadges, classes status-*), mas os 83 usos
+restantes dependem de decisão do orquestrador.

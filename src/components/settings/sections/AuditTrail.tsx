@@ -10,6 +10,9 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select as SelectField } from '@/components/ui/Select'
 import { ActorChip } from '@/components/ui/ActorChip'
 import { formatActivity } from '@/components/dashboard/activityFormatter'
 import {
@@ -43,10 +46,11 @@ const ENTITY_BUCKETS: Array<{ value: string; label: string }> = [
 
 const SEVERITY_OPTIONS = ['', 'info', 'warn', 'error'] as const
 
-const SEVERITY_STYLE: Record<string, string> = {
-  info:  'var(--color-status-muted)',
-  warn:  'var(--color-status-pending)',
-  error: 'var(--color-danger)',
+// Chips suaves (fundo claro + texto colorido), não sólidos — vocabulário 2e.
+const SEVERITY_CLASS: Record<string, string> = {
+  info:  'bg-[var(--sf2)] text-surface-400 border-surface-700',
+  warn:  'bg-status-pending-bg text-status-pending border-status-pending-border',
+  error: 'bg-status-failed-bg text-status-failed border-status-failed/40',
 }
 
 export function AuditTrail() {
@@ -82,7 +86,7 @@ export function AuditTrail() {
   }
 
   return (
-    <div className="px-6 py-6">
+    <div>
       <SectionHeader
         title="Auditoria da equipe"
         description="Tudo que sua equipe fez na plataforma — criação, edição e remoção de contatos, campanhas, templates, automações e mais. Apenas leitura."
@@ -91,7 +95,7 @@ export function AuditTrail() {
       <FilterBar filters={filters} onApply={onApply} loading={loading} />
 
       {error && rows.length > 0 && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-lg border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-sm border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
@@ -116,7 +120,7 @@ export function AuditTrail() {
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-surface-400 text-xs uppercase tracking-wider">
+            <thead className="text-surface-500 text-[10px] font-bold uppercase" style={{ letterSpacing: '.14em' }}>
               <tr className="border-b border-surface-700">
                 <th className="text-left pl-0 pr-4 py-2.5 font-medium">Quando</th>
                 <th className="text-left px-4 py-2.5 font-medium">Quem</th>
@@ -136,14 +140,10 @@ export function AuditTrail() {
 
       {nextCursor && (
         <div className="mt-4 flex justify-center">
-          <button
-            onClick={onLoadMore}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-100 text-sm disabled:opacity-50"
-          >
+          <Button variant="neutral" onClick={onLoadMore} disabled={loading}>
             {loading ? <Spinner className="w-4 h-4 inline mr-2" /> : null}
             Carregar mais
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -169,7 +169,7 @@ function Row({ row }: { row: TenantAuditRow }) {
     details: row.details,
   })
   return (
-    <tr className="hover:bg-surface-800/30">
+    <tr className="hover:bg-[var(--rowhover)]">
       <td className="pl-0 pr-4 py-2.5 whitespace-nowrap text-surface-300 text-xs">
         {new Date(row.createdAt).toLocaleString('pt-BR')}
       </td>
@@ -185,7 +185,7 @@ function Row({ row }: { row: TenantAuditRow }) {
         <div className="flex items-center gap-2">
           <span className="text-surface-100 text-sm">{verb}</span>
           {row.severity !== 'info' && (
-            <span className={cn('color-chip inline-block px-1.5 py-0.5 rounded text-[11px] font-medium border')} style={{ ['--chip']: SEVERITY_STYLE[row.severity] } as React.CSSProperties}>
+            <span className={cn('inline-block px-1.5 py-px rounded-xs text-[11px] font-semibold border', SEVERITY_CLASS[row.severity] ?? SEVERITY_CLASS.info)}>
               {row.severity}
             </span>
           )}
@@ -365,17 +365,13 @@ function FilterBar({
       <Field label="Desde" type="datetime-local" value={toLocalInput(draft.since)} onChange={v => set('since', fromLocalInput(v))} />
       <div className="flex gap-2 ml-auto">
         {hasFilters && (
-          <button onClick={clear} className="px-3 py-1.5 rounded bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs flex items-center gap-1">
-            <X className="w-3 h-3" /> Limpar
-          </button>
+          <Button size="sm" variant="neutral" onClick={clear} leftIcon={<X className="w-3 h-3" />}>
+            Limpar
+          </Button>
         )}
-        <button
-          onClick={apply}
-          disabled={loading}
-          className="px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-xs disabled:opacity-50"
-        >
+        <Button size="sm" variant="primary" onClick={apply} disabled={loading}>
           Aplicar
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -393,12 +389,13 @@ function Field({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <input
+      <Input
+        size="sm"
         type={type}
         value={value}
         placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
-        className="px-2 py-1 text-xs rounded border border-surface-700 bg-surface-900 text-surface-100 focus:outline-none focus:border-brand-500 w-44"
+        className="w-44"
       />
     </label>
   )
@@ -415,15 +412,15 @@ function Select({
   return (
     <label className="flex flex-col gap-1">
       <span className="text-xs text-surface-400">{label}</span>
-      <select
+      <SelectField
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="px-2 py-1 text-xs rounded border border-surface-700 bg-surface-900 text-surface-100 focus:outline-none focus:border-brand-500 min-w-[140px]"
+        className="min-w-[140px]"
       >
         {options.map(o => (
           <option key={o.value || 'all'} value={o.value}>{o.label}</option>
         ))}
-      </select>
+      </SelectField>
     </label>
   )
 }

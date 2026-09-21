@@ -1,6 +1,7 @@
 import { forwardRef } from 'react'
 import { cn } from '@/lib/utils'
-import { formatHourLabel, STATUS_CHIP_VAR, STATUS_LABEL, type ScheduleEvent } from './scheduleMock'
+import { formatHourLabel, type ScheduleEvent } from './scheduleMock'
+import { ScheduleStatusChip } from './ScheduleChips'
 
 interface ScheduleEventBlockProps {
   event: ScheduleEvent
@@ -21,6 +22,7 @@ export const ScheduleEventBlock = forwardRef<HTMLButtonElement, ScheduleEventBlo
   function ScheduleEventBlock({ event, top, height, lane, selected, onClick }, ref) {
     const cancelled = event.status === 'cancelado'
     const showChip = !cancelled && height >= 46
+    const compact = height < 40
 
     return (
       <button
@@ -42,23 +44,24 @@ export const ScheduleEventBlock = forwardRef<HTMLButtonElement, ScheduleEventBlo
           selected && 'border-brand-500 ring-[3px] ring-accent-soft',
         )}
       >
-        <div className={cn('text-[11.5px] font-semibold text-surface-100 truncate', cancelled && 'line-through')}>
-          {event.title}
-        </div>
-        <div className="text-2xs text-surface-400 truncate mt-px">
-          {formatHourLabel(event.startMinutes)}–{formatHourLabel(event.endMinutes)} · {event.agent}
-        </div>
-        {cancelled && (
-          <div className="text-2xs text-danger truncate mt-px">cancelado pelo contato</div>
+        {compact ? (
+          // Bloco curto (mock: "Suporte · Lab Vida 14:00"): título + hora na mesma linha.
+          <div className="text-[11.5px] font-semibold text-surface-100 truncate">
+            <span className={cn(cancelled && 'line-through')}>{event.title}</span>{' '}
+            <span className="font-normal text-surface-400">{formatHourLabel(event.startMinutes)}</span>
+          </div>
+        ) : (
+          <>
+            <div className={cn('text-[11.5px] font-semibold text-surface-100 truncate', cancelled && 'line-through')}>
+              {event.title}
+            </div>
+            <div className={cn('text-2xs text-surface-400 mt-px', cancelled ? 'line-clamp-2' : 'truncate')}>
+              {formatHourLabel(event.startMinutes)} – {formatHourLabel(event.endMinutes)}
+              {cancelled ? ' · cancelado pelo contato' : ` · ${event.agent}`}
+            </div>
+          </>
         )}
-        {showChip && (
-          <span
-            className="color-chip inline-flex items-center rounded-xs border px-1 py-px text-[10px] font-semibold mt-1"
-            style={{ ['--chip']: STATUS_CHIP_VAR[event.status] } as React.CSSProperties}
-          >
-            {STATUS_LABEL[event.status]}
-          </span>
-        )}
+        {showChip && <ScheduleStatusChip status={event.status} className="text-[10px] px-1 mt-1" />}
       </button>
     )
   },

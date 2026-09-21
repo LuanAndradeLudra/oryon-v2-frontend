@@ -388,7 +388,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500">Revisão</p>
 
                     {/* User data summary */}
-                    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4">
+                    <div className="border-y border-surface-700 py-4">
                       <p className="text-xs font-semibold text-surface-500 mb-3">Dados do usuário</p>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -407,7 +407,7 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                     </div>
 
                     {/* Role summary */}
-                    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4">
+                    <div className="border-y border-surface-700 py-4">
                       <p className="text-xs font-semibold text-surface-500 mb-3">Acesso</p>
                       <div>
                         <p className="text-[10px] uppercase tracking-wide text-surface-500">Papel</p>

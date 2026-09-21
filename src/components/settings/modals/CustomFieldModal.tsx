@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { FormDialog } from '@/components/ui/FormDialog'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
@@ -153,26 +154,22 @@ export function CustomFieldModal({ open, onClose, onSave, editField, existingKey
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOption() } }}
                 placeholder="Digite uma opção..."
               />
-              <button
-                type="button"
-                onClick={addOption}
-                className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 transition-all whitespace-nowrap"
-              >
-                <Plus className="w-3.5 h-3.5" /> Adicionar
-              </button>
+              <Button type="button" size="sm" variant="neutral" className="whitespace-nowrap" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={addOption}>
+                Adicionar
+              </Button>
             </div>
             {options.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {options.map((opt) => (
                   <span
                     key={opt}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-surface-800 border border-surface-700 text-surface-200"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-xs bg-[var(--sf2)] border border-surface-700 text-surface-200"
                   >
                     {opt}
                     <button
                       type="button"
                       onClick={() => removeOption(opt)}
-                      className="text-surface-500 hover:text-red-400 transition-colors"
+                      className="text-surface-500 hover:text-danger transition-colors"
                     >
                       <X className="w-3 h-3" />
                     </button>

@@ -147,7 +147,7 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
   }
 
   return (
-    <div className="bg-surface-900 border border-brand-600/40 rounded-2xl p-5 mb-4">
+    <div className="border-y border-surface-700 py-5 mb-4">
       <div className="flex items-center justify-between mb-5">
         <p className="text-xs font-semibold text-brand-400 uppercase tracking-widest">{title}</p>
         <button onClick={onCancel} className="text-surface-500 hover:text-surface-300 transition-colors"><X className="w-4 h-4" /></button>
@@ -177,7 +177,7 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
         </div>
 
         {/* Permissions */}
-        <div className="bg-surface-800/40 border border-surface-700 rounded-xl overflow-hidden">
+        <div className="border-y border-surface-700 overflow-hidden">
           <button type="button" onClick={() => setPermOpen((v) => !v)} className="w-full flex items-center justify-between px-4 py-3 text-left">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-brand-400" />
@@ -308,7 +308,7 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
         <div className="px-4 pb-3 flex flex-wrap gap-1">
           {dept.permissions.slice(0, 5).map((perm) => {
             const label = PERMISSION_GROUPS.flatMap((g) => g.perms).find((p) => p.key === perm)?.label ?? perm
-            return <span key={perm} className="inline-flex px-1.5 py-0.5 bg-surface-800 border border-surface-700 text-surface-400 text-[10px] rounded-md">{label}</span>
+            return <span key={perm} className="inline-flex px-1.5 py-0.5 bg-[var(--sf2)] border border-surface-700 text-surface-400 text-[10px] rounded-xs">{label}</span>
           })}
           {dept.permissions.length > 5 && <span className="inline-flex px-1.5 py-0.5 text-surface-600 text-[10px]">+{dept.permissions.length - 5} mais</span>}
         </div>

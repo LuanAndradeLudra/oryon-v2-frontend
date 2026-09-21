@@ -55,7 +55,7 @@ function PillToggle({ label, selected, onClick }: { label: string; selected: boo
       onClick={onClick}
       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
         selected
-          ? 'bg-brand-600 border-brand-500 text-surface-950 shadow-sm shadow-brand-900/40'
+          ? 'bg-accent-soft border-brand-500/40 text-accent-dark'
           : 'bg-surface-800 border-surface-700 text-surface-300 hover:border-surface-600 hover:text-surface-100'
       }`}
     >
@@ -269,7 +269,7 @@ function BrandFilesSection({
         <div className="mt-3 space-y-2">
           {entries.map(({ file, status, error: fileError }) => (
             <div key={file.id}>
-              <div className="flex items-start gap-3 rounded-xl bg-surface-800/60 border border-surface-700/60 px-3 py-2.5">
+              <div className="flex items-start gap-3 rounded-sm border border-surface-700 px-3 py-2.5">
                 <div className="flex-shrink-0 mt-0.5">{fileIcon(file.mimeType)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -419,7 +419,7 @@ export function CompanyBrain() {
       />
 
       {/* Status banner */}
-      <div className={`flex items-center gap-3 rounded-xl px-4 py-3 mb-4 border ${
+      <div className={`flex items-center gap-3 rounded-sm px-4 py-3 mb-4 border ${
         hasContent ? 'bg-status-active-bg border-status-active-border' : 'bg-brand-950/50 border-brand-500/20'
       }`}>
         <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${

@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { Search } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { SettingsSidebarItem } from './SettingsSidebarItem'
 import { SettingsSectionsProvider, SettingsOutline } from './SettingsSection'
+import { SettingsBreadcrumbCtx } from './settingsBreadcrumb'
+import { useParams } from 'react-router-dom'
 import { isRouteVisible } from '@/config/featureFlags'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
@@ -78,11 +79,10 @@ interface NavDomain {
 }
 
 // ── Arquitetura da informação ────────────────────────────────────────────────
-// 4 domínios de topo (README §3.9 / mock 2e), nível de CLUSTER removido —
-// o eyebrow do domínio já cumpre esse papel nesta tela (nenhum nome de
-// cluster visível no mock). Reagrupamento dos itens EXISTENTES, sem mudar
-// rota/label/gate de nenhum — só a hierarquia visual (SCRUM-1097, Fase C
-// de 2e-configuracoes.GAPS.md, NAV-10). "Etapas e funis" e "Horário de
+// 3 domínios de eyebrow (Workspace / Automação / Conta) — mock 2e, medido no
+// PNG: "CRM" NÃO é eyebrow, é um sub-grupo de Workspace (rótulo sentence-case
+// + itens recuados). Reagrupamento dos itens EXISTENTES, sem mudar
+// rota/label/gate de nenhum — só a hierarquia visual (SCRUM-1097, R2-2E-01). "Etapas e funis" e "Horário de
 // atendimento" do mock não têm rota própria hoje — decisão de produto,
 // documentada em GAPS-PENDENTES.md, não inventada aqui.
 export const SETTINGS_NAV: NavDomain[] = [
@@ -100,12 +100,10 @@ export const SETTINGS_NAV: NavDomain[] = [
           { section: 'departments',      label: 'Setores',              supervisorOnly: true },
         ],
       },
-    ],
-  },
-  {
-    domain: 'CRM',
-    clusters: [
       {
+        // Mock 2e: "CRM" é sub-grupo DENTRO de Workspace (rótulo sentence-case
+        // + itens recuados), não um 5º domínio com eyebrow.
+        label: 'CRM',
         items: [
           { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
           { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true, hidden: true },
@@ -116,7 +114,7 @@ export const SETTINGS_NAV: NavDomain[] = [
           { section: 'pipeline-stages',   label: 'Funis',                 adminOnly: true, multiPipelineOnly: true },
           // F11-888: roteamento congelado (Modelo B) — sai do menu; rota mantida oculta até a remoção física.
           { section: 'pipeline-routing',  label: 'Roteamento por canal',  adminOnly: true, multiPipelineOnly: true, hidden: true },
-          { section: 'vertical',          label: 'Vertical & vocabulário', adminOnly: true },
+          { section: 'vertical',          label: 'Vocabulário',           adminOnly: true },
           { section: 'tags',              label: 'Tags',                  supervisorOnly: true },
         ],
       },
@@ -131,6 +129,16 @@ export const SETTINGS_NAV: NavDomain[] = [
           { section: 'quick-replies', label: 'Respostas rápidas', supervisorOnly: true },
         ],
       },
+      {
+        // Mock 5b: "Integrações" é sub-grupo de Automação (Conectores dentro;
+        // Webhooks e Chaves de API do mock não têm rota hoje). Breadcrumb do
+        // mock: "Automação / Integrações / Conectores".
+        label: 'Integrações',
+        items: [
+          // Leva 12 (SCRUM-1110) — Conectores, tela nova (README §3.10).
+          { section: 'connectors',    label: 'Conectores',          adminOnly: true },
+        ],
+      },
     ],
   },
   {
@@ -141,9 +149,7 @@ export const SETTINGS_NAV: NavDomain[] = [
           { section: 'account',       label: 'Minha conta' },
           { section: 'notifications', label: 'Notificações' },
           { section: 'billing',       label: 'Plano & faturamento', ownerOnly: true },
-          { section: 'security',      label: 'Segurança',           adminOnly: true },
-          // Leva 12 (SCRUM-1110) — Conectores, tela nova (README §3.10).
-          { section: 'connectors',    label: 'Conectores',          adminOnly: true },
+          { section: 'security',      label: 'Segurança e acesso',  adminOnly: true },
           { section: 'audit',         label: 'Auditoria',           adminOnly: true },
         ],
       },
@@ -188,8 +194,55 @@ export function firstVisibleSection(currentRole: string, opts: SettingsNavOption
   return visibleSettingsNav(currentRole, opts)[0]?.clusters[0]?.items[0]?.section ?? 'account'
 }
 
+function NavClusterGroup({ cluster, activeSection, searching, currentRole }: {
+  cluster: NavCluster
+  activeSection?: string
+  searching: boolean
+  currentRole: string
+}) {
+  const containsActive = cluster.items.some((i) => i.section === activeSection)
+  const [override, setOverride] = useState<boolean | null>(null)
+  // Sub-grupo rotulado = acordeão (mock 5b: "CRM" recolhido, "Integrações"
+  // aberto): abre sozinho quando contém a seção ativa; o rótulo alterna.
+  const open = !cluster.label || searching || (override ?? containsActive)
+  return (
+    <div className={cluster.label ? 'mt-1 first:mt-0' : ''}>
+      {cluster.label && (
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOverride(!open)}
+          className="w-full h-[26px] pl-[22px] pr-2 flex items-center text-left text-[13px] font-medium text-surface-200 hover:text-surface-50 transition-colors"
+        >
+          {cluster.label}
+        </button>
+      )}
+      {open && (
+        <nav className="flex flex-col">
+          {cluster.items.map((item) => (
+            <SettingsSidebarItem
+              key={item.section}
+              section={item.section}
+              label={item.label}
+              nested={!!cluster.label}
+              currentRole={currentRole}
+            />
+          ))}
+        </nav>
+      )}
+    </div>
+  )
+}
+
 export function SettingsLayout({ children, currentRole = 'admin', multiPipeline = false }: SettingsLayoutProps) {
   const isMobile = useIsMobile()
+  const { section: activeSection } = useParams()
+  const breadcrumb = (() => {
+    for (const d of SETTINGS_NAV) for (const c of d.clusters) for (const i of c.items) {
+      if (i.section === activeSection) return [d.domain, ...(c.label ? [c.label] : []), i.label]
+    }
+    return undefined
+  })()
   const [search, setSearch] = useState('')
   const query = normalize(search.trim())
   const matches = (item: NavItem) => {
@@ -212,7 +265,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
       {/* Navegação única — text-first, sem ícones, sem pills. A hierarquia é
           100% tipográfica: DOMÍNIO (caps) > cluster (sentence, mudo) > item. */}
-      <aside className="w-full md:w-[248px] flex-shrink-0 border-b md:border-b-0 border-surface-700 py-3 md:py-5 px-3 overflow-y-auto max-h-60 md:max-h-none">
+      <aside className="w-full md:w-[248px] flex-shrink-0 bg-surface-800 border-b md:border-b-0 md:border-r border-surface-700 py-3 md:py-5 px-3 overflow-y-auto max-h-60 md:max-h-none">
         {/* Busca — encontra por rótulo OU sinônimo natural */}
         <div className="relative mb-4">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
@@ -221,7 +274,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar configuração..."
             aria-label="Buscar configuração"
-            className="w-full h-7 bg-transparent border border-surface-700/60 rounded-lg pl-8 pr-2 text-sm text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
+            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-lg pl-8 pr-2 text-sm text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50 transition-colors"
           />
         </div>
 
@@ -229,29 +282,19 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
           <p className="px-2 py-4 text-xs text-surface-500">Nenhuma configuração encontrada.</p>
         )}
 
-        {nav.map((d, di) => (
-          <div key={d.domain} className={cn('mb-4', di > 0 && 'border-t border-surface-700 pt-4 mt-0')}>
+        {nav.map((d) => (
+          <div key={d.domain} className="mb-5">
             <p className="px-2 mb-2 text-[10px] font-bold uppercase text-surface-500" style={{ letterSpacing: '.14em' }}>
               {d.domain}
             </p>
             {d.clusters.map((cluster, i) => (
-              <div key={cluster.label ?? i} className={cluster.label ? 'mt-3 first:mt-0' : ''}>
-                {cluster.label && (
-                  <p className="px-2 h-7 flex items-center text-[12.5px] font-normal text-surface-400">
-                    {cluster.label}
-                  </p>
-                )}
-                <nav className="flex flex-col">
-                  {cluster.items.map((item) => (
-                    <SettingsSidebarItem
-                      key={item.section}
-                      section={item.section}
-                      label={item.label}
-                      currentRole={currentRole}
-                    />
-                  ))}
-                </nav>
-              </div>
+              <NavClusterGroup
+                key={cluster.label ?? i}
+                cluster={cluster}
+                activeSection={activeSection}
+                searching={!!query}
+                currentRole={currentRole}
+              />
             ))}
           </div>
         ))}
@@ -261,14 +304,16 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
           outline "Nesta página" (dir., 2xl+). O outline é gerado sozinho
           pelas SettingsSection registradas — em telas largas o espaço que
           sobrava vira navegação intra-página (padrão Stripe/docs). */}
-      <main className="flex-1 overflow-y-auto py-6 px-4 md:py-8 md:px-10">
+      <main className="flex-1 overflow-y-auto py-6 px-4 md:pt-[26px] md:pb-8 md:px-10">
         <SettingsSectionsProvider>
-          <div className="flex justify-center gap-10">
-            <div className="max-w-4xl w-full min-w-0">
-              {children}
+          <SettingsBreadcrumbCtx.Provider value={breadcrumb}>
+            <div className="flex justify-center gap-10">
+              <div className="max-w-4xl w-full min-w-0">
+                {children}
+              </div>
+              <SettingsOutline />
             </div>
-            <SettingsOutline />
-          </div>
+          </SettingsBreadcrumbCtx.Provider>
         </SettingsSectionsProvider>
       </main>
       </div>
