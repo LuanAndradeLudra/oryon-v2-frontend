@@ -21,7 +21,7 @@ interface SegmentedControlProps<T extends string> {
   options: SegmentOption<T>[]
   value: T
   onChange: (value: T) => void
-  size?: 'sm' | 'md'
+  size?: 'sm' | '32' | 'md'
   className?: string
   /**
    * Estilo do estado ativo:
@@ -61,7 +61,7 @@ export function SegmentedControl<T extends string>({
             style={active && solid ? ({ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties) : undefined}
             className={cn(
               'inline-flex items-center gap-1.5 font-semibold transition-colors cursor-pointer whitespace-nowrap',
-              size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-9 px-3.5 text-[13px]',
+              size === 'sm' ? 'h-7 px-2.5 text-xs' : size === '32' ? 'h-8 px-2.5 text-xs' : 'h-9 px-3.5 text-[13px]',
               i > 0 && 'border-l border-surface-700',
               // ELEV-02 (spec 1a): sem sombra fora de overlay.
               active
@@ -71,7 +71,7 @@ export function SegmentedControl<T extends string>({
                 : 'text-surface-400 hover:text-surface-100',
             )}
           >
-            {Icon && <Icon className={size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />}
+            {Icon && <Icon className={size === 'md' ? 'w-4 h-4' : 'w-3.5 h-3.5'} />}
             {opt.label}
             {typeof opt.count === 'number' && (
               <span className={cn('ml-0.5 tabular-nums', active && solid ? 'text-white' : 'text-surface-400')}>
