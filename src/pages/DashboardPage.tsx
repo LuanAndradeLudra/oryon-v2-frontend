@@ -37,6 +37,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { useSetupChecklist } from '@/hooks/useSetupChecklist'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { ConnectedLineChip } from '@/components/layout/ConnectedLineChip'
+import { usePrimaryConnectedLine } from '@/hooks/usePrimaryConnectedLine'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { TipCard } from '@/components/ui/TipCard'
 import { api } from '@/services/api'
@@ -126,6 +128,7 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState(new Date())
   const [now, setNow] = useState(() => new Date())
+  const primaryLine = usePrimaryConnectedLine()
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 5000)
@@ -277,7 +280,15 @@ export function DashboardPage() {
 
   // DASH-HEADER-01: subtítulo dinâmico "Terça, 15 set · atualizado há Ns" no
   // lugar do texto fixo da rota — `now` tickando a cada 5s mantém o "há Ns" vivo.
-  useRegisterTopBarSubtitle(formatUpdatedSubtitle(lastUpdated, now), [lastUpdated, now])
+  useRegisterTopBarSubtitle(
+    <>
+      {formatUpdatedSubtitle(lastUpdated, now)}
+      {primaryLine.connected && (
+        <span className="ml-3"><ConnectedLineChip>WhatsApp conectado</ConnectedLineChip></span>
+      )}
+    </>,
+    [lastUpdated, now, primaryLine.connected],
+  )
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">

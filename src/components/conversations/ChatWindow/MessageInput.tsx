@@ -63,6 +63,8 @@ interface MessageInputProps {
   contactId: string
   sending: boolean
   windowOpen: boolean
+  /** Horas restantes da janela de 24h (só pra o aviso do rodapé do composer). */
+  windowHoursLeft?: number
   disabled?: boolean
   /**
    * When set, the input is locked with a clear explanation instead of
@@ -148,7 +150,7 @@ function QuickReplyPicker({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MessageInput({ onSend, contactId, sending, windowOpen, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
+export function MessageInput({ onSend, contactId, sending, windowOpen, windowHoursLeft, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
   const { toast } = useToast()
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
@@ -1003,6 +1005,11 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, disabled,
             )}
 
             <div className="ml-auto flex items-center gap-2">
+              {windowHoursLeft !== undefined && (
+                <span className="hidden lg:inline text-[11px] text-surface-500 whitespace-nowrap" data-testid="window-notice">
+                  Janela de 24h aberta · fecha em {windowHoursLeft} h
+                </span>
+              )}
               {/* Emoji */}
               <EmojiPickerButton
                 textareaRef={textareaRef}

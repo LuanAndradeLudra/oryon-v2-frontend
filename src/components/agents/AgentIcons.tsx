@@ -19,14 +19,23 @@ export const AGENT_ICONS = [
   { id: 'zap',        Icon: Zap,           bg: 'bg-yellow-500',  hoverBg: 'hover:bg-yellow-500',  shadow: 'shadow-yellow-900/40',  stroke: 'text-yellow-700',   hoverStroke: 'group-hover:text-white' },
 ]
 
-export function AgentIcon({ iconId, className }: { iconId?: string; className?: string }) {
+export function AgentIcon({ iconId, className, dashed }: { iconId?: string; className?: string; dashed?: boolean }) {
   const entry = AGENT_ICONS.find(i => i.id === iconId) ?? AGENT_ICONS[0]
-  const { Icon, bg, shadow } = entry
+  const { Icon, bg } = entry
+  // R2-AGT-01 (mock 2a): tile de raio 8 SEM sombra; rascunho = sem fundo,
+  // borda tracejada --bd2 e ícone terciário.
+  if (dashed) {
+    return (
+      <div className={cn('rounded-lg flex items-center justify-center flex-shrink-0 border border-dashed border-[var(--bd2)]', className)}>
+        <Icon className="w-[45%] h-[45%] text-surface-500" />
+      </div>
+    )
+  }
   // The bot's bg-brand-600 token is near-white in dark mode → text-white loses
   // contrast and the icon disappears. Mirror the picker's contrast fix here.
   const iconColor = entry.id === 'bot' ? 'text-black' : 'text-white'
   return (
-    <div className={cn('rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg', bg, shadow, className)}>
+    <div className={cn('rounded-lg flex items-center justify-center flex-shrink-0', bg, className)}>
       <Icon className={cn('w-[45%] h-[45%]', iconColor)} />
     </div>
   )

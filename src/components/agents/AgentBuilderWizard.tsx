@@ -181,7 +181,7 @@ const HUB_TEAM_SIZES = [
 
 // ─── Shared input styles ───────────────────────────────────────────────────────
 
-const INPUT = 'w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition'
+const INPUT = 'w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-[13px] text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition'
 const TEXTAREA = INPUT + ' resize-none'
 
 // ─── TagInput ─────────────────────────────────────────────────────────────────
@@ -403,15 +403,15 @@ function Step2({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
               <button
                 key={t.value} type="button" onClick={() => setData(d => ({ ...d, tone: t.value }))}
                 className={cn(
-                  'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all',
+                  'flex flex-col items-start gap-1 p-3 rounded-lg border text-left transition-all',
                   selected
-                    ? 'bg-status-active-bg border-status-active-border ring-1 ring-status-active-border'
-                    : 'bg-surface-800 border-surface-700 hover:border-surface-600',
+                    ? 'bg-surface-800 border-brand-500 ring-[3px] ring-accent-soft'
+                    : 'bg-surface-800 border-surface-700 hover:bg-[var(--rowhover)]',
                 )}
               >
-                <span className={cn('transition-colors', selected ? 'text-status-active' : 'text-surface-400')}>{t.icon}</span>
-                <span className="text-xs font-medium text-surface-200">{t.label}</span>
-                <span className="text-[10px] text-surface-500 leading-tight">{t.desc}</span>
+                <span className={cn('transition-colors', selected ? 'text-accent-dark' : 'text-surface-400')}>{t.icon}</span>
+                <span className="text-[13px] font-semibold text-surface-100">{t.label}</span>
+                <span className="text-[11.5px] text-surface-400 leading-[1.45]">{t.desc}</span>
               </button>
             )
           })}
@@ -425,10 +425,10 @@ function Step2({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
             <button
               key={l.value} type="button" onClick={() => setData(d => ({ ...d, language: l.value }))}
               className={cn(
-                'flex-1 py-2 rounded-xl border text-sm font-medium transition-all',
+                'flex-1 h-9 rounded-sm border text-[13px] font-semibold transition-all',
                 data.language === l.value
-                  ? 'bg-status-active-bg border-status-active-border text-status-active ring-1 ring-status-active-border'
-                  : 'bg-surface-800 border-surface-700 text-surface-400 hover:border-surface-600',
+                  ? 'bg-accent-soft border-brand-500 text-accent-dark'
+                  : 'bg-surface-800 border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)]',
               )}
             >
               {l.label}
@@ -1123,7 +1123,7 @@ function WizardKBProgress({ fileName }: { fileName: string }) {
   const progress = Math.min(95, elapsed * 1.2)
 
   return (
-    <div className="p-3 bg-surface-900/60 border border-surface-700 rounded-xl space-y-2">
+    <div className="p-3 bg-surface-800 border border-surface-700 rounded-lg space-y-2">
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-brand-400 flex-shrink-0" />
         <p className="text-xs text-surface-200 font-medium truncate">{fileName}</p>
@@ -1292,7 +1292,7 @@ function Step6KB({
           <p className="text-xs font-medium text-surface-400">{data.knowledge_docs.length} documento(s) adicionado(s)</p>
           {data.knowledge_docs.map(doc => (
             <div key={doc.id} className="space-y-2">
-              <div className="flex items-center gap-3 p-3 bg-surface-900/60 border border-surface-700 rounded-xl">
+              <div className="flex items-center gap-3 p-3 bg-surface-800 border border-surface-700 rounded-lg">
                 <FileText className="w-4 h-4 text-surface-500 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-surface-200 truncate">{doc.name}</p>
@@ -1491,7 +1491,7 @@ function Step6({
 
       <div className="grid grid-cols-3 gap-2">
         {summaryItems.map(({ label, value }) => (
-          <div key={label} className="bg-surface-900/60 border border-surface-700 rounded-xl px-3 py-2.5">
+          <div key={label} className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5">
             <p className="text-[10px] text-surface-600 uppercase tracking-wide">{label}</p>
             <p className="text-sm text-surface-200 font-medium truncate">{value}</p>
           </div>
@@ -1510,7 +1510,7 @@ function Step6({
           </div>
           <button
             type="button" onClick={generate}
-            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 font-medium transition-all shadow-lg shadow-brand-900/40"
+            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-110 text-[var(--color-btn-primary-fg)] font-semibold transition-all"
           >
             <Sparkles className="w-5 h-5" />
             Gerar System Prompt com IA
@@ -1555,7 +1555,7 @@ function Step6({
             onChange={e => setData(d => ({ ...d, generated_prompt: e.target.value }))}
             rows={18} maxLength={10000}
             placeholder="Escreva o system prompt do agente aqui..."
-            className="w-full bg-surface-900/80 border border-surface-700 rounded-xl px-4 py-3 text-xs text-surface-300 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
+            className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-xs text-surface-300 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
           />
           <p className="text-right text-xs text-surface-700">{data.generated_prompt.length.toLocaleString()} caracteres</p>
         </div>
@@ -1617,7 +1617,7 @@ function CapabilitiesReview({
   const enabledCount = data.crm_capabilities.capabilities.filter((c) => c.enabled).length
 
   return (
-    <div className="bg-surface-900/60 border border-surface-700 rounded-xl px-4 py-3 flex-shrink-0">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 flex-shrink-0">
       <div className="flex items-baseline justify-between mb-1">
         <p className="text-[11px] text-surface-300 font-semibold uppercase tracking-wide">
           Capacidades de CRM <span className="text-surface-600 font-normal normal-case">(opcional)</span>
@@ -1682,7 +1682,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
         <p className="text-sm text-surface-500 mt-0.5">Revise as configurações antes de ativar o agente.</p>
       </div>
 
-      <div className="bg-surface-900/60 border border-surface-700 rounded-xl p-4 flex-shrink-0">
+      <div className="bg-surface-800 border border-surface-700 rounded-lg p-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <AgentIcon iconId={data.icon} className="w-10 h-10" />
           <div className="flex-1 min-w-0">
@@ -1710,7 +1710,7 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
           { label: 'FAQs',           value: `${data.faqs.filter(f => f.question).length} perguntas` },
           { label: 'Encaminhamentos', value: data.handoff_rules.length > 0 ? `${data.handoff_rules.length} regra(s)` : 'Nenhuma' },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-surface-900/60 border border-surface-700 rounded-xl px-3 py-2.5">
+          <div key={label} className="bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5">
             <p className="text-[10px] text-surface-600 uppercase tracking-wide">{label}</p>
             <p className="text-xs font-medium text-surface-200 truncate">{value}</p>
           </div>
@@ -1749,32 +1749,6 @@ function Step7({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
 }
 
 // ─── Animated background orbs ────────────────────────────────────────────────
-
-function BackgroundOrbs() {
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-      <motion.div
-        animate={{ x: [0, 40, -20, 0], y: [0, -30, 20, 0], scale: [1, 1.1, 0.95, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-brand-600/8 blur-3xl"
-      />
-      <motion.div
-        animate={{ x: [0, -50, 30, 0], y: [0, 40, -25, 0], scale: [1, 0.9, 1.05, 1] }}
-        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full bg-indigo-700/8 blur-3xl"
-      />
-      <motion.div
-        animate={{ x: [0, 30, -40, 0], y: [0, -20, 35, 0], scale: [1, 1.15, 0.9, 1] }}
-        transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
-        className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-brand-500/5 blur-3xl"
-      />
-      <div
-        className="absolute inset-0 opacity-[0.025]"
-        style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '40px 40px' }}
-      />
-    </div>
-  )
-}
 
 // ─── Wizard root ──────────────────────────────────────────────────────────────
 
@@ -2036,7 +2010,6 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
   }
 
   const teaching = STEP_TEACHINGS[step - 1]
-  const TeachingIcon = teaching.icon
 
   return (
     <motion.div
@@ -2047,89 +2020,36 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
       className="fixed inset-0 z-50 bg-surface-950"
     >
           <div className="h-full flex overflow-hidden relative">
-            <BackgroundOrbs />
-
             {/* ── LEFT TUTOR PANEL ─────────────────────────────────────── */}
-            <div className="relative z-10 w-80 flex-shrink-0 flex flex-col border-r border-surface-700 bg-surface-950/80 backdrop-blur-sm">
-              {/* Brand header + close */}
-              <div className="flex items-center gap-3 px-8 pt-8 pb-6 border-b border-surface-700 flex-shrink-0">
-                <motion.div
-                  animate={{ scale: [1, 1.08, 1] }}
-                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-900/50 flex-shrink-0"
-                >
-                  <Zap className="w-4 h-4 text-surface-950" fill="currentColor" />
-                </motion.div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">Studio</p>
-                  <h1 className="text-sm font-bold text-surface-50 truncate">Criar Agente IA</h1>
+            {/* R2-WIZ-01 (mock 2b): painel --sf sólido (sem orbs/blur), marca
+                "O · Novo agente", eyebrow --acs, título 18/700, trilha logo
+                abaixo do texto e nota fixa no rodapé; X vive no header da
+                direita. */}
+            <div className="relative z-10 w-80 flex-shrink-0 flex flex-col border-r border-surface-700 bg-surface-800">
+              <div className="flex-1 overflow-y-auto px-5 py-[18px]">
+                <div className="flex items-center gap-2 mb-[22px]">
+                  <span className="w-[22px] h-[22px] rounded-[6px] bg-gradient-to-br from-[#5EEAD4] via-[#14B8A6] to-[#0F766E] text-[#04201D] text-[12px] font-extrabold flex items-center justify-center">O</span>
+                  <span className="text-xs text-surface-400">Novo agente</span>
                 </div>
-                <button
-                  onClick={handleCloseClick}
-                  disabled={publishing}
-                  aria-label="Fechar"
-                  className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition disabled:opacity-40"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
 
-              {/* Teaching content — fills remaining height, scrolls if needed */}
-              <div className="flex-1 overflow-y-auto px-8 py-8">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`teach-${step}`}
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -16 }}
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
                   >
-                    <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-2">
+                    <p className="text-[10px] font-bold text-accent-dark uppercase tracking-[.14em]">
                       Etapa {step} de {STEP_LABELS.length}
                     </p>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div
-                        className="w-9 h-9 rounded-lg border flex items-center justify-center flex-shrink-0"
-                        style={{
-                          color: teaching.accent,
-                          backgroundColor: `color-mix(in srgb, ${teaching.accent} 18%, transparent)`,
-                          borderColor: `color-mix(in srgb, ${teaching.accent} 32%, transparent)`,
-                        }}
-                      >
-                        <TeachingIcon className="w-4.5 h-4.5" />
-                      </div>
-                      <h2 className="text-[18px] font-bold text-surface-100 leading-tight">{teaching.title}</h2>
-                    </div>
-                    <p className="text-[12.5px] text-surface-400 leading-[1.55] mb-6">{teaching.description}</p>
-                    <div className="flex flex-col gap-3">
-                      {teaching.tips.map((tip, i) => {
-                        const TipIcon = tip.icon
-                        return (
-                          <motion.div
-                            key={i}
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.25, delay: 0.1 + i * 0.07 }}
-                            className="flex items-start gap-2.5"
-                          >
-                            <div className="w-6 h-6 rounded-md bg-surface-800 border border-surface-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <TipIcon className="w-3 h-3 text-brand-400" />
-                            </div>
-                            <p className="text-xs text-surface-500 leading-relaxed">{tip.text}</p>
-                          </motion.div>
-                        )
-                      })}
-                    </div>
+                    <h2 className="text-[18px] font-bold tracking-[-0.01em] leading-[1.25] text-surface-100 mt-1.5">{teaching.title}</h2>
+                    <p className="text-[12.5px] text-surface-400 leading-[1.55] mt-2">{teaching.description}</p>
                   </motion.div>
                 </AnimatePresence>
-              </div>
 
-              {/* Trilha de etapas (tela 2b) — só concluídas são clicáveis;
-                  vista vertical compacta sempre visível no painel Tutor. É a
-                  navegação por etapa da tela inteira (o header do painel à
-                  direita só tem a barra de progresso fina, sem repetir isto). */}
-              <div className="px-8 py-4 border-t border-surface-700 flex-shrink-0">
-                <div className="flex flex-col gap-1">
+                {/* Trilha de etapas (tela 2b) — só concluídas são clicáveis. */}
+                <div className="flex flex-col gap-0.5 mt-[22px]">
                   {STEP_LABELS.map((label, i) => {
                     const s = i + 1
                     const done = s < step
@@ -2141,8 +2061,8 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                         onClick={() => { if (done) { setValidationError(null); setStep(s) } }}
                         disabled={!done}
                         className={cn(
-                          'flex items-center gap-2.5 h-[30px] rounded-lg px-1.5 -mx-1.5 text-left transition-colors',
-                          done && 'cursor-pointer hover:bg-surface-800/50',
+                          'flex items-center gap-2.5 h-[30px] rounded-sm px-1.5 -mx-1.5 text-left text-[12.5px] transition-colors',
+                          done && 'cursor-pointer hover:bg-[var(--rowhover)]',
                           !done && 'cursor-default',
                         )}
                       >
@@ -2156,7 +2076,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                           {done ? <Check className="w-3 h-3" strokeWidth={3} /> : <span className="text-[10px] font-bold">{s}</span>}
                         </span>
                         <span className={cn(
-                          'text-xs truncate',
+                          'truncate',
                           active ? 'text-surface-100 font-semibold' : done ? 'text-surface-400' : 'text-surface-500',
                         )}>
                           {label}
@@ -2165,8 +2085,20 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                     )
                   })}
                 </div>
-                <p className="text-[10.5px] text-surface-600 mt-2 px-1.5">Só etapas concluídas são clicáveis.</p>
+
+                {/* Dicas da etapa — conteúdo real de ensino, sem tiles de ícone. */}
+                {teaching.tips.length > 0 && (
+                  <ul className="mt-[22px] space-y-2">
+                    {teaching.tips.map((tip, i) => (
+                      <li key={i} className="text-xs text-surface-500 leading-relaxed">{tip.text}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
+
+              <p className="px-5 pb-[18px] text-[11.5px] text-surface-500 leading-[1.5] flex-shrink-0">
+                Só etapas concluídas são clicáveis.
+              </p>
             </div>
 
             {/* ── RIGHT FORM PANEL ─────────────────────────────────────── */}
@@ -2179,7 +2111,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   aqui de propósito: aquele componente é o stepper horizontal
                   com círculos numerados — visual bem mais pesado que o traço
                   fino do mock, e duplicaria a trilha da esquerda. */}
-              <div className="flex-shrink-0 h-[52px] flex items-center gap-1 px-6 bg-surface-950/85 backdrop-blur-md border-b border-surface-700">
+              <div className="flex-shrink-0 h-[52px] flex items-center gap-1 px-6 bg-surface-800 border-b border-surface-700">
                 {STEP_LABELS.map((_, i) => (
                   <div
                     key={i}
@@ -2189,6 +2121,14 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                     )}
                   />
                 ))}
+                <button
+                  onClick={handleCloseClick}
+                  disabled={publishing}
+                  aria-label="Fechar"
+                  className="ml-3.5 w-7 h-7 flex items-center justify-center rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition disabled:opacity-40 flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Scrollable form content — max-width 720px (tela 2b): sem
@@ -2225,7 +2165,7 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                   existiam, entra na regra de reestilo puro). Cresce um pouco só
                   quando há erro de validação/publicação pra não cortar o texto. */}
               <div className={cn(
-                'flex-shrink-0 min-h-16 px-10 border-t border-surface-700 bg-surface-900/85 backdrop-blur-md flex items-center',
+                'flex-shrink-0 min-h-16 px-10 border-t border-surface-700 bg-surface-800 flex items-center',
                 (step < 8 ? validationError : publishError) ? 'flex-col items-stretch gap-2 py-3' : 'gap-2',
               )}>
                 {step < 8 && validationError && (
