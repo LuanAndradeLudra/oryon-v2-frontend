@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare, Users, BarChart3, Settings,
   Clock, CheckCircle2, Inbox, CreditCard, Smartphone,
@@ -15,6 +14,7 @@ import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { generateInsights } from '@/services/copilotService'
 import { isFeatureVisible } from '@/config/featureFlags'
 import { cn, getInitials } from '@/lib/utils'
+import { Card } from '@/components/ui/Card'
 import { WorkspaceReadinessBanner } from '@/components/common/WorkspaceReadinessBanner'
 import type { AuditLog, Conversation, HomeStats, User, WhatsAppNumberDetailed } from '@/types'
 import { api } from '@/services/api'
@@ -52,11 +52,11 @@ function PersonalHeader({ user }: { user: User }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-surface-50">
+      <h1 className="text-2xl font-display font-bold tracking-[-0.01em] text-surface-100">
         {greeting}, {user.firstName} <Hand className="w-6 h-6 inline text-brand-400" />
       </h1>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-        <span className={cn('color-chip inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border')} style={{ ['--chip']: role.chip } as React.CSSProperties}>
+        <span className={cn('color-chip-soft inline-flex items-center h-5 px-1.5 rounded-xs text-[11px] font-semibold border')} style={{ ['--chip']: role.chip } as React.CSSProperties}>
           {role.label}
         </span>
         {user.departmentName && (
@@ -86,45 +86,24 @@ interface KPIData {
   trendUp?: boolean
 }
 
-const KPI_COLORS: Record<KPIColor, { bg: string; icon: string; ring: string }> = {
-  brand:  { bg: 'bg-brand-500/10',   icon: 'text-brand-400',   ring: 'ring-brand-500/20' },
-  green:  { bg: 'bg-status-active-bg', icon: 'text-status-active', ring: 'ring-status-active-border' },
-  blue:   { bg: 'bg-accent-blue/10',    icon: 'text-accent-blue',    ring: 'ring-accent-blue/20' },
-  amber:  { bg: 'bg-status-pending-bg',   icon: 'text-status-pending',   ring: 'ring-status-pending-border' },
-  purple: { bg: 'bg-accent-violet/10',  icon: 'text-accent-violet',  ring: 'ring-accent-violet/20' },
-}
-
-function KPICard({ data, hero }: { data: KPIData; hero?: boolean }) {
-  const c = KPI_COLORS[data.color] ?? KPI_COLORS.brand
-  const Icon = data.icon
+function KPICard({ data }: { data: KPIData }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 flex flex-col gap-3"
-    >
-      <div className="flex items-start justify-between">
-        <div className={cn('w-10 h-10 rounded-xl ring-1 flex items-center justify-center', c.bg, c.ring)}>
-          <Icon className={cn('w-5 h-5', c.icon)} />
-        </div>
+    <div className="flex flex-col gap-0.5 px-3.5 py-3 min-w-0">
+      <span className="text-[11px] font-medium text-surface-400 truncate">{data.label}</span>
+      <p className="text-[26px] font-extrabold tracking-[-0.02em] leading-[1.15] mt-0.5 text-surface-100 tabular-nums">{data.value}</p>
+      <div className="flex items-center gap-1.5 min-w-0 text-[11.5px]">
         {data.trend && (
           <span className={cn(
-            'text-xs font-medium px-2 py-0.5 rounded-full',
-            data.trendUp === true  ? 'text-status-active bg-status-active-bg' :
-            data.trendUp === false ? 'text-danger bg-danger/10' :
-            'text-surface-500 bg-surface-800',
+            'font-medium',
+            data.trendUp === true ? 'text-status-active' : data.trendUp === false ? 'text-danger' : 'text-surface-500',
           )}>
             {data.trend}
           </span>
         )}
+        {data.subtext && <span className="text-surface-500 truncate">{data.subtext}</span>}
+        {!data.trend && !data.subtext && <span>&nbsp;</span>}
       </div>
-      <div>
-        <p className="text-3xl font-bold text-surface-50 leading-none tabular-nums">{data.value}</p>
-        {data.subtext && <p className="text-xs text-surface-500 mt-1">{data.subtext}</p>}
-        <p className="text-xs uppercase tracking-wide mt-1.5 text-surface-400">{data.label}</p>
-      </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -152,9 +131,9 @@ function getKPIs(stats: HomeStats, role: string): KPIData[] {
 
 function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {getKPIs(stats, role).map((kpi, i) => (
-        <KPICard key={kpi.label} data={kpi} hero={i === 0} />
+    <div className="grid grid-cols-2 lg:grid-cols-4 bg-surface-800 border border-surface-700 rounded-lg overflow-hidden divide-x divide-surface-700 [&>*:nth-child(n+3)]:border-t [&>*:nth-child(n+3)]:border-surface-700 lg:[&>*:nth-child(n+3)]:border-t-0">
+      {getKPIs(stats, role).map((kpi) => (
+        <KPICard key={kpi.label} data={kpi} />
       ))}
     </div>
   )
@@ -162,11 +141,7 @@ function KPIGrid({ stats, role }: { stats: HomeStats; role: string }) {
 
 function KPIGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-surface-900 border border-surface-700 rounded-2xl h-28 animate-pulse" />
-      ))}
-    </div>
+    <div className="bg-surface-800 border border-surface-700 rounded-lg h-[84px] animate-pulse" />
   )
 }
 
@@ -198,7 +173,7 @@ function AIInsightsWidget({ stats }: { stats: HomeStats }) {
   return (
     // h-full + flex-col garantem que o card iguale altura com o
     // MyPerformanceCard ao lado quando estão em col-span-6 cada.
-    <div className="bg-surface-900 border border-surface-700 shadow-sm rounded-2xl p-5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
@@ -266,7 +241,7 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
   const myAvgMin    = stats.myAvgResponseMinutes ?? 0
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full flex flex-col">
+    <Card className="h-full flex flex-col p-4">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-brand-400" />
@@ -310,7 +285,7 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -354,7 +329,7 @@ function QuickActions({ role }: { role: string }) {
   const navigate = useNavigate()
   const actions = getQuickActions(role)
   return (
-    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Ações rápidas</h3>
       <div className="grid grid-cols-2 gap-1.5">
         {actions.map((a) => {
@@ -363,7 +338,7 @@ function QuickActions({ role }: { role: string }) {
             <button
               key={a.label}
               onClick={() => navigate(a.href)}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 transition-colors text-left group"
+              className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left group"
             >
               <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', a.iconBg)}>
                 <Icon className={cn('w-4 h-4', a.iconColor)} />
@@ -395,7 +370,7 @@ const ACTION_MAP: Record<string, { label: string; dot: string }> = {
 
 function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean }) {
   return (
-    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Atividade recente</h3>
       {loading ? (
         <div className="flex justify-center py-10">
@@ -448,7 +423,7 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
 function TeamCard({ stats }: { stats: HomeStats }) {
   const navigate = useNavigate()
   return (
-    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Equipe</h4>
         <Users className="w-4 h-4 text-surface-600" />
@@ -487,7 +462,7 @@ function WhatsAppNumbersCard() {
   }, [])
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Números WhatsApp</h4>
         <Smartphone className="w-4 h-4 text-surface-600" />
@@ -533,7 +508,7 @@ function WhatsAppNumbersCard() {
 function LiveServiceCard({ stats }: { stats: HomeStats }) {
   const navigate = useNavigate()
   return (
-    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Atendimento agora</h4>
         <div className="flex items-center gap-1.5">
@@ -599,7 +574,7 @@ function SupervisorBlock() {
   }, [])
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Fila de espera</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : `${queue.length} sem usuário`}</span>
@@ -619,7 +594,7 @@ function SupervisorBlock() {
             <button
               key={conv.id}
               onClick={() => navigate('/conversations')}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 transition-colors text-left w-full"
+              className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left w-full"
             >
               <div className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
                 {getInitials(conv.contact.displayName)}
@@ -655,7 +630,7 @@ function AgentBlock() {
   }, [])
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-700 rounded-2xl p-5">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Minhas conversas abertas</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : `${convs.length} abertas`}</span>
@@ -675,7 +650,7 @@ function AgentBlock() {
             <button
               key={conv.id}
               onClick={() => navigate('/conversations')}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 transition-colors text-left w-full"
+              className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left w-full"
             >
               <div className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
                 {getInitials(conv.contact.displayName)}
