@@ -10,7 +10,7 @@ import type { CsatDataPoint } from '@/types/dashboard'
 export const CsatChart = memo(function CsatChart({ data }: { data: CsatDataPoint[] }) {
   const C = useChartColors()
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5 h-full">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full">
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-semibold text-surface-100">Satisfação & NPS</p>
         <div className="flex items-center gap-4 text-xs text-surface-400">

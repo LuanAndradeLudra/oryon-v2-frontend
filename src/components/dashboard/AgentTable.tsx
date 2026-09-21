@@ -123,7 +123,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
   )
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
       <div className="px-5 py-4 border-b border-surface-700 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-surface-100">Performance da Equipe</p>

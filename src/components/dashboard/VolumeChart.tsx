@@ -1,10 +1,11 @@
 import { memo } from 'react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip,
+  Tooltip,
 } from 'recharts'
 import { useChartColors } from '@/hooks/useChartColors'
-import type { VolumeDataPoint } from '@/types/dashboard'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import type { DateRange, VolumeDataPoint } from '@/types/dashboard'
 
 function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null
@@ -30,34 +31,55 @@ function SimpleTooltip({ active, payload, label }: { active?: boolean; payload?:
 // (o backend só expõe volume por dia, Recebidas/Enviadas). Portamos o
 // VOCABULÁRIO visual (header 40px, legenda com quadradinho de 8px, colunas
 // empilhadas) sobre o dado real existente, sem inventar granularidade nova.
-export const VolumeChart = memo(function VolumeChart({ data }: { data: VolumeDataPoint[] }) {
+const RANGE_OPTIONS: { value: 'today' | '7d' | '30d'; label: string }[] = [
+  { value: 'today', label: 'Hoje' },
+  { value: '7d', label: '7 dias' },
+  { value: '30d', label: '30 dias' },
+]
+
+export const VolumeChart = memo(function VolumeChart({ data, range, onRangeChange }: {
+  data: VolumeDataPoint[]
+  /** R2-DASH-04: seletor Hoje/7 dias/30 dias no header (mock 1b) — liga ao
+   *  MESMO período global da página, sem fetch próprio. */
+  range?: DateRange
+  onRangeChange?: (r: DateRange) => void
+}) {
   const C = useChartColors()
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between min-h-10 pb-2.5 mb-2.5 border-b border-surface-700 flex-shrink-0 flex-wrap gap-2">
         <p className="text-[13px] font-semibold text-surface-100">Volume de Mensagens</p>
-        <div className="flex items-center gap-4 text-xs text-surface-400">
+        <div className="flex items-center gap-3.5 text-[11.5px] text-surface-400">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-[2px] inline-block" style={{ backgroundColor: C.brand }} />
             Recebidas
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-[2px] inline-block" style={{ backgroundColor: C.online }} />
+            <span className="w-2 h-2 rounded-[2px] inline-block bg-[var(--bd2)]" />
             Enviadas
           </span>
         </div>
+        {range && onRangeChange && (
+          <SegmentedControl
+            label="Período do gráfico"
+            size="sm"
+            className="ml-auto"
+            options={RANGE_OPTIONS}
+            value={(range === 'month' ? '' : range) as 'today' | '7d' | '30d'}
+            onChange={(v) => onRangeChange(v)}
+          />
+        )}
       </div>
       <div className="flex-1 min-h-[170px]">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
+        <BarChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
           <XAxis dataKey="date" tick={{ fill: C.axis, fontSize: 10.5 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.axis, fontSize: 10.5 }} axisLine={false} tickLine={false} />
+          <YAxis hide />
           <Tooltip content={<SimpleTooltip />} cursor={{ fill: C.surface8, fillOpacity: 0.5 }} />
           <Bar dataKey="inbound" name="Recebidas" stackId="volume" isAnimationActive={false}
             fill={C.brand} radius={[0, 0, 0, 0]} maxBarSize={18} />
           <Bar dataKey="outbound" name="Enviadas" stackId="volume" isAnimationActive={false}
-            fill={C.online} fillOpacity={0.55} radius={[3, 3, 0, 0]} maxBarSize={18} />
+            fill="var(--bd2)" radius={[2, 2, 0, 0]} maxBarSize={18} />
         </BarChart>
       </ResponsiveContainer>
       </div>

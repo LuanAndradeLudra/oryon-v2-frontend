@@ -11,7 +11,7 @@ export const TagsChart = memo(function TagsChart({ data }: { data: TagVolume[] }
   const C = useChartColors()
   const sorted = [...data].sort((a, b) => b.count - a.count).slice(0, 8)
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5 h-full">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full">
       <p className="text-sm font-semibold text-surface-100 mb-4">Tags Mais Usadas</p>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={sorted} layout="vertical" margin={{ left: 4, right: 20, top: 4, bottom: 4 }}>

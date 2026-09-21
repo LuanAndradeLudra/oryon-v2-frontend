@@ -58,7 +58,10 @@ comportamento (não só visual) e por risco de regressão em fluxos de navegaç�
 
 ## 2. Conversas/Inbox (leva 4, README 3.3)
 
-### 2.1 SegmentedControl "Minhas/Fila/Todas" como eixo primário da lista
+### 2.1 SegmentedControl "Minhas/Fila/Todas" como eixo primário da lista — CORRIGIDO (Rodada 2, R2-1D-FILT)
+
+> Rodada 2: reclassificado — `assignedTo` já aceita me/unassigned/all, então era layout, não [!]. Feito na barra da lista; status e período foram pro menu do funil. Continua [!] só a CONTAGEM por segmento (Minhas 7 / Fila 12) e por chip (Não lidas 5): a API só devolve `statusCounts`.
+
 
 O mockup organiza a lista de conversas por um SegmentedControl de atendimento
 (Minhas/Fila/Todas). A lista real usa abas de **status** (Todas/Abertas/Pendentes/

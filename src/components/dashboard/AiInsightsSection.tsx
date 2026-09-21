@@ -40,7 +40,7 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'bg-surface-900 border rounded-xl p-4 flex flex-col gap-3',
+        'bg-surface-800 border rounded-lg p-4 flex flex-col gap-3',
         'border-surface-700 hover:border-surface-700 transition-colors',
       )}
     >
@@ -78,7 +78,7 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-4 flex flex-col gap-3 animate-pulse">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-4 flex flex-col gap-3 animate-pulse">
       <div className="h-5 w-24 bg-surface-800 rounded-full" />
       <div className="flex flex-col gap-1.5">
         <div className="h-4 w-3/4 bg-surface-800 rounded" />
