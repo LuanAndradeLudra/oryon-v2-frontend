@@ -295,7 +295,7 @@ export function DashboardPage() {
         {isMobile && <MobilePageHeader title="Dashboard" />}
 
         <div className="flex-1 overflow-y-auto">
-          <div className="px-3 py-4 sm:px-6 sm:py-6 max-w-[1440px] mx-auto space-y-4 sm:space-y-5">
+          <div className="p-4 space-y-3.5">
 
             {/* Setup card */}
             <AnimatePresence>
@@ -340,7 +340,7 @@ export function DashboardPage() {
                  Conversas por hora + Funil, direita Fila agora + Equipe;
                  3) seções extras (que o mock não tem, mas são produto real)
                  ABAIXO. */
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 <KpiGrid metrics={snapshot.kpis} />
 
                 {/* Seção desligada por padrão (flag dashboardAiInsights) — não
@@ -350,12 +350,12 @@ export function DashboardPage() {
                   <AiInsightsSection kpis={snapshot.kpis} />
                 )}
 
-                <div className="grid grid-cols-12 gap-4 items-start">
-                  <div className="col-span-12 xl:col-span-8 space-y-4">
+                <div className="grid grid-cols-12 gap-3.5 items-start">
+                  <div className="col-span-12 xl:col-span-8 space-y-3.5">
                     <VolumeChart data={snapshot.volumeChart} range={dateRange} onRangeChange={setDateRange} />
                     <SalesFunnelCard />
                   </div>
-                  <div className="col-span-12 xl:col-span-4 space-y-4">
+                  <div className="col-span-12 xl:col-span-4 space-y-3.5">
                     <FilaAgoraCard />
                     <TeamMiniCard agents={snapshot.agentMetrics} />
                   </div>

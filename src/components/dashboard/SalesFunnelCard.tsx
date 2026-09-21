@@ -5,7 +5,7 @@ import { pipelinesApi, pipelineAnalyticsApi } from '@/services/api'
 import { isMoneyBucket } from '@/types/pipelineAnalytics'
 import type { PipelineOverview } from '@/types/pipelineAnalytics'
 import type { Pipeline, PipelineStage } from '@/types'
-import { tintaDaEtapa } from '@/lib/utils'
+import { cn, tintaDaEtapa } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 function brl(cents: number): string {
@@ -94,53 +94,46 @@ export function SalesFunnelCard() {
       {rows.length === 0 ? (
         <EmptyState icon={Milestone} title="Sem etapas em aberto" className="py-8" />
       ) : (
-        <table className="w-full">
-          <thead>
-            {/* DASH-FUNNEL-02: faixa --sf2 de 30px, sem uppercase/tracking. */}
-            <tr className="h-[30px] bg-[var(--sf2)] border-b border-surface-700 text-[11px] font-semibold text-surface-400">
-              <th className="text-left px-3.5 font-semibold">Etapa</th>
-              <th className="text-right font-semibold">Negócios</th>
-              <th className="text-right font-semibold">Valor</th>
-              <th className="text-left pl-4 font-semibold">Distribuição</th>
-              <th className="text-right px-3.5 font-semibold">Conversão</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => {
-              const prevCount = i > 0 ? rows[i - 1].count : null
-              const conversion = prevCount ? Math.round((row.count / prevCount) * 100) : null
-              const width = Math.min(100, Math.round((row.count / topCount) * 100))
-              return (
-                <tr key={row.stage.id} className="border-b border-surface-700 last:border-b-0">
-                  <td className="py-2.5 pl-3.5 pr-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: tintaDaEtapa(row.stage.color) }}
-                      />
-                      <span className="text-[13px] font-medium text-surface-200 truncate">{row.stage.label}</span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 text-right text-[13px] tabular-nums text-surface-200">{row.count}</td>
-                  <td className="py-2.5 text-right text-[13px] tabular-nums text-surface-300">
-                    {row.amountCents !== null ? brl(row.amountCents) : '—'}
-                  </td>
-                  <td className="py-2.5 pl-4">
-                    <div className="h-1.5 rounded-full bg-[var(--sf2)] overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${width}%`, backgroundColor: tintaDaEtapa(row.stage.color, 0.85) }}
-                      />
-                    </div>
-                  </td>
-                  <td className="py-2.5 text-right text-[13px] tabular-nums text-surface-400 pr-3.5">
-                    {conversion !== null ? `${conversion}%` : '—'}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <div>
+          {/* R2-DASH-10 (canvas 1b): grid 1.4fr 80px 120px 1.6fr 90px; cabeçalho
+              h30 --sf2 11/600 --tx2; linhas h36 13px; números à direita. */}
+          <div className="grid grid-cols-[1.4fr_80px_120px_1.6fr_90px] items-center h-[30px] px-3.5 border-b border-surface-700 bg-[var(--sf2)] text-[11px] font-semibold text-surface-400">
+            <span>Etapa</span>
+            <span className="text-right">Negócios</span>
+            <span className="text-right">Valor</span>
+            <span className="pl-4">Distribuição</span>
+            <span className="text-right">Conversão</span>
+          </div>
+          {rows.map((row, i) => {
+            const prevCount = i > 0 ? rows[i - 1].count : null
+            const conversion = prevCount ? Math.round((row.count / prevCount) * 100) : null
+            const width = Math.min(100, Math.round((row.count / topCount) * 100))
+            return (
+              <div
+                key={row.stage.id}
+                className="grid grid-cols-[1.4fr_80px_120px_1.6fr_90px] items-center h-9 px-3.5 border-b border-surface-700 last:border-b-0 text-[13px]"
+              >
+                <span className="flex items-center gap-2 font-medium min-w-0">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: tintaDaEtapa(row.stage.color) }} />
+                  <span className="truncate">{row.stage.label}</span>
+                </span>
+                <span className="text-right tabular-nums">{row.count}</span>
+                <span className="text-right tabular-nums">{row.amountCents !== null ? brl(row.amountCents) : '—'}</span>
+                <span className="pl-4">
+                  <span className="block h-1.5 rounded-[3px] bg-[var(--sf2)] overflow-hidden">
+                    <span
+                      className="block h-full opacity-[.85]"
+                      style={{ width: `${width}%`, backgroundColor: row.stage.color }}
+                    />
+                  </span>
+                </span>
+                <span className={cn('text-right tabular-nums', conversion === null && 'text-surface-400')}>
+                  {conversion !== null ? `${conversion}%` : '—'}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )

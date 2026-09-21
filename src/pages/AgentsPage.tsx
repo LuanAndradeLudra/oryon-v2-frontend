@@ -132,12 +132,13 @@ function AgentCard({
             <span className="text-[13px] font-semibold text-surface-100 truncate">{agent.name}</span>
             <span
               className={cn(
-                'inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0',
+                'inline-flex items-center gap-1 h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0',
                 agent.status === 'active' ? 'color-chip-soft border [--chip:var(--color-status-active)]'
                   : agent.status === 'paused' ? 'color-chip-soft border [--chip:var(--color-status-pending)]'
                   : 'bg-[var(--sf2)] border border-surface-700 text-surface-400',
               )}
             >
+              {agent.status === 'active' && <i className="w-[5px] h-[5px] rounded-full bg-current not-italic" />}
               {statusCfg.label}
             </span>
           </div>
@@ -249,7 +250,7 @@ export function AgentsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* ── Left: Agent list — hidden when no agents ── */}
         {hasAgents && (
-          <div className="w-[300px] flex-shrink-0 flex flex-col border-r border-surface-700">
+          <div className="w-[300px] flex-shrink-0 flex flex-col border-r border-surface-700 bg-surface-800">
             {/* R2-AGT-04 (mock 2a): sem cabeçalho "Agentes · N" (o TopBar já
                 titula); barra de chips h22 — ativo --acsoft/--acs sem borda,
                 demais borda --bd — com a contagem dentro do chip. */}
@@ -261,14 +262,14 @@ export function AgentsPage() {
                   key={val}
                   onClick={() => setStatusFilter(val)}
                   className={cn(
-                    'inline-flex items-center h-[22px] px-2 rounded-xs text-[11.5px] font-semibold transition-colors cursor-pointer',
+                    'inline-flex items-center h-[22px] px-2 rounded-xs text-[11px] font-semibold transition-colors cursor-pointer',
                     statusFilter === val
                       ? 'bg-accent-soft text-accent-dark'
                       : 'border border-surface-700 text-surface-400 hover:bg-[var(--rowhover)]',
                   )}
                 >
                   {label}
-                  {counts[val] > 0 && <span className="ml-1 tabular-nums font-medium">{counts[val]}</span>}
+                  {val === 'all' && <span className="tabular-nums">&nbsp;· {counts[val]}</span>}
                 </button>
               ))}
             </div>

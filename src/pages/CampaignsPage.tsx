@@ -54,7 +54,7 @@ export function CampaignsPage() {
           value={activeTab}
           onChange={setActiveTab}
           label="Seções de campanhas"
-          className="px-6"
+          className="px-4 pt-3"
         />
         {/* Setup card */}
         <AnimatePresence>

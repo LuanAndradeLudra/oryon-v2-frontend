@@ -353,7 +353,7 @@ export function GlassChatInput({
               type="button"
               onClick={onAbort}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium bg-surface-700 hover:bg-surface-600 text-surface-200 transition-colors"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium bg-[var(--sf2)] hover:bg-surface-600 text-surface-200 transition-colors"
             >
               <Square className="w-3.5 h-3.5" />
               <span>Parar</span>

@@ -237,7 +237,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
           // SCRUM-1106 (tela 2c): grade de 4 cards — a lista virou linhas
           // densas demais pra caber num card estreito, então a prévia some
           // de vista; o mock quer a mensagem visível de cara.
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             {filtered.map((tpl) => (
               <TemplateCard
                 key={tpl.id}

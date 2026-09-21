@@ -212,3 +212,11 @@ Tudo `❓ ao vivo` (sem navegador). Dashboard: chip "WhatsApp conectado" ligado 
 Tudo `❓ ao vivo` (sem navegador).
 
 - **R2-AGT-06** — empty state legado (tile `rounded-3xl` 80px + botão grande) → `EmptyState` + `Button sm` (via `action`). ✅ código, `❓ ao vivo`.
+
+### Rodada 2 — comparação numérica com o canvas (2a lista/detalhe, 2b wizard e drawer)
+
+| ID | Canvas | App antes | Ação |
+|---|---|---|---|
+| R2-AGT-07 | Lista `--sf`; chips de filtro 11/600 e "Todos · 4"; chip Ativo com dot 5px; detalhe: header `padding 14/20/0 gap12`, chip h20 11/700 px7 + dot, subtítulo 12 --tx2, abas `padding 14/20/0`, painel esquerdo `18/20`, rail gap 14 | coluna sem fundo, chips 11.5, sem dot, header `px-6 pt-5 pb-4`, subtítulo --tx3 | **✅ código** |
+| R2-WIZ-05 | Segmentos do header raio 2 | `rounded-full` | **✅ código** (demais valores do wizard conferidos: Tutor 320/18-20, trilha h30/gap10/18px, header 52, corpo 720/32-40, footer 64, botões h36) |
+| R2-AUTO-05 | Drawer: título 15/700, sub 11.5, chip h20 11/700; nav `14/10 gap2`, item h30 gap8 raio 6 12.5px; eyebrow da seção ativa em --acs + dica 11.5; footer h60, botões h36 (`Button` md) | título 13, chip h18, nav `p-3 gap-4px`, item raio 7 gap10 12px, footer `py-3` + `Button sm`, campos h~32 | **✅ código** |

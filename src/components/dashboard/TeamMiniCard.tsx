@@ -38,13 +38,13 @@ export function TeamMiniCard({ agents }: { agents: AgentMetrics[] }) {
             <span className="text-right">TMR</span>
           </div>
           {top.map((agent) => (
-            <div key={agent.userId} className="grid grid-cols-[1fr_60px_60px] items-center gap-2 px-3.5 h-8">
+            <div key={agent.userId} className="grid grid-cols-[1fr_60px_60px] items-center px-3.5 h-8 text-[12.5px]">
               <span className="flex items-center gap-2 min-w-0">
                 <Avatar name={agent.name} size="2xs" online={agent.isOnline} kind="operator" />
-                <span className="flex-1 min-w-0 truncate text-xs font-medium text-surface-200">{agent.name}</span>
+                <span className="flex-1 min-w-0 truncate">{agent.name}</span>
               </span>
-              <span className="text-right text-xs tabular-nums text-surface-300">{agent.conversationsToday || '—'}</span>
-              <span className="text-right text-xs tabular-nums text-surface-400">
+              <span className="text-right tabular-nums">{agent.conversationsToday || '—'}</span>
+              <span className="text-right tabular-nums text-surface-400">
                 {agent.avgResponseTime ? formatKpiValue(agent.avgResponseTime, 'seconds') : '—'}
               </span>
             </div>

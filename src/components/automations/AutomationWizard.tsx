@@ -83,9 +83,9 @@ function KeywordInput({ onAdd }: { onAdd: (kw: string) => void }) {
         onChange={(e) => setVal(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit() } }}
         placeholder="Digite e pressione Enter…"
-        className="flex-1 bg-surface-700 border border-surface-600 rounded-lg px-3 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
+        className="flex-1 bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
       />
-      <button onClick={submit} title="Adicionar palavra-chave" aria-label="Adicionar palavra-chave" className="px-3 py-1.5 bg-surface-700 border border-surface-600 rounded-lg text-xs text-surface-300 hover:text-surface-100 transition-colors">
+      <button onClick={submit} title="Adicionar palavra-chave" aria-label="Adicionar palavra-chave" className="px-3 py-1.5 bg-surface-800 border border-[var(--bd2)] rounded-lg text-xs text-surface-300 hover:text-surface-100 transition-colors">
         <Plus className="w-3.5 h-3.5" />
       </button>
     </div>
@@ -251,7 +251,7 @@ function CustomTriggerForm({
                   type="number" min={1} max={1440}
                   value={trigger.params?.minutes ?? 30}
                   onChange={(e) => updateParam({ minutes: Math.max(1, Number(e.target.value)) })}
-                  className="w-20 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 focus:outline-none focus:border-brand-500"
+                  className="w-20 bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-100 focus:outline-none focus:border-brand-500"
                 />
                 <div className="flex gap-1.5">
                   {[15, 30, 60, 120].map((m) => (
@@ -259,7 +259,7 @@ function CustomTriggerForm({
                       className={cn('px-2 py-1 rounded-lg text-3xs font-medium border transition-colors',
                         (trigger.params?.minutes ?? 30) === m
                           ? 'bg-brand-600/20 border-brand-600 text-brand-400'
-                          : 'bg-surface-700 border-surface-600 text-surface-500 hover:text-surface-300',
+                          : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-500 hover:text-surface-300',
                       )}>
                       {m}min
                     </button>
@@ -276,7 +276,7 @@ function CustomTriggerForm({
                 value={trigger.params?.tagName ?? ''}
                 onChange={(e) => updateParam({ tagName: e.target.value })}
                 placeholder="Ex: VIP, Urgente, Prospect..."
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
               />
               <p className="text-3xs text-surface-500 mt-1">Deixe em branco para disparar com qualquer tag.</p>
             </div>
@@ -289,7 +289,7 @@ function CustomTriggerForm({
                 value={trigger.params?.fieldName ?? ''}
                 onChange={(e) => updateParam({ fieldName: e.target.value })}
                 placeholder="Ex: email, telefone, empresa... (vazio = qualquer campo)"
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
               />
             </div>
           )}
@@ -304,7 +304,7 @@ function CustomTriggerForm({
                   type="number" min={0} max={100}
                   value={trigger.params?.threshold ?? 70}
                   onChange={(e) => updateParam({ threshold: Math.min(100, Math.max(0, Number(e.target.value))) })}
-                  className="w-20 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-100 focus:outline-none focus:border-brand-500"
+                  className="w-20 bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-100 focus:outline-none focus:border-brand-500"
                 />
                 {trigger.eventKey !== 'campanha_falha_alta' && (
                   <div className="flex gap-1.5">
@@ -313,7 +313,7 @@ function CustomTriggerForm({
                         className={cn('px-2 py-1 rounded-lg text-3xs font-medium border transition-colors',
                           (trigger.params?.threshold ?? 70) === v
                             ? 'bg-brand-600/20 border-brand-600 text-brand-400'
-                            : 'bg-surface-700 border-surface-600 text-surface-500 hover:text-surface-300',
+                            : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-500 hover:text-surface-300',
                         )}>
                         {v}
                       </button>
@@ -333,7 +333,7 @@ function CustomTriggerForm({
                     className={cn('flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors',
                       (trigger.params?.direction ?? 'above') === d
                         ? 'bg-brand-600/20 border-brand-600 text-brand-400'
-                        : 'bg-surface-700 border-surface-600 text-surface-400 hover:text-surface-200',
+                        : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-400 hover:text-surface-200',
                     )}>
                     {d === 'above' ? '↑ Atingiu ou ultrapassou' : '↓ Caiu abaixo de'}
                   </button>
@@ -348,7 +348,7 @@ function CustomTriggerForm({
               <select
                 value={trigger.params?.stageKey ?? ''}
                 onChange={(e) => updateParam({ stageKey: e.target.value })}
-                className="w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
               >
                 <option value="">Qualquer estágio</option>
                 {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -480,7 +480,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                       type="number" min={1} max={168}
                       value={(trigger as Extract<AutomationTrigger, { type: 'follow_up' }>).afterHours}
                       onChange={(e) => onChange({ trigger: { type: 'follow_up', afterHours: Math.max(1, Number(e.target.value)) } })}
-                      className="w-24 bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500"
+                      className="w-24 bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500"
                     />
                     <div className="flex gap-1.5">
                       {[6, 12, 24, 48, 72].map((h) => (
@@ -488,7 +488,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                           className={cn('px-2 py-1 rounded-lg text-3xs font-medium border transition-colors',
                             (trigger as Extract<AutomationTrigger, { type: 'follow_up' }>).afterHours === h
                               ? 'bg-brand-600/20 border-brand-600 text-brand-400'
-                              : 'bg-surface-700 border-surface-600 text-surface-500 hover:text-surface-300',
+                              : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-500 hover:text-surface-300',
                           )}>
                           {h}h
                         </button>
@@ -508,7 +508,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                       type="number" min={1} max={90}
                       value={(trigger as Extract<AutomationTrigger, { type: 'inatividade' }>).afterDays}
                       onChange={(e) => onChange({ trigger: { type: 'inatividade', afterDays: Math.max(1, Number(e.target.value)) } })}
-                      className="w-24 bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500"
+                      className="w-24 bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500"
                     />
                     <div className="flex gap-1.5">
                       {[3, 7, 14, 30].map((d) => (
@@ -516,7 +516,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                           className={cn('px-2 py-1 rounded-lg text-3xs font-medium border transition-colors',
                             (trigger as Extract<AutomationTrigger, { type: 'inatividade' }>).afterDays === d
                               ? 'bg-brand-600/20 border-brand-600 text-brand-400'
-                              : 'bg-surface-700 border-surface-600 text-surface-500 hover:text-surface-300',
+                              : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-500 hover:text-surface-300',
                           )}>
                           {d}d
                         </button>
@@ -535,7 +535,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                     <label className="block text-xs font-medium text-surface-300 mb-1.5">Palavras ou frases detectadas</label>
                     <div className="flex flex-wrap gap-1.5 mb-2 min-h-[28px]">
                       {t.keywords.map((kw, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-700 border border-surface-600 rounded-full text-xs text-surface-200">
+                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-800 border border-[var(--bd2)] rounded-full text-xs text-surface-200">
                           {kw}
                           <button onClick={() => onChange({ trigger: { ...t, keywords: t.keywords.filter((_, j) => j !== i) } })} title={`Remover "${kw}"`} aria-label={`Remover palavra-chave "${kw}"`} className="text-surface-500 hover:text-danger ml-0.5">×</button>
                         </span>
@@ -550,7 +550,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                       {(['any', 'all'] as const).map((m) => (
                         <button key={m} onClick={() => onChange({ trigger: { ...t, matchMode: m } })}
                           className={cn('flex-1 px-3 py-2 rounded-lg text-xs font-medium border transition-colors',
-                            t.matchMode === m ? 'bg-brand-600/20 border-brand-600 text-brand-400' : 'bg-surface-700 border-surface-600 text-surface-400 hover:text-surface-200',
+                            t.matchMode === m ? 'bg-brand-600/20 border-brand-600 text-brand-400' : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-400 hover:text-surface-200',
                           )}>
                           {m === 'any' ? 'Qualquer palavra' : 'Todas as palavras'}
                         </button>
@@ -567,7 +567,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                 <select
                   value={(trigger as Extract<AutomationTrigger, { type: 'estagio_crm' }>).stageKey}
                   onChange={(e) => onChange({ trigger: { type: 'estagio_crm', stageKey: e.target.value } })}
-                  className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500"
+                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500"
                 >
                   <option value="">Selecione uma situação…</option>
                   {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -653,7 +653,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
   const noValueOps: AutomationConditionOperator[] = ['is_set', 'is_not_set']
 
   const renderValueInput = (cond: AutomationCondition, i: number) => {
-    const selectClass = "w-full bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
+    const selectClass = "w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
 
     switch (cond.field) {
       case 'stage':
@@ -765,7 +765,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
                     const newOp = (OPERATORS_FOR_FIELD[f]?.[0]?.value ?? 'equals') as AutomationConditionOperator
                     updateCondition(i, { field: f, operator: newOp, value: '' })
                   }}
-                  className="flex-1 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
+                  className="flex-1 bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
                 >
                   {CONDITION_FIELDS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
                 </select>
@@ -773,7 +773,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
                 <select
                   value={cond.operator}
                   onChange={(e) => updateCondition(i, { operator: e.target.value as AutomationConditionOperator })}
-                  className="w-36 bg-surface-700 border border-surface-600 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
+                  className="w-36 bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-brand-500"
                 >
                   {ops.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
                 </select>
@@ -844,7 +844,7 @@ function ActionSubForm({
                 const tpl = templates.find((t) => t.id === e.target.value)
                 onUpdate({ type: 'send_message', templateId: e.target.value, templateName: tpl?.name ?? '' })
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione um template…</option>
               {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -899,7 +899,7 @@ function ActionSubForm({
                     ...(scope !== 'user' ? { notifyUserId: undefined, notifyUserName: undefined } : {}),
                   })
                 }}
-                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
               >
                 <option value="admins">Apenas administradores</option>
                 <option value="department">Um departamento</option>
@@ -925,7 +925,7 @@ function ActionSubForm({
                       departmentName: d?.name ?? '',
                     })
                   }}
-                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
                 >
                   <option value="">Selecione um departamento…</option>
                   {depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -947,7 +947,7 @@ function ActionSubForm({
                       notifyUserName: u?.name ?? '',
                     })
                   }}
-                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
                 >
                   <option value="">Selecione um usuário…</option>
                   {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -965,7 +965,7 @@ function ActionSubForm({
                 const u = users.find((u) => u.id === e.target.value)
                 onUpdate({ type: 'assign_agent', userId: e.target.value, userName: u?.name ?? '' })
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione um agente…</option>
               {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -981,7 +981,7 @@ function ActionSubForm({
                 const d = depts.find((d) => d.id === e.target.value)
                 onUpdate({ type: 'assign_dept', departmentId: e.target.value, departmentName: d?.name ?? '' })
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione um departamento…</option>
               {depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -998,7 +998,7 @@ function ActionSubForm({
                 const tag = tags.find((t) => t.id === e.target.value)
                 onUpdate({ type: action.type, tagId: e.target.value, tagName: tag?.name ?? '' } as AutomationAction)
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione uma tag…</option>
               {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -1014,7 +1014,7 @@ function ActionSubForm({
                 const s = stages.find((s) => s.key === e.target.value)
                 onUpdate({ type: 'change_stage', stageKey: e.target.value, stageLabel: s?.label ?? '' })
               }}
-              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">Selecione uma situação…</option>
               {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -1051,7 +1051,7 @@ function ActionSubForm({
               <label className="block text-3xs font-medium text-surface-400 mb-1">URL do endpoint</label>
               <input placeholder="https://sua-api.com/webhook" value={action.url}
                 onChange={(e) => onUpdate({ type: 'send_webhook', url: e.target.value, method: action.method })}
-                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-1.5 text-[13px] text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
+                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm h-9 px-2.5 text-[13px] text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-500"
               />
             </div>
             <div className="flex gap-2">

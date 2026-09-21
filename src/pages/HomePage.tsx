@@ -307,7 +307,7 @@ function getQuickActions(role: string): QuickAction[] {
     { label: 'Plano & Cobrança',  description: 'Gerenciar assinatura',            icon: CreditCard,    iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/settings/billing' },
     { label: 'Configurar CRM',    description: 'Estágios e campos personalizados', icon: Settings,      iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/contacts' },
     { label: 'Automações',         description: 'Fluxos automáticos',               icon: Workflow,      iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/automations' },
-    { label: 'Relatórios',        description: 'Dashboard de métricas',            icon: BarChart3,     iconColor: 'text-surface-400', iconBg: 'bg-surface-700',    href: '/dashboard' },
+    { label: 'Relatórios',        description: 'Dashboard de métricas',            icon: BarChart3,     iconColor: 'text-surface-400', iconBg: 'bg-[var(--sf2)]',    href: '/dashboard' },
   ]
   if (role === 'supervisor') return [
     { label: 'Fila de espera',    description: 'Sem agente atribuído',            icon: Inbox,         iconColor: 'text-accent-amber',   iconBg: 'bg-accent-amber/10',   href: '/conversations' },
@@ -315,7 +315,7 @@ function getQuickActions(role: string): QuickAction[] {
     { label: 'Criar tag',         description: 'Organizar conversas',             icon: Tag,           iconColor: 'text-accent-green', iconBg: 'bg-accent-green/10', href: '/settings/tags' },
     { label: 'Relatórios',        description: 'Métricas da equipe',              icon: BarChart3,     iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/dashboard' },
     { label: 'Respostas rápidas', description: 'Templates de mensagem',           icon: Zap,           iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/settings/quick-replies' },
-    { label: 'CRM',               description: 'Pipeline de vendas',              icon: MessageSquare, iconColor: 'text-surface-400', iconBg: 'bg-surface-700',    href: '/contacts' },
+    { label: 'CRM',               description: 'Pipeline de vendas',              icon: MessageSquare, iconColor: 'text-surface-400', iconBg: 'bg-[var(--sf2)]',    href: '/contacts' },
   ]
   return [
     { label: 'Minhas conversas',  description: 'Ver atribuídas a mim',            icon: MessageSquare, iconColor: 'text-brand-400',   iconBg: 'bg-brand-500/10',   href: '/conversations' },
@@ -393,7 +393,7 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
                   <div className={cn('w-2 h-2 rounded-full flex-shrink-0', action.dot)} />
                   {i < logs.length - 1 && <div className="w-px h-4 bg-surface-800" />}
                 </div>
-                <div className="w-7 h-7 rounded-full bg-surface-700 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-surface-300 mt-0.5">
+                <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-surface-300 mt-0.5">
                   {getInitials(log.userName)}
                 </div>
                 <div className="flex-1 min-w-0 pt-0.5">
@@ -596,7 +596,7 @@ function SupervisorBlock() {
               onClick={() => navigate('/conversations')}
               className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left w-full"
             >
-              <div className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
                 {getInitials(conv.contact.displayName)}
               </div>
               <div className="flex-1 min-w-0">
@@ -652,7 +652,7 @@ function AgentBlock() {
               onClick={() => navigate('/conversations')}
               className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--rowhover)] transition-colors text-left w-full"
             >
-              <div className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center text-xs font-bold text-surface-300 flex-shrink-0">
                 {getInitials(conv.contact.displayName)}
               </div>
               <div className="flex-1 min-w-0">

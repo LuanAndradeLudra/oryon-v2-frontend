@@ -754,7 +754,7 @@ function HandoffGeneratingCard() {
               initial={{ opacity: 0, scale: 0.75 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-              className="px-2 py-0.5 rounded-md bg-surface-700 border border-surface-600 text-[11px] text-surface-300"
+              className="px-2 py-0.5 rounded-md bg-surface-800 border border-[var(--bd2)] text-[11px] text-surface-300"
             >
               {kw}
             </motion.span>

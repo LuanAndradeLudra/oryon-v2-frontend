@@ -48,7 +48,7 @@ export function KnowledgeDocArtifact({
               onClick={() => setEditing(false)}
               className={cn(
                 'flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] transition-colors',
-                !editing ? 'bg-surface-700 text-surface-200' : 'text-surface-500 hover:text-surface-300',
+                !editing ? 'bg-[var(--sf2)] text-surface-200' : 'text-surface-500 hover:text-surface-300',
               )}
             >
               <Eye className="w-3 h-3" /> Visualizar
@@ -58,7 +58,7 @@ export function KnowledgeDocArtifact({
               onClick={() => setEditing(true)}
               className={cn(
                 'flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] transition-colors',
-                editing ? 'bg-surface-700 text-surface-200' : 'text-surface-500 hover:text-surface-300',
+                editing ? 'bg-[var(--sf2)] text-surface-200' : 'text-surface-500 hover:text-surface-300',
               )}
             >
               <Pencil className="w-3 h-3" /> Editar

@@ -204,12 +204,12 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                 chip de estado e X; sem tile de ícone. */}
             <div className="flex items-start gap-3 px-5 min-h-14 py-2.5 border-b border-surface-700 flex-shrink-0">
               <div className="min-w-0 flex-1">
-                <h2 className="text-sm font-bold tracking-[-0.01em] text-surface-100">{editTarget ? (editTarget.name || 'Editar automação') : 'Nova automação'}</h2>
-                <p className="text-xs text-surface-400 mt-0.5 leading-[1.4]">{flowSummary(summ)}</p>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-100">{editTarget ? (editTarget.name || 'Editar automação') : 'Nova automação'}</h2>
+                <p className="text-[11.5px] text-surface-400 leading-[1.25] mt-0.5">{flowSummary(summ)}</p>
               </div>
               {editTarget && (
                 <span className={cn(
-                  'inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0 mt-0.5',
+                  'inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold flex-shrink-0 mt-0.5',
                   editTarget.status === 'active' ? 'color-chip-soft border [--chip:var(--color-status-active)]'
                     : editTarget.status === 'inactive' ? 'color-chip-soft border [--chip:var(--color-status-pending)]'
                     : 'bg-[var(--sf2)] border border-surface-700 text-surface-400',
@@ -225,8 +225,8 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             {/* Corpo: mini-fluxo vertical + seções */}
             <div className="flex-1 flex min-h-0 overflow-hidden">
               {/* Nav vertical (mini-fluxo) */}
-              <nav className="w-[200px] flex-shrink-0 border-r border-surface-700 bg-[var(--sf2)] p-3 overflow-y-auto hidden sm:block">
-                <div className="flex flex-col gap-1">
+              <nav className="w-[200px] flex-shrink-0 border-r border-surface-700 bg-[var(--sf2)] px-2.5 py-3.5 overflow-y-auto hidden sm:block">
+                <div className="flex flex-col gap-0.5">
                   {SECTIONS.map((s) => {
                     const isActive = active === s.key
                     const status = sectionStatus(s.key)
@@ -241,7 +241,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                         key={s.key}
                         onClick={() => scrollTo(s.key)}
                         className={cn(
-                          'w-full flex items-center gap-2.5 h-[30px] px-2.5 rounded-sm border text-left transition-colors',
+                          'w-full flex items-center gap-2 h-[30px] px-2.5 rounded-xs border text-left transition-colors',
                           isActive
                             ? 'bg-surface-800 border-surface-700'
                             : 'border-transparent hover:bg-surface-800/50',
@@ -256,11 +256,11 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                             status === 'unvisited' && 'border border-[var(--bd2)]',
                           )}
                         />
-                        <span className={cn('flex-1 min-w-0 truncate text-xs transition-colors', isActive ? 'text-surface-100 font-semibold' : 'text-surface-400 font-medium')}>
+                        <span className={cn('flex-1 min-w-0 truncate text-[12.5px] transition-colors', isActive ? 'text-surface-100 font-semibold' : 'text-surface-400 font-medium')}>
                           {s.label}
                         </span>
                         {count > 0 && (
-                          <span className="text-[10.5px] tabular-nums text-surface-500 flex-shrink-0">{count}</span>
+                          <span className="text-[11px] tabular-nums text-surface-500 flex-shrink-0">{count}</span>
                         )}
                       </button>
                     )
@@ -303,27 +303,27 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                 />
 
                 <section ref={registerRef('gatilho')} className="scroll-mt-4">
-                  <SectionTitle title="Gatilho" hint="O que dispara a automação" />
+                  <SectionTitle active={active === 'gatilho'} title="Gatilho" hint="O que dispara a automação" />
                   <Step1 draft={draft} onChange={update} hideMeta />
                 </section>
 
                 <section ref={registerRef('condicoes')} className="scroll-mt-4">
-                  <SectionTitle title="Condições" hint="Filtros opcionais (E / OU)" />
+                  <SectionTitle active={active === 'condicoes'} title="Condições" hint="Filtros opcionais (E / OU)" />
                   <Step2 draft={draft} onChange={update} />
                 </section>
 
                 <section ref={registerRef('acoes')} className="scroll-mt-4">
-                  <SectionTitle title="Ações" hint="O que executar, em sequência" />
+                  <SectionTitle active={active === 'acoes'} title="Ações" hint="O que executar, em sequência" />
                   <Step3 draft={draft} onChange={update} hideAgentBehavior />
                 </section>
 
                 <section ref={registerRef('ia')} className="scroll-mt-4">
-                  <SectionTitle title="Coexistência com a IA" hint="Como o agente se comporta quando isto dispara" />
+                  <SectionTitle active={active === 'ia'} title="Coexistência com a IA" hint="Como o agente se comporta quando isto dispara" />
                   <AgentBehaviorSelector draft={draft} onChange={update} />
                 </section>
 
                 <section ref={registerRef('revisar')} className="scroll-mt-4">
-                  <SectionTitle title="Revisar" hint="Nome e descrição — depois é só ativar" />
+                  <SectionTitle active={active === 'revisar'} title="Revisar" hint="Nome e descrição — depois é só ativar" />
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-medium text-surface-300 mb-1.5">Nome</label>
@@ -356,8 +356,8 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             {/* Footer — R2-AUTO-02 (mock 2b): "Alterado há N min" à esquerda (updatedAt
                 real; "não publicado" não existe — não há versão publicada),
                 botões do sistema (neutral/primary, raio 7). */}
-            <div className="flex items-center justify-between px-5 py-3 border-t border-surface-700 flex-shrink-0">
-              <p className="text-[11.5px] text-surface-500">
+            <div className="flex items-center justify-between h-[60px] px-5 border-t border-surface-700 flex-shrink-0">
+              <p className="text-xs text-surface-500">
                 {editTarget
                   ? `Alterado ${formatRelativeTime(editTarget.updatedAt)}${draft.actions.length === 0 ? ' · adicione ao menos uma ação para ativar' : ''}`
                   : draft.actions.length === 0 ? 'Adicione ao menos uma ação para ativar.' : `${draft.actions.length} ${draft.actions.length === 1 ? 'ação' : 'ações'} · pronto para ativar`}
@@ -365,7 +365,6 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
               <div className="flex items-center gap-2">
                 {editTarget ? (
                   <Button
-                    size="sm"
                     onClick={() => save()}
                     disabled={!canActivate}
                     loading={saving}
@@ -375,11 +374,10 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                   </Button>
                 ) : (
                   <>
-                    <Button size="sm" variant="neutral" onClick={() => save('draft')} disabled={!canDraft}>
+                    <Button variant="neutral" onClick={() => save('draft')} disabled={!canDraft}>
                       Salvar rascunho
                     </Button>
                     <Button
-                      size="sm"
                       onClick={() => save('active')}
                       disabled={!canActivate}
                       loading={saving}
@@ -415,11 +413,11 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
 
 // R2-AUTO-03 (mock 2b): título de seção = eyebrow 10/700 .14em uppercase --tx3,
 // dica inline (11px --tx3) — sem ícone e sem linha de descrição abaixo.
-function SectionTitle({ title, hint }: { title: string; hint: string }) {
+function SectionTitle({ title, hint, active }: { title: string; hint: string; active?: boolean }) {
   return (
     <div className="mb-2.5 flex items-baseline gap-2">
-      <h3 className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">{title}</h3>
-      <p className="text-[11px] text-surface-500 truncate">{hint}</p>
+      <h3 className={cn('text-[10px] font-bold uppercase tracking-[.14em]', active ? 'text-accent-dark' : 'text-surface-500')}>{title}</h3>
+      <p className="text-[11.5px] text-surface-500 truncate">{hint}</p>
     </div>
   )
 }

@@ -37,7 +37,7 @@ function formatSessionDate(iso: string) {
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2 mb-3">
-      <div className="w-7 h-7 rounded-full bg-surface-700 flex items-center justify-center flex-shrink-0">
+      <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0">
         <Bot className="w-3.5 h-3.5 text-surface-400" />
       </div>
       <div className="bg-surface-800 border border-surface-700/60 rounded-2xl rounded-bl-sm px-4 py-3">
@@ -544,7 +544,7 @@ export function AgentTestModal({
                       </span>
                     )}
                     {msg.role === 'assistant' && (
-                      <div className="w-7 h-7 rounded-full bg-surface-700 flex items-center justify-center flex-shrink-0 mb-0.5">
+                      <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0 mb-0.5">
                         <Bot className="w-3.5 h-3.5 text-surface-400" />
                       </div>
                     )}

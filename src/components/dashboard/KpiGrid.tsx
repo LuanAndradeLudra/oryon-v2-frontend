@@ -45,16 +45,16 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
   const trendColor = isGood ? 'text-online' : isBad ? 'text-danger' : 'text-surface-500'
 
   return (
-    <div className="flex flex-col gap-0.5 px-3.5 py-3 min-w-0">
+    <div className="flex flex-col px-3.5 py-3 min-w-0">
       <span className="text-[11px] font-medium text-surface-400 truncate">{metric.label}</span>
-      <div className="font-extrabold tabular-nums tracking-[-0.02em] leading-[1.15] mt-0.5 font-display text-[26px] text-surface-100">
+      <div className="font-extrabold tabular-nums tracking-[-0.02em] leading-[1.15] font-display text-[26px] text-surface-100">
         {formatKpiValue(metric.value, metric.unit)}
         {metric.unit === 'csat_score' && (
           <span className="font-normal text-surface-400 ml-1 font-sans text-sm">/ 5</span>
         )}
       </div>
       {metric.trend !== 0 ? (
-        <div className={cn('flex items-center gap-1 font-medium text-[11.5px]', trendColor)}>
+        <div className={cn('flex items-center gap-1.5 font-semibold text-[11.5px]', trendColor)}>
           {metric.trend > 0
             ? <TrendingUp className="w-3 h-3" />
             : <TrendingDown className="w-3 h-3" />}
@@ -64,7 +64,7 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
       ) : support ? (
         // R2-DASH-02: linha de apoio com dado real que o snapshot já traz
         // (ex.: "12 aguardando" = fila `pending`), no lugar da linha vazia.
-        <span className={cn('text-[11.5px] font-medium truncate', support.tone === 'warn' ? 'text-warning' : 'text-surface-500')}>{support.text}</span>
+        <span className={cn('text-[11.5px] font-semibold truncate', support.tone === 'warn' ? 'text-status-pending' : 'text-surface-500')}>{support.text}</span>
       ) : (
         <span className="text-[11.5px] text-surface-500">&nbsp;</span>
       )}
