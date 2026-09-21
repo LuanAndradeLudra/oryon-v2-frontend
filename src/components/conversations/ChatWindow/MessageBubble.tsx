@@ -653,7 +653,7 @@ function TextContent({ message }: { message: Message }) {
   // render the synthetic "[…]" body underneath the rich renderer.
   if (STRUCTURED_TYPES.has(message.type)) return null
   return message.body ? (
-    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+    <p className="text-sm leading-[1.45] whitespace-pre-wrap break-words">
       <WhatsAppText text={message.body} />
     </p>
   ) : null
@@ -663,7 +663,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
   // Extra top spacing when a new sender run starts (the avatar sits above).
-  const gap = showAvatar ? 'mt-3' : isSameDirection ? 'mt-0.5' : 'mt-3'
+  const gap = showAvatar ? 'mt-2' : isSameDirection ? 'mt-1' : 'mt-2'
 
   // Transcription toggle lives here so the "Ver transcrição" control can sit
   // next to the timestamp in the footer; the MediaContent component
@@ -866,7 +866,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               semantic groups at opposite ends read cleaner than one cluster. */}
           {isOutbound && <SenderInlineIcon message={message} />}
           <div className="flex items-center gap-1 ml-auto">
-            <span className={cn('text-[10px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-400')}>
+            <span className={cn('text-[10.5px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-500')}>
               {timeStr}
             </span>
             {isOutbound && <StatusIcon status={message.status} />}
