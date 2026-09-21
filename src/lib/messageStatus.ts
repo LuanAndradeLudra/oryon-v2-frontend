@@ -6,8 +6,10 @@ const RANK: Record<string, number> = { sending: 0, queued: 0, sent: 1, delivered
 /** Só avança, nunca regride — o backend já garante isto, mas o socket pode
  *  entregar fora de ordem e um GET recente pode ter estado mais novo. */
 export function shouldApplyStatus(current: MessageStatus, next: MessageStatus): boolean {
-  if (next === 'failed') return current !== 'delivered' && current !== 'read' && current !== 'failed'
-  if (current === 'failed') return next === 'delivered' || next === 'read'
+  // `failed` é terminal, como no backend (MessageStatusService): depois de
+  // recarregar a tela o estado viria `failed` de qualquer forma.
+  if (current === 'failed') return false
+  if (next === 'failed') return current !== 'delivered' && current !== 'read'
   return (RANK[next] ?? 0) > (RANK[current] ?? 0)
 }
 

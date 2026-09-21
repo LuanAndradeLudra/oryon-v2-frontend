@@ -57,4 +57,23 @@ describe('CampaignReport com o payload real do backend', () => {
     // números reais do funil (delivered=8/read=5) aparecem, não zeros
     expect(screen.getAllByText('8').length).toBeGreaterThan(0)
   })
+
+  it('prefere o stats do /analytics ao da lista (que pode estar velho)', async () => {
+    getAnalytics.mockResolvedValue({
+      data: {
+        campaignId: 'c1',
+        // a lista ainda tinha delivered=0/read=0; o analytics já tem os valores atuais
+        stats: { total: 10, sent: 10, delivered: 7, read: 3, failed: 0 },
+        failures: [],
+      },
+    })
+    getConversations.mockResolvedValue({ data: [] })
+    const stale = { ...campaign, stats: { total: 10, sent: 10, delivered: 0, read: 0, failed: 0 } } as unknown as Campaign
+    render(
+      <MemoryRouter>
+        <CampaignReport campaign={stale} onClose={() => undefined} />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getAllByText('7').length).toBeGreaterThan(0))
+  })
 })
