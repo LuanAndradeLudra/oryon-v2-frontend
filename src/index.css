@@ -508,7 +508,13 @@ html, body, #root {
    OBS: elementos cravados em px fixo (ex.: text-[10px], size={N}) NÃO seguem
    esta manopla — precisariam de conversão px→rem para crescer junto. */
 @media (min-width: 768px) {
-  :root { font-size: 110%; } /* 16px → 17.6px  (~+10%) */
+  /* SCRUM-1097 Rodada 2: 110% → 100%. O handoff do Claude Design (densidade
+     "Compacto") foi medido com raiz de 16px: h-7 = 28px, text-xs = 12px,
+     w-[308px] etc. Com 110% todo valor em rem renderizava 10% maior que o
+     mock (controle de 28px virava 31px, texto de 12px virava 13,2px) e ainda
+     ficava desalinhado dos valores em px fixo. Para voltar ao tamanho anterior:
+     font-size: 110%. */
+  :root { font-size: 100%; }
 }
 
 /* ── Typography base ─────────────────────────────────────────────────────── */
