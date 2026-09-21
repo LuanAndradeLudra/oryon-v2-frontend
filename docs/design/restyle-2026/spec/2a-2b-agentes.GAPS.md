@@ -185,3 +185,28 @@ achados novos, zero correções necessárias.
 | — | "Linha X · N conversas agora", "61% sem humano · CSAT", painel HOJE, Sugestão do sistema | — | `[!]` mantido (grep `AgentConfig`: só `conversation_count` total; sem CSAT/handoffs/linha) |
 
 Tudo `❓ ao vivo` (sem navegador). Dashboard: chip "WhatsApp conectado" ligado ao subtítulo via `usePrimaryConnectedLine` (DASH-HEADER-02, ver 1b-dashboard.GAPS.md).
+
+## Rodada 2 — 2b Wizards, inventário por imagem (Farol, 2026-09-21)
+
+**Wizard de agente (tela cheia)** — PNG claro+escuro vs app:
+
+| ID | Elemento (mock) | App antes | Ação |
+|---|---|---|---|
+| R2-WIZ-01 | Painel Tutor `--sf` sólido, marca "O · Novo agente" 12px, eyebrow `--acs`, título 18/700, trilha logo abaixo do texto, nota no rodapé; sem orbs/blur | orbs animadas + blur, tile gradiente "Studio/Criar Agente IA", X no Tutor, tile de ícone colorido no título, trilha colada no rodapé | **✅ código** shell reescrito; `BackgroundOrbs` removido; dicas de ensino mantidas (conteúdo real) como lista simples sem tiles |
+| R2-WIZ-02 | X no header da direita (28px raio 7) | no Tutor | **✅ código** |
+| R2-WIZ-03 | Header/footer do painel de conteúdo `--sf` (sem translucidez) | `surface-950/85` + blur | **✅ código** |
+| R2-WIZ-04 | Cards de opção: borda --bd, raio 8, título 13/600 + descrição 11.5 --tx2, à esquerda; selecionado borda --ac + anel 3px --acsoft; inputs raio 7 borda --bd2 | cards centralizados, seleção verde-sólida (`status-active`), inputs `rounded-xl` | **✅ código** (Tom de comunicação, Idioma, INPUT, textareas, caixas `bg-surface-900/60 rounded-xl`) |
+| — | "Rascunho salvo" no header | — | `[!]` mantido: o wizard não persiste rascunho (grep `AgentBuilderWizard`: só `createAgent` no fim) |
+| — | Nomes das 8 etapas (Objetivo/Tom de voz/Hub/Conhecimento/Handoff/Canais/Teste) | Identidade·Personalidade·Escopo·Negócio·Passar p/ humano·KB·Gerar Prompt·Revisão | `[!]` mantido: conteúdo por etapa é produto (achado estrutural #4), não só rótulo |
+
+**Drawer de automação:**
+
+| ID | Elemento (mock) | App antes | Ação |
+|---|---|---|---|
+| R2-AUTO-01 | Header: título 14/700 + subtítulo 12 --tx2 + chip de estado ("Ativa") + X 28px; sem tile de ícone | tile brand 36px + título 14/600 + subtítulo 11px; sem chip (AUTO-WIZ-05) | **✅ código**: chip de `editTarget.status` (Ativa/Pausada/Rascunho) — dado real |
+| R2-AUTO-02 | Footer: "Alterado há N min" + Descartar/primary (AUTO-WIZ-26..29) | "N ações · pronto para ativar" + botões artesanais raio 12 | **✅ código**: `updatedAt` real ("Alterado há …"); botões viram `Button` do sistema. "não publicado"/"Descartar" `[!]`: não existe versão publicada; Descartar = fechar já tem confirmação |
+| R2-AUTO-03 | Nav: bolinha à ESQUERDA do rótulo, sem ícone, item raio 7; seções em eyebrow 10/700 uppercase sem ícone/descrição em linha | ícone + rótulo + contagem + bolinha à direita; títulos com ícone brand e linha de dica abaixo | **✅ código** |
+| R2-AUTO-04 | Fundo do drawer `--sf`; campos raio 7 borda --bd2; cards de trigger/tipo/coexistência com borda --ac + anel 3px --acsoft; caixas raio 8 | `surface-950`, `rounded-xl`, seleção `brand-600/10` | **✅ código** (`AutomationBuilder` + `AutomationWizard`) |
+| — | 4ª seção "Horário" | "Coexistência com a IA" | `[!]` mantido: não existe agendamento de horário na automação (grep `Automation`/`automationsApi`) |
+
+Tudo `❓ ao vivo` (sem navegador).

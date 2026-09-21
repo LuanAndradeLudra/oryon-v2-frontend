@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Zap, GitBranch, Layers, Sparkles, ClipboardCheck, Wand2, Check } from 'lucide-react'
+import { X, Zap, GitBranch, Layers, Sparkles, ClipboardCheck, Wand2 } from 'lucide-react'
 import type { Automation } from '@/types'
 import { automationsApi } from '@/services/api'
 import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
 import { Banner } from '@/components/ui/Banner'
-import { cn } from '@/lib/utils'
-import { TYPE_CONFIG } from './TypeBadge'
+import { cn, formatRelativeTime } from '@/lib/utils'
+import { Button } from '@/components/ui/Button'
 import { flowSummary, triggerChipLabel, actionLabel } from './automationText'
 import {
   Step1, Step2, Step3, AgentBehaviorSelector, EMPTY_DRAFT, type WizardDraft,
@@ -182,7 +182,6 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
   }
 
   const registerRef = (key: string) => (el: HTMLDivElement | null) => { sectionRefs.current[key] = el }
-  const TypeIcon = TYPE_CONFIG[draft.type]?.icon
 
   return (
     <AnimatePresence>
@@ -199,18 +198,26 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             key="builder-panel"
             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 34, mass: 0.9 }}
-            className="fixed top-0 right-0 bottom-0 w-[min(880px,95vw)] z-50 bg-surface-950 border-l overlay-frame flex flex-col"
+            className="fixed top-0 right-0 bottom-0 w-[min(880px,95vw)] z-50 bg-surface-800 border-l overlay-frame flex flex-col"
           >
-            {/* Header + resumo vivo */}
-            <div className="flex items-start gap-3 px-6 min-h-14 py-2.5 border-b border-surface-700 flex-shrink-0">
-              <div className="color-chip w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0" style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}>
-                {TypeIcon ?? <Zap className="w-4 h-4" />}
-              </div>
+            {/* Header — R2-AUTO-01 (mock 2b): título 14/700 + subtítulo 12 --tx2 (resumo vivo),
+                chip de estado e X; sem tile de ícone. */}
+            <div className="flex items-start gap-3 px-5 min-h-14 py-2.5 border-b border-surface-700 flex-shrink-0">
               <div className="min-w-0 flex-1">
-                <h2 className="text-sm font-semibold text-surface-100">{editTarget ? 'Editar automação' : 'Nova automação'}</h2>
-                <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">{flowSummary(summ)}</p>
+                <h2 className="text-sm font-bold tracking-[-0.01em] text-surface-100">{editTarget ? (editTarget.name || 'Editar automação') : 'Nova automação'}</h2>
+                <p className="text-xs text-surface-400 mt-0.5 leading-[1.4]">{flowSummary(summ)}</p>
               </div>
-              <button onClick={requestClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors flex-shrink-0" aria-label="Fechar">
+              {editTarget && (
+                <span className={cn(
+                  'inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0 mt-0.5',
+                  editTarget.status === 'active' ? 'bg-status-active-bg text-status-active'
+                    : editTarget.status === 'inactive' ? 'bg-status-pending-bg text-status-pending'
+                    : 'bg-[var(--sf2)] border border-surface-700 text-surface-400',
+                )}>
+                  {editTarget.status === 'active' ? 'Ativa' : editTarget.status === 'inactive' ? 'Pausada' : 'Rascunho'}
+                </span>
+              )}
+              <button onClick={requestClose} className="w-7 h-7 flex items-center justify-center rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0" aria-label="Fechar">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -221,7 +228,6 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
               <nav className="w-[200px] flex-shrink-0 border-r border-surface-700 bg-[var(--sf2)] p-3 overflow-y-auto hidden sm:block">
                 <div className="flex flex-col gap-1">
                   {SECTIONS.map((s) => {
-                    const Icon = s.icon
                     const isActive = active === s.key
                     const status = sectionStatus(s.key)
                     // Contagem no nav (tela 2b, "Ações · 3") — só pras 2
@@ -235,28 +241,27 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                         key={s.key}
                         onClick={() => scrollTo(s.key)}
                         className={cn(
-                          'w-full flex items-center gap-2.5 h-[30px] px-2.5 rounded-lg border text-left transition-colors',
+                          'w-full flex items-center gap-2.5 h-[30px] px-2.5 rounded-sm border text-left transition-colors',
                           isActive
                             ? 'bg-surface-800 border-surface-700'
                             : 'border-transparent hover:bg-surface-800/50',
                         )}
                       >
-                        <Icon className={cn('w-3.5 h-3.5 flex-shrink-0', isActive ? 'text-brand-400' : 'text-surface-500')} />
-                        <span className={cn('flex-1 min-w-0 truncate text-xs font-medium transition-colors', isActive ? 'text-surface-100' : 'text-surface-400')}>
-                          {s.label}
-                        </span>
-                        {count > 0 && (
-                          <span className="text-[10.5px] tabular-nums text-surface-600 flex-shrink-0">{count}</span>
-                        )}
                         <span
                           aria-hidden
                           className={cn(
                             'w-1.5 h-1.5 rounded-full flex-shrink-0',
                             status === 'ok' && 'bg-online',
                             status === 'pending' && 'bg-away',
-                            status === 'unvisited' && 'border border-surface-600',
+                            status === 'unvisited' && 'border border-[var(--bd2)]',
                           )}
                         />
+                        <span className={cn('flex-1 min-w-0 truncate text-xs transition-colors', isActive ? 'text-surface-100 font-semibold' : 'text-surface-400 font-medium')}>
+                          {s.label}
+                        </span>
+                        {count > 0 && (
+                          <span className="text-[10.5px] tabular-nums text-surface-500 flex-shrink-0">{count}</span>
+                        )}
                       </button>
                     )
                   })}
@@ -264,7 +269,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
               </nav>
 
               {/* Seções */}
-              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-8">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-[22px]">
                 {/* Recipes (só criação) */}
                 {!editTarget && recipesOpen && (
                   <div>
@@ -274,14 +279,14 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                     </div>
                     <div className="grid grid-cols-3 auto-rows-fr gap-2">
                       {onDescribeWithAI && (
-                        <button onClick={onDescribeWithAI} className="card-glow h-full text-left p-3 rounded-xl border border-surface-700 bg-surface-900">
+                        <button onClick={onDescribeWithAI} className="h-full text-left p-3 rounded-lg border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors">
                           <Wand2 className="w-4 h-4 text-brand-400 mb-1.5" />
                           <p className="text-xs font-semibold text-surface-100">Descrever com IA</p>
                           <p className="text-[10px] text-surface-400 mt-0.5 leading-relaxed">Explique o objetivo e o Copilot monta.</p>
                         </button>
                       )}
                       {RECIPES.map((r) => (
-                        <button key={r.title} onClick={() => applyRecipe(r)} className="card-glow h-full text-left p-3 rounded-xl border border-surface-700 bg-surface-900">
+                        <button key={r.title} onClick={() => applyRecipe(r)} className="h-full text-left p-3 rounded-lg border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors">
                           <p className="text-xs font-semibold text-surface-200">{r.title}</p>
                           <p className="text-[10px] text-surface-500 mt-1 leading-relaxed">{r.desc}</p>
                         </button>
@@ -298,27 +303,27 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                 />
 
                 <section ref={registerRef('gatilho')} className="scroll-mt-4">
-                  <SectionTitle icon={Zap} title="Gatilho" hint="O que dispara a automação" />
+                  <SectionTitle title="Gatilho" hint="O que dispara a automação" />
                   <Step1 draft={draft} onChange={update} hideMeta />
                 </section>
 
                 <section ref={registerRef('condicoes')} className="scroll-mt-4">
-                  <SectionTitle icon={GitBranch} title="Condições" hint="Filtros opcionais (E / OU)" />
+                  <SectionTitle title="Condições" hint="Filtros opcionais (E / OU)" />
                   <Step2 draft={draft} onChange={update} />
                 </section>
 
                 <section ref={registerRef('acoes')} className="scroll-mt-4">
-                  <SectionTitle icon={Layers} title="Ações" hint="O que executar, em sequência" />
+                  <SectionTitle title="Ações" hint="O que executar, em sequência" />
                   <Step3 draft={draft} onChange={update} hideAgentBehavior />
                 </section>
 
                 <section ref={registerRef('ia')} className="scroll-mt-4">
-                  <SectionTitle icon={Sparkles} title="Coexistência com a IA" hint="Como o agente se comporta quando isto dispara" />
+                  <SectionTitle title="Coexistência com a IA" hint="Como o agente se comporta quando isto dispara" />
                   <AgentBehaviorSelector draft={draft} onChange={update} />
                 </section>
 
                 <section ref={registerRef('revisar')} className="scroll-mt-4">
-                  <SectionTitle icon={ClipboardCheck} title="Revisar" hint="Nome e descrição — depois é só ativar" />
+                  <SectionTitle title="Revisar" hint="Nome e descrição — depois é só ativar" />
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-medium text-surface-300 mb-1.5">Nome</label>
@@ -326,7 +331,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                         value={draft.name}
                         onChange={(e) => update({ name: e.target.value })}
                         placeholder={suggestedName}
-                        className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3.5 py-2.5 text-sm text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-600 transition-colors"
+                        className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-[13px] text-surface-100 placeholder-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
                       />
                       {!draft.name.trim() && (
                         <p className="text-[10px] text-surface-500 mt-1">Em branco, usamos: <span className="text-surface-300">{suggestedName}</span></p>
@@ -338,7 +343,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                         value={draft.description}
                         onChange={(e) => update({ description: e.target.value })}
                         placeholder="Descreva o objetivo desta automação"
-                        className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3.5 py-2.5 text-sm text-surface-100 placeholder-surface-600 focus:outline-none focus:border-brand-600 transition-colors"
+                        className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-2.5 py-2 text-[13px] text-surface-100 placeholder-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
                       />
                     </div>
                   </div>
@@ -348,41 +353,40 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
               </div>
             </div>
 
-            {/* Footer — status decidido no fim */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-surface-700 flex-shrink-0">
-              <p className="text-[11px] text-surface-500">
-                {draft.actions.length === 0 ? 'Adicione ao menos uma ação para ativar.' : `${draft.actions.length} ${draft.actions.length === 1 ? 'ação' : 'ações'} · pronto para ativar`}
+            {/* Footer — R2-AUTO-02 (mock 2b): "Alterado há N min" à esquerda (updatedAt
+                real; "não publicado" não existe — não há versão publicada),
+                botões do sistema (neutral/primary, raio 7). */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-surface-700 flex-shrink-0">
+              <p className="text-[11.5px] text-surface-500">
+                {editTarget
+                  ? `Alterado ${formatRelativeTime(editTarget.updatedAt)}${draft.actions.length === 0 ? ' · adicione ao menos uma ação para ativar' : ''}`
+                  : draft.actions.length === 0 ? 'Adicione ao menos uma ação para ativar.' : `${draft.actions.length} ${draft.actions.length === 1 ? 'ação' : 'ações'} · pronto para ativar`}
               </p>
               <div className="flex items-center gap-2">
                 {editTarget ? (
-                  <button
+                  <Button
+                    size="sm"
                     onClick={() => save()}
                     disabled={!canActivate}
+                    loading={saving}
                     title={multiWabaNoLine ? 'Escolha a linha WhatsApp acima' : undefined}
-                    className={cn('flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-colors',
-                      canActivate ? 'bg-brand-600 text-surface-950 hover:bg-brand-500' : 'bg-surface-800 text-surface-600 cursor-not-allowed')}
                   >
-                    {saving ? 'Salvando…' : 'Salvar alterações'} {!saving && <Check className="w-3.5 h-3.5" />}
-                  </button>
+                    Salvar alterações
+                  </Button>
                 ) : (
                   <>
-                    <button
-                      onClick={() => save('draft')}
-                      disabled={!canDraft}
-                      className={cn('px-4 py-2 rounded-xl text-xs font-medium border transition-colors',
-                        canDraft ? 'border-surface-700 text-surface-300 hover:text-surface-100 hover:border-surface-600' : 'border-surface-700 text-surface-600 cursor-not-allowed')}
-                    >
+                    <Button size="sm" variant="neutral" onClick={() => save('draft')} disabled={!canDraft}>
                       Salvar rascunho
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      size="sm"
                       onClick={() => save('active')}
                       disabled={!canActivate}
+                      loading={saving}
                       title={multiWabaNoLine ? 'Escolha a linha WhatsApp acima' : draft.actions.length === 0 ? 'Adicione ao menos uma ação' : undefined}
-                      className={cn('flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-colors',
-                        canActivate ? 'bg-brand-600 text-surface-950 hover:bg-brand-500' : 'bg-surface-800 text-surface-600 cursor-not-allowed')}
                     >
-                      {saving ? 'Salvando…' : 'Ativar automação'} {!saving && <Check className="w-3.5 h-3.5" />}
-                    </button>
+                      Ativar automação
+                    </Button>
                   </>
                 )}
               </div>
@@ -393,12 +397,12 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
           {askClose && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/60" onClick={() => setAskClose(false)} />
-              <div className="relative z-10 bg-surface-950 overlay-frame border rounded-2xl w-full max-w-sm p-6 text-center">
+              <div className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-sm p-6 text-center">
                 <h3 className="text-sm font-semibold text-surface-100 mb-1">Descartar alterações?</h3>
                 <p className="text-xs text-surface-500 mb-5">As mudanças não salvas serão perdidas.</p>
                 <div className="flex gap-3">
-                  <button onClick={() => setAskClose(false)} className="flex-1 py-2 rounded-xl border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">Continuar editando</button>
-                  <button onClick={() => { setAskClose(false); onClose() }} className="flex-1 py-2 rounded-xl bg-danger hover:bg-danger/90 text-white text-sm font-semibold transition-colors">Descartar</button>
+                  <button onClick={() => setAskClose(false)} className="flex-1 py-2 rounded-sm border border-[var(--bd2)] text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">Continuar editando</button>
+                  <button onClick={() => { setAskClose(false); onClose() }} className="flex-1 py-2 rounded-sm bg-danger hover:bg-danger/90 text-white text-sm font-semibold transition-colors">Descartar</button>
                 </div>
               </div>
             </div>
@@ -409,13 +413,13 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
   )
 }
 
-function SectionTitle({ icon: Icon, title, hint }: { icon: React.ElementType; title: string; hint: string }) {
+// R2-AUTO-03 (mock 2b): título de seção = eyebrow 10/700 .14em uppercase --tx3,
+// dica inline (11px --tx3) — sem ícone e sem linha de descrição abaixo.
+function SectionTitle({ title, hint }: { title: string; hint: string }) {
   return (
-    <div className="mb-3">
-      <h3 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
-        <Icon className="w-4 h-4 text-brand-400" /> {title}
-      </h3>
-      <p className="text-[11px] text-surface-500 mt-0.5 ml-6">{hint}</p>
+    <div className="mb-2.5 flex items-baseline gap-2">
+      <h3 className="text-[10px] font-bold uppercase tracking-[.14em] text-surface-500">{title}</h3>
+      <p className="text-[11px] text-surface-500 truncate">{hint}</p>
     </div>
   )
 }
