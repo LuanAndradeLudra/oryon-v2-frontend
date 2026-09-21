@@ -2,6 +2,7 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { resolveActivePreset } from '@/lib/dateRange'
 import { resolveHandlingValue } from '@/lib/conversationFilterState'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { QuickFiltersMenu } from './QuickFiltersMenu'
 import { TagFilterMenu } from './TagFilterMenu'
 import type { ConversationFilters, Tag, User } from '@/types'
@@ -117,25 +118,13 @@ export function ConversationFiltersBar({
     <div className="px-3 pt-2.5 pb-2 space-y-2">
       {/* Segmentado + funil */}
       <div className="flex items-center gap-2">
-        <div role="group" aria-label="Atendimento" className="inline-flex h-7 rounded-sm border border-surface-700 p-0.5 gap-0.5">
-          {SEGMENTS.map(({ label, value }) => {
-            const active = segmentValue === value
-            return (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={active}
-                onClick={() => set({ assignedTo: value })}
-                className={cn(
-                  'px-2.5 rounded-[5px] text-xs font-semibold transition-colors',
-                  active ? 'bg-surface-900 text-surface-100' : 'text-surface-400 hover:text-surface-100',
-                )}
-              >
-                {label}
-              </button>
-            )
-          })}
-        </div>
+        {/* Primitivo SegmentedControl (barra unida do canvas 1d, CONV-LIST-02..05). */}
+        <SegmentedControl
+          label="Atendimento"
+          options={SEGMENTS.map(({ label, value }) => ({ value, label }))}
+          value={segmentValue as 'me' | 'unassigned' | 'all'}
+          onChange={(v) => set({ assignedTo: v })}
+        />
         <div className="ml-auto">
           <QuickFiltersMenu
             filters={filters}
