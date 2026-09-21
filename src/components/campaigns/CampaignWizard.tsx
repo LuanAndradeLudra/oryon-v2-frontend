@@ -51,7 +51,7 @@ interface CampaignWizardProps {
 
 type Step = 1 | 2 | 3 | 4 | 5
 
-const STEP_LABELS = ['Template', 'Segmento', 'Variáveis', 'Agendar', 'Revisão']
+const STEP_LABELS = ['Template', 'Público', 'Variáveis', 'Agendamento', 'Revisão']
 
 const CONTACT_FIELDS = [
   { value: 'displayName', label: 'Nome do contato' },
@@ -1389,9 +1389,9 @@ function Step4({
 // hairline --bd (surface-700), sem grupo/eyebrow em volta.
 function SummaryRow({ label, value, action }: { label: string; value: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[120px_1fr_auto] items-center gap-2.5 py-[9px] border-b border-surface-700 last:border-b-0">
+    <div className="grid grid-cols-[120px_1fr_auto] items-baseline gap-2.5 py-[9px] border-b border-surface-700 last:border-b-0">
       <span className="text-xs text-surface-400">{label}</span>
-      <span className="text-[13px] font-medium text-surface-100 min-w-0 truncate">{value}</span>
+      <span className="text-[13px] font-medium text-surface-100 min-w-0 break-words">{value}</span>
       {action}
     </div>
   )
@@ -1516,9 +1516,22 @@ function Step5({
       ? new Date(scheduledAt).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }).replace('.', '') + ' · ' + new Date(scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       : '—'
 
+  // R2-CAMP-01 (mock 2c): a linha Público descreve o recorte — "2.318 contatos ·
+  // Situação = Qualificado, Proposta" — com os dados reais que o wizard já tem
+  // (tags/etapas/filtros escolhidos), em vez de só o tipo ("Filtro avançado").
+  const segmentDescription =
+    segmentType === 'tag' && selectedTagIds.length > 0
+      ? tags.filter((t) => selectedTagIds.includes(t.id)).map((t) => t.name).join(', ')
+      : segmentType === 'stage' && selectedStages.length > 0
+        ? stages.filter((st) => selectedStages.includes(st.key)).map((st) => st.label).join(', ')
+        : segmentType === 'filter' && filterPills.length > 0
+          ? filterPills.map((pill) => pill.label).join(' · ')
+          : segmentType === 'manual' && selectedContactIds.length > 0
+            ? `Seleção manual (${selectedContactIds.length})`
+            : segmentLabels[segmentType]
   const publicLabel = estimatedReach !== null
-    ? <><b className="text-surface-100">{estimatedReach} contato{estimatedReach === 1 ? '' : 's'}</b> · {segmentLabels[segmentType]}</>
-    : segmentLabels[segmentType]
+    ? <><b className="text-surface-100">{estimatedReach.toLocaleString('pt-BR')} contato{estimatedReach === 1 ? '' : 's'}</b> · {segmentDescription}</>
+    : segmentDescription
 
   return (
     <div className="flex gap-5">
