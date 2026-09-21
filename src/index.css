@@ -907,7 +907,9 @@ code, pre, kbd, samp {
   --color-surface-950: #FAFAFC;
   --color-surface-900: #F5F6F8;
   --color-surface-800: #FFFFFF;
-  --color-surface-700: #E4E6EC;
+  /* Rodada 2 (pedido do usuário): linhas/bordas/divisores do tema claro mais
+     ESCUROS para marcar o contraste entre elementos — era #E4E6EC (handoff). */
+  --color-surface-700: #C9CFDA;
   --color-surface-600: #6B7385;
   --color-surface-500: #4B5263;
   --color-surface-400: #374151;
@@ -948,7 +950,7 @@ code, pre, kbd, samp {
 
   /* SCRUM-1097 (claro): ver comentário dark. */
   --rowhover: rgba(15, 23, 42, 0.035);
-  --bd2: #C8CDD8;
+  --bd2: #A3ACBD;
   --toast: #1A1F2E;
   --toasttx: #FFFFFF;
 
@@ -976,7 +978,7 @@ code, pre, kbd, samp {
   /* Elevação nível 3 (light): overlay branco; a separação vem da sombra em
      3 camadas (anel de recorte + contato + altura) e da borda nítida. */
   --color-overlay:        #FFFFFF;
-  --color-overlay-border: #D5DAE3;
+  --color-overlay-border: #B9C0CE;
   --shadow-overlay: 0 0 0 1px rgba(15, 23, 42, 0.03),
                     0 4px 12px rgba(15, 23, 42, 0.10),
                     0 16px 40px rgba(15, 23, 42, 0.16);
