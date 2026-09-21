@@ -53,17 +53,17 @@ function CreditBar({ used, total }: { used: number; total: number | null }) {
   const numCls = danger ? 'text-red-400' : warning ? 'text-status-pending' : 'text-surface-200'
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-surface-500">Créditos de IA utilizados</span>
-        <span className="text-surface-500">
+    <div>
+      <div className="flex items-baseline justify-between text-[12.5px]">
+        <span className="font-semibold text-surface-100">Créditos de IA utilizados</span>
+        <span className="text-surface-400">
           <span className={cn('font-semibold', numCls)}>{used.toLocaleString('pt-BR')}</span>
           {' / '}
           <span className={cn('font-semibold', numCls)}>{total ? total.toLocaleString('pt-BR') : '∞'}</span>
           {total ? <> · <span className={cn('font-semibold', numCls)}>{Math.round(pct)}</span>%</> : null}
         </span>
       </div>
-      <div className="h-1.5 bg-surface-800 border border-surface-700 rounded-[3px] overflow-hidden">
+      <div className="h-1.5 bg-[var(--sf2)] border border-surface-700 rounded-[3px] overflow-hidden mt-1.5">
         <motion.div
           className={`h-full ${danger ? 'bg-red-500' : warning ? 'bg-status-pending' : 'bg-brand-500'}`}
           initial={{ width: 0 }}
@@ -110,12 +110,12 @@ function LimitRow({
   const atCeiling = hasUsage && used >= limit
 
   return (
-    <div className="grid grid-cols-[1fr_160px_90px] items-center gap-3 h-9">
-      <span className="flex items-center gap-2 text-sm text-surface-300 min-w-0">
+    <div className="grid grid-cols-[1fr_160px_90px] items-center h-9 border-b border-surface-700 last:border-b-0">
+      <span className="flex items-center gap-2 text-[13px] text-surface-100 min-w-0">
         <span className="text-surface-500 flex-shrink-0">{icon}</span>
         <span className="truncate">{label}</span>
       </span>
-      <span className="h-1 rounded-full bg-surface-700 overflow-hidden">
+      <span className="h-1 rounded-[2px] bg-[var(--sf2)] overflow-hidden">
         {hasUsage && (
           <span
             className={cn('block h-full rounded-full', atCeiling ? 'bg-warning' : 'bg-brand-500')}
@@ -123,7 +123,7 @@ function LimitRow({
           />
         )}
       </span>
-      <span className={cn('text-sm font-medium text-right tabular-nums', atCeiling ? 'text-warning' : 'text-surface-200')}>
+      <span className={cn('text-sm text-right tabular-nums', atCeiling ? 'font-semibold text-warning' : 'text-surface-400')}>
         {hasUsage ? `${used.toLocaleString('pt-BR')}/${limit.toLocaleString('pt-BR')}` : formatCredits(limit)}
       </span>
     </div>
@@ -222,23 +222,23 @@ function UpgradeTable({
             )}
           >
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold text-surface-300">{name}</span>
-              {isCurrent && <span className="text-2xs text-surface-500">· atual</span>}
+              <span className="text-[12.5px] font-semibold text-surface-100">{name}</span>
+              {isCurrent && <span className="text-[11px] font-medium text-surface-500">· atual</span>}
               {isRecommended && (
-                <span className="bg-accent-soft text-accent-dark text-2xs font-semibold px-1.5 py-px rounded-xs">
+                <span className="inline-flex items-center h-4 bg-accent-soft text-accent-dark text-[10px] font-bold px-[5px] rounded-[4px]">
                   Recomendado
                 </span>
               )}
             </div>
-            <p className="text-lg font-extrabold text-surface-50 tabular-nums">
-              {priceLabel}<span className="text-xs text-surface-500 font-normal">/mês</span>
+            <p className="text-lg font-extrabold text-surface-50 tabular-nums mt-1" style={{ letterSpacing: '-.02em' }}>
+              {priceLabel}<span className="text-[11px] text-surface-500 font-medium" style={{ letterSpacing: 0 }}>/mês</span>
             </p>
-            <p className="text-2xs text-surface-500 mt-1.5 leading-relaxed">{resourceLine}</p>
+            <p className="text-[11.5px] text-surface-400 mt-2 leading-[1.6]">{resourceLine}</p>
             {!isCurrent && (
               <Button
                 size="sm"
                 variant={isRecommended ? 'primary' : 'neutral'}
-                className="mt-3 w-full"
+                className="mt-2.5"
                 disabled={disabled || !opt}
                 onClick={() => opt && onUpgrade({ kind: isSubscribed ? 'change' : 'subscribe', tier, plan: opt })}
                 title={!opt ? 'Sob consulta' : undefined}
@@ -378,7 +378,7 @@ export function BillingSettings() {
       )}
 
       {status && !statusError && !isSubscribed && !isCanceled && (
-        <div className="mt-2 flex items-center justify-between gap-4 rounded-xs border border-brand-500/40 bg-accent-soft px-3.5 py-2.5">
+        <div className="-mt-3 flex items-center justify-between gap-3 rounded-lg border border-brand-500 bg-accent-soft px-3.5 py-2.5">
           <div className="flex items-start gap-2.5">
             <Zap className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
             <div>
@@ -392,7 +392,7 @@ export function BillingSettings() {
           <Button
             size="sm"
             variant="primary"
-            className="flex-shrink-0 h-8"
+            className="flex-shrink-0 h-8 px-3.5 text-[12.5px]"
             onClick={() => setIntent({
               kind: 'subscribe', tier: backendTier,
               plan: plans.find((p) => p.tier === backendTier) ?? {
@@ -422,17 +422,17 @@ export function BillingSettings() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
+                <h2 className="text-base font-bold text-surface-50" style={{ letterSpacing: '-.01em' }}>Oryon {billing.plan.displayName}</h2>
                 {!isSubscribed && !isCanceled && daysUntilReset != null && (
                   <span
-                    className="color-chip-soft text-2xs font-semibold px-1.5 py-px rounded-xs border"
+                    className="color-chip-soft inline-flex items-center h-5 px-[7px] rounded-[5px] border text-[11px] font-bold"
                     style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
                   >
                     Avaliação · {daysUntilReset} dia{daysUntilReset === 1 ? '' : 's'} restante{daysUntilReset === 1 ? '' : 's'}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-surface-500 mt-0.5">
+              <p className="text-xs text-surface-400 mt-0.5">
                 Cobrança mensal
                 {atendimentos != null && <> · ≈ {atendimentos.toLocaleString('pt-BR')} atendimentos/mês</>}
                 {billing.planResetsAt && <> · próximo ciclo {formatDayMonth(billing.planResetsAt)}</>}
@@ -440,19 +440,19 @@ export function BillingSettings() {
             </div>
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="text-[22px] font-extrabold text-surface-50 tabular-nums leading-none">
+            <p className="text-[22px] font-extrabold text-surface-50 tabular-nums leading-[1.1]" style={{ letterSpacing: '-.02em' }}>
               R$&nbsp;{priceMonthly.toLocaleString('pt-BR')}<span className="text-[11.5px] text-surface-500 font-normal">/mês</span>
             </p>
           </div>
         </div>
 
         {/* Credit usage */}
-        <div className="mt-5">
+        <div className="mt-3.5">
           <CreditBar used={billing.creditsUsed} total={billing.creditsTotal} />
         </div>
 
-        <div className="flex items-center justify-between gap-3 mt-3">
-          <p className="text-xs text-surface-500">
+        <div className="flex items-center justify-between gap-3 mt-[5px]">
+          <p className="text-[11.5px] text-surface-500">
             1 crédito ≈ 1 atendimento (~7.000 tokens de conteúdo). Os créditos não acumulam entre períodos.
           </p>
           {daysUntilReset != null && (

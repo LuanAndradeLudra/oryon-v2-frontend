@@ -12,7 +12,7 @@ export const WEEKDAY_LABELS = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM']
 const BASE_MONDAY = new Date(2026, 8, 15)
 const TODAY_DAY_INDEX = 1
 const H = 60
-const NOW_MINUTES_FROM_START = (14 - HOUR_START) * H + 10
+const NOW_MINUTES_FROM_START = (14 - HOUR_START) * H + 33 // canvas 2d: linha em 6,55 linhas = 14:33
 
 export function addDays(date: Date, days: number): Date {
   const d = new Date(date)
@@ -53,6 +53,15 @@ export function formatWeekPeriod(days: ScheduleWeekDay[]): string {
     : `${first.getDate()} de ${monthName(first)} – ${last.getDate()} de ${monthName(last)}`
 }
 
+/** Semana ISO 8601 — o canvas 2d mostra "semana 38" ao lado do período. */
+export function isoWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+}
+
 export function formatDayLong(date: Date): string {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })
 }
@@ -78,6 +87,8 @@ export interface ScheduleEvent {
   color: string
   status: ScheduleEventStatus
   isCampaign?: boolean
+  /** Mostra o chip de status no bloco — o canvas 2d só o desenha em 2 eventos (Mariana: Confirmado, Beatriz: Aguardando). */
+  chip?: boolean
   detail: {
     contact?: string
     origin?: string
@@ -85,6 +96,9 @@ export interface ScheduleEvent {
   }
 }
 
+// Eventos = os 10 do canvas 2d (dia/linha/cor medidos no HTML). O canvas diz
+// "27 esta semana" porque só desenha uma amostra; a contagem do header é
+// calculada sobre estes.
 export const MOCK_EVENTS: ScheduleEvent[] = [
   {
     id: 'evt-1',
@@ -106,7 +120,7 @@ export const MOCK_EVENTS: ScheduleEvent[] = [
     startMinutes: H,
     endMinutes: H * 2,
     agent: 'Rafael',
-    color: '#3B82F6',
+    color: '#0EA5E9',
     status: 'confirmado',
     detail: { contact: 'Consultório Dr. Paulo', origin: 'Indicação', channel: 'Google Meet' },
   },
@@ -118,34 +132,22 @@ export const MOCK_EVENTS: ScheduleEvent[] = [
     startMinutes: H * 2,
     endMinutes: H * 3 + 30,
     agent: 'Ana Nunes',
-    color: '#3B82F6',
+    color: '#0EA5E9',
     status: 'confirmado',
+    chip: true,
     detail: { contact: 'Mariana Costa · Acme Ltda', origin: 'Agente Vendas', channel: 'Google Meet' },
   },
   {
     id: 'evt-4',
     title: 'Demo · Eduardo Martins',
     type: 'Demo',
-    dayIndex: 3,
+    dayIndex: 4,
     startMinutes: H * 3,
     endMinutes: H * 4,
     agent: 'Rafael',
-    color: '#3B82F6',
+    color: '#0EA5E9',
     status: 'cancelado',
     detail: { contact: 'Eduardo Martins', origin: 'Site', channel: 'Google Meet' },
-  },
-  {
-    // SCHED-EVENT-13: sobrepõe evt-4 (11h-12h) pra exercitar o layoutLanes() de fato.
-    id: 'evt-10',
-    title: 'Retorno · Camila Duarte',
-    type: 'Retorno',
-    dayIndex: 3,
-    startMinutes: H * 3 + 30,
-    endMinutes: H * 4 + 30,
-    agent: 'Ana Nunes',
-    color: '#F59E0B',
-    status: 'aguardando',
-    detail: { contact: 'Camila Duarte', origin: 'Conversa', channel: 'WhatsApp' },
   },
   {
     id: 'evt-5',
@@ -163,24 +165,25 @@ export const MOCK_EVENTS: ScheduleEvent[] = [
     id: 'evt-6',
     title: 'Retorno · Helena Prado',
     type: 'Retorno',
-    dayIndex: 4,
+    dayIndex: 3,
     startMinutes: H * 6,
     endMinutes: H * 7,
     agent: 'Ana Nunes',
     color: '#F59E0B',
-    status: 'aguardando',
+    status: 'confirmado',
     detail: { contact: 'Helena Prado', origin: 'Conversa', channel: 'WhatsApp' },
   },
   {
     id: 'evt-7',
     title: 'Retorno · Beatriz Fonseca',
     type: 'Retorno',
-    dayIndex: 2,
+    dayIndex: 1,
     startMinutes: H * 7,
     endMinutes: H * 8,
     agent: 'Lucas',
     color: '#F59E0B',
     status: 'aguardando',
+    chip: true,
     detail: { contact: 'Beatriz Fonseca', origin: 'Conversa', channel: 'WhatsApp' },
   },
   {
@@ -191,22 +194,34 @@ export const MOCK_EVENTS: ScheduleEvent[] = [
     startMinutes: H * 8,
     endMinutes: H * 9,
     agent: 'Lucas',
-    color: '#10B981',
+    color: '#8B5CF6',
     status: 'confirmado',
     detail: { contact: 'Acme Ltda', origin: 'Onboarding', channel: 'Google Meet' },
   },
   {
     id: 'evt-9',
-    title: 'Campanha · Reativação de clientes',
+    title: 'Campanha · Lançamento agenda',
     type: 'Campanha',
-    dayIndex: 5,
+    dayIndex: 2,
     startMinutes: H * 2,
-    endMinutes: H * 3,
+    endMinutes: H * 2 + 30,
     agent: 'Automação',
     color: '#6B8080',
     status: 'confirmado',
     isCampaign: true,
     detail: { origin: 'Disparo automático', channel: 'WhatsApp' },
+  },
+  {
+    id: 'evt-10',
+    title: 'Demo · Dra. Renata Lima',
+    type: 'Demo',
+    dayIndex: 3,
+    startMinutes: H * 2,
+    endMinutes: H * 3,
+    agent: 'Ana Nunes',
+    color: '#0EA5E9',
+    status: 'confirmado',
+    detail: { contact: 'Dra. Renata Lima', origin: 'Indicação', channel: 'Google Meet' },
   },
 ]
 

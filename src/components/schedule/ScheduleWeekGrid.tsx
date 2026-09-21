@@ -73,7 +73,7 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
   return (
     <div className="flex-1 overflow-auto">
       <div
-        className="grid"
+        className="grid bg-surface-800"
         style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
       >
         {/* Cabeçalho de dia */}
@@ -82,18 +82,28 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
           <div
             key={day.dayIndex}
             className={cn(
-              'h-11 flex flex-col items-center justify-center border-b border-r border-surface-700 last:border-r-0',
+              'h-11 flex items-baseline gap-1.5 px-2.5 py-2 border-b border-r border-surface-700 last:border-r-0',
               day.isToday && 'bg-accent-soft',
               day.isWeekend && !day.isToday && 'bg-[var(--sf2)]',
             )}
           >
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-surface-400">{day.label}</span>
-            <span className="text-sm font-semibold text-surface-100 leading-tight">
-              {day.dayNumber}
-              {day.isToday && (
-                <span className="ml-1 text-3xs font-bold text-brand-400 align-top">HOJE</span>
+            <span
+              className={cn(
+                'text-[11px] font-semibold uppercase tracking-[.06em]',
+                day.isToday ? 'text-accent-dark' : day.isWeekend ? 'text-surface-500' : 'text-surface-400',
               )}
+            >
+              {day.label}
             </span>
+            <span
+              className={cn(
+                'text-sm',
+                day.isToday ? 'font-bold text-accent-dark' : cn('font-semibold', day.isWeekend ? 'text-surface-500' : 'text-surface-100'),
+              )}
+            >
+              {day.dayNumber}
+            </span>
+            {day.isToday && <span className="ml-auto text-[10px] font-bold text-accent-dark">HOJE</span>}
           </div>
         ))}
 
@@ -102,7 +112,7 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
           {HOURS.map((h) => (
             <div
               key={h}
-              className="border-b border-surface-700 text-right pr-1.5 text-2xs text-surface-500"
+              className="border-b border-surface-700 text-right px-2 py-1 text-[10.5px] text-surface-500"
               style={{ height: ROW_HEIGHT }}
             >
               {String(h).padStart(2, '0')}:00
@@ -120,7 +130,7 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
               key={day.dayIndex}
               className={cn(
                 'relative border-r border-surface-700 last:border-r-0',
-                day.isToday && 'bg-accent-soft',
+                day.isToday && 'bg-[color-mix(in_srgb,var(--color-accent-soft)_50%,transparent)]',
                 day.isWeekend && !day.isToday && 'bg-[var(--sf2)]',
               )}
               style={{ height: GRID_HEIGHT }}

@@ -17,6 +17,12 @@ interface ScheduleEventPopoverProps {
 
 const POPOVER_WIDTH = 300
 
+const POPOVER_STATUS_LABEL = {
+  confirmado: 'Confirmado pelo contato',
+  aguardando: 'Aguardando confirmação',
+  cancelado: 'Cancelado pelo contato',
+} as const
+
 /**
  * Popover de detalhe do evento. Reimplementa o essencial do `Dropdown`
  * (portal + `useLayer` + fechar no clique-fora/Escape) em vez de reusá-lo
@@ -77,7 +83,7 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.13, ease: 'easeOut' }}
         style={{ position: 'fixed', top, bottom, left, width: POPOVER_WIDTH }}
-        className="overlay-surface border rounded-[8px] p-3.5"
+        className="overlay-surface border rounded-[8px] p-3.5 text-[12.5px]"
       >
         <div className="flex items-start gap-2 mb-2.5">
           <span
@@ -86,7 +92,7 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
             aria-hidden
           />
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-bold text-surface-50 leading-snug truncate">{event.title}</div>
+            <div className="text-sm font-bold text-surface-50 leading-tight truncate">{event.title}</div>
             <div className="text-2xs text-surface-400 mt-0.5">
               {formatDayLong(date)} · {formatHourLabel(event.startMinutes)} – {formatHourLabel(event.endMinutes)}
               {event.detail.channel ? ` · ${event.detail.channel}` : ''}
@@ -102,7 +108,7 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
           </button>
         </div>
 
-        <div className="grid grid-cols-[82px_1fr] gap-y-1.5 text-xs mb-3">
+        <div className="grid grid-cols-[82px_1fr] gap-x-2 gap-y-[5px] text-[12.5px] mb-2.5">
           {event.detail.contact && (
             <>
               <span className="text-surface-500">Contato</span>
@@ -123,7 +129,7 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
                     exemplo de cor no material de referência, então ficam no
                     chip neutro em vez de uma paleta inventada. */}
                 {event.detail.origin === 'Agente Vendas' ? (
-                  <ScheduleOriginChip className="text-[11px]">{event.detail.origin}</ScheduleOriginChip>
+                  <ScheduleOriginChip>{event.detail.origin}</ScheduleOriginChip>
                 ) : (
                   <span className="inline-flex items-center rounded-xs border border-surface-700 bg-[var(--sf2)] px-1.5 py-px text-[11px] font-medium text-surface-300">
                     {event.detail.origin}
@@ -134,11 +140,11 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
           )}
           <span className="text-surface-500">Status</span>
           <span>
-            <ScheduleStatusChip status={event.status} className="text-[11px]" />
+            <ScheduleStatusChip status={event.status} label={POPOVER_STATUS_LABEL[event.status]} />
           </span>
         </div>
 
-        <div className="border-t border-surface-700 pt-2.5 flex items-center gap-2">
+        <div className="border-t border-surface-700 pt-1.5 flex items-center gap-1.5">
           <Button size="sm" variant="primary" onClick={onClose} title="Exemplo — sem conversa real vinculada ainda">
             Abrir conversa
           </Button>

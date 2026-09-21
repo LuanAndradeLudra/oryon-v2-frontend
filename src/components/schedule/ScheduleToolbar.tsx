@@ -37,7 +37,7 @@ function FilterDropdown({
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="h-7 inline-flex items-center gap-1.5 rounded-sm border border-surface-700 bg-surface-800 px-2.5 text-xs font-medium text-surface-300 hover:bg-surface-700 hover:text-surface-100 transition-colors"
+          className="h-7 inline-flex items-center gap-[5px] rounded-[7px] border border-[var(--bd2)] px-[9px] text-xs font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
         >
           {activeLabel}
           <ChevronDown className="w-3.5 h-3.5 text-surface-500" />
@@ -63,6 +63,8 @@ function FilterDropdown({
 
 interface ScheduleToolbarProps {
   periodLabel: string
+  /** Semana ISO — canvas 2d: "semana 38". */
+  weekNumber?: number
   viewMode: ScheduleViewMode
   onViewModeChange: (mode: ScheduleViewMode) => void
   onPrev: () => void
@@ -76,6 +78,7 @@ interface ScheduleToolbarProps {
 
 export function ScheduleToolbar({
   periodLabel,
+  weekNumber,
   viewMode,
   onViewModeChange,
   onPrev,
@@ -87,13 +90,13 @@ export function ScheduleToolbar({
   onTypeFilterChange,
 }: ScheduleToolbarProps) {
   return (
-    <div className="flex items-center gap-3 h-11 px-4 border-b border-surface-700 flex-shrink-0 flex-wrap">
+    <div className="flex items-center gap-2 h-11 px-4 border-b border-surface-700 bg-surface-800 flex-shrink-0 flex-wrap">
       <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={onPrev}
           aria-label="Semana anterior"
-          className="w-7 h-7 inline-flex items-center justify-center rounded-sm border border-surface-700 text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+          className="w-7 h-7 inline-flex items-center justify-center rounded-[7px] border border-[var(--bd2)] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -101,7 +104,7 @@ export function ScheduleToolbar({
           type="button"
           onClick={onNext}
           aria-label="Próxima semana"
-          className="w-7 h-7 inline-flex items-center justify-center rounded-sm border border-surface-700 text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+          className="w-7 h-7 inline-flex items-center justify-center rounded-[7px] border border-[var(--bd2)] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -109,9 +112,9 @@ export function ScheduleToolbar({
 
       <Button size="sm" variant="neutral" onClick={onToday}>Hoje</Button>
 
-      <div className="flex items-baseline gap-2 min-w-0">
-        <span className="text-sm font-bold text-surface-100 truncate">{periodLabel}</span>
-        <span className="text-2xs text-surface-500 flex-shrink-0">{viewMode}</span>
+      <div className="flex items-baseline min-w-0 ml-1.5">
+        <span className="text-sm font-bold text-surface-100 truncate" style={{ letterSpacing: '-.01em' }}>{periodLabel}</span>
+        <span className="text-xs font-medium text-surface-500 flex-shrink-0 ml-1">{viewMode}{weekNumber != null ? ` ${weekNumber}` : ''}</span>
       </div>
 
       <div className="ml-auto flex items-center gap-2 flex-shrink-0">

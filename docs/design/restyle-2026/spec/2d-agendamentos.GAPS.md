@@ -6,18 +6,11 @@ SchedulePage.tsx`, `src/components/schedule/*`. Tela é casca estática com mock
 (decisão do usuário) — só visual avaliado. Tokens: --bd=surface-700,
 --bd2=var(--bd2), --sf2=var(--sf2), --tx3=surface-500, --ac=brand-500.
 
-**Reconferência (epic @ 7b1cd7e, fast-forward):** os 12 ❌ da Fase B abaixo já
-tinham sido corrigidos na Fase C (commits `d9265af`/`7a418b3` e o `HEADER-02`
-via `useRegisterTopBarSubtitle`, mesclado pelo Maestro). Reli linha a linha
-todo o hairline `surface-800 → surface-700` e cada item específico contra o
-código atual — todos batem. Único ajuste feito NESTA reconferência:
-`scheduleMock.ts` não tinha nenhum par de eventos sobrepostos na tela toda,
-então o `layoutLanes()` (EVENT-13) nunca era exercitado de fato pela grade
-renderizada (só validável lendo o algoritmo). Adicionei `evt-10` ("Retorno ·
-Camila Duarte", QUI/dayIndex 3, 11h30-12h30) sobrepondo `evt-4` (11h-12h) —
-dado de exemplo consistente com o resto do mock, sem invenção de taxonomia
-nova (mesmo tipo/cor "Retorno" já usado em evt-6/evt-7). Ver
-`src/components/schedule/scheduleMock.ts:137-149`.
+**Rodada 2:** o `evt-10` que adicionei na reconferência ("Retorno · Camila Duarte")
+era dado INVENTADO — o canvas 2d não tem eventos sobrepostos (medido no HTML).
+Removido; o mock agora tem exatamente os 10 eventos do canvas (dia, linha e cor).
+`layoutLanes()` (EVENT-13) segue correto por leitura, mas sem fixture que o
+exercite (vale só para dado real futuro).
 
 ## Tabela
 
@@ -68,7 +61,7 @@ nova (mesmo tipo/cor "Retorno" já usado em evt-6/evt-7). Ver
 | SCHED-EVENT-10 | ✅ | ScheduleEventBlock.tsx:42 | `border-brand-500 ring-[3px] ring-accent-soft` (anel 3px) | — |
 | SCHED-EVENT-11 | ✅ | ScheduleEventBlock.tsx:34,38 | `opacity-55` + `line-through` | — |
 | SCHED-EVENT-12 | ✅ | ScheduleEventBlock.tsx:39-40 | base `border-l-[3px]`; `isCampaign` sobrescreve com `border-l` (twMerge resolve o conflito por ordem, último vence) → 1px tracejado | — |
-| SCHED-EVENT-13 | ✅ | ScheduleWeekGrid.tsx:22-56 (`layoutLanes`), 115-116, 155; ScheduleEventBlock.tsx:33-34 | clusters de sobreposição empacotados em lanes, `left`/`width` em % por evento; QUI (dayIndex 3) agora tem `evt-4` (11h-12h) + `evt-10` (11h30-12h30, adicionado nesta reconferência) exercitando o split ao vivo | — |
+| SCHED-EVENT-13 | ✅ | ScheduleWeekGrid.tsx:22-56 (`layoutLanes`), 115-116, 155; ScheduleEventBlock.tsx:33-34 | clusters de sobreposição empacotados em lanes, `left`/`width` em % por evento; o mock do canvas não tem sobreposição, então o split não aparece na tela de exemplo | — |
 | SCHED-EVENT-14 | ✅ | scheduleMock.ts (`event.color`, STATUS_CHIP_VAR) | cores de dado fixas nos 2 temas | — |
 | SCHED-POPOVER-01 | ✅ | ScheduleEventPopover.tsx:17 | `POPOVER_WIDTH = 300` | — |
 | SCHED-POPOVER-02 | ✅ | ScheduleEventPopover.tsx:65 | `rounded-[8px]` | — |
@@ -110,3 +103,16 @@ em `scheduleMock.ts`, sem mudança de spec/verdito) · **[!]:** 0.
 | R2-2D-03 | horário "08:00 – 09:00" com espaços; cancelado na mesma linha ("· cancelado pelo contato", esmaecido) | ScheduleEventBlock/Popover/ListView | ✅ código · ❓ ao vivo |
 
 Os ✅ da Fase C acima passam a valer só como "código × spec"; ao vivo segue ❓.
+
+## Rodada 2b — valores do canvas 2d (HTML) e correções de dado
+
+| ID | Achado (canvas) | Correção | Status |
+|---|---|---|---|
+| R2-2D-04 | cabeçalho do dia é ALINHADO À ESQUERDA (`baseline`, gap 6, padding 8/10): rótulo 11/600 .06em, número 14/600; hoje = acento (rótulo, número 14/700) + HOJE à direita; fim de semana tx3 | ScheduleWeekGrid.tsx | ✅ código · ❓ ao vivo |
+| R2-2D-05 | grade com fundo `--sf`; tint de hoje no corpo a 50%; rótulo de hora 10.5px tx3 padding 4/8 | ScheduleWeekGrid.tsx | ✅ código · ❓ ao vivo |
+| R2-2D-06 | bloco: fundo `--sf`, 11.5px lh 1.3, hora tx2; campanha `--sf2` + tracejado `--bd2` + tx2; chip 16px raio 5 10/700 SÓ em 2 eventos (Mariana, Beatriz) → flag `chip` no dado | ScheduleEventBlock.tsx, scheduleMock.ts | ✅ código · ❓ ao vivo |
+| R2-2D-07 | dados: Demo `#0EA5E9` (era `#3B82F6`), Treinamento `#8B5CF6` (era verde); Eduardo na SEX (era QUI), Helena na QUI (era SEX), Beatriz na TER (era QUA), campanha na QUA 10:00 "Lançamento agenda" (era SÁB); faltava "Demo · Dra. Renata Lima" QUI 10-11; linha de agora 14:33 | scheduleMock.ts | ✅ código · ❓ ao vivo |
+| R2-2D-08 | toolbar: fundo `--sf`, gap 8, botões 28px raio 7 borda `--bd2`; filtros 12/600 px9; período 14/700 -.01em + "semana 38" (ISO) 12/500 tx3 | ScheduleToolbar.tsx, SchedulePage.tsx | ✅ código · ❓ ao vivo |
+| R2-2D-09 | popover: chips 18px raio 5 10.5/700; status "Confirmado pelo contato"; título lh 1.25; grid 82px gap 5/8; rodapé pt 6 gap 6; 12.5px | ScheduleEventPopover.tsx, ScheduleChips.tsx | ✅ código · ❓ ao vivo |
+
+Contagem do header: canvas diz "27 esta semana · 3 aguardando" (amostra parcial); o app calcula sobre os 10 eventos desenhados.

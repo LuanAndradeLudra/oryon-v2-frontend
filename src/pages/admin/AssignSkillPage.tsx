@@ -33,6 +33,7 @@ import { DynamicSchemaFormFields } from '@/components/admin/DynamicSchemaFormFie
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import type { SkillTemplate, JsonSchemaObject } from '@/types/skills'
 import { cn } from '@/lib/utils'
+import { Checkbox } from '@/components/ui/Checkbox'
 
 export function AssignSkillPage() {
   const navigate = useNavigate()
@@ -377,12 +378,7 @@ export function AssignSkillPage() {
                               : 'bg-surface-900 border-surface-700 hover:border-surface-600',
                           )}
                         >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleAgent(a.id)}
-                            className="w-4 h-4 accent-brand-500"
-                          />
+                          <Checkbox checked={checked} onChange={() => toggleAgent(a.id)} />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm text-surface-100 truncate">{a.name}</p>
                             <p className="text-[11px] text-surface-500 font-mono truncate">

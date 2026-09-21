@@ -14,7 +14,7 @@ import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/
 import { ScheduleToolbar, type ScheduleViewMode } from '@/components/schedule/ScheduleToolbar'
 import { ScheduleWeekGrid } from '@/components/schedule/ScheduleWeekGrid'
 import { ScheduleListView } from '@/components/schedule/ScheduleListView'
-import { getWeekDays, formatWeekPeriod, MOCK_EVENTS } from '@/components/schedule/scheduleMock'
+import { getWeekDays, formatWeekPeriod, isoWeekNumber, MOCK_EVENTS } from '@/components/schedule/scheduleMock'
 
 export function SchedulePage() {
   const [weekOffset, setWeekOffset] = useState(0)
@@ -60,6 +60,7 @@ export function SchedulePage() {
 
       <ScheduleToolbar
         periodLabel={formatWeekPeriod(days)}
+        weekNumber={viewMode === 'semana' ? isoWeekNumber(days[0].date) : undefined}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onPrev={() => setWeekOffset((w) => w - 1)}

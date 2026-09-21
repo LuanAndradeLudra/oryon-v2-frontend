@@ -14,6 +14,7 @@ import { showToast } from '@/hooks/useToast'
 import { saveHub, loadHub, type CompanyHubData, type BrandFile, DEFAULT_HUB } from '@/services/companyContextService'
 import { extractBrandFile } from '@/services/agentsApi'
 import { onboardingApi } from '@/services/api'
+import { Textarea } from '@/components/ui/Textarea'
 import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { WhatsAppNumbers } from '@/components/settings/sections/WhatsAppNumbers'
 import { Departments } from '@/components/settings/sections/Departments'
@@ -516,12 +517,12 @@ function HubStep({
                 <label className="block text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">
                   O que você faz?
                 </label>
-                <textarea
+                <Textarea
                   value={form.description}
                   onChange={e => onChange({ description: e.target.value })}
                   placeholder="Descreva sua empresa, público-alvo e principais diferenciais. A IA usará isso para representar bem sua marca..."
                   rows={3}
-                  className={`${INPUT} resize-none`}
+                  className="resize-none"
                 />
               </div>
 

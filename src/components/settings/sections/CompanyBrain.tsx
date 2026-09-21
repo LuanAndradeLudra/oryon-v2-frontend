@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
+import { Textarea } from '@/components/ui/Textarea'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -492,12 +493,12 @@ export function CompanyBrain() {
               label="O que você faz?"
               hint="Missão, público-alvo e principais diferenciais."
             >
-              <textarea
+              <Textarea
                 value={form.description}
                 onChange={e => patch({ description: e.target.value })}
                 placeholder="Ex: Plataforma de atendimento via WhatsApp para PMEs. Centralizamos conversas, automatizamos follow-ups e ajudamos equipes a fechar mais negócios..."
                 rows={3}
-                className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+                className="resize-none"
               />
             </FormField>
 
@@ -505,12 +506,12 @@ export function CompanyBrain() {
               label="Produtos e serviços"
               hint="Liste o que você vende, com preços e detalhes para atendimento."
             >
-              <textarea
+              <Textarea
                 value={form.productsServices}
                 onChange={e => patch({ productsServices: e.target.value })}
                 placeholder={`Plano Starter — R$199/mês (até 3 usuários)\nPlano Pro — R$499/mês (usuários ilimitados)\nImplementação — a partir de R$2.000`}
                 rows={4}
-                className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors resize-none"
+                className="resize-none"
               />
             </FormField>
         </div>
