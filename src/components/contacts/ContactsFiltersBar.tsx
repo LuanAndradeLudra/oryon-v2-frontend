@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Search, X, ChevronDown, Tag, SlidersHorizontal, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { tagsApi } from '@/services/api'
+import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { ContactFilters, ContactSource, ContactSentiment, ContactIntent, Tag as TagType } from '@/types'
 
 const SOURCES: { value: ContactSource; label: string }[] = [
@@ -191,6 +193,62 @@ function TagFilter({ selected, onChange }: {
   )
 }
 
+// ─── Situação (multi-seleção) ─────────────────────────────────────────────────
+
+/** R2-1C-FILT-01: chip "Situação · Qualificado" do mock. `ContactFilters.stage`
+ *  já existia no tipo e o backend filtra por `stage IN (...)` — faltava só o
+ *  controle. Etapas vêm do CRM do tenant (`useCRMConfig().stages`). */
+function StageFilter({ selected, onChange }: { selected: string[]; onChange: (keys: string[]) => void }) {
+  const { stages } = useCRMConfig()
+  const [open, setOpen] = useState(false)
+  if (stages.length === 0) return null
+  const ordered = [...stages].sort((a, b) => a.order - b.order)
+  const first = ordered.find((s) => s.key === selected[0])
+  const label = selected.length === 0 ? 'Situação' : selected.length === 1 ? `Situação · ${first?.label ?? selected[0]}` : `Situação · ${selected.length}`
+  const toggle = (key: string) =>
+    onChange(selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key])
+  return (
+    <Dropdown
+      open={open}
+      onClose={() => setOpen(false)}
+      align="left"
+      className="w-56"
+      anchor={
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          data-testid="contacts-filter-stage"
+          className={cn(
+            'flex items-center gap-1.5 h-7 pl-3 pr-2.5 rounded-sm text-xs font-semibold border transition-all whitespace-nowrap',
+            selected.length > 0
+              ? 'border-brand-500 bg-accent-soft text-accent-dark'
+              : 'border-[var(--bd2)] bg-surface-800 text-surface-100 hover:border-surface-500',
+          )}
+        >
+          <span>{label}</span>
+          <ChevronDown className={cn('w-3 h-3 flex-shrink-0 transition-transform', open && 'rotate-180')} />
+        </button>
+      }
+    >
+      <div className="px-1 py-1 flex flex-col gap-0.5 max-h-72 overflow-y-auto">
+        {ordered.map((st) => (
+          <DropdownItem key={st.key} active={selected.includes(st.key)} onClick={() => toggle(st.key)}>
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />
+            <span className="flex-1 truncate">{st.label}</span>
+          </DropdownItem>
+        ))}
+        {selected.length > 0 && (
+          <DropdownItem onClick={() => { onChange([]); setOpen(false) }}>
+            <X className="w-3.5 h-3.5" /> Limpar
+          </DropdownItem>
+        )}
+      </div>
+    </Dropdown>
+  )
+}
+
 // ─── Grupo de filtros dentro do painel "Filtros" ──────────────────────────────
 
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
@@ -271,6 +329,11 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns }: 
 
       {/* Inline: Fonte + Etiquetas + "+ Filtro" (só desktop) */}
       <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+        <StageFilter
+          selected={filters.stage ?? []}
+          onChange={(keys) => set({ stage: keys.length > 0 ? keys : undefined })}
+        />
+
         <FilterSelect
           value={filters.source ?? ''}
           onChange={(v) => set({ source: (v || undefined) as ContactSource | undefined })}

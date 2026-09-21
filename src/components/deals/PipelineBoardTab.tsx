@@ -56,7 +56,7 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
   const { toast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
-  const { openDeal } = useDealPanel()
+  const { openDeal, openDealId } = useDealPanel()
   const { users } = useTagsAndUsers()
   /**
    * Busca com respiro: cada tecla mudaria o filtro e o `useKanbanDeals` refaz a
@@ -262,6 +262,7 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
         pipeline={pipeline}
         users={users}
         highlightDealId={highlightDealId}
+        selectedDealId={openDealId}
       />
 
       {newDealStageId && (

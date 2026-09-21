@@ -1037,8 +1037,16 @@ export const usersApi = {
 
 export const contactsApi = {
   list(filters: ContactFilters = {}, page = 1, limit = 50) {
+    // O backend lê `stage` e `tagId` como lista separada por vírgula (split(',')) —
+    // sem isto o axios manda `stage[]=a&stage[]=b` e o controller recebe um array.
     return api.get<PaginatedResponse<Contact>>('/contacts', {
-      params: { ...filters, page, limit },
+      params: {
+        ...filters,
+        stage: filters.stage?.length ? filters.stage.join(',') : undefined,
+        tagId: filters.tagId?.length ? filters.tagId.join(',') : undefined,
+        page,
+        limit,
+      },
     })
   },
 
