@@ -35,7 +35,7 @@ function relativeTime(date: string) {
 // ── Personal header ────────────────────────────────────────────────────────────
 
 const ROLE_CONFIG: Record<string, { label: string; chip: string }> = {
-  super_admin:    { label: 'Equipe Oryon', chip: 'var(--color-brand-500)' },
+  super_admin:    { label: 'Equipe Oryon', chip: 'var(--color-accent-dark)' },
   business_admin: { label: 'Admin',        chip: 'var(--color-brand-500)' },
   admin:          { label: 'Admin',        chip: 'var(--color-brand-500)' },
   supervisor:     { label: 'Supervisor',   chip: 'var(--color-status-pending)' },
