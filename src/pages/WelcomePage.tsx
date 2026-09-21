@@ -163,7 +163,7 @@ export function WelcomePage() {
   const navBg   = isLight ? 'bg-white/80 border-gray-200' : 'bg-surface-950/80 border-surface-700'
   const textPri = isLight ? 'text-gray-900' : 'text-surface-50'
   const textSec = isLight ? 'text-gray-500' : 'text-surface-400'
-  const cardBg  = isLight ? 'bg-white border-gray-200' : 'bg-surface-900 border-surface-700'
+  const cardBg  = isLight ? 'bg-white border-gray-200' : 'bg-surface-800 border-surface-700'
 
   return (
     <div className={`h-screen w-full overflow-y-auto ${isLight ? 'bg-white text-gray-900' : 'bg-surface-950 text-surface-50'}`}>
@@ -417,7 +417,7 @@ export function WelcomePage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className={`border-t ${isLight ? 'bg-white border-gray-200' : 'bg-surface-900 border-surface-700'}`}>
+      <footer className={`border-t ${isLight ? 'bg-white border-gray-200' : 'bg-surface-800 border-surface-700'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
             {/* Brand */}

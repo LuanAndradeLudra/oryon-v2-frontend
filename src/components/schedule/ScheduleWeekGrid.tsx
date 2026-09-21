@@ -97,7 +97,7 @@ export function ScheduleWeekGrid({ days, events }: ScheduleWeekGridProps) {
             </span>
             <span
               className={cn(
-                'text-sm',
+                'text-[14px]',
                 day.isToday ? 'font-bold text-accent-dark' : cn('font-semibold', day.isWeekend ? 'text-surface-500' : 'text-surface-100'),
               )}
             >

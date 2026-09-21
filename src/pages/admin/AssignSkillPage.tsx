@@ -375,7 +375,7 @@ export function AssignSkillPage() {
                             'flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors',
                             checked
                               ? 'bg-accent-soft border-brand-500/40'
-                              : 'bg-surface-900 border-surface-700 hover:border-surface-600',
+                              : 'bg-surface-800 border-surface-700 hover:border-surface-600',
                           )}
                         >
                           <Checkbox checked={checked} onChange={() => toggleAgent(a.id)} />
