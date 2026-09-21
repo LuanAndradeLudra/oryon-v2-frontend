@@ -64,6 +64,11 @@
    * tiveram. px preserva o comportamento fixo exato. */
   --text-2xs: 11px;
   --text-3xs: 10px;
+  /* SCRUM-1097 Rodada 2 (spec 1a TYPE-05): corpo = 13px / 400 / altura 1.5.
+     `text-sm` era 14px/20px em todo o app; o handoff usa 13px como tamanho de
+     corpo e de título de card (TYPE-04). Reverter: 0.875rem / 1.428. */
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.5;
 
   /* ── Acento teal (dark defaults) ─────────────────────────────────────────── */
   /* dark: sobe luminância #14B8A6 → #2DD4BF — intencional */
