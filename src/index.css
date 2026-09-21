@@ -1034,6 +1034,22 @@ code, pre, kbd, samp {
   --copilot-gradient-to:   #0F766E;
 }
 
+/* ── Campos de formulário (tema claro) — borda de ênfase em TODOS ─────────────
+ * Rodada 2 (pedido do usuário): as bordas dos campos de input também precisam
+ * do tom mais escuro no claro. O primitivo Input/Select/Textarea já usa --bd2,
+ * mas há dezenas de <input>/<select>/<textarea> crus com `border-surface-700`
+ * (buscas, filtros, drawers). Esta regra leva TODOS ao --bd2 no repouso, sem
+ * tocar nos estados: foco (`:focus`, anel/borda de marca), inválido
+ * (`aria-invalid` / `border-danger`) e campos deliberadamente sem borda
+ * (`border-transparent`, `border-0`). Checkbox/radio/range/file/color ficam de fora. */
+[data-theme="light"] :is(input, select, textarea):not(
+    [type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="submit"], [type="button"],
+    :focus, :focus-visible, [aria-invalid="true"],
+    [class*="border-danger"], [class*="border-transparent"], [class*="border-0"], [class*="border-brand"], [class*="border-warning"]
+  ) {
+  border-color: var(--bd2);
+}
+
 /* ── Cards light — SEM sombra ─────────────────────────────────────────────────
  * SCRUM-1097 R2: aqui havia uma regra global que dava `box-shadow` (2 camadas) a
  * TODO elemento arredondado com borda surface-7/8 — cards, inputs, botões — só no
