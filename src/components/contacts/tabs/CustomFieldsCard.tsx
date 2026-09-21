@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { Pencil, Save, X as XIcon, Plus, Trash2, Check } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
@@ -133,6 +133,14 @@ function FieldDisplay({ field, flat }: { field: ContactCustomField; flat?: boole
       </a>
     )
   }
+  if (flat) {
+    const mono = field.type === 'number' || field.type === 'phone'
+    return (
+      <p className={cn('text-[12.5px] font-medium text-surface-100 break-words', mono && 'font-mono text-[11.5px]')}>
+        {field.value || '—'}
+      </p>
+    )
+  }
   return <p className="text-sm text-surface-200">{field.value || '—'}</p>
 }
 
@@ -208,7 +216,20 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
           <p className="text-sm text-surface-600 py-1">Nenhum campo personalizado. Clique em editar para adicionar.</p>
         )}
 
-        {fields.map((field) => {
+        {/* R2-1C-DRAWER-03: no drawer (flat), leitura em grade rótulo | valor
+            (88px/1fr) como em DADOS — não mais rótulo caixa-alta empilhado. */}
+        {flat && !editing && fields.length > 0 && (
+          <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-1.5">
+            {fields.map((field) => (
+              <Fragment key={field.key}>
+                <p className="text-[12.5px] text-surface-400 truncate" title={field.label}>{field.label}</p>
+                <FieldDisplay field={field} flat />
+              </Fragment>
+            ))}
+          </div>
+        )}
+
+        {!(flat && !editing) && fields.map((field) => {
           const def = defs.find((d) => d.key === field.key)
           return (
             <div key={field.key}>

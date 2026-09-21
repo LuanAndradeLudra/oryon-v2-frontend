@@ -145,3 +145,7 @@ mais próxima disponível hoje.
 parte do 04): fazem parte do HEADER da página de Funis, não do
 `DealsBoard.tsx` em si — arquivo real não identificado nesta Fase B (só os 3
 arquivos indicados pelo Maestro foram lidos). Marcar `❓` até localizar.
+
+## Rodada 2 (2026-09-21)
+
+- **R2-1E-PANEL-01** Ficha/painel de negocio (DealDetailPanel): abas no padrao do Tabs (13/500 --tx2, ativa --tx 600 + sublinhado currentColor, gap 18) em vez de brand-400; scrim do painel em token (--color-scrim-soft). O fundo do painel segue o remap `.drawer-invertido` (decisao anterior do orquestrador, sem PNG de referencia para essa ficha). ❓ ao vivo; NAO ha mock da ficha de negocio — conferir com o usuario o que ele espera dela.

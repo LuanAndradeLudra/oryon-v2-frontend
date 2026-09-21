@@ -292,20 +292,27 @@ export function DealDetailPanel({ dealId, onClose, onOpenBoard, rotaAtual }: Dea
         onOpenBoard={onOpenBoard && deal && rotaAtual !== `/pipelines/${deal.pipelineId}` ? () => onOpenBoard(deal) : undefined}
       />
 
-      <div className="flex px-5 flex-shrink-0 border-b border-surface-700">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            data-testid={`deal-tab-${tab.id}`}
-            className="relative pb-3 pt-3 mr-5 text-sm font-medium transition-colors"
-            style={{ color: activeTab === tab.id ? 'var(--color-brand-400, #818cf8)' : 'var(--color-surface-400, #94a3b8)' }}
-          >
-            {tab.label}
-            {activeTab === tab.id && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-400 rounded-full" />}
-          </button>
-        ))}
+      {/* R2-1E-PANEL-01: abas no padrão do primitivo Tabs (13/500 --tx2, gap
+          18, ativa --tx 600 + sublinhado 2px em currentColor) — antes eram
+          brand-400 com sublinhado próprio, diferente do drawer de contato. Os
+          data-testid seguem, por isso não uso o <Tabs> direto. */}
+      <div role="tablist" aria-label="Seções do negócio" className="flex items-center gap-[18px] px-[18px] pt-3.5 flex-shrink-0 border-b border-surface-700 text-[13px] font-medium text-surface-400">
+        {TABS.map((tab) => {
+          const active = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setActiveTab(tab.id)}
+              data-testid={`deal-tab-${tab.id}`}
+              className={`whitespace-nowrap pb-2 transition-colors cursor-pointer ${active ? 'font-semibold text-surface-100 shadow-[inset_0_-2px_0_currentColor]' : 'hover:text-surface-100'}`}
+            >
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
       <div ref={bodyRef} className="flex-1 overflow-y-auto">
