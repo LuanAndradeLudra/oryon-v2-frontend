@@ -63,7 +63,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-[#1877f2]/15 border border-[#1877f2]/20 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[#1877f2]/15 border border-[#1877f2]/20 flex items-center justify-center flex-shrink-0">
             <Users className="w-4 h-4 text-[#1877f2]" />
           </div>
           <div className="flex-1 min-w-0">
@@ -72,7 +72,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
               {loading ? 'Carregando...' : `${leads.length} lead${leads.length !== 1 ? 's' : ''} · Meta Ads`}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -118,7 +118,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
         {/* Search */}
         {!loading && leads.length > 0 && (
           <div className="px-5 py-3 border-b border-surface-700 flex-shrink-0">
-            <div className="flex items-center gap-2 bg-surface-900 border border-surface-700 rounded-xl px-3 py-2">
+            <div className="flex items-center gap-2 bg-surface-900 border border-surface-700 rounded-lg px-3 py-2">
               <Search className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
               <input
                 value={search}
@@ -189,7 +189,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
           <div className="px-5 py-3 border-t border-surface-700 flex-shrink-0">
             <button
               onClick={() => navigate('/contacts')}
-              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-surface-700 text-xs text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-all"
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-surface-700 text-xs text-surface-400 hover:text-surface-200 hover:border-surface-600 transition-all"
             >
               <ExternalLink className="w-3 h-3" />
               Abrir todos os contatos no CRM

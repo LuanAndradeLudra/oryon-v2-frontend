@@ -168,7 +168,7 @@ function FlowCard({ automation, onEdit }: {
   const joiner = automation.conditionsLogic === 'or' ? 'ou' : 'e'
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-3.5 space-y-1">
+    <div className="bg-surface-900 border border-surface-700 rounded-lg p-3.5 space-y-1">
       <FlowSection eyebrow="Quando" icon={<Zap className="w-3 h-3" />} onClick={() => onEdit('gatilho')}>
         {triggerSentence(automation)}
       </FlowSection>
@@ -399,15 +399,15 @@ export function AutomationDetail({
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-surface-900 border border-surface-700 rounded-xl px-3 py-2.5">
+          <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5">
             <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Play className="w-2.5 h-2.5" /> Execuções</p>
             <p className="text-sm font-display font-bold text-surface-100 tabular-nums">{automation.executionCount.toLocaleString('pt-BR')}</p>
           </div>
-          <div className="bg-surface-900 border border-surface-700 rounded-xl px-3 py-2.5">
+          <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5">
             <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Última</p>
             <p className="text-xs font-medium text-surface-200 tabular-nums">{automation.lastExecutedAt ? relativeDate(automation.lastExecutedAt) : '—'}</p>
           </div>
-          <div className="bg-surface-900 border border-surface-700 rounded-xl px-3 py-2.5 min-w-0">
+          <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 min-w-0">
             <p className="text-3xs text-surface-500 mb-1">Linha</p>
             <WhatsappLineChip whatsappNumberId={automation.whatsappNumberId} />
             {!automation.whatsappNumberId && <p className="text-xs text-surface-400">—</p>}
@@ -444,7 +444,7 @@ export function AutomationDetail({
               {failedOnly ? 'Nenhuma falha na janela recente. 🎉' : 'Ainda sem execuções registradas.'}
             </p>
           ) : (
-            <div className="bg-surface-900 border border-surface-700 rounded-xl px-3">
+            <div className="bg-surface-900 border border-surface-700 rounded-lg px-3">
               {runs.map((run) => (
                 <RunRow key={run.id} run={run} onOpenContact={openContact} onOpenConversation={openConversation} />
               ))}

@@ -43,7 +43,7 @@ function KpiCard({ label, value, sub, color, icon }: {
   label: string; value: string | number; sub?: string; color: string; icon: React.ReactNode
 }) {
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 flex flex-col gap-1">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3 flex flex-col gap-1">
       <div className="flex items-center gap-1.5 text-surface-500">
         <span style={{ color }} className="opacity-70">{icon}</span>
         <span className="text-3xs font-medium">{label}</span>
@@ -137,7 +137,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
       </div>
 
       {!generated && !loading && (
-        <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-surface-700 rounded-xl">
+        <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-surface-700 rounded-lg">
           <Sparkles className="w-6 h-6 text-surface-600" />
           <p className="text-xs text-surface-500 text-center max-w-xs">
             Clique em "Gerar análise" para que a IA avalie conversões, churn e engajamento desta campanha.
@@ -161,7 +161,7 @@ function AiInsightsSection({ campaign, analytics }: { campaign: Campaign; analyt
             {insights.map((ins) => (
               <div
                 key={ins.id}
-                className="p-3 rounded-xl border"
+                className="p-3 rounded-lg border"
                 style={{ backgroundColor: INSIGHT_BG[ins.type], borderColor: tint(INSIGHT_COLORS[ins.type], 19) }}
               >
                 <div className="flex items-start gap-2">
@@ -325,7 +325,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
               Relatório de desempenho · {stats.total} contatos · {campaign.sentAt ? fmtDate(campaign.sentAt) : ''}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -459,15 +459,15 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                     <>
                       {/* Stats row */}
                       <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
+                        <div className="bg-surface-800 border border-surface-700 rounded-lg p-3 text-center">
                           <p className="text-xl font-bold text-emerald-400">{stats.conversions ?? 0}</p>
                           <p className="text-3xs text-surface-500 mt-0.5">Total de conversões</p>
                         </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
+                        <div className="bg-surface-800 border border-surface-700 rounded-lg p-3 text-center">
                           <p className="text-xl font-bold text-brand-400">{convRate}%</p>
                           <p className="text-3xs text-surface-500 mt-0.5">Taxa (lidas → converteu)</p>
                         </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
+                        <div className="bg-surface-800 border border-surface-700 rounded-lg p-3 text-center">
                           <p className="text-xl font-bold text-amber-400">{pct(stats.conversions ?? 0, stats.sent)}</p>
                           <p className="text-3xs text-surface-500 mt-0.5">Taxa sobre enviadas</p>
                         </div>
@@ -507,7 +507,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           {analytics.conversionEvents.map((ev, i) => {
                             const cfg = CONV_CONFIG[ev.type]
                             return (
-                              <div key={i} className="flex items-center gap-3 px-3 py-2 bg-surface-800 border border-surface-700 rounded-xl">
+                              <div key={i} className="flex items-center gap-3 px-3 py-2 bg-surface-800 border border-surface-700 rounded-lg">
                                 <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
                                   style={{ backgroundColor: tint(C[cfg.color], 12), color: C[cfg.color] }}>
                                   {cfg.icon}
@@ -540,7 +540,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         if (!best) return null
                         const cfg = getPlatformCfg(best.source)
                         return (
-                          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border"
+                          <div className="flex items-center gap-3 px-4 py-3 rounded-sm border"
                             style={{ backgroundColor: tint(cfg.color, 7), borderColor: tint(cfg.color, 19) }}>
                             <Crown className="w-4 h-4 flex-shrink-0" style={{ color: cfg.color }} />
                             <div className="flex-1 min-w-0">
@@ -620,7 +620,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       {/* Comparison table */}
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-2">Tabela comparativa</p>
-                        <div className="overflow-x-auto rounded-xl border border-surface-700">
+                        <div className="overflow-x-auto rounded-lg border border-surface-700">
                           <table className="w-full text-2xs">
                             <thead>
                               <tr className="border-b border-surface-700 bg-surface-800">
@@ -677,7 +677,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   key={key}
                                   onClick={() => setOutcomeFilter(outcomeFilter === key ? 'all' : key)}
                                   className={cn(
-                                    'rounded-xl p-2.5 border text-center transition-all',
+                                    'rounded-lg p-2.5 border text-center transition-all',
                                     outcomeFilter === key
                                       ? 'border-current'
                                       : 'bg-surface-800 border-surface-700 hover:border-surface-600',
@@ -734,7 +734,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                           const sentimentCfg = SENTIMENT_CONFIG[conv.sentiment] ?? { label: conv.sentiment, color: 'var(--color-status-muted)' }
                           const adCfg = conv.adSource ? getPlatformCfg(conv.adSource) : null
                           return (
-                            <div key={conv.contactId} className="px-3 py-2.5 bg-surface-800 border border-surface-700 rounded-xl space-y-1.5">
+                            <div key={conv.contactId} className="px-3 py-2.5 bg-surface-800 border border-surface-700 rounded-lg space-y-1.5">
                               <div className="flex items-start gap-2">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -782,7 +782,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                               const count = conversations.filter((c) => c.sentiment === key).length
                               const pctVal = Math.round((count / conversations.length) * 100)
                               return (
-                                <div key={key} className="flex-1 bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
+                                <div key={key} className="flex-1 bg-surface-800 border border-surface-700 rounded-lg p-3 text-center">
                                   <p className="text-lg font-bold" style={{ color: cfg.color }}>{pctVal}%</p>
                                   <p className="text-3xs text-surface-500 mt-0.5">{cfg.label}</p>
                                   <p className="text-3xs text-surface-600">{count} conversa{count !== 1 ? 's' : ''}</p>
@@ -800,15 +800,15 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                     <>
                       {/* Summary */}
                       <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
+                        <div className="bg-surface-800 border border-surface-700 rounded-lg p-3 text-center">
                           <p className="text-xl font-bold text-danger">{totalChurn}</p>
                           <p className="text-3xs text-surface-500 mt-0.5">Total churn</p>
                         </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
+                        <div className="bg-surface-800 border border-surface-700 rounded-lg p-3 text-center">
                           <p className="text-xl font-bold text-amber-400">{pct(totalChurn, stats.sent)}</p>
                           <p className="text-3xs text-surface-500 mt-0.5">Taxa de churn</p>
                         </div>
-                        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center">
+                        <div className="bg-surface-800 border border-surface-700 rounded-lg p-3 text-center">
                           <p className="text-xl font-bold text-surface-300">{pct(stats.optedOut ?? analytics.churnBreakdown.optOut + analytics.churnBreakdown.blocked, stats.sent)}</p>
                           <p className="text-3xs text-surface-500 mt-0.5">Descadastraram</p>
                         </div>
@@ -844,7 +844,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                       )}
 
                       {/* Interpretation */}
-                      <div className="bg-surface-800 border border-surface-700 rounded-xl p-4 space-y-2.5">
+                      <div className="bg-surface-800 border border-surface-700 rounded-lg p-4 space-y-2.5">
                         <p className="text-3xs font-semibold text-surface-400 uppercase tracking-wider">Interpretação dos motivos</p>
                         {analytics.churnBreakdown.optOut > 0 && (
                           <div className="flex gap-2">

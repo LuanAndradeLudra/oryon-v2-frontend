@@ -26,10 +26,10 @@ function AttributedLeadsChart() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="h-52 bg-surface-900 border border-surface-700 rounded-xl animate-pulse" />
+  if (loading) return <div className="h-52 bg-surface-900 border border-surface-700 rounded-lg animate-pulse" />
 
   return (
-    <div className="bg-surface-900 border border-surface-700 rounded-xl p-5">
+    <div className="bg-surface-900 border border-surface-700 rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm font-semibold text-surface-100">Leads Gerados por Anúncios</p>
@@ -87,7 +87,7 @@ function PerCampaignBreakdown({
       {campaigns.map((camp) => {
         const isOpen = expanded === camp.platformCampaignId
         return (
-          <div key={camp.platformCampaignId} className="bg-surface-900 border border-surface-700 rounded-xl overflow-hidden">
+          <div key={camp.platformCampaignId} className="bg-surface-900 border border-surface-700 rounded-lg overflow-hidden">
             <button
               className="w-full px-4 py-3 flex items-center gap-3 hover:bg-surface-800/40 transition-colors"
               onClick={() => setExpanded(isOpen ? null : camp.platformCampaignId)}
@@ -143,7 +143,7 @@ function PerCampaignBreakdown({
                     e.stopPropagation()
                     onLeadsClick(camp.platformCampaignId, camp.platformCampaignName)
                   }}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-[#1877f2]/30 text-[#1877f2] text-xs font-medium hover:bg-[#1877f2]/10 transition-all"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-[#1877f2]/30 text-[#1877f2] text-xs font-medium hover:bg-[#1877f2]/10 transition-all"
                 >
                   <Users className="w-3 h-3" />
                   Ver {camp.leadsGenerated} leads no CRM
@@ -179,7 +179,7 @@ function TotalsStrip({
         <div
           key={item.label}
           className={cn(
-            'bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 flex items-center gap-3',
+            'bg-surface-900 border border-surface-700 rounded-lg px-4 py-3 flex items-center gap-3',
             item.clickable && 'cursor-pointer hover:border-accent-amber/40 hover:bg-surface-800/50 transition-all group',
           )}
           onClick={item.clickable ? onLeadsClick : undefined}

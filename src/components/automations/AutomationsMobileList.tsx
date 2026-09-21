@@ -44,7 +44,7 @@ function AutomationCard({
       tabIndex={0}
       onClick={() => onOpenDetail(automation)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenDetail(automation) } }}
-      className="w-full flex items-stretch gap-3 px-4 py-3.5 bg-surface-900/40 border border-surface-700 rounded-xl hover:bg-surface-900 active:bg-surface-800 transition-colors text-left cursor-pointer"
+      className="w-full flex items-stretch gap-3 px-4 py-3.5 bg-surface-900/40 border border-surface-700 rounded-lg hover:bg-surface-900 active:bg-surface-800 transition-colors text-left cursor-pointer"
     >
       <span
         className="color-chip w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border"

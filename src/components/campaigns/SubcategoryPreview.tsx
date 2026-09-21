@@ -179,7 +179,7 @@ export function SubcategoryPreview({ category, subCategory }: Props) {
     <div className="space-y-2.5">
       {/* Phone-style container */}
       <div
-        className="relative rounded-2xl overflow-hidden bg-[#ECE5DD] border border-surface-700/30 shadow-inner"
+        className="relative rounded-lg overflow-hidden bg-[#ECE5DD] border border-surface-700/30 shadow-inner"
         style={{ minHeight: 440 }}
       >
         {/* WhatsApp top bar */}
@@ -264,7 +264,7 @@ function MessageBubble({
   subCategory: SubCategory
 }) {
   return (
-    <div className="bg-white rounded-xl overflow-hidden shadow-sm" style={{ maxWidth: '92%' }}>
+    <div className="bg-white rounded-lg overflow-hidden shadow-sm" style={{ maxWidth: '92%' }}>
       {/* Header: image gradient */}
       {cfg.headerType === 'image' && (
         <div className={cn('h-[96px] flex items-center justify-center bg-gradient-to-br', cfg.headerGradient ?? 'from-surface-200 to-surface-300')}>
@@ -378,7 +378,7 @@ function CatalogPanel() {
       <div className="flex-1 overflow-y-auto divide-y divide-[#f9fafb]">
         {PRODUCTS.map((p, i) => (
           <div key={i} className="flex items-center gap-2.5 px-3 py-2.5">
-            <div className={cn('w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center flex-shrink-0', p.gradient)}>
+            <div className={cn('w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center flex-shrink-0', p.gradient)}>
               <Emoji native={p.emoji} size="1.75rem" />
             </div>
             <div className="flex-1 min-w-0">
@@ -442,7 +442,7 @@ function FlowPanel({ phase }: { phase: FlowPhase }) {
                     <div
                       key={i}
                       className={cn(
-                        'flex items-center gap-2.5 px-3 py-2.5 border rounded-xl transition-all duration-200',
+                        'flex items-center gap-2.5 px-3 py-2.5 border rounded-lg transition-all duration-200',
                         chosen ? 'border-[#0078D7] bg-blue-50' : 'border-[#e5e7eb]'
                       )}
                     >
@@ -476,13 +476,13 @@ function FlowPanel({ phase }: { phase: FlowPhase }) {
               className="absolute inset-0 p-3 space-y-3"
             >
               <p className="text-xs font-semibold text-[#111827]">Como prefere ser contatado?</p>
-              <div className="bg-[#0078D7]/8 border border-[#0078D7]/30 rounded-xl px-3 py-2.5 flex items-center gap-2">
+              <div className="bg-[#0078D7]/8 border border-[#0078D7]/30 rounded-lg px-3 py-2.5 flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-[#0078D7]" />
                 <span className="text-2xs text-[#0078D7] font-medium">WhatsApp</span>
               </div>
               <div>
                 <p className="text-3xs text-[#6b7280] mb-1.5">Seu nome completo</p>
-                <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl px-3 py-2.5 text-2xs text-[#9ca3af] flex items-center gap-1">
+                <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-2xs text-[#9ca3af] flex items-center gap-1">
                   <span className="inline-block w-0.5 h-3.5 bg-[#9ca3af] animate-pulse rounded-full" />
                   <span className="ml-1">Digitar aqui...</span>
                 </div>
@@ -522,7 +522,7 @@ function FlowPanel({ phase }: { phase: FlowPhase }) {
       {/* Bottom action button */}
       {phase !== 'done' && (
         <div className="px-3 py-3 border-t border-[#f3f4f6] flex-shrink-0">
-          <div className="w-full bg-[#0078D7] text-white text-xs font-semibold py-2.5 rounded-xl flex items-center justify-center gap-1.5">
+          <div className="w-full bg-[#0078D7] text-white text-xs font-semibold py-2.5 rounded-lg flex items-center justify-center gap-1.5">
             {phase === 'q2' ? 'Enviar' : 'Próximo'}
             <ChevronRight className="w-3.5 h-3.5" />
           </div>

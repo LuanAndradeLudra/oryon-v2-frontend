@@ -69,9 +69,9 @@ function StatusBadge({ status }: { status: AgentConfig['status'] }) {
   // R2-AGT-02 (mock 2a): chip suave h18 raio 5 — Ativo --okbg/--ok, Rascunho
   // --sf2 + borda --bd, sem pílula nem dot sólido.
   const cls = status === 'active'
-    ? 'bg-status-active-bg text-status-active'
+    ? 'color-chip-soft border [--chip:var(--color-status-active)]'
     : status === 'paused'
-      ? 'bg-status-pending-bg text-status-pending'
+      ? 'color-chip-soft border [--chip:var(--color-status-pending)]'
       : 'bg-[var(--sf2)] border border-surface-700 text-surface-400'
   return (
     <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold', cls)}>
@@ -251,9 +251,9 @@ function AiBehaviorCard({ agent, onUpdate }: { agent: AgentConfigWithTools; onUp
           onClick={handleSave}
           disabled={saving || !dirty}
           className={cn(
-            'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
+            'inline-flex items-center gap-2 px-3 py-2 rounded-sm text-sm font-medium border transition-colors',
             dirty
-              ? 'border-transparent bg-status-active-bg text-status-active ring-1 ring-status-active-border hover:brightness-110 cursor-pointer'
+              ? 'border-transparent color-chip-soft border [--chip:var(--color-status-active)] ring-1 ring-status-active-border hover:brightness-110 cursor-pointer'
               : 'border-surface-700 text-surface-600 bg-surface-900 cursor-default',
           )}
         >
@@ -511,9 +511,9 @@ function SystemPromptTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onU
           onClick={handleSave}
           disabled={!isDirty || saving}
           className={cn(
-            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors',
+            'inline-flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium transition-colors',
             saved
-              ? 'bg-status-active-bg text-status-active ring-1 ring-status-active-border'
+              ? 'color-chip-soft border [--chip:var(--color-status-active)] ring-1 ring-status-active-border'
               : isDirty
                 ? 'bg-surface-100 hover:bg-surface-50 text-surface-950'
                 : 'bg-surface-800 text-surface-600 cursor-not-allowed',
@@ -577,11 +577,11 @@ function ToolForm({
     </div>
   )
 
-  const inputCls = "w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
-  const textareaCls = "w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
+  const inputCls = "w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
+  const textareaCls = "w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/40 transition"
 
   return (
-    <div className="space-y-4 bg-[var(--sf2)] border border-surface-700 rounded-xl p-4">
+    <div className="space-y-4 bg-[var(--sf2)] border border-surface-700 rounded-lg p-4">
       <div className="flex items-center gap-2 mb-2">
         <Wrench className="w-4 h-4 text-brand-400" />
         <p className="text-sm font-medium text-surface-200">{initial?.name ? 'Editar ferramenta' : 'Nova ferramenta'}</p>
@@ -603,7 +603,7 @@ function ToolForm({
           <select
             value={form.method}
             onChange={e => setForm(f => ({ ...f, method: e.target.value as AgentTool['method'] }))}
-            className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+            className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
           >
             {(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const).map(m => (
               <option key={m} value={m}>{m}</option>
@@ -634,13 +634,13 @@ function ToolForm({
       ), 'Orienta o agente sobre o que esperar na resposta da API.')}
 
       <div className="flex items-center gap-2 pt-2">
-        <button onClick={onCancel} className="flex-1 px-4 py-2 rounded-xl border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition">
+        <button onClick={onCancel} className="flex-1 px-4 py-2 rounded-sm border border-[var(--bd2)] text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition">
           Cancelar
         </button>
         <button
           onClick={handleSave}
           disabled={!form.name || !form.url || saving}
-          className="flex-1 px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-50 disabled:opacity-50 text-surface-950 text-sm font-medium transition"
+          className="flex-1 px-4 py-2 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-110 disabled:opacity-50 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition"
         >
           {saving ? 'Salvando…' : 'Salvar ferramenta'}
         </button>
@@ -714,7 +714,7 @@ function ToolsTab({
         {!adding && (
           <button
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-medium ring-1 ring-brand-500/25 transition"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)] text-xs font-semibold transition"
           >
             <Plus className="w-3.5 h-3.5" />
             Adicionar
@@ -733,13 +733,13 @@ function ToolsTab({
 
       {/* Tool cards */}
       {agent.tools.length === 0 && !adding && (
-        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-700 rounded-xl">
+        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-700 rounded-lg">
           <Wrench className="w-8 h-8 text-surface-700" />
           <div className="text-center">
             <p className="text-sm text-surface-500">Nenhuma ferramenta configurada</p>
             <p className="text-xs text-surface-600 mt-0.5">Conecte APIs externas para o agente consultar seus sistemas</p>
           </div>
-          <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600/15 text-brand-400 text-xs font-medium ring-1 ring-brand-500/25 hover:bg-brand-600/25 transition">
+          <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)] text-xs font-semibold transition">
             <Plus className="w-3.5 h-3.5" /> Adicionar ferramenta
           </button>
         </div>
@@ -747,7 +747,7 @@ function ToolsTab({
 
       <div className="space-y-2">
         {agent.tools.map(tool => (
-          <motion.div key={tool.id} layout className="bg-[var(--sf2)] border border-surface-700 rounded-xl overflow-hidden">
+          <motion.div key={tool.id} layout className="bg-[var(--sf2)] border border-surface-700 rounded-lg overflow-hidden">
             {editingId === tool.id ? (
               <ToolForm
                 initial={{
@@ -1028,7 +1028,7 @@ function KBUploadProgress({ fileName }: { fileName: string }) {
   const progress = Math.min(95, elapsed * 1.2)
 
   return (
-    <div className="p-3 bg-[var(--sf2)] border border-surface-700 rounded-xl space-y-2">
+    <div className="p-3 bg-[var(--sf2)] border border-surface-700 rounded-lg space-y-2">
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-brand-400 flex-shrink-0" />
         <p className="text-xs text-surface-200 font-medium truncate">{fileName}</p>
@@ -1268,7 +1268,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={!!uploadingFile}
-            className="flex-1 flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-xl border-2 border-dashed border-surface-700 hover:border-brand-500/40 text-surface-400 hover:text-brand-400 text-xs font-medium transition disabled:opacity-50"
+            className="flex-1 flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-surface-700 hover:border-brand-500/40 text-surface-400 hover:text-brand-400 text-xs font-medium transition disabled:opacity-50"
           >
             <FileUp className="w-7 h-7" />
             <span>Clique para selecionar</span>
@@ -1290,7 +1290,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
           <button
             type="button"
             onClick={() => setTextModalOpen(true)}
-            className="flex-1 flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-xl border-2 border-dashed border-surface-700 hover:border-brand-500/40 text-surface-400 hover:text-brand-400 text-xs font-medium transition"
+            className="flex-1 flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-surface-700 hover:border-brand-500/40 text-surface-400 hover:text-brand-400 text-xs font-medium transition"
           >
             <Plus className="w-7 h-7" />
             <span>Abrir editor de texto</span>
@@ -1314,7 +1314,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
             const isLoadingThis = editLoading && editingDocId === doc.id && editContent === ''
             const previewText = (doc.content_preview ?? '').split('\n').slice(0, 8).join('\n').trim()
             return (
-              <div key={doc.id} className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-3">
+              <div key={doc.id} className="bg-[var(--sf2)] border border-surface-700 rounded-lg p-3">
                 <div className="flex items-center gap-3">
                   <FileText className="w-4 h-4 text-surface-500 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -1419,7 +1419,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
               value={textName}
               onChange={e => setTextName(e.target.value)}
               placeholder='Ex: "Política de devolução", "FAQ de atendimento"…'
-              className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
             />
           </div>
           <div>
@@ -1429,7 +1429,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
               onChange={e => setTextInput(e.target.value)}
               rows={14}
               placeholder="Cole o texto que o agente deve conhecer..."
-              className="w-full bg-surface-900 border border-surface-700 rounded-xl px-3 py-2 text-xs text-surface-200 placeholder:text-surface-600 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition font-mono leading-relaxed"
+              className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-3 py-2 text-xs text-surface-200 placeholder:text-surface-600 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition font-mono leading-relaxed"
             />
             <p className="text-right text-[10px] text-surface-600 mt-1">
               {textInput.length.toLocaleString()} caracteres
@@ -1507,7 +1507,7 @@ function RulesTab({
   return (
     <div className={cn('flex flex-col gap-4', subTab === 'handoff' && 'h-full min-h-0')}>
       {/* Sub-tab selector (pill style, nested inside the main tab area) */}
-      <div className="flex items-center gap-1 p-1 bg-[var(--sf2)] border border-surface-700 rounded-xl w-fit flex-shrink-0">
+      <div className="flex items-center gap-1 p-1 bg-[var(--sf2)] border border-surface-700 rounded-lg w-fit flex-shrink-0">
         {subTabs.map(t => (
           <button
             key={t.id}
@@ -1527,7 +1527,7 @@ function RulesTab({
 
       {/* Contextual banner — explains the difference so operators don't confuse
           the two panels. Same layout for both sub-tabs, content swaps. */}
-      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-600/5 border border-brand-500/15 rounded-xl flex-shrink-0">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-600/5 border border-brand-500/15 rounded-lg flex-shrink-0">
         <Info className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-surface-400 leading-relaxed">{activeHint}</p>
       </div>
@@ -1599,7 +1599,7 @@ function FaqRuleForm({
   }
 
   return (
-    <div className="bg-[var(--sf2)] border border-brand-500/30 rounded-xl p-4 space-y-3">
+    <div className="bg-[var(--sf2)] border border-brand-500/30 rounded-lg p-4 space-y-3">
       {/* Name */}
       <div>
         <label className="block text-xs font-medium text-surface-400 mb-1">Nome da regra</label>
@@ -1773,7 +1773,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
         {!adding && !loading && (
           <button
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-medium ring-1 ring-brand-500/25 transition"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)] text-xs font-semibold transition"
           >
             <Plus className="w-3.5 h-3.5" />
             Adicionar FAQ
@@ -1790,7 +1790,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
       </AnimatePresence>
 
       {!loading && rules.length === 0 && !adding && (
-        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-700 rounded-xl">
+        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-700 rounded-lg">
           <MessageCircleQuestion className="w-8 h-8 text-surface-700" />
           <div className="text-center">
             <p className="text-sm text-surface-500">Nenhuma FAQ configurada</p>
@@ -1798,7 +1798,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
           </div>
           <button
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600/15 text-brand-400 text-xs font-medium ring-1 ring-brand-500/25 hover:bg-brand-600/25 transition"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)] text-xs font-semibold transition"
           >
             <Plus className="w-3.5 h-3.5" /> Adicionar primeira FAQ
           </button>
@@ -1807,7 +1807,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
 
       <div className="space-y-2">
         {rules.map(rule => (
-          <motion.div key={rule.id} layout className="bg-[var(--sf2)] border border-surface-700 rounded-xl overflow-hidden">
+          <motion.div key={rule.id} layout className="bg-[var(--sf2)] border border-surface-700 rounded-lg overflow-hidden">
             {editingId === rule.id ? (
               <FaqRuleForm
                 initial={{
@@ -1973,17 +1973,17 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
       {/* Summary cards */}
       {!loading && !error && totals.total > 0 && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-3">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-lg p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Total de chamadas</p>
             <p className="text-xl font-bold text-surface-100">{totals.total.toLocaleString('pt-BR')}</p>
           </div>
-          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-3">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-lg p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Taxa de sucesso</p>
             <p className={cn('text-xl font-bold', successRate !== null && successRate >= 95 ? 'text-status-active' : successRate !== null && successRate >= 80 ? 'text-status-pending' : 'text-danger')}>
               {successRate !== null ? `${successRate}%` : '—'}
             </p>
           </div>
-          <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl p-3">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-lg p-3">
             <p className="text-[10px] uppercase tracking-wide text-surface-600 mb-1">Falhas</p>
             <p className={cn('text-xl font-bold', totals.failures === 0 ? 'text-surface-400' : 'text-danger')}>
               {totals.failures.toLocaleString('pt-BR')}
@@ -2009,7 +2009,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
       {/* Empty */}
       {!loading && !error && rows.length === 0 && (
-        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-700 rounded-xl">
+        <div className="flex flex-col items-center gap-3 py-12 border border-dashed border-surface-700 rounded-lg">
           <BarChart3 className="w-8 h-8 text-surface-700" />
           <div className="text-center">
             <p className="text-sm text-surface-500">Nenhuma execução registrada</p>
@@ -2022,7 +2022,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
       {/* Per-tool table */}
       {!loading && !error && rows.length > 0 && (
-        <div className="bg-[var(--sf2)] border border-surface-700 rounded-xl overflow-hidden">
+        <div className="bg-[var(--sf2)] border border-surface-700 rounded-lg overflow-hidden">
           <table className="w-full text-xs">
             <thead className="bg-surface-950/60 text-surface-500 uppercase tracking-wide text-[10px]">
               <tr>
@@ -2233,7 +2233,7 @@ export function AgentDetail({
           {moreOpen && (
             <>
               <div className="overlay-scrim z-40" aria-hidden onClick={() => setMoreOpen(false)} />
-              <div className="absolute right-0 top-full mt-1 min-w-[13rem] py-1 overlay-surface border rounded-xl z-50">
+              <div className="absolute right-0 top-full mt-1 min-w-[13rem] py-1 overlay-surface border rounded-lg z-50">
                 <button
                   onClick={() => {
                     setMoreOpen(false)

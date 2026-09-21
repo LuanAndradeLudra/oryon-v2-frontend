@@ -216,3 +216,17 @@ Escrito incrementalmente, um bloco por primitivo.
 
 - `ui/*` ainda usa `text-[10px]` ×6 e `text-[11px]` ×4 (TYPE-17) — trocar por `text-3xs`/`text-2xs`.
 - Componentes de `ui/` sem item na 1a (avaliar nas specs de tela): `Stepper`, `TagPicker`, `ContextMenu`, `UserPicker`, `RadioOptionList`, `ProgressBar`, `TipCard`, `PageHeader`, `BottomSheet`, `FormDialog`, `ColorPicker`, `sidebar`/`dock`.
+
+## Rodada 2 — 1a vocabulário: uso dos primitivos nas telas do Farol (2026-09-21)
+
+PNG `1a-vocabulario-componentes` (claro+escuro) confrontado com o que as telas 1b/2a/2b/2c usam:
+
+| ID | Primitivo (mock) | Uso encontrado | Ação |
+|---|---|---|---|
+| R2-1A-01 | Button md 36 / sm 28, neutral (borda --bd2), primary `--btn` | botões artesanais `rounded-xl` com fundo brand tintado/invertido (AgentDetail, AutomationBuilder, wizard de agente, Campaign*) | **✅** trocados por `Button` (`AgentsPage`, `AutomationBuilder`, `CampaignWizard`) ou pelo mesmo vocabulário (outline `--bd2` raio 7 / primary `--btn`) onde o `Button` não cabia (botões inline de lista) |
+| R2-1A-02 | Chip de status suave (`.color-chip-soft`) × etiqueta cheia (`.color-chip`) | `.color-chip` sólido usado como status (Ativo, Agendada, chip de linha WhatsApp, valores de "Atividade") | **✅** status → `.color-chip-soft`/neutro; `.color-chip` só em etiquetas |
+| R2-1A-03 | Input md 36 raio 7 borda --bd2; seleção de card = borda --ac + anel 3px --acsoft | `rounded-xl`, seleção `brand/10` ou verde sólido | **✅** wizards de agente/automação/campanha |
+| R2-1A-04 | Tabs com contagem 11px --tx3 | `Tabs` já usado; "(N)" entre parênteses em "Ferramentas (N)" no AgentDetail | `❓` menor — não alterado (rótulo dinâmico dentro do array de abas) |
+| R2-1A-05 | EmptyState em caixa tracejada, Card sem sombra, ConfirmModal danger com banner | cards sem sombra ✅ (dashboard); dropzones/empties tracejados `rounded-lg` ✅ | conferido |
+
+Tudo `❓ ao vivo`.

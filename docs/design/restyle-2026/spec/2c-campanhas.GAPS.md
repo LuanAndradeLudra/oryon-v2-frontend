@@ -196,3 +196,20 @@ em paralelo, provavelmente a própria sessão de navegador da Fase D);
 tsc+eslint bastam pra este tamanho de mudança (2 arquivos, CSS/classe só,
 sem lógica nova) e não há teste dedicado pra `CampaignsTab.tsx` ou
 `WhatsappLineChip.tsx`.
+
+## Rodada 2 — 2c Campanhas, inventário por imagem (Farol, 2026-09-21)
+
+PNG claro+escuro (`2c-disparos-wizard-revisao`, `2c-templates-preview-whatsapp`) elemento a elemento:
+
+| ID | Elemento (mock) | App antes | Ação |
+|---|---|---|---|
+| R2-CAMP-01 | Linha "Público" descreve o recorte: "2.318 contatos · Situação = Qualificado, Proposta · com consentimento" | só o tipo ("Filtro avançado"/"Por tags…") | **✅ código**: descrição montada com dado real do wizard (tags, etapas, filtros, seleção manual) + `toLocaleString`; valor da linha passa a quebrar em 2 linhas (`break-words`, `items-baseline`) |
+| R2-CAMP-02 | Breadcrumb "Nome · Template · Público · Agendamento · Revisão" | Template·Segmento·Variáveis·Agendar·Revisão | **✅ parcial**: renomeados p/ Template·Público·Variáveis·Agendamento·Revisão (a etapa "Variáveis" não tem par no mock — `[!]` produto) |
+| R2-CAMP-03 | Chips de status/etiqueta suaves com a classe do sistema | classes locais `bg-status-*-bg` | **✅ código**: `.color-chip-soft` + `--chip` (campanha, template, agente, automação) |
+| R2-CAMP-04 | Raio de controles 7 / cards 8 / modais 10 nas telas do meu escopo | `rounded-xl` em inputs/botões/caixas (AgentDetail 31×, TemplateCreator 20×, CampaignReport 18×…) | **✅ código**: varredura — inputs/botões `rounded-sm` + borda `--bd2`, caixas `rounded-lg`, modais `rounded-xl`; botões tintados brand → outline neutro |
+| — | "Custo estimado R$ 812,00 · 2.318 × R$ 0,35" | — | `[!]` **confirmado por grep** (frontend + `backend/src/modules/campaigns`): nenhum preço/custo por mensagem |
+| — | "Enviar teste para mim" | — | `[!]` **confirmado por grep**: sem endpoint de teste em `campaignsApi`/backend |
+| — | "Rascunho salvo" no header do modal | — | `[!]`: o wizard não persiste progresso |
+| — | Subtítulo TopBar "limite diário 1.000 · 412 usados" | — | `[!]` parcial: limite existe por linha (`messagingLimit`), "usados hoje" não |
+
+Templates (grade): card já conferido na Rodada 1 (nome mono + chip Meta + meta em linha + prévia em fundo #EFE7DD); sem divergência nova visível no PNG. Tudo `❓ ao vivo`.

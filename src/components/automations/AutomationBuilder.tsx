@@ -210,8 +210,8 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
               {editTarget && (
                 <span className={cn(
                   'inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0 mt-0.5',
-                  editTarget.status === 'active' ? 'bg-status-active-bg text-status-active'
-                    : editTarget.status === 'inactive' ? 'bg-status-pending-bg text-status-pending'
+                  editTarget.status === 'active' ? 'color-chip-soft border [--chip:var(--color-status-active)]'
+                    : editTarget.status === 'inactive' ? 'color-chip-soft border [--chip:var(--color-status-pending)]'
                     : 'bg-[var(--sf2)] border border-surface-700 text-surface-400',
                 )}>
                   {editTarget.status === 'active' ? 'Ativa' : editTarget.status === 'inactive' ? 'Pausada' : 'Rascunho'}
