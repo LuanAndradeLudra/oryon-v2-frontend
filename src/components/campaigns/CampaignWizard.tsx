@@ -51,7 +51,7 @@ interface CampaignWizardProps {
 
 type Step = 1 | 2 | 3 | 4 | 5
 
-const STEP_LABELS = ['Template', 'Segmento', 'Variáveis', 'Agendar', 'Revisão']
+const STEP_LABELS = ['Template', 'Público', 'Variáveis', 'Agendamento', 'Revisão']
 
 const CONTACT_FIELDS = [
   { value: 'displayName', label: 'Nome do contato' },
@@ -432,7 +432,7 @@ export function CampaignWizard({
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-surface-800 overlay-frame border rounded-2xl w-full max-w-3xl pointer-events-auto flex flex-col max-h-[90vh]"
+              className="bg-surface-800 overlay-frame border rounded-xl w-full max-w-3xl pointer-events-auto flex flex-col max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header — CAMP-WIZ-03/04/06: sem border-b (o breadcrumb logo
@@ -655,7 +655,7 @@ function Step1({
   return (
     <div className="space-y-5">
       {/* Info banner */}
-      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-500/5 border border-brand-500/20 rounded-xl">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-500/5 border border-brand-500/20 rounded-lg">
         <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
         <p className="text-[11px] text-surface-400 leading-relaxed">
           Apenas templates com status <strong className="text-brand-300">Aprovado</strong> pela Meta podem ser usados em campanhas.
@@ -708,7 +708,7 @@ function Step1({
                 key={tpl.id}
                 onClick={() => onSelect(tpl)}
                 className={cn(
-                  'w-full text-left p-3 rounded-xl border transition-all',
+                  'w-full text-left p-3 rounded-lg border transition-all',
                   selected?.id === tpl.id
                     ? 'border-brand-500 ring-[3px] ring-accent-soft'
                     : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
@@ -832,7 +832,7 @@ function Step2({
                 key={opt.value}
                 onClick={() => onSegmentType(opt.value)}
                 className={cn(
-                  'w-full text-left px-3 py-2.5 rounded-xl border transition-all flex items-center gap-3',
+                  'w-full text-left px-3 py-2.5 rounded-sm border transition-all flex items-center gap-3',
                   segmentType === opt.value
                     ? 'border-brand-500 ring-[3px] ring-accent-soft'
                     : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
@@ -954,7 +954,7 @@ function Step2({
                     key={contact.id}
                     onClick={() => toggleContact(contact.id)}
                     className={cn(
-                      'w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all text-left',
+                      'w-full flex items-center gap-2.5 px-3 py-2 rounded-sm border transition-all text-left',
                       selected ? 'border-brand-500/50 bg-brand-500/8' : 'border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/60'
                     )}
                   >
@@ -1003,7 +1003,7 @@ function Step2({
       {/* Advanced filter */}
       {segmentType === 'filter' && (
         <div className="space-y-4">
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-xl">
+          <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-lg">
             <Info className="w-3.5 h-3.5 text-surface-400 mt-0.5 flex-shrink-0" />
             <p className="text-[11px] text-surface-400 leading-relaxed">
               Os critérios marcados são combinados com <strong className="text-surface-300">E</strong> —
@@ -1180,7 +1180,7 @@ function Step2({
 
 function FilterGroup({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-surface-800/40 border border-surface-700/60 rounded-xl p-3 space-y-2">
+    <div className="bg-surface-800/40 border border-surface-700/60 rounded-lg p-3 space-y-2">
       <p className="text-[11px] font-semibold text-surface-400 uppercase tracking-wide">{label}</p>
       {children}
     </div>
@@ -1219,7 +1219,7 @@ function Step3({
     <div className="flex gap-5">
       <div className="flex-1 space-y-4">
         {/* Explanation */}
-        <div className="flex items-start gap-2.5 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-xl">
+        <div className="flex items-start gap-2.5 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-lg">
           <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
           <div className="text-[11px] text-surface-400 space-y-1 leading-relaxed">
             <p>Configure como cada <strong className="text-brand-300">variável numérica</strong> do template será preenchida para cada destinatário no momento do envio.</p>
@@ -1230,7 +1230,7 @@ function Step3({
         </div>
 
         {mappings.map((m) => (
-          <div key={m.position} className="bg-surface-800 rounded-xl p-4 space-y-3">
+          <div key={m.position} className="bg-surface-800 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-brand-400 bg-brand-400/10 px-2 py-0.5 rounded">{`{{${m.position}}}`}</span>
               <span className="text-sm font-medium text-surface-200">{m.variableName}</span>
@@ -1281,7 +1281,7 @@ function Step3({
                   ))}
                 </select>
               ) : (
-                <div className="flex items-start gap-2 px-3 py-2.5 bg-accent-amber/10 border border-accent-amber/25 rounded-xl">
+                <div className="flex items-start gap-2 px-3 py-2.5 bg-accent-amber/10 border border-accent-amber/25 rounded-lg">
                   <Info className="w-3.5 h-3.5 text-accent-amber mt-0.5 flex-shrink-0" />
                   <p className="text-[11px] text-surface-300 leading-relaxed">
                     Nenhum campo personalizado cadastrado. Crie um em Configurações → CRM.
@@ -1336,7 +1336,7 @@ function Step4({
               key={opt.value}
               onClick={() => onScheduleMode(opt.value)}
               className={cn(
-                'p-3 rounded-xl border text-left transition-colors',
+                'p-3 rounded-lg border text-left transition-colors',
                 scheduleMode === opt.value
                   ? 'border-brand-500 ring-[3px] ring-accent-soft'
                   : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
@@ -1389,9 +1389,9 @@ function Step4({
 // hairline --bd (surface-700), sem grupo/eyebrow em volta.
 function SummaryRow({ label, value, action }: { label: string; value: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[120px_1fr_auto] items-center gap-2.5 py-[9px] border-b border-surface-700 last:border-b-0">
+    <div className="grid grid-cols-[120px_1fr_auto] items-baseline gap-2.5 py-[9px] border-b border-surface-700 last:border-b-0">
       <span className="text-xs text-surface-400">{label}</span>
-      <span className="text-[13px] font-medium text-surface-100 min-w-0 truncate">{value}</span>
+      <span className="text-[13px] font-medium text-surface-100 min-w-0 break-words">{value}</span>
       {action}
     </div>
   )
@@ -1406,11 +1406,11 @@ const TEMPLATE_STATUS_LABEL: Record<string, string> = {
   PENDING: 'Em análise', APPROVED: 'Aprovado', REJECTED: 'Rejeitado', PAUSED: 'Pausado', DISABLED: 'Desativado',
 }
 const TEMPLATE_STATUS_CLASS: Record<string, string> = {
-  APPROVED: 'bg-status-active-bg text-status-active',
-  PENDING:  'bg-status-pending-bg text-status-pending',
-  REJECTED: 'bg-danger/10 text-danger',
+  APPROVED: 'color-chip-soft border [--chip:var(--color-status-active)]',
+  PENDING:  'color-chip-soft border [--chip:var(--color-status-pending)]',
+  REJECTED: 'color-chip-soft border [--chip:var(--color-danger)]',
   PAUSED:   'bg-surface-900 border border-surface-700 text-surface-400',
-  DISABLED: 'bg-danger/10 text-danger',
+  DISABLED: 'color-chip-soft border [--chip:var(--color-danger)]',
 }
 
 function EditLink({ onClick }: { onClick: () => void }) {
@@ -1516,9 +1516,22 @@ function Step5({
       ? new Date(scheduledAt).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }).replace('.', '') + ' · ' + new Date(scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       : '—'
 
+  // R2-CAMP-01 (mock 2c): a linha Público descreve o recorte — "2.318 contatos ·
+  // Situação = Qualificado, Proposta" — com os dados reais que o wizard já tem
+  // (tags/etapas/filtros escolhidos), em vez de só o tipo ("Filtro avançado").
+  const segmentDescription =
+    segmentType === 'tag' && selectedTagIds.length > 0
+      ? tags.filter((t) => selectedTagIds.includes(t.id)).map((t) => t.name).join(', ')
+      : segmentType === 'stage' && selectedStages.length > 0
+        ? stages.filter((st) => selectedStages.includes(st.key)).map((st) => st.label).join(', ')
+        : segmentType === 'filter' && filterPills.length > 0
+          ? filterPills.map((pill) => pill.label).join(' · ')
+          : segmentType === 'manual' && selectedContactIds.length > 0
+            ? `Seleção manual (${selectedContactIds.length})`
+            : segmentLabels[segmentType]
   const publicLabel = estimatedReach !== null
-    ? <><b className="text-surface-100">{estimatedReach} contato{estimatedReach === 1 ? '' : 's'}</b> · {segmentLabels[segmentType]}</>
-    : segmentLabels[segmentType]
+    ? <><b className="text-surface-100">{estimatedReach.toLocaleString('pt-BR')} contato{estimatedReach === 1 ? '' : 's'}</b> · {segmentDescription}</>
+    : segmentDescription
 
   return (
     <div className="flex gap-5">
@@ -1626,7 +1639,7 @@ function Step5({
           {estimatedReach !== null && estimatedReach > 0 && (
             <button
               onClick={() => setShowContactsModal(true)}
-              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-surface-600 text-xs text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
+              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-surface-600 text-xs text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
             >
               <Users className="w-3.5 h-3.5" />
               Verificar lista de contatos ({estimatedReach} contato{estimatedReach === 1 ? '' : 's'})
@@ -1751,7 +1764,7 @@ function ContactListModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.15 }}
-        className="relative bg-surface-900 overlay-frame border rounded-2xl w-full max-w-lg flex flex-col max-h-[80vh]"
+        className="relative bg-surface-900 overlay-frame border rounded-xl w-full max-w-lg flex flex-col max-h-[80vh]"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
@@ -1789,7 +1802,7 @@ function ContactListModal({
               {displayed.map((c) => {
                 const stageDef = stages.find((s) => s.key === c.stage)
                 return (
-                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[var(--rowhover)] transition-colors">
+                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-[var(--rowhover)] transition-colors">
                     <div className="w-8 h-8 rounded-full bg-brand-500/15 text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
                       {c.displayName.slice(0, 1).toUpperCase()}
                     </div>
@@ -1820,7 +1833,7 @@ function ContactListModal({
         <div className="px-5 py-3 border-t border-surface-700 flex-shrink-0">
           <button
             onClick={onClose}
-            className="w-full py-2 rounded-xl bg-surface-100 hover:bg-surface-50 text-surface-950 text-sm font-medium transition-all"
+            className="w-full py-2 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-110 text-[var(--color-btn-primary-fg)] text-sm font-medium transition-all"
           >
             Fechar e continuar
           </button>

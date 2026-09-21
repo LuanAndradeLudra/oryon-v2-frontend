@@ -33,11 +33,11 @@ const STATUS_CONFIG: Record<TemplateStatus, { label: string }> = {
 // TPL-05 (spec 2c): chip suave (fundo tinta + texto colorido), sem ícone —
 // mesmo padrão do statusChip de CampaignsTab.tsx, chip "Aprovado · Meta".
 const STATUS_CHIP_CLASS: Record<TemplateStatus, string> = {
-  APPROVED: 'bg-status-active-bg text-status-active',
-  PENDING:  'bg-status-pending-bg text-status-pending',
-  REJECTED: 'bg-danger/10 text-danger',
+  APPROVED: 'color-chip-soft border [--chip:var(--color-status-active)]',
+  PENDING:  'color-chip-soft border [--chip:var(--color-status-pending)]',
+  REJECTED: 'color-chip-soft border [--chip:var(--color-danger)]',
   PAUSED:   'bg-surface-900 border border-surface-700 text-surface-400',
-  DISABLED: 'bg-danger/10 text-danger',
+  DISABLED: 'color-chip-soft border [--chip:var(--color-danger)]',
 }
 
 const FILTER_OPTIONS: { value: TemplateStatus | 'all'; label: string }[] = [
@@ -185,7 +185,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar template..."
-            className="w-full bg-surface-800 border border-surface-700 rounded-xl pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
           />
         </div>
 
@@ -262,7 +262,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
           onClick={() => setPreviewTemplate(null)}
         >
           <div
-            className="bg-surface-900 rounded-2xl border border-surface-700 p-6 max-w-sm w-full"
+            className="bg-surface-900 rounded-lg border border-surface-700 p-6 max-w-sm w-full"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">

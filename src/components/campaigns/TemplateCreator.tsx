@@ -371,7 +371,7 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
               <div
                 key={s}
                 className={cn(
-                  'flex items-start gap-3 px-3 py-2.5 rounded-xl transition-all',
+                  'flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all',
                   current ? 'bg-brand-500/10' : 'hover:bg-surface-800/50'
                 )}
               >
@@ -562,7 +562,7 @@ function StepCategoria({
   return (
     <div className="space-y-7">
       {!editing && (
-        <div className="flex items-center gap-0 bg-brand-500/5 border border-brand-500/15 rounded-xl overflow-hidden text-[11px]">
+        <div className="flex items-center gap-0 bg-brand-500/5 border border-brand-500/15 rounded-lg overflow-hidden text-[11px]">
           <div className="flex items-center gap-2 px-3 py-2.5 flex-1 border-r border-brand-500/15">
             <Sparkles className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
             <div>
@@ -603,7 +603,7 @@ function StepCategoria({
                 disabled={disabled || readOnly}
                 title={disabled ? 'Em breve — esta categoria precisa de um fluxo dedicado e ainda não está disponível.' : undefined}
                 className={cn(
-                  'text-left p-3 rounded-xl border transition-all relative',
+                  'text-left p-3 rounded-lg border transition-all relative',
                   category === value
                     ? 'border-brand-500 bg-brand-500/10'
                     : disabled
@@ -645,7 +645,7 @@ function StepCategoria({
               onClick={() => { if (!readOnly) onSubCategory(sub.value) }}
               disabled={readOnly}
               className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all',
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-sm border text-left transition-all',
                 subCategory === sub.value
                   ? 'border-brand-500 bg-brand-500/10'
                   : 'border-surface-700 bg-surface-800/30 hover:border-surface-600'
@@ -718,7 +718,7 @@ function StepMensagem({
               disabled={fieldDisabled}
               placeholder="ex: boas_vindas_novos_clientes"
               className={cn(
-                'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
+                'w-full bg-surface-800 border rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
                 errors.name ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
               )}
             />
@@ -734,7 +734,7 @@ function StepMensagem({
               value={language}
               onChange={(e) => onLanguage(e.target.value)}
               disabled={fieldDisabled}
-              className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 pr-8 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors disabled:opacity-60"
+              className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 pr-8 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors disabled:opacity-60"
             >
               {LANGUAGES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -754,7 +754,7 @@ function StepMensagem({
               onClick={() => { if (!fieldDisabled) onHeaderType(ht.value) }}
               disabled={fieldDisabled}
               className={cn(
-                'p-2.5 rounded-xl border text-center transition-all',
+                'p-2.5 rounded-lg border text-center transition-all',
                 headerType === ht.value
                   ? 'border-brand-500 bg-brand-500/10'
                   : 'border-surface-700 bg-surface-800/40 hover:border-surface-600',
@@ -778,7 +778,7 @@ function StepMensagem({
               disabled={fieldDisabled}
               placeholder="Texto do cabeçalho — pode conter {{1}}"
               className={cn(
-                'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
+                'w-full bg-surface-800 border rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
                 errors.headerText ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
               )}
             />
@@ -800,7 +800,7 @@ function StepMensagem({
               disabled={fieldDisabled}
               placeholder="https://exemplo.com/imagem.jpg"
               className={cn(
-                'w-full bg-surface-800 border rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
+                'w-full bg-surface-800 border rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
                 errors.headerMediaUrl ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
               )}
             />
@@ -820,7 +820,7 @@ function StepMensagem({
         </p>
 
         {/* Best practices callout */}
-        <div className="mb-3 bg-surface-800/60 border border-surface-700/60 rounded-xl overflow-hidden">
+        <div className="mb-3 bg-surface-800/60 border border-surface-700/60 rounded-lg overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-surface-700/60">
             <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0" />
             <p className="text-[11px] font-semibold text-surface-300">Boas práticas para aprovação mais rápida</p>
@@ -841,7 +841,7 @@ function StepMensagem({
         </div>
 
         {/* Formatting toolbar */}
-        <div className="flex items-center gap-1 mb-2 p-1.5 bg-surface-800 border border-surface-700 rounded-xl w-fit">
+        <div className="flex items-center gap-1 mb-2 p-1.5 bg-surface-800 border border-surface-700 rounded-lg w-fit">
           <ToolbarBtn onClick={() => wrapSelection('*')} title="Negrito (Ctrl+B)">
             <Bold className="w-3.5 h-3.5" />
           </ToolbarBtn>
@@ -872,7 +872,7 @@ function StepMensagem({
             maxLength={1024}
             placeholder="Olá, {{1}}! Sua mensagem aqui..."
             className={cn(
-              'w-full bg-surface-800 border rounded-xl px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors resize-none',
+              'w-full bg-surface-800 border rounded-sm px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors resize-none',
               errors.body ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
             )}
           />
@@ -887,7 +887,7 @@ function StepMensagem({
 
         {/* Variable examples */}
         {varPositions.length > 0 ? (
-          <div className="mt-3 bg-surface-800/60 border border-surface-700 rounded-xl overflow-hidden">
+          <div className="mt-3 bg-surface-800/60 border border-surface-700 rounded-lg overflow-hidden">
             <div className="flex items-start gap-2 px-3 py-2.5 border-b border-surface-700">
               <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
               <div>
@@ -933,7 +933,7 @@ function StepMensagem({
             onChange={(e) => onFooter(e.target.value.slice(0, 60))}
             disabled={fieldDisabled}
             placeholder="Ex: Oryon • Atendimento Digital"
-            className="w-full bg-surface-800 border border-surface-700 rounded-xl px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors pr-12"
+            className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors pr-12"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-surface-400">{footer.length}/60</span>
         </div>
@@ -964,7 +964,7 @@ function StepBotoes({
   return (
     <div className="space-y-5">
       {/* Info banner */}
-      <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-xl">
+      <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-lg">
         <Info className="w-3.5 h-3.5 text-surface-400 mt-0.5 flex-shrink-0" />
         <p className="text-[11px] text-surface-400 leading-relaxed">
           Botões são opcionais — pule este passo se não precisar. Você pode adicionar
@@ -983,7 +983,7 @@ function StepBotoes({
           if (!cfg) return null
           const Icon = cfg.icon
           return (
-            <div key={i} className="bg-surface-800 border border-surface-700 rounded-2xl overflow-hidden">
+            <div key={i} className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
               <div className="flex items-center gap-3 px-3 py-2 border-b border-surface-700/60">
                 <Icon className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
                 <select
@@ -1060,7 +1060,7 @@ function StepBotoes({
           <button
             onClick={() => onShowAddButton(!showAddButton)}
             disabled={fieldDisabled}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-surface-600 hover:border-brand-500 rounded-xl text-xs text-surface-400 hover:text-brand-300 transition-all w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 py-2 border border-dashed border-surface-600 hover:border-brand-500 rounded-lg text-xs text-surface-400 hover:text-brand-300 transition-all w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-3.5 h-3.5" />
             Adicionar botão
@@ -1076,7 +1076,7 @@ function StepBotoes({
                 transition={{ duration: 0.15 }}
                 className="overflow-hidden"
               >
-                <div className="mt-2 bg-surface-800 border border-surface-700 rounded-xl overflow-hidden divide-y divide-surface-700/60">
+                <div className="mt-2 bg-surface-800 border border-surface-700 rounded-lg overflow-hidden divide-y divide-surface-700/60">
                   {availableButtonTypes.map((bt) => {
                     const Icon = bt.icon
                     const alreadyHasType = buttons.some((b) => b.type === bt.value)
@@ -1132,7 +1132,7 @@ function StepRevisao({
   return (
     <div className="space-y-5">
       {/* Card: Sobre o template */}
-      <div className="bg-surface-800/50 border border-surface-700 rounded-2xl p-4 space-y-2">
+      <div className="bg-surface-800/50 border border-surface-700 rounded-lg p-4 space-y-2">
         <p className="text-xs font-bold text-surface-300 uppercase tracking-wider mb-3">Sobre o template</p>
         <div className="flex items-center justify-between">
           <span className="text-xs text-surface-400">Nome</span>
@@ -1167,7 +1167,7 @@ function StepRevisao({
       </div>
 
       {/* Card: Processo de aprovação */}
-      <div className="bg-surface-800/50 border border-surface-700 rounded-2xl overflow-hidden">
+      <div className="bg-surface-800/50 border border-surface-700 rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-surface-700">
           <p className="text-xs font-bold text-surface-200 uppercase tracking-wider">Processo de aprovação</p>
         </div>

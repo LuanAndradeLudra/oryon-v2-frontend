@@ -207,7 +207,7 @@ function TagInput({
         />
         <button
           type="button" onClick={add} disabled={!input.trim()}
-          className="px-3 rounded-xl bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition"
+          className="px-3 rounded-lg bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -275,7 +275,7 @@ function CapabilityPicker({
           className={INPUT}
         />
         <button type="button" onClick={addCustom} disabled={!custom.trim()}
-          className="px-3 rounded-xl bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
+          className="px-3 rounded-lg bg-surface-800 border border-surface-700 text-surface-400 hover:text-brand-400 hover:border-brand-500/40 disabled:opacity-40 transition">
           <Plus className="w-4 h-4" />
         </button>
       </div>
@@ -310,7 +310,7 @@ function Step1({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
               <button
                 key={id} type="button" onClick={() => setData(d => ({ ...d, icon: id }))}
                 className={cn(
-                  'group w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 border',
+                  'group w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200 border',
                   selected
                     ? ['bg-white', shadow, 'border-transparent ring-2 ring-offset-2 ring-offset-surface-950 ring-surface-100/40 scale-110 shadow-lg']
                     : ['bg-surface-800 border-surface-700 hover:border-transparent hover:scale-105 hover:shadow-lg', hoverBg, `hover:${shadow}`],
@@ -630,7 +630,7 @@ function Step4({ data, setData }: { data: WizardData; setData: React.Dispatch<Re
         </p>
       </div>
 
-      <div className="rounded-xl bg-brand-900/15 border border-brand-500/25 overflow-hidden">
+      <div className="rounded-lg bg-brand-900/15 border border-brand-500/25 overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-brand-500/20">
           <Sparkles className="w-4 h-4 text-brand-400 flex-shrink-0" />
@@ -957,7 +957,7 @@ function PromptGeneratingAnimation() {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-brand-500/25 bg-surface-900/80 overflow-hidden"
+      className="rounded-lg border border-brand-500/25 bg-surface-900/80 overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-surface-700 bg-surface-900">
@@ -1258,7 +1258,7 @@ function Step6KB({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={!!uploadingFile}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-surface-700 hover:border-brand-500/40 text-surface-400 hover:text-brand-400 transition disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-surface-700 hover:border-brand-500/40 text-surface-400 hover:text-brand-400 transition disabled:opacity-50"
         >
           <Upload className="w-4 h-4" />
           {uploadingFile ? `Enviando ${uploadingFile}…` : 'Selecionar arquivos'}
@@ -1501,7 +1501,7 @@ function Step6({
       {/* Idle state — ready to generate */}
       {!data.generated_prompt && !manualMode && !generating && (
         <div className="flex flex-col items-center gap-4 py-6">
-          <div className="w-16 h-16 rounded-2xl bg-brand-600/10 ring-1 ring-brand-500/20 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-lg bg-brand-600/10 ring-1 ring-brand-500/20 flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-brand-400" />
           </div>
           <div className="text-center">

@@ -237,10 +237,10 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
 // "Enviando" ganha um pontinho (dot) em vez de ícone.
 const STATUS_CHIP_CLASS: Record<CampaignStatus, string> = {
   draft:     'bg-surface-900 border border-surface-700 text-surface-400',
-  scheduled: 'bg-status-pending-bg text-status-pending',
-  sending:   'bg-accent-soft text-accent-dark',
-  sent:      'bg-status-active-bg text-status-active',
-  failed:    'bg-danger/10 text-danger',
+  scheduled: 'color-chip-soft border [--chip:var(--color-status-pending)]',
+  sending:   'color-chip-soft border [--chip:var(--color-accent-dark)]',
+  sent:      'color-chip-soft border [--chip:var(--color-status-active)]',
+  failed:    'color-chip-soft border [--chip:var(--color-danger)]',
   cancelled: 'bg-surface-900 border border-surface-700 text-surface-400',
 }
 

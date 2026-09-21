@@ -144,8 +144,8 @@ function AgentCard({
             <span
               className={cn(
                 'inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0',
-                agent.status === 'active' ? 'bg-status-active-bg text-status-active'
-                  : agent.status === 'paused' ? 'bg-status-pending-bg text-status-pending'
+                agent.status === 'active' ? 'color-chip-soft border [--chip:var(--color-status-active)]'
+                  : agent.status === 'paused' ? 'color-chip-soft border [--chip:var(--color-status-pending)]'
                   : 'bg-[var(--sf2)] border border-surface-700 text-surface-400',
               )}
             >
@@ -318,7 +318,7 @@ export function AgentsPage() {
             <div className="px-6 pt-6 space-y-4">
               {/* Skeleton espelha o header + tabs do detail — sem "flash" de spinner */}
               <div className="flex items-center gap-4">
-                <Skeleton className="w-12 h-12 rounded-2xl" />
+                <Skeleton className="w-12 h-12 rounded-lg" />
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-48" />
                   <Skeleton className="h-3 w-32 bg-surface-800/70" />
@@ -341,7 +341,7 @@ export function AgentsPage() {
           ) : agents.length > 0 ? (
             /* Has agents but none selected */
             <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
-              <div className="w-16 h-16 rounded-2xl bg-surface-900 ring-1 ring-surface-800 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-lg bg-surface-900 ring-1 ring-surface-800 flex items-center justify-center">
                 <Bot className="w-8 h-8 text-surface-700" />
               </div>
               <div>
