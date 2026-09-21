@@ -172,3 +172,16 @@ volta do formulário confere, footer 64px sob o formulário com
 Voltar/Continuar/Publicar (aprovado depois da Fase C original) confere.
 Nenhuma divergência de valor exato encontrada nesta reconferência — zero
 achados novos, zero correções necessárias.
+
+## Rodada 2 — 2a Agentes, inventário por imagem (Farol, 2026-09-21)
+
+| ID | Elemento (mock) | App antes | Ação |
+|---|---|---|---|
+| R2-AGT-01 | Tile do agente raio 8, sem sombra; rascunho tracejado sem fundo (AGT-LIST-07/DET-31, ficaram ❌ na Fase C) | `rounded-2xl shadow-lg` sempre preenchido | **✅ código** `AgentIcon` (+ prop `dashed`) |
+| R2-AGT-02 | Chip de estado suave h18 raio 5 (Ativo --okbg/--ok; Rascunho --sf2+borda) (AGT-LIST-08..10, DET-04) | texto colorido+dot na lista; `.color-chip` sólido pílula no detalhe | **✅ código** lista e detalhe |
+| R2-AGT-03 | Testar = outline neutro h28; kebab 28/raio 7; "Ligado" 12/600 --tx; nome 16/700; chips de status do overview h28 (sel. --ac/--acsoft/--acs); Atividade em linhas simples (zero caixa); eyebrows do rail 10/700 .14em (AGT-DET-04/08/10) | botão brand preenchido h36, kebab 36/raio 12, nome 18, pílulas sólidas | **✅ código** |
+| R2-AGT-04 | Barra de chips h22 "Todos 4 · Ativos · Rascunho" no lugar do segmentado + cabeçalho "Agentes · N"; sem chevron nos itens; "Novo agente" primary sm (AGT-LIST-02/03, SHELL-06) | segmentado 4 abas `rounded-xl` + cabeçalho + chevron | **✅ código** |
+| R2-AGT-05 | Subtítulo do header com a descrição do agente | "Atualizado dd/mm" | **✅ código**: usa `agent.objective` (existe no tipo) antes do "Atualizado"; "modelo Claude · v14" `[!]` (grep: `AgentConfig` sem model/versão) |
+| — | "Linha X · N conversas agora", "61% sem humano · CSAT", painel HOJE, Sugestão do sistema | — | `[!]` mantido (grep `AgentConfig`: só `conversation_count` total; sem CSAT/handoffs/linha) |
+
+Tudo `❓ ao vivo` (sem navegador). Dashboard: chip "WhatsApp conectado" ligado ao subtítulo via `usePrimaryConnectedLine` (DASH-HEADER-02, ver 1b-dashboard.GAPS.md).
