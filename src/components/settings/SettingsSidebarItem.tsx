@@ -6,12 +6,14 @@ interface SettingsSidebarItemProps {
   label: string
   adminOnly?: boolean
   currentRole?: string
+  /** Item de sub-grupo (ex. CRM): recuo extra de ~7px, medido no PNG do mock 2e. */
+  nested?: boolean
 }
 
 // Item de navegação text-first (padrão Linear/Vercel): sem ícone, sem pill.
 // O estado ativo é dito pela tipografia (texto forte) + barra de acento de
 // 2px — sinal periférico que não adiciona container nenhum.
-export function SettingsSidebarItem({ section, label, adminOnly, currentRole }: SettingsSidebarItemProps) {
+export function SettingsSidebarItem({ section, label, adminOnly, currentRole, nested }: SettingsSidebarItemProps) {
   const { section: activeSection } = useParams()
   const isActive = activeSection === section
 
@@ -30,7 +32,8 @@ export function SettingsSidebarItem({ section, label, adminOnly, currentRole }: 
       aria-current={isActive ? 'page' : undefined}
       style={isActive ? { boxShadow: 'inset 2px 0 0 var(--color-brand-500)', borderRadius: '0 6px 6px 0' } : undefined}
       className={cn(
-        'flex items-center h-[26px] pl-[22px] pr-2 text-[13px] transition-colors duration-100',
+        'flex items-center h-[26px] pr-2 text-[13px] transition-colors duration-100',
+        nested ? 'pl-[29px]' : 'pl-[22px]',
         isActive
           ? 'text-surface-50 font-semibold bg-[var(--rowhover)]'
           : 'text-surface-400 hover:text-surface-100 rounded-md',

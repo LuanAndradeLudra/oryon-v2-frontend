@@ -1,6 +1,8 @@
 import { Check } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useContext } from 'react'
 import { cn } from '@/lib/utils'
+import { SettingsBreadcrumbCtx } from './settingsBreadcrumb'
 
 interface SectionHeaderProps {
   title: string
@@ -14,11 +16,13 @@ interface SectionHeaderProps {
 }
 
 // Título de PÁGINA das Configurações (nível acima do SettingsSection):
-// display font + hairline abaixo. Um só por aba — dá a âncora tipográfica
-// que os cards antigos tentavam dar com borda.
-export function SectionHeader({ title, description, action, className, breadcrumb, saved }: SectionHeaderProps) {
+// display font, SEM hairline abaixo (medido no PNG 2e: só as seções se
+// separam por hairline). Um só por aba.
+export function SectionHeader({ title, description, action, className, breadcrumb: breadcrumbProp, saved }: SectionHeaderProps) {
+  const ctxBreadcrumb = useContext(SettingsBreadcrumbCtx)
+  const breadcrumb = breadcrumbProp ?? ctxBreadcrumb
   return (
-    <div className={cn('pb-6 mb-2 border-b border-surface-700', className)}>
+    <div className={cn('pb-6 mb-2', className)}>
       {(breadcrumb?.length || saved) && (
         <div className="flex items-center justify-between gap-3 mb-2">
           {breadcrumb && breadcrumb.length > 0 && (

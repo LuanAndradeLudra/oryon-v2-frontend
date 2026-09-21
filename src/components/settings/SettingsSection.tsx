@@ -22,6 +22,7 @@ interface OutlineEntry { id: string; title: string }
 type RegisterFn = (e: OutlineEntry) => () => void
 
 const RegisterCtx = createContext<RegisterFn | null>(null)
+
 const EntriesCtx = createContext<OutlineEntry[]>([])
 
 export function SettingsSectionsProvider({ children }: { children: ReactNode }) {

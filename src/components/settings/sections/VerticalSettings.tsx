@@ -223,7 +223,6 @@ export function VerticalSettings() {
       <SectionHeader
         title="Vocabulário"
         description="Como o Oryon chama as coisas na sua operação. Os termos abaixo substituem padrões em menus, tabelas, botões e mensagens do sistema — em todo o workspace."
-        breadcrumb={['Workspace', 'CRM', 'Vocabulário']}
         saved={saved}
       />
 
