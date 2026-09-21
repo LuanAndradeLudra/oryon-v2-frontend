@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, Check, Layers, Smartphone, ShieldCheck, ChevronDown, ExternalLink } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
+import { Checkbox } from '@/components/ui/Checkbox'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
@@ -86,8 +87,7 @@ function PermissionMatrix({ value, onChange }: { value: DepartmentPermission[]; 
   return (
     <div className="flex flex-col gap-4">
       <label className="flex items-center gap-2 cursor-pointer select-none">
-        <input type="checkbox" checked={value.length === ALL_PERMISSIONS.length} onChange={toggleAll}
-          className="w-4 h-4 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer" />
+        <Checkbox checked={value.length === ALL_PERMISSIONS.length} onChange={toggleAll} />
         <span className="text-xs font-semibold text-surface-300">Selecionar todas</span>
       </label>
 
@@ -101,17 +101,15 @@ function PermissionMatrix({ value, onChange }: { value: DepartmentPermission[]; 
         return (
           <div key={group.group}>
             <label className="flex items-center gap-2 cursor-pointer select-none mb-2">
-              <input type="checkbox" checked={allChecked}
+              <Checkbox checked={allChecked}
                 ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }}
-                onChange={toggleGroup}
-                className="w-4 h-4 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer" />
+                onChange={toggleGroup} />
               <span className="text-xs font-semibold text-surface-400 uppercase tracking-wide">{group.group}</span>
             </label>
             <div className="grid grid-cols-2 gap-1.5 pl-6">
               {group.perms.map((perm) => (
                 <label key={perm.key} className="flex items-center gap-2 cursor-pointer select-none group">
-                  <input type="checkbox" checked={value.includes(perm.key)} onChange={() => toggle(perm.key)}
-                    className="w-3.5 h-3.5 rounded border-surface-600 bg-surface-800 accent-brand-500 cursor-pointer" />
+                  <Checkbox checked={value.includes(perm.key)} onChange={() => toggle(perm.key)} />
                   <span className="text-xs text-surface-400 group-hover:text-surface-200 transition-colors">{perm.label}</span>
                 </label>
               ))}
