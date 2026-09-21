@@ -10,6 +10,7 @@ import { listAdminOrganizations, type AdminOrganization } from '@/services/admin
 import type { SkillTemplate } from '@/types/skills'
 import { CategoryIcon } from '@/components/skills/CategoryIcon'
 import { Button } from '@/components/ui/Button'
+import { Select } from '@/components/ui/Select'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -233,15 +234,11 @@ function FilterSelect({
   return (
     <label className="flex items-center gap-2 text-surface-300">
       <span className="text-xs uppercase tracking-wide text-surface-500">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="bg-surface-900 border border-surface-700 rounded-md px-2 py-1 text-surface-200 focus:outline-none focus:ring-2 focus:ring-brand-600"
-      >
+      <Select size="sm" value={value} onChange={(e) => onChange(e.target.value)}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
-      </select>
+      </Select>
     </label>
   )
 }
@@ -292,10 +289,10 @@ function TemplateCard({
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border transition-colors flex flex-col h-full',
+        'p-4 rounded-lg border transition-colors flex flex-col h-full',
         template.enabled
-          ? 'bg-surface-900 border-surface-700 hover:border-surface-600'
-          : 'bg-surface-900/40 border-surface-700 opacity-70',
+          ? 'bg-surface-800 border-surface-700 hover:border-surface-600'
+          : 'bg-[var(--sf2)] border-surface-700 opacity-70',
       )}
     >
       {/* Header: icon + name + badges. Description sits below so badges can
@@ -373,49 +370,29 @@ function TemplateCard({
           tooltips add detail on top of the label, not instead of it. */}
       <div className="mt-3 pt-3 border-t border-surface-700 flex items-center gap-1">
         <Tooltip content="Editar template" side="top">
-          <button
-            onClick={onEdit}
-            className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs"
-          >
-            <Edit3 className="w-3.5 h-3.5" /> Editar
-          </button>
+          <Button variant="neutral" size="sm" onClick={onEdit} leftIcon={<Edit3 className="w-3.5 h-3.5" />} className="flex-1">Editar</Button>
         </Tooltip>
         <Tooltip content="Testar este template" side="top">
-          <button
-            onClick={onTest}
-            className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-surface-800 hover:bg-surface-700 text-surface-200 text-xs"
-          >
-            <Beaker className="w-3.5 h-3.5" /> Testar
-          </button>
+          <Button variant="neutral" size="sm" onClick={onTest} leftIcon={<Beaker className="w-3.5 h-3.5" />} className="flex-1">Testar</Button>
         </Tooltip>
         {template.enabled && (
           <Tooltip content="Atribuir a um agente" side="top">
-            <button
-              onClick={onAssign}
-              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-brand-600/20 hover:bg-brand-600/30 text-brand-400 text-xs"
-            >
-              <Link2 className="w-3.5 h-3.5" /> Atribuir
-            </button>
+            <Button variant="secondary" size="sm" onClick={onAssign} leftIcon={<Link2 className="w-3.5 h-3.5" />} className="flex-1">Atribuir</Button>
           </Tooltip>
         )}
         <Tooltip
           content={template.enabled ? 'Desabilitar (soft delete)' : 'Reativar template'}
           side="top"
         >
-          <button
+          <Button
+            variant={template.enabled ? 'neutral' : 'secondary'}
+            size="sm"
             onClick={handleToggleClick}
-            className={cn(
-              'inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs flex-shrink-0',
-              template.enabled
-                ? 'bg-surface-800 hover:bg-surface-700 text-surface-300'
-                : 'bg-status-active-bg hover:bg-status-active-bg/80 text-status-active',
-            )}
+            leftIcon={template.enabled ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
+            className="flex-shrink-0"
           >
-            {template.enabled
-              ? <PowerOff className="w-3.5 h-3.5" />
-              : <Power className="w-3.5 h-3.5" />}
             {template.enabled ? 'Desabilitar' : 'Reativar'}
-          </button>
+          </Button>
         </Tooltip>
       </div>
 
@@ -442,25 +419,25 @@ function Badge({
   tone: 'success' | 'muted' | 'brand' | 'pending' | 'danger'
   children: React.ReactNode
 }) {
-  // `muted` stays on the neutral surface path (no --chip); the colored tones
-  // render as filled chips (darkened bg + white text) via .color-chip.
+  // `muted` stays on the neutral surface path (no --chip); status tones render
+  // as SOFT chips via .color-chip-soft (só etiquetas usam .color-chip cheio).
   const chipColor: Partial<Record<typeof tone, string>> = {
     success: 'var(--color-status-active)',
     brand:   'var(--color-brand-500)',
     pending: 'var(--color-status-pending)',
     danger:  'var(--color-danger)',
   }
-  const base = 'inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium'
+  const base = 'inline-flex items-center px-1.5 py-0.5 rounded-xs text-[10px] font-medium'
   if (tone === 'muted') {
     return (
-      <span className={cn(base, 'ring-1 bg-surface-800 text-surface-400 ring-surface-700')}>
+      <span className={cn(base, 'border bg-[var(--sf2)] text-surface-400 border-surface-700')}>
         {children}
       </span>
     )
   }
   return (
     <span
-      className={cn(base, 'color-chip border')}
+      className={cn(base, 'color-chip-soft border')}
       style={{ ['--chip']: chipColor[tone] } as React.CSSProperties}
     >
       {children}

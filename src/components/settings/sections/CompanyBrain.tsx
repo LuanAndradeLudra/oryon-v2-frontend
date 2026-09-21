@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Brain, Bot, BarChart2, Sparkles,
   Globe, Instagram, Facebook, Linkedin, Twitter, Phone,
-  UploadCloud, FileText, FileImage, File, X, Loader2, CheckCircle2, AlertCircle, RefreshCw,
+  UploadCloud, FileText, FileImage, File, X, CheckCircle2, AlertCircle, RefreshCw,
 } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
 import { SettingsSection } from '../SettingsSection'
@@ -69,11 +69,11 @@ function UsedByBadges() {
     <div className="flex items-center flex-wrap gap-2">
       <span className="text-xs text-surface-500">Alimenta automaticamente:</span>
       {[
-        { icon: Sparkles,  label: 'Copilot',       color: 'text-brand-400 bg-brand-500/10 border-brand-500/25' },
-        { icon: Bot,       label: 'Agent Builder', color: 'text-status-active bg-status-active-bg border-status-active-border' },
-        { icon: BarChart2, label: 'CRM Setup',     color: 'text-status-pending bg-status-pending-bg border-status-pending-border' },
-      ].map(({ icon: Icon, label, color }) => (
-        <span key={label} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${color}`}>
+        { icon: Sparkles,  label: 'Copilot',       chip: 'var(--color-brand-500)' },
+        { icon: Bot,       label: 'Agent Builder', chip: 'var(--color-success)' },
+        { icon: BarChart2, label: 'CRM Setup',     chip: 'var(--color-warning)' },
+      ].map(({ icon: Icon, label, chip }) => (
+        <span key={label} className="color-chip-soft inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[11px] font-medium border" style={{ ['--chip']: chip } as React.CSSProperties}>
           <Icon className="w-3 h-3" />{label}
         </span>
       ))}
@@ -132,7 +132,7 @@ function AnalysisProgress() {
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1 bg-surface-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-brand-600 to-brand-400 rounded-full transition-all duration-1000 ease-out"
+            className="h-full bg-brand-500 rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -246,9 +246,9 @@ function BrandFilesSection({
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onClick={() => inputRef.current?.click()}
-        className={`flex items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
+        className={`flex items-center gap-3 rounded-md border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
           dragOver
-            ? 'border-brand-500 bg-brand-500/8'
+            ? 'border-brand-500 bg-accent-soft'
             : 'border-surface-700 bg-surface-800/40 hover:border-surface-600 hover:bg-surface-800/70'
         }`}
       >
@@ -301,14 +301,14 @@ function BrandFilesSection({
                         else { setEditingId(file.id); setEditText(file.extractedText ?? '') }
                       }}
                       title="Ver/Editar texto"
-                      className="p-1 rounded-lg text-surface-600 hover:text-brand-400 hover:bg-surface-700 transition"
+                      className="p-1 rounded-sm text-surface-600 hover:text-brand-400 hover:bg-surface-700 transition"
                     >
                       {editingId === file.id ? <X className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
                     </button>
                     <button
                       type="button"
                       onClick={() => setRemoveTarget(file.id)}
-                      className="p-1 rounded-lg text-surface-600 hover:text-red-400 hover:bg-surface-700 transition"
+                      className="p-1 rounded-sm text-surface-600 hover:text-danger hover:bg-surface-700 transition"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -420,9 +420,9 @@ export function CompanyBrain() {
 
       {/* Status banner */}
       <div className={`flex items-center gap-3 rounded-sm px-4 py-3 mb-4 border ${
-        hasContent ? 'bg-status-active-bg border-status-active-border' : 'bg-brand-950/50 border-brand-500/20'
+        hasContent ? 'bg-status-active-bg border-status-active-border' : 'bg-accent-soft border-brand-500/30'
       }`}>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+        <div className={`w-7 h-7 rounded-xs flex items-center justify-center flex-shrink-0 ${
           hasContent ? 'bg-status-active-bg' : 'bg-brand-500/20'
         }`}>
           <Brain className={`w-3.5 h-3.5 ${hasContent ? 'text-status-active' : 'text-brand-400'}`} />
@@ -549,7 +549,7 @@ export function CompanyBrain() {
         description="PDFs, DOCX, imagens e textos são lidos pela IA e o conteúdo alimenta o Copilot e os agentes."
       >
         <div className="flex justify-end mb-2">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 font-medium">Analisado por IA</span>
+          <span className="color-chip-soft text-[10px] px-2 py-0.5 rounded-xs border font-medium" style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}>Analisado por IA</span>
         </div>
         <BrandFilesSection
           files={form.brandFiles ?? []}

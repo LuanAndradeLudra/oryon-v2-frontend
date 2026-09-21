@@ -199,23 +199,14 @@ export const KPI_CATALOG: KpiDefinition[] = [
   { id: 'appointments_cancelled', label: 'Cancelamentos',             category: 'Clínica',    unit: 'count',      trendIsGood: 'down'   },
 ]
 
+// R2-DASH-07: a faixa do mock 1b tem 5 KPIs — o padrão acompanha (o usuário
+// escolhe mais no "Personalizar"; cada 5 viram uma nova linha da mesma faixa).
 export const DEFAULT_KPI_SLOTS: KpiId[] = [
-  'total_conversations',
   'active_conversations',
-  'queued',
   'resolved',
-  'resolution_rate',
   'first_response_time',
-  'csat',
-  'sla_compliance',
-  'new_contacts',
-  'bot_deflection',
-  // Campaign defaults (Meta WhatsApp metrics)
-  'campaign_delivery_rate',
-  'campaign_read_rate',
-  'campaign_reply_rate',
-  'campaign_ctr',
-  'campaign_optout_rate',
+  'queued',
+  'resolution_rate',
 ]
 
 /** Creates an empty dashboard snapshot with zero-valued KPIs from the catalog */

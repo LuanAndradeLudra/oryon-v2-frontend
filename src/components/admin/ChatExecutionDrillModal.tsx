@@ -59,7 +59,7 @@ export function ChatExecutionDrillModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="bg-surface-900 overlay-frame border rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+        className="bg-surface-800 overlay-frame border rounded-[10px] w-full max-w-5xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <header className="flex items-start justify-between px-5 py-4 border-b border-surface-700">
@@ -344,10 +344,10 @@ function SectionCard({
   const [open, setOpen] = useState(true)
   const borderClass = variant === 'warning' ? 'border-status-failed/40' : 'border-surface-700'
   return (
-    <section className={`rounded-lg border ${borderClass} bg-surface-900/40`}>
+    <section className={`rounded-lg border ${borderClass} bg-[var(--sf)]`}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-surface-800/40 rounded-t-lg"
+        className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-[var(--rowhover)] rounded-t-lg"
       >
         {open ? <ChevronDown className="w-4 h-4 text-surface-400" /> : <ChevronRight className="w-4 h-4 text-surface-400" />}
         <h3 className="text-sm font-semibold text-surface-100 flex-1">
@@ -363,7 +363,7 @@ function SectionCard({
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-lg border border-surface-700 bg-surface-900 p-3">
+    <div className="rounded-lg border border-surface-700 bg-[var(--sf)] p-3">
       <p className="text-[11px] uppercase tracking-wider text-surface-400">{label}</p>
       <p className="mt-1 text-base font-semibold text-surface-100">{value}</p>
       {hint && <p className="text-[11px] text-surface-500 mt-0.5">{hint}</p>}

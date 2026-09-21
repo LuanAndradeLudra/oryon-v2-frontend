@@ -3,8 +3,11 @@
 // Com PAYMENT_GATEWAY_PROVIDER=mock o backend confirma na hora (status CONFIRMED).
 
 import { useState } from 'react'
-import { Copy, Check, Loader2, AlertTriangle, QrCode, CreditCard, PartyPopper } from 'lucide-react'
+import { Copy, Check, AlertTriangle, QrCode, CreditCard, PartyPopper } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
+import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
 import { billingApi } from '@/services/billingApi'
 import type {
@@ -122,9 +125,9 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
               ? 'Plano atualizado imediatamente. A nova franquia já está disponível.'
               : 'Downgrade agendado para o próximo ciclo — você mantém o plano atual até lá.'}
           </p>
-          <button onClick={handleClose} className="mt-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 font-semibold text-sm">
+          <Button variant="primary" className="mt-2" onClick={handleClose}>
             Concluir
-          </button>
+          </Button>
         </div>
       ) : isPaymentDone ? (
         // ── Resultado do pagamento (Pix QR ou cartão) ──
@@ -139,16 +142,17 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
                 <img
                   src={`data:image/png;base64,${pix.encodedImage}`}
                   alt="QR code Pix"
-                  className="w-48 h-48 mx-auto rounded-xl bg-white p-2"
+                  className="w-48 h-48 mx-auto rounded-md bg-white p-2"
                 />
               )}
-              <button
+              <Button
+                variant="neutral"
+                className="w-full"
                 onClick={copyPix}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-surface-700 hover:bg-surface-800 text-sm text-surface-200 transition-colors"
+                leftIcon={copied ? <Check className="w-4 h-4 text-status-active" /> : <Copy className="w-4 h-4" />}
               >
-                {copied ? <Check className="w-4 h-4 text-status-active" /> : <Copy className="w-4 h-4" />}
                 {copied ? 'Copiado!' : 'Copiar código Pix'}
-              </button>
+              </Button>
             </>
           ) : cardCharged ? (
             <div className="text-center py-2 space-y-2">
@@ -171,9 +175,9 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
               )}
             </div>
           )}
-          <button onClick={handleClose} className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 font-semibold text-sm">
+          <Button variant="primary" className="w-full" onClick={handleClose}>
             Concluir
-          </button>
+          </Button>
         </div>
       ) : (
         // ── Formulário ──
@@ -204,9 +208,9 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
                       disabled={cardBlocked}
                       title={cardBlocked ? 'Pagamento com cartão em breve' : undefined}
                       className={cn(
-                        'flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors',
+                        'flex items-center justify-center gap-2 h-9 rounded-sm border text-[13px] font-medium transition-colors',
                         method === m
-                          ? 'border-brand-500 bg-brand-950/40 text-brand-300'
+                          ? 'border-brand-500 bg-accent-soft text-accent-dark'
                           : 'border-surface-700 text-surface-300 hover:bg-surface-800',
                         cardBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent',
                       )}
@@ -220,27 +224,27 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
 
               {/* CPF/CNPJ */}
               <Field label="CPF/CNPJ">
-                <input value={cpfCnpj} onChange={(e) => setCpfCnpj(e.target.value)}
-                  placeholder="Somente números" className={inputCls} />
+                <Input value={cpfCnpj} onChange={(e) => setCpfCnpj(e.target.value)}
+                  placeholder="Somente números" />
               </Field>
 
               {/* Cartão */}
               {method === 'CREDIT_CARD' && (
                 <div className="space-y-3 border-t border-surface-700 pt-3">
                   <Field label="Nome impresso no cartão">
-                    <input value={card.holderName} onChange={(e) => setCard({ ...card, holderName: e.target.value })} className={inputCls} />
+                    <Input value={card.holderName} onChange={(e) => setCard({ ...card, holderName: e.target.value })} />
                   </Field>
                   <Field label="Número do cartão">
-                    <input value={card.number} onChange={(e) => setCard({ ...card, number: e.target.value })} placeholder="0000 0000 0000 0000" className={inputCls} />
+                    <Input value={card.number} onChange={(e) => setCard({ ...card, number: e.target.value })} placeholder="0000 0000 0000 0000" />
                   </Field>
                   <div className="grid grid-cols-3 gap-2">
-                    <Field label="Mês"><input value={card.expiryMonth} onChange={(e) => setCard({ ...card, expiryMonth: e.target.value })} placeholder="MM" className={inputCls} /></Field>
-                    <Field label="Ano"><input value={card.expiryYear} onChange={(e) => setCard({ ...card, expiryYear: e.target.value })} placeholder="AAAA" className={inputCls} /></Field>
-                    <Field label="CVV"><input value={card.ccv} onChange={(e) => setCard({ ...card, ccv: e.target.value })} placeholder="123" className={inputCls} /></Field>
+                    <Field label="Mês"><Input value={card.expiryMonth} onChange={(e) => setCard({ ...card, expiryMonth: e.target.value })} placeholder="MM" /></Field>
+                    <Field label="Ano"><Input value={card.expiryYear} onChange={(e) => setCard({ ...card, expiryYear: e.target.value })} placeholder="AAAA" /></Field>
+                    <Field label="CVV"><Input value={card.ccv} onChange={(e) => setCard({ ...card, ccv: e.target.value })} placeholder="123" /></Field>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Field label="CEP"><input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={inputCls} /></Field>
-                    <Field label="Nº endereço"><input value={addressNumber} onChange={(e) => setAddressNumber(e.target.value)} className={inputCls} /></Field>
+                    <Field label="CEP"><Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} /></Field>
+                    <Field label="Nº endereço"><Input value={addressNumber} onChange={(e) => setAddressNumber(e.target.value)} /></Field>
                   </div>
                 </div>
               )}
@@ -248,38 +252,22 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
           )}
 
           {error && (
-            <p className="text-xs text-red-400 flex items-center gap-1.5">
+            <p className="text-xs text-danger flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> {error}
             </p>
           )}
 
-          <button
-            onClick={submit}
-            disabled={loading}
-            className={cn(
-              'w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 font-semibold text-sm flex items-center justify-center gap-2',
-              loading && 'opacity-60 cursor-not-allowed',
-            )}
-          >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+          <Button variant="primary" className="w-full" onClick={submit} loading={loading}>
             {intent.kind === 'change'
               ? 'Confirmar troca'
               : method === 'PIX' ? 'Gerar Pix' : 'Pagar com cartão'}
-          </button>
+          </Button>
         </div>
       )}
     </Modal>
   )
 }
 
-const inputCls =
-  'w-full px-3 py-2 rounded-lg bg-surface-950 border border-surface-700 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500'
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block space-y-1">
-      <span className="text-xs text-surface-400">{label}</span>
-      {children}
-    </label>
-  )
+  return <FormField label={label}>{children}</FormField>
 }

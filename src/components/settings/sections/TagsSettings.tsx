@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Check, X, Copy, Tag as TagIcon } from 'lucide-rea
 import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonList } from '@/components/ui/Skeleton'
 import { useToast } from '@/hooks/useToast'
@@ -193,12 +194,12 @@ export function TagsSettings() {
         <div className="border-y border-surface-700 py-5 mb-4">
           <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest mb-3">Nova tag</p>
           <div className="flex flex-col gap-3">
-            <input
+            <Input
               autoFocus
+              aria-label="Nome da tag"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Nome da tag"
-              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
             <ColorPicker value={newColor} onChange={setNewColor} />
@@ -222,16 +223,16 @@ export function TagsSettings() {
         <div className="border-y border-surface-700 py-5 mb-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest">Editar tag</p>
-            <button onClick={() => setEditTarget(null)} className="text-surface-500 hover:text-surface-300">
+            <Button variant="ghost" size="sm" iconOnly onClick={() => setEditTarget(null)} aria-label="Fechar">
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
           <div className="flex flex-col gap-3">
-            <input
+            <Input
               autoFocus
+              aria-label="Nome da tag"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
             />
             <ColorPicker value={editColor} onChange={setEditColor} />
             <div className="flex justify-end gap-2">
