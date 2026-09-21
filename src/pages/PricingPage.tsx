@@ -6,7 +6,7 @@ import {
   CheckCircle2, XCircle, Zap, ArrowRight, ChevronDown,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PLANS, PLAN_ORDER, formatPlanPrice, annualSavings } from '@/config/plans'
+import { PLANS, PLAN_ORDER, annualSavings } from '@/config/plans'
 import type { PlanTier } from '@/types'
 
 // ─── Feature comparison rows ──────────────────────────────────────────────────
@@ -60,13 +60,6 @@ function formatLimit(n: number | null): string {
 
 // ─── Plan card ────────────────────────────────────────────────────────────────
 
-const PLAN_COLORS: Record<string, string> = {
-  essential: 'from-slate-800 to-surface-900',
-  pro:       'from-brand-950 to-surface-900',
-  business:  'from-violet-950 to-surface-900',
-  scale:     'from-amber-950 to-surface-900',
-  enterprise:'from-surface-800 to-surface-900',
-}
 
 const BADGE_COLORS: Record<string, string> = {
   essential: 'bg-surface-700 text-surface-300',
@@ -94,7 +87,7 @@ function PlanCard({ tier, annual }: { tier: PlanTier; annual: boolean }) {
   if (plan.modules.sla)            highlights.push('SLA 99,5%')
 
   return (
-    <div className={`relative flex flex-col rounded-2xl border ${popular ? 'border-brand-500' : 'border-surface-700'} bg-gradient-to-b ${PLAN_COLORS[tier]} p-6 gap-5`}>
+    <div className={`relative flex flex-col rounded-lg border ${popular ? 'border-brand-500' : 'border-surface-700'} bg-surface-800 p-6 gap-5`}>
       {popular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-brand-600 text-surface-950 text-xs font-semibold">
           Mais popular
@@ -140,9 +133,9 @@ function PlanCard({ tier, annual }: { tier: PlanTier; annual: boolean }) {
         ))}
       </ul>
 
-      <button className={`w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+      <button className={`w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
         popular
-          ? 'bg-brand-600 hover:bg-brand-500 text-surface-950 shadow-lg shadow-brand-900/40'
+          ? 'bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)]'
           : tier === 'enterprise'
             ? 'bg-surface-700 hover:bg-surface-600 text-surface-200'
             : 'bg-surface-800 hover:bg-surface-700 text-surface-200'
@@ -225,7 +218,7 @@ function FAQ() {
   return (
     <div className="space-y-2">
       {FAQS.map((faq, i) => (
-        <div key={i} className="rounded-xl border border-surface-700 bg-surface-900 overflow-hidden">
+        <div key={i} className="rounded-lg border border-surface-700 bg-surface-900 overflow-hidden">
           <button
             className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
             onClick={() => setOpen(open === i ? null : i)}
@@ -264,7 +257,7 @@ export function PricingPage() {
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-900/50">
+            <div className="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center">
               <Zap className="w-5 h-5 text-surface-950" fill="currentColor" />
             </div>
             <span className="text-xl font-bold">Oryon</span>
@@ -304,14 +297,14 @@ export function PricingPage() {
         </div>
 
         {/* Enterprise strip */}
-        <div className="rounded-2xl border border-surface-700 bg-surface-900 p-6 flex flex-col sm:flex-row items-center gap-6 justify-between">
+        <div className="rounded-lg border border-surface-700 bg-surface-900 p-6 flex flex-col sm:flex-row items-center gap-6 justify-between">
           <div>
             <h3 className="text-lg font-bold text-surface-50">Enterprise</h3>
             <p className="text-sm text-surface-400 mt-1">
               Redes, franquias e grandes operações. SLA contratual, sub-contas ilimitadas, suporte 24/7, LGPD customizado.
             </p>
           </div>
-          <button className="flex-shrink-0 px-6 py-3 rounded-xl bg-surface-700 hover:bg-surface-600 text-surface-200 font-semibold text-sm transition-colors flex items-center gap-2 whitespace-nowrap">
+          <button className="flex-shrink-0 px-6 py-3 rounded-lg bg-surface-700 hover:bg-surface-600 text-surface-200 font-semibold text-sm transition-colors flex items-center gap-2 whitespace-nowrap">
             Falar com vendas
             <ArrowRight className="w-4 h-4" />
           </button>
@@ -335,7 +328,7 @@ export function PricingPage() {
                 transition={{ duration: 0.25 }}
                 className="overflow-hidden mt-6"
               >
-                <div className="rounded-2xl border border-surface-700 bg-surface-900 p-6">
+                <div className="rounded-lg border border-surface-700 bg-surface-900 p-6">
                   <ComparisonTable />
                 </div>
               </motion.div>
@@ -354,7 +347,7 @@ export function PricingPage() {
           <p className="text-surface-400 text-sm">
             Tem um plano customizado em mente? Redes de clínicas, imobiliárias e agências têm condições especiais.
           </p>
-          <button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 font-semibold text-sm transition-colors shadow-lg shadow-brand-900/40">
+          <button className="inline-flex items-center gap-2 px-6 py-3 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] font-semibold text-sm transition-colors">
             Falar com um especialista
             <ArrowRight className="w-4 h-4" />
           </button>

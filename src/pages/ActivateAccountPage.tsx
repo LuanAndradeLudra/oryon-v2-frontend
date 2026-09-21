@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
+import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
+import { Input } from '@/components/ui/Input'
 
 export function ActivateAccountPage() {
   const [searchParams] = useSearchParams()
@@ -100,14 +102,14 @@ export function ActivateAccountPage() {
               Nova senha
             </label>
             <div className="relative">
-              <input
+              <Input
                 type={showPass ? 'text' : 'password'}
                 autoComplete="new-password"
                 autoFocus
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 8 caracteres"
-                className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
+                className="pr-10"
               />
               <button
                 type="button"
@@ -124,13 +126,12 @@ export function ActivateAccountPage() {
             <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">
               Confirmar senha
             </label>
-            <input
+            <Input
               type={showPass ? 'text' : 'password'}
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repita a senha"
-              className="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
             />
           </div>
 
@@ -138,13 +139,7 @@ export function ActivateAccountPage() {
             <Banner variant="danger">{error}</Banner>
           )}
 
-          <button
-            type="submit"
-            disabled={loading || !password || !confirmPassword}
-            className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mt-1"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ativar conta'}
-          </button>
+          <Button type="submit" variant="primary" size="lg" loading={loading} disabled={loading || !password || !confirmPassword} className="w-full mt-1">Ativar conta</Button>
         </form>
 
         <div className="mt-6 text-center">

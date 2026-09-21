@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Zap, Loader2, Check, X } from 'lucide-react'
+import { Eye, EyeOff, Check, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
+import { Input } from '@/components/ui/Input'
 
 interface Requirement {
   label: string
@@ -78,7 +80,7 @@ export function SetPasswordPage() {
         {/* Card */}
         <form
           onSubmit={handleSubmit}
-          className="bg-surface-900 border border-surface-700 rounded-2xl p-6 flex flex-col gap-4 shadow-2xl"
+          className="bg-surface-800 border border-surface-700 rounded-lg p-6 flex flex-col gap-4"
         >
           {/* Current password */}
           <div className="flex flex-col gap-1.5">
@@ -86,14 +88,14 @@ export function SetPasswordPage() {
               Senha atual
             </label>
             <div className="relative">
-              <input
+              <Input
                 type={showCurrent ? 'text' : 'password'}
                 autoFocus
                 autoComplete="current-password"
                 value={currentPw}
                 onChange={(e) => setCurrentPw(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
+                className="pr-10"
               />
               <button
                 type="button"
@@ -112,13 +114,13 @@ export function SetPasswordPage() {
               Nova senha
             </label>
             <div className="relative">
-              <input
+              <Input
                 type={showPass ? 'text' : 'password'}
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
+                className="pr-10"
               />
               <button
                 type="button"
@@ -181,7 +183,7 @@ export function SetPasswordPage() {
           </div>
 
           {/* Requirements checklist */}
-          <div className="bg-surface-800/60 rounded-xl px-4 py-3 flex flex-col gap-1.5">
+          <div className="bg-[var(--sf2)] border border-surface-700 rounded-lg px-4 py-3 flex flex-col gap-1.5">
             {REQUIREMENTS.map((r) => {
               const ok = r.test(password)
               return (
@@ -204,16 +206,7 @@ export function SetPasswordPage() {
           )}
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mt-1"
-          >
-            {loading
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : 'Salvar senha e acessar'
-            }
-          </button>
+          <Button type="submit" variant="primary" size="lg" loading={loading} disabled={!canSubmit} className="w-full mt-1">Salvar senha e acessar</Button>
         </form>
 
         {/* Logout link */}

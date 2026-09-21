@@ -1,9 +1,11 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { Eye, EyeOff, Loader2, Sun, Moon } from 'lucide-react'
+import { Eye, EyeOff, Sun, Moon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
+import { Button } from '@/components/ui/Button'
 import { Banner } from '@/components/ui/Banner'
+import { Input } from '@/components/ui/Input'
 import { LoginBeams } from '@/components/ui/LoginBeams'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useTheme } from '@/hooks/useTheme'
@@ -81,7 +83,7 @@ export function LoginPage() {
       <button
         onClick={toggle}
         title={isLight ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-900 hover:bg-surface-800 transition-colors shadow-lg"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-800 hover:bg-surface-700 transition-colors"
       >
         <div className="relative w-8 h-4 rounded-full bg-surface-700 flex-shrink-0">
           <motion.div
@@ -173,7 +175,7 @@ export function LoginPage() {
           {/* Card chrome only on mobile/tablet — on desktop the right column
               already provides the surface-950 panel, so the inner card was
               competing with it visually. */}
-          <div className="bg-surface-900 border border-surface-700 rounded-2xl p-5 shadow-2xl lg:bg-transparent lg:border-0 lg:p-5 lg:shadow-none lg:rounded-lg">
+          <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 lg:bg-transparent lg:border-0 lg:p-5">
             <div className="mb-5">
               <h2 className="text-2xl font-bold text-surface-50">Entrar</h2>
               <p className="text-sm text-surface-400 mt-1">Acesse sua conta para continuar</p>
@@ -185,14 +187,13 @@ export function LoginPage() {
                 <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">
                   E-mail
                 </label>
-                <input
+                <Input
                   type="email"
                   autoComplete="email"
                   autoFocus
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu@email.com"
-                  className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
                 />
               </div>
 
@@ -202,13 +203,13 @@ export function LoginPage() {
                   Senha
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     type={showPass ? 'text' : 'password'}
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors"
+                    className="pr-10"
                   />
                   <button
                     type="button"
@@ -234,13 +235,7 @@ export function LoginPage() {
               )}
 
               {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading || !email || !password}
-                className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mt-1"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Entrar'}
-              </button>
+              <Button type="submit" variant="primary" size="lg" loading={loading} disabled={loading || !email || !password} className="w-full mt-1">Entrar</Button>
             </form>
           </div>
 
