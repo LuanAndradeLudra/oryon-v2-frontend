@@ -17,7 +17,6 @@ import { dealsApi } from '@/services/api'
 import { cn, hexToRgba, getApiErrorMessage, formatPhoneBR, formatRelativeTime } from '@/lib/utils'
 import { isAiActive } from '@/lib/conversationSignals'
 import { HandoffChip } from './AiHandoffBanner'
-import { AddToPipelineMenu } from '@/components/deals/AddToPipelineMenu'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
@@ -401,14 +400,14 @@ export function ChatHeader({
 
   // ─── Desktop layout (original) ──────────────────────────────────────────
   return (
-    <div className="conv-surface flex items-center justify-between px-4 py-3 border-b border-surface-700 bg-surface-950 flex-shrink-0 gap-3">
+    <div className="conv-surface h-[52px] flex items-center justify-between px-4 border-b border-surface-700 bg-surface-800 flex-shrink-0 gap-3">
 
       {/* ── Left: contact info ────────────────────────────────── */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0">
         <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="30" />
         <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-[13.5px] font-bold text-surface-50 truncate">{contact.displayName}</h2>
+          <div className="flex items-center gap-2 leading-tight">
+            <h2 className="text-[13.5px] font-bold text-surface-100 truncate">{contact.displayName}</h2>
             {/* CONV-CHAT-05 (spec/1d-conversas.GAPS.md): situação do contato
                 no cabeçalho do chat — existia no ContactPanel, faltava aqui. */}
             {contact.stage && <StageBadge stage={contact.stage} stages={stages} />}
@@ -416,13 +415,12 @@ export function ChatHeader({
           {/* R2-1D-HDR: "telefone formatado · visto por último há N" (mock).
               O número da LINHA saiu (já é o ConnectedLineChip da TopBar) e o
               responsável mora em DADOS do painel. */}
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <WhatsAppIcon size={12} />
-            <span className="text-xs text-surface-400 truncate">{formatPhoneBR(contact.waId)}</span>
+          <div className="flex items-center gap-1.5 mt-0.5 text-[11.5px] leading-tight text-surface-400">
+            <span className="truncate">{formatPhoneBR(contact.waId)}</span>
             {contact.lastSeenAt && (
               <>
-                <span className="text-surface-600 text-xs">·</span>
-                <span className="text-xs text-surface-500 truncate">visto por último {formatRelativeTime(contact.lastSeenAt)}</span>
+                <span aria-hidden>·</span>
+                <span className="truncate">visto por último {formatRelativeTime(contact.lastSeenAt)}</span>
               </>
             )}
           </div>
@@ -438,15 +436,6 @@ export function ChatHeader({
             sentido. Dois botões idênticos na mesma tela é ruído, não atalho.
             Continua a um clique em: painel do contato (à direita) e
             "Adicionar ao funil ▾" (aqui ao lado). */}
-        {!isMobile && (
-          <AddToPipelineMenu
-            contactId={contact.id}
-            contactName={contact.displayName || contact.waId}
-            size="sm"
-            onPick={(pipeline) => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline, conversationId: conversation.id })}
-            onOpenDetailed={() => addToPipeline.requestAddDetailed({ contactId: contact.id, contactName: contact.displayName || contact.waId, conversationId: conversation.id })}
-          />
-        )}
         {addToPipeline.dialogs}
 
         {/* Ordem do grupo de ações: o status vem antes do HandoffChip
@@ -502,6 +491,17 @@ export function ChatHeader({
                 {label}
               </DropdownItem>
             ))}
+            {/* "Adicionar ao funil" saiu do cabeçalho (o mock não o tem; o painel
+                do contato já tem "Novo negócio"). Nada se perde: aqui abre o
+                mesmo fluxo com detalhes, que deixa escolher o funil. */}
+            <DropdownItem
+              onClick={() => {
+                setMoreOpen(false)
+                addToPipeline.requestAddDetailed({ contactId: contact.id, contactName: contact.displayName || contact.waId, conversationId: conversation.id })
+              }}
+            >
+              <Handshake className="w-3.5 h-3.5" /> Adicionar ao funil…
+            </DropdownItem>
             <DropdownItem danger onClick={() => { setMoreOpen(false); setArchiveOpen(true) }}>
               <Archive className="w-3.5 h-3.5" /> Arquivar conversa
             </DropdownItem>

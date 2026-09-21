@@ -64,6 +64,11 @@
    * tiveram. px preserva o comportamento fixo exato. */
   --text-2xs: 11px;
   --text-3xs: 10px;
+  /* SCRUM-1097 Rodada 2 (spec 1a TYPE-05): corpo = 13px / 400 / altura 1.5.
+     `text-sm` era 14px/20px em todo o app; o handoff usa 13px como tamanho de
+     corpo e de título de card (TYPE-04). Reverter: 0.875rem / 1.428. */
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.5;
 
   /* ── Acento teal (dark defaults) ─────────────────────────────────────────── */
   /* dark: sobe luminância #14B8A6 → #2DD4BF — intencional */
@@ -1421,10 +1426,9 @@ svg[data-oryon-icon] {
    surface-950 do canvas), por pedido explícito. No claro segue o canvas
    normal (o shell é sempre escuro por design, não faria sentido no claro). */
 .chat-shell-bg {
-  background: radial-gradient(ellipse farthest-corner at 0% 0%, #000000 0%, #050808 60%);
-}
-[data-theme="light"] .chat-shell-bg {
-  background: #E4E7ED;
+  /* SCRUM-1097 R2 (spec 1d CONV-FRAME-03): coluna do chat = --bg CHAPADO nos
+     2 temas (era radial até #000 no escuro e #E4E7ED no claro). */
+  background: var(--color-surface-950);
 }
 
 /* ── Workspace canvas — o conteúdo flutua sobre o shell ─────────────────────
