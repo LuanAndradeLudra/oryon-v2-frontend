@@ -34,7 +34,7 @@ const sizes = {
 }
 
 const dotSizes = {
-  '2xs': 'w-1.5 h-1.5',
+  '2xs': 'w-[7px] h-[7px]',
   xs: 'w-1.5 h-1.5',
   sm: 'w-2 h-2',
   '30': 'w-2 h-2',
@@ -105,7 +105,8 @@ export function Avatar({ name, imageUrl, size = 'md', online, className, kind = 
       {online !== undefined && (
         <span
           className={cn(
-            'absolute bottom-0 right-0 rounded-full border-2 border-surface-900',
+            // Canvas 1b (Equipe): dot 7px com anel de 1.5px na cor da SUPERFÍCIE (--sf).
+            'absolute bottom-0 right-0 rounded-full border-[1.5px] border-surface-800',
             dotSizes[size],
             online ? 'bg-online' : 'bg-offline'
           )}
