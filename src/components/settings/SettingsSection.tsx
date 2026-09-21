@@ -74,8 +74,8 @@ export function SettingsOutline() {
   if (entries.length < 3) return null
   return (
     <nav aria-label="Nesta página" className="hidden xl:block w-[180px] flex-shrink-0 sticky top-8 self-start">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-surface-500 mb-2">Nesta página</p>
-      <ul className="flex flex-col gap-1">
+      <p className="text-[10px] font-bold uppercase text-surface-500 mb-1" style={{ letterSpacing: '.14em' }}>Nesta página</p>
+      <ul className="flex flex-col gap-1.5">
         {entries.map((e) => {
           const isActive = e.id === activeId
           return (
@@ -83,10 +83,10 @@ export function SettingsOutline() {
               <a
                 href={`#${e.id}`}
                 className={cn(
-                  'block py-0.5 text-xs transition-colors',
+                  'block text-xs transition-colors',
                   isActive
                     ? 'pl-[10px] font-semibold text-surface-100 shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
-                    : 'pl-3 text-surface-500 hover:text-surface-100',
+                    : 'pl-[10px] text-surface-500 hover:text-surface-100',
                 )}
               >
                 {e.title}
