@@ -127,3 +127,18 @@ restantes dependem de decisão do orquestrador.
 - **SETT-NAV-09** — reclassificado: "Etapas e funis" = rota `pipeline-stages` (existia, rótulo era "Funis") e "Etiquetas e cores" = `tags` → renomeados e reordenados como no mock (commit desta rodada). Continuam `[!]` só os itens SEM rota/tela: Horário de atendimento, Regras de handoff, Webhooks, Chaves de API.
 - **CONN-CAT-12** (estado da busca/categoria na URL) — não é `[!]` de dado: é comportamento fora do que o mock desenha. Fora do escopo visual; não implementado.
 - **6a LIMITS-08/09** — mantido `[!]`, com evidência: `BillingStatus` só traz `creditsUsed/creditsTotal`; não existe agregado de uso por tenant (usuários/números/agentes/automações/Copilot no mês) em `billingApi`/`usePlanGate`/hooks; montar exigiria 4-5 listagens e definir "ativo" (decisão de produto). O "no teto" (âmbar) já funciona na linha de créditos.
+
+### Rodada 2 — valores exatos do canvas (medidos pelo Maestro ao vivo + extração do HTML)
+
+| ID | Valor (canvas 2e) | Onde | Status |
+|---|---|---|---|
+| R2-2E-05 | item de topo h28 `padding 0 10px` 12.5px `--tx2`; sub-item h26 `padding-left 22px`; ativo `--tx` 600 + inset 2px acento + rowhover + raio `0 6 6 0`; rótulo "CRM" 12.5/600 `--tx` | SettingsSidebarItem.tsx, SettingsLayout.tsx `NavClusterGroup` | ✅ código · ❓ ao vivo |
+| R2-2E-06 | rótulo de grupo 10/700 .14em uppercase tx3, padding 6/14 10 4; aside `padding 14 12`, `gap 2`; busca h28 raio 7 borda bd2 12px mb10 | SettingsLayout.tsx | ✅ código · ❓ ao vivo |
+| R2-2E-07 | coluna de leitura `justify-content:flex-start` (encostada na nav) | SettingsLayout.tsx | ✅ código · ❓ ao vivo |
+| R2-2E-08 | SettingsSection grid **260px 1fr / gap 24** (6a usa 220 e padding 18/16 — `labelWidth`/`dense`), padding 26/22, desc 12px tx2 lh 1.5 mt 3 (corrige o 236 que eu tinha deduzido do PNG) | SettingsSection.tsx | ✅ código · ❓ ao vivo |
+| R2-2E-09 | header: breadcrumb 12px tx3 (último tx2), título 20/700 -.015em mt 8, descrição 13px lh 1.55 mt 4 max 620 | SectionHeader.tsx | ✅ código · ❓ ao vivo |
+
+**Não aplicado (é `ui/` do orquestrador):** `Tabs` (3d) usa sublinhado de acento; o canvas usa `inset 0 -2px --tx`, 13/500 tx2, gap 18, padding `16px 20px 0`. `Modal` ainda `rounded-2xl` (canvas: 10px). Coluna "gap 12" dos campos de SettingsSection não foi imposta globalmente (seções de lista têm espaçamento próprio); o Vocabulário já usa gap-3.
+
+### Cobertura sem mock (Rodada 2)
+Login/Onboarding (R2-NOMOCK-AUTH-01..05), /admin skills e agentes (R2-NOMOCK-ADM-01..09), /admin observabilidade e auditoria (R2-NOMOCK-OBS-01..04), modais/drawers/seções de Configurações (R2-NOMOCK-SET-01..07). Resíduo declarado: botões crus em SetupWizard/Pricing/Welcome; `<textarea>` cru (sem primitivo); Button sem `asChild` (Link com classes do primário); Checkbox nativo. Tudo `❓ ao vivo`.
