@@ -118,9 +118,12 @@ export function ChatWindow({
     await onStatusChange(conversation.id, status, dealOutcome)
   }
 
-  const windowOpen = conversation
-    ? Date.now() - new Date(conversation.lastMessageAt).getTime() < 86_400_000
-    : false
+  // Janela de 24h do WhatsApp: mesma conta de antes, agora também dizendo
+  // quantas horas faltam (R2-1D-COMP: "Janela de 24h aberta · fecha em N h").
+  const windowMsLeft = conversation
+    ? 86_400_000 - (Date.now() - new Date(conversation.lastMessageAt).getTime())
+    : 0
+  const windowOpen = windowMsLeft > 0
 
   if (!conversation) {
     // Estado vazio como CENTRO DE COMANDO — o espaço morto vira onboarding
@@ -203,6 +206,7 @@ export function ChatWindow({
         contactId={conversation.contact.id}
         sending={sending}
         windowOpen={windowOpen}
+        windowHoursLeft={Math.max(1, Math.ceil(windowMsLeft / 3_600_000))}
         blockedReason={sendBlockedReason}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
