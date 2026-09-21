@@ -231,7 +231,8 @@ export function VerticalSettings() {
         title="Registros do funil"
         description={`Singular e plural. Usados em "Novo ${dealLower}", "3 ${dealsLower}", na coluna do Kanban e nas notificações.`}
       >
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <FormField label="Singular">
             <Input value={vocab.deal} onChange={(e) => update('deal', e.target.value)} />
           </FormField>
@@ -241,7 +242,7 @@ export function VerticalSettings() {
         </div>
         <FormField
           label={<>Gênero gramatical <span className="text-surface-500 font-normal">· para "novo/nova", "ganho/ganha"</span></>}
-          className="mb-4 max-w-xs"
+          className="max-w-xs"
         >
           <SegmentedControl
             label="Gênero gramatical"
@@ -253,9 +254,10 @@ export function VerticalSettings() {
             ]}
           />
         </FormField>
-        <p className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 rounded-xs p-3">
-          Prévia: "Novo <span className="font-semibold text-surface-100">{dealLower}</span>" · "3 <span className="font-semibold text-surface-100">{dealsLower}</span> em Proposta" · "<span className="font-semibold text-surface-100">{vocab.deal}</span> {wonAgreement}"
+        <p className="text-xs text-surface-500 bg-[var(--sf2)] border border-surface-700 rounded-xs px-2.5 py-2 leading-[1.5]">
+          Prévia: <span className="text-surface-100">"Novo {dealLower}" · "3 {dealsLower} em Proposta" · "{vocab.deal} {wonAgreement}"</span>
         </p>
+        </div>
       </SettingsSection>
 
       {/* Fechamento */}
@@ -263,7 +265,7 @@ export function VerticalSettings() {
         title="Fechamento"
         description={`Nome das etapas terminais. Funis do tipo "${PIPELINE_KIND_OPTIONS.find((o) => o.kind === 'process')!.label.toLowerCase()}" usam o segundo par automaticamente.`}
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
             <FormField label={<>Positivo <span className="text-surface-500 font-normal">· funil de {PIPELINE_KIND_OPTIONS.find((o) => o.kind === 'sales')!.noun}s</span></>}>
               <Input
@@ -310,26 +312,23 @@ export function VerticalSettings() {
             <PersonSelect value={vocab.agent} presets={AGENT_PRESETS} onChange={(v) => update('agent', v)} />
           </FormField>
         </div>
-        <p className="mt-2 text-2xs text-surface-500">
+        <p className="mt-2 text-[11.5px] text-surface-500">
           Opções: {CONTACT_PRESETS.join(' · ')} · Personalizado
         </p>
       </SettingsSection>
 
       {/* Onde isso aparece — referência, não editável */}
       <SettingsSection title="Onde isso aparece" description="Referência, não editável.">
-        <div>
+        <div className="text-[12.5px]">
           {[
-            ['Menu lateral', 'Funis → coluna "', vocab.deals, '"'],
-            ['Ficha do contato', 'Aba "', vocab.deals, `" · botão "Novo ${dealLower}"`],
-          ].map(([left, before, term, after], i) => (
-            <div
-              key={left}
-              className={`grid grid-cols-[160px_1fr] text-xs py-[7px] ${i > 0 ? 'border-t border-surface-700' : ''}`}
-            >
-              <span className="text-surface-500">{left}</span>
-              <span className="text-surface-400">
-                {before}<span className="font-semibold text-surface-100">{term}</span>{after}
-              </span>
+            ['Menu lateral', `Funis → coluna "${vocab.deals}"`],
+            ['Ficha do contato', `Aba "${vocab.deals}" · botão "Novo ${dealLower}"`],
+            ['Modal de fechamento', `"Mover para ${vocab.salesLostLabel ?? salesDefaults.lost}" · "Marcar como ${vocab.salesWonLabel ?? salesDefaults.won}"`],
+            ['Agentes IA', 'Prompt do sistema usa os mesmos termos'],
+          ].map(([left, right]) => (
+            <div key={left} className="grid grid-cols-[160px_1fr] gap-2.5 py-[7px] border-b border-surface-700 last:border-b-0">
+              <span className="text-surface-400">{left}</span>
+              <span>{right}</span>
             </div>
           ))}
         </div>

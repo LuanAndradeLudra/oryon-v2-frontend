@@ -123,6 +123,7 @@ export function ConnectorsSettings() {
         </Dropdown>
 
         <SegmentedControl
+          size="32"
           label="Filtro de status"
           value={status}
           onChange={setStatus}

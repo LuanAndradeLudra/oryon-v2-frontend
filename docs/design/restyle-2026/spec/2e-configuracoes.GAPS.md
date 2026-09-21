@@ -142,3 +142,15 @@ restantes dependem de decisão do orquestrador.
 
 ### Cobertura sem mock (Rodada 2)
 Login/Onboarding (R2-NOMOCK-AUTH-01..05), /admin skills e agentes (R2-NOMOCK-ADM-01..09), /admin observabilidade e auditoria (R2-NOMOCK-OBS-01..04), modais/drawers/seções de Configurações (R2-NOMOCK-SET-01..07). Resíduo declarado: botões crus em SetupWizard/Pricing/Welcome; `<textarea>` cru (sem primitivo); Button sem `asChild` (Link com classes do primário); Checkbox nativo. Tudo `❓ ao vivo`.
+
+### Rodada 2c — Vocabulário e tabelas contra o canvas 2e (tools-extract-canvas.py 2e)
+
+| ID | Valor (canvas) | Onde | Status |
+|---|---|---|---|
+| R2-2E-10 | 1ª seção `padding 26/22 + margin-top 14`, demais `22/22` (header sem padding-bottom próprio → 14) | SettingsSection.tsx (`py-[22px] first:pt-[26px]`), SectionHeader.tsx `pb-3.5` | ✅ código · ❓ ao vivo |
+| R2-2E-11 | coluna de campos `flex-col gap-12`; prévia `px10 py8 raio 6 lh 1.5` com o TEXTO INTEIRO em `--tx` (eu só destacava os termos) | VerticalSettings.tsx | ✅ código · ❓ ao vivo |
+| R2-2E-12 | tabela "Onde isso aparece" tem **4 linhas** (Menu lateral, Ficha do contato, Modal de fechamento "Mover para {negativo} · Marcar como {positivo}", Agentes IA) — eu só tinha 2; 12.5px, esquerda tx2, direita tx uniforme, hairline entre linhas | VerticalSettings.tsx | ✅ código · ❓ ao vivo |
+| R2-2E-13 | listas (Usuários, Respostas rápidas): cabeçalho 10/700 .14em, 1ª coluna rente à margem (sem `px-5`), hover `--rowhover`, papel = chip soft h20 raio 5 | AgentManagement.tsx, QuickReplies.tsx | ✅ código · ❓ ao vivo |
+| R2-CONN-5B-b | segmentado do 5b usa `size="32"` (h32 12/600) | ConnectorsSettings.tsx | ✅ código · ❓ ao vivo |
+
+Sem mock no canvas (só o vocabulário de 2e/1a se aplica): Números WhatsApp, Departamentos, Etapas/Etiquetas/Campos — auditadas na Rodada 2 (R2-2E-*).

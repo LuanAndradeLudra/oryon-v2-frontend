@@ -52,25 +52,25 @@ function QuickReplyRow({
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
   return (
-    <tr onContextMenu={onContextMenu} className="hover:bg-surface-900/60 transition-colors">
-      <td className="px-5 py-4">
+    <tr onContextMenu={onContextMenu} className="hover:bg-[var(--rowhover)] transition-colors">
+      <td className="px-3 py-3 first:pl-0 last:pr-0">
         <code className="shortcut-tag inline-block max-w-[180px] truncate align-bottom text-xs font-mono text-accent-dark bg-accent-soft px-2 py-1 rounded-xs" title={response.shortcut}>
           {response.shortcut}
         </code>
       </td>
-      <td className="px-5 py-4">
+      <td className="px-3 py-3 first:pl-0 last:pr-0">
         <p className="text-sm font-medium text-surface-100">{response.title}</p>
       </td>
-      <td className="px-5 py-4 max-w-xs">
+      <td className="px-3 py-3 first:pl-0 last:pr-0 max-w-xs">
         <p className="text-xs text-surface-400 truncate">{response.body}</p>
       </td>
-      <td className="px-5 py-4">
+      <td className="px-3 py-3 first:pl-0 last:pr-0">
         <div>
           <p className="text-xs text-surface-300">{response.createdByName}</p>
           <p className="text-xs text-surface-500">{formatRelativeTime(response.createdAt)}</p>
         </div>
       </td>
-      <td className="px-5 py-4">
+      <td className="px-3 py-3 first:pl-0 last:pr-0">
         {canManage && (
           <div className="flex items-center gap-1 justify-end">
             <button
@@ -220,11 +220,11 @@ export function QuickReplies() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-surface-700">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Atalho</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Título</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Preview</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Criado por</th>
-                <th className="px-5 py-3" />
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Atalho</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Título</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Preview</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Criado por</th>
+                <th className="px-3 py-2.5 first:pl-0 last:pr-0" />
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-700">
