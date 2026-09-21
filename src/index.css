@@ -1032,15 +1032,12 @@ code, pre, kbd, samp {
   --copilot-gradient-to:   #0F766E;
 }
 
-/* ── Cards light — sombra sutil para separar do canvas ───────────────────
- * Alvo: apenas elementos com borda arredondada (rounded-*) que são cards
- * reais. Exclui divisores full-width (header, nav, filter bar) que usam
- * border-b mas não têm rounded — esses criariam um contorno retangular
- * indesejado no light mode.                                                */
-[data-theme="light"] [class*="rounded"][class*="border-surface-8"],
-[data-theme="light"] [class*="rounded"][class*="border-surface-7"] {
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.09), 0 4px 12px rgba(15, 23, 42, 0.09);
-}
+/* ── Cards light — SEM sombra ─────────────────────────────────────────────────
+ * SCRUM-1097 R2: aqui havia uma regra global que dava `box-shadow` (2 camadas) a
+ * TODO elemento arredondado com borda surface-7/8 — cards, inputs, botões — só no
+ * tema claro. O mock do Claude Design separa por BORDA 1px (--bd), nunca por
+ * sombra ("elevação = borda + --sf2/--bd2"). Regra removida; sombra só em
+ * overlay (modal/dropdown/tooltip), drag e glow de IA. */
 
 /* ── Página de perfil — painel esquerdo (accordion) ──────────────────────────
  * Os cards internos são compartilhados com o drawer e usam bg-surface-900 (=
@@ -1438,7 +1435,7 @@ svg[data-oryon-icon] {
 /* Light: cards ganham sombra sutil em repouso (profundidade/sofisticação) e
  * o glow de hover é contido — 0.35 de teal sobre branco ofusca. */
 [data-theme="light"] .card-glow {
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  box-shadow: none; /* R2: sem sombra em repouso (borda separa) */
 }
 [data-theme="light"] .card-glow::before {
   background: radial-gradient(ellipse at top left, rgba(20, 184, 166, 0.08) 0%, transparent 65%);
