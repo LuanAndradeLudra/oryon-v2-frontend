@@ -17,32 +17,24 @@ import { Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
-import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
+import { usePrimaryConnectedLine } from '@/hooks/usePrimaryConnectedLine'
+import { ConnectedLineChip } from '@/components/layout/ConnectedLineChip'
 import type { ConversationStatusCounts } from '@/types'
 
 interface Props {
   statusCounts: ConversationStatusCounts
 }
 
-const isConnected = (status: string | undefined) =>
-  status === 'connected' || status === 'CONNECTED'
-
 export function ConversationsTopBarSlot({ statusCounts }: Props) {
   const navigate = useNavigate()
-  const { numbers } = useWorkspaceNumber()
-  const line = numbers.find((n) => n.isPrimary) ?? (numbers.length === 1 ? numbers[0] : null)
-  const lineLabel = line ? (line.label?.trim() || line.displayPhoneNumber) : null
-  const lineConnected = !!line && isConnected(line.status)
+  const { connected: lineConnected, label: lineLabel } = usePrimaryConnectedLine()
 
   useRegisterTopBarSubtitle(
     <>
       {`${statusCounts.open} abertas · ${statusCounts.pending} pendentes`}
       {lineConnected && (
-        // CONV-HDR-05/06: 11.5px/600 na cor --ok, sem fundo/borda; ponto 6px
-        // #22C55E fixo nos dois temas.
-        <span className="inline-flex items-center gap-1.5 ml-3 text-[11.5px] font-semibold text-success">
-          <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
-          Linha {lineLabel} · conectada
+        <span className="ml-3">
+          <ConnectedLineChip>Linha {lineLabel} · conectada</ConnectedLineChip>
         </span>
       )}
     </>,
