@@ -105,17 +105,19 @@ export const SETTINGS_NAV: NavDomain[] = [
         // + itens recuados), não um 5º domínio com eyebrow.
         label: 'CRM',
         items: [
-          { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
-          { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true, hidden: true },
+          // Ordem e rótulos do mock 2e: Etapas e funis · Etiquetas e cores ·
+          // Campos personalizados · Vocabulário (+ itens existentes do app).
+          { section: 'pipeline-stages',   label: 'Etapas e funis',        adminOnly: true, multiPipelineOnly: true },
+          { section: 'tags',              label: 'Etiquetas e cores',     supervisorOnly: true },
+          { section: 'custom-fields',     label: 'Campos personalizados', adminOnly: true },
+          { section: 'vertical',          label: 'Vocabulário',           adminOnly: true },
           // F13-903: a situação do contato ganha seção própria — o wizard apontava
           // para uma tela que não existia. Vale para todo tenant (não é do funil).
           { section: 'stages',            label: 'Situação do contato',   adminOnly: true },
-          { section: 'custom-fields',     label: 'Campos personalizados', adminOnly: true },
-          { section: 'pipeline-stages',   label: 'Funis',                 adminOnly: true, multiPipelineOnly: true },
+          { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
+          { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true, hidden: true },
           // F11-888: roteamento congelado (Modelo B) — sai do menu; rota mantida oculta até a remoção física.
           { section: 'pipeline-routing',  label: 'Roteamento por canal',  adminOnly: true, multiPipelineOnly: true, hidden: true },
-          { section: 'vertical',          label: 'Vocabulário',           adminOnly: true },
-          { section: 'tags',              label: 'Tags',                  supervisorOnly: true },
         ],
       },
     ],

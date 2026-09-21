@@ -121,3 +121,9 @@ Access checkbox sem primitivo; páginas de lista ainda não usam a grade
 `.color-chip` (index.css) é SÓLIDO e o mock de 2d/6a usa chip SOFT: resolvi
 localmente (ScheduleChips, ConnectorBadges, classes status-*), mas os 83 usos
 restantes dependem de decisão do orquestrador.
+
+### Revisão dos `[!]` antigos (Rodada 2)
+
+- **SETT-NAV-09** — reclassificado: "Etapas e funis" = rota `pipeline-stages` (existia, rótulo era "Funis") e "Etiquetas e cores" = `tags` → renomeados e reordenados como no mock (commit desta rodada). Continuam `[!]` só os itens SEM rota/tela: Horário de atendimento, Regras de handoff, Webhooks, Chaves de API.
+- **CONN-CAT-12** (estado da busca/categoria na URL) — não é `[!]` de dado: é comportamento fora do que o mock desenha. Fora do escopo visual; não implementado.
+- **6a LIMITS-08/09** — mantido `[!]`, com evidência: `BillingStatus` só traz `creditsUsed/creditsTotal`; não existe agregado de uso por tenant (usuários/números/agentes/automações/Copilot no mês) em `billingApi`/`usePlanGate`/hooks; montar exigiria 4-5 listagens e definir "ativo" (decisão de produto). O "no teto" (âmbar) já funciona na linha de créditos.

@@ -79,7 +79,7 @@ export function ConnectorsSettings() {
       />
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2.5 pb-4 mb-4 border-b border-surface-700">
+      <div className="flex flex-wrap items-center gap-2.5 mb-4">
         <div className="relative w-[340px] max-w-full">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
           <input
@@ -87,7 +87,7 @@ export function ConnectorsSettings() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Nome, fornecedor ou o que faz…"
             aria-label="Buscar conector"
-            className="w-full h-8 bg-surface-800 border border-surface-700 rounded-sm pl-8 pr-2 text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
+            className="w-full h-8 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-2 text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
           />
         </div>
 
@@ -98,7 +98,7 @@ export function ConnectorsSettings() {
             <button
               type="button"
               onClick={() => setCategoryOpen((o) => !o)}
-              className="h-8 inline-flex items-center gap-1.5 rounded-sm border border-surface-700 bg-surface-800 px-2.5 text-sm text-surface-300 hover:bg-surface-700 transition-colors"
+              className="h-8 inline-flex items-center gap-1.5 rounded-sm border border-[var(--bd2)] bg-surface-800 px-2.5 text-sm text-surface-300 hover:bg-surface-700 transition-colors"
             >
               {category ?? 'Categoria'}
               <ChevronDown className="w-3.5 h-3.5 text-surface-500" />
