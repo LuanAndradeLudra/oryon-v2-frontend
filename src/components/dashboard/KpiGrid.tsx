@@ -96,7 +96,7 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
   const catColor = CATEGORY_COLORS[metric.category] ?? 'var(--color-accent-blue)'
 
   return (
-    <div className="card-glow bg-surface-900 border border-surface-700 rounded-xl flex flex-col p-3.5 gap-2">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg flex flex-col p-3.5 gap-2">
       <div className="flex items-center gap-2">
         <div
           className="rounded-lg flex items-center justify-center flex-shrink-0 w-6 h-6"
@@ -134,7 +134,7 @@ function KpiCard({ metric }: { metric: KpiMetric }) {
 // vira `border-bottom` no empilhamento mobile). Sem ícone — só rótulo, valor
 // e linha de apoio (delta + contexto).
 
-function KpiStripCell({ metric }: { metric: KpiMetric }) {
+function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text: string; tone: 'warn' } }) {
   const isGood =
     (metric.trend > 0 && metric.trendIsGood === 'up') ||
     (metric.trend < 0 && metric.trendIsGood === 'down')
@@ -158,10 +158,14 @@ function KpiStripCell({ metric }: { metric: KpiMetric }) {
             ? <TrendingUp className="w-3 h-3" />
             : <TrendingDown className="w-3 h-3" />}
           <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1)}%</span>
-          <span className="text-surface-600 font-normal truncate">vs. período anterior</span>
+          <span className="text-surface-500 font-normal truncate">vs. período anterior</span>
         </div>
+      ) : support ? (
+        // R2-DASH-02: linha de apoio com dado real que o snapshot já traz
+        // (ex.: "12 aguardando" = fila `pending`), no lugar da linha vazia.
+        <span className={cn('text-[11.5px] font-medium truncate', support.tone === 'warn' ? 'text-warning' : 'text-surface-500')}>{support.text}</span>
       ) : (
-        <span className="text-[11.5px] text-surface-600">&nbsp;</span>
+        <span className="text-[11.5px] text-surface-500">&nbsp;</span>
       )}
     </div>
   )
@@ -175,7 +179,7 @@ const STRIP_COLS: Record<number, string> = {
   5: 'sm:grid-cols-5',
 }
 
-function KpiStrip({ metrics }: { metrics: KpiMetric[] }) {
+function KpiStrip({ metrics, queued }: { metrics: KpiMetric[]; queued: number }) {
   return (
     <div
       className={cn(
@@ -184,7 +188,11 @@ function KpiStrip({ metrics }: { metrics: KpiMetric[] }) {
       )}
     >
       {metrics.map((metric) => (
-        <KpiStripCell key={metric.id} metric={metric} />
+        <KpiStripCell
+          key={metric.id}
+          metric={metric}
+          support={metric.id === 'active_conversations' && queued > 0 ? { text: `${queued} aguardando`, tone: 'warn' } : undefined}
+        />
       ))}
     </div>
   )
@@ -324,10 +332,7 @@ export function KpiGrid({
       {/* flex-wrap (SCRUM-1070): sem isto, em ~375px a soma de label + seletor
           de período + "Personalizar" excedia a largura e o container pai
           (overflow-hidden) cortava o botão fora da tela em vez de rolar. */}
-      <div className="flex items-center gap-3 mb-3 flex-wrap">
-        <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest shrink-0">
-          Métricas Principais
-        </p>
+      <div className="flex items-center gap-3 mb-2 flex-wrap">
         <div className="flex-1 min-w-0" />
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
@@ -344,7 +349,7 @@ export function KpiGrid({
           faixa (card único, hairlines); o restante fica compacto abaixo em
           cards soltos. A ordem dos slots continua sendo a do usuário —
           reordenar no customizer muda o que é destaque. */}
-      <KpiStrip metrics={activeMetrics.slice(0, 5)} />
+      <KpiStrip metrics={activeMetrics.slice(0, 5)} queued={metrics.find((m) => m.id === 'queued')?.value ?? 0} />
 
       {activeMetrics.length > 5 && (
         <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 mt-3">
