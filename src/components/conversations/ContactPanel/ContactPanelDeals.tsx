@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KanbanSquare } from 'lucide-react'
+import {  } from 'lucide-react'
 import { useContactPipelines } from '@/hooks/useContactPipelines'
 import { ConversationDealSelector } from '@/components/conversations/ChatWindow/ConversationDealSelector'
 import { needsDealSelector, selectableDeals, linkedDeal } from '@/lib/dealIndicator'
@@ -161,10 +161,10 @@ export function ContactPanelDeals({
   return (
     <div className="panel-divider px-4 py-3 border-t border-surface-700" data-testid="panel-pipelines">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] text-surface-500 uppercase tracking-wide font-semibold flex items-center gap-1.5">
-          <KanbanSquare className="w-3 h-3" /> Funis
-          <span className="text-surface-600 normal-case tracking-normal" data-testid="panel-pipelines-count">
-            · {open.length} em aberto
+        <p className="text-[10px] text-surface-500 uppercase tracking-[.14em] font-bold flex items-center gap-1.5">
+          Negócios
+          <span data-testid="panel-pipelines-count">
+            · {open.length}
           </span>
         </p>
       </div>
