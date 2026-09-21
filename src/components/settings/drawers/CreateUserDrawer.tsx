@@ -61,7 +61,7 @@ function Stepper({ current }: { current: number }) {
             <div className="flex items-center gap-1.5">
               <div className={cn(
                 'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-colors',
-                active ? 'bg-brand-600 text-surface-950' : done ? 'bg-brand-900/40 text-brand-400' : 'bg-surface-800 text-surface-600',
+                active ? 'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)]' : done ? 'bg-accent-soft text-accent-dark' : 'bg-surface-800 text-surface-600',
               )}>
                 {done ? <Check className="w-2.5 h-2.5" /> : n}
               </div>
@@ -241,12 +241,9 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                 <h2 className="text-base font-semibold text-surface-100">Criar usuário</h2>
                 <p className="text-xs text-surface-400 mt-0.5">Um convite por e-mail será enviado automaticamente</p>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 text-surface-500 hover:text-surface-200 hover:bg-surface-800 rounded-lg transition-colors"
-              >
+              <Button variant="ghost" size="sm" iconOnly onClick={onClose} aria-label="Fechar">
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
 
             {/* Stepper */}
@@ -353,8 +350,8 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
                           <label
                             key={role}
                             className={cn(
-                              'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors',
-                              s2.role === role ? 'border-brand-500/60 bg-brand-900/20' : 'border-surface-700 hover:border-surface-700',
+                              'flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors',
+                              s2.role === role ? 'border-brand-500 bg-accent-soft' : 'border-surface-700 hover:bg-[var(--rowhover)]',
                             )}
                           >
                             <input

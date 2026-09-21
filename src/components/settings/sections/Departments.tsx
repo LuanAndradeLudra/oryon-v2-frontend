@@ -5,6 +5,9 @@ import { SectionHeader } from '../SectionHeader'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge'
@@ -150,31 +153,26 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
     <div className="border-y border-surface-700 py-5 mb-4">
       <div className="flex items-center justify-between mb-5">
         <p className="text-xs font-semibold text-brand-400 uppercase tracking-widest">{title}</p>
-        <button onClick={onCancel} className="text-surface-500 hover:text-surface-300 transition-colors"><X className="w-4 h-4" /></button>
+        <Button variant="ghost" size="sm" iconOnly onClick={onCancel} aria-label="Fechar"><X className="w-4 h-4" /></Button>
       </div>
 
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
+          <FormField label="Nome" requirement="required" error={nameError || undefined}>
+            <Input autoFocus value={form.name} onChange={(e) => { set('name', e.target.value); setNameError('') }}
+              placeholder="Ex: Suporte, Marketing" />
+          </FormField>
           <div>
-            <label className="text-xs font-medium text-surface-400 uppercase tracking-wide block mb-1.5">Nome <span className="text-danger">*</span></label>
-            <input autoFocus value={form.name} onChange={(e) => { set('name', e.target.value); setNameError('') }}
-              placeholder="Ex: Suporte, Marketing"
-              className={cn('w-full bg-surface-800 border rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500', nameError ? 'border-danger' : 'border-surface-700')} />
-            {nameError && <p className="text-xs text-danger mt-1">{nameError}</p>}
-          </div>
-          <div>
-            <label className="text-xs font-medium text-surface-400 uppercase tracking-wide block mb-1.5">Cor</label>
-            <div className="w-9 h-9 rounded-xl border-2 border-surface-700 cursor-pointer" style={{ backgroundColor: form.color }} />
+            <p className="text-xs font-medium text-surface-400 mb-1.5">Cor</p>
+            <div className="w-9 h-9 rounded-md border-2 border-surface-700 cursor-pointer" style={{ backgroundColor: form.color }} />
           </div>
         </div>
 
         <ColorPicker value={form.color} onChange={(c) => set('color', c)} />
 
-        <div>
-          <label className="text-xs font-medium text-surface-400 uppercase tracking-wide block mb-1.5">Descrição <span className="text-surface-600">(opcional)</span></label>
-          <input value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Breve descrição do setor"
-            className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500" />
-        </div>
+        <FormField label="Descrição" requirement="optional">
+          <Input value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Breve descrição do setor" />
+        </FormField>
 
         {/* Permissions */}
         <div className="border-y border-surface-700 overflow-hidden">
@@ -200,40 +198,38 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
 
         {/* WhatsApp — only with conversation permissions */}
         {needsWhatsapp && (
-          <div>
-            <label className="text-xs font-medium text-surface-400 uppercase tracking-wide block mb-1.5">
-              <Smartphone className="w-3 h-3 inline mr-1" />Número WhatsApp vinculado
-            </label>
-            {waNumbers.length === 0 ? (
+          waNumbers.length === 0 ? (
+            <div>
+              <p className="text-xs font-medium text-surface-400 mb-1.5">
+                <Smartphone className="w-3 h-3 inline mr-1" />Número WhatsApp vinculado
+              </p>
               <Banner variant="warning">
                 <p>Para atender conversas, conecte pelo menos um número WhatsApp.</p>
                 <Link to="/settings/numbers" className="mt-2 inline-flex items-center gap-1.5 font-semibold text-white underline underline-offset-2 hover:text-white/80">
                   <ExternalLink className="w-3.5 h-3.5" />Conectar primeiro número
                 </Link>
               </Banner>
-            ) : (
-              <div className="relative">
-                <select value={form.whatsappNumberId} onChange={(e) => set('whatsappNumberId', e.target.value)}
-                  className={cn('w-full appearance-none bg-surface-800 border rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 pr-8',
-                    mustPickNumber && !form.whatsappNumberId.trim() ? 'border-status-pending' : 'border-surface-700')}>
-                  <option value="">Selecione um número…</option>
-                  {waNumbers.map((n) => <option key={n.id} value={n.id}>{formatWaSelectLabel(n)}</option>)}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 pointer-events-none" />
-              </div>
-            )}
-            <p className="text-xs text-surface-600 mt-1">Atendentes deste setor só acessam conversas deste número.</p>
-            {mustPickNumber && !form.whatsappNumberId.trim() && (
-              <p className="text-xs text-status-pending mt-1">Escolha um número para salvar.</p>
-            )}
-          </div>
+              <p className="text-xs text-surface-600 mt-1">Atendentes deste setor só acessam conversas deste número.</p>
+            </div>
+          ) : (
+            <FormField
+              label={<><Smartphone className="w-3 h-3 inline mr-1" />Número WhatsApp vinculado</>}
+              hint="Atendentes deste setor só acessam conversas deste número."
+              error={mustPickNumber && !form.whatsappNumberId.trim() ? 'Escolha um número para salvar.' : undefined}
+            >
+              <Select value={form.whatsappNumberId} onChange={(e) => set('whatsappNumberId', e.target.value)}>
+                <option value="">Selecione um número…</option>
+                {waNumbers.map((n) => <option key={n.id} value={n.id}>{formatWaSelectLabel(n)}</option>)}
+              </Select>
+            </FormField>
+          )
         )}
 
         {/* Actions */}
         <div className="flex justify-end gap-2 pt-1 flex-wrap">
           <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
           {blockedByNoNumbers ? (
-            <Link to="/settings/numbers" className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold rounded-xl transition-colors">
+            <Link to="/settings/numbers" className="inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-sm text-[13px] font-semibold bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] hover:brightness-90 transition">
               <ExternalLink className="w-4 h-4" />Conectar número para salvar
             </Link>
           ) : (
@@ -264,7 +260,7 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
     <div className="group hover:bg-surface-900/60 transition-colors">
       <div className="flex items-center justify-between gap-3 px-4 py-3.5">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center"
+          <div className="w-9 h-9 rounded-md flex-shrink-0 flex items-center justify-center"
             style={{ backgroundColor: `color-mix(in srgb, ${dept.color || 'var(--color-accent-violet)'} 13%, transparent)`, border: `2px solid color-mix(in srgb, ${dept.color || 'var(--color-accent-violet)'} 33%, transparent)` }}>
             <Layers className="w-4 h-4" style={{ color: dept.color || 'var(--color-accent-violet)' }} />
           </div>
@@ -294,10 +290,10 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
           </div>
 
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors" title="Editar">
+            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-sm text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors" title="Editar">
               <Pencil className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir">
+            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-sm text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
