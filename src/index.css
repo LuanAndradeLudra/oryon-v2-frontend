@@ -73,7 +73,7 @@
   /* ── Acento teal (dark defaults) ─────────────────────────────────────────── */
   /* dark: sobe luminância #14B8A6 → #2DD4BF — intencional */
   --color-accent:       #2DD4BF;
-  --color-accent-dark:  #14B8A6;
+  --color-accent-dark:  #2DD4BF; /* spec --acs escuro (TOK) */
   --color-accent-soft:  rgba(45, 212, 191, 0.14);
   --color-accent-on:    #0A0F0F;
 
