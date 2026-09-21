@@ -117,7 +117,7 @@ export function AiSuggestionsModal({ contactId, suggestions, meta, onClose, onAp
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700">
+          <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-brand-600/20 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-brand-400" />

@@ -3,7 +3,7 @@
 //     Cancelado, chip de origem, quem moveu, tempo na etapa e telefone
 //   * sales: renderiza exatamente como antes (título, valor, ganho/perdido)
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react'
 
 vi.mock('@/hooks/useIsMobile', () => ({ useIsMobile: () => false }))
 
@@ -239,10 +239,11 @@ describe('DealsBoard — coluna terminal única (R2-1E-COL)', () => {
     const d = deal({ id: 'dd', pipelineId: 'ps' })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [d] }} onMoveStage={onMoveStage} pipeline={SALES} />)
     fireEvent.dragStart(screen.getByText('Título do registro').closest('[draggable]')!, { dataTransfer: { effectAllowed: '' } })
-    // o id do card arrastado entra em setTimeout(0) — espera o estado assentar
-    await new Promise((r) => setTimeout(r, 10))
     const perdido = within(screen.getByTestId('board-terminal-column')).getByText('Não confirmou').closest('div[class*="flex-col"]')!
-    fireEvent.drop(perdido)
-    expect(onMoveStage).toHaveBeenCalledWith(expect.objectContaining({ id: 'dd' }), 's4')
+    // o id do card arrastado entra em setTimeout(0): repete o drop até o estado assentar
+    await waitFor(() => {
+      fireEvent.drop(perdido)
+      expect(onMoveStage).toHaveBeenCalledWith(expect.objectContaining({ id: 'dd' }), 's4')
+    })
   })
 })

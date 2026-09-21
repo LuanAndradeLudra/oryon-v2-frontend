@@ -413,7 +413,7 @@ export function ContactProfilePage() {
                     surface-900) via index.css — escopado à página, sem tocar
                     nos mesmos cards no drawer. Divisores em surface-700 ficam
                     visíveis nos dois temas (surface-800 = branco no claro). */}
-                <div className="profile-accordion rounded-2xl border border-surface-800 bg-surface-900 divide-y divide-surface-700 overflow-hidden grow shrink-0">
+                <div className="profile-accordion rounded-2xl border border-surface-700 bg-surface-900 divide-y divide-surface-700 overflow-hidden grow shrink-0">
                   <CollapsibleSection title="Perfil" storageKey="profile.about">
                     <ContactInfoCard contact={contact} onSave={profile.save} hideTitle />
                     <QualificationCard contact={contact} onSave={profile.save} hideStage hideTitle />
@@ -451,7 +451,7 @@ export function ContactProfilePage() {
             center={
               /* Painel de trabalho único de altura total: tabs fixas no topo
                  da superfície, conteúdo rolando internamente abaixo. */
-              <section className="flex-1 min-h-0 flex flex-col rounded-2xl border border-surface-800 bg-surface-900 overflow-hidden">
+              <section className="flex-1 min-h-0 flex flex-col rounded-2xl border border-surface-700 bg-surface-900 overflow-hidden">
                 <ProfileTabs tabs={centerTabs} active={tab} onChange={setTab} />
                 {tab === 'conversations' ? (
                   <div className="flex-1 min-h-0 overflow-y-auto scroll-thin">

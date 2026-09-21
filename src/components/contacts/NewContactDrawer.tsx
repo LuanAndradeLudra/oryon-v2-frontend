@@ -332,9 +332,9 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             style={{ zIndex: zIndex + 1 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
+            <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
               <div>
-                <h2 className="text-base font-semibold text-surface-50">Novo contato</h2>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Novo contato</h2>
                 <p className="text-xs text-surface-500 mt-0.5">Preencha as informações do novo lead</p>
               </div>
               <button
@@ -630,7 +630,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-surface-700 flex-shrink-0">
+            <div className="flex items-center justify-end gap-2 px-[18px] py-3.5 border-t border-surface-700 flex-shrink-0">
               <button
                 onClick={onClose}
                 disabled={saving}

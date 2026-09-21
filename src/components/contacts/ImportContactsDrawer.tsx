@@ -534,9 +534,9 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
             style={{ zIndex: zIndex + 1 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700 flex-shrink-0">
+            <div className="flex items-center justify-between px-[18px] py-3.5 border-b border-surface-700 flex-shrink-0">
               <div>
-                <h2 className="text-base font-semibold text-surface-50">Importar contatos</h2>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Importar contatos</h2>
                 <p className="text-xs text-surface-500 mt-0.5">CSV, JSON ou XML — até 1.000 contatos por vez</p>
               </div>
               <button onClick={requestClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
@@ -560,7 +560,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       className={cn(
                         'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                         uploadMode === 'file'
-                          ? 'bg-surface-700 text-surface-100 shadow-sm'
+                          ? 'bg-surface-700 text-surface-100'
                           : 'text-surface-400 hover:text-surface-200',
                       )}
                     >
@@ -572,7 +572,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       className={cn(
                         'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                         uploadMode === 'paste'
-                          ? 'bg-surface-700 text-surface-100 shadow-sm'
+                          ? 'bg-surface-700 text-surface-100'
                           : 'text-surface-400 hover:text-surface-200',
                       )}
                     >
@@ -1057,7 +1057,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
 
             {/* Footer navigation */}
             {(step === 'map' || step === 'preview') && (
-              <div className="flex items-center justify-between px-5 py-4 border-t border-surface-700 flex-shrink-0">
+              <div className="flex items-center justify-between px-[18px] py-3.5 border-t border-surface-700 flex-shrink-0">
                 <button
                   onClick={() => setStep(step === 'map' ? 'upload' : 'map')}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all"

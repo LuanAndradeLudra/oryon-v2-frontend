@@ -347,7 +347,7 @@ export function PipelinePage() {
           onClick={() => setTab('board')}
           className={cn(
             'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
-            tab === 'board' ? 'bg-surface-700 text-surface-100 shadow-sm' : 'text-surface-400 hover:text-surface-200',
+            tab === 'board' ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:text-surface-200',
           )}
         >
           <LayoutGrid className="w-3.5 h-3.5" /> Quadro
@@ -357,7 +357,7 @@ export function PipelinePage() {
           onClick={() => setTab('reports')}
           className={cn(
             'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
-            tab === 'reports' ? 'bg-surface-700 text-surface-100 shadow-sm' : 'text-surface-400 hover:text-surface-200',
+            tab === 'reports' ? 'bg-surface-700 text-surface-100' : 'text-surface-400 hover:text-surface-200',
           )}
         >
           <BarChart3 className="w-3.5 h-3.5" /> Relatórios

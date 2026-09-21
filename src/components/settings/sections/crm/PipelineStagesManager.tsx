@@ -180,7 +180,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                     <span className="text-sm font-medium text-surface-100">{stage.label}</span>
                     {stage.isWon && (
                       <span
-                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-xs color-chip border"
+                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-xs color-chip-soft border"
                         style={TERMINAL_CHIP_STYLE.won}
                       >
                         <Trophy className="w-2.5 h-2.5" /> {terminalLabels.won}
@@ -188,7 +188,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                     )}
                     {stage.isLost && (
                       <span
-                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-xs color-chip border"
+                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-xs color-chip-soft border"
                         style={TERMINAL_CHIP_STYLE.lost}
                       >
                         <X className="w-2.5 h-2.5" /> {terminalLabels.lost}
