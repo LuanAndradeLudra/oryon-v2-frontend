@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { SkeletonTable } from './Skeleton'
 import { EmptyState } from './EmptyState'
 import { ErrorState } from './ErrorState'
+import { Checkbox } from './Checkbox'
 
 export interface DataTableColumn<Row> {
   key: string
@@ -97,12 +98,10 @@ export function DataTable<Row>({
           <tr className="border-b border-surface-700">
             {selectable && (
               <th className="w-10 px-3 h-[30px]">
-                <input
-                  type="checkbox"
+                <Checkbox
                   aria-label="Selecionar todos"
                   checked={allSelected}
                   onChange={onToggleSelectAll}
-                  className="accent-brand-500 cursor-pointer"
                 />
               </th>
             )}
@@ -152,12 +151,10 @@ export function DataTable<Row>({
               >
                 {selectable && (
                   <td className="w-10 px-3" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       aria-label="Selecionar linha"
                       checked={selected}
                       onChange={() => onToggleSelect(key)}
-                      className="accent-brand-500 cursor-pointer"
                     />
                   </td>
                 )}

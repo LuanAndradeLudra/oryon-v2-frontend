@@ -773,6 +773,47 @@ code, pre, kbd, samp {
 }
 .chip-dot { background-color: currentColor; }
 
+/* Checkbox (ui/Checkbox.tsx) — spec 1a TABLE-12/RAD-09: 14px, raio 4, borda --bd2
+   sobre --sf; marcado = fundo do botão primário (--btn) + check 10px na cor do
+   texto do botão (--btntx: escuro no dark, branco no claro). */
+.ui-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border-radius: 4px;
+  border: 1px solid var(--bd2);
+  background-color: var(--color-surface-800);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 10px 10px;
+  transition: background-color 120ms, border-color 120ms;
+}
+.ui-checkbox:checked,
+.ui-checkbox:indeterminate {
+  background-color: var(--color-btn-primary-bg);
+  border-color: var(--color-btn-primary-bg);
+}
+.ui-checkbox:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%2304201D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.2 4.1 7.3 8 2.8'/%3E%3C/svg%3E");
+}
+.ui-checkbox:indeterminate {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%2304201D' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2.5 5h5'/%3E%3C/svg%3E");
+}
+[data-theme="light"] .ui-checkbox:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.2 4.1 7.3 8 2.8'/%3E%3C/svg%3E");
+}
+[data-theme="light"] .ui-checkbox:indeterminate {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2.5 5h5'/%3E%3C/svg%3E");
+}
+.ui-checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+.ui-checkbox:disabled { opacity: 0.45; cursor: not-allowed; }
+
 /* Status trigger button — neutral at rest, colors like .color-chip on hover
    (same --chip var), matching the "clicked/open" look one step early. */
 .status-trigger:hover {
