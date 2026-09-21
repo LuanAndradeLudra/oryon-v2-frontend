@@ -410,7 +410,8 @@ export function BillingSettings() {
 
       {/* Current plan */}
       <SettingsSection
-        labelWidth={198}
+        labelWidth={220}
+        dense
         title="Plano atual"
         description="Sua assinatura, ciclo de cobrança e consumo de créditos de IA."
       >
@@ -464,7 +465,8 @@ export function BillingSettings() {
 
       {/* Limits */}
       <SettingsSection
-        labelWidth={198}
+        labelWidth={220}
+        dense
         title="Limites do plano"
         description="Recursos incluídos na sua assinatura atual."
       >
@@ -490,7 +492,8 @@ export function BillingSettings() {
       {/* Upgrade CTA */}
       {nextPlan && (
         <SettingsSection
-          labelWidth={198}
+          labelWidth={220}
+        dense
         title="Upgrade"
           description="O próximo plano libera mais usuários, números e agentes."
         >
@@ -508,7 +511,8 @@ export function BillingSettings() {
 
       {/* Pacotes de crédito */}
       <SettingsSection
-        labelWidth={198}
+        labelWidth={220}
+        dense
         title="Comprar créditos avulsos"
         description="Pacotes não renovam — somam ao saldo atual. Ideal para picos de atendimento."
       >
@@ -536,7 +540,8 @@ export function BillingSettings() {
 
       {/* Extrato de créditos */}
       <SettingsSection
-        labelWidth={198}
+        labelWidth={220}
+        dense
         title="Extrato de créditos"
         description="Consumo e recargas de crédito, mais recentes primeiro."
       >

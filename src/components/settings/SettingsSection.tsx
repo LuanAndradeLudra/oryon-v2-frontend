@@ -104,8 +104,10 @@ interface SettingsSectionProps {
   description?: string
   children: ReactNode
   className?: string
-  /** Largura da coluna do rótulo em px (default 236 — medido no PNG 2e; o 6a mede ~198). */
+  /** Largura da coluna do rótulo em px (default 260 — canvas 2e; o 6a usa 220). */
   labelWidth?: number
+  /** Padding vertical do canvas 6a (18/16) em vez do 2e (26/22). */
+  dense?: boolean
   /** Ícone exclusivo do eixo conceitual desta seção, tingido com `accentColor`.
    *  Omitido na maioria das seções (identidade puramente tipográfica) — só
    *  vale a pena quando a seção precisa se diferenciar de uma vizinha visualmente
@@ -116,7 +118,7 @@ interface SettingsSectionProps {
   accentColor?: string
 }
 
-export function SettingsSection({ title, description, children, className, labelWidth = 236, icon: Icon, accentColor }: SettingsSectionProps) {
+export function SettingsSection({ title, description, children, className, labelWidth = 260, dense = false, icon: Icon, accentColor }: SettingsSectionProps) {
   const register = useContext(RegisterCtx)
   const id = slugify(title)
   // register é estável (useCallback []) → roda 1x por montagem da seção.
@@ -126,7 +128,8 @@ export function SettingsSection({ title, description, children, className, label
     <section
       id={id}
       className={cn(
-        'py-[22px] first:pt-2 border-b border-surface-700 last:border-0 scroll-mt-6',
+        dense ? 'pt-4 pb-4 first:pt-[18px]' : 'pt-[26px] pb-[22px]',
+        'border-b border-surface-700 last:border-0 scroll-mt-6',
         'md:grid md:grid-cols-[var(--label-w)_1fr] md:gap-6 md:items-start',
         className,
       )}
@@ -138,7 +141,7 @@ export function SettingsSection({ title, description, children, className, label
           {title}
         </h3>
         {description && (
-          <p className="text-xs text-surface-500 mt-1 leading-relaxed">{description}</p>
+          <p className="text-xs text-surface-400 mt-[3px] leading-[1.5]">{description}</p>
         )}
       </div>
       <div className="min-w-0">{children}</div>
