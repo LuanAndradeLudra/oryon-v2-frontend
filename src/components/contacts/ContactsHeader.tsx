@@ -32,7 +32,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
               viewMode === 'table'
-                ? 'bg-surface-700 text-surface-100 shadow-sm'
+                ? 'bg-surface-700 text-surface-100'
                 : 'text-surface-400 hover:text-surface-200'
             )}
           >
@@ -44,7 +44,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
               viewMode === 'kanban'
-                ? 'bg-surface-700 text-surface-100 shadow-sm'
+                ? 'bg-surface-700 text-surface-100'
                 : 'text-surface-400 hover:text-surface-200'
             )}
           >
@@ -72,7 +72,7 @@ export function ContactsHeader({ total, viewMode, onViewModeChange, onNewContact
 
         <button
           onClick={onNewContact}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-surface-950 transition-all"
         >
           <Plus className="w-3.5 h-3.5" />
           Novo Contato

@@ -214,7 +214,7 @@ export function DealsBoard({
             <span className="text-xs font-semibold truncate" style={{ color: tintaDaEtapa(stage.color) }}>{stage.label}</span>
             {stage.isWon && (
               <span
-                className="text-3xs px-1.5 py-0.5 rounded border color-chip"
+                className="text-3xs px-1.5 py-0.5 rounded border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.won}
               >
                 {terminalLabels.won.toLowerCase()}
@@ -222,7 +222,7 @@ export function DealsBoard({
             )}
             {stage.isLost && (
               <span
-                className="text-3xs px-1.5 py-0.5 rounded border color-chip"
+                className="text-3xs px-1.5 py-0.5 rounded border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.lost}
               >
                 {terminalLabels.lost.toLowerCase()}
