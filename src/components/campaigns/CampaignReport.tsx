@@ -251,6 +251,8 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   // Os contadores do `/analytics` são lidos AGORA; `campaign.stats` vem da lista e
   // pode estar velho (delivered/read sobem depois, por webhook, e a aba não recarrega).
   const stats = analytics?.stats ?? campaign.stats
+  // SCRUM-1150: campanha parada sozinha pelo circuit breaker; o /analytics traz o motivo atual.
+  const stopReason = analytics?.stopReason ?? campaign.stopReason ?? null
 
   useEffect(() => {
     Promise.all([
@@ -391,6 +393,24 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                   {/* ── OVERVIEW ── */}
                   {tab === 'overview' && (
                     <>
+                      {/* Pausa automática (circuit breaker) e contatos suprimidos */}
+                      {stopReason && (
+                        <div
+                          role="alert"
+                          className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5"
+                        >
+                          <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
+                          <p className="text-2xs text-surface-200">{stopReason}</p>
+                        </div>
+                      )}
+                      {(stats.excluded ?? 0) > 0 && (
+                        <p className="text-2xs text-surface-400">
+                          <span className="font-semibold text-surface-200">{stats.excluded}</span>{' '}
+                          {stats.excluded === 1 ? 'contato do segmento ficou' : 'contatos do segmento ficaram'} de fora
+                          do envio (número inválido ou opt-out de marketing).
+                        </p>
+                      )}
+
                       {/* Funnel */}
                       <div>
                         <p className="text-xs font-semibold text-surface-300 mb-3">Funil de engajamento</p>

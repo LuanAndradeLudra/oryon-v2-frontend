@@ -1405,7 +1405,7 @@ export interface WhatsAppTemplate {
   updatedAt: string
 }
 
-export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled'
+export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled' | 'stopped' | 'paused'
 
 export interface CampaignSegment {
   type: 'all' | 'tag' | 'stage' | 'manual' | 'filter'
@@ -1445,6 +1445,8 @@ export interface CampaignStats {
   conversions?: number
   engagementScore?: number   // 0–100 composite
   churnCount?: number
+  /** Contatos do segmento fora do envio (número inválido / opt-out de marketing). */
+  excluded?: number
 }
 
 export interface CampaignChurnBreakdown {
@@ -1536,6 +1538,8 @@ export interface CampaignAnalytics {
   avgTimeToReadMinutes: number | null
   /** Contadores atuais da campanha — mais novos que o `stats` da lista. */
   stats?: CampaignStats
+  /** Motivo da pausa automática, sempre atual. */
+  stopReason?: string | null
 }
 
 export interface Campaign {
@@ -1550,6 +1554,8 @@ export interface Campaign {
   scheduledAt?: string
   sentAt?: string
   stats: CampaignStats
+  /** Por que a campanha foi parada sozinha (circuit breaker). */
+  stopReason?: string | null
   createdByUserId: string
   createdAt: string
   whatsappNumberId?: string | null

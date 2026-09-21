@@ -76,4 +76,26 @@ describe('CampaignReport com o payload real do backend', () => {
     )
     await waitFor(() => expect(screen.getAllByText('7').length).toBeGreaterThan(0))
   })
+
+  it('mostra o motivo da pausa automática e os contatos excluídos (SCRUM-1149/1150)', async () => {
+    getAnalytics.mockResolvedValue({
+      data: {
+        campaignId: 'c1',
+        status: 'stopped',
+        stopReason: 'Pausada automaticamente: 12 de 20 envios (60%) falharam por problema da conta ou do template.',
+        stats: { total: 20, sent: 8, delivered: 8, read: 2, failed: 12, excluded: 3 },
+        failures: [{ code: '132015', reason: 'Template pausado', count: 12 }],
+      },
+    })
+    getConversations.mockResolvedValue({ data: [] })
+    render(
+      <MemoryRouter>
+        <CampaignReport campaign={campaign} onClose={() => undefined} />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy())
+    expect(screen.getByRole('alert').textContent).toContain('Pausada automaticamente')
+    expect(screen.getByText(/ficaram de fora/)).toBeTruthy()
+    expect(screen.getByText('Template pausado')).toBeTruthy()
+  })
 })
