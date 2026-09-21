@@ -1,63 +1,10 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import {
-  TrendingUp, TrendingDown, Settings2, X, RotateCcw, Check,
-  MessageSquare, MessageCircle, Clock, CheckCircle2, XCircle,
-  Target, Zap, Timer, ShieldCheck, Star, ThumbsUp, RefreshCw,
-  ArrowDownLeft, ArrowUpRight, UserPlus, Bot, Users, Activity,
-  Send, Eye, Reply, MousePointer, AlertTriangle, UserX, Radio, Megaphone,
-  DollarSign, BarChart2, CalendarCheck, CalendarX,
-} from 'lucide-react'
+import { TrendingUp, TrendingDown, Settings2, X, RotateCcw, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatKpiValue } from './utils'
 import type { KpiId, KpiMetric } from '@/types/dashboard'
 import { KPI_CATALOG, DEFAULT_KPI_SLOTS } from '@/types/dashboard'
-
-const KPI_ICONS: Record<KpiId, React.ReactNode> = {
-  total_conversations:  <MessageSquare className="w-4 h-4" />,
-  active_conversations: <MessageCircle className="w-4 h-4" />,
-  queued:               <Clock className="w-4 h-4" />,
-  resolved:             <CheckCircle2 className="w-4 h-4" />,
-  abandoned:            <XCircle className="w-4 h-4" />,
-  resolution_rate:      <Target className="w-4 h-4" />,
-  abandon_rate:         <XCircle className="w-4 h-4" />,
-  first_response_time:  <Zap className="w-4 h-4" />,
-  avg_resolution_time:  <Timer className="w-4 h-4" />,
-  sla_compliance:       <ShieldCheck className="w-4 h-4" />,
-  csat:                 <Star className="w-4 h-4" />,
-  nps:                  <ThumbsUp className="w-4 h-4" />,
-  recontact_rate:       <RefreshCw className="w-4 h-4" />,
-  msgs_received:        <ArrowDownLeft className="w-4 h-4" />,
-  msgs_sent:            <ArrowUpRight className="w-4 h-4" />,
-  new_contacts:         <UserPlus className="w-4 h-4" />,
-  bot_deflection:       <Bot className="w-4 h-4" />,
-  bot_resolved:         <Bot className="w-4 h-4" />,
-  agents_online:        <Users className="w-4 h-4" />,
-  team_utilization:     <Activity className="w-4 h-4" />,
-  // Campanhas
-  campaign_sent:          <Send className="w-4 h-4" />,
-  campaign_delivery_rate: <CheckCircle2 className="w-4 h-4" />,
-  campaign_read_rate:     <Eye className="w-4 h-4" />,
-  campaign_reply_rate:    <Reply className="w-4 h-4" />,
-  campaign_ctr:           <MousePointer className="w-4 h-4" />,
-  campaign_fail_rate:     <AlertTriangle className="w-4 h-4" />,
-  campaign_optout_rate:   <UserX className="w-4 h-4" />,
-  campaigns_active:       <Radio className="w-4 h-4" />,
-  campaigns_total:        <Megaphone className="w-4 h-4" />,
-  campaign_reach:         <Users className="w-4 h-4" />,
-  // Marketing (Meta Ads + Google Ads)
-  ads_leads_meta:         <Megaphone className="w-4 h-4" />,
-  ads_leads_google:       <Target className="w-4 h-4" />,
-  ads_total_spend:        <DollarSign className="w-4 h-4" />,
-  ads_avg_cpl:            <DollarSign className="w-4 h-4" />,
-  ads_avg_roas:           <BarChart2 className="w-4 h-4" />,
-  ads_conversion_rate:    <TrendingUp className="w-4 h-4" />,
-  ads_qualified_rate:     <CheckCircle2 className="w-4 h-4" />,
-  ads_customer_rate:      <Star className="w-4 h-4" />,
-  // Clínica
-  appointments_scheduled: <CalendarCheck className="w-4 h-4" />,
-  appointments_cancelled: <CalendarX className="w-4 h-4" />,
-}
 
 const CATEGORY_COLORS: Record<string, string> = {
   Atendimento: 'var(--color-accent-blue)',
@@ -82,52 +29,6 @@ function loadSlots(): KpiId[] {
   return DEFAULT_KPI_SLOTS
 }
 
-// ── KPI Card (grade secundária, slots 5+) ──────────────────────────────────────
-
-function KpiCard({ metric }: { metric: KpiMetric }) {
-  const isGood =
-    (metric.trend > 0 && metric.trendIsGood === 'up') ||
-    (metric.trend < 0 && metric.trendIsGood === 'down')
-  const isBad =
-    (metric.trend > 0 && metric.trendIsGood === 'down') ||
-    (metric.trend < 0 && metric.trendIsGood === 'up')
-
-  const trendColor = isGood ? 'text-online' : isBad ? 'text-danger' : 'text-surface-500'
-  const catColor = CATEGORY_COLORS[metric.category] ?? 'var(--color-accent-blue)'
-
-  return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg flex flex-col p-3.5 gap-2">
-      <div className="flex items-center gap-2">
-        <div
-          className="rounded-lg flex items-center justify-center flex-shrink-0 w-6 h-6"
-          style={{ backgroundColor: `color-mix(in srgb, ${catColor} 10%, transparent)`, color: catColor }}
-        >
-          {KPI_ICONS[metric.id]}
-        </div>
-        <span className="font-medium leading-tight text-surface-400 text-xs">
-          {metric.label}
-        </span>
-      </div>
-
-      <div className="font-bold tabular-nums leading-none font-display text-xl text-surface-50">
-        {formatKpiValue(metric.value, metric.unit)}
-        {metric.unit === 'csat_score' && (
-          <span className="font-normal text-surface-400 ml-1 font-sans text-sm">/ 5</span>
-        )}
-      </div>
-
-      {metric.trend !== 0 && (
-        <div className={cn('relative flex items-center gap-1 font-medium text-xs', trendColor)}>
-          {metric.trend > 0
-            ? <TrendingUp className="w-3 h-3" />
-            : <TrendingDown className="w-3 h-3" />}
-          <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1)}%</span>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── Faixa de KPI (hero) — card único dividido por hairlines ───────────────────
 // SCRUM-1104 (tela 1b): os primeiros slots deixam de ser N cards soltos e
 // passam a ser células de um único card, separadas por `border-right` (linha
@@ -144,9 +45,9 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
   const trendColor = isGood ? 'text-online' : isBad ? 'text-danger' : 'text-surface-500'
 
   return (
-    <div className="flex flex-col gap-1 px-3.5 py-3 min-w-0">
+    <div className="flex flex-col gap-0.5 px-3.5 py-3 min-w-0">
       <span className="text-[11px] font-medium text-surface-400 truncate">{metric.label}</span>
-      <div className="font-extrabold tabular-nums leading-none font-display text-[26px] text-surface-50">
+      <div className="font-extrabold tabular-nums tracking-[-0.02em] leading-[1.15] mt-0.5 font-display text-[26px] text-surface-100">
         {formatKpiValue(metric.value, metric.unit)}
         {metric.unit === 'csat_score' && (
           <span className="font-normal text-surface-400 ml-1 font-sans text-sm">/ 5</span>
@@ -171,28 +72,32 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
   )
 }
 
-// Colunas da faixa = quantidade real de slots (mín. 4, máx. 5 — ver MIN/MAX
-// do CustomizerPanel) — evita hairline de coluna vazia quando o usuário
-// reduz a seleção abaixo de 5.
-const STRIP_COLS: Record<number, string> = {
-  4: 'sm:grid-cols-4',
-  5: 'sm:grid-cols-5',
-}
+// R2-DASH-07 (mock 1b, DASH-KPI-01/02): TODOS os KPIs escolhidos vivem em UM
+// card `--sf/--bd/raio 8`, em linhas de 5 células separadas por hairline
+// (sem tile de ícone, sem card por KPI).
+const STRIP_COLS = 5
 
 function KpiStrip({ metrics, queued }: { metrics: KpiMetric[]; queued: number }) {
+  const rows: KpiMetric[][] = []
+  for (let i = 0; i < metrics.length; i += STRIP_COLS) rows.push(metrics.slice(i, i + STRIP_COLS))
   return (
-    <div
-      className={cn(
-        'bg-surface-800 border border-surface-700 rounded-lg grid grid-cols-1 divide-y sm:divide-y-0 sm:divide-x divide-surface-700 overflow-hidden',
-        STRIP_COLS[metrics.length] ?? 'sm:grid-cols-5',
-      )}
-    >
-      {metrics.map((metric) => (
-        <KpiStripCell
-          key={metric.id}
-          metric={metric}
-          support={metric.id === 'active_conversations' && queued > 0 ? { text: `${queued} aguardando`, tone: 'warn' } : undefined}
-        />
+    <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+      {rows.map((row, ri) => (
+        <div
+          key={ri}
+          className={cn(
+            'grid grid-cols-1 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-surface-700',
+            ri > 0 && 'border-t border-surface-700',
+          )}
+        >
+          {row.map((metric) => (
+            <KpiStripCell
+              key={metric.id}
+              metric={metric}
+              support={metric.id === 'active_conversations' && queued > 0 ? { text: `${queued} aguardando`, tone: 'warn' } : undefined}
+            />
+          ))}
+        </div>
       ))}
     </div>
   )
@@ -349,15 +254,7 @@ export function KpiGrid({
           faixa (card único, hairlines); o restante fica compacto abaixo em
           cards soltos. A ordem dos slots continua sendo a do usuário —
           reordenar no customizer muda o que é destaque. */}
-      <KpiStrip metrics={activeMetrics.slice(0, 5)} queued={metrics.find((m) => m.id === 'queued')?.value ?? 0} />
-
-      {activeMetrics.length > 5 && (
-        <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 mt-3">
-          {activeMetrics.slice(5).map((metric) => (
-            <KpiCard key={metric.id} metric={metric} />
-          ))}
-        </div>
-      )}
+      <KpiStrip metrics={activeMetrics} queued={metrics.find((m) => m.id === 'queued')?.value ?? 0} />
 
       <CustomizerPanel
         open={customizerOpen}

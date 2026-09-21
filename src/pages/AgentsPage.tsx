@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Bot, Plus, Sparkles,
+  Bot, Plus,
   ExternalLink, Copy, ToggleRight, Pause, FileText,
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
@@ -49,29 +49,18 @@ function relativeTime(iso: string): string {
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-// Acento violeta — mesmo tom já usado em todo o produto pra sinalizar "isto é
-// IA" (ex.: CHIP.violet em ConversationActivitySection/timelineSources pros
-// eventos do agente), em vez do brand-600 genérico que qualquer CTA usa.
+// R2-AGT-06: empty state legado (tile 80px rounded-3xl + botão grande) → primitivo
+// EmptyState (caixa tracejada, ícone 20, título 13/600) + Button sm.
 function NoAgentsState({ onNew }: { onNew: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8">
-      <div
-        className="w-20 h-20 rounded-3xl flex items-center justify-center"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--color-accent-violet) 10%, transparent)', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--color-accent-violet) 20%, transparent)' }}
-      >
-        <Bot className="w-10 h-10" style={{ color: 'color-mix(in srgb, var(--color-accent-violet) 65%, transparent)' }} />
-      </div>
-      <div>
-        <p className="text-base font-semibold text-surface-200">Nenhum agente ainda</p>
-        <p className="text-sm text-surface-500 mt-1">crie o primeiro pra começar a atender no WhatsApp</p>
-      </div>
-      <button
-        onClick={onNew}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-medium transition-colors shadow-lg shadow-brand-900/30"
-      >
-        <Sparkles className="w-4 h-4" />
-        Criar primeiro agente
-      </button>
+    <div className="flex items-start justify-center h-full px-6 pt-10">
+      <EmptyState
+        icon={Bot}
+        title="Nenhum agente ainda"
+        hint="Crie o primeiro pra começar a atender no WhatsApp."
+        action={{ label: 'Criar primeiro agente', onClick: onNew }}
+        className="w-full max-w-md"
+      />
     </div>
   )
 }
