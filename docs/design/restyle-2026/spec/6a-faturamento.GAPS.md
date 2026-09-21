@@ -109,3 +109,17 @@ upgrade, fundo da coluna atual, trilha das mini-barras e hairlines das linhas.
 Breadcrumb do 6a no PNG é "Administração / Plano & faturamento"; o app deriva
 da nav ("Conta / Plano & faturamento") — conflito de mocks, ver 2e-GAPS.
 Seções "Créditos avulsos" e "Extrato" (abaixo da dobra no PNG) existem no app.
+
+## Rodada 2b — valores do canvas 6a (HTML)
+
+| ID | Valor (canvas) | Onde | Status |
+|---|---|---|---|
+| R2-6A-04 | seção: grid **220px 1fr / gap 24**, padding 18/16 (a mim, ~198 medido do PNG estava errado) | SettingsSection `labelWidth={220} dense` | ✅ código · ❓ ao vivo |
+| R2-6A-05 | banner: raio 8, borda 1px `--ac`, gap 12, padding 10/14, título 13/600, botão h32 12.5/600 | BillingSettings.tsx | ✅ código · ❓ ao vivo |
+| R2-6A-06 | créditos: rótulo 12.5/600, trilho 6px `--sf2` + borda `--bd`, rodapé 11.5 tx3 (mt 5) | CreditBar / rodapé | ✅ código · ❓ ao vivo |
+| R2-6A-07 | **limites: hairline `--bd` em cada linha (menos a última)** — eu havia removido na Fase C; trilho 4px raio 2 `--sf2`; contagem tx2, no teto 600 âmbar | LimitRow | ✅ código · ❓ ao vivo |
+| R2-6A-08 | chip avaliação h20 px7 raio 5 11/700; nome 16/700 -.01em; preço 22/800 -.02em | Plano atual | ✅ código · ❓ ao vivo |
+| R2-6A-09 | upgrade: nome 12.5/600, "· atual" 11 tx3, preço 18/800 -.02em mt4, specs 11.5 tx2 lh1.6 mt8, chip Recomendado h16 raio 4 10/700, botões h28 sem largura total | UpgradeTable | ✅ código · ❓ ao vivo |
+| R2-6A-10 | "Nesta página": eyebrow .14em mb4, itens pl10, gap 6 | SettingsOutline | ✅ código · ❓ ao vivo |
+
+O canvas desenha barras de uso nas 5 linhas restantes (Usuários 3/3 etc.) — dado que não existe por tenant (`[!]` LIMITS-08/09 mantido).
