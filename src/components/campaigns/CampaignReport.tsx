@@ -248,7 +248,9 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   const [outcomeFilter, setOutcomeFilter] = useState<string>('all')
   const [sentimentFilter, setSentimentFilter] = useState<string>('all')
 
-  const { stats } = campaign
+  // Os contadores do `/analytics` são lidos AGORA; `campaign.stats` vem da lista e
+  // pode estar velho (delivered/read sobem depois, por webhook, e a aba não recarrega).
+  const stats = analytics?.stats ?? campaign.stats
 
   useEffect(() => {
     Promise.all([

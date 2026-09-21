@@ -1534,6 +1534,8 @@ export interface CampaignAnalytics {
   readHeatmap:        CampaignReadHeatmapCell[]
   /** `null` quando ninguém leu ainda (não é "0 minutos"). */
   avgTimeToReadMinutes: number | null
+  /** Contadores atuais da campanha — mais novos que o `stats` da lista. */
+  stats?: CampaignStats
 }
 
 export interface Campaign {

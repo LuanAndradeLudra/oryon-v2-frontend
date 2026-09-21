@@ -132,6 +132,7 @@ export function useMessages(conversationId: string | null) {
         // (sem duplicar). Backend antigo não manda o campo → só marca falha.
         const failedMessage = (err as { response?: { data?: { failedMessage?: Message } } })?.response?.data
           ?.failedMessage
+        if (failedMessage && objectUrl) URL.revokeObjectURL(objectUrl) // a bolha passa a usar a URL do servidor
         setMessages((prev) => {
           if (failedMessage) {
             const withoutTemp = prev.filter((m) => m.id !== tempId)

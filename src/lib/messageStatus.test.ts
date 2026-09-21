@@ -26,11 +26,13 @@ describe('applyStatusUpdate', () => {
     expect(applyStatusUpdate(msg({ status: 'sending' }), { messageId: 'm1', status: 'sent' }).status).toBe('sent')
     expect(applyStatusUpdate(msg({ status: 'queued' }), { messageId: 'm1', status: 'sent' }).status).toBe('sent')
   })
-  it('failed não derruba delivered/read, mas delivered/read vencem failed', () => {
+  it('failed não derruba delivered/read e é terminal (igual ao backend)', () => {
     expect(shouldApplyStatus('delivered', 'failed')).toBe(false)
     expect(shouldApplyStatus('read', 'failed')).toBe(false)
-    expect(shouldApplyStatus('failed', 'delivered')).toBe(true)
+    expect(shouldApplyStatus('failed', 'delivered')).toBe(false)
+    expect(shouldApplyStatus('failed', 'read')).toBe(false)
     expect(shouldApplyStatus('sent', 'failed')).toBe(true)
+    expect(shouldApplyStatus('queued', 'failed')).toBe(true)
   })
   it('aplica timestamps e motivo da falha do payload', () => {
     const r = applyStatusUpdate(msg(), {
