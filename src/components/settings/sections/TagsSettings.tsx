@@ -190,7 +190,7 @@ export function TagsSettings() {
 
       {/* Create form */}
       {creating && (
-        <div className="bg-surface-900 border border-brand-600/40 rounded-2xl p-5 mb-4">
+        <div className="border-y border-surface-700 py-5 mb-4">
           <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest mb-3">Nova tag</p>
           <div className="flex flex-col gap-3">
             <input
@@ -219,7 +219,7 @@ export function TagsSettings() {
 
       {/* Edit form */}
       {editTarget && (
-        <div className="bg-surface-900 border border-brand-600/40 rounded-2xl p-5 mb-4">
+        <div className="border-y border-surface-700 py-5 mb-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-surface-400 uppercase tracking-widest">Editar tag</p>
             <button onClick={() => setEditTarget(null)} className="text-surface-500 hover:text-surface-300">

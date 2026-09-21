@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2, Users } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/Modal'
+import { SectionHeader } from '@/components/settings/SectionHeader'
 import { Switch } from '@/components/ui/Switch'
 import { PractitionerModal } from '@/components/settings/modals/PractitionerModal'
 import { useToast } from '@/hooks/useToast'
@@ -95,27 +97,22 @@ export function PractitionersManager() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-surface-100">Profissionais</h3>
-          <p className="text-xs text-surface-500 mt-0.5">
-            Cadastre os profissionais da equipe. É a fonte única que a IA usa pra saber quem citar.
-          </p>
-        </div>
-        {canManage && (
-          <button
-            onClick={() => {
-              setEditPractitioner(null)
-              setModalOpen(true)
-            }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 transition-all"
+      <SectionHeader
+        title="Profissionais"
+        description="Cadastre os profissionais da equipe. É a fonte única que a IA usa pra saber quem citar."
+        action={canManage ? (
+          <Button
+            size="sm"
+            variant="primary"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+            onClick={() => { setEditPractitioner(null); setModalOpen(true) }}
           >
-            <Plus className="w-3.5 h-3.5" /> Novo profissional
-          </button>
-        )}
-      </div>
+            Novo profissional
+          </Button>
+        ) : undefined}
+      />
 
-      <div className="bg-surface-900 border border-surface-700 rounded-2xl overflow-hidden">
+      <div className="border-y border-surface-700">
         {practitioners.length === 0 ? (
           <p className="text-sm text-surface-500 text-center py-10">Nenhum profissional cadastrado.</p>
         ) : (
@@ -125,7 +122,7 @@ export function PractitionersManager() {
               return (
                 <li
                   key={p.id}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-800/30 transition-colors group"
+                  className="flex items-center gap-3 px-1 py-3 hover:bg-[var(--rowhover)] transition-colors group"
                 >
                   <Users className="w-4 h-4 text-surface-700 flex-shrink-0" />
 
@@ -133,12 +130,12 @@ export function PractitionersManager() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-surface-100 truncate">{p.name}</span>
                       {p.category && (
-                        <span className="text-[10px] text-surface-400 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                        <span className="text-[10px] text-surface-400 bg-[var(--sf2)] border border-surface-700 px-1.5 py-0.5 rounded-xs whitespace-nowrap">
                           {p.category}
                         </span>
                       )}
                       {!isActive && (
-                        <span className="text-[10px] text-surface-500 border border-surface-700 px-1.5 py-0.5 rounded-full">
+                        <span className="text-[10px] text-surface-500 border border-surface-700 px-1.5 py-0.5 rounded-xs">
                           Inativo
                         </span>
                       )}
@@ -164,7 +161,7 @@ export function PractitionersManager() {
                       </button>
                       <button
                         onClick={() => setDeletePractitioner(p)}
-                        className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
+                        className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

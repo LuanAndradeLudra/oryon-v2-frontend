@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Camera } from 'lucide-react'
 import { SectionHeader } from '../SectionHeader'
+import { SettingsSection } from '../SettingsSection'
+import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -167,19 +169,19 @@ export function WhatsAppBusinessProfile() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <SectionHeader
         title="Perfil do WhatsApp"
         description="Edite o perfil do WhatsApp Business de cada número — foto, endereço, e-mail, descrição, sites e categoria."
       />
 
       {numbers.length === 0 ? (
-        <div className="bg-surface-900 border border-surface-700 rounded-2xl p-6 text-sm text-surface-400">
+        <div className="py-[22px] text-[13px] text-surface-500">
           Nenhuma linha WhatsApp conectada. Conecte um número em Configurações → Números WhatsApp.
         </div>
       ) : (
         <>
-          <div className="bg-surface-900 border border-surface-700 rounded-2xl p-6 mb-6">
+          <SettingsSection title="Linha e foto" description="Escolha a linha WhatsApp e a foto de perfil exibida no WhatsApp Business.">
             <FormField label="Linha WhatsApp">
               <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
                 {numbers.map((n) => (
@@ -220,12 +222,10 @@ export function WhatsAppBusinessProfile() {
                 <p className="text-xs text-surface-500">JPEG ou PNG, até 5MB.</p>
               </div>
             </div>
-          </div>
+          </SettingsSection>
 
           <div className={loadingProfile ? 'opacity-50 pointer-events-none' : ''}>
-            <div className="bg-surface-900 border border-surface-700 rounded-2xl p-6 mb-6">
-              <h3 className="text-sm font-semibold text-surface-300 mb-4">Perfil de negócio</h3>
-
+            <SettingsSection title="Perfil de negócio" description="Informações públicas do seu WhatsApp Business.">
               <div className="grid grid-cols-1 gap-4">
                 <FormField
                   label="Recado (about)"
@@ -294,17 +294,10 @@ export function WhatsAppBusinessProfile() {
                   </Select>
                 </FormField>
               </div>
-            </div>
+            </SettingsSection>
 
-            <div className="flex justify-end">
-              <button
-                onClick={save}
-                disabled={saving}
-                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-surface-950 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
-              >
-                {saving && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                Salvar alterações
-              </button>
+            <div className="flex justify-end pt-[22px] border-t border-surface-700">
+              <Button variant="primary" onClick={save} loading={saving}>Salvar alterações</Button>
             </div>
           </div>
         </>

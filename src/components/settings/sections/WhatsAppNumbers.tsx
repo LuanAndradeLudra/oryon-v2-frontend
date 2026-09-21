@@ -7,6 +7,7 @@ import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { Button } from '@/components/ui/Button'
+import { Select } from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -250,18 +251,18 @@ export function WhatsAppNumbers() {
             <div key={num.id} className="py-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-status-active-bg border border-status-active-border flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-md bg-status-active-bg border border-status-active-border flex items-center justify-center flex-shrink-0">
                     <WhatsAppIcon size={20} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-semibold text-surface-50">{num.displayPhoneNumber}</p>
-                      <span className={cn('color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
+                      <span className={cn('color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-xs font-medium border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
                         {status.icon}
                         {status.label}
                       </span>
                       {num.isPrimary && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border border-brand-500/40 text-brand-300 bg-brand-500/10">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-xs font-medium border border-brand-500/40 text-brand-300 bg-brand-500/10">
                           <Star className="w-3 h-3 fill-current" />
                           Principal
                         </span>
@@ -303,19 +304,20 @@ export function WhatsAppNumbers() {
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-2 flex-1">
                           <Bot className="w-4 h-4 text-surface-500 flex-shrink-0" />
-                          <select
+                          <Select
+                            size="sm"
+                            className="flex-1"
                             value={num.agentId ?? ''}
                             onChange={(e) => assignAgent(num.id, e.target.value || null)}
                             disabled={savingAgent === num.id}
-                            className="flex-1 bg-surface-800 border border-surface-700 rounded-lg px-3 py-1.5 text-xs text-surface-200 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-colors disabled:opacity-50"
-                          >
+                            >
                             <option value="">Nenhum agente (atendimento humano)</option>
                             {agents.filter((a) => a.status === 'active' || a.id === num.agentId).map((a) => (
                               <option key={a.id} value={a.id}>
                                 {a.name} {a.status !== 'active' ? `(${a.status})` : ''}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                           {num.agentId && (
                             <button
                               onClick={() => assignAgent(num.id, null)}
@@ -347,7 +349,7 @@ export function WhatsAppNumbers() {
                         <button
                           onClick={() => { void handlePromote(num.id) }}
                           disabled={promoting === num.id}
-                          className="p-2 rounded-xl text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
+                          className="p-2 rounded-md text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
                         >
                           <Star className="w-4 h-4" />
                         </button>
@@ -357,14 +359,14 @@ export function WhatsAppNumbers() {
                       <button
                         onClick={() => { void handleResubscribe(num) }}
                         disabled={resubscribing === num.id}
-                        className="p-2 rounded-xl text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors disabled:opacity-50"
+                        className="p-2 rounded-md text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors disabled:opacity-50"
                       >
                         <RefreshCw className={cn('w-4 h-4', resubscribing === num.id && 'animate-spin')} />
                       </button>
                     </Tooltip>
                     <button
                       onClick={() => { void openDisconnectConfirm(num) }}
-                      className="p-2 rounded-xl text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
+                      className="p-2 rounded-md text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

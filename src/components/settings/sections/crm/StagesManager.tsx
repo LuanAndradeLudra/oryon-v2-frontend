@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, GripVertical, Milestone, Layers } from 'lucide-re
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmModal } from '@/components/ui/Modal'
-import { SettingsSection } from '@/components/settings/SettingsSection'
+import { SectionHeader } from '@/components/settings/SectionHeader'
 import { StageModal } from '@/components/settings/modals/StageModal'
 import { useToast } from '@/hooks/useToast'
 import { ToastContainer } from '@/components/ui/Toast'
@@ -86,27 +86,24 @@ export function StagesManager() {
   )
 
   return (
-    <SettingsSection
-      title="Situação do contato"
-      description="A situação diz em que ponto do ciclo de vida a PESSOA está (lead, cliente, inativo). Não confunda com a etapa, que é a posição de um NEGÓCIO dentro de um funil — essa fica em Funis."
-      icon={STAGE_AXIS_ICON}
-      accentColor={STAGE_AXIS_COLOR}
-    >
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <p className="text-xs text-surface-500">Arraste para reordenar.</p>
-        {canManageStages && (
+    <>
+      <SectionHeader
+        title="Situação do contato"
+        description="A situação diz em que ponto do ciclo de vida a PESSOA está (lead, cliente, inativo). Não confunda com a etapa, que é a posição de um NEGÓCIO dentro de um funil — essa fica em Funis."
+        action={canManageStages ? (
           <Button
             size="sm"
-            onClick={() => { setEditStage(null); setModalOpen(true) }}
+            variant="primary"
             leftIcon={<Plus className="w-3.5 h-3.5" />}
-            className="crm-manager-new-btn px-4 whitespace-nowrap flex-shrink-0 hover:brightness-95"
+            onClick={() => { setEditStage(null); setModalOpen(true) }}
           >
             Novo estágio
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
+      {canManageStages && <p className="text-xs text-surface-500 mb-3">Arraste para reordenar.</p>}
 
-      <div className="bg-surface-900 border border-surface-700 rounded-2xl overflow-hidden">
+      <div className="border-y border-surface-700">
         {stages.length === 0 ? (
           <EmptyState
             icon={Layers}
@@ -126,21 +123,21 @@ export function StagesManager() {
                 onDrop={canManageStages ? () => handleDrop(idx) : undefined}
                 onDragEnd={canManageStages ? handleDragEnd : undefined}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-3 transition-all duration-200 group',
-                  overIdx === idx ? 'bg-brand-500/10 border-l-2 border-brand-500' : 'hover:bg-surface-800/30',
+                  'flex items-center gap-3 px-1 py-3 transition-all duration-200 group',
+                  overIdx === idx ? 'bg-brand-500/10 border-l-2 border-brand-500' : 'hover:bg-[var(--rowhover)]',
                 )}
               >
                 <GripVertical
                   className={cn(
                     'w-4 h-4 flex-shrink-0',
                     canManageStages
-                      ? 'text-surface-700 cursor-grab active:cursor-grabbing'
-                      : 'text-surface-800 cursor-not-allowed',
+                      ? 'text-surface-600 cursor-grab active:cursor-grabbing'
+                      : 'text-surface-700 cursor-not-allowed',
                   )}
                 />
 
                 <span
-                  className="w-3 h-3 rounded-full flex-shrink-0 border-2"
+                  className="w-3 h-3 rounded-xs flex-shrink-0 border-2"
                   style={{ backgroundColor: stage.color, borderColor: stage.color }}
                 />
 
@@ -149,7 +146,7 @@ export function StagesManager() {
                     <span className="text-sm font-medium text-surface-100">{stage.label}</span>
                     {stage.isTerminal && (
                       <span
-                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full color-chip border"
+                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-xs color-chip border"
                         style={{ ['--chip']: STAGE_AXIS_COLOR } as React.CSSProperties}
                       >
                         <STAGE_AXIS_ICON className="w-2.5 h-2.5" /> Terminal
@@ -171,7 +168,7 @@ export function StagesManager() {
                     </button>
                     <button
                       onClick={() => setDeleteStage(stage)}
-                      className="p-1.5 rounded-lg text-surface-400 hover:text-red-400 hover:bg-red-900/20 transition-all"
+                      className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -202,6 +199,6 @@ export function StagesManager() {
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
-    </SettingsSection>
+    </>
   )
 }

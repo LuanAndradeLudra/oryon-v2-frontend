@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Pencil, GripVertical, Check, X } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { Select } from '@/components/ui/Select'
 import { useToast } from '@/hooks/useToast'
@@ -129,7 +131,7 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
         sem apagar o histórico de negócios já fechados com ele.
       </p>
 
-      <div className="bg-surface-900 border border-surface-700 rounded-2xl overflow-hidden">
+      <div className="border-y border-surface-700">
         {reasons === null ? (
           <p className="text-sm text-surface-500 text-center py-10">Carregando…</p>
         ) : sorted.length === 0 ? (
@@ -145,22 +147,23 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
                 onDrop={canManage ? () => handleDrop(idx) : undefined}
                 onDragEnd={canManage ? handleDragEnd : undefined}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-3 transition-all duration-200',
+                  'flex items-center gap-3 px-1 py-3 transition-all duration-200',
                   overIdx === idx ? 'bg-brand-500/10 border-l-2 border-brand-500' : '',
                   !r.active && 'opacity-50',
                 )}
               >
-                <GripVertical className={cn('w-4 h-4 flex-shrink-0', canManage ? 'text-surface-700 cursor-grab' : 'text-surface-800')} />
+                <GripVertical className={cn('w-4 h-4 flex-shrink-0', canManage ? 'text-surface-600 cursor-grab' : 'text-surface-700')} />
 
                 {editingId === r.id ? (
                   <div className="flex-1 flex items-center gap-2">
-                    <input
+                    <Input
+                      size="sm"
                       value={editLabel}
                       onChange={(e) => setEditLabel(e.target.value)}
                       autoFocus
-                      className="flex-1 min-w-0 bg-surface-800 border border-surface-700 rounded-lg px-2 py-1 text-sm text-surface-100 focus:outline-none focus:border-brand-500/60"
+                      className="flex-1 min-w-0"
                     />
-                    <Select value={editOutcome} onChange={(e) => setEditOutcome(e.target.value as typeof editOutcome)} className="py-1 text-xs w-32">
+                    <Select size="sm" value={editOutcome} onChange={(e) => setEditOutcome(e.target.value as typeof editOutcome)} className="w-32">
                       <option value="won">Ganho</option>
                       <option value="lost">Perdido</option>
                       <option value="any">Qualquer</option>
@@ -176,7 +179,7 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
                   <>
                     <div className="flex-1 min-w-0 flex items-center gap-2">
                       <span className="text-sm font-medium text-surface-100">{r.label}</span>
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-surface-800 border border-surface-700 text-surface-400">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-xs bg-[var(--sf2)] border border-surface-700 text-surface-400">
                         {OUTCOME_LABEL[r.outcome]}
                       </span>
                       <span className="text-[11px] text-surface-600 font-mono">{r.key}</span>
@@ -197,37 +200,31 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
 
       {canManage && (
         creating ? (
-          <div className="flex items-center gap-2 bg-surface-900 border border-surface-700 rounded-xl p-3">
-            <input
+          <div className="flex items-center gap-2">
+            <Input
+              size="sm"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               placeholder="Nome do motivo"
               autoFocus
-              className="flex-1 min-w-0 bg-surface-800 border border-surface-700 rounded-lg px-2.5 py-1.5 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/60"
+              className="flex-1 min-w-0"
             />
-            <Select value={newOutcome} onChange={(e) => setNewOutcome(e.target.value as typeof newOutcome)} className="py-1.5 text-xs w-32">
+            <Select size="sm" value={newOutcome} onChange={(e) => setNewOutcome(e.target.value as typeof newOutcome)} className="w-32">
               <option value="won">Ganho</option>
               <option value="lost">Perdido</option>
               <option value="any">Qualquer</option>
             </Select>
-            <button
-              onClick={handleCreate}
-              disabled={savingCreate || !newLabel.trim()}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-surface-950 disabled:opacity-50"
-            >
+            <Button size="sm" variant="primary" onClick={handleCreate} disabled={savingCreate || !newLabel.trim()}>
               {savingCreate ? 'Salvando...' : 'Adicionar'}
-            </button>
-            <button onClick={() => { setCreating(false); setNewLabel('') }} className="px-2 py-1.5 rounded-lg text-xs text-surface-400 hover:bg-surface-800">
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setCreating(false); setNewLabel('') }}>
               Cancelar
-            </button>
+            </Button>
           </div>
         ) : (
-          <button
-            onClick={() => setCreating(true)}
-            className="flex items-center gap-1.5 self-start px-3 py-2 rounded-lg text-xs font-semibold bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" /> Novo motivo
-          </button>
+          <Button size="sm" variant="neutral" className="self-start" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setCreating(true)}>
+            Novo motivo
+          </Button>
         )
       )}
 

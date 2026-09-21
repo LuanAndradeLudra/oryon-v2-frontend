@@ -129,6 +129,16 @@ export const SETTINGS_NAV: NavDomain[] = [
           { section: 'quick-replies', label: 'Respostas rápidas', supervisorOnly: true },
         ],
       },
+      {
+        // Mock 5b: "Integrações" é sub-grupo de Automação (Conectores dentro;
+        // Webhooks e Chaves de API do mock não têm rota hoje). Breadcrumb do
+        // mock: "Automação / Integrações / Conectores".
+        label: 'Integrações',
+        items: [
+          // Leva 12 (SCRUM-1110) — Conectores, tela nova (README §3.10).
+          { section: 'connectors',    label: 'Conectores',          adminOnly: true },
+        ],
+      },
     ],
   },
   {
@@ -138,10 +148,8 @@ export const SETTINGS_NAV: NavDomain[] = [
         items: [
           { section: 'account',       label: 'Minha conta' },
           { section: 'notifications', label: 'Notificações' },
-          { section: 'billing',       label: 'Faturamento',         ownerOnly: true },
+          { section: 'billing',       label: 'Plano & faturamento', ownerOnly: true },
           { section: 'security',      label: 'Segurança e acesso',  adminOnly: true },
-          // Leva 12 (SCRUM-1110) — Conectores, tela nova (README §3.10).
-          { section: 'connectors',    label: 'Conectores',          adminOnly: true },
           { section: 'audit',         label: 'Auditoria',           adminOnly: true },
         ],
       },
@@ -184,6 +192,46 @@ export function visibleSettingsNav(currentRole: string, opts: SettingsNavOptions
 /** Primeira seção visível para o papel — destino do redirect de /settings. */
 export function firstVisibleSection(currentRole: string, opts: SettingsNavOptions = {}): string {
   return visibleSettingsNav(currentRole, opts)[0]?.clusters[0]?.items[0]?.section ?? 'account'
+}
+
+function NavClusterGroup({ cluster, activeSection, searching, currentRole }: {
+  cluster: NavCluster
+  activeSection?: string
+  searching: boolean
+  currentRole: string
+}) {
+  const containsActive = cluster.items.some((i) => i.section === activeSection)
+  const [override, setOverride] = useState<boolean | null>(null)
+  // Sub-grupo rotulado = acordeão (mock 5b: "CRM" recolhido, "Integrações"
+  // aberto): abre sozinho quando contém a seção ativa; o rótulo alterna.
+  const open = !cluster.label || searching || (override ?? containsActive)
+  return (
+    <div className={cluster.label ? 'mt-1 first:mt-0' : ''}>
+      {cluster.label && (
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOverride(!open)}
+          className="w-full h-[26px] pl-[22px] pr-2 flex items-center text-left text-[13px] font-medium text-surface-200 hover:text-surface-50 transition-colors"
+        >
+          {cluster.label}
+        </button>
+      )}
+      {open && (
+        <nav className="flex flex-col">
+          {cluster.items.map((item) => (
+            <SettingsSidebarItem
+              key={item.section}
+              section={item.section}
+              label={item.label}
+              nested={!!cluster.label}
+              currentRole={currentRole}
+            />
+          ))}
+        </nav>
+      )}
+    </div>
+  )
 }
 
 export function SettingsLayout({ children, currentRole = 'admin', multiPipeline = false }: SettingsLayoutProps) {
@@ -240,24 +288,13 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
               {d.domain}
             </p>
             {d.clusters.map((cluster, i) => (
-              <div key={cluster.label ?? i} className={cluster.label ? 'mt-3 first:mt-0' : ''}>
-                {cluster.label && (
-                  <p className="h-[26px] pl-[22px] pr-2 flex items-center text-[13px] font-medium text-surface-200">
-                    {cluster.label}
-                  </p>
-                )}
-                <nav className="flex flex-col">
-                  {cluster.items.map((item) => (
-                    <SettingsSidebarItem
-                      key={item.section}
-                      section={item.section}
-                      label={item.label}
-                      nested={!!cluster.label}
-                      currentRole={currentRole}
-                    />
-                  ))}
-                </nav>
-              </div>
+              <NavClusterGroup
+                key={cluster.label ?? i}
+                cluster={cluster}
+                activeSection={activeSection}
+                searching={!!query}
+                currentRole={currentRole}
+              />
             ))}
           </div>
         ))}
@@ -267,7 +304,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
           outline "Nesta página" (dir., 2xl+). O outline é gerado sozinho
           pelas SettingsSection registradas — em telas largas o espaço que
           sobrava vira navegação intra-página (padrão Stripe/docs). */}
-      <main className="flex-1 overflow-y-auto py-6 px-4 md:py-8 md:px-10">
+      <main className="flex-1 overflow-y-auto py-6 px-4 md:pt-[26px] md:pb-8 md:px-10">
         <SettingsSectionsProvider>
           <SettingsBreadcrumbCtx.Provider value={breadcrumb}>
             <div className="flex justify-center gap-10">
