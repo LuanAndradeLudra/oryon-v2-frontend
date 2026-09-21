@@ -1,13 +1,8 @@
 import { Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// README §3.10 / Fase B (spec/conectores.GAPS.md): os badges de estado do
-// catálogo e do modal de detalhe são "fundo claro + texto colorido"
-// (--okbg/--ok, --amberbg/--amber) — um padrão visual DIFERENTE do que
-// `.color-chip` (index.css) produz (pill sólido escurecido + texto branco,
-// pensado pra tags/etapas). Em vez de mudar `.color-chip` (primitivo
-// compartilhado, usado em várias outras telas com o padrão sólido correto
-// pra elas), estes 2 componentes ficam locais aos Conectores.
+// Badges de estado do catálogo/modal (README §3.10): chip de STATUS = suave,
+// via `.color-chip-soft` + `--chip` (só etiquetas usam `.color-chip` cheio).
 
 interface StatusChipProps {
   label: string

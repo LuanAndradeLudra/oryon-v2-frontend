@@ -423,7 +423,10 @@ export function BillingSettings() {
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-surface-50">Oryon {billing.plan.displayName}</h2>
                 {!isSubscribed && !isCanceled && daysUntilReset != null && (
-                  <span className="text-2xs font-semibold px-1.5 py-px rounded-xs border bg-status-pending-bg text-status-pending border-status-pending-border">
+                  <span
+                    className="color-chip-soft text-2xs font-semibold px-1.5 py-px rounded-xs border"
+                    style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
+                  >
                     Avaliação · {daysUntilReset} dia{daysUntilReset === 1 ? '' : 's'} restante{daysUntilReset === 1 ? '' : 's'}
                   </span>
                 )}
