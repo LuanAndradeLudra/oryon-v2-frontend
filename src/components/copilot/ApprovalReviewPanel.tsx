@@ -92,7 +92,7 @@ export function ApprovalReviewPanel({ tc, onResolve, onReject }: ApprovalReviewP
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18 }}
-      className="flex h-full flex-col overflow-hidden rounded-xl border border-surface-700/50 bg-surface-900/70"
+      className="flex h-full flex-col overflow-hidden rounded-lg border border-surface-700/50 bg-surface-900/70"
     >
       {/* Header */}
       <div className="flex flex-shrink-0 items-center gap-2.5 border-b border-surface-700 px-4 py-3">

@@ -129,9 +129,9 @@ function DeleteConfirm({ automation, onConfirm, onCancel }: {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-950 overlay-frame border rounded-2xl w-full max-w-sm p-6 text-center"
+        className="relative z-10 bg-surface-950 overlay-frame border rounded-xl w-full max-w-sm p-6 text-center"
       >
-        <div className="w-12 h-12 rounded-2xl bg-danger/10 border border-danger/20 flex items-center justify-center mx-auto mb-4">
+        <div className="w-12 h-12 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center mx-auto mb-4">
           <Trash2 className="w-5 h-5 text-danger" />
         </div>
         <h3 className="text-sm font-semibold text-surface-100 mb-1">Excluir automação?</h3>
@@ -139,10 +139,10 @@ function DeleteConfirm({ automation, onConfirm, onCancel }: {
           "<span className="text-surface-300">{automation.name}</span>" será removida permanentemente.
         </p>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
+          <button onClick={onCancel} className="flex-1 py-2 rounded-lg border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
             Cancelar
           </button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl bg-danger hover:bg-danger/90 text-white text-sm font-semibold transition-colors">
+          <button onClick={onConfirm} className="flex-1 py-2 rounded-lg bg-danger hover:bg-danger/90 text-white text-sm font-semibold transition-colors">
             Excluir
           </button>
         </div>
@@ -162,7 +162,7 @@ function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
       <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-950 overlay-frame border rounded-2xl w-full max-w-sm p-5"
+        className="relative z-10 bg-surface-950 overlay-frame border rounded-xl w-full max-w-sm p-5"
       >
         <h3 className="text-sm font-semibold text-surface-100 mb-1">Duplicar para outra linha</h3>
         <p className="text-xs text-surface-500 mb-4">
@@ -175,7 +175,7 @@ function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
               <button
                 key={l.id}
                 onClick={() => onPick(l.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-surface-800 transition-colors text-left"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-surface-800 transition-colors text-left"
               >
                 <Phone className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
                 <span className="text-xs font-medium text-surface-200 flex-1 truncate">{l.label || l.displayPhoneNumber}</span>
@@ -184,7 +184,7 @@ function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
             )
           })}
         </div>
-        <button onClick={onCancel} className="w-full mt-4 py-2 rounded-xl border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
+        <button onClick={onCancel} className="w-full mt-4 py-2 rounded-lg border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
           Cancelar
         </button>
       </motion.div>
@@ -517,7 +517,7 @@ export function AutomationsPage() {
           return (
             <div className="flex items-center gap-3 min-w-0 max-w-[280px]">
               <span
-                className="color-chip w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
+                className="color-chip-soft w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
                 style={{ ['--chip']: accent } as React.CSSProperties}
                 title={TYPE_CONFIG[a.type]?.label}
               >
@@ -527,7 +527,7 @@ export function AutomationsPage() {
                 <div className="flex items-center gap-1.5 min-w-0">
                   <p className="text-sm font-medium text-surface-100 truncate min-w-0">{a.name}</p>
                   {a.status === 'draft' && (
-                    <span className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+                    <span className="color-chip-soft px-1.5 py-0.5 rounded-xs text-[9px] font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
                       Rascunho
                     </span>
                   )}
@@ -623,7 +623,7 @@ export function AutomationsPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar automação..."
-                className="w-full bg-surface-900 border border-surface-700 rounded-xl pl-8 pr-3 py-1.5 text-sm text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
+                className="w-full bg-surface-900 border border-surface-700 rounded-sm pl-8 pr-3 py-1.5 text-sm text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
               />
             </div>
             <SegmentedControl label="Filtrar por status" options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
@@ -669,7 +669,7 @@ export function AutomationsPage() {
           />
         ) : (
           <div className="flex-1 min-w-0 overflow-hidden flex flex-col px-4 py-3">
-            <div className="flex-1 min-h-0 flex flex-col rounded-xl border border-surface-700 overflow-hidden bg-surface-900/20">
+            <div className="flex-1 min-h-0 flex flex-col rounded-lg border border-surface-700 overflow-hidden bg-surface-900/20">
               <DataTable
                 columns={columns}
                 rows={sortedRows}

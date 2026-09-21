@@ -120,7 +120,7 @@ function SessionItemRow({
       onMouseLeave={() => onHoverChange(null)}
       onContextMenu={onContextMenu}
       className={cn(
-        'relative px-3 py-2.5 rounded-xl cursor-pointer transition-colors mb-0.5',
+        'relative px-3 py-2.5 rounded-lg cursor-pointer transition-colors mb-0.5',
         active
           ? 'bg-brand-600/12 border border-brand-500/15'
           : 'hover:bg-surface-800/50',

@@ -103,3 +103,15 @@ PNG claro+escuro abertos como imagem; elementos que a spec NÃO listou ou que fi
 | — | Linha do agente de IA em "Equipe" | omitida | `[!]` mantido: `AgentConfig` só tem `conversation_count` total (sem abertas/TMR) |
 
 Tudo `❓ ao vivo` (sem navegador).
+
+### Rodada 2 — adendo (medição ao vivo do orquestrador)
+
+| ID | Achado | Ação |
+|---|---|---|
+| R2-DASH-07 | `KpiGrid` era grade de cards com tile de ícone e valor 20/700 (os slots 6+ caíam em `KpiCard`) | **✅ código**: TODOS os KPIs escolhidos numa faixa única `--sf/--bd/8`, linhas de 5 células com hairline, célula 12×14, rótulo 11/500 --tx2 sem ícone, valor 26/800 -.02em lh 1.15, apoio 11.5; `KpiCard` removido; padrão passa a 5 KPIs (usuários com seleção salva mantêm a deles — viram novas linhas da mesma faixa) |
+| R2-DASH-08 | Faixa dentro da coluna esquerda; extras misturados | **✅ código**: faixa em LARGURA TOTAL; abaixo grid 2/3+1/3 (esq. Conversas por hora + Funil; dir. Fila agora + Equipe); extras (Tags/CSAT, Horários de pico, Performance, Ao vivo/Status/Atividade) abaixo |
+
+### Home / telas sem mock (R2-HOME-01, censo 1a)
+
+Home: containers `card-glow bg-surface-900 rounded-2xl` → vocabulário do `Card` (`--sf/--bd/8`, sem glow); "Seu desempenho hoje" é agora `<Card>`; KPIs da Home em faixa única sem tile; chip de papel soft; ações rápidas raio 7 + `--rowhover`.
+Censo em TeamChat, Copilot, Marketing, Automações (lista/detalhe): sombras fora de overlay, `backdrop-blur`, gradientes decorativos (tiles violeta, título, divisórias, barras), raios ≥ 11 (controles 7 / caixas 8 / modais 10) e chips sólidos de status → soft. Overlays (modais de aprovação, popover do Copilot, tooltip do Marketing) mantêm a sombra. `WhatsappLineRow.tsx` não tocado (orquestrador). `❓ ao vivo`.

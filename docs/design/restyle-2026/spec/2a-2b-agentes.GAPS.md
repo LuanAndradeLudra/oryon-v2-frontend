@@ -210,3 +210,5 @@ Tudo `❓ ao vivo` (sem navegador). Dashboard: chip "WhatsApp conectado" ligado 
 | — | 4ª seção "Horário" | "Coexistência com a IA" | `[!]` mantido: não existe agendamento de horário na automação (grep `Automation`/`automationsApi`) |
 
 Tudo `❓ ao vivo` (sem navegador).
+
+- **R2-AGT-06** — empty state legado (tile `rounded-3xl` 80px + botão grande) → `EmptyState` + `Button sm` (via `action`). ✅ código, `❓ ao vivo`.

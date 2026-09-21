@@ -352,7 +352,7 @@ export function AutomationDetail({
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-surface-100 truncate">{automation.name}</h2>
             {isDraft && (
-              <span className="color-chip inline-flex items-center px-1.5 py-0.5 rounded-full text-3xs font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
+              <span className="color-chip-soft inline-flex items-center px-1.5 py-0.5 rounded-xs text-3xs font-semibold border flex-shrink-0" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>
                 Rascunho
               </span>
             )}

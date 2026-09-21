@@ -47,7 +47,7 @@ function AutomationCard({
       className="w-full flex items-stretch gap-3 px-4 py-3.5 bg-surface-900/40 border border-surface-700 rounded-lg hover:bg-surface-900 active:bg-surface-800 transition-colors text-left cursor-pointer"
     >
       <span
-        className="color-chip w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border"
+        className="color-chip-soft w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border"
         style={{ ['--chip']: accent } as React.CSSProperties}
         title={TYPE_CONFIG[automation.type]?.label}
       >
@@ -60,7 +60,7 @@ function AutomationCard({
           <p className="text-sm font-semibold text-surface-50 truncate flex-1">{automation.name}</p>
           {automation.status === 'draft' && (
             <span
-              className="color-chip px-1.5 py-0.5 rounded-full text-[9px] font-semibold border flex-shrink-0"
+              className="color-chip-soft px-1.5 py-0.5 rounded-xs text-[9px] font-semibold border flex-shrink-0"
               style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
             >
               Rascunho

@@ -250,7 +250,7 @@ const PanelCode = memo(function PanelCode({ lang, content }: { lang: string; con
   const [copied, setCopied] = useState(false)
   const copy = () => navigator.clipboard.writeText(content).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
   return (
-    <div className="rounded-xl overflow-hidden border border-surface-700/50 bg-surface-950 my-3">
+    <div className="rounded-lg overflow-hidden border border-surface-700/50 bg-surface-950 my-3">
       <div className="flex items-center justify-between px-4 py-2 bg-surface-900 border-b border-surface-700">
         <div className="flex items-center gap-2">
           <Code2 className="w-3.5 h-3.5 text-surface-500" />
@@ -270,7 +270,7 @@ const PanelCode = memo(function PanelCode({ lang, content }: { lang: string; con
 
 const PanelPlan = memo(function PanelPlan({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-xl overflow-hidden border border-brand-500/15 bg-surface-900/40 my-3">
+    <div className="rounded-lg overflow-hidden border border-brand-500/15 bg-surface-900/40 my-3">
       <div className="flex items-center gap-2 px-4 py-3 bg-surface-900/60 border-b border-surface-700">
         <ListOrdered className="w-4 h-4 text-brand-400" />
         <span className="text-sm font-semibold text-surface-200">{title}</span>
@@ -292,7 +292,7 @@ const PanelPlan = memo(function PanelPlan({ title, items }: { title: string; ite
 
 const PanelTable = memo(function PanelTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
-    <div className="rounded-xl overflow-hidden border border-surface-700/50 bg-surface-900/40 my-3">
+    <div className="rounded-lg overflow-hidden border border-surface-700/50 bg-surface-900/40 my-3">
       <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-900/60 border-b border-surface-700">
         <Table2 className="w-3.5 h-3.5 text-surface-400" />
         <span className="text-2xs font-semibold text-surface-300">Tabela</span>
