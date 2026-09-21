@@ -751,6 +751,15 @@ code, pre, kbd, samp {
   color: #fff;
   border-color: color-mix(in srgb, var(--chip) var(--chip-mix, 85%), #000);
 }
+/* Variante SUAVE (spec 1a BADGE / mock 2c-2d-6a): chips de STATUS (IA ativa,
+   Pendente, Concluída, Avaliação…) = 12% da cor no fundo, 25% na borda, texto
+   na própria cor. `.color-chip` (cheio) fica para ETIQUETAS (VIP, Indicação…),
+   que no mock 1a são preenchidas. Mesma variável --chip. */
+.color-chip-soft {
+  background-color: color-mix(in srgb, var(--chip) 12%, transparent);
+  color: var(--chip);
+  border-color: color-mix(in srgb, var(--chip) 25%, transparent);
+}
 .chip-dot { background-color: currentColor; }
 
 /* Status trigger button — neutral at rest, colors like .color-chip on hover
