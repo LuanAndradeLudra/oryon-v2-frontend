@@ -79,7 +79,7 @@ function TagCard({ tag, usageCount, onEdit, onDelete, canManage }: TagCardProps)
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(tag)}
-            className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors"
+            className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>

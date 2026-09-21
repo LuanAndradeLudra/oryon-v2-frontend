@@ -359,7 +359,7 @@ export function WhatsAppNumbers() {
                       <button
                         onClick={() => { void handleResubscribe(num) }}
                         disabled={resubscribing === num.id}
-                        className="p-2 rounded-md text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-colors disabled:opacity-50"
+                        className="p-2 rounded-md text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-50"
                       >
                         <RefreshCw className={cn('w-4 h-4', resubscribing === num.id && 'animate-spin')} />
                       </button>

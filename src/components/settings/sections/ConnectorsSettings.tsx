@@ -72,14 +72,14 @@ export function ConnectorsSettings() {
         title="Conectores"
         description="Conecte sistemas externos aos agentes de IA. Instale uma vez aqui; depois ative por agente na aba Skills de cada um."
         action={
-          <Button size="sm" variant="neutral" leftIcon={<MessageSquarePlus className="w-3.5 h-3.5" />}>
+          <Button size="sm" variant="neutral" className="h-8 px-3 text-[12.5px]" leftIcon={<MessageSquarePlus className="w-3.5 h-3.5" />}>
             Solicitar integração
           </Button>
         }
       />
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2.5 mb-4">
+      <div className="flex flex-wrap items-center gap-2 pb-3 mb-3.5 border-b border-surface-700">
         <div className="relative w-[340px] max-w-full">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
           <input
@@ -87,7 +87,7 @@ export function ConnectorsSettings() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Nome, fornecedor ou o que faz…"
             aria-label="Buscar conector"
-            className="w-full h-8 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-2 text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
+            className="w-full h-8 bg-surface-800 border border-[var(--bd2)] rounded-[7px] pl-8 pr-2 text-[12.5px] text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
           />
         </div>
 
@@ -98,9 +98,9 @@ export function ConnectorsSettings() {
             <button
               type="button"
               onClick={() => setCategoryOpen((o) => !o)}
-              className="h-8 inline-flex items-center gap-1.5 rounded-sm border border-[var(--bd2)] bg-surface-800 px-2.5 text-sm text-surface-300 hover:bg-surface-700 transition-colors"
+              className="h-8 inline-flex items-center gap-1.5 rounded-[7px] border border-[var(--bd2)] bg-surface-800 px-2.5 text-[12.5px] font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
             >
-              {category ?? 'Categoria'}
+              Categoria<span className="font-medium text-surface-500"> · {category ?? 'Todas'}</span>
               <ChevronDown className="w-3.5 h-3.5 text-surface-500" />
             </button>
           }
@@ -133,17 +133,17 @@ export function ConnectorsSettings() {
           ]}
         />
 
-        <span className="text-2xs text-surface-500 ml-auto">
+        <span className="text-xs text-surface-400 ml-auto">
           {CONNECTORS.length} no catálogo · {installedCount} instalado{installedCount === 1 ? '' : 's'}
         </span>
 
-        <div className="flex items-center gap-1 border border-surface-700 rounded-sm p-0.5">
+        <div className="inline-flex border border-surface-700 rounded-[7px] overflow-hidden">
           <button
             type="button"
             onClick={() => setView('grid')}
             aria-label="Ver em grade"
             aria-pressed={view === 'grid'}
-            className={`w-8 h-8 rounded-xs flex items-center justify-center transition-colors ${view === 'grid' ? 'bg-surface-700 text-surface-100' : 'text-surface-500 hover:text-surface-300'}`}
+            className={`w-8 h-8 flex items-center justify-center transition-colors ${view === 'grid' ? 'bg-[var(--sf2)] text-surface-100' : 'text-surface-400 hover:text-surface-100'}`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
           </button>
@@ -152,7 +152,7 @@ export function ConnectorsSettings() {
             onClick={() => setView('list')}
             aria-label="Ver em lista"
             aria-pressed={view === 'list'}
-            className={`w-8 h-8 rounded-xs flex items-center justify-center transition-colors ${view === 'list' ? 'bg-surface-700 text-surface-100' : 'text-surface-500 hover:text-surface-300'}`}
+            className={`w-8 h-8 flex items-center justify-center border-l border-surface-700 transition-colors ${view === 'list' ? 'bg-[var(--sf2)] text-surface-100' : 'text-surface-400 hover:text-surface-100'}`}
           >
             <ListIcon className="w-3.5 h-3.5" />
           </button>

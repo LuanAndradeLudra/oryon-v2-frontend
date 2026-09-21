@@ -302,14 +302,14 @@ function BrandFilesSection({
                         else { setEditingId(file.id); setEditText(file.extractedText ?? '') }
                       }}
                       title="Ver/Editar texto"
-                      className="p-1 rounded-sm text-surface-600 hover:text-brand-400 hover:bg-surface-700 transition"
+                      className="p-1 rounded-sm text-surface-600 hover:text-brand-400 hover:bg-[var(--rowhover)] transition"
                     >
                       {editingId === file.id ? <X className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
                     </button>
                     <button
                       type="button"
                       onClick={() => setRemoveTarget(file.id)}
-                      className="p-1 rounded-sm text-surface-600 hover:text-danger hover:bg-surface-700 transition"
+                      className="p-1 rounded-sm text-surface-600 hover:text-danger hover:bg-[var(--rowhover)] transition"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>

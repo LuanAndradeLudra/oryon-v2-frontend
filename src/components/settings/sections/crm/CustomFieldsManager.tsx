@@ -118,7 +118,7 @@ export function CustomFieldsManager() {
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => { setEditField(field); setModalOpen(true) }}
-                    className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
+                    className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>

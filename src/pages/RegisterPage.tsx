@@ -47,7 +47,7 @@ function PasswordStrength({ password }: { password: string }) {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-colors ${i < score ? colors[score] : 'bg-surface-700'}`}
+            className={`h-1 flex-1 rounded-full transition-colors ${i < score ? colors[score] : 'bg-surface-900'}`}
           />
         ))}
       </div>
@@ -123,7 +123,7 @@ export function RegisterPage() {
       <button
         onClick={toggle}
         title={isLight ? 'Mudar para tema escuro' : 'Mudar para tema claro'}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-800 hover:bg-surface-700 transition-colors"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-full border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors"
       >
         <div className="relative w-8 h-4 rounded-full bg-surface-700 flex-shrink-0">
           <motion.div

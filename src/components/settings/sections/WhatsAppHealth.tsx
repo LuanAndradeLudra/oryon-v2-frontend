@@ -229,7 +229,7 @@ function LineHealthRow({
               </span>
             )}
             {!line.isActive && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-3xs font-semibold bg-surface-700 text-surface-400 border border-surface-600">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-3xs font-semibold bg-[var(--sf2)] text-surface-400 border border-surface-600">
                 Inativa
               </span>
             )}
@@ -245,7 +245,7 @@ function LineHealthRow({
               </span>
             )}
             {line.agentId ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-3xs font-medium bg-surface-700 text-surface-300 border border-surface-600">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-3xs font-medium bg-[var(--sf2)] text-surface-300 border border-surface-600">
                 <Bot className="w-2.5 h-2.5" />
                 IA atribuída
               </span>

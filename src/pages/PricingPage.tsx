@@ -62,11 +62,11 @@ function formatLimit(n: number | null): string {
 
 
 const BADGE_COLORS: Record<string, string> = {
-  essential: 'bg-surface-700 text-surface-300',
+  essential: 'bg-surface-900 text-surface-300',
   pro:       'bg-brand-900 text-brand-300',
   business:  'bg-accent-violet/20 text-accent-violet',
   scale:     'bg-accent-amber/20 text-accent-amber',
-  enterprise:'bg-surface-700 text-surface-300',
+  enterprise:'bg-surface-900 text-surface-300',
 }
 
 const POPULAR_TIER: PlanTier = 'pro'
@@ -137,8 +137,8 @@ function PlanCard({ tier, annual }: { tier: PlanTier; annual: boolean }) {
         popular
           ? 'bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)]'
           : tier === 'enterprise'
-            ? 'bg-surface-700 hover:bg-surface-600 text-surface-200'
-            : 'bg-surface-800 hover:bg-surface-700 text-surface-200'
+            ? 'bg-surface-900 hover:bg-[var(--rowhover)] text-surface-200'
+            : 'bg-surface-800 hover:bg-[var(--rowhover)] text-surface-200'
       }`}>
         {tier === 'enterprise' ? 'Falar com vendas' : 'Começar agora'}
         <ArrowRight className="w-4 h-4" />
@@ -304,7 +304,7 @@ export function PricingPage() {
               Redes, franquias e grandes operações. SLA contratual, sub-contas ilimitadas, suporte 24/7, LGPD customizado.
             </p>
           </div>
-          <button className="flex-shrink-0 px-6 py-3 rounded-lg bg-surface-700 hover:bg-surface-600 text-surface-200 font-semibold text-sm transition-colors flex items-center gap-2 whitespace-nowrap">
+          <button className="flex-shrink-0 px-6 py-3 rounded-lg bg-surface-900 hover:bg-[var(--rowhover)] text-surface-200 font-semibold text-sm transition-colors flex items-center gap-2 whitespace-nowrap">
             Falar com vendas
             <ArrowRight className="w-4 h-4" />
           </button>

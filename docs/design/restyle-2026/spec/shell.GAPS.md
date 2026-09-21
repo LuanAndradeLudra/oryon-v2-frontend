@@ -85,3 +85,17 @@ Legenda: ✅ bate · ❌ difere · ❓ só ao vivo / decisão do orquestrador ·
   command-palette em overlay (`:1736-1807`), `TopBarReadinessIndicator` negativo — produto real, sem item.
 - `sidebar.tsx:119` divisor de seção na colapsada (`h-px bg-surface-700/60`) — o mock colapsado não tem
   eyebrow nem divisor entre grupos (só 4 ícones + rodapé).
+
+## Rodada 2 — 6b consumo na sidebar (canvas via tools-extract-canvas.py 6b) — desvios para o orquestrador (`layout/` não é meu)
+
+`AiCreditsIndicator.tsx` (popover de 300px) × canvas:
+| # | Canvas | Código hoje |
+|---|---|---|
+| 1 | popover em coluna única `padding 14`, `gap 10`, 12.5px; SEM anel no cabeçalho | cabeçalho com `CreditRing` 36px + seções separadas por `border-b` (`p-3.5`, `p-2.5`) |
+| 2 | título "Créditos de IA · Start" 13/700; subtítulo "Renova em 15 dias · 01 out" `--tx2` (com a data) | `text-sm`/600 e subtítulo `text-2xs` tx3 só com "Renova em N dias" (sem a data) |
+| 3 | direita: "6%" 16/800 -.02em lh 1.1 + "usado" 11px tx3 embaixo | só o % colorido, sem "usado" |
+| 4 | corpo: grade `1fr auto` gap 4/12 com `padding-top 8` + `border-top`: Usados / Disponíveis / Ritmo ("≈ 4,2/dia" com 1 casa + "· sobra" verde) — rótulo tx2, valor 600 | 3 colunas centradas (`grid-cols-3`), valor 12px sobre rótulo `text-3xs`; "Ritmo/dia" inteiro |
+| 5 | rodapé: botões `h26 px9 raio 6 11.5/600` alinhados à esquerda (Ver faturamento `--bd2`; Comprar créditos cor `--acs`), `border-top pt 8`, gap 6 | 2 `Button sm` `flex-1` (h28) |
+| 6 | avisos de teto são estados da FAIXA da sidebar (780/1000 âmbar "acaba antes", 950/1000 vermelho "agentes pausam" + Comprar `#2DD4BF` 10.5/700) | tira de aviso DENTRO do popover (`bg-warning/10`/`bg-danger/10`) |
+
+7a shell: amostra conferida (logo 26px/gap 9/h36, menu do avatar `w-60`=240, TopBar `h-12`) sem desvio; passe numérico completo do 7a fica para a medição ao vivo (sem sessão no portal).

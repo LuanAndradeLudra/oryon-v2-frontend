@@ -129,7 +129,7 @@ function BrandFilesSection({ files, onChange }: { files: BrandFile[]; onChange: 
               </div>
               {status !== 'analyzing' && (
                 <button type="button" onClick={() => setEntries(prev => prev.filter(e => e.file.id !== file.id))}
-                  className="flex-shrink-0 p-1 rounded-lg text-surface-600 hover:text-surface-300 hover:bg-surface-700 transition">
+                  className="flex-shrink-0 p-1 rounded-lg text-surface-600 hover:text-surface-300 hover:bg-[var(--rowhover)] transition">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}

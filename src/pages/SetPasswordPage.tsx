@@ -139,7 +139,7 @@ export function SetPasswordPage() {
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div
                       key={i}
-                      className={`h-1 flex-1 rounded-full transition-all duration-200 ${i < score ? STRENGTH_COLORS[score] : 'bg-surface-700'}`}
+                      className={`h-1 flex-1 rounded-full transition-all duration-200 ${i < score ? STRENGTH_COLORS[score] : 'bg-surface-900'}`}
                     />
                   ))}
                 </div>
