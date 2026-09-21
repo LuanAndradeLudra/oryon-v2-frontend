@@ -126,7 +126,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
         // fundo sutil. Ativa = --rowhover + acento inset 2px à esquerda
         // (substitui o hack de gradiente de borda do tema claro, removido de
         // index.css — CollapsibleSection/DataTable já usam este mesmo par).
-        'relative w-full flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-left transition-colors duration-100',
+        'relative w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-colors duration-100',
         isActive
           ? 'bg-[var(--rowhover)] shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
           : 'hover:bg-[var(--rowhover)]',
@@ -148,7 +148,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           {/* CONV-LIST-16/17 (spec/1d-conversas.GAPS.md): peso 600 sempre —
               não-lida se sinaliza só pelo badge, o mock é explícito que o
               nome NÃO muda de peso/cor entre lida/não-lida. */}
-          <span className="text-[13px] font-semibold text-surface-50 truncate">
+          <span className="text-[13px] font-semibold text-surface-100 truncate">
             {contact.displayName}
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -174,11 +174,11 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
         <div className="flex items-center justify-between gap-2">
           <div className={cn(
             'flex items-center gap-1 min-w-0 text-xs',
-            hasUnread ? 'text-surface-300' : 'text-surface-500'
+            'text-surface-400'
           )}>
             {lastMessageSenderKind === 'operator' ? null : <SenderIndicator kind={lastMessageSenderKind} />}
             <span className="truncate">
-              {lastMessageSenderKind === 'operator' && <span className="text-surface-400">Você: </span>}
+              {lastMessageSenderKind === 'operator' && <span className="text-surface-500">Você: </span>}
               <MessagePreview text={lastMessagePreview || '…'} />
             </span>
           </div>
@@ -193,7 +193,7 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             (IA âmbar OU humano verde OU "Resolvida" neutro, mutuamente
             exclusivos como no mock) + pontos das etiquetas; à direita só
             texto colorido de estado (sem ícone): espera, verificação. */}
-        <div className="flex items-center gap-1.5 mt-1.5">
+        <div className="flex items-center gap-1.5 mt-1">
           <div className="flex items-center gap-1.5 min-w-0">
             {status === "resolved" ? (
               <span className="inline-flex items-center h-[18px] px-1.5 rounded-xs border border-surface-700 bg-surface-900 text-[10.5px] font-semibold text-surface-400 flex-shrink-0">
