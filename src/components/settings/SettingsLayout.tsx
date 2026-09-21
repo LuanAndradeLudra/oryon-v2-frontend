@@ -107,13 +107,15 @@ export const SETTINGS_NAV: NavDomain[] = [
         items: [
           // Ordem e rótulos do mock 2e: Etapas e funis · Etiquetas e cores ·
           // Campos personalizados · Vocabulário (+ itens existentes do app).
+          // Situação do contato fica ao lado de Etapas e funis (teste F13-903:
+          // os dois eixos lado a lado) — único desvio da ordem do mock.
+          // F13-903: a situação do contato ganha seção própria — o wizard apontava
+          // para uma tela que não existia. Vale para todo tenant (não é do funil).
+          { section: 'stages',            label: 'Situação do contato',   adminOnly: true },
           { section: 'pipeline-stages',   label: 'Etapas e funis',        adminOnly: true, multiPipelineOnly: true },
           { section: 'tags',              label: 'Etiquetas e cores',     supervisorOnly: true },
           { section: 'custom-fields',     label: 'Campos personalizados', adminOnly: true },
           { section: 'vertical',          label: 'Vocabulário',           adminOnly: true },
-          // F13-903: a situação do contato ganha seção própria — o wizard apontava
-          // para uma tela que não existia. Vale para todo tenant (não é do funil).
-          { section: 'stages',            label: 'Situação do contato',   adminOnly: true },
           { section: 'crm-products',      label: 'Produtos',              adminOnly: true },
           { section: 'crm-practitioners', label: 'Profissionais', adminOnly: true, hidden: true },
           // F11-888: roteamento congelado (Modelo B) — sai do menu; rota mantida oculta até a remoção física.
