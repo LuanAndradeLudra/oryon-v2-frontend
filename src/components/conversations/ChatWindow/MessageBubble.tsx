@@ -4,6 +4,7 @@ import {
   Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, Megaphone, CornerUpLeft, Workflow, UserRound,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
+import { failureReason } from '@/lib/messageStatus'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Message } from '@/types'
@@ -834,7 +835,9 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
 
         {/* Failed indicator */}
         {message.status === 'failed' && (
-          <p className="text-[10px] text-danger mt-1">Falha no envio</p>
+          <p className="text-[10px] text-danger mt-1" title={failureReason(message) ?? undefined}>
+            Falha no envio{failureReason(message) ? `: ${failureReason(message)}` : ''}
+          </p>
         )}
 
         {/* Phase 33c — phantom-confirmation flag: the anti-claim guard caught

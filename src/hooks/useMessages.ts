@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { messagesApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
+import { applyStatusUpdate } from '@/lib/messageStatus'
 import type { Message, MessageType, SendMessageDto, SocketAnomalyReviewed, SocketMessageStatus } from '@/types'
 
 /** Mesma classificação que o backend usa (conversations.service.ts) — só
@@ -52,19 +53,11 @@ export function useMessages(conversationId: string | null) {
     })
   }, [])
 
+  // Casa por id OU wamid, respeita a conversa e nunca regride o status
+  // (lib/messageStatus). O payload do socket não traz `timestamp`: os
+  // instantes vêm em deliveredAt/readAt/failedAt.
   const updateMessageStatus = useCallback((payload: SocketMessageStatus) => {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === payload.messageId
-          ? {
-              ...m,
-              status: payload.status,
-              deliveredAt: payload.status === 'delivered' ? payload.timestamp : m.deliveredAt,
-              readAt: payload.status === 'read' ? payload.timestamp : m.readAt,
-            }
-          : m
-      )
-    )
+    setMessages((prev) => prev.map((m) => applyStatusUpdate(m, payload)))
   }, [])
 
   /** SCRUM-806 — "marcar como verificada": todo marcador de handoff pendente
@@ -134,7 +127,18 @@ export function useMessages(conversationId: string | null) {
         // perder de vista (o backend nunca chega a salvar nada quando a
         // chamada à Meta falha, então não há mensagem real para reconciliar
         // aqui — e o objectUrl não é revogado, a bolha falha ainda usa ele).
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m)))
+        // Com o ciclo "gravar antes" o backend já persistiu a linha `failed`
+        // e a devolve em `failedMessage`: troca a bolha otimista por ela
+        // (sem duplicar). Backend antigo não manda o campo → só marca falha.
+        const failedMessage = (err as { response?: { data?: { failedMessage?: Message } } })?.response?.data
+          ?.failedMessage
+        setMessages((prev) => {
+          if (failedMessage) {
+            const withoutTemp = prev.filter((m) => m.id !== tempId)
+            return withoutTemp.some((m) => m.id === failedMessage.id) ? withoutTemp : [...withoutTemp, failedMessage]
+          }
+          return prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
+        })
         // Re-throw so the caller (MessageInput / ChatWindow) can show a
         // toast and decide whether to keep the typed text.
         throw err

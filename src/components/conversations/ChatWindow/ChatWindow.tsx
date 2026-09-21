@@ -6,7 +6,7 @@ import { MessageInput } from './MessageInput'
 import { HandoffStripe } from './AiHandoffBanner'
 import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
-import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, DealOutcomeInput, SocketAnomalyReviewed } from '@/types'
+import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, DealOutcomeInput, SocketAnomalyReviewed, SocketMessageStatus } from '@/types'
 
 interface ChatWindowProps {
   conversation: Conversation | null
@@ -86,8 +86,9 @@ export function ChatWindow({
         addIncomingMessage(payload.message)
       }
     }
-    const handleStatus = (payload: { messageId: string; status: string; timestamp: string }) => {
-      updateMessageStatus(payload as any)
+    const handleStatus = (payload: SocketMessageStatus) => {
+      if (payload.conversationId && payload.conversationId !== conversation.id) return
+      updateMessageStatus(payload)
     }
     const handleAiPause = (payload: SocketAiPauseUpdated) => {
       if (payload.conversationId === conversation.id) {
