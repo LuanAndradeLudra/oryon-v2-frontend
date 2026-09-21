@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Bot, Plus, ChevronRight, Sparkles,
+  Bot, Plus, Sparkles,
   ExternalLink, Copy, ToggleRight, Pause, FileText,
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
@@ -22,6 +22,7 @@ import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { SkeletonList, SkeletonCard, Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/Button'
 import { useToast } from '@/hooks/useToast'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -30,21 +31,6 @@ const STATUS_CONFIG: Record<string, { label: string; chip: string }> = {
   active:  { label: 'Ativo',     chip: 'var(--color-status-active)'  },
   draft:   { label: 'Rascunho',  chip: 'var(--color-status-pending)' },
   paused:  { label: 'Pausado',   chip: 'var(--color-status-muted)'   },
-}
-
-// ─── Status badge ─────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: AgentConfig['status'] }) {
-  const cfg = STATUS_CONFIG[status]
-  return (
-    <span
-      className="color-chip inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border"
-      style={{ ['--chip']: cfg.chip } as React.CSSProperties}
-    >
-      <span className="chip-dot w-1.5 h-1.5 rounded-full" />
-      {cfg.label}
-    </span>
-  )
 }
 
 // ─── Relative time ────────────────────────────────────────────────────────────
@@ -147,7 +133,7 @@ function AgentCard({
       )}
     >
       <div className="flex items-center gap-3">
-        <AgentIcon iconId={agent.icon} className="w-[34px] h-[34px]" />
+        <AgentIcon iconId={agent.icon} dashed={agent.status === 'draft'} className="w-[34px] h-[34px]" />
         <div className="flex-1 min-w-0">
           {/* Nome + chip de estado na mesma linha (tela 2a); métricas reais
               (conversas atendidas, última atividade) nas duas linhas abaixo —
@@ -156,17 +142,20 @@ function AgentCard({
           <div className="flex items-center justify-between gap-2">
             <span className="text-[13px] font-semibold text-surface-100 truncate">{agent.name}</span>
             <span
-              className="flex items-center gap-1 text-[10.5px] font-medium flex-shrink-0"
-              style={{ color: statusCfg.chip }}
+              className={cn(
+                'inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0',
+                agent.status === 'active' ? 'bg-status-active-bg text-status-active'
+                  : agent.status === 'paused' ? 'bg-status-pending-bg text-status-pending'
+                  : 'bg-[var(--sf2)] border border-surface-700 text-surface-400',
+              )}
             >
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusCfg.chip }} />
               {statusCfg.label}
             </span>
           </div>
-          <p className="text-[11.5px] text-surface-500 truncate mt-0.5">
+          <p className="text-[11.5px] text-surface-400 truncate mt-0.5">
             {agent.conversation_count.toLocaleString('pt-BR')} conversa{agent.conversation_count === 1 ? '' : 's'}
           </p>
-          <p className="text-[11px] text-surface-600 truncate">
+          <p className="text-[11px] text-surface-500 truncate">
             atualizado {relativeTime(agent.updated_at)}
           </p>
         </div>
@@ -177,10 +166,7 @@ function AgentCard({
               className="w-2 h-2 rounded-full bg-status-pending ring-2 ring-status-pending-border"
             />
           )}
-          <ChevronRight className={cn(
-            'w-4 h-4 transition-all',
-            selected ? 'text-brand-400 translate-x-0.5' : 'text-surface-700 group-hover:text-surface-500',
-          )} />
+          {/* chevron removido — o mock não tem (R2-AGT-04) */}
         </div>
       </div>
     </button>
@@ -204,13 +190,9 @@ export function AgentsPage() {
   const { toast } = useToast()
 
   useRegisterTopBarActions(
-    <button
-      onClick={() => setShowWizard(true)}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-surface-950 text-xs font-medium transition"
-    >
-      <Plus className="w-3.5 h-3.5" />
+    <Button size="sm" onClick={() => setShowWizard(true)} leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}>
       Novo agente
-    </button>,
+    </Button>,
     [],
   )
 
@@ -279,37 +261,27 @@ export function AgentsPage() {
         {/* ── Left: Agent list — hidden when no agents ── */}
         {hasAgents && (
           <div className="w-[300px] flex-shrink-0 flex flex-col border-r border-surface-700">
-            {/* Cabeçalho da coluna — identifica a lista e o total sem depender do TopBar */}
-            <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
-              <h2 className="text-sm font-display font-bold text-surface-100">Agentes</h2>
-              <span className="text-xs font-medium text-surface-500 bg-surface-800 px-2 py-0.5 rounded-full tabular-nums">
-                {counts.all}
-              </span>
-            </div>
-
-            {/* Status filter */}
-            <div className="px-3 pb-2 flex-shrink-0">
-              <div className="flex items-center gap-0.5 bg-surface-900 border border-surface-700 rounded-xl p-1">
-                {([['all', 'Todos'], ['active', 'Ativos'], ['draft', 'Rascunhos'], ['paused', 'Pausados']] as const).map(([val, label]) => (
-                  <button
-                    key={val}
-                    onClick={() => setStatusFilter(val)}
-                    className={cn(
-                      'flex-1 text-center text-xs py-1.5 rounded-lg transition-colors cursor-pointer',
-                      statusFilter === val
-                        ? 'bg-surface-700 text-surface-100 font-medium shadow-sm'
-                        : 'text-surface-500 hover:text-surface-300',
-                    )}
-                  >
-                    {label}
-                    {counts[val] > 0 && (
-                      <span className={cn('ml-1 tabular-nums', statusFilter === val ? 'text-surface-400' : 'text-surface-600')}>
-                        {counts[val]}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
+            {/* R2-AGT-04 (mock 2a): sem cabeçalho "Agentes · N" (o TopBar já
+                titula); barra de chips h22 — ativo --acsoft/--acs sem borda,
+                demais borda --bd — com a contagem dentro do chip. */}
+            <div className="flex items-center gap-1.5 flex-wrap px-3 py-2.5 border-b border-surface-700 flex-shrink-0">
+              {([['all', 'Todos'], ['active', 'Ativos'], ['draft', 'Rascunhos'], ['paused', 'Pausados']] as const)
+                .filter(([val]) => val === 'all' || val === 'active' || val === 'draft' || counts[val] > 0)
+                .map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setStatusFilter(val)}
+                  className={cn(
+                    'inline-flex items-center h-[22px] px-2 rounded-xs text-[11.5px] font-semibold transition-colors cursor-pointer',
+                    statusFilter === val
+                      ? 'bg-accent-soft text-accent-dark'
+                      : 'border border-surface-700 text-surface-400 hover:bg-[var(--rowhover)]',
+                  )}
+                >
+                  {label}
+                  {counts[val] > 0 && <span className="ml-1 tabular-nums font-medium">{counts[val]}</span>}
+                </button>
+              ))}
             </div>
 
             {/* List — AGT-LIST-04: itens edge-to-edge, sem gap lateral (a
