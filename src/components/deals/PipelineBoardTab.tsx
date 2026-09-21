@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, Layers } from 'lucide-react'
 import { DealsBoard } from '@/components/deals/DealsBoard'
+import { BoardFilterBar } from '@/components/deals/BoardFilterBar'
 import { NewDealDialog } from '@/components/deals/NewDealDialog'
 import { CloseDealReasonModal, type CloseDealReasonInput } from '@/components/deals/CloseDealReasonModal'
 import { NewContactDrawer } from '@/components/contacts/NewContactDrawer'
@@ -11,6 +12,7 @@ import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
 import { toastDealClosedWithUndo } from '@/lib/dealClose'
 import { pipelineKindOf, pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
+import { matchesCloseDate, matchesOwner, boardSummary, type CloseFilter, type OwnerFilter } from '@/lib/boardFilters'
 import { contactsApi } from '@/services/api'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, Deal, Pipeline, PipelineStage } from '@/types'
@@ -86,6 +88,14 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
   const [multiOpenOnly, setMultiOpenOnly] = useState(false)
   const canFilterMultiOpen = !!pipeline.allowMultipleOpen
 
+  /**
+   * R2-1E-BAR (RODADA-2.md): filtros Responsável (`ownerUserId`) e Fechamento
+   * previsto (`expectedCloseAt`) da barra do board. Client-side, sobre os
+   * negócios que o quadro já carregou — mesma lente do "mais de um aberto".
+   */
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>('all')
+  const [closeFilter, setCloseFilter] = useState<CloseFilter>('all')
+
   const { visibleDealsByStage, multiOpenContacts } = useMemo(() => {
     const counts = new Map<string, number>()
     for (const list of Object.values(dealsByStage)) {
@@ -95,15 +105,23 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
       }
     }
     const repeated = new Set([...counts.entries()].filter(([, n]) => n > 1).map(([id]) => id))
-    if (!multiOpenOnly || !canFilterMultiOpen) {
+    const onlyMulti = multiOpenOnly && canFilterMultiOpen
+    const now = new Date()
+    const filtering = onlyMulti || ownerFilter !== 'all' || closeFilter !== 'all'
+    if (!filtering) {
       return { visibleDealsByStage: dealsByStage, multiOpenContacts: repeated.size }
     }
     const filtered: typeof dealsByStage = {}
     for (const [stageId, list] of Object.entries(dealsByStage)) {
-      filtered[stageId] = (list ?? []).filter((d) => !!d.contactId && repeated.has(d.contactId))
+      filtered[stageId] = (list ?? []).filter((d) =>
+        (!onlyMulti || (!!d.contactId && repeated.has(d.contactId)))
+        && matchesOwner(d, ownerFilter)
+        && matchesCloseDate(d, closeFilter, now),
+      )
     }
     return { visibleDealsByStage: filtered, multiOpenContacts: repeated.size }
-  }, [dealsByStage, multiOpenOnly, canFilterMultiOpen])
+  }, [dealsByStage, multiOpenOnly, canFilterMultiOpen, ownerFilter, closeFilter])
+  const summary = useMemo(() => boardSummary(Object.values(visibleDealsByStage).flat()), [visibleDealsByStage])
   const sortedStages = [...pipeline.stages].sort((a, b) => a.order - b.order)
   const isProcess = pipelineKindOf(pipeline) === 'process'
 
@@ -195,29 +213,40 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
 
   return (
     <>
-      {canFilterMultiOpen && (
-        <div className="flex items-center gap-2 px-1 pb-2">
-          <button
-            type="button"
-            onClick={() => setMultiOpenOnly((v) => !v)}
-            aria-pressed={multiOpenOnly}
-            data-testid="board-filter-multi-open"
-            className={cn(
-              'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border text-[11px] font-medium transition-colors',
-              multiOpenOnly
-                ? 'border-brand-500 bg-brand-500/10 text-brand-300'
-                : 'border-surface-700 bg-surface-800 text-surface-300 hover:text-surface-100',
+      <BoardFilterBar
+        users={users}
+        owner={ownerFilter}
+        onOwnerChange={setOwnerFilter}
+        close={closeFilter}
+        onCloseChange={setCloseFilter}
+        summary={summary}
+        isProcess={isProcess}
+        noun={pipelineNoun(pipeline)}
+      >
+        {canFilterMultiOpen && (
+          <>
+            <button
+              type="button"
+              onClick={() => setMultiOpenOnly((v) => !v)}
+              aria-pressed={multiOpenOnly}
+              data-testid="board-filter-multi-open"
+              className={cn(
+                'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-xs font-medium transition-colors flex-shrink-0',
+                multiOpenOnly
+                  ? 'border-brand-500 bg-accent-soft text-accent-dark'
+                  : 'border-[var(--bd2)] bg-surface-900 text-surface-300 hover:text-surface-100',
+              )}
+            >
+              <Layers className="w-3 h-3" />
+              Com mais de um aberto
+              {multiOpenContacts > 0 && <span className="text-surface-500">· {multiOpenContacts}</span>}
+            </button>
+            {multiOpenOnly && multiOpenContacts === 0 && (
+              <span className="text-[11px] text-surface-500">Nenhum contato tem dois negócios abertos aqui.</span>
             )}
-          >
-            <Layers className="w-3 h-3" />
-            Com mais de um aberto
-            {multiOpenContacts > 0 && <span className="text-surface-500">· {multiOpenContacts}</span>}
-          </button>
-          {multiOpenOnly && multiOpenContacts === 0 && (
-            <span className="text-[11px] text-surface-500">Nenhum contato tem dois negócios abertos aqui.</span>
-          )}
-        </div>
-      )}
+          </>
+        )}
+      </BoardFilterBar>
       <DealsBoard
         stages={sortedStages}
         dealsByStage={visibleDealsByStage}

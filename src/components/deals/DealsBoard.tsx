@@ -179,7 +179,250 @@ export function DealsBoard({
   const stats = pipeline ? boardStats(allDeals) : null
   const entries = pipeline ? entrySources(allDeals) : []
   const kindOption = pipeline ? pipelineKindOption(pipelineKindOf(pipeline)) : null
-  const totalOpenCents = allDeals.reduce((sum, d) => sum + (d.amountCents ?? 0), 0)
+
+  // R2-1E-COL: colunas abertas seguem a ordem do funil; as terminais (`isWon`/
+  // `isLost` — o tipo já vem na etapa) vão empilhadas numa coluna única à
+  // direita, separada por borda tracejada (README 3.4). Cada etapa mantém o
+  // próprio alvo de drop, então o fluxo de fechar com motivo não muda.
+  const openStages = stages.filter((s) => !s.isWon && !s.isLost)
+  const terminalStages = stages.filter((s) => s.isWon || s.isLost)
+  const renderColumn = (stage: PipelineStage, terminal = false) => {
+    const cards = dealsByStage[stage.id] ?? []
+    const isOver = overStageId === stage.id && !!draggingDeal && draggingDeal.stageId !== stage.id
+    const totalCents = cards.reduce((sum, d) => sum + (d.amountCents ?? 0), 0)
+    // D2 (F-FUNIL-10): total ponderado por coluna, mesma probabilidade
+    // efetiva usada no card e na ficha (dealProbability) — nunca uma
+    // conta paralela.
+    const weightedCents = cards.reduce((sum, d) => sum + dealProbability(d, stage).weightedAmountCents, 0)
+
+    return (
+      <div
+        key={stage.id}
+        className={terminal ? 'flex flex-col flex-1 min-h-0' : 'flex flex-col w-[85vw] md:w-[250px] flex-shrink-0 snap-start'}
+        onDragOver={(e) => { e.preventDefault(); setOverStageId(stage.id) }}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStageId(null) }}
+        onDrop={() => handleDrop(stage.id)}
+      >
+        {/* Header da coluna — README 3.4: 28px, border-bottom 2px na cor
+            crua da etapa. */}
+        <div
+          className="flex items-center justify-between h-7 px-1 mb-3 border-b-2"
+          style={{ borderColor: stage.color, ...(terminal && stage.isLost ? { backgroundColor: 'color-mix(in srgb, var(--color-danger) 10%, transparent)' } : null) }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} />
+            <span className="text-xs font-semibold truncate" style={{ color: tintaDaEtapa(stage.color) }}>{stage.label}</span>
+            {stage.isWon && (
+              <span
+                className="text-3xs px-1.5 py-0.5 rounded border color-chip"
+                style={TERMINAL_CHIP_STYLE.won}
+              >
+                {terminalLabels.won.toLowerCase()}
+              </span>
+            )}
+            {stage.isLost && (
+              <span
+                className="text-3xs px-1.5 py-0.5 rounded border color-chip"
+                style={TERMINAL_CHIP_STYLE.lost}
+              >
+                {terminalLabels.lost.toLowerCase()}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* DEAL-COL-17 (spec/1e-funis.GAPS.md): soma inline na MESMA
+                linha do cabeçalho, não numa linha separada abaixo. */}
+            {!isProcess && totalCents > 0 && (
+              <span
+                className="text-2xs text-surface-500 tabular-nums whitespace-nowrap"
+                title={weightedCents !== totalCents ? `${brl(weightedCents)} ponderado` : undefined}
+              >
+                {brl(totalCents)}
+              </span>
+            )}
+            {/* DEAL-COL-16: contagem como texto solto, não um badge pill. */}
+            <span className="text-[11.5px] font-semibold text-surface-500 tabular-nums">
+              {cards.length}
+            </span>
+            {/* A3: criar já nesta etapa. Fora dos terminais — negócio não
+                nasce fechado (a A4 exige motivo, e o backend responde 400). */}
+            {onNewDeal && !stage.isWon && !stage.isLost && (
+              <button
+                type="button"
+                onClick={() => onNewDeal(stage.id)}
+                aria-label={`Novo ${noun} em ${stage.label}`}
+                title={`Novo ${noun} em ${stage.label}`}
+                className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-lg text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Lista de cards */}
+        <div
+          className={cn(
+            'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-xl transition-all duration-200 min-h-[80px] p-2',
+            isOver ? 'bg-brand-500/5 ring-2 ring-brand-500/30 ring-inset' : 'bg-transparent',
+            loading && cards.length > 0 && 'opacity-50',
+          )}
+        >
+          {/* As três leituras da coluna (carregando · vazia · com cards)
+              têm CHAVE, e isso não é enfeite. Sem chave o React casa por
+              posição e tipo: o `div` do esqueleto e o `div` do vazio são
+              o mesmo nó, reaproveitado. O nó chegava sem `border-color`
+              (o padrão do Tailwind v4 é `currentColor`) e recebia
+              `border-surface-700` JUNTO com `transition-colors` — então
+              a borda ANIMAVA de `currentColor` até o cinza.
+
+              `currentColor` ali é a cor de texto herdada do body:
+              `surface-100`, que é #ECF1F1 no escuro e #1A1F2E no claro.
+              Por isso o tracejado piscava CLARO no tema escuro e ESCURO
+              no tema claro — o inverso do tema, sempre. Não era a cor do
+              vazio, era o ponto de partida da transição.
+
+              Com chave, cada leitura monta seu próprio nó e já nasce na
+              cor final; `transition-colors` volta a servir só ao que foi
+              feito para servir, o realce de arrastar-sobre. */}
+          {loading && cards.length === 0 ? (
+            /* `surface-700`, não `surface-800`: a escala é INVERTIDA por
+               tema, e a 800 no claro é #FFFFFF — o esqueleto seria um
+               retângulo branco pulsando sobre o chão cinza. A 700 é cinza
+               claro no claro (#D9DCE5) e escuro no escuro (#243333). */
+            <div key="carregando" className="h-16 rounded-xl bg-surface-700/50 animate-pulse" aria-hidden />
+          ) : cards.length === 0 ? (
+            <div key="vazia" className={cn(
+              // README 3.4: slot de drop, retângulo tracejado de 88px.
+              'border-2 border-dashed rounded-xl h-[88px] flex items-center justify-center transition-colors',
+              isOver ? 'border-brand-500/50 bg-brand-500/5' : 'border-surface-700',
+            )}>
+              <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-600')}>
+                {isOver ? 'Soltar aqui' : terminal ? `Solte aqui para marcar como ${stage.isWon ? terminalLabels.won : terminalLabels.lost}` : `Nenhum ${noun}`}
+              </span>
+            </div>
+          ) : (
+            cards.map((deal) => (
+              <div
+                key={deal.id}
+                ref={highlightDealId === deal.id ? (el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : undefined}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = 'move'
+                  setTimeout(() => setDraggingId(deal.id), 0)
+                }}
+                onDragEnd={() => { setDraggingId(null); setOverStageId(null) }}
+                onClick={() => onOpenDeal?.(deal.id)}
+                data-testid={highlightDealId === deal.id ? 'deal-card-highlighted' : undefined}
+                className={cn(
+                  // README 3.4: borda 1px, raio 8px, padding 10px 12px.
+                  'relative group/card rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-surface-700 hover:bg-[var(--rowhover)]',
+                  onOpenDeal && 'cursor-pointer',
+                  // Em arraste: única sombra fora de overlay (o card É um overlay enquanto flutua).
+                  draggingId === deal.id && 'opacity-95 shadow-lg',
+                  highlightDealId === deal.id && 'ring-[3px] ring-brand-500 border-brand-500',
+                )}
+              >
+                {/* Ações do card — SEMPRE visíveis no mobile (não só no
+                    hover, que não existe por toque); no desktop seguem
+                    reveladas por hover/foco, como antes. */}
+                <div className={cn('absolute top-2 right-2 z-10 flex items-center gap-1', !isDesktop && 'opacity-100')}>
+                  {/* F-FUNIL-09: "Mover ▾" — a alternativa ao drag para
+                      quem NÃO tem mouse. Some onde o arrasto funciona
+                      (10/09): ali eram dois caminhos para o mesmo gesto,
+                      e o botão ainda cobria o canto do card no hover.
+                      Onde o ponteiro não arrasta ele continua sendo o
+                      ÚNICO jeito de mover um card, então fica. */}
+                  {!ponteiroArrasta && (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setStageMenuDealId(stageMenuDealId === deal.id ? null : deal.id)
+                      }}
+                      className={cn(
+                        'flex items-center gap-0.5 h-[22px] px-[7px] rounded-md border border-[var(--bd2)] text-3xs font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                        stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
+                      )}
+                      aria-label={`Mover ${noun} para outra etapa`}
+                    >
+                      Mover <ChevronDown className="w-3 h-3" />
+                    </button>
+                    {stageMenuDealId === deal.id && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute right-0 top-full mt-1 w-44 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
+                      >
+                        {stages.filter((s) => s.id !== deal.stageId).map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => { onMoveStage(deal, s.id); setStageMenuDealId(null) }}
+                            className="w-full text-left px-3 py-2 text-xs text-surface-200 hover:bg-surface-700 transition-colors flex items-center gap-2"
+                          >
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  )}
+                  {onMovePipeline && otherPipelines.length > 0 && (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setPipelineMenuDealId(pipelineMenuDealId === deal.id ? null : deal.id)
+                        }}
+                        className={cn(
+                          'p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                          pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
+                        )}
+                        aria-label="Mais ações"
+                      >
+                        <MoreVertical className="w-3.5 h-3.5" />
+                      </button>
+                      {pipelineMenuDealId === deal.id && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-0 top-full mt-1 w-48 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
+                        >
+                          <div className="px-3 py-2 border-b border-surface-700">
+                            <span className="text-3xs font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
+                              <ArrowRightLeft className="w-3 h-3" /> Transferir de funil
+                            </span>
+                          </div>
+                          {otherPipelines.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => { onMovePipeline(deal, p.id); setPipelineMenuDealId(null) }}
+                              className="w-full text-left px-3 py-2 text-xs text-surface-200 hover:bg-surface-700 transition-colors flex items-center gap-2"
+                            >
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                              {p.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {isProcess ? (
+                  <ProcessCardBody deal={deal} onOpenContact={onOpenContact} siblings={openByContact.get(deal.contactId ?? '') ?? 1} />
+                ) : (
+                  <SalesCardBody deal={deal} onOpenContact={onOpenContact} users={users} siblings={openByContact.get(deal.contactId ?? '') ?? 1} />
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -203,7 +446,6 @@ export function DealsBoard({
             {stats.open} aberto{stats.open === 1 ? '' : 's'}
             {' · '}{stats.wonToday} {terminalLabels.won.toLowerCase()}{stats.wonToday === 1 ? '' : 's'} hoje
             {' · '}{stats.lost} {terminalLabels.lost.toLowerCase()}{stats.lost === 1 ? '' : 's'}
-            {!isProcess && <> · {brl(totalOpenCents)}</>}
           </span>
           <span className="text-surface-600">·</span>
           <span>
@@ -238,245 +480,17 @@ export function DealsBoard({
       )}
       <div
         className="flex gap-[10px] p-4 h-full min-h-0"
-        style={{ minWidth: isDesktop ? stages.length * 260 : undefined }}
+        style={{ minWidth: isDesktop ? openStages.length * 260 + (terminalStages.length > 0 ? 272 : 0) : undefined }}
       >
-        {stages.map((stage) => {
-          const cards = dealsByStage[stage.id] ?? []
-          const isOver = overStageId === stage.id && !!draggingDeal && draggingDeal.stageId !== stage.id
-          const totalCents = cards.reduce((sum, d) => sum + (d.amountCents ?? 0), 0)
-          // D2 (F-FUNIL-10): total ponderado por coluna, mesma probabilidade
-          // efetiva usada no card e na ficha (dealProbability) — nunca uma
-          // conta paralela.
-          const weightedCents = cards.reduce((sum, d) => sum + dealProbability(d, stage).weightedAmountCents, 0)
-
-          return (
-            <div
-              key={stage.id}
-              className="flex flex-col w-[85vw] md:w-[250px] flex-shrink-0 snap-start"
-              onDragOver={(e) => { e.preventDefault(); setOverStageId(stage.id) }}
-              onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStageId(null) }}
-              onDrop={() => handleDrop(stage.id)}
-            >
-              {/* Header da coluna — README 3.4: 28px, border-bottom 2px na cor
-                  crua da etapa. */}
-              <div
-                className="flex items-center justify-between h-7 px-1 mb-3 border-b-2"
-                style={{ borderColor: stage.color }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} />
-                  <span className="text-xs font-semibold truncate" style={{ color: tintaDaEtapa(stage.color) }}>{stage.label}</span>
-                  {stage.isWon && (
-                    <span
-                      className="text-3xs px-1.5 py-0.5 rounded border color-chip"
-                      style={TERMINAL_CHIP_STYLE.won}
-                    >
-                      {terminalLabels.won.toLowerCase()}
-                    </span>
-                  )}
-                  {stage.isLost && (
-                    <span
-                      className="text-3xs px-1.5 py-0.5 rounded border color-chip"
-                      style={TERMINAL_CHIP_STYLE.lost}
-                    >
-                      {terminalLabels.lost.toLowerCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* DEAL-COL-17 (spec/1e-funis.GAPS.md): soma inline na MESMA
-                      linha do cabeçalho, não numa linha separada abaixo. */}
-                  {!isProcess && totalCents > 0 && (
-                    <span
-                      className="text-2xs text-surface-500 tabular-nums whitespace-nowrap"
-                      title={weightedCents !== totalCents ? `${brl(weightedCents)} ponderado` : undefined}
-                    >
-                      {brl(totalCents)}
-                    </span>
-                  )}
-                  {/* DEAL-COL-16: contagem como texto solto, não um badge pill. */}
-                  <span className="text-[11.5px] font-semibold text-surface-500 tabular-nums">
-                    {cards.length}
-                  </span>
-                  {/* A3: criar já nesta etapa. Fora dos terminais — negócio não
-                      nasce fechado (a A4 exige motivo, e o backend responde 400). */}
-                  {onNewDeal && !stage.isWon && !stage.isLost && (
-                    <button
-                      type="button"
-                      onClick={() => onNewDeal(stage.id)}
-                      aria-label={`Novo ${noun} em ${stage.label}`}
-                      title={`Novo ${noun} em ${stage.label}`}
-                      className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-lg text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Lista de cards */}
-              <div
-                className={cn(
-                  'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-xl transition-all duration-200 min-h-[80px] p-2',
-                  isOver ? 'bg-brand-500/5 ring-2 ring-brand-500/30 ring-inset' : 'bg-transparent',
-                  loading && cards.length > 0 && 'opacity-50',
-                )}
-              >
-                {/* As três leituras da coluna (carregando · vazia · com cards)
-                    têm CHAVE, e isso não é enfeite. Sem chave o React casa por
-                    posição e tipo: o `div` do esqueleto e o `div` do vazio são
-                    o mesmo nó, reaproveitado. O nó chegava sem `border-color`
-                    (o padrão do Tailwind v4 é `currentColor`) e recebia
-                    `border-surface-700` JUNTO com `transition-colors` — então
-                    a borda ANIMAVA de `currentColor` até o cinza.
-
-                    `currentColor` ali é a cor de texto herdada do body:
-                    `surface-100`, que é #ECF1F1 no escuro e #1A1F2E no claro.
-                    Por isso o tracejado piscava CLARO no tema escuro e ESCURO
-                    no tema claro — o inverso do tema, sempre. Não era a cor do
-                    vazio, era o ponto de partida da transição.
-
-                    Com chave, cada leitura monta seu próprio nó e já nasce na
-                    cor final; `transition-colors` volta a servir só ao que foi
-                    feito para servir, o realce de arrastar-sobre. */}
-                {loading && cards.length === 0 ? (
-                  /* `surface-700`, não `surface-800`: a escala é INVERTIDA por
-                     tema, e a 800 no claro é #FFFFFF — o esqueleto seria um
-                     retângulo branco pulsando sobre o chão cinza. A 700 é cinza
-                     claro no claro (#D9DCE5) e escuro no escuro (#243333). */
-                  <div key="carregando" className="h-16 rounded-xl bg-surface-700/50 animate-pulse" aria-hidden />
-                ) : cards.length === 0 ? (
-                  <div key="vazia" className={cn(
-                    // README 3.4: slot de drop, retângulo tracejado de 88px.
-                    'border-2 border-dashed rounded-xl h-[88px] flex items-center justify-center transition-colors',
-                    isOver ? 'border-brand-500/50 bg-brand-500/5' : 'border-surface-700',
-                  )}>
-                    <span className={cn('text-xs', isOver ? 'text-brand-400' : 'text-surface-600')}>
-                      {isOver ? 'Soltar aqui' : `Nenhum ${noun}`}
-                    </span>
-                  </div>
-                ) : (
-                  cards.map((deal) => (
-                    <div
-                      key={deal.id}
-                      ref={highlightDealId === deal.id ? (el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : undefined}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.effectAllowed = 'move'
-                        setTimeout(() => setDraggingId(deal.id), 0)
-                      }}
-                      onDragEnd={() => { setDraggingId(null); setOverStageId(null) }}
-                      onClick={() => onOpenDeal?.(deal.id)}
-                      data-testid={highlightDealId === deal.id ? 'deal-card-highlighted' : undefined}
-                      className={cn(
-                        // README 3.4: borda 1px, raio 8px, padding 10px 12px.
-                        'relative group/card rounded-lg border border-surface-700 bg-surface-900 px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[opacity,box-shadow] duration-100 hover:border-surface-700 hover:bg-[var(--rowhover)]',
-                        onOpenDeal && 'cursor-pointer',
-                        // Em arraste: única sombra fora de overlay (o card É um overlay enquanto flutua).
-                        draggingId === deal.id && 'opacity-95 shadow-lg',
-                        highlightDealId === deal.id && 'ring-[3px] ring-brand-500 border-brand-500',
-                      )}
-                    >
-                      {/* Ações do card — SEMPRE visíveis no mobile (não só no
-                          hover, que não existe por toque); no desktop seguem
-                          reveladas por hover/foco, como antes. */}
-                      <div className={cn('absolute top-2 right-2 z-10 flex items-center gap-1', !isDesktop && 'opacity-100')}>
-                        {/* F-FUNIL-09: "Mover ▾" — a alternativa ao drag para
-                            quem NÃO tem mouse. Some onde o arrasto funciona
-                            (10/09): ali eram dois caminhos para o mesmo gesto,
-                            e o botão ainda cobria o canto do card no hover.
-                            Onde o ponteiro não arrasta ele continua sendo o
-                            ÚNICO jeito de mover um card, então fica. */}
-                        {!ponteiroArrasta && (
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setStageMenuDealId(stageMenuDealId === deal.id ? null : deal.id)
-                            }}
-                            className={cn(
-                              'flex items-center gap-0.5 h-[22px] px-[7px] rounded-md border border-[var(--bd2)] text-3xs font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
-                              stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
-                            )}
-                            aria-label={`Mover ${noun} para outra etapa`}
-                          >
-                            Mover <ChevronDown className="w-3 h-3" />
-                          </button>
-                          {stageMenuDealId === deal.id && (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className="absolute right-0 top-full mt-1 w-44 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
-                            >
-                              {stages.filter((s) => s.id !== deal.stageId).map((s) => (
-                                <button
-                                  key={s.id}
-                                  type="button"
-                                  onClick={() => { onMoveStage(deal, s.id); setStageMenuDealId(null) }}
-                                  className="w-full text-left px-3 py-2 text-xs text-surface-200 hover:bg-surface-700 transition-colors flex items-center gap-2"
-                                >
-                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                                  {s.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        )}
-                        {onMovePipeline && otherPipelines.length > 0 && (
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setPipelineMenuDealId(pipelineMenuDealId === deal.id ? null : deal.id)
-                              }}
-                              className={cn(
-                                'p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
-                                pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
-                              )}
-                              aria-label="Mais ações"
-                            >
-                              <MoreVertical className="w-3.5 h-3.5" />
-                            </button>
-                            {pipelineMenuDealId === deal.id && (
-                              <div
-                                onClick={(e) => e.stopPropagation()}
-                                className="absolute right-0 top-full mt-1 w-48 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
-                              >
-                                <div className="px-3 py-2 border-b border-surface-700">
-                                  <span className="text-3xs font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
-                                    <ArrowRightLeft className="w-3 h-3" /> Transferir de funil
-                                  </span>
-                                </div>
-                                {otherPipelines.map((p) => (
-                                  <button
-                                    key={p.id}
-                                    type="button"
-                                    onClick={() => { onMovePipeline(deal, p.id); setPipelineMenuDealId(null) }}
-                                    className="w-full text-left px-3 py-2 text-xs text-surface-200 hover:bg-surface-700 transition-colors flex items-center gap-2"
-                                  >
-                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-                                    {p.name}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {isProcess ? (
-                        <ProcessCardBody deal={deal} onOpenContact={onOpenContact} siblings={openByContact.get(deal.contactId ?? '') ?? 1} />
-                      ) : (
-                        <SalesCardBody deal={deal} onOpenContact={onOpenContact} users={users} siblings={openByContact.get(deal.contactId ?? '') ?? 1} />
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )
-        })}
+        {openStages.map((stage) => renderColumn(stage))}
+        {terminalStages.length > 0 && (
+          <div
+            className="flex flex-col gap-3 w-[85vw] md:w-[250px] flex-shrink-0 snap-start min-h-0 border-l-2 border-dashed border-surface-700 pl-[10px] ml-[2px]"
+            data-testid="board-terminal-column"
+          >
+            {terminalStages.map((stage) => renderColumn(stage, true))}
+          </div>
+        )}
       </div>
     </div>
   )

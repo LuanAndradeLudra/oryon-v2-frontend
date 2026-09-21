@@ -222,3 +222,27 @@ describe('DealsBoard — "Mover ▾" por toque e clique no card (F-FUNIL-09)', (
     expect(onOpenDeal).not.toHaveBeenCalled()
   })
 })
+
+describe('DealsBoard — coluna terminal única (R2-1E-COL)', () => {
+  it('etapas isWon/isLost ficam empilhadas na coluna terminal; as abertas fora dela', () => {
+    render(<DealsBoard stages={STAGES} dealsByStage={{}} onMoveStage={vi.fn()} pipeline={SALES} />)
+    const terminal = screen.getByTestId('board-terminal-column')
+    expect(within(terminal).getByText('Confirmado')).toBeInTheDocument()
+    expect(within(terminal).getByText('Não confirmou')).toBeInTheDocument()
+    expect(within(terminal).queryByText('Enviado')).toBeNull()
+    expect(within(terminal).getByText('Solte aqui para marcar como Ganho')).toBeInTheDocument()
+    expect(within(terminal).getByText('Solte aqui para marcar como Perdido')).toBeInTheDocument()
+  })
+
+  it('soltar um card na etapa terminal continua chamando onMoveStage (o modal de motivo abre no pai)', async () => {
+    const onMoveStage = vi.fn()
+    const d = deal({ id: 'dd', pipelineId: 'ps' })
+    render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [d] }} onMoveStage={onMoveStage} pipeline={SALES} />)
+    fireEvent.dragStart(screen.getByText('Título do registro').closest('[draggable]')!, { dataTransfer: { effectAllowed: '' } })
+    // o id do card arrastado entra em setTimeout(0) — espera o estado assentar
+    await new Promise((r) => setTimeout(r, 10))
+    const perdido = within(screen.getByTestId('board-terminal-column')).getByText('Não confirmou').closest('div[class*="flex-col"]')!
+    fireEvent.drop(perdido)
+    expect(onMoveStage).toHaveBeenCalledWith(expect.objectContaining({ id: 'dd' }), 's4')
+  })
+})

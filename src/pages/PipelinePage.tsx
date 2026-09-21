@@ -381,9 +381,11 @@ export function PipelinePage() {
         title={`Configurar etapas, motivos e acesso de "${pipeline.name}"`}
         aria-label={`Configurar o funil ${pipeline.name}`}
         data-testid="pipeline-settings-link"
-        className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-900 transition-colors"
+        className="inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-sm text-xs font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-900 transition-colors"
       >
-        <Settings2 className="w-4 h-4" />
+        <Settings2 className="w-3.5 h-3.5" />
+        {/* R2-1E-BAR: o mock rotula o gesto ("Etapas"), não só o ícone. */}
+        <span className="hidden md:inline">Etapas</span>
       </button>
     </div>
   )
