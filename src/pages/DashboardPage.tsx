@@ -335,45 +335,48 @@ export function DashboardPage() {
                 </div>
               </div>
             ) : snapshot && (
-              /* ── Arquitetura main + rail ─────────────────────────────────
-                 Coluna principal (8/12): a NARRATIVA analítica — KPIs, volume,
-                 tags/CSAT, picos, equipe. Rail (4/12): o PULSO da operação —
-                 Ao Vivo, distribuição de status e atividade. Em mobile o rail
-                 vem primeiro (fila/espera são alerta, não rodapé). */
-              <div className="grid grid-cols-12 gap-4 items-start">
-                <div className="col-span-12 xl:col-span-8 space-y-4">
-                  <KpiGrid metrics={snapshot.kpis} />
+              /* ── Layout do mock 1b (R2-DASH-08) ─────────────────────────
+                 1) faixa de KPIs em LARGURA TOTAL; 2) grid 2/3 + 1/3: esquerda
+                 Conversas por hora + Funil, direita Fila agora + Equipe;
+                 3) seções extras (que o mock não tem, mas são produto real)
+                 ABAIXO. */
+              <div className="space-y-4">
+                <KpiGrid metrics={snapshot.kpis} />
 
-                  {/* Seção desligada por padrão (flag dashboardAiInsights) — não
-                      montar evita a chamada generateDashboardInsights() e o gasto
-                      de tokens. */}
-                  {isFeatureVisible('dashboardAiInsights') && (
-                    <AiInsightsSection kpis={snapshot.kpis} />
-                  )}
+                {/* Seção desligada por padrão (flag dashboardAiInsights) — não
+                    montar evita a chamada generateDashboardInsights() e o gasto
+                    de tokens. */}
+                {isFeatureVisible('dashboardAiInsights') && (
+                  <AiInsightsSection kpis={snapshot.kpis} />
+                )}
 
-                  <VolumeChart data={snapshot.volumeChart} range={dateRange} onRangeChange={setDateRange} />
-
-                  <SalesFunnelCard />
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <TagsChart data={snapshot.tagVolumes} />
-                    <CsatChart data={snapshot.csatChart} />
+                <div className="grid grid-cols-12 gap-4 items-start">
+                  <div className="col-span-12 xl:col-span-8 space-y-4">
+                    <VolumeChart data={snapshot.volumeChart} range={dateRange} onRangeChange={setDateRange} />
+                    <SalesFunnelCard />
                   </div>
-
-                  <PeakHoursHeatmap data={snapshot.heatmap} />
-
-                  <AgentTable agents={snapshot.agentMetrics} />
-
-                  {/* <MarketingFunnelSection dateRange={dateRange} /> — endpoint backend nao existe ainda */}
+                  <div className="col-span-12 xl:col-span-4 space-y-4">
+                    <FilaAgoraCard />
+                    <TeamMiniCard agents={snapshot.agentMetrics} />
+                  </div>
                 </div>
 
-                <div className="col-span-12 xl:col-span-4 space-y-4 order-first xl:order-none">
-                  <FilaAgoraCard />
-                  <TeamMiniCard agents={snapshot.agentMetrics} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <TagsChart data={snapshot.tagVolumes} />
+                  <CsatChart data={snapshot.csatChart} />
+                </div>
+
+                <PeakHoursHeatmap data={snapshot.heatmap} />
+
+                <AgentTable agents={snapshot.agentMetrics} />
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
                   <LiveNowCard status={snapshot.realtime ? { agentsOnline: snapshot.realtime.agentsOnline, agentsTotal: snapshot.realtime.agentsOnline, activeConversations: snapshot.realtime.activeConversations, queued: snapshot.realtime.queueSize ?? 0, avgWaitSeconds: snapshot.realtime.avgWaitSeconds } : EMPTY_REALTIME_STATUS} />
                   <StatusDonut data={snapshot.statusDistribution} />
                   <ActivityFeed events={snapshot.activityFeed} />
                 </div>
+
+                {/* <MarketingFunnelSection dateRange={dateRange} /> — endpoint backend nao existe ainda */}
               </div>
             )}
           </div>
