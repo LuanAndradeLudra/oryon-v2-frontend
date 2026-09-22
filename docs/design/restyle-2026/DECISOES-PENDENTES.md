@@ -39,7 +39,7 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     sempre visível, ao lado do aviso de janela. Alternativa: mostrar sempre, desabilitado quando vazio.
 
 16. **Junção sidebar/TopBar** — após testes com o usuário (sidebar #0A0F0F, TopBar #0A0F0F/#060909, painéis no
-    tom do chão — todos rejeitados): sidebar e TopBar voltaram ao mock (`#0E1414` e `#161E1E`) e a sidebar ganhou
+    tom do chão — todos rejeitados): TopBar voltou ao mock (`#161E1E`) e a sidebar ficou em `#0A0F0F` (mock `#0E1414`; fundo das telas mantido em `#060909` após teste com `#0E1414`) e a sidebar ganhou
     uma hairline de 1px `#243333` na borda direita, de onde nasce a linha inferior do TopBar. Em avaliação pelo usuário.
 
 ## Sem dado no backend (`[!]`, não implementado)
