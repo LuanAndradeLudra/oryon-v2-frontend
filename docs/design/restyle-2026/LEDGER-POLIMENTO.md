@@ -25,7 +25,7 @@ Status: `pendente` · `em curso` · `saturado` (2 ciclos seguidos só com S3 e n
 ### Fluxos (a cada 3º ciclo)
 | # | Fluxo | Status | Ciclos | Cliques / trocas de contexto |
 |---|-------|--------|--------|------------------------------|
-| F1 | Atender conversa da fila até resolver (atribuir, responder, template, etiquetar, resolver) | pendente (próximo: ciclo 3) | — | — |
+| F1 | Atender conversa da fila até resolver (atribuir, responder, template, etiquetar, resolver) | em curso | 1 | Fila→abrir→Assumir→responder→etiquetar(3)→Resolver ≈ 8 cliques; J/K/E/R existem |
 | F2 | Lead → contato → negócio → mover etapas → ganhar/perder | pendente | — | — |
 | F3 | Criar e disparar campanha, depois acompanhar o resultado | pendente | — | — |
 | F4 | Configurar agente de IA do zero e testá-lo | pendente | — | — |
@@ -82,6 +82,17 @@ Achados:
 Observações: revisão feita por leitura de código (sem navegador nesta sessão) — os 3 achados vêm do mesmo padrão de defeito (P6 "no-results" sem ação), já visto e corrigido em T1/Conversas no ciclo 1; provável que o mesmo padrão exista em outras listas fora de Configurações (candidato a achado transversal num ciclo futuro). Modelo de salvamento (P9) auditado: Vocabulário usa "controle isolado" (auto-save + indicador — correto pro padrão); MyAccount/CompanyProfile/CompanyBrain/WhatsAppBusinessProfile usam "registro único" com toast em vez da barra fixa "Alterações não salvas" com guarda de navegação do P9 — real, mas G de esforço (dirty-tracking + guard em 4 arquivos); registrado abaixo em vez de implementado neste ciclo (regra: no máx. 3 itens, S1/S2 primeiro, e os 3 P6 encontrados já eram mais isolados e comprovados). T10 Conectores (card/modal/catálogo) não teve achado extra além do PL-C2-BUS-2 (que é da mesma tela física, `/settings/connectors`).
 Registrado em DECISOES: nenhum (os três são correção de defeito, sem ambiguidade — mesmo critério do Ciclo 1).
 Próximo: T10 Conectores (fluxo de instalar/credenciar um conector) ou T2 Contatos, conforme a rotação; ao vivo pendente (sem portal nesta sessão).
+
+### Ciclo 3 — F1 Atender conversa da fila até resolver (fluxo) — 2026-09-22 20:0x
+Percurso medido ao vivo: aba **Fila** (1 clique) → abrir conversa (1) → ações do header disponíveis (Assumir · Resolver · ··· · Info) → responder no composer → etiquetar (Editar → buscar → aplicar, 3) → Resolver (1). ≈ **8 cliques**; com teclado, J/K/E/R cobrem navegar, resolver e atribuir.
+Notas: hierarquia 4 · eficiência 4 · feedback 3 · consistência 4 · densidade 4 · copy 4 · a11y 4 · perf 4 · mercado 3 (média 3,8)
+Achados:
+- PL-3-1 [S2] (P7) Resolver/reabrir é ação **reversível de 1 clique (ou da tecla E)** e o toast só informava — sem "Desfazer". O board de Funis já usa esse padrão (`PipelineBoardTab`). — **feito** `3bd0d65` (toast 8 s com Desfazer; sem Desfazer quando há desfecho de negócio, porque aí a reversão não é só de status)
+- PL-3-2 [S2] (P5) Atalhos **J/K/E/R** só eram ensinados no estado vazio do chat; depois de abrir a conversa ninguém mais descobre (Intercom/Front ensinam no tooltip do próprio botão). — **feito** `ee0dd4f` (tooltip "Assumir a conversa (R)" e "Resolver e ir para a próxima (E)")
+- PL-3-3 [S1] (P6) **Dashboard fica em esqueleto infinito quando a API não responde** — derrubei o backend e recarreguei /dashboard: 11–12 blocos `animate-pulse` por mais de 30 s, sem ErrorState, sem "Tentar de novo", nada no console. O `ErrorState` que o Farol acabou de adicionar cobre o catch do fetch, mas não o caminho de falha de rede. — **repassado ao Farol** (PL-C3-FAR-1), fora do meu orçamento de 3 itens.
+Medições ao vivo feitas para os agentes: seletor de período do Dashboard agora tem só Hoje/7 dias e **filtra de verdade** (39 → 13 elementos no gráfico ao escolher Hoje).
+Registrado em DECISOES: nenhum.
+Próximo: T5 Home (ciclo 4); ciclo 6 = fluxo F2.
 
 ## Achados abertos (backlog do loop)
 <!-- Achados vistos e não feitos, para ciclos futuros priorizarem S1/S2 de qualquer tela. -->
