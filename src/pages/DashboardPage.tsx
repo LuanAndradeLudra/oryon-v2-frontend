@@ -153,10 +153,14 @@ export function DashboardPage() {
       // even a single hour can produce dozens of conversation_assigned /
       // resolved rows.
       const sinceIso = new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+      // PL-C2-FAR-1: nem `/home/snapshot` nem `/home/stats` aceitam `range`
+      // no backend (nenhum dos dois controllers declara @Query — conferido em
+      // dashboard.controller.ts) — passar o período aqui não mudava nada;
+      // o comentário antigo ("range scopes appointmentsScheduled/…") estava
+      // errado. O período agora só filtra `VolumeChart` no cliente (abaixo).
       const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.all([
         api.get('/home/snapshot').catch(() => ({ data: null })),
-        // `range` scopes appointmentsScheduled/appointmentsCancelled (SCRUM-966/967).
-        api.get<HomeStats>('/home/stats', { params: { range: dateRange } }),
+        api.get<HomeStats>('/home/stats'),
         api.get<{ data: ActivityFeedApiRow[] }>(`/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
       ])
 
@@ -257,7 +261,10 @@ export function DashboardPage() {
     }
   }
 
-  useEffect(() => { fetchDashboard() }, [dateRange]) // eslint-disable-line react-hooks/exhaustive-deps
+  // PL-C2-FAR-1: `dateRange` saiu daqui — não refaz fetch nenhum (nada no
+  // backend variava com ele; ver comentário em fetchDashboard). Trocar o
+  // período agora só refiltra `VolumeChart` no cliente, sem round-trip.
+  useEffect(() => { fetchDashboard() }, [])
   const refresh = () => { fetchDashboard() }
 
   const dateAndRefreshActions = (
