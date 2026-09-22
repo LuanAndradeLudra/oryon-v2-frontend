@@ -161,7 +161,25 @@ export function ConnectorsSettings() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Search} title="Nenhum conector encontrado" hint="Ajuste a busca ou a categoria." />
+        // PL-C2-BUS-2 [S2] (P6): faltava a ação "Limpar filtros" — o hint
+        // mandava "ajustar" sem oferecer como, e não dizia o que estava
+        // filtrando (busca, categoria e status combinam com AND).
+        <EmptyState
+          icon={Search}
+          title="Nenhum conector encontrado"
+          hint={(() => {
+            const active = [
+              search && `busca "${search}"`,
+              category && `categoria "${category}"`,
+              status !== 'all' && (status === 'installed' ? 'só instalados' : 'só em breve'),
+            ].filter(Boolean)
+            return active.length > 0 ? `Sem resultado com ${active.join(' + ')}.` : 'Ajuste a busca ou a categoria.'
+          })()}
+          action={{
+            label: 'Limpar filtros',
+            onClick: () => { setSearch(''); setCategory(null); setStatus('all') },
+          }}
+        />
       ) : view === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
           {filtered.map((c) => (
