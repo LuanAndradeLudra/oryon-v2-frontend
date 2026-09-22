@@ -53,12 +53,17 @@ const SEVERITY_CLASS: Record<string, string> = {
   error: 'bg-status-failed-bg text-status-failed border-status-failed/40',
 }
 
+const DEFAULT_AUDIT_QUERY: TenantAuditQuery = { limit: 30 }
+
 export function AuditTrail() {
-  const [filters, setFilters] = useState<TenantAuditQuery>({ limit: 30 })
+  const [filters, setFilters] = useState<TenantAuditQuery>(DEFAULT_AUDIT_QUERY)
   const [rows, setRows] = useState<TenantAuditRow[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // PL-C2-BUS-3: força o FilterBar a reinicializar seu rascunho quando a
+  // ação do EmptyState limpa os filtros por fora dele.
+  const [filterBarKey, setFilterBarKey] = useState(0)
 
   const load = useCallback(async (q: TenantAuditQuery, append = false) => {
     setLoading(true); setError(null)
@@ -92,7 +97,7 @@ export function AuditTrail() {
         description="Tudo que sua equipe fez na plataforma — criação, edição e remoção de contatos, campanhas, templates, automações e mais. Apenas leitura."
       />
 
-      <FilterBar filters={filters} onApply={onApply} loading={loading} />
+      <FilterBar key={filterBarKey} filters={filters} onApply={onApply} loading={loading} />
 
       {error && rows.length > 0 && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-sm border border-status-failed/40 bg-status-failed-bg text-status-failed text-sm">
@@ -109,13 +114,26 @@ export function AuditTrail() {
         <SkeletonTable rows={6} cols={4} />
       )}
 
-      {!loading && rows.length === 0 && !error && (
-        <EmptyState
-          icon={Search}
-          title="Nenhuma atividade no período"
-          hint="Ajuste o filtro ou amplie a janela. Apenas ações de membros da equipe (não jobs internos) aparecem aqui."
-        />
-      )}
+      {!loading && rows.length === 0 && !error && (() => {
+        // PL-C2-BUS-3 [S2] (P6): "Nenhuma atividade no período" não dizia
+        // se havia filtro ativo nem como sair dele — só "ajuste", sem ação.
+        const hasActiveFilters = !!(filters.actorId || filters.action || filters.entityType || filters.severity || filters.since)
+        return (
+          <EmptyState
+            icon={Search}
+            title={hasActiveFilters ? 'Nenhuma atividade com esses filtros' : 'Nenhuma atividade no período'}
+            hint="Apenas ações de membros da equipe (não jobs internos) aparecem aqui."
+            action={hasActiveFilters ? {
+              label: 'Limpar filtros',
+              onClick: () => {
+                setFilters(DEFAULT_AUDIT_QUERY)
+                void load(DEFAULT_AUDIT_QUERY, false)
+                setFilterBarKey((k) => k + 1)
+              },
+            } : undefined}
+          />
+        )
+      })()}
 
       {rows.length > 0 && (
         <div className="overflow-x-auto">
