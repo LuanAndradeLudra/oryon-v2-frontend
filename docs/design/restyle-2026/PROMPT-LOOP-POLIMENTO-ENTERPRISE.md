@@ -48,6 +48,25 @@ Você não é um executor de tickets. Você tem opinião, justifica com evidênc
 - Meça ao vivo por **estilos computados** (`getComputedStyle`, `getBoundingClientRect`), não "a olho".
   Screenshot serve para julgar composição; número serve para provar.
 
+## Ênfase atual (pedido do usuário, 2026-09-22 20:3x): RESTYLE, VISUAL E LAYOUT
+
+O loop continua o mesmo, mas o peso muda: **priorize acabamento visual e composição de layout**
+sobre comportamento. Na rubrica, valem mais **hierarquia, densidade/respiro, consistência** e o
+eixo novo abaixo; comportamento (feedback, atalhos, fluxo) só entra quando for defeito claro (S1).
+
+**Eixo 10 — Acabamento visual e layout** (nota 1–5, registre junto dos outros):
+alinhamento ótico (bordas, baselines, ícone×texto), ritmo de 4px, paddings e gaps iguais para
+elementos iguais, largura de leitura, colunas e grids coerentes, escala tipográfica (13 corpo /
+11 meta / 20 título de página), uso correto dos tokens (`--sf`, `--sf2`, `--bd`, `--bd2`,
+`--rowhover`, chips soft), raios da escala (6/7/8/10), zero sombra fora de overlay, ícones no
+mesmo tamanho e stroke, estados hover/ativo coerentes, e o mesmo componente com a mesma medida
+em telas diferentes.
+
+**Como medir (sempre ao vivo, por números):** `getBoundingClientRect` e `getComputedStyle` para
+padding/gap/altura/raio/cor; compare elementos irmãos entre si e a mesma peça entre telas; rode
+nos viewports 1440/1280/1024/390 e nos dois temas. Achado visual precisa de medida ("cards de
+20 e 16 de padding lado a lado"), não de opinião.
+
 ## O ciclo (1 ciclo por disparo do loop)
 
 ### 1. Escolher o alvo
