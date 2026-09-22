@@ -10,7 +10,7 @@ Status: `pendente` · `em curso` · `saturado` (2 ciclos seguidos só com S3 e n
 | # | Alvo | Status | Ciclos | Última nota média |
 |---|------|--------|--------|-------------------|
 | T1 | Conversas (lista, chat, composer, painel do contato) | em curso | 1 | 3,7 |
-| T2 | Contatos (tabela, filtros, drawer) | pendente | — | — |
+| T2 | Contatos (tabela, filtros, drawer) | em curso | 1 | 4,0 |
 | T3 | Funis / Negócios (quadro, card, detalhe, Relatórios) | pendente | — | — |
 | T4 | Dashboard | pendente | — | — |
 | T5 | Home | pendente | — | — |
@@ -52,6 +52,16 @@ Achados:
 Observações: console sem erro/warning na rota; contraste no claro limpo; a lista não é virtualizada (50 linhas, DOM ~265 nós — sem problema neste volume, revisitar se paginar mais).
 Registrado em DECISOES: nenhum (os três são correção de defeito, sem ambiguidade).
 Próximo: T2 Contatos (ciclo 2); ciclo 3 = fluxo F1.
+
+### Ciclo 2 — T2 Contatos (tela) — 2026-09-22 20:2x
+Notas: hierarquia 4 · eficiência 4 · feedback 4 · consistência 4 · densidade 4 · copy 4 · a11y 3 · perf 4 · mercado 4 (média 4,0)
+Achados:
+- PL-2-1 [S2] (P5) Menu "···" de cada linha **sem nome acessível** — 50 botões por página que um leitor de tela anuncia só como "botão"; hover em `surface-700`, que escureceu no claro. — evidência: 50 `<button>` sem texto e sem `aria-label` na rota. — **feito** `47aef0f` (ao vivo: 0 botões sem nome; rótulo "Mais ações — <contato>")
+- PL-2-2 [S2] (P7/P12) "Selecionar todos" marca **apenas os carregados**, e a barra dizia "50 selecionados" com 5.191 no filtro — ação em massa parecendo maior do que é (o P7 cita este caso). — **feito** `e87f770` (ao vivo: "50 selecionados de 5.191 no filtro"; checkbox do cabeçalho = "Selecionar todos os itens carregados")
+Verificado e SEM defeito (não virou achado): rolagem infinita funciona (50 → 97 ao rolar o container da tabela); ordenação por coluna funciona nos dois sentidos e publica `aria-sort`; rodapé "1–50 de 5.191" honesto; console sem erro/warning; contraste no claro limpo.
+Registrado em DECISOES: nenhum.
+Próximo: **ciclo 3 = fluxo F1** (atender conversa da fila até resolver).
+Em paralelo (agentes, mesma rubrica): Cartógrafo T3 Funis · Farol T4 Dashboard/T7 Campanhas · Bússola T11 Configurações/T10 Conectores.
 
 ## Achados abertos (backlog do loop)
 <!-- Achados vistos e não feitos, para ciclos futuros priorizarem S1/S2 de qualquer tela. -->
