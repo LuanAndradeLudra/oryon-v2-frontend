@@ -61,7 +61,10 @@ function ActionsMenuCell({ contact, onOpenPanel, onOpenConversation }: {
         anchor={
           <button
             onClick={() => setOpen((v) => !v)}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
+            aria-label={`Mais ações — ${contact.displayName || contact.waId}`}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
           >
             <MoreHorizontal className="w-4 h-4" />
           </button>
