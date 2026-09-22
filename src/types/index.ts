@@ -970,6 +970,14 @@ export interface Conversation {
   lastMessagePreview: string
   /** Who sent the last message — drives the sender indicator on the preview. */
   lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
+  /**
+   * SCRUM-1096 — trecho de mensagem que bateu a busca atual, com os
+   * marcadores de `lib/searchHighlight.tsx`. Só vem preenchido quando a
+   * busca em curso casou pelo CONTEÚDO da mensagem (não pelo nome/telefone
+   * do contato) — nesse caso a lista mostra este texto no lugar de
+   * `lastMessagePreview`. Aditivo: ausente/null fora de uma busca por conteúdo.
+   */
+  searchSnippet?: string | null
   unreadCount: number
   /** Minimal shape — only the fields the conversation list/header actually
    *  read (id, firstName, lastName for the assignee pill). The realtime
