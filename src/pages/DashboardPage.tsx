@@ -166,14 +166,16 @@ export function DashboardPage() {
       // errado. O período agora só filtra `VolumeChart` no cliente (abaixo).
       //
       // PL-C4-FAR-1: rede de segurança independente do interceptor de retry
-      // de services/api.ts — medido ao vivo que, mesmo depois do PL-C3-FAR-1
-      // (db31620), algo ainda deixava a tela presa por ~15s sem cair no catch
-      // corretamente (raiz exata não reproduzível sem o navegador conectado
-      // aqui). Isto garante um teto DURO: 35s (> os 30s de timeout do axios
-      // numa única tentativa) e SEMPRE rejeita de forma limpa pro catch
-      // abaixo, não importa o que aconteça na camada de rede.
+      // de services/api.ts. Medição ao vivo do usuário (2026-09-22 21:0x):
+      // com o teto em 35s, o erro só aparecia em ~38s — ou seja, é o TETO que
+      // resolve, não a causa raiz (uma chamada com timeout de 30s deveria
+      // estourar perto de 30s se estivesse mesmo sob o axios configurado).
+      // Causa raiz segue aberta (ver commit da investigação), mas 35s é
+      // tempo longo demais pro usuário — Intercom/Linear falham em ~10s.
+      // 15s = o tempo de UMA tentativa (o retry de timeout já foi removido
+      // no PL-C3-FAR-1/db31620, não são mais 3 tentativas de 30s cada).
       const hardTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('dashboard-fetch-timeout')), 35_000),
+        setTimeout(() => reject(new Error('dashboard-fetch-timeout')), 15_000),
       )
       const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.race([
         Promise.all([
