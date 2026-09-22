@@ -3,11 +3,14 @@ import { ChevronDown } from 'lucide-react'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import type { DateRange } from '@/types/dashboard'
 
+// PL-C2-FAR-1: só "Hoje"/"7 dias" — "30 dias" e "Este mês" saíram porque
+// nenhuma fonte de dado do Dashboard (KPIs, VolumeChart) tem mais que 7 dias
+// de janela hoje (`getMessagesAnalytics` no backend busca sempre `weekAgo`);
+// oferecer as duas opções sem dado por trás era um controle inerte (P14).
+// Reintroduzir quando o backend aceitar uma janela maior.
 const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
   { value: 'today', label: 'Hoje'     },
   { value: '7d',    label: '7 dias'   },
-  { value: '30d',   label: '30 dias'  },
-  { value: 'month', label: 'Este mês' },
 ]
 
 // R2-DASH-03 (mock 1b): o período no slot da TopBar é UMA pílula de seleção

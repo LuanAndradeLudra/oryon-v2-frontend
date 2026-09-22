@@ -42,6 +42,14 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     tom do chão — todos rejeitados): TopBar voltou ao mock (`#161E1E`) e a sidebar ficou em `#0A0F0F` (mock `#0E1414`; fundo das telas mantido em `#060909` após teste com `#0E1414`) e a sidebar ganhou
     uma hairline de 1px `#243333` na borda direita, de onde nasce a linha inferior do TopBar. Em avaliação pelo usuário.
 
+## Loop de polimento enterprise (PL-C2-FAR-*)
+17. **Seletor de período do Dashboard (`DateRangePicker` + segmentado do `VolumeChart`)** — as opções "30 dias"/
+    "Este mês" saíram (nenhuma fonte de dado do Dashboard tem mais que 7 dias de janela hoje; eram controle 100%
+    inerte, PL-C2-FAR-1). "Hoje"/"7 dias" continuam, agora como filtro real no cliente. Mock 1b mostra as duas
+    pílulas com 4 opções cada — desvio deliberado do mock por achado de fidelidade de dado, não de layout.
+    Reverter: commit `444f486` (`DateRangePicker.tsx`, `VolumeChart.tsx`, `DashboardPage.tsx`); reintroduzir as
+    2 opções quando o backend aceitar uma janela maior que 7 dias em `getMessagesAnalytics`.
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
