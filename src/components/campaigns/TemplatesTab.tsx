@@ -372,9 +372,11 @@ function TemplateCard({
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
                   aria-label="Mais ações"
-                  className="p-1 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
+                  className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
                 >
-                  <MoreHorizontal className="w-3.5 h-3.5" />
+                  {/* Eixo 10: p-1.5 + w-4 h-4, mesma medida do kebab irmão em
+                      CampaignsTab.tsx (mesma tela, mesmo componente). */}
+                  <MoreHorizontal className="w-4 h-4" />
                 </button>
               }
             >
