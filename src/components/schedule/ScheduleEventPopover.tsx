@@ -131,7 +131,9 @@ export function ScheduleEventPopover({ event, date, anchorRect, onClose }: Sched
                 {event.detail.origin === 'Agente Vendas' ? (
                   <ScheduleOriginChip>{event.detail.origin}</ScheduleOriginChip>
                 ) : (
-                  <span className="inline-flex items-center rounded-xs border border-surface-700 bg-[var(--sf2)] px-1.5 py-px text-[11px] font-medium text-surface-300">
+                  // Mesma geometria do ScheduleOriginChip acima — só muda a
+                  // cor, pra não trocar de tamanho conforme a origem.
+                  <span className="inline-flex items-center h-[18px] rounded-[5px] border border-surface-700 bg-[var(--sf2)] px-1.5 text-[10.5px] font-bold text-surface-300">
                     {event.detail.origin}
                   </span>
                 )}
