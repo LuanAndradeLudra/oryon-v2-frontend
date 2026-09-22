@@ -616,9 +616,13 @@ function MediaContent({
   return null
 }
 
-function TextContent({ message }: { message: Message }) {
+// Exportado só pra teste (src/.../MessageBubble.test.tsx) — sem hooks, dá pra
+// renderizar isolado sem mockar mídia autenticada/áudio do componente principal.
+export function TextContent({ message }: { message: Message }) {
   // Structured types own their full display via the registry; don't also
   // render the synthetic "[…]" body underneath the rich renderer.
+  // SCRUM-1158: inclui image/video/document — body é sempre a mesma legenda
+  // que MediaContent já desenha embaixo da mídia.
   if (STRUCTURED_TYPES.has(message.type)) return null
   return message.body ? (
     <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
