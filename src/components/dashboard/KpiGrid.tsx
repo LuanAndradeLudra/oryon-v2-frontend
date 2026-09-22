@@ -165,12 +165,18 @@ function CustomizerPanel({
               <div className="flex flex-col gap-1">
                 {KPI_CATALOG.filter((d) => d.category === cat).map((def) => {
                   const isActive = activeSlots.includes(def.id)
-                  const disabled = isActive ? count <= MIN : count >= MAX
+                  // PL-C2-FAR-3 (P14): hasData === false fica em 0 pra sempre
+                  // (sem fonte no backend hoje) — não deixa ADICIONAR como se
+                  // fosse um KPI de verdade. Quem já tinha salvo antes desta
+                  // leva continua podendo tirar (senão prende a seleção).
+                  const noData = def.hasData === false
+                  const disabled = noData ? (isActive ? count <= MIN : true) : (isActive ? count <= MIN : count >= MAX)
                   return (
                     <button
                       key={def.id}
                       onClick={() => !disabled && onToggle(def.id)}
                       disabled={disabled}
+                      title={noData ? 'Sem dado no backend ainda — fica em 0' : undefined}
                       className={cn(
                         'flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors',
                         isActive
@@ -188,7 +194,12 @@ function CustomizerPanel({
                       )}>
                         {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
                       </span>
-                      <span className="text-xs font-medium">{def.label}</span>
+                      <span className="text-xs font-medium flex-1">{def.label}</span>
+                      {noData && (
+                        <span className="text-[9.5px] font-semibold uppercase tracking-wide text-surface-500 flex-shrink-0">
+                          Sem dado
+                        </span>
+                      )}
                     </button>
                   )
                 })}
