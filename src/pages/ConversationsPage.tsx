@@ -22,7 +22,6 @@ import { useListScrollMemory } from '@/hooks/useListScrollMemory'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { resolveRange } from '@/lib/dateRange'
 import type {
   Conversation, ConversationFilters,
   SocketAiPauseUpdated, SocketConversationStatusUpdated, SocketMessageNew, SocketUnreadUpdate,
@@ -35,14 +34,12 @@ export function ConversationsPage() {
   const navigate = useNavigate()
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
   const [infoOpen, setInfoOpen]     = useState(false)
-  // Default to "today" (BRT) on every mount — the operator opens the page
-  // and sees only the conversations with activity from 00:00 São Paulo today.
-  // The chip stays clickable for other presets and persists only within the
-  // session; on reload we always reset to "today" by design.
-  const [filters, setFilters]       = useState<ConversationFilters>(() => {
-    const today = resolveRange('today')
-    return { status: 'all', startDate: today.startDate, endDate: today.endDate }
-  })
+  // PL-1-1 (P12/P14): a caixa de entrada abria com o período "Hoje" ligado por
+  // padrão — um filtro que o operador não escolheu e que esconde tudo que
+  // chegou ontem. Num tenant sem mensagem hoje, a inbox nasce vazia. Intercom,
+  // Front e Zendesk abrem a caixa com as conversas em aberto, sem recorte de
+  // data; o chip de período continua disponível para quem quiser recortar.
+  const [filters, setFilters]       = useState<ConversationFilters>({ status: 'all' })
   const [totalUnread, setTotalUnread] = useState(0)
 
   const { tags: allTags, users: allUsers, createTag, deleteTag } = useTagsAndUsers()
