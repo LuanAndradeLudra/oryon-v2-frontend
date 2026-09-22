@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -100,13 +101,9 @@ export function DealsBoard({
   const currentPipelineId = stages[0]?.pipelineId
   const otherPipelines = getActivePipelines(pipelines).filter((p) => p.id !== currentPipelineId)
 
-  // Fecha os menus de card ("Transferir de funil" / "Mover ▾") ao clicar fora deles.
-  useEffect(() => {
-    if (!pipelineMenuDealId && !stageMenuDealId) return
-    const onDocClick = () => { setPipelineMenuDealId(null); setStageMenuDealId(null) }
-    document.addEventListener('click', onDocClick)
-    return () => document.removeEventListener('click', onDocClick)
-  }, [pipelineMenuDealId, stageMenuDealId])
+  // PL-C2-CAR-2: fechar ao clicar fora agora é do `Dropdown` (ele já cobre
+  // isso, mais Escape e a pilha de camadas — ver P3.2). O listener de
+  // document manual que vivia aqui era só pros dois menus em <div> cru.
 
   /**
    * C2 (SCRUM-933) — quantos negócios ABERTOS cada contato tem NESTE board.
@@ -356,81 +353,82 @@ export function DealsBoard({
                       Onde o ponteiro não arrasta ele continua sendo o
                       ÚNICO jeito de mover um card, então fica. */}
                   {!ponteiroArrasta && (
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setStageMenuDealId(stageMenuDealId === deal.id ? null : deal.id)
-                      }}
-                      className={cn(
-                        'flex items-center gap-0.5 h-[22px] px-[7px] rounded-md border border-[var(--bd2)] text-3xs font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
-                        stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
-                      )}
-                      aria-label={`Mover ${noun} para outra etapa`}
+                    // PL-C2-CAR-2 (P3): era um <div absolute> à mão, sem
+                    // portal nem `useLayer` — dentro da coluna (`overflow-y-auto`),
+                    // um card perto do fim ficava com o menu CORTADO pelo
+                    // scroll (às vezes invisível de vez). O `Dropdown`
+                    // primitivo (mesmo usado em `DealSummary.tsx` para o
+                    // mesmo gesto) portala pro `body` e entra na pilha de
+                    // camadas — nunca mais corta.
+                    <Dropdown
+                      open={stageMenuDealId === deal.id}
+                      onClose={() => setStageMenuDealId(null)}
+                      align="right"
+                      className="w-44"
+                      anchor={
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setStageMenuDealId(stageMenuDealId === deal.id ? null : deal.id)
+                          }}
+                          className={cn(
+                            'flex items-center gap-0.5 h-[22px] px-[7px] rounded-md border border-[var(--bd2)] text-3xs font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
+                          )}
+                          aria-label={`Mover ${noun} para outra etapa`}
+                        >
+                          Mover <ChevronDown className="w-3 h-3" />
+                        </button>
+                      }
                     >
-                      Mover <ChevronDown className="w-3 h-3" />
-                    </button>
-                    {stageMenuDealId === deal.id && (
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute right-0 top-full mt-1 w-44 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
-                      >
+                      <div className="px-1 py-1 flex flex-col gap-0.5">
                         {stages.filter((s) => s.id !== deal.stageId).map((s) => (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => { onMoveStage(deal, s.id); setStageMenuDealId(null) }}
-                            className="w-full text-left px-3 py-2 text-xs text-surface-200 hover:bg-surface-700 transition-colors flex items-center gap-2"
-                          >
+                          <DropdownItem key={s.id} onClick={() => { onMoveStage(deal, s.id); setStageMenuDealId(null) }}>
                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
                             {s.label}
-                          </button>
+                          </DropdownItem>
                         ))}
                       </div>
-                    )}
-                  </div>
+                    </Dropdown>
                   )}
                   {onMovePipeline && otherPipelines.length > 0 && (
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setPipelineMenuDealId(pipelineMenuDealId === deal.id ? null : deal.id)
-                        }}
-                        className={cn(
-                          'p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
-                          pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
-                        )}
-                        aria-label="Mais ações"
-                      >
-                        <MoreVertical className="w-3.5 h-3.5" />
-                      </button>
-                      {pipelineMenuDealId === deal.id && (
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute right-0 top-full mt-1 w-48 bg-surface-800 border border-surface-700 rounded-lg shadow-xl overflow-hidden"
+                    <Dropdown
+                      open={pipelineMenuDealId === deal.id}
+                      onClose={() => setPipelineMenuDealId(null)}
+                      align="right"
+                      className="w-48"
+                      anchor={
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPipelineMenuDealId(pipelineMenuDealId === deal.id ? null : deal.id)
+                          }}
+                          className={cn(
+                            'p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
+                          )}
+                          aria-label="Mais ações"
                         >
-                          <div className="px-3 py-2 border-b border-surface-700">
-                            <span className="text-3xs font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
-                              <ArrowRightLeft className="w-3 h-3" /> Transferir de funil
-                            </span>
-                          </div>
-                          {otherPipelines.map((p) => (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => { onMovePipeline(deal, p.id); setPipelineMenuDealId(null) }}
-                              className="w-full text-left px-3 py-2 text-xs text-surface-200 hover:bg-surface-700 transition-colors flex items-center gap-2"
-                            >
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-                              {p.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+                      }
+                    >
+                      <div className="px-3 py-2 border-b border-surface-700">
+                        <span className="text-3xs font-semibold text-surface-500 uppercase tracking-wide flex items-center gap-1.5">
+                          <ArrowRightLeft className="w-3 h-3" /> Transferir de funil
+                        </span>
+                      </div>
+                      <div className="px-1 py-1 flex flex-col gap-0.5">
+                        {otherPipelines.map((p) => (
+                          <DropdownItem key={p.id} onClick={() => { onMovePipeline(deal, p.id); setPipelineMenuDealId(null) }}>
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                            {p.name}
+                          </DropdownItem>
+                        ))}
+                      </div>
+                    </Dropdown>
                   )}
                 </div>
                 {isProcess ? (
