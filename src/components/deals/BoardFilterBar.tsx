@@ -34,7 +34,9 @@ function fullName(u: User): string {
   return `${u.firstName} ${u.lastName ?? ''}`.trim()
 }
 
-/** Chip-gatilho de 28px do README 3.4 (`Responsável ▾`): borda --bd2, ativo = acento suave. */
+/** Chip-gatilho do canvas 1e (`Responsável ▾`): 28px, padding 0/9, gap 5,
+ *  raio 7, borda --bd2, 12/600, SEM fundo (cor --tx) em repouso; ativo = borda
+ *  de acento + fundo acento suave. */
 function FilterChip({
   label, active, open, onClick, testId, ariaLabel,
 }: {
@@ -54,10 +56,10 @@ function FilterChip({
       aria-label={ariaLabel}
       data-testid={testId}
       className={cn(
-        'inline-flex items-center gap-1 h-7 px-2.5 rounded-sm border text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0',
+        'inline-flex items-center gap-[5px] h-7 px-[9px] rounded-sm border text-xs font-semibold whitespace-nowrap transition-colors flex-shrink-0',
         active || open
           ? 'border-brand-500 bg-accent-soft text-accent-dark'
-          : 'border-[var(--bd2)] bg-surface-900 text-surface-300 hover:text-surface-100',
+          : 'border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)]',
       )}
     >
       {label}
@@ -155,7 +157,7 @@ export function BoardFilterBar({
 
       {summary && (
       <p className="text-xs text-surface-400 tabular-nums" data-testid="board-summary" title={summaryTitle}>
-        <span className="font-semibold text-surface-200">
+        <span className="font-bold text-surface-100">
           {summary.total} {noun}{summary.total === 1 ? '' : 's'}
         </span>
         {!isProcess && (

@@ -6,11 +6,12 @@ import { useParams, useNavigate, useSearchParams, Navigate } from 'react-router-
 import { AlertTriangle, ChevronDown, Check, Search, X, Settings2, Plus } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { pipelinesApi } from '@/services/api'
-import { getDefaultPipeline, getActivePipelines, getPipelineStages, cn } from '@/lib/utils'
+import { getDefaultPipeline, getActivePipelines, getPipelineStages } from '@/lib/utils'
 import { pipelineKindOf, pipelineKindOption, pipelineNoun } from '@/lib/pipelineKinds'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Button } from '@/components/ui/Button'
 import { BoardFilterBar } from '@/components/deals/BoardFilterBar'
 import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
@@ -272,22 +273,21 @@ export function PipelinePage() {
   const toolbarLead = (
     <>
       {isMobile && seletorComTipo}
-      <div className="inline-flex items-center gap-0.5 h-7 p-0.5 rounded-sm border border-[var(--bd2)] bg-surface-800 flex-shrink-0" role="group" aria-label="Visão do funil">
-        {([['board', 'Quadro'], ['reports', 'Relatórios']] as const).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            aria-pressed={tab === key}
-            className={cn(
-              'h-6 px-2.5 rounded-[5px] text-xs font-semibold transition-colors',
-              tab === key ? 'bg-surface-900 text-surface-100' : 'text-surface-400 hover:text-surface-100',
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* R2-1E-BAR-06 (medido ao vivo): primitivo SegmentedControl, não pílulas
+          manuais — a barra unida (h28, divisor 1px, ativo sf2) que o canvas
+          usa para Kanban/Lista/Previsão. Quadro/Relatórios são as visões que
+          existem, no lugar delas. */}
+      <SegmentedControl
+        label="Visão do funil"
+        size="sm"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'board', label: 'Quadro' },
+          { value: 'reports', label: 'Relatórios' },
+        ]}
+      />
+      <span className="w-px h-[18px] bg-surface-700 mx-1 flex-shrink-0" aria-hidden />
 
       {/* Busca — casa nome, telefone, e-mail e empresa do CONTATO do negócio
           (deals.service.ts); só no QUADRO: a aba de relatórios agrega por

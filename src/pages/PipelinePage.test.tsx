@@ -109,7 +109,7 @@ describe('PipelinePage — navegação (D2/SCRUM-935)', () => {
     expect(screen.getByTestId('board-search-recebida')).toHaveTextContent('mariana')
 
     // Relatórios agregam por etapa e período — o campo não teria o que filtrar.
-    fireEvent.click(screen.getByRole('button', { name: /Relatórios/ }))
+    fireEvent.click(screen.getByRole('tab', { name: /Relatórios/ }))
     await waitFor(() => expect(screen.queryByTestId('board-search')).toBeNull())
   })
 
@@ -165,7 +165,7 @@ describe('PipelinePage — navegação (D2/SCRUM-935)', () => {
   it('a aba "Relatórios" troca o conteúdo (via querystring, linkável)', async () => {
     renderAt('/pipelines/p1', [pipeline({ id: 'p1', name: 'Vendas' })])
     await waitFor(() => screen.getByTestId('board-tab'))
-    fireEvent.click(screen.getByRole('button', { name: /Relatórios/ }))
+    fireEvent.click(screen.getByRole('tab', { name: /Relatórios/ }))
     await waitFor(() => expect(screen.getByTestId('reports-tab')).toHaveTextContent('relatórios de Vendas'))
     expect(screen.queryByTestId('board-tab')).toBeNull()
   })

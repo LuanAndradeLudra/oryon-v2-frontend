@@ -214,14 +214,17 @@ export function ContactsPage() {
           As telas de dentro são os MESMOS componentes de /settings
           (`StagesManager`, `CustomFieldsManager`), então não há duas
           implementações: há duas portas para a mesma sala. */}
-      <button
+      {/* R2-1C-PIX-02 (medido ao vivo): era um botão à mão (30px, 12/500,
+          raio 8) — vira o primitivo Button neutral sm (28px, 12/600, raio 7). */}
+      <Button
+        size="sm"
+        variant="neutral"
+        leftIcon={<Settings2 className="w-3.5 h-3.5" />}
         onClick={() => setShowCRMConfig(true)}
         data-testid="crm-config-link"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 border border-surface-700 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors"
       >
-        <Settings2 className="w-3.5 h-3.5" />
         Configurar
-      </button>
+      </Button>
       <Button
         size="sm"
         variant="neutral"
