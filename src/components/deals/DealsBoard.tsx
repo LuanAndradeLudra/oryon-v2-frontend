@@ -222,7 +222,7 @@ export function DealsBoard({
             </span>
             {stage.isWon && stage.label.toLowerCase() !== terminalLabels.won.toLowerCase() && (
               <span
-                className="text-3xs px-1.5 py-0.5 rounded border color-chip-soft"
+                className="text-3xs px-1.5 py-0.5 rounded-xs border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.won}
               >
                 {terminalLabels.won.toLowerCase()}
@@ -230,7 +230,7 @@ export function DealsBoard({
             )}
             {stage.isLost && stage.label.toLowerCase() !== terminalLabels.lost.toLowerCase() && (
               <span
-                className="text-3xs px-1.5 py-0.5 rounded border color-chip-soft"
+                className="text-3xs px-1.5 py-0.5 rounded-xs border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.lost}
               >
                 {terminalLabels.lost.toLowerCase()}
@@ -298,7 +298,7 @@ export function DealsBoard({
                tema, e a 800 no claro é #FFFFFF — o esqueleto seria um
                retângulo branco pulsando sobre o chão cinza. A 700 é cinza
                claro no claro (#D9DCE5) e escuro no escuro (#243333). */
-            <div key="carregando" className="h-16 rounded-xl bg-surface-700/50 animate-pulse" aria-hidden />
+            <div key="carregando" className="h-16 rounded-lg bg-surface-700/50 animate-pulse" aria-hidden />
           ) : cards.length === 0 ? (
             terminal && stage.isWon && !isOver ? (
               <div key="vazia" className="border border-surface-700 rounded-lg bg-surface-900 px-3 py-2.5 text-xs text-surface-400 leading-[1.5]">
@@ -373,7 +373,14 @@ export function DealsBoard({
                             setStageMenuDealId(stageMenuDealId === deal.id ? null : deal.id)
                           }}
                           className={cn(
-                            'flex items-center gap-0.5 h-[22px] px-[7px] rounded-md border border-[var(--bd2)] text-3xs font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            // PL-C2-CAR-4 (P8/P10): este botão só existe onde o
+                            // ponteiro NÃO arrasta (toque) — era 22px de altura,
+                            // abaixo do piso de 32px compacto (e dos 44px de
+                            // toque, que é o caso comum aqui). `isDesktop`
+                            // segue a mesma variável que já decide a opacidade
+                            // logo abaixo, não um breakpoint novo.
+                            'flex items-center gap-1 rounded-md border border-[var(--bd2)] font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            isDesktop ? 'h-8 px-[7px] text-3xs' : 'min-h-11 px-3 text-xs',
                             stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
                           aria-label={`Mover ${noun} para outra etapa`}
@@ -406,7 +413,9 @@ export function DealsBoard({
                             setPipelineMenuDealId(pipelineMenuDealId === deal.id ? null : deal.id)
                           }}
                           className={cn(
-                            'p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            // PL-C2-CAR-4: mesmo ajuste do "Mover ▾" ao lado — 22px → 32/44.
+                            'flex items-center justify-center rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            isDesktop ? 'w-8 h-8' : 'w-11 h-11',
                             pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
                           aria-label="Mais ações"

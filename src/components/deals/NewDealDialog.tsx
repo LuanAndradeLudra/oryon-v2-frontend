@@ -672,9 +672,9 @@ export function NewDealDialog({
       <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center justify-between')}>
         {!isMobile && (
           <span className="text-[11px] text-surface-500">
-            <kbd className="rounded border border-surface-700 px-1 py-0.5 font-mono text-[10px]">⌘</kbd>
+            <kbd className="rounded-2xs border border-surface-700 px-1 py-0.5 font-mono text-[10px]">⌘</kbd>
             {' '}
-            <kbd className="rounded border border-surface-700 px-1 py-0.5 font-mono text-[10px]">↵</kbd>
+            <kbd className="rounded-2xs border border-surface-700 px-1 py-0.5 font-mono text-[10px]">↵</kbd>
             {' '}{diverges ? 'não decide' : 'cria'}
           </span>
         )}
