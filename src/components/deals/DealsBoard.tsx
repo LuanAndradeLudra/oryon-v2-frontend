@@ -222,7 +222,7 @@ export function DealsBoard({
             </span>
             {stage.isWon && stage.label.toLowerCase() !== terminalLabels.won.toLowerCase() && (
               <span
-                className="text-3xs px-1.5 py-0.5 rounded border color-chip-soft"
+                className="text-3xs px-1.5 py-0.5 rounded-xs border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.won}
               >
                 {terminalLabels.won.toLowerCase()}
@@ -230,7 +230,7 @@ export function DealsBoard({
             )}
             {stage.isLost && stage.label.toLowerCase() !== terminalLabels.lost.toLowerCase() && (
               <span
-                className="text-3xs px-1.5 py-0.5 rounded border color-chip-soft"
+                className="text-3xs px-1.5 py-0.5 rounded-xs border color-chip-soft"
                 style={TERMINAL_CHIP_STYLE.lost}
               >
                 {terminalLabels.lost.toLowerCase()}
@@ -298,7 +298,7 @@ export function DealsBoard({
                tema, e a 800 no claro é #FFFFFF — o esqueleto seria um
                retângulo branco pulsando sobre o chão cinza. A 700 é cinza
                claro no claro (#D9DCE5) e escuro no escuro (#243333). */
-            <div key="carregando" className="h-16 rounded-xl bg-surface-700/50 animate-pulse" aria-hidden />
+            <div key="carregando" className="h-16 rounded-lg bg-surface-700/50 animate-pulse" aria-hidden />
           ) : cards.length === 0 ? (
             terminal && stage.isWon && !isOver ? (
               <div key="vazia" className="border border-surface-700 rounded-lg bg-surface-900 px-3 py-2.5 text-xs text-surface-400 leading-[1.5]">
