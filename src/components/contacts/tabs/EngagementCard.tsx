@@ -201,7 +201,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
                 return (
                   <span
                     key={status}
-                    className="color-chip text-2xs font-medium px-2.5 py-1 rounded-full border"
+                    className="color-chip-soft inline-flex items-center h-5 text-[11px] font-semibold px-[7px] rounded-[5px] border"
                     style={{ ['--chip']: chips[status] ?? chips.abandoned } as React.CSSProperties}
                   >
                     {labels[status] ?? status} {count}
@@ -235,7 +235,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
               )}
               {lastAnalysis.status === 'confirmed' && (
                 <span
-                  className="color-chip text-3xs font-medium px-2 py-0.5 rounded-full border"
+                  className="color-chip-soft inline-flex items-center h-5 text-[11px] font-semibold px-[7px] rounded-[5px] border"
                   style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
                 >
                   Confirmada

@@ -322,7 +322,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {contact.aiSentiment && contact.aiSentiment !== 'unknown' && (
                 <Section label="Sentimento geral das conversas" icon={SENTIMENT_CONFIG[contact.aiSentiment!].icon} iconColor={SENTIMENT_CONFIG[contact.aiSentiment!].iconColor} delay={justFinished ? 0.15 : 0}>
                   <span
-                    className="color-chip inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border"
+                    className="color-chip-soft inline-flex items-center gap-1.5 h-5 text-[11px] font-semibold px-[7px] rounded-[5px] border"
                     style={{ ['--chip']: SENTIMENT_CONFIG[contact.aiSentiment!].chip } as React.CSSProperties}
                   >
                     {SENTIMENT_CONFIG[contact.aiSentiment!].icon}{SENTIMENT_CONFIG[contact.aiSentiment!].label}
