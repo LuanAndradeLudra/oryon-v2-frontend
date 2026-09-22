@@ -103,6 +103,19 @@ Verificado e SEM defeito: ritmo vertical constante de **24px** entre cards nas d
 Registrado em DECISOES: nenhum.
 Próximo: T12 Navegação global (ciclo 5) — sidebar/TopBar/busca/notificações/créditos, medindo alinhamento e alturas entre as peças.
 
+### Ciclos paralelos dos agentes — 2026-09-22 20:3x–20:5x (registrados pelo Maestro)
+**Farol — T4 sobras + T7 Campanhas (eixo 10) e o S1 de rede**
+- PL-C3-FAR-1 [S1] (P6) Loading infinito com a API fora do ar. Causa-raiz **não era do Dashboard**: o interceptor de retry (`services/api.ts`) tratava qualquer erro sem status como transitório, inclusive `ECONNABORTED` (timeout) — com timeout de 30 s e 2 retentativas, ~91,5 s antes de qualquer catch. Agora timeout não é retentado. — `db31620` — **verificado ao vivo: esqueleto some em ~15 s**
+- PL-C4-FAR-1 [S1] (P6) **ABERTO, sucessor do anterior**: sem API, a área de conteúdo do Dashboard fica só com o título "Métricas Principais" — página em branco silenciosa, sem ErrorState e sem "Tentar de novo" (medido ao vivo com o backend derrubado; volta ao normal quando sobe). Repassado ao Farol como prioridade.
+- PL-C2-FAR-eixo10-1 [S3] cabeçalho `min-h-10` em SalesFunnelCard (2×) e TeamMiniCard contra `h-10` dos irmãos do mesmo grid — `a5018b8`
+- PL-C3-FAR-eixo10-1 [S3] (P4) kebab de TemplatesTab (p-1/ícone 14) menor que o gêmeo de CampaignsTab (p-1.5/ícone 16) na mesma tela — `f10dc92`
+**Bússola — T11 Configurações + T10 Conectores (eixo 10)**
+- PL-C2-BUS-6 [S3] gap da coluna de campos: Vocabulário em 12px (canvas 2e) e Minha Conta/Perfil da Empresa/Perfil do WhatsApp em 16px para a mesma peça — `762b0b8`
+- PL-C2-BUS-7 [S3] chips de status de WhatsAppHealth e WhatsAppNumbers sem altura fixa (10–12px) contra o padrão já convergido h-20/px-7/r-5/11-bold — `1231972`
+**Decisão do Maestro (raio de 4px):** os ~15 mini-chips do wizard de campanha em `rounded` (4px) **ficam como estão** — 4px é o piso real da escala (canvas 1a RAD-09: contador, checkbox, "Em breve"); faltava token. Criado `--radius-2xs` (4px) e a régua do `index.css` atualizada — `bec4ef6`.
+**Medição para a Bússola:** ação de linha em /settings/agents mede 28×28 (padding 6, raio 8, ícone 14) com linha de 48px → recomendado unificar os 3 padrões em 28×28 raio **6** com hover `--rowhover` (CONV-CHAT-36).
+Não verificável neste ambiente: VolumeChart no caso "sem mensagem hoje" (o dataset local tem mensagens de hoje — conversa de teste do composer).
+
 ## Achados abertos (backlog do loop)
 <!-- Achados vistos e não feitos, para ciclos futuros priorizarem S1/S2 de qualquer tela. -->
 - PL-1-4 [S3] (P6) O "carregando" da lista ainda é spinner + "Carregando…" em vez de skeleton de linhas (`ConversationList.tsx` ~l.175). Perf percebida.
