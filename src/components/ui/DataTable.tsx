@@ -99,7 +99,7 @@ export function DataTable<Row>({
             {selectable && (
               <th className="w-10 px-3 h-8">
                 <Checkbox
-                  aria-label="Selecionar todos"
+                  aria-label="Selecionar todos os itens carregados"
                   checked={allSelected}
                   onChange={onToggleSelectAll}
                 />

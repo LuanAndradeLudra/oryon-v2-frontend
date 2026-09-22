@@ -10,6 +10,9 @@ import type { Contact, Tag } from '@/types'
 
 interface BulkActionBarProps {
   count: number
+  /** Total do filtro atual (servidor). Deixa claro que a seleção cobre só o
+   *  que está carregado — P7: alcance honesto em ação de massa. */
+  total?: number
   selectedContacts: Contact[]
   tags: Tag[]
   onMoveStage: (stage: string) => void
@@ -28,6 +31,7 @@ type HoveredSub = 'addTag' | 'removeTag' | null
 
 export function BulkActionBar({
   count,
+  total,
   selectedContacts,
   tags,
   onMoveStage,
@@ -150,6 +154,11 @@ export function BulkActionBar({
         {inline && <>{count}</>}
         {' '}
         {count === 1 ? 'selecionado' : 'selecionados'}
+        {/* PL-2-2 (P7): "selecionar todos" marca só o que está carregado. Dizer o
+            total do filtro evita a ação em massa parecer maior do que é. */}
+        {typeof total === 'number' && total > count && (
+          <span className="text-surface-500"> de {total.toLocaleString('pt-BR')} no filtro</span>
+        )}
       </div>
 
       <div className="h-5 w-px bg-surface-700" />

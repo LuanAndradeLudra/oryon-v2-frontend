@@ -409,6 +409,7 @@ export function ContactsPage() {
                 <BulkActionBar
                   inline
                   count={selectedIds.size}
+                  total={total}
                   selectedContacts={selectedContacts}
                   tags={tags}
                   onMoveStage={handleBulkMoveStage}
