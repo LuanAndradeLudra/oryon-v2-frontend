@@ -94,7 +94,7 @@ export function MessageInput({ channelId, replyTo, onClearReply, placeholder }: 
             <EmojiPickerButton
               textareaRef={textareaRef}
               onEmojiInsert={(newValue) => setText(newValue)}
-              className="p-1.5 rounded-full hover:bg-surface-600"
+              className="p-1.5"
             />
             <button
               className="p-1.5 rounded-full text-surface-500 hover:text-surface-200 hover:bg-surface-600 transition-all"

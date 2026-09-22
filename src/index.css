@@ -411,7 +411,7 @@
      do contato. Um degrau acima do chão: existe como superfície sem virar a
      mancha mais clara da tela. */
   --color-composer-bg:     #0E1414;
-  --color-composer-border: #243333;
+  --color-composer-border: var(--bd2); /* CONV-CHAT-32: borda de ênfase */
 
   /* ── Elevação nível 3: overlays (dropdown/popover/tooltip/notificações) ──
      No escuro a superfície flutuante é a MAIS CLARA do app (mais perto da
@@ -973,7 +973,7 @@ code, pre, kbd, samp {
 
   /* Composer */
   --color-composer-bg:     #F5F6F8;
-  --color-composer-border: #E4E6EC;
+  --color-composer-border: var(--bd2); /* CONV-CHAT-32: borda de ênfase */
 
   /* Elevação nível 3 (light): overlay branco; a separação vem da sombra em
      3 camadas (anel de recorte + contato + altura) e da borda nítida. */
