@@ -819,20 +819,15 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            // msg-composer traz o FUNDO via token que acompanha o tema (ver
-            // index.css) — por isso a cor base não vem de bg-surface-800 aqui.
+            // msg-composer traz bg/border via tokens que acompanham o tema
+            // (ver index.css — --color-composer-border já é --bd2, CONV-CHAT-32).
             // `relative` é necessário pro overlay absolute do dropzone
             // (abaixo) se posicionar contra este container.
             // CONV-CHAT-32/41 (spec/1d-conversas.GAPS.md): sem sombra — o mock
             // é explícito ("Composer não tem sombra").
-            // R2-1D-COMP-03 (medido ao vivo): a borda em repouso é --bd2, não
-            // a linha comum (--color-composer-border, que é --bd) — sobrescrita
-            // aqui com `!important` porque o token vive em index.css, fora do
-            // meu domínio (Leva 0, do Maestro); reportado pra ele ajustar na
-            // fonte quando puder.
             'relative msg-composer rounded-lg px-3 pt-2.5 pb-2 transition-all',
-            'border !border-[var(--bd2)] focus-within:!border-brand-500/50',
-            dragOver && '!border-brand-500 ring-1 ring-brand-500/40'
+            'border focus-within:border-brand-500/50',
+            dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
           )}
         >
           {/* Dropzone: feedback "solte aqui" durante o arraste (SCRUM-275) */}
@@ -1019,14 +1014,11 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
                   Janela de 24h aberta · fecha em {windowHoursLeft} h
                 </span>
               )}
-              {/* Emoji — o primitivo (src/components/ui) não é meu domínio; as
-                  classes de raio/hover que faltam (CONV-CHAT-36) entram aqui,
-                  por fora, via `className` (o componente já as mescla com a
-                  base dele em vez de substituir). */}
+              {/* Emoji — raio/hover (CONV-CHAT-36) já vêm do primitivo. */}
               <EmojiPickerButton
                 textareaRef={textareaRef}
                 onEmojiInsert={(newValue) => setText(newValue)}
-                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-md hover:bg-[var(--rowhover)]"
+                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
               />
 
               {/* Send — aparece com texto E/OU anexos em espera */}
