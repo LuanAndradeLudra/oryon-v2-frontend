@@ -1427,9 +1427,18 @@ code, pre, kbd, samp {
 }
 
 /* ── Oryon icons — global scale ─────────────────────────────────────────────
- * Escala todos os ícones custom em 1.3× mantendo o fluxo do layout.
- * transform-origin: center garante que o scale não desloca o ícone. */
-svg[data-oryon-icon] {
+ * Escala todos os ícones em 1.4× mantendo o fluxo do layout (transform não
+ * mexe na caixa; transform-origin: center garante que o scale não desloca).
+ *
+ * PL-5-1: a regra cobria só `[data-oryon-icon]` — o set da casa. Mas
+ * `src/lib/icons.tsx` é um drop-in: o que ele não desenha cai no lucide-react
+ * de verdade (`svg.lucide`), que ficava SEM a escala. Resultado medido ao vivo
+ * na sidebar: 11 ícones da casa desenhando 23,1px e 2 fallbacks (Funis,
+ * AI Observabilidade) desenhando 16,5px — 40% menores, lado a lado, com a
+ * mesma classe `w-[16.5px]`. Mesmo desencontro em 14px (19,6 × 14,0).
+ * A escala é do sistema de ícones, não de um dos dois fornecedores. */
+svg[data-oryon-icon],
+svg.lucide {
   transform: scale(1.4);
   transform-origin: center;
 }

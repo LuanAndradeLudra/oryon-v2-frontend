@@ -156,7 +156,10 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
     // daqui. Gate SCRUM-498: mesmo flag de tenant que já esconde o board
     // de dentro de /contacts.
     ...(multiPipeline ? [{
-      icon: <Handshake className="w-[16.5px] h-[16.5px]" />,
+      // PL-5-2: Handshake não existe no set da casa (`src/lib/icons.tsx`) e cai
+      // no lucide-react de verdade, cujo traço padrão é 2 — mais pesado que o
+      // 1.75 dos 11 vizinhos desta mesma barra. Mesmo motivo do LineChart abaixo.
+      icon: <Handshake className="w-[16.5px] h-[16.5px]" strokeWidth={1.75} />,
       label: 'Funis',
       href: '/pipelines',
     }] : []),
@@ -305,7 +308,7 @@ export function NavSidebar({ totalUnread = 0, forceExpanded = false }: NavSideba
                 />
                 <SidebarLink
                   href="/admin/ai-observability"
-                  icon={<LineChart className="w-[16.5px] h-[16.5px]" />}
+                  icon={<LineChart className="w-[16.5px] h-[16.5px]" strokeWidth={1.75} />}
                   label="AI Observability"
                   active={activeHref === '/admin/ai-observability'}
                 />
