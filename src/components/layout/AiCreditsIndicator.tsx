@@ -223,7 +223,7 @@ export function AiCreditsIndicator() {
           >
             {/* Canvas 6b: coluna única, padding 14, gap 10, 12.5px. Anel 36 com trilha --bd. */}
             <div className="flex items-center gap-2.5">
-              <CreditRing size={36} pct={pct} color={color} track="var(--bd)" />
+              <CreditRing size={36} pct={pct} color={pct >= 0.9 ? 'var(--color-danger)' : pct >= 0.7 ? 'var(--color-warning)' : 'var(--color-brand-500)'} track="var(--bd)" />
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-surface-100 truncate">
                   Créditos de IA{billing?.plan.displayName ? ` · ${billing.plan.displayName}` : ''}
@@ -235,7 +235,12 @@ export function AiCreditsIndicator() {
                 </p>
               </div>
               <div className="text-right flex-shrink-0">
-                <div className="text-base font-extrabold tabular-nums tracking-[-0.02em] leading-[1.1]" style={{ color }}>
+                {/* Canvas 6b: o % não tem cor própria (usa --tx); cor só nas faixas de risco,
+                    por token — o hex da sidebar (sempre escura) não serve no popover claro. */}
+                <div className={cn(
+                  'text-base font-extrabold tabular-nums tracking-[-0.02em] leading-[1.1]',
+                  pct >= 0.9 ? 'text-danger' : pct >= 0.7 ? 'text-warning' : 'text-surface-100',
+                )}>
                   {pctLabel}%
                 </div>
                 <div className="text-2xs text-surface-500">usado</div>
