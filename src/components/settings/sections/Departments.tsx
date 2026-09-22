@@ -150,7 +150,7 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
   return (
     <div className="border-y border-surface-700 py-5 mb-4">
       <div className="flex items-center justify-between mb-5">
-        <p className="text-xs font-semibold text-brand-400 uppercase tracking-widest">{title}</p>
+        <p className="text-xs font-semibold text-accent-dark uppercase tracking-widest">{title}</p>
         <Button variant="ghost" size="sm" iconOnly onClick={onCancel} aria-label="Fechar"><X className="w-4 h-4" /></Button>
       </div>
 
@@ -255,7 +255,7 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
   return (
     // Gramática nova: linha de lista sem card — assenta direto no fundo,
     // separada por hairline (divide-y no container), hover sutil.
-    <div className="group hover:bg-surface-900/60 transition-colors">
+    <div className="group hover:bg-[var(--rowhover)] transition-colors">
       <div className="flex items-center justify-between gap-3 px-4 py-3.5">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-md flex-shrink-0 flex items-center justify-center"

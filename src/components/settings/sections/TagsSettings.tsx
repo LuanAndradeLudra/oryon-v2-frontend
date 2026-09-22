@@ -59,7 +59,7 @@ function TagCard({ tag, usageCount, onEdit, onDelete, canManage }: TagCardProps)
     // separada por hairline (divide-y no container), hover sutil.
     <div
       onContextMenu={onContextMenu}
-      className="group flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface-900/60 transition-colors"
+      className="group flex items-center justify-between gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors"
     >
       <div className="flex items-center gap-3">
         <div

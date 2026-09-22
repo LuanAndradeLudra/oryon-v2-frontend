@@ -175,7 +175,7 @@ export function ConnectorsSettings() {
               key={c.id}
               type="button"
               onClick={() => setOpenConnector(c)}
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-surface-900/40 transition-colors"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-[var(--rowhover)] transition-colors"
             >
               <ConnectorTile connector={c} size={32} radius={8} />
               <div className="min-w-0 flex-1">

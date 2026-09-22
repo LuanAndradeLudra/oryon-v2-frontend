@@ -154,3 +154,15 @@ Login/Onboarding (R2-NOMOCK-AUTH-01..05), /admin skills e agentes (R2-NOMOCK-ADM
 | R2-CONN-5B-b | segmentado do 5b usa `size="32"` (h32 12/600) | ConnectorsSettings.tsx | ✅ código · ❓ ao vivo |
 
 Sem mock no canvas (só o vocabulário de 2e/1a se aplica): Números WhatsApp, Departamentos, Etapas/Etiquetas/Campos — auditadas na Rodada 2 (R2-2E-*).
+
+### Rodada 2d — revisão de Números WhatsApp / Departamentos / Usuários (sem desenho próprio no canvas — só vocabulário 2e/1a)
+
+Confirmado via `tools-extract-canvas.py`: nenhuma dessas 3 telas tem mockup renderizado no canvas (só aparecem como item de nav) — Vocabulário (2e), Conectores (5b/3d/3e/4a) e Faturamento (6a) são as únicas com desenho pixel a pixel. Segue a revisão de vocabulário:
+
+| ID | Achado | Correção | Status |
+|---|---|---|---|
+| R2-2E-14 | Departments.tsx:258, TagsSettings.tsx:62, ConnectorsSettings.tsx:178 usavam `hover:bg-surface-900/40|60` — inconsistente com o `--rowhover` já padronizado em Usuários/Respostas rápidas nesta rodada | trocado para `--rowhover` | ✅ código · ❓ ao vivo |
+| R2-2E-15 | Departments.tsx:153 eyebrow do formulário em `text-brand-400` (cor de marca crua) | `text-accent-dark` (token já usado em eyebrows equivalentes) | ✅ código · ❓ ao vivo |
+| R2-2E-16 | WhatsAppNumbers.tsx:260 (status da linha) e WhatsAppHealth.tsx:237/242/341 (token/tier) usavam `.color-chip` SÓLIDO — são chips de STATUS, não etiqueta | `.color-chip-soft` | ✅ código · ❓ ao vivo |
+
+Confirmado que já estavam corretas: WhatsAppNumbers (lista hairline `divide-y`, `SectionHeader`, sem card), Departments (form em `border-y` hairline, `SectionHeader`), AgentManagement/Usuários (tabela com eyebrow 10/700 e chip soft, R2-2E-13 desta rodada).

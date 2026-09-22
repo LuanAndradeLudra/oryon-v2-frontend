@@ -257,7 +257,7 @@ export function WhatsAppNumbers() {
                   <div>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-semibold text-surface-50">{num.displayPhoneNumber}</p>
-                      <span className={cn('color-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-xs font-medium border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
+                      <span className={cn('color-chip-soft inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-xs font-medium border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
                         {status.icon}
                         {status.label}
                       </span>
