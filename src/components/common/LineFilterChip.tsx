@@ -58,8 +58,8 @@ export function LineFilterChip({
         onClick={() => setOpen((v) => !v)}
         className={cn(
           'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
-          'bg-surface-800 border border-surface-700/60 text-surface-200 hover:border-surface-600',
-          open && 'border-brand-500/40 ring-2 ring-brand-500/10',
+          'bg-surface-800 border border-[var(--bd2)] text-surface-200 hover:bg-[var(--rowhover)]',
+          open && 'border-brand-500',
         )}
       >
         <Icon className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
@@ -83,8 +83,8 @@ export function LineFilterChip({
                 className={cn(
                   'w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors',
                   value === 'all'
-                    ? 'bg-brand-500/10 text-surface-100'
-                    : 'text-surface-300 hover:bg-surface-800',
+                    ? 'bg-[var(--rowhover)] text-surface-100'
+                    : 'text-surface-300 hover:bg-[var(--rowhover)]',
                 )}
               >
                 <Globe className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
@@ -107,8 +107,8 @@ export function LineFilterChip({
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors',
                       isActive
-                        ? 'bg-brand-500/10 text-surface-100'
-                        : 'text-surface-300 hover:bg-surface-800',
+                        ? 'bg-[var(--rowhover)] text-surface-100'
+                        : 'text-surface-300 hover:bg-[var(--rowhover)]',
                     )}
                   >
                     <Phone className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />

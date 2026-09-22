@@ -30,6 +30,10 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
 12. **Logo**: mock usa placeholder "O" 26px; mantida a marca real em 26px.
 13. **Pílula "Buscar" do TopBar e seletores em botão** usam a linha comum (`--bd`), não a borda de input (`--bd2`).
     Alternativa: levar também para `--bd2`.
+14. **Fab (botão flutuante mobile de Contatos/Conversas)**: mantida sombra (categoria overlay, elemento flutuante
+    sobre conteúdo) mas trocada para `--shadow-overlay` do sistema em vez de `shadow-brand-600/30` arbitrário;
+    cor trocada de `bg-brand-600`/`hover:bg-brand-500` cru para os tokens do botão primário (`--color-btn-primary-bg/fg`,
+    `hover:brightness-90`), igual ao `Button` variant="primary". Revisão mobile R2, commit ver mensagem.
 
 ## Sem dado no backend (`[!]`, não implementado)
 Split Humano/IA por hora e deltas dos KPIs (Dashboard); painel "HOJE"/CSAT do agente; "Rascunho salvo" nos wizards;
