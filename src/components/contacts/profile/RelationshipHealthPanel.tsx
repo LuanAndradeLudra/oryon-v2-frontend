@@ -75,9 +75,13 @@ export function RelationshipHealthPanel({ contact, stats }: RelationshipHealthPa
           <HeartPulse className="w-4 h-4 text-surface-400" />
           Relacionamento
         </h3>
+        {/* R2-1C-VOC-02 (medido ao vivo): era .color-chip cheio em pílula — este
+            rótulo é STATUS (Engajado/Estável/Esfriando/Em risco), não etiqueta;
+            vocabulário correto é .color-chip-soft, h20/raio5/11-600 (como IA
+            ativa, Pendente etc.), não a pílula cheia das tags. */}
         <span
           title="Índice de saúde do relacionamento: combina recência do último contato, frequência de conversas, tempo de resposta e sentimento. Prévia calculada no cliente a partir dos dados do contato."
-          className="color-chip inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+          className="color-chip-soft inline-flex items-center h-5 rounded-[5px] border px-[7px] text-[11px] font-semibold"
           style={{ ['--chip']: band.color } as React.CSSProperties}
         >
           {band.label}
@@ -90,7 +94,7 @@ export function RelationshipHealthPanel({ contact, stats }: RelationshipHealthPa
           <span className="text-2xl font-display font-semibold text-surface-50 tabular-nums leading-none">{score}</span>
           <span className="text-[11px] text-surface-400 mb-0.5">/100</span>
           <span className="text-[10px] text-surface-500 uppercase tracking-wide mb-0.5 ml-1">prévia</span>
-          <div className="flex-1 h-1.5 rounded-full bg-surface-700 overflow-hidden ml-1 mb-1">
+          <div className="flex-1 h-1.5 rounded-full bg-[var(--sf2)] overflow-hidden ml-1 mb-1">
             <div className="h-full rounded-full transition-all" style={{ width: `${score}%`, backgroundColor: band.color }} />
           </div>
         </div>
@@ -101,7 +105,7 @@ export function RelationshipHealthPanel({ contact, stats }: RelationshipHealthPa
             <div key={f.key} className="flex items-center gap-2">
               <f.icon className="w-3.5 h-3.5 text-surface-500 flex-shrink-0" />
               <span className="text-xs text-surface-400 w-20 flex-shrink-0">{f.label}</span>
-              <div className="flex-1 h-1 rounded-full bg-surface-700/70 overflow-hidden">
+              <div className="flex-1 h-1 rounded-full bg-[var(--sf2)]/80 overflow-hidden">
                 <div
                   className="h-full rounded-full"
                   style={{ width: `${f.score}%`, backgroundColor: `color-mix(in srgb, ${band.color} 70%, var(--color-surface-600))` }}
