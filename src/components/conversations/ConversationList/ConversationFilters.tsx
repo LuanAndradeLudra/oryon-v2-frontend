@@ -166,7 +166,14 @@ export function ConversationFiltersBar({
               className="inline-flex items-center gap-1 h-5 pl-2 pr-1.5 rounded-sm border border-surface-700 bg-surface-900 text-[11px] font-semibold text-surface-200"
             >
               {p.label}
-              <button type="button" onClick={p.onRemove} aria-label={`Remover ${p.label}`} className="text-surface-400 hover:text-surface-100">
+              {/* PL-1-3 (P10): área de clique de 16px no "x" — o ícone segue 10px,
+                  mas o alvo antes era 10×10, abaixo de qualquer mínimo. */}
+              <button
+                type="button"
+                onClick={p.onRemove}
+                aria-label={`Remover ${p.label}`}
+                className="-mr-0.5 w-4 h-4 inline-flex items-center justify-center rounded-[4px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+              >
                 <X className="w-2.5 h-2.5" />
               </button>
             </span>
