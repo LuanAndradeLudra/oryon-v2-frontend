@@ -325,7 +325,7 @@ export function AgentManagement() {
                       anchor={
                         <button
                           onClick={() => setOpenDropdown(openDropdown === user.id ? null : user.id)}
-                          className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+                          className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
                         >
                           <MoreHorizontal className="w-3.5 h-3.5" />
                         </button>

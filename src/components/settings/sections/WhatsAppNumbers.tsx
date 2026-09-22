@@ -322,7 +322,7 @@ export function WhatsAppNumbers() {
                             <button
                               onClick={() => assignAgent(num.id, null)}
                               disabled={savingAgent === num.id}
-                              className="p-1.5 rounded-[6px] text-surface-500 hover:text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
+                              className="p-1.5 rounded-xs text-surface-500 hover:text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
                               title="Remover agente"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -349,7 +349,7 @@ export function WhatsAppNumbers() {
                         <button
                           onClick={() => { void handlePromote(num.id) }}
                           disabled={promoting === num.id}
-                          className="p-1.5 rounded-[6px] text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
+                          className="p-1.5 rounded-xs text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
                         >
                           <Star className="w-3.5 h-3.5" />
                         </button>
@@ -359,14 +359,14 @@ export function WhatsAppNumbers() {
                       <button
                         onClick={() => { void handleResubscribe(num) }}
                         disabled={resubscribing === num.id}
-                        className="p-1.5 rounded-[6px] text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-50"
+                        className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-50"
                       >
                         <RefreshCw className={cn('w-3.5 h-3.5', resubscribing === num.id && 'animate-spin')} />
                       </button>
                     </Tooltip>
                     <button
                       onClick={() => { void openDisconnectConfirm(num) }}
-                      className="p-1.5 rounded-[6px] text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
+                      className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
