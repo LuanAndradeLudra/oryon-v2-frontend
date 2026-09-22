@@ -341,6 +341,9 @@ export function ConversationsPage() {
   }, [])
 
   const handleStatusChange = async (id: string, status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => {
+    const rawBefore = conversations.find((c) => c.id === id)?.status
+    // 'abandoned' não é um destino do seletor: só desfazemos entre os 3 do fluxo.
+    const statusBefore = rawBefore === 'open' || rawBefore === 'pending' || rawBefore === 'resolved' ? rawBefore : undefined
     await updateStatus(id, status, dealOutcome)
     syncActive(id, { status })
     invalidateActivity(id)
@@ -348,6 +351,22 @@ export function ConversationsPage() {
       status === 'resolved' ? (dealOutcome ? 'Conversa resolvida · desfecho registrado ✓' : 'Conversa resolvida ✓')
         : status === 'pending' ? 'Conversa marcada como pendente'
           : 'Conversa marcada como aberta'
+    // PL-3-2 (P7): mudar status é reversível e de 1 clique (ou 1 tecla, "E"),
+    // então não confirma — mas precisa de saída. O board de Funis já usa este
+    // padrão em `PipelineBoardTab`; aqui o toast só informava. Sem "Desfazer"
+    // quando houve desfecho de negócio: aí a reversão não é só de status.
+    const previous = statusBefore
+    if (!dealOutcome && previous && previous !== status) {
+      toast(msg, 'success', {
+        label: 'Desfazer',
+        onClick: () => {
+          void updateStatus(id, previous)
+            .then(() => { syncActive(id, { status: previous }); invalidateActivity(id) })
+            .catch(() => toast('Não foi possível desfazer.', 'error'))
+        },
+      }, 8000)
+      return
+    }
     toast(msg, 'success')
   }
 
