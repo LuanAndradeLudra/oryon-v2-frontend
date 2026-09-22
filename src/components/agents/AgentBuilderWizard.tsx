@@ -7,6 +7,7 @@ import {
   Briefcase, SmilePlus, GraduationCap, Heart, Flame,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/Button'
 import { createAgent, updateAgent, getAgent, generateAgentPrompt, addAgentKnowledge, extractBrandFile } from '@/services/agentsApi'
 import { showToast } from '@/hooks/useToast'
 import {
@@ -2186,47 +2187,52 @@ export function AgentBuilderWizard({ onClose, onCreated }: AgentBuilderWizardPro
                     <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> <span>{publishError}</span>
                   </motion.p>
                 )}
+                {/* PL-C2-CAR-11 (Eixo10/P4): os 4 botões do rodapé eram
+                    <button> à mão reproduzindo ~90% do primitivo Button md
+                    (mesmo h-9/px-3.5/rounded-sm) mas com a franja errada:
+                    sem focus-visible ring (os 4), disabled:opacity-50 em vez
+                    de 45% (Voltar/Rascunho), borda surface-700 em vez de
+                    --bd2 (Rascunho) e — o mais visível — hover:brightness-110
+                    no primário, quando TODO OUTRO botão primary do app
+                    escurece no hover (hover:brightness-90). Result: o CTA
+                    mais importante do wizard reagia ao contrário de todos os
+                    outros. */}
                 <div className="flex items-center gap-2 flex-1">
                   {step > 1 && (
-                    <button
-                      type="button"
-                      onClick={back}
-                      disabled={publishing}
-                      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-sm text-[13px] font-semibold text-surface-400 hover:text-surface-200 transition-colors disabled:opacity-50"
-                    >
-                      <ChevronLeft className="w-4 h-4" /> Voltar
-                    </button>
+                    <Button type="button" variant="ghost" size="md" onClick={back} disabled={publishing} leftIcon={<ChevronLeft className="w-4 h-4" />}>
+                      Voltar
+                    </Button>
                   )}
                   <div className="ml-auto flex items-center gap-2">
                     {step === 8 ? (
                       <>
-                        <button
-                          type="button"
-                          onClick={() => handlePublish('draft')}
-                          disabled={publishing}
-                          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-sm border border-surface-700 text-[13px] font-semibold text-surface-300 hover:text-surface-100 transition-colors disabled:opacity-50"
-                        >
+                        <Button type="button" variant="neutral" size="md" onClick={() => handlePublish('draft')} disabled={publishing}>
                           Salvar como rascunho
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
+                          variant="primary"
+                          size="md"
                           onClick={() => handlePublish('active')}
-                          disabled={publishing || !data.generated_prompt}
-                          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-sm text-[13px] font-semibold bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                          disabled={!data.generated_prompt}
+                          loading={publishing}
+                          leftIcon={<Zap className="w-4 h-4" />}
                         >
-                          {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                           {publishing ? 'Publicando...' : 'Publicar agente'}
-                        </button>
+                        </Button>
                       </>
                     ) : (
-                      <button
+                      <Button
                         type="button"
+                        variant="primary"
+                        size="md"
                         onClick={next}
                         disabled={step === 7 && !data.generated_prompt}
-                        className="inline-flex items-center gap-1.5 h-9 px-4 rounded-sm text-[13px] font-semibold bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        leftIcon={step === 7 ? <Sparkles className="w-4 h-4" /> : undefined}
+                        rightIcon={step === 7 ? undefined : <ChevronRight className="w-4 h-4" />}
                       >
-                        {step === 7 ? <><Sparkles className="w-4 h-4" /> Revisar</> : <>Continuar <ChevronRight className="w-4 h-4" /></>}
-                      </button>
+                        {step === 7 ? 'Revisar' : 'Continuar'}
+                      </Button>
                     )}
                   </div>
                 </div>
