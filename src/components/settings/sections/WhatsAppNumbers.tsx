@@ -18,17 +18,20 @@ import { api, whatsappNumbersApi, type WhatsappLineDependencies } from '@/servic
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import type { WhatsAppNumberDetailed } from '@/types'
 
+// Wifi/WifiOff/Clock não existem no set da casa (traço 2 do lucide real) —
+// strokeWidth explícito pra bater com os botões de ação (Star/RefreshCw/
+// Trash2, traço 1.75) na mesma linha.
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; chip: string }> = {
-  connected:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    chip: 'var(--color-status-active)' },
-  CONNECTED:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" />,    chip: 'var(--color-status-active)' },
-  disconnected: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, chip: 'var(--color-danger)' },
-  DISCONNECTED: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" />, chip: 'var(--color-danger)' },
-  pending:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    chip: 'var(--color-status-pending)' },
-  PENDING:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" />,    chip: 'var(--color-status-pending)' },
-  DELETED:      { label: 'Removido',     icon: <WifiOff className="w-3.5 h-3.5" />, chip: 'var(--color-status-muted)' },
+  connected:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" strokeWidth={1.75} />,    chip: 'var(--color-status-active)' },
+  CONNECTED:    { label: 'Conectado',    icon: <Wifi className="w-3.5 h-3.5" strokeWidth={1.75} />,    chip: 'var(--color-status-active)' },
+  disconnected: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" strokeWidth={1.75} />, chip: 'var(--color-danger)' },
+  DISCONNECTED: { label: 'Desconectado', icon: <WifiOff className="w-3.5 h-3.5" strokeWidth={1.75} />, chip: 'var(--color-danger)' },
+  pending:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" strokeWidth={1.75} />,    chip: 'var(--color-status-pending)' },
+  PENDING:      { label: 'Pendente',     icon: <Clock className="w-3.5 h-3.5" strokeWidth={1.75} />,    chip: 'var(--color-status-pending)' },
+  DELETED:      { label: 'Removido',     icon: <WifiOff className="w-3.5 h-3.5" strokeWidth={1.75} />, chip: 'var(--color-status-muted)' },
 }
 
-const DEFAULT_STATUS = { label: 'Desconhecido', icon: <Clock className="w-3.5 h-3.5" />, chip: 'var(--color-status-muted)' }
+const DEFAULT_STATUS = { label: 'Desconhecido', icon: <Clock className="w-3.5 h-3.5" strokeWidth={1.75} />, chip: 'var(--color-status-muted)' }
 
 const QUALITY_CONFIG: Record<string, { label: string; cls: string }> = {
   green:   { label: 'Alta',      cls: 'bg-online' },

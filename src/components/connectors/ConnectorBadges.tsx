@@ -38,7 +38,10 @@ export function ConnectorComingSoonChip({ size = 'sm', className }: { size?: 'sm
         className,
       )}
     >
-      <Clock className="w-2.5 h-2.5" />
+      {/* Clock não existe no set da casa (cai no lucide real, traço 2 por
+          padrão) — ao lado do Check/Lock (traço 1.75) nos outros badges do
+          mesmo grid, ficava mais grosso. */}
+      <Clock className="w-2.5 h-2.5" strokeWidth={1.75} />
       Em breve
     </span>
   )
