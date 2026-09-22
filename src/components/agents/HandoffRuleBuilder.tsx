@@ -539,7 +539,7 @@ function DraftEditor({
               type="button"
               onClick={() => onChange({ ...draft, action: opt.value })}
               className={cn(
-                'flex items-start gap-2.5 p-3 rounded-xl border text-left transition-all',
+                'flex items-start gap-2.5 p-3 rounded-lg border text-left transition-all',
                 draft.action === opt.value
                   ? 'ring-1'
                   : 'bg-surface-800 border-surface-700 hover:border-surface-600',
@@ -653,7 +653,7 @@ function DraftEditor({
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition"
+          className="flex-1 px-4 py-2.5 rounded-sm border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition"
         >
           Cancelar
         </button>
@@ -661,7 +661,7 @@ function DraftEditor({
           type="button"
           onClick={onSave}
           disabled={!draft.name.trim() || draft.keywords.length === 0 || saving}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-surface-100 hover:bg-surface-50 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-medium transition inline-flex items-center justify-center gap-2"
+          className="flex-1 px-4 py-2.5 rounded-sm bg-surface-100 hover:bg-surface-50 disabled:opacity-50 disabled:cursor-not-allowed text-surface-950 text-sm font-medium transition inline-flex items-center justify-center gap-2"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           {saving ? 'Salvando…' : 'Salvar regra'}
@@ -1127,7 +1127,7 @@ export function HandoffRulesPanel({
         {/* Rules list */}
         <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
           {rules.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-12 border border-dashed border-surface-700 rounded-xl">
+            <div className="flex flex-col items-center gap-4 py-12 border border-dashed border-[var(--bd2)] rounded-lg">
               <div className="w-12 h-12 rounded-2xl bg-brand-600/10 ring-1 ring-brand-500/20 flex items-center justify-center">
                 <ArrowRight className="w-6 h-6 text-brand-500" />
               </div>
@@ -1140,7 +1140,7 @@ export function HandoffRulesPanel({
               <div className="flex gap-2">
                 <button
                   onClick={() => setModal('manual')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-surface-700 text-surface-400 text-xs hover:text-surface-200 hover:border-surface-600 transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-surface-700 text-surface-400 text-xs hover:text-surface-200 hover:border-surface-600 transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Criar manualmente
