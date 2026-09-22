@@ -46,6 +46,11 @@ export function SettingsSectionsProvider({ children }: { children: ReactNode }) 
 export function SettingsOutline() {
   const entries = useContext(EntriesCtx)
   const [activeId, setActiveId] = useState<string | null>(null)
+  // Canvas 6a "Nesta página": o primeiro item já nasce ativo (página no
+  // topo) — sem isso, nada fica marcado até o scroll cruzar a faixa restrita
+  // do IntersectionObserver (rootMargin corta os 96px do topo). Calculado no
+  // render (não via effect) para não disparar um setState extra a cada montagem.
+  const effectiveActiveId = activeId ?? entries[0]?.id ?? null
 
   useEffect(() => {
     if (entries.length < 3) return
@@ -77,7 +82,7 @@ export function SettingsOutline() {
       <p className="text-[10px] font-bold uppercase text-surface-500 mb-1" style={{ letterSpacing: '.14em' }}>Nesta página</p>
       <ul className="flex flex-col gap-1.5">
         {entries.map((e) => {
-          const isActive = e.id === activeId
+          const isActive = e.id === effectiveActiveId
           return (
             <li key={e.id}>
               <a
@@ -128,7 +133,7 @@ export function SettingsSection({ title, description, children, className, label
     <section
       id={id}
       className={cn(
-        dense ? 'pt-4 pb-4 first:pt-[18px]' : 'py-[22px] first:pt-[26px]',
+        dense ? 'pt-4 pb-4 first-of-type:pt-[18px]' : 'py-[22px] first-of-type:pt-[26px]',
         'border-b border-surface-700 last:border-0 scroll-mt-6',
         'md:grid md:grid-cols-[var(--label-w)_1fr] md:gap-6 md:items-start',
         className,
