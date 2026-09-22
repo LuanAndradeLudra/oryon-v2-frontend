@@ -69,7 +69,7 @@ export function BottomTabBar() {
   return (
     <nav
       role="tablist"
-      aria-label="NavegaÃ§Ã£o principal"
+      aria-label="Navegação principal"
       className={cn(
         'flex-shrink-0 grid bg-surface-950 border-t border-surface-700 pb-[env(safe-area-inset-bottom)]',
         TABS.length === 5 ? 'grid-cols-5' : 'grid-cols-4',
@@ -87,13 +87,13 @@ export function BottomTabBar() {
             aria-label={tab.label}
             className={cn(
               'flex flex-col items-center justify-center gap-1 py-2 transition-colors min-h-[56px]',
-              active ? 'text-brand-400' : 'text-surface-400 hover:text-surface-200',
+              active ? 'text-accent-dark' : 'text-surface-400 hover:text-surface-200',
             )}
           >
             <span className="relative flex items-center justify-center w-6 h-6">
               <tab.Icon className="w-5 h-5" />
               {showBadge && (
-                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-danger text-white text-[9px] font-bold leading-none">
+                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-[var(--color-btn-danger-bg)] text-[var(--color-btn-danger-fg)] text-[9px] font-bold leading-none">
                   {unreadConversations > 99 ? '99+' : unreadConversations}
                 </span>
               )}
