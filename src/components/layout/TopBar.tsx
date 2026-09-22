@@ -1362,7 +1362,7 @@ function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: 
       className="relative inline-flex flex-shrink-0 w-7 h-7 rounded-[30%] overflow-hidden transition-shadow duration-150"
       // Anel teal — único estado em que o avatar recebe cor, sinaliza "menu aberto" (handoff 3.13).
       // SHELL-TOPBAR-07: camada interna do anel na cor da TopBar (--sf).
-      style={active ? { boxShadow: '0 0 0 2px var(--color-surface-800), 0 0 0 4px var(--color-accent)' } : undefined}
+      style={active ? { boxShadow: '0 0 0 2px var(--color-topbar), 0 0 0 4px var(--color-accent)' } : undefined}
     >
       {imageUrl ? (
         <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
@@ -1622,7 +1622,7 @@ export function TopBar() {
   }
 
   return (
-    <div className="conv-surface h-12 flex-shrink-0 bg-surface-800 border-b border-surface-700 px-4 flex items-center gap-3">
+    <div className="conv-surface h-12 flex-shrink-0 bg-[var(--color-topbar)] border-b border-surface-700 px-4 flex items-center gap-3">
       {/* SHELL-TOPBAR-01/02 (spec shell.md): 48px em --sf com hairline --bd;
           título 14/700 -.01em; subtítulo 12px --tx2, sem bullet. */}
 

@@ -78,7 +78,10 @@ export const DesktopSidebar = ({
         // faz parte da moldura do workspace — o canvas de conteúdo é quem se
         // destaca. (bg via token local .nav-sidebar continua p/ hovers/chips.)
         // SHELL-SIDEBAR-01/05 (spec shell.md): container 10 10 12.
-        'nav-sidebar h-full pt-2.5 pb-3 px-2.5 flex flex-col bg-transparent flex-shrink-0 overflow-hidden',
+        // Linha de 1px na borda direita (pedido do usuário 22/09): a sidebar vira
+        // moldura contínua e a hairline do TopBar nasce nela — sem degrau de cor.
+        // Hex fixo porque o rail é escuro nos dois temas.
+        'nav-sidebar h-full pt-2.5 pb-3 px-2.5 flex flex-col bg-transparent flex-shrink-0 overflow-hidden border-r border-[#243333]',
         'transition-[width] duration-200 ease-out will-change-[width]',
         className
       )}

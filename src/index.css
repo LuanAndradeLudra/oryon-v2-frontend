@@ -117,6 +117,9 @@
    * `surface-600`: no claro esse degrau é um cinza de TEXTO (#6B7385),
    * escuro demais pra uma borda. Usar `border-[var(--bd2)]`. */
   --bd2: #2E4040;
+  /* TopBar = mesmo plano do conteúdo (pedido do usuário 22/09: harmonizar a junção
+     sidebar/TopBar). Escuro: chão #060909; claro: superfície. Mock: --sf. */
+  --color-topbar: var(--color-surface-950);
 
   /* SCRUM-1097: superfície INVERTIDA de toast e tooltip (spec 1a TOK-22/23:
    * #ECF1F1/#060909 escuro · #1A1F2E/#FFFFFF claro) — o único par de cores
@@ -951,6 +954,7 @@ code, pre, kbd, samp {
   /* SCRUM-1097 (claro): ver comentário dark. */
   --rowhover: rgba(15, 23, 42, 0.035);
   --bd2: #A3ACBD;
+  --color-topbar: var(--color-surface-800);
   --toast: #1A1F2E;
   --toasttx: #FFFFFF;
 
