@@ -35,6 +35,9 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     cor trocada de `bg-brand-600`/`hover:bg-brand-500` cru para os tokens do botão primário (`--color-btn-primary-bg/fg`,
     `hover:brightness-90`), igual ao `Button` variant="primary". Revisão mobile R2, commit ver mensagem.
 
+15. **Botão "Enviar" do composer só aparece com texto digitado** (comportamento atual do app). No mock (1d) ele está
+    sempre visível, ao lado do aviso de janela. Alternativa: mostrar sempre, desabilitado quando vazio.
+
 ## Sem dado no backend (`[!]`, não implementado)
 Split Humano/IA por hora e deltas dos KPIs (Dashboard); painel "HOJE"/CSAT do agente; "Rascunho salvo" nos wizards;
 custo estimado e "enviar teste" na campanha; check duplo e nome do agente no chip da lista; Copilot, Nota interna e
