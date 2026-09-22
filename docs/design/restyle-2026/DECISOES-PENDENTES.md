@@ -42,6 +42,16 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     tom do chão — todos rejeitados): TopBar voltou ao mock (`#161E1E`) e a sidebar ficou em `#0A0F0F` (mock `#0E1414`; fundo das telas mantido em `#060909` após teste com `#0E1414`) e a sidebar ganhou
     uma hairline de 1px `#243333` na borda direita, de onde nasce a linha inferior do TopBar. Em avaliação pelo usuário.
 
+## Propostas de produto (fora do escopo do redesign)
+- **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
+  kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
+  permitem kanban em qualquer lista, mas como modo opcional da mesma lista, não tela própria. No Oryon as situações
+  (Novo Lead, Qualificado, Proposta…) se sobrepõem aos nomes das etapas dos funis e os dois eixos ainda não conversam
+  (auditoria Situação × Funis, 10/09, 6 decisões do PO pendentes) → dois quadros parecidos gerariam confusão.
+  Feito no lugar (22/09): **contagem por situação no menu do chip "Situação"** (panorama sem mudar de tela).
+  Próximos, se desejado: agrupar a tabela por situação (seções com contagem); quadro opcional por situação só depois
+  das decisões Situação × Funis.
+
 ## Sem dado no backend (`[!]`, não implementado)
 Split Humano/IA por hora e deltas dos KPIs (Dashboard); painel "HOJE"/CSAT do agente; "Rascunho salvo" nos wizards;
 custo estimado e "enviar teste" na campanha; check duplo e nome do agente no chip da lista; Copilot, Nota interna e

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Search, X, ChevronDown, Tag, SlidersHorizontal, Plus, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { tagsApi } from '@/services/api'
+import { tagsApi, contactsApi } from '@/services/api'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { ContactFilters, ContactSource, ContactSentiment, ContactIntent, Tag as TagType } from '@/types'
@@ -198,9 +198,32 @@ function TagFilter({ selected, onChange }: {
 /** R2-1C-FILT-01: chip "Situação · Qualificado" do mock. `ContactFilters.stage`
  *  já existia no tipo e o backend filtra por `stage IN (...)` — faltava só o
  *  controle. Etapas vêm do CRM do tenant (`useCRMConfig().stages`). */
-function StageFilter({ selected, onChange }: { selected: string[]; onChange: (keys: string[]) => void }) {
+function StageFilter({ selected, onChange, baseFilters }: { selected: string[]; onChange: (keys: string[]) => void; baseFilters: ContactFilters }) {
   const { stages } = useCRMConfig()
   const [open, setOpen] = useState(false)
+  // Contagem por situação (pedido do usuário 22/09): o backend não tem endpoint
+  // de agregação, mas a listagem devolve `total` respeitando os filtros. Ao abrir
+  // o menu, uma consulta leve (limit=1) por situação com os DEMAIS filtros ativos
+  // (busca, etiquetas, origem, situação comercial…) — exato para a base inteira,
+  // e só custa quando o usuário abre o menu. Falha → sem número (nunca inventa).
+  const [counts, setCounts] = useState<Record<string, number>>({})
+  const baseKey = JSON.stringify(baseFilters)
+  useEffect(() => {
+    if (!open || stages.length === 0) return
+    let cancelled = false
+    const base = JSON.parse(baseKey) as ContactFilters
+    Promise.all(stages.map((st) =>
+      contactsApi.list({ ...base, stage: [st.key] }, 1, 1)
+        .then((r) => [st.key, r.data.total] as const)
+        .catch(() => null),
+    )).then((rows) => {
+      if (cancelled) return
+      const next: Record<string, number> = {}
+      rows.forEach((row) => { if (row) next[row[0]] = row[1] })
+      setCounts(next)
+    })
+    return () => { cancelled = true }
+  }, [open, baseKey, stages])
   if (stages.length === 0) return null
   const ordered = [...stages].sort((a, b) => a.order - b.order)
   const first = ordered.find((s) => s.key === selected[0])
@@ -237,6 +260,9 @@ function StageFilter({ selected, onChange }: { selected: string[]; onChange: (ke
           <DropdownItem key={st.key} active={selected.includes(st.key)} onClick={() => toggle(st.key)}>
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />
             <span className="flex-1 truncate">{st.label}</span>
+            {counts[st.key] !== undefined && (
+              <span className="ml-auto pl-2 text-2xs text-surface-500 tabular-nums">{counts[st.key].toLocaleString('pt-BR')}</span>
+            )}
           </DropdownItem>
         ))}
         {selected.length > 0 && (
@@ -338,6 +364,7 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns, su
         <StageFilter
           selected={filters.stage ?? []}
           onChange={(keys) => set({ stage: keys.length > 0 ? keys : undefined })}
+          baseFilters={{ ...filters, stage: undefined, ...(commercial && commercial.value !== 'all' ? { commercial: commercial.value as ContactFilters['commercial'] } : {}) }}
         />
 
         <TagFilter
