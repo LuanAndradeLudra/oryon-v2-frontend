@@ -31,7 +31,9 @@ function StatCard({ icon: Icon, label, value, hint }: { icon: React.ComponentTyp
         <span className="text-xs font-medium">{label}</span>
       </div>
       <div className="text-xl font-bold text-surface-50 tabular-nums font-display">{value}</div>
-      {hint && <p className="text-[11px] text-surface-500">{hint}</p>}
+      {/* PL-C2-CAR-3 (P8): piso de 12px pra texto informativo — este hint
+          estava em 11px. */}
+      {hint && <p className="text-xs text-surface-500">{hint}</p>}
     </div>
   )
 }
@@ -133,6 +135,14 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
         <>
           {/* Cards de resumo */}
           <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+            {/* PL-C2-CAR-3 (P6): este card é o único que NÃO obedece o filtro
+                de Período — é a contagem atual, não a do período escolhido
+                (tipo do backend já documenta: "Em aberto, HOJE — não
+                filtrado pelo período"). Trocar pra "Ontem"/"7 dias" e ver o
+                número de aberto igual, sem explicação, lia como filtro
+                quebrado. O hint agora diz isso, em vez de repetir o valor
+                (funil de processo mostrava "X negócios" duas vezes: no valor
+                e no hint, com "hoje" sugerindo um recorte que não existe). */}
             <StatCard
               icon={Wallet}
               label="Em aberto"
@@ -141,7 +151,11 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
                   ? brl(openBucket!.amountCents)
                   : `${openBucket!.count} ${openBucket!.count === 1 ? 'negócio' : 'negócios'}`
               }
-              hint={`${openBucket!.count} negócio${openBucket!.count === 1 ? '' : 's'} hoje`}
+              hint={
+                isMoneyBucket(openBucket!)
+                  ? `${openBucket!.count} negócio${openBucket!.count === 1 ? '' : 's'} · não filtra por período`
+                  : 'Não filtra por período'
+              }
             />
             {!isProcess && isMoneyBucket(openBucket!) && (
               <StatCard icon={Scale3d} label="Ponderado" value={brl(openBucket!.weightedAmountCents)} hint="Valor × probabilidade da etapa" />

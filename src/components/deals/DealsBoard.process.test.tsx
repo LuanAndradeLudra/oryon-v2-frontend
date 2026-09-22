@@ -163,8 +163,11 @@ describe('DealsBoard — "Mover ▾" por toque e clique no card (F-FUNIL-09)', (
     const sales = deal({ pipelineId: 'ps', stageId: 's1' })
     render(<DealsBoard stages={STAGES} dealsByStage={{ s1: [sales] }} onMoveStage={onMoveStage} pipeline={SALES} />)
     fireEvent.click(screen.getByRole('button', { name: /Mover .* para outra etapa/ }))
-    // "Confirmado" aparece 2x (cabeçalho da coluna + opção do menu) — a opção é um <button>.
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmado' }))
+    // PL-C2-CAR-2: o menu agora é o `Dropdown` primitivo (portal + useLayer,
+    // em vez do <div absolute> à mão que ficava cortado pelo overflow da
+    // coluna) — o item é `DropdownItem`, role="menuitem". "Confirmado"
+    // aparece 2x (cabeçalho da coluna + opção do menu).
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Confirmado' }))
     expect(onMoveStage).toHaveBeenCalledWith(sales, 's3')
   })
 
