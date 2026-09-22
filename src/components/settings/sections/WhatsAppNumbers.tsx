@@ -257,12 +257,12 @@ export function WhatsAppNumbers() {
                   <div>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-semibold text-surface-50">{num.displayPhoneNumber}</p>
-                      <span className={cn('color-chip-soft inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-xs font-medium border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
+                      <span className={cn('color-chip-soft inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold border')} style={{ ['--chip']: status.chip } as React.CSSProperties}>
                         {status.icon}
                         {status.label}
                       </span>
                       {num.isPrimary && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-xs font-medium border border-brand-500/40 text-brand-300 bg-brand-500/10">
+                        <span className="inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold border border-brand-500/40 text-brand-300 bg-brand-500/10">
                           <Star className="w-3 h-3 fill-current" />
                           Principal
                         </span>

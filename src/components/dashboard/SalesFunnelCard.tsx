@@ -53,7 +53,9 @@ export function SalesFunnelCard() {
   if (!pipeline) {
     return (
       <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
-        <div className="flex items-center min-h-10 px-3.5 border-b border-surface-700">
+        {/* PL-C3-FAR-eixo10: h-10 fixo, não min-h-10 — mesma medida exata dos
+            irmãos VolumeChart/FilaAgoraCard na mesma linha do grid (40px). */}
+        <div className="flex items-center h-10 px-3.5 border-b border-surface-700">
           <p className="text-[13px] font-semibold text-surface-100">Funil de vendas</p>
           <span className="text-[11.5px] text-surface-500 ml-2">por etapa · mês atual</span>
         </div>
@@ -80,7 +82,8 @@ export function SalesFunnelCard() {
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
-      <div className="flex items-center min-h-10 px-3.5 border-b border-surface-700">
+      {/* PL-C3-FAR-eixo10: h-10 fixo, mesma medida dos irmãos do grid. */}
+      <div className="flex items-center h-10 px-3.5 border-b border-surface-700">
         <p className="text-[13px] font-semibold text-surface-100">Funil de vendas</p>
         <span className="text-[11.5px] text-surface-500 ml-2">por etapa · mês atual</span>
         <Link

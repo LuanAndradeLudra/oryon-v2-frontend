@@ -149,7 +149,7 @@ export function MyAccount() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <FormField label="Nome" required>
             <Input
               value={form.firstName}
@@ -179,7 +179,7 @@ export function MyAccount() {
         title="Alterar senha"
         description="Use no mínimo 8 caracteres. Você continuará conectado nesta sessão."
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {(['current', 'next', 'confirm'] as const).map((field) => {
             const labels = { current: 'Senha atual', next: 'Nova senha', confirm: 'Confirmar nova senha' }
             const placeholders = { current: '••••••••', next: 'Mín. 8 caracteres', confirm: 'Repita a nova senha' }

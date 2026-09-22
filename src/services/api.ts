@@ -629,7 +629,19 @@ axios.interceptors.request.use((config) => {
 
 // ─── Retry interceptor — exponential backoff for transient failures ───────────
 // Retries 5xx and network errors up to 2 times with 500ms, 1000ms delays.
-
+//
+// PL-C3-FAR-1 (achado ao vivo do usuário, P6): um ECONNABORTED (timeout —
+// `error.code`, sem `error.response`) caía no mesmo balde de "sem status =
+// transitório" que um ECONNREFUSED rápido. Com o backend inteiro fora do ar
+// (não uma falha passageira), CADA requisição já esperava os 30s inteiros de
+// `timeout` antes de rejeitar — e o interceptor então tentava de novo MAIS
+// duas vezes, cada uma esperando outros 30s. Resultado: até ~91,5s
+// (30+0,5+30+1+30) de tela em loading antes de qualquer catch/ErrorState
+// aparecer — indistinguível de "travado pra sempre" pra quem espera só 30s
+// (foi exatamente o que o usuário mediu ao vivo no Dashboard). Reintentar uma
+// requisição que já demorou 30s pra falhar não ajuda (o problema não é
+// passageiro) — só multiplica a espera. ECONNREFUSED/DNS/etc. continuam
+// retentáveis (falham rápido, vale a pena); só o timeout sai do retry.
 const RETRY_MAX = 2
 const RETRY_STATUS_CODES = new Set([502, 503, 504, 408, 429])
 
@@ -639,9 +651,11 @@ api.interceptors.response.use(undefined, async (error) => {
 
   const retryCount = parseInt(config.headers?.['x-retry-count'] ?? '0', 10)
   const status = error.response?.status
+  const isTimeout = error.code === 'ECONNABORTED'
 
-  // Only retry on transient errors (network failures or specific status codes)
-  const isTransient = !status || RETRY_STATUS_CODES.has(status)
+  // Only retry on transient errors (fast network failures or specific status
+  // codes) — never a timeout, que já pagou o custo todo de esperar.
+  const isTransient = (!status && !isTimeout) || RETRY_STATUS_CODES.has(status)
   if (!isTransient || retryCount >= RETRY_MAX) return Promise.reject(error)
 
   config.headers['x-retry-count'] = String(retryCount + 1)

@@ -17,6 +17,7 @@ import { PeakHoursHeatmap } from '@/components/dashboard/PeakHoursHeatmap'
 import { AgentTable }       from '@/components/dashboard/AgentTable'
 import { ActivityFeed }     from '@/components/dashboard/ActivityFeed'
 import { AiInsightsSection } from '@/components/dashboard/AiInsightsSection'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { isFeatureVisible } from '@/config/featureFlags'
 // import { MarketingFunnelSection } from '@/components/dashboard/MarketingFunnelSection'
 // Removido temporariamente — endpoint /api/analytics/marketing-funnel ainda nao
@@ -126,6 +127,10 @@ export function DashboardPage() {
   const [dateRange, setDateRange] = useState<DateRange>('7d')
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null)
   const [loading, setLoading] = useState(true)
+  // PL-C2-FAR-2 (P6): antes, uma falha de rede/backend caía no catch e virava
+  // um snapshot zerado igual ao de "sem atividade ainda" — o operador não
+  // tinha como distinguir "não há nada pra ver" de "o dashboard quebrou".
+  const [error, setError] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(new Date())
   const [now, setNow] = useState(() => new Date())
   const primaryLine = usePrimaryConnectedLine()
@@ -141,6 +146,7 @@ export function DashboardPage() {
 
   const fetchDashboard = async () => {
     setLoading(true)
+    setError(false)
     try {
       // Fetch full snapshot + activity feed from backend. The activity feed
       // lives on its own endpoint (`/activity-feed`) because it powers more
@@ -254,8 +260,10 @@ export function DashboardPage() {
       setSnapshot(snap)
       setLastUpdated(new Date())
     } catch {
-      setSnapshot(buildEmptySnapshot())
-      setLastUpdated(new Date())
+      // PL-C2-FAR-2: não substitui por um snapshot zerado (isso é o que
+      // causava o bug — ver ErrorState.tsx). O estado de erro cobre a tela
+      // (abaixo) com "Tentar de novo"; nenhum número falso é mostrado.
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -341,6 +349,8 @@ export function DashboardPage() {
                   <div className="h-72 bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
                 </div>
               </div>
+            ) : error ? (
+              <ErrorState onRetry={refresh} />
             ) : snapshot && (
               /* ── Layout do mock 1b (R2-DASH-08) ─────────────────────────
                  1) faixa de KPIs em LARGURA TOTAL; 2) grid 2/3 + 1/3: esquerda

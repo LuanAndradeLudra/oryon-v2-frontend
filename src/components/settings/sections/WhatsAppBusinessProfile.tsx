@@ -226,7 +226,7 @@ export function WhatsAppBusinessProfile() {
 
           <div className={loadingProfile ? 'opacity-50 pointer-events-none' : ''}>
             <SettingsSection title="Perfil de negócio" description="Informações públicas do seu WhatsApp Business.">
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-3">
                 <FormField
                   label="Recado (about)"
                   hint={`${form.about.length}/${ABOUT_MAX_LENGTH} caracteres`}
