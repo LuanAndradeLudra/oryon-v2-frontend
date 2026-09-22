@@ -128,7 +128,7 @@ export function SettingsSection({ title, description, children, className, label
     <section
       id={id}
       className={cn(
-        dense ? 'pt-4 pb-4 first:pt-[18px]' : 'pt-[26px] pb-[22px]',
+        dense ? 'pt-4 pb-4 first:pt-[18px]' : 'py-[22px] first:pt-[26px]',
         'border-b border-surface-700 last:border-0 scroll-mt-6',
         'md:grid md:grid-cols-[var(--label-w)_1fr] md:gap-6 md:items-start',
         className,

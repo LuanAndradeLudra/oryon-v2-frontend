@@ -22,7 +22,7 @@ export function SectionHeader({ title, description, action, className, breadcrum
   const ctxBreadcrumb = useContext(SettingsBreadcrumbCtx)
   const breadcrumb = breadcrumbProp ?? ctxBreadcrumb
   return (
-    <div className={cn('pb-6', className)}>
+    <div className={cn('pb-3.5', className)}>
       {(breadcrumb?.length || saved) && (
         <div className="flex items-center justify-between gap-3">
           {breadcrumb && breadcrumb.length > 0 && (

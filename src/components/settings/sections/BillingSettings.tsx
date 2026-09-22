@@ -378,7 +378,7 @@ export function BillingSettings() {
       )}
 
       {status && !statusError && !isSubscribed && !isCanceled && (
-        <div className="-mt-3 flex items-center justify-between gap-3 rounded-lg border border-brand-500 bg-accent-soft px-3.5 py-2.5">
+        <div className="mt-0 mb-1 flex items-center justify-between gap-3 rounded-lg border border-brand-500 bg-accent-soft px-3.5 py-2.5">
           <div className="flex items-start gap-2.5">
             <Zap className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
             <div>

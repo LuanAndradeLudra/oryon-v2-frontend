@@ -282,17 +282,17 @@ export function AgentManagement() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-surface-700">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Usuário</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider hidden lg:table-cell">Setor</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Papel</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3" />
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Usuário</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em] hidden lg:table-cell">Setor</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Papel</th>
+                <th className="text-left px-3 py-2.5 first:pl-0 last:pr-0 text-[10px] font-bold text-surface-500 uppercase tracking-[.14em]">Status</th>
+                <th className="px-3 py-2.5 first:pl-0 last:pr-0" />
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-700">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-surface-900/60 transition-colors">
-                  <td className="px-5 py-4">
+                <tr key={user.id} className="hover:bg-[var(--rowhover)] transition-colors">
+                  <td className="px-3 py-3 first:pl-0 last:pr-0">
                     <div className="flex items-center gap-3">
                       <Avatar name={`${user.firstName} ${user.lastName}`} size="sm" kind="operator" online={user.isActive && user.status !== 'pending'} />
                       <div>
@@ -301,7 +301,7 @@ export function AgentManagement() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4 hidden lg:table-cell">
+                  <td className="px-3 py-3 first:pl-0 last:pr-0 hidden lg:table-cell">
                     {(() => {
                       const names = user.departmentNames?.length
                         ? user.departmentNames.join(', ')
@@ -309,15 +309,15 @@ export function AgentManagement() {
                       return names ? <p className="text-sm text-surface-300">{names}</p> : <p className="text-sm text-surface-500">—</p>
                     })()}
                   </td>
-                  <td className="px-5 py-4">
-                    <span className={cn('color-chip inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border')} style={{ ['--chip']: ROLE_COLORS[user.role] } as React.CSSProperties}>
+                  <td className="px-3 py-3 first:pl-0 last:pr-0">
+                    <span className={cn('color-chip-soft inline-flex items-center h-5 px-[7px] rounded-[5px] text-[11px] font-bold border')} style={{ ['--chip']: ROLE_COLORS[user.role] } as React.CSSProperties}>
                       {ROLE_LABELS[user.role]}
                     </span>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-3 py-3 first:pl-0 last:pr-0">
                     <StatusBadge user={user} />
                   </td>
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-3 py-3 first:pl-0 last:pr-0 text-right">
                     <Dropdown
                       open={openDropdown === user.id}
                       onClose={() => setOpenDropdown(null)}
