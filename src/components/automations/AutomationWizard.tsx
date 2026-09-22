@@ -789,7 +789,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
       </div>
 
       {conditions.length < 5 && (
-        <button onClick={addCondition} className="flex items-center gap-2 text-xs text-brand-400 hover:text-brand-300 transition-colors">
+        <button onClick={addCondition} className="flex items-center gap-2 text-xs text-accent-dark hover:opacity-80 transition-colors">
           <Plus className="w-3.5 h-3.5" />
           Adicionar condição {conditions.length > 0 ? `(${5 - conditions.length} restantes)` : ''}
         </button>

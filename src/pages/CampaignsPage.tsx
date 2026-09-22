@@ -69,7 +69,7 @@ export function CampaignsPage() {
               <div className="flex items-center gap-2 mt-2">
                 <button
                   onClick={() => { setActiveTab('templates'); markDone('campaigns') }}
-                  className="text-xs text-brand-400 hover:text-brand-300 font-medium transition-colors"
+                  className="text-xs text-accent-dark hover:opacity-80 font-medium transition-colors"
                 >
                   Criar template →
                 </button>

@@ -714,7 +714,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                         {(outcomeFilter !== 'all' || sentimentFilter !== 'all') && (
                           <button
                             onClick={() => { setOutcomeFilter('all'); setSentimentFilter('all') }}
-                            className="ml-auto text-3xs text-brand-400 hover:text-brand-300 transition-colors"
+                            className="ml-auto text-3xs text-accent-dark hover:opacity-80 transition-colors"
                           >
                             Limpar filtros
                           </button>
@@ -761,7 +761,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                   <span className="text-[9px] text-surface-600">{fmtDate(conv.lastMessageAt)}</span>
                                   <button
                                     onClick={() => { onClose(); navigate(`/contacts?contact=${conv.contactId}`) }}
-                                    className="text-[9px] text-brand-400 hover:text-brand-300 transition-colors flex items-center gap-0.5"
+                                    className="text-[9px] text-accent-dark hover:opacity-80 transition-colors flex items-center gap-0.5"
                                   >
                                     <ExternalLink className="w-2.5 h-2.5" />
                                     CRM

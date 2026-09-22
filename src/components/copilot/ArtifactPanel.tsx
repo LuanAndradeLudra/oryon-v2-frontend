@@ -990,7 +990,7 @@ h1{font-size:22px;font-weight:700;margin-bottom:6px}
                     onClick={() => setSwitcherOpen((v) => !v)}
                     className="flex items-center gap-1.5 max-w-full group"
                   >
-                    <p className="text-sm font-semibold text-surface-100 truncate group-hover:text-brand-300 transition-colors">
+                    <p className="text-sm font-semibold text-surface-100 truncate group-hover:text-accent-dark transition-colors">
                       {artifact.title}
                     </p>
                     <ChevronDown className={cn(
