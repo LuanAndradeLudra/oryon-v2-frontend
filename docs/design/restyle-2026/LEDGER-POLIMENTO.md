@@ -19,7 +19,7 @@ Status: `pendente` · `em curso` · `saturado` (2 ciclos seguidos só com S3 e n
 | T8 | Automação | pendente | — | — |
 | T9 | Agenda | pendente | — | — |
 | T10 | Conectores | pendente | — | — |
-| T11 | Configurações | pendente | — | — |
+| T11 | Configurações | em curso | 1 | 3,9 |
 | T12 | Navegação global (sidebar, TopBar, busca, notificações, créditos) | pendente | — | — |
 
 ### Fluxos (a cada 3º ciclo)
@@ -63,6 +63,18 @@ Registrado em DECISOES: nenhum.
 Próximo: **ciclo 3 = fluxo F1** (atender conversa da fila até resolver).
 Em paralelo (agentes, mesma rubrica): Cartógrafo T3 Funis · Farol T4 Dashboard/T7 Campanhas · Bússola T11 Configurações/T10 Conectores.
 
+### Ciclo 2 — T11 Configurações (tela) — 2026-09-22 (Bússola, sem navegador — medição ao vivo pendente)
+Notas: hierarquia 4 · eficiência 4 · feedback 3 · consistência 4 · densidade 4 · copy 4 · a11y 4 · perf 5 · mercado 3 (média 3,9)
+Achados:
+- PL-C2-BUS-1 [S2] (P6) Busca "Buscar configuração..." (`SettingsLayout.tsx`) não tinha jeito de limpar além de apagar letra a letra, e "Nenhuma configuração encontrada." não citava o termo nem oferecia ação — quem errava a palavra ficava sem próximo passo. — proposta: X para limpar dentro do campo + mensagem com o termo + "Limpar busca" — esforço P — **feito** `522510c`
+- PL-C2-BUS-2 [S2] (P6) Catálogo de Conectores (`ConnectorsSettings.tsx`): busca + categoria + status combinam com AND, mas o "sem resultado" só dizia "ajuste a busca ou a categoria" sem ação nem citar o que estava ativo (mesmo padrão do QW-01/PL-1-2 já corrigido em Conversas). — proposta: hint cita os filtros ativos + "Limpar filtros" reseta os 3 de uma vez — esforço P — **feito** `afebb4d`
+- PL-C2-BUS-3 [S2] (P6) Auditoria (`AuditTrail.tsx`): "Nenhuma atividade no período" nunca oferecia limpar filtro mesmo com ator/ação/entidade/severidade/período ativos. — proposta: título muda para "…com esses filtros" + "Limpar filtros" só quando há filtro ativo; `FilterBar` (estado de rascunho interno) remonta via `key` pra não mostrar valor velho após o reset externo — esforço P — **feito** `f6ff4d4`
+Observações: revisão feita por leitura de código (sem navegador nesta sessão) — os 3 achados vêm do mesmo padrão de defeito (P6 "no-results" sem ação), já visto e corrigido em T1/Conversas no ciclo 1; provável que o mesmo padrão exista em outras listas fora de Configurações (candidato a achado transversal num ciclo futuro). Modelo de salvamento (P9) auditado: Vocabulário usa "controle isolado" (auto-save + indicador — correto pro padrão); MyAccount/CompanyProfile/CompanyBrain/WhatsAppBusinessProfile usam "registro único" com toast em vez da barra fixa "Alterações não salvas" com guarda de navegação do P9 — real, mas G de esforço (dirty-tracking + guard em 4 arquivos); registrado abaixo em vez de implementado neste ciclo (regra: no máx. 3 itens, S1/S2 primeiro, e os 3 P6 encontrados já eram mais isolados e comprovados). T10 Conectores (card/modal/catálogo) não teve achado extra além do PL-C2-BUS-2 (que é da mesma tela física, `/settings/connectors`).
+Registrado em DECISOES: nenhum (os três são correção de defeito, sem ambiguidade — mesmo critério do Ciclo 1).
+Próximo: T10 Conectores (fluxo de instalar/credenciar um conector) ou T2 Contatos, conforme a rotação; ao vivo pendente (sem portal nesta sessão).
+
 ## Achados abertos (backlog do loop)
 <!-- Achados vistos e não feitos, para ciclos futuros priorizarem S1/S2 de qualquer tela. -->
 - PL-1-4 [S3] (P6) O "carregando" da lista ainda é spinner + "Carregando…" em vez de skeleton de linhas (`ConversationList.tsx` ~l.175). Perf percebida.
+- PL-C2-BUS-4 [S2] (P9) Modelo de salvamento "registro único" (MyAccount, CompanyProfile, CompanyBrain, WhatsAppBusinessProfile) usa botão sempre visível + toast, não a barra fixa "Alterações não salvas · Descartar · Salvar" com guarda de navegação que o P9 pede. Esforço G (dirty-tracking + guard em 4 arquivos) — candidato a ciclo próprio, não a item avulso.
+- PL-C2-BUS-5 [S3] `SecuritySettings.tsx` mostra "Em breve" (P4 proíbe explicitamente — a própria origem do princípio cita este arquivo). Sem dado de sessões/log — implementar exigiria backend; esconder a seção inteira equivale a tirar um item do menu (fora do escopo do ciclo). Registrar como proposta de produto se for revisitado.
