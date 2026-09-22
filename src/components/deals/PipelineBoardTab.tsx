@@ -10,7 +10,7 @@ import { useKanbanDeals } from '@/hooks/useKanbanDeals'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useDealPanel } from '@/contexts/DealPanelContext'
 import { useToast } from '@/hooks/useToast'
-import { toastDealClosedWithUndo } from '@/lib/dealClose'
+import { toastDealClosedWithUndo, UNDO_CLOSE_WINDOW_MS } from '@/lib/dealClose'
 import { pipelineKindOf, pipelineNoun, terminalLabelsOf } from '@/lib/pipelineKinds'
 import { boardStats, entrySources } from '@/lib/dealCard'
 import { matchesCloseDate, matchesOwner, boardSummary, type CloseFilter, type OwnerFilter } from '@/lib/boardFilters'
@@ -168,7 +168,25 @@ export function PipelineBoardTab({ pipeline, pipelines, onDealsChanged, search, 
       setCloseDealTarget({ deal, stage })
       return
     }
-    moveStage(deal, toStageId).catch(() => toast(`Não foi possível mover o ${pipelineNoun(pipeline)}.`, 'error'))
+    // PL-C2-CAR-1 (P7): mover para uma etapa ABERTA é reversível e de 1 clique
+    // (arrasto) — não pede confirmação, mas precisa dizer que aconteceu e dar
+    // saída pra quem soltou na coluna errada. Antes o card só se movia, sem
+    // nenhum sinal de sucesso (só o erro tostava). O fechamento (Ganho/Perdido)
+    // já tinha esse padrão via `toastDealClosedWithUndo` — isto é o mesmo
+    // gesto pras etapas abertas, reaproveitando o `moveStage` do próprio board
+    // (mantém o estado otimista local em vez de só a chamada de API).
+    const fromStageId = deal.stageId
+    moveStage(deal, toStageId)
+      .then(() => {
+        toast(`Movido para ${stage?.label ?? 'outra etapa'}.`, 'success', {
+          label: 'Desfazer',
+          onClick: () => {
+            void moveStage({ ...deal, stageId: toStageId }, fromStageId)
+              .catch(() => toast('Não foi possível desfazer.', 'error'))
+          },
+        }, UNDO_CLOSE_WINDOW_MS)
+      })
+      .catch(() => toast(`Não foi possível mover o ${pipelineNoun(pipeline)}.`, 'error'))
   }
 
   const handleCloseDealWithReason = async (input: CloseDealReasonInput) => {
