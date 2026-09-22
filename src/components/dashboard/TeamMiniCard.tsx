@@ -19,7 +19,8 @@ export function TeamMiniCard({ agents }: { agents: AgentMetrics[] }) {
 
   return (
     <div className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-3.5 min-h-10 border-b border-surface-700">
+      {/* PL-C3-FAR-eixo10: h-10 fixo, mesma medida dos irmãos do grid. */}
+      <div className="flex items-center justify-between px-3.5 h-10 border-b border-surface-700">
         <p className="text-[13px] font-semibold text-surface-100">Equipe</p>
         <span className="text-[11.5px] text-surface-400 tabular-nums">
           {agents.filter((a) => a.isOnline).length} online
