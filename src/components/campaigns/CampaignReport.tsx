@@ -316,7 +316,10 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
+          {/* Eixo 10: rounded-lg (8px), não rounded-xl (10px) — mesma medida
+              do ícone 32px de cabeçalho de drawer em CampaignLeadsDrawer.tsx
+              e AttributionTab.tsx (mesma tela T7). */}
+          <div className="w-8 h-8 rounded-lg bg-brand-600/15 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
             <BarChart3 className="w-4 h-4 text-brand-400" />
           </div>
           <div className="flex-1 min-w-0">

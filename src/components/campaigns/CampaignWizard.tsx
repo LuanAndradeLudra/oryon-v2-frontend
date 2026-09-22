@@ -1243,11 +1243,15 @@ function Step3({
                 <button
                   key={src}
                   onClick={() => onUpdate(m.position, { source: src })}
+                  // Eixo 10: mesmos valores de border-brand-500/50 + bg-500/15
+                  // + hover dos outros grupos de chip-escolha do wizard
+                  // (chipBase/chipOff acima, fora de escopo JS aqui — só os
+                  // literais, não dá pra reusar a const de outra função).
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                    'px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all',
                     m.source === src
-                      ? 'border-brand-500 bg-brand-500/10 text-brand-300'
-                      : 'border-surface-700 text-surface-500 hover:border-surface-600'
+                      ? 'border-brand-500/50 bg-brand-500/15 text-brand-300'
+                      : 'border-surface-700 text-surface-400 hover:border-surface-500 hover:text-surface-200'
                   )}
                 >
                   {src === 'contact_field' ? 'Campo do contato' :

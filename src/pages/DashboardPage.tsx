@@ -164,10 +164,24 @@ export function DashboardPage() {
       // dashboard.controller.ts) — passar o período aqui não mudava nada;
       // o comentário antigo ("range scopes appointmentsScheduled/…") estava
       // errado. O período agora só filtra `VolumeChart` no cliente (abaixo).
-      const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.all([
-        api.get('/home/snapshot').catch(() => ({ data: null })),
-        api.get<HomeStats>('/home/stats'),
-        api.get<{ data: ActivityFeedApiRow[] }>(`/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
+      //
+      // PL-C4-FAR-1: rede de segurança independente do interceptor de retry
+      // de services/api.ts — medido ao vivo que, mesmo depois do PL-C3-FAR-1
+      // (db31620), algo ainda deixava a tela presa por ~15s sem cair no catch
+      // corretamente (raiz exata não reproduzível sem o navegador conectado
+      // aqui). Isto garante um teto DURO: 35s (> os 30s de timeout do axios
+      // numa única tentativa) e SEMPRE rejeita de forma limpa pro catch
+      // abaixo, não importa o que aconteça na camada de rede.
+      const hardTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('dashboard-fetch-timeout')), 35_000),
+      )
+      const [{ data: dbSnapshot }, { data: stats }, { data: activityFeedRes }] = await Promise.race([
+        Promise.all([
+          api.get('/home/snapshot').catch(() => ({ data: null })),
+          api.get<HomeStats>('/home/stats'),
+          api.get<{ data: ActivityFeedApiRow[] }>(`/activity-feed?since=${encodeURIComponent(sinceIso)}&limit=100`).catch(() => ({ data: { data: [] } })),
+        ]),
+        hardTimeout,
       ])
 
       // Start with empty structure, fill with real data
@@ -259,10 +273,14 @@ export function DashboardPage() {
 
       setSnapshot(snap)
       setLastUpdated(new Date())
-    } catch {
+    } catch (err) {
       // PL-C2-FAR-2: não substitui por um snapshot zerado (isso é o que
       // causava o bug — ver ErrorState.tsx). O estado de erro cobre a tela
       // (abaixo) com "Tentar de novo"; nenhum número falso é mostrado.
+      // PL-C4-FAR-1: log explícito — antes este catch não deixava rastro
+      // nenhum no console, dificultando diagnosticar por que o erro nao
+      // aparecia visualmente.
+      console.error('[DashboardPage] fetchDashboard falhou:', err)
       setError(true)
     } finally {
       setLoading(false)
