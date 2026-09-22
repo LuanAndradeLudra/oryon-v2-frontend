@@ -368,7 +368,7 @@ export function DealDetailHeader({
                     onChange={(e) => setProbDraft(e.target.value)}
                     onBlur={handleProbabilitySave}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleProbabilitySave(); if (e.key === 'Escape') setProbEditing(false) }}
-                    className="w-14 bg-surface-800 border border-brand-500/50 rounded px-1.5 py-0.5 text-xs text-surface-100"
+                    className="w-14 bg-surface-800 border border-brand-500/50 rounded-sm px-1.5 py-0.5 text-xs text-surface-100"
                   />
                 ) : (
                   <button
