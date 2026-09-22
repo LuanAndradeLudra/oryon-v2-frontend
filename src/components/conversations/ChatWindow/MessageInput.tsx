@@ -949,7 +949,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
               <button
                 ref={attachButtonRef}
                 onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-md flex items-center justify-center text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
+                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-[6px] flex items-center justify-center text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
                 title="Anexar arquivo"
               >
                 <Paperclip className="w-4 h-4" />
