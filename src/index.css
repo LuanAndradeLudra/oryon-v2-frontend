@@ -117,9 +117,9 @@
    * `surface-600`: no claro esse degrau é um cinza de TEXTO (#6B7385),
    * escuro demais pra uma borda. Usar `border-[var(--bd2)]`. */
   --bd2: #2E4040;
-  /* TopBar = mesmo plano do conteúdo (pedido do usuário 22/09: harmonizar a junção
-     sidebar/TopBar). Escuro: chão #060909; claro: superfície. Mock: --sf. */
-  --color-topbar: var(--color-surface-950);
+  /* TopBar em --sf (mock) — mesma cor das colunas das telas de painéis; a junção
+     com a sidebar é marcada pela hairline da sidebar (pedido do usuário 22/09). */
+  --color-topbar: var(--color-surface-800);
 
   /* SCRUM-1097: superfície INVERTIDA de toast e tooltip (spec 1a TOK-22/23:
    * #ECF1F1/#060909 escuro · #1A1F2E/#FFFFFF claro) — o único par de cores
@@ -1479,9 +1479,7 @@ svg[data-oryon-icon] {
 /* SHELL-SIDEBAR-01 (spec shell.md): moldura/sidebar em fundo CHAPADO --sb
    #0E1414 — o gradiente radial preto não existe no mock. */
 .workspace-shell {
-  /* Pedido do usuário (2026-09-22): levemente mais escuro que o --sb do
-     handoff (#0E1414). Reverter: #0E1414. */
-  background: #0A0F0F;
+  background: #0E1414; /* --sb do handoff */
 }
 
 /* Chat background — no escuro usa a MESMA cor do shell/sidebar (não o

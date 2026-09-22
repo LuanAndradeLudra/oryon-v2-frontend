@@ -38,13 +38,9 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
 15. **Botão "Enviar" do composer só aparece com texto digitado** (comportamento atual do app). No mock (1d) ele está
     sempre visível, ao lado do aviso de janela. Alternativa: mostrar sempre, desabilitado quando vazio.
 
-16. **Sidebar/shell levemente mais escuro** (pedido do usuário): `#0E1414` (`--sb` do handoff) → `#0A0F0F`.
-    Reverter: `.workspace-shell` em `src/index.css`.
-
-17. **Junção sidebar/TopBar (escuro)** — pedido do usuário para tirar a sensação de corte: TopBar passou do `--sf`
-    `#161E1E` (mock) para o tom do conteúdo `#060909` (token `--color-topbar`; no claro segue branco) e a sidebar
-    ganhou linha de 1px `#243333` na borda direita, de onde nasce a linha inferior do TopBar. Reverter: token
-    `--color-topbar` em `src/index.css` e a classe `border-r` em `src/components/ui/sidebar.tsx`.
+16. **Junção sidebar/TopBar** — após testes com o usuário (sidebar #0A0F0F, TopBar #0A0F0F/#060909, painéis no
+    tom do chão — todos rejeitados): sidebar e TopBar voltaram ao mock (`#0E1414` e `#161E1E`) e a sidebar ganhou
+    uma hairline de 1px `#243333` na borda direita, de onde nasce a linha inferior do TopBar. Em avaliação pelo usuário.
 
 ## Sem dado no backend (`[!]`, não implementado)
 Split Humano/IA por hora e deltas dos KPIs (Dashboard); painel "HOJE"/CSAT do agente; "Rascunho salvo" nos wizards;
