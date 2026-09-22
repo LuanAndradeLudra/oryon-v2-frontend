@@ -84,7 +84,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+        <Loader2 className="w-5 h-5 text-accent-dark animate-spin" />
       </div>
     )
   }

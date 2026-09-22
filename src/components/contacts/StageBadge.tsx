@@ -34,7 +34,9 @@ export function StageBadge({ stage, stages, size = 'sm', className }: StageBadge
   const shell = cn(
     'inline-flex items-center gap-1.5 font-semibold rounded-[5px] border',
     'bg-surface-800 border-surface-700',
-    size === 'xs' ? 'h-[18px] gap-[5px] text-[10.5px] px-1.5' : size === 'sm' ? 'text-[11px] px-[7px] py-0.5' : 'text-xs px-2.5 py-1',
+    // canvas 1a: sm = 20px de altura fixa (era py-0.5, sem altura travada — o
+    // badge esticava com o line-height do texto em vez de bater a régua).
+    size === 'xs' ? 'h-[18px] gap-[5px] text-[10.5px] px-1.5' : size === 'sm' ? 'h-5 text-[11px] px-[7px]' : 'text-xs px-2.5 py-1',
     className,
   )
 

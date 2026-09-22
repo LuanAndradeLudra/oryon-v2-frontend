@@ -57,7 +57,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
 
   return (
     <>
-      <div className="bg-surface-900 border border-surface-700 rounded-2xl p-4 flex flex-col gap-4 overflow-hidden">
+      <div className="bg-surface-900 border border-surface-700 rounded-lg p-4 flex flex-col gap-4 overflow-hidden">
         {/* ── Header ───────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
               'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg transition-colors',
               stages.length === 0
                 ? 'text-surface-600 cursor-not-allowed'
-                : 'text-brand-400 hover:text-brand-300 hover:bg-brand-500/10',
+                : 'text-accent-dark hover:bg-accent-soft',
             )}
           >
             {/* SCRUM-929 (F-FICHA-08): "Mudar situação" — ícone e verbo
@@ -104,14 +104,14 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
         ) : !current ? (
           /* Contact has no stage — likely a new lead. Make the empty state
              actionable instead of just "—". */
-          <div className="flex flex-col gap-2 rounded-xl border border-dashed border-surface-700 bg-surface-800/40 p-4">
+          <div className="flex flex-col gap-2 rounded-lg border border-dashed border-[var(--bd2)] bg-surface-800/40 p-4">
             <p className="text-xs text-surface-400">
               Este contato ainda não está em nenhuma situação.
             </p>
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-brand-300 hover:text-brand-200 bg-brand-600/15 hover:bg-brand-600/25 border border-brand-500/30 px-3 py-1.5 rounded-lg transition-colors"
+              className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-accent-dark hover:brightness-110 bg-accent-soft border border-brand-500/40 px-3 py-1.5 rounded-lg transition-colors"
             >
               <Flag className="w-3 h-3" />
               Definir situação inicial
@@ -121,7 +121,7 @@ export function StageCard({ contact, onStageChanged, hideTitle = false }: StageC
           <>
             {/* ── Current stage spotlight ─────────────────────────────── */}
             <div
-              className="color-chip rounded-xl border p-4 flex items-start gap-3"
+              className="color-chip rounded-lg border p-4 flex items-start gap-3"
               style={{
                 ['--chip']: current.color,
                 // Levemente translúcido: mesmo fundo escurecido do .color-chip, mas

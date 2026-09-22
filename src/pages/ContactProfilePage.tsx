@@ -108,7 +108,7 @@ function ProfileTabs({ tabs, active, onChange }: ProfileTabsProps) {
             {typeof tab.count === 'number' && (
               <span className={cn(
                 'min-w-[18px] px-1 rounded-full text-[11px] font-semibold text-center tabular-nums',
-                isActive ? 'bg-surface-700 text-surface-100' : 'bg-surface-800 text-surface-500',
+                isActive ? 'bg-surface-900 text-surface-100' : 'bg-surface-800 text-surface-500',
               )}>
                 {tab.count > 99 ? '99+' : tab.count}
               </span>
@@ -522,7 +522,7 @@ export function ContactProfilePage() {
                   className={cn(
                     'px-2.5 py-1 rounded-md border text-xs font-medium transition-colors cursor-pointer',
                     taskDueDays === opt.days
-                      ? 'bg-brand-500/15 border-brand-500/40 text-brand-300'
+                      ? 'bg-accent-soft border-brand-500/40 text-accent-dark'
                       : 'bg-surface-800 border-surface-700 text-surface-400 hover:text-surface-200',
                   )}
                 >

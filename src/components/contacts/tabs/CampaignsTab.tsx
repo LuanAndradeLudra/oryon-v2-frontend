@@ -3,7 +3,7 @@ import { Megaphone } from 'lucide-react'
 export function CampaignsTab() {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-4 px-6 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-surface-800 border border-surface-700 flex items-center justify-center">
+      <div className="w-14 h-14 rounded-xl bg-surface-800 border border-surface-700 flex items-center justify-center">
         <Megaphone className="w-7 h-7 text-surface-500" />
       </div>
       <div>

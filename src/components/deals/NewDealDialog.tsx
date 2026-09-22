@@ -363,7 +363,7 @@ export function NewDealDialog({
               <button
                 type="button"
                 onClick={() => { setPickedContact({ id: c.id, name: c.displayName }); setResults([]); setError('') }}
-                className="w-full min-h-11 px-3 py-2 text-left text-sm text-surface-100 hover:bg-surface-700 transition-colors"
+                className="w-full min-h-11 px-3 py-2 text-left text-sm text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
                 {c.displayName}
                 {(c.email || c.waId) && (
@@ -457,7 +457,7 @@ export function NewDealDialog({
   const FunilIcon = selectedPipeline ? pipelineKindOption(pipelineKindOf(selectedPipeline)).icon : Wallet
 
   const avatarDono = (
-    <span className="w-4 h-4 rounded-full bg-surface-700 text-surface-200 text-[8px] font-semibold grid place-items-center shrink-0" aria-hidden>
+    <span className="w-4 h-4 rounded-full bg-avatar-surface text-avatar-initials text-[8px] font-semibold grid place-items-center shrink-0" aria-hidden>
       {ownerUserId === null ? '–' : (donoUser ? iniciais(nomeDe(donoUser)) : '?')}
     </span>
   )
@@ -550,7 +550,7 @@ export function NewDealDialog({
                 <button
                   type="button"
                   onClick={fechar}
-                  className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer"
+                  className="text-xs font-semibold text-accent-dark hover:opacity-80 transition-colors cursor-pointer"
                 >
                   Pronto
                 </button>
@@ -573,7 +573,7 @@ export function NewDealDialog({
         initial={semMovimento ? false : { height: 0, opacity: 0 }}
         animate={{ height: 'auto', opacity: 1 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col gap-3 rounded-xl border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))] overflow-hidden">
+        className="flex flex-col gap-3 rounded-lg border border-surface-700 p-3.5 bg-[linear-gradient(180deg,rgba(45,212,191,0.045),rgba(22,30,30,0.45))] overflow-hidden">
         {/* O número só existe quando há o que mostrar: itens lançados ou um
             valor digitado. Bloco recém-aberto e vazio mostra os botões de
             adicionar, e mais nada — era o campo em branco no topo que fazia o
@@ -586,9 +586,9 @@ export function NewDealDialog({
               </span>
               <span className="text-[11px] leading-snug text-right text-surface-500">
                 {hasItems && !amountTouched
-                  ? <>= soma de <b className="font-semibold text-brand-400">{items.length} {items.length === 1 ? 'item' : 'itens'}</b></>
+                  ? <>= soma de <b className="font-semibold text-accent-dark">{items.length} {items.length === 1 ? 'item' : 'itens'}</b></>
                   : hasItems && diverges
-                    ? <>digitado<br /><b className="font-semibold text-brand-400">difere dos itens</b></>
+                    ? <>digitado<br /><b className="font-semibold text-accent-dark">difere dos itens</b></>
                     : 'digitado'}
               </span>
             </div>
@@ -630,7 +630,7 @@ export function NewDealDialog({
           <button
             type="button"
             onClick={() => setValorManual(true)}
-            className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 rounded"
+            className="self-start text-xs font-semibold text-accent-dark hover:opacity-80 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 rounded"
           >
             {hasItems ? 'Informar outro valor' : 'Informar valor sem itens'}
           </button>
@@ -645,7 +645,7 @@ export function NewDealDialog({
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
               onClick={() => { setAmountCents(itemsTotal); setAmountTouched(true) }}
-              className="self-start text-xs font-semibold text-brand-400 hover:text-brand-300 min-h-11 sm:min-h-0 cursor-pointer"
+              className="self-start text-xs font-semibold text-accent-dark hover:opacity-80 min-h-11 sm:min-h-0 cursor-pointer"
             >
               Usar a soma dos itens ({formatBRL(itemsTotal)})
             </motion.button>
@@ -656,7 +656,7 @@ export function NewDealDialog({
       <button
         type="button"
         onClick={() => setValorAberto(true)}
-        className="flex items-center gap-2 rounded-xl border border-dashed border-surface-700 px-3.5 py-4 text-sm text-surface-500 hover:text-surface-300 hover:border-surface-600 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
+        className="flex items-center gap-2 rounded-lg border border-dashed border-[var(--bd2)] px-3.5 py-4 text-sm text-surface-500 hover:text-surface-300 hover:border-surface-600 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60"
       >
         <Plus className="w-4 h-4" aria-hidden />
         Adicionar valor ou itens

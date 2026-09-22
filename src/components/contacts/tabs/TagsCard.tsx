@@ -46,7 +46,7 @@ export function TagsCard({ contact, onAddTag, onRemoveTag, hideTitle = false, fl
         'flex items-center gap-1 font-medium transition-colors',
         flat
           ? 'text-[11.5px] font-semibold text-accent-dark'
-          : 'text-[10px] text-brand-400 hover:text-brand-300',
+          : 'text-[10px] text-accent-dark hover:opacity-80',
       )}
     >
       {!flat && <Plus className="w-3 h-3" />}
@@ -149,7 +149,7 @@ export function TagsCard({ contact, onAddTag, onRemoveTag, hideTitle = false, fl
       >
         {loadingAll ? (
           <div className="flex justify-center py-6">
-            <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+            <Loader2 className="w-5 h-5 text-accent-dark animate-spin" />
           </div>
         ) : (
           <TagPickerContent

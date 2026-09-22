@@ -74,7 +74,7 @@ function GeneratingState() {
           transition={{ duration: 2, repeat: Infinity }}
         >
           <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-brand-400" />
+            <Sparkles className="w-4 h-4 text-accent-dark" />
           </div>
         </motion.div>
         {/* Orbiting dots */}
@@ -121,7 +121,7 @@ function GeneratingState() {
           transition={{ duration: 0.2 }}
           className="flex items-center justify-center gap-2"
         >
-          <span className="text-brand-400">{LOADING_STEPS[stepIndex].icon}</span>
+          <span className="text-accent-dark">{LOADING_STEPS[stepIndex].icon}</span>
           <span className="text-[11px] text-surface-400">{LOADING_STEPS[stepIndex].text}</span>
         </motion.div>
       </AnimatePresence>
@@ -383,9 +383,9 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
 
               {/* Next Best Action */}
               {contact.aiNextBestAction && (
-                <Section label="Estratégia de abordagem recomendada" icon={<Sparkles className="w-3.5 h-3.5" />} iconColor="text-brand-400" delay={justFinished ? 0.7 : 0}>
-                  <div className="bg-brand-600/10 border border-brand-500/20 rounded-xl px-3.5 py-3">
-                    <p className="text-[13px] text-brand-300 leading-relaxed">{contact.aiNextBestAction}</p>
+                <Section label="Estratégia de abordagem recomendada" icon={<Sparkles className="w-3.5 h-3.5" />} iconColor="text-accent-dark" delay={justFinished ? 0.7 : 0}>
+                  <div className="bg-accent-soft border border-brand-500/25 rounded-lg px-3.5 py-3">
+                    <p className="text-[13px] text-accent-dark leading-relaxed">{contact.aiNextBestAction}</p>
                   </div>
                 </Section>
               )}
@@ -393,7 +393,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {/* Last Interaction Summary */}
               {contact.aiLastInteractionSummary && (
                 <Section label="Última interação" icon={<MessageSquareQuote className="w-3.5 h-3.5" />} iconColor="text-surface-500" delay={justFinished ? 0.85 : 0}>
-                  <div className="bg-surface-800/50 border border-surface-700/50 rounded-xl px-3.5 py-3">
+                  <div className="bg-surface-800/50 border border-surface-700/50 rounded-lg px-3.5 py-3">
                     <p className="text-[13px] text-surface-400 leading-relaxed italic">{contact.aiLastInteractionSummary}</p>
                   </div>
                 </Section>

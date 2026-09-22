@@ -157,7 +157,7 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, h
               <button
                 type="button"
                 onClick={adjustItems}
-                className="text-xs text-brand-300 hover:text-brand-200 whitespace-nowrap flex-shrink-0"
+                className="text-xs text-accent-dark hover:opacity-80 whitespace-nowrap flex-shrink-0"
                 data-testid="resolve-adjust-items"
               >
                 ajustar itens

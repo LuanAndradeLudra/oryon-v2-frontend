@@ -108,7 +108,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
                 </div>
               ) : loading ? (
                 <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+                  <Loader2 className="w-5 h-5 text-accent-dark animate-spin" />
                 </div>
               ) : templates.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3 px-6 text-center">
@@ -140,9 +140,9 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
                       </div>
                       <div className="flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {sending ? (
-                          <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
+                          <Loader2 className="w-4 h-4 text-accent-dark animate-spin" />
                         ) : (
-                          <Send className="w-4 h-4 text-brand-400" />
+                          <Send className="w-4 h-4 text-accent-dark" />
                         )}
                       </div>
                     </button>

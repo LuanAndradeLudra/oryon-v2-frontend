@@ -168,7 +168,7 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
                       <option value="lost">Perdido</option>
                       <option value="any">Qualquer</option>
                     </Select>
-                    <button onClick={handleSaveEdit} className="p-1.5 rounded-lg text-brand-400 hover:bg-[var(--rowhover)]">
+                    <button onClick={handleSaveEdit} className="p-1.5 rounded-lg text-accent-dark hover:bg-[var(--rowhover)]">
                       <Check className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => setEditingId(null)} className="p-1.5 rounded-lg text-surface-400 hover:bg-[var(--rowhover)]">

@@ -157,7 +157,7 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
 
       {deals === null ? (
         <div className="flex justify-center py-10">
-          <Loader2 className="w-5 h-5 animate-spin text-brand-400" />
+          <Loader2 className="w-5 h-5 animate-spin text-accent-dark" />
         </div>
       ) : open.length === 0 && closed.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-10">

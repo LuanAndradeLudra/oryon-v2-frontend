@@ -309,7 +309,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                 type="button"
                 onClick={handleMovePipeline}
                 disabled={!movePipelineId || moving}
-                className="px-3 py-2 rounded-lg text-xs font-semibold bg-surface-700 hover:bg-surface-600 text-surface-200 disabled:opacity-50 transition-all whitespace-nowrap"
+                className="px-3 py-2 rounded-lg text-xs font-semibold bg-[var(--sf2)] hover:bg-surface-800 text-surface-100 disabled:opacity-50 transition-all whitespace-nowrap"
               >
                 {moving ? 'Transferindo...' : 'Transferir'}
               </button>
@@ -422,7 +422,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
                 <button
                   onClick={() => handleSave(false)}
                   disabled={saving}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-700 hover:bg-surface-600 text-surface-100 disabled:opacity-60 transition-all"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-[var(--sf2)] hover:bg-surface-800 text-surface-100 disabled:opacity-60 transition-all"
                 >
                   {saving ? 'Salvando...' : 'Vincular'}
                 </button>

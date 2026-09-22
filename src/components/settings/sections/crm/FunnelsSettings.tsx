@@ -215,7 +215,7 @@ export function FunnelsSettings() {
               {selected && (
                 <a
                   href="#etapas"
-                  className="flex items-center gap-1 px-2 py-2 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors"
+                  className="flex items-center gap-1 px-2 py-2 text-xs font-medium text-accent-dark hover:opacity-80 transition-colors"
                 >
                   Editar etapas <ArrowRight className="w-3.5 h-3.5" />
                 </a>

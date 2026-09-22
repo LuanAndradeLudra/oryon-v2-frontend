@@ -121,14 +121,14 @@ function FieldDisplay({ field, flat }: { field: ContactCustomField; flat?: boole
     return (
       <div className="flex flex-wrap gap-1">
         {items.map((item) => (
-          <span key={item} className="px-2 py-0.5 rounded-full text-xs bg-brand-900/30 border border-brand-800/50 text-brand-300">{item}</span>
+          <span key={item} className="px-2 py-0.5 rounded-full text-xs bg-accent-soft border border-brand-500/30 text-accent-dark">{item}</span>
         ))}
       </div>
     )
   }
   if (field.type === 'url' && field.value) {
     return (
-      <a href={field.value} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-400 hover:underline truncate block">
+      <a href={field.value} target="_blank" rel="noopener noreferrer" className="text-sm text-accent-dark hover:underline truncate block">
         {field.value}
       </a>
     )
@@ -259,7 +259,7 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
                 <button
                   key={def.key}
                   onClick={() => handleAddField(def)}
-                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-surface-800 border border-surface-700 text-surface-300 hover:border-brand-500/40 hover:text-brand-300 transition-all"
+                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-surface-800 border border-surface-700 text-surface-300 hover:border-brand-500/40 hover:text-accent-dark transition-all"
                 >
                   <Plus className="w-3 h-3" /> {def.label}
                 </button>
