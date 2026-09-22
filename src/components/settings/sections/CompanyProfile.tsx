@@ -160,7 +160,7 @@ export function CompanyProfile() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3">
           <FormField label="Nome da Empresa" required>
             <Input
               value={form.name}
@@ -189,7 +189,7 @@ export function CompanyProfile() {
         title="Preferências regionais"
         description="E-mail de contato, fuso horário e idioma usados em agendamentos e mensagens automáticas."
       >
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3">
           <FormField label="E-mail de contato" required>
             <Input
               type="email"
