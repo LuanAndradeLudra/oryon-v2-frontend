@@ -373,7 +373,14 @@ export function DealsBoard({
                             setStageMenuDealId(stageMenuDealId === deal.id ? null : deal.id)
                           }}
                           className={cn(
-                            'flex items-center gap-0.5 h-[22px] px-[7px] rounded-md border border-[var(--bd2)] text-3xs font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            // PL-C2-CAR-4 (P8/P10): este botão só existe onde o
+                            // ponteiro NÃO arrasta (toque) — era 22px de altura,
+                            // abaixo do piso de 32px compacto (e dos 44px de
+                            // toque, que é o caso comum aqui). `isDesktop`
+                            // segue a mesma variável que já decide a opacidade
+                            // logo abaixo, não um breakpoint novo.
+                            'flex items-center gap-1 rounded-md border border-[var(--bd2)] font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            isDesktop ? 'h-8 px-[7px] text-3xs' : 'min-h-11 px-3 text-xs',
                             stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
                           aria-label={`Mover ${noun} para outra etapa`}
@@ -406,7 +413,9 @@ export function DealsBoard({
                             setPipelineMenuDealId(pipelineMenuDealId === deal.id ? null : deal.id)
                           }}
                           className={cn(
-                            'p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            // PL-C2-CAR-4: mesmo ajuste do "Mover ▾" ao lado — 22px → 32/44.
+                            'flex items-center justify-center rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            isDesktop ? 'w-8 h-8' : 'w-11 h-11',
                             pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
                           aria-label="Mais ações"
