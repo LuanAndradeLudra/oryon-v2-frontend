@@ -55,7 +55,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 4 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
-        className="relative z-10 w-[760px] max-w-full h-[460px] max-h-[90vh] bg-surface-800 overlay-frame border rounded-[10px] overflow-hidden flex"
+        className="relative z-10 w-[760px] max-w-full h-[460px] max-h-[90vh] bg-surface-800 overlay-frame border rounded-2xl overflow-hidden flex"
       >
         {/* Coluna de identidade */}
         <div
@@ -68,7 +68,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
           <div
             style={{ boxShadow: comingSoon ? undefined : `inset 0 -3px 0 ${connector.brandColor}` }}
             className={cn(
-              'w-[52px] h-[52px] rounded-[10px] bg-white flex items-center justify-center flex-shrink-0',
+              'w-[52px] h-[52px] rounded-xl bg-white flex items-center justify-center flex-shrink-0',
               comingSoon && 'opacity-70',
             )}
           >
@@ -173,7 +173,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
                         <div
                           key={c.title}
                           className={cn(
-                            'rounded-[7px] border px-3 py-2.5',
+                            'rounded-sm border px-3 py-2.5',
                             comingSoon ? 'border-dashed border-[var(--bd2)]' : 'border-surface-700',
                           )}
                         >

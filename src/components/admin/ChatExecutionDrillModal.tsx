@@ -59,7 +59,7 @@ export function ChatExecutionDrillModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="bg-surface-800 overlay-frame border rounded-[10px] w-full max-w-5xl max-h-[90vh] flex flex-col"
+        className="bg-surface-800 overlay-frame border rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <header className="flex items-start justify-between px-5 py-4 border-b border-surface-700">

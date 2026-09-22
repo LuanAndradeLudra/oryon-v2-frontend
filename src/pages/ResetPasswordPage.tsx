@@ -67,7 +67,7 @@ export function ResetPasswordPage() {
             </p>
             <Link
               to="/login"
-              className="inline-flex items-center justify-center w-full h-11 rounded-[7px] bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-sm font-semibold hover:brightness-90 transition mt-4"
+              className="inline-flex items-center justify-center w-full h-11 rounded-sm bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-sm font-semibold hover:brightness-90 transition mt-4"
             >
               Ir para o login
             </Link>
