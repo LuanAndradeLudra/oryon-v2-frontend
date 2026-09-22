@@ -54,7 +54,7 @@ export function MobileFeatureGate({
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-sm text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -62,7 +62,7 @@ export function MobileFeatureGate({
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
         <div
-          className="w-16 h-16 rounded-2xl color-chip border flex items-center justify-center"
+          className="w-16 h-16 rounded-lg color-chip-soft border flex items-center justify-center"
           style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
         >
           <Monitor className="w-8 h-8" />
@@ -73,7 +73,7 @@ export function MobileFeatureGate({
         <button
           type="button"
           onClick={handleCopy}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-900 border border-surface-700 text-sm text-surface-200 hover:bg-surface-800 transition-colors"
+          className="mt-4 inline-flex items-center gap-2 h-9 px-3.5 rounded-sm bg-surface-800 border border-[var(--bd2)] text-[13px] font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
         >
           {copied ? (
             <>

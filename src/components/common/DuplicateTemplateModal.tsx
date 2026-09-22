@@ -63,7 +63,7 @@ export function DuplicateTemplateModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface-900 rounded-2xl border border-surface-700/60 w-full max-w-md overflow-hidden"
+        className="bg-surface-800 rounded-xl border border-[var(--bd2)] w-full max-w-md overflow-hidden"
       >
         <div className="flex items-start justify-between px-5 py-4 border-b border-surface-700">
           <div className="min-w-0">
@@ -93,7 +93,7 @@ export function DuplicateTemplateModal({
                 <label className="block text-[10px] font-semibold uppercase tracking-wide text-surface-400 mb-1.5">
                   Linha de destino <span className="text-danger">*</span>
                 </label>
-                <ul className="rounded-xl border border-surface-700/60 overflow-hidden divide-y divide-surface-700">
+                <ul className="rounded-lg border border-surface-700 overflow-hidden divide-y divide-surface-700">
                   {otherLines.map((n) => {
                     const isPicked = pickedLineId === n.id
                     return (

@@ -708,7 +708,7 @@ export function AutomationsPage() {
               key="detail-panel"
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full sm:w-[34rem] z-40 bg-surface-950 border-l overlay-frame flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-[34rem] z-40 bg-surface-800 border-l overlay-frame flex flex-col"
             >
               <AutomationDetail
                 automation={selected}

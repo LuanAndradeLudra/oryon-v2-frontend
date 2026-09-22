@@ -94,7 +94,7 @@ export function AssignWabaModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface-900 rounded-2xl border border-surface-700/60 w-full max-w-md overflow-hidden"
+        className="bg-surface-800 rounded-xl border border-[var(--bd2)] w-full max-w-md overflow-hidden"
       >
         <div className="flex items-start justify-between px-5 py-4 border-b border-surface-700">
           <div className="min-w-0">

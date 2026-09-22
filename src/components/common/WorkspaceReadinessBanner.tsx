@@ -126,7 +126,7 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
   return (
     <div
       className={cn(
-        'rounded-xl border bg-surface-900/40 p-5',
+        'rounded-lg border bg-surface-800 p-5',
         hasBlockers ? 'border-danger/30' : 'border-surface-700',
         className,
       )}
@@ -134,7 +134,7 @@ function ChecklistCard({ checks, className }: { checks: WorkspaceCheck[]; classN
       <div className="flex items-start gap-3">
         {hasBlockers ? (
           <span
-            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 color-chip"
+            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 color-chip-soft border"
             style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
           >
             <AlertTriangle className="w-5 h-5" />

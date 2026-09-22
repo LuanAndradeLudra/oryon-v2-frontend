@@ -836,8 +836,8 @@ function ToolsTab({
                               {tool.parameters.map((p, i) => (
                                 <div key={i} className="flex items-center gap-2 text-xs">
                                   <code className="text-brand-300 font-mono">{p.name}</code>
-                                  <span className="text-surface-700">·</span>
-                                  <span className="text-surface-600">{p.type}</span>
+                                  <span className="text-surface-500">·</span>
+                                  <span className="text-surface-500">{p.type}</span>
                                   {p.required && <span className="color-chip border text-[10px] px-1 rounded" style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}>obrigatório</span>}
                                   <span className="text-surface-500">—</span>
                                   <span className="text-surface-400">{p.description}</span>
