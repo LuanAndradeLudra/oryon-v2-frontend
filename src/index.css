@@ -16,7 +16,7 @@
  * pixel-a-pixel por componente/tela.
  * Botões / inputs (altura):  sm h-7 · md h-9 · lg h-11  (Button.tsx é a ref;
  *          formalizar em Input/Textarea/Select/NumberField/MoneyInput/PhoneField)
- * Radius:  chips/badges 6px (--radius-xs) · botões/inputs 7px (--radius-sm)
+ * Radius:  micro 4px (--radius-2xs) · chips/badges 6px (--radius-xs) · botões/inputs 7px (--radius-sm)
  *          cards e popover/dropdown 8px (--radius-md/--radius-lg)
  *          modais/drawers 10px (--radius-xl/--radius-2xl) · pill rounded-full
  *          StageBadge é exceção pontual em 5px (componente, não token)
@@ -436,6 +436,11 @@
   /* ── Border radius ──────────────────────────────────────────────────── */
   /* SCRUM-1097: densidade compacta — cantos quase retos (era 4/10/12/16/20/24px).
    * StageBadge usa 5px direto no componente (exceção pontual, não token). */
+  /* 4px é o piso REAL da escala: o canvas 1a (RAD-09) usa 4 em contador,
+     checkbox e no selo "Em breve"; os mini-chips do wizard de campanha já
+     seguiam esse valor. Tinha ficado sem token e por isso lia como "fora da
+     escala". */
+  --radius-2xs:  0.25rem;   /*  4px — contador, checkbox, mini-chip, kbd */
   --radius-xs:   0.375rem;  /*  6px — badges, chips pequenos */
   --radius-sm:   0.4375rem; /*  7px — inputs, botões */
   --radius-md:   0.5rem;    /*  8px — botões md, popover/dropdown */
