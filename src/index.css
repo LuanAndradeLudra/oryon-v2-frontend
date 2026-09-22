@@ -56,6 +56,13 @@
   --color-accent-soft:  rgba(45, 212, 191, 0.14);
   --color-accent-on:    #0A0F0F;
 
+  /* Destaque de busca por conteúdo (SCRUM-1096) — tokens próprios, não
+   * reaproveita --color-accent-soft: esse já é usado no hover do Button
+   * (src/components/ui/Button.tsx), mudar o alpha dele mudaria hover de
+   * botão sem querer. */
+  --color-search-highlight-bg: rgba(45, 212, 191, 0.14);
+  --color-search-highlight-fg: #5EEAD4;
+
   /* aliases de uso frequente nos componentes */
   --color-brand-cta:       #2DD4BF;
   --color-brand-cta-hover: #14B8A6;
@@ -810,6 +817,15 @@ code, pre, kbd, samp {
   --color-accent-dark:  #0F766E;
   --color-accent-soft:  rgba(20, 184, 166, 0.10);
   --color-accent-on:    #FFFFFF;
+
+  /* Destaque de busca (SCRUM-1096) — tokens próprios (ver o bloco escuro
+   * acima pro motivo de não reaproveitar --color-accent-soft). Tinge com o
+   * PRÓPRIO --color-accent-dark (não o --color-accent mais claro): pedido
+   * do usuário foi "caixa mais escura, mais contraste com o texto
+   * destacado" — tingir com o tom escuro dá esse efeito; só subir o alpha
+   * do teal claro deixaria mais saturado, não mais escuro. */
+  --color-search-highlight-bg: rgba(15, 118, 110, 0.16);
+  --color-search-highlight-fg: #0F766E;
 
   /* Bubbles (light) — outbound: teal sólido da marca, texto branco. Contraste
      forte com o canvas cinza (#E4E7ED) e separação total do inbound branco. */

@@ -20,6 +20,17 @@ describe('renderHighlightedSnippet', () => {
     expect(mark?.textContent).toBe('confirmar')
   })
 
+  it('usa os tokens dedicados de destaque (não a cor de hover do Button)', () => {
+    // Opção "D" do comparativo — tokens PRÓPRIOS (search-highlight-bg/fg), não
+    // --color-accent-soft (compartilhado com o hover do Button): reutilizar
+    // aquele mudaria hover de botão junto se alguém ajustasse o alpha aqui.
+    const snippet = `${START}confirmar${END} amanhã`
+    const { container } = render(<div>{renderHighlightedSnippet(snippet)}</div>)
+    const mark = container.querySelector('mark') as HTMLElement
+    expect(mark.style.backgroundColor).toBe('var(--color-search-highlight-bg)')
+    expect(mark.style.color).toBe('var(--color-search-highlight-fg)')
+  })
+
   it('vários marcadores no mesmo snippet', () => {
     const snippet = `Vou ${START}confirmar${END} sua ${START}consulta${END} amanhã`
     const { container } = render(<div>{renderHighlightedSnippet(snippet)}</div>)
