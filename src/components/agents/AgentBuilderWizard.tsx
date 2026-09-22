@@ -1511,7 +1511,9 @@ function Step6({
           </div>
           <button
             type="button" onClick={generate}
-            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-110 text-[var(--color-btn-primary-fg)] font-semibold transition-all"
+            // PL-C2-CAR-11: mesmo bug do rodapé — todo primary do app
+            // escurece no hover (hover:brightness-90), este clareava.
+            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] font-semibold transition-all"
           >
             <Sparkles className="w-5 h-5" />
             Gerar System Prompt com IA
