@@ -207,7 +207,7 @@ export function AgentCatalogTab({ agentId }: Props) {
         <p className="text-sm text-surface-400">{loadError}</p>
         <button
           onClick={() => reload()}
-          className="inline-flex items-center gap-1.5 text-xs text-brand-400 hover:text-brand-300"
+          className="inline-flex items-center gap-1.5 text-xs text-accent-dark hover:opacity-80"
         >
           <RefreshCw className="w-3.5 h-3.5" /> Tentar de novo
         </button>

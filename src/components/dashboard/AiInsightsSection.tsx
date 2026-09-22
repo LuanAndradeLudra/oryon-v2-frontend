@@ -66,7 +66,7 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
       {isFeatureVisible('aiInsightsAskButton') && (
         <button
           onClick={() => open(insight.question)}
-          className="flex items-center gap-1.5 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors self-start"
+          className="flex items-center gap-1.5 text-xs font-medium text-accent-dark hover:opacity-80 transition-colors self-start"
         >
           Perguntar à IA
           <ArrowRight className="w-3 h-3" />

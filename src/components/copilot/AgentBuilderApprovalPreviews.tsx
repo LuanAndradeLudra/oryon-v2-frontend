@@ -68,7 +68,7 @@ export function ExpandableTextarea({
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
-            className="inline-flex items-center gap-1 text-3xs text-surface-400 hover:text-brand-300 transition-colors"
+            className="inline-flex items-center gap-1 text-3xs text-surface-400 hover:text-accent-dark transition-colors"
             aria-label="Abrir editor em tela cheia"
           >
             <Maximize2 className="h-3 w-3" />

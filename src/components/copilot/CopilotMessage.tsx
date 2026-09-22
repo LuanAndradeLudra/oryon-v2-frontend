@@ -1199,7 +1199,7 @@ function TemplateApprovalPreview({
                   <p className="text-3xs font-medium text-surface-300 truncate">Documento PDF</p>
                   <p className="text-[9px] text-surface-500 truncate">{mediaUrl.split('/').pop()}</p>
                 </div>
-                <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="text-3xs text-brand-400 hover:text-brand-300 transition-colors flex-shrink-0">
+                <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="text-3xs text-accent-dark hover:opacity-80 transition-colors flex-shrink-0">
                   Abrir
                 </a>
               </div>

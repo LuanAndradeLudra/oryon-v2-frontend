@@ -283,12 +283,12 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
               {(run.contactId || run.conversationId) && (
                 <div className="flex items-center gap-3 pt-0.5">
                   {run.conversationId && (
-                    <button onClick={() => onOpenConversation(run.conversationId!)} className="inline-flex items-center gap-1 text-2xs text-brand-400 hover:text-brand-300 transition-colors">
+                    <button onClick={() => onOpenConversation(run.conversationId!)} className="inline-flex items-center gap-1 text-2xs text-accent-dark hover:opacity-80 transition-colors">
                       <ExternalLink className="w-2.5 h-2.5" /> ver conversa
                     </button>
                   )}
                   {run.contactId && (
-                    <button onClick={() => onOpenContact(run.contactId!)} className="inline-flex items-center gap-1 text-2xs text-brand-400 hover:text-brand-300 transition-colors">
+                    <button onClick={() => onOpenContact(run.contactId!)} className="inline-flex items-center gap-1 text-2xs text-accent-dark hover:opacity-80 transition-colors">
                       <ExternalLink className="w-2.5 h-2.5" /> ver contato
                     </button>
                   )}
@@ -452,7 +452,7 @@ export function AutomationDetail({
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="w-full py-2 text-2xs text-brand-400 hover:text-brand-300 transition-colors flex items-center justify-center gap-1.5 border-t border-surface-700"
+                  className="w-full py-2 text-2xs text-accent-dark hover:opacity-80 transition-colors flex items-center justify-center gap-1.5 border-t border-surface-700"
                 >
                   {loadingMore ? <Loader2 className="w-3 h-3 animate-spin" /> : <ChevronDown className="w-3 h-3" />}
                   Carregar mais

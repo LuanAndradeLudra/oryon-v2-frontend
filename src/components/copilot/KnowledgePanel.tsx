@@ -167,7 +167,7 @@ function CompanyFieldRow({
           </button>
           <button
             onClick={save}
-            className="text-3xs text-brand-400 hover:text-brand-300 font-medium"
+            className="text-3xs text-accent-dark hover:opacity-80 font-medium"
           >
             Salvar
           </button>
@@ -261,7 +261,7 @@ function CompanySection({ kb, upsertCompanyField, deleteCompanyField }: {
                   <button
                     key={p.label}
                     onClick={() => { setNewLabel(p.label); setShowPresets(false) }}
-                    className="text-left text-2xs text-surface-300 hover:text-brand-300 px-2 py-1 rounded-lg hover:bg-surface-700/50 transition-colors"
+                    className="text-left text-2xs text-surface-300 hover:text-accent-dark px-2 py-1 rounded-lg hover:bg-surface-700/50 transition-colors"
                   >
                     {p.label}
                   </button>
@@ -304,7 +304,7 @@ function CompanySection({ kb, upsertCompanyField, deleteCompanyField }: {
                   <button
                     onClick={() => addField()}
                     disabled={!newLabel.trim()}
-                    className="text-3xs text-brand-400 hover:text-brand-300 font-medium disabled:opacity-40"
+                    className="text-3xs text-accent-dark hover:opacity-80 font-medium disabled:opacity-40"
                   >
                     Adicionar
                   </button>

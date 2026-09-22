@@ -61,11 +61,11 @@ function PersonalHeader({ user }: { user: User }) {
         </span>
         {user.departmentName && (
           <>
-            <span className="text-surface-700">·</span>
+            <span className="text-surface-500">·</span>
             <span className="text-sm text-surface-400">{user.departmentName}</span>
           </>
         )}
-        <span className="text-surface-700">·</span>
+        <span className="text-surface-500">·</span>
         <span className="text-sm text-surface-500 capitalize">{date}</span>
       </div>
     </div>
@@ -211,7 +211,7 @@ function AIInsightsWidget({ stats }: { stats: HomeStats }) {
               {isFeatureVisible('aiInsightsAskButton') && (
                 <button
                   onClick={() => open(insight)}
-                  className="text-[11px] text-brand-400 hover:text-brand-300 opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap"
+                  className="text-[11px] text-accent-dark hover:opacity-80 opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap"
                 >
                   Perguntar →
                 </button>
@@ -473,7 +473,7 @@ function WhatsAppNumbersCard() {
             <p className="text-xs text-surface-500">Nenhum número conectado ainda.</p>
             <button
               onClick={() => navigate('/settings/numbers')}
-              className="self-start text-xs text-brand-400 hover:text-brand-300 transition-colors"
+              className="self-start text-xs text-accent-dark hover:opacity-80 transition-colors"
             >
               Conectar agora →
             </button>
