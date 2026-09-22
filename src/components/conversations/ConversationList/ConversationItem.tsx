@@ -8,6 +8,7 @@ import { cn, chatRelTime, formatMessageTime, truncate } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { getAssignment, getAwaitingReply, isAiActive } from '@/lib/conversationSignals'
+import { renderHighlightedSnippet } from '@/lib/searchHighlight'
 import { GUARD_LIST_BADGE_TITLE } from '@/lib/guardReason'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import type { Conversation } from '@/types'
@@ -76,7 +77,7 @@ interface ConversationItemProps {
 }
 
 export const ConversationItem = memo(function ConversationItem({ conversation, isActive, offFilter = false, onSelect }: ConversationItemProps) {
-  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly } =
+  const { contact, lastMessagePreview, lastMessageSenderKind, lastMessageAt, unreadCount, assignedUser, tags, hasRecentAnomaly, searchSnippet } =
     conversation
 
   const hasUnread = unreadCount > 0 && !isActive
@@ -169,10 +170,21 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
             'flex items-center gap-1 min-w-0 text-xs',
             hasUnread ? 'text-surface-300' : 'text-surface-500'
           )}>
-            <SenderIndicator kind={lastMessageSenderKind} />
-            <span className="truncate">
-              <MessagePreview text={lastMessagePreview || '…'} />
-            </span>
+            {/* SCRUM-1096 — quando o match veio do CONTEÚDO da mensagem (não do
+                nome/telefone do contato), o trecho destacado substitui o
+                preview padrão. O SenderIndicator some junto: ele descreve
+                quem mandou a ÚLTIMA mensagem, e o trecho aqui pode ser de
+                qualquer mensagem antiga que bateu — misturar os dois confundiria. */}
+            {searchSnippet ? (
+              <span className="truncate">{renderHighlightedSnippet(searchSnippet)}</span>
+            ) : (
+              <>
+                <SenderIndicator kind={lastMessageSenderKind} />
+                <span className="truncate">
+                  <MessagePreview text={lastMessagePreview || '…'} />
+                </span>
+              </>
+            )}
           </div>
           {hasUnread && (
             <span className="flex-shrink-0 min-w-[18px] h-[18px] bg-brand-500 text-surface-950 text-[10px] font-bold rounded-full flex items-center justify-center px-1">
