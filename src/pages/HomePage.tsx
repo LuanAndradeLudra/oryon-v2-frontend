@@ -90,7 +90,7 @@ function KPICard({ data }: { data: KPIData }) {
   return (
     <div className="flex flex-col gap-0.5 px-3.5 py-3 min-w-0">
       <span className="text-[11px] font-medium text-surface-400 truncate">{data.label}</span>
-      <p className="text-[26px] font-extrabold tracking-[-0.02em] leading-[1.15] mt-0.5 text-surface-100 tabular-nums">{data.value}</p>
+      <p className="text-[26px] font-extrabold tracking-[-0.02em] leading-[1.15] mt-0.5 text-surface-100 tabular-nums">{typeof data.value === 'number' ? data.value.toLocaleString('pt-BR') : data.value}</p>
       <div className="flex items-center gap-1.5 min-w-0 text-[11.5px]">
         {data.trend && (
           <span className={cn(
@@ -173,7 +173,7 @@ function AIInsightsWidget({ stats }: { stats: HomeStats }) {
   return (
     // h-full + flex-col garantem que o card iguale altura com o
     // MyPerformanceCard ao lado quando estão em col-span-6 cada.
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
@@ -241,7 +241,7 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
   const myAvgMin    = stats.myAvgResponseMinutes ?? 0
 
   return (
-    <Card className="h-full flex flex-col p-4">
+    <Card className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-brand-400" />
@@ -281,7 +281,7 @@ function MyPerformanceCard({ stats }: { stats: HomeStats }) {
               {row.icon}
               <span className="text-xs">{row.label}</span>
             </div>
-            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value}</span>
+            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value.toLocaleString('pt-BR')}</span>
           </div>
         ))}
       </div>
@@ -329,7 +329,7 @@ function QuickActions({ role }: { role: string }) {
   const navigate = useNavigate()
   const actions = getQuickActions(role)
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Ações rápidas</h3>
       <div className="grid grid-cols-2 gap-1.5">
         {actions.map((a) => {
@@ -370,7 +370,7 @@ const ACTION_MAP: Record<string, { label: string; dot: string }> = {
 
 function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean }) {
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Atividade recente</h3>
       {loading ? (
         <div className="flex justify-center py-10">
@@ -423,7 +423,7 @@ function ActivityFeed({ logs, loading }: { logs: AuditLog[]; loading: boolean })
 function TeamCard({ stats }: { stats: HomeStats }) {
   const navigate = useNavigate()
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Equipe</h4>
         <Users className="w-4 h-4 text-surface-600" />
@@ -436,7 +436,7 @@ function TeamCard({ stats }: { stats: HomeStats }) {
         ].map((row) => (
           <div key={row.label} className="flex items-center justify-between">
             <span className="text-sm text-surface-400">{row.label}</span>
-            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value}</span>
+            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value.toLocaleString('pt-BR')}</span>
           </div>
         ))}
       </div>
@@ -462,7 +462,7 @@ function WhatsAppNumbersCard() {
   }, [])
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-100">Números WhatsApp</h4>
         <Smartphone className="w-4 h-4 text-surface-600" />
@@ -508,7 +508,7 @@ function WhatsAppNumbersCard() {
 function LiveServiceCard({ stats }: { stats: HomeStats }) {
   const navigate = useNavigate()
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 h-full flex flex-col">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Atendimento agora</h4>
         <div className="flex items-center gap-1.5">
@@ -548,7 +548,7 @@ function LiveServiceCard({ stats }: { stats: HomeStats }) {
               {row.icon}
               <span className="text-xs">{row.label}</span>
             </div>
-            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value}</span>
+            <span className={cn('text-sm font-semibold tabular-nums', row.cls)}>{row.value.toLocaleString('pt-BR')}</span>
           </div>
         ))}
       </div>
@@ -574,7 +574,7 @@ function SupervisorBlock() {
   }, [])
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Fila de espera</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : `${queue.length} sem usuário`}</span>
@@ -630,7 +630,7 @@ function AgentBlock() {
   }, [])
 
   return (
-    <div className="bg-surface-800 border border-surface-700 rounded-lg p-5">
+    <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-100">Minhas conversas abertas</h4>
         <span className="text-xs text-surface-500">{loading ? '…' : `${convs.length} abertas`}</span>

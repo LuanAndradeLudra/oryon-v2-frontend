@@ -13,7 +13,7 @@ Status: `pendente` · `em curso` · `saturado` (2 ciclos seguidos só com S3 e n
 | T2 | Contatos (tabela, filtros, drawer) | em curso | 1 | 4,0 |
 | T3 | Funis / Negócios (quadro, card, detalhe, Relatórios) | em curso | 1 | 3,7 |
 | T4 | Dashboard | pendente | — | — |
-| T5 | Home | pendente | — | — |
+| T5 | Home | em curso | 1 | 4,0 |
 | T6 | Agentes IA | pendente | — | — |
 | T7 | Campanhas / Disparos | pendente | — | — |
 | T8 | Automação | pendente | — | — |
@@ -93,6 +93,15 @@ Achados:
 Medições ao vivo feitas para os agentes: seletor de período do Dashboard agora tem só Hoje/7 dias e **filtra de verdade** (39 → 13 elementos no gráfico ao escolher Hoje).
 Registrado em DECISOES: nenhum.
 Próximo: T5 Home (ciclo 4); ciclo 6 = fluxo F2.
+
+### Ciclo 4 — T5 Home (tela) — 2026-09-22 20:4x — **ênfase visual/layout (eixo 10)**
+Notas: hierarquia 4 · eficiência 4 · feedback 4 · consistência 3 · densidade 4 · copy 4 · a11y 4 · perf 4 · mercado 4 · **visual/layout 3** (média 3,8)
+Achados:
+- PL-4-1 [S2] (eixo 10 / P8) **Padding desigual na mesma família de cards**: 8 cards refeitos à mão com `p-5` (20px) + 1 `Card` com `p-4` (16px), enquanto o primitivo usa `p-3.5` (14px) — três medidas lado a lado na mesma tela. — evidência ao vivo: paddings 20/16/0; depois **todos 14**. — **feito** `828c8a2`
+- PL-4-2 [S3] (eixo 10 / P15) **Números sem separador de milhar** na Home ("1948", "5191", "1019") enquanto o resto do app escreve "5.191". — **feito** `828c8a2` + `e0d91c4` (ao vivo: "1.948 conversas abertas aguardando atendimento")
+Verificado e SEM defeito: ritmo vertical constante de **24px** entre cards nas duas colunas; topo das colunas alinhado (y=182 nas duas); larguras 984 + 480 com gap 24; faixa de KPIs com a mesma escala do Dashboard (valor 26/800, −0,02em).
+Registrado em DECISOES: nenhum.
+Próximo: T12 Navegação global (ciclo 5) — sidebar/TopBar/busca/notificações/créditos, medindo alinhamento e alturas entre as peças.
 
 ## Achados abertos (backlog do loop)
 <!-- Achados vistos e não feitos, para ciclos futuros priorizarem S1/S2 de qualquer tela. -->
