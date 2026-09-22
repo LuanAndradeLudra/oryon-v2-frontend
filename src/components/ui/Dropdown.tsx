@@ -218,7 +218,7 @@ export function DropdownItem({ onClick, children, icon: Icon, danger, active, di
         danger
           ? 'text-danger'
           : active
-            ? 'text-brand-300 bg-brand-600/10'
+            ? 'text-surface-100 bg-[var(--rowhover)]'
             : 'text-surface-100',
         disabled && 'opacity-40 cursor-not-allowed'
       )}

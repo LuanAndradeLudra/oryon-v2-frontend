@@ -144,7 +144,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
               {children}
             </div>
             {footer && (
-              <div className="px-[18px] py-3.5 border-t border-surface-700 flex-shrink-0">
+              <div className="px-[18px] pt-3.5 pb-4 border-t border-surface-700 flex-shrink-0">
                 {footer}
               </div>
             )}
@@ -193,7 +193,7 @@ export function ConfirmModal({
   confirmLabel = 'Confirmar', danger = false, loading = false,
 }: ConfirmModalProps) {
   return (
-    <Modal open={open} onClose={onClose} title={title} className="max-w-sm">
+    <Modal open={open} onClose={onClose} title={title} className="max-w-[400px]">
       {impact && (
         <Banner variant={(impact.tone ?? 'neutral') as BannerVariant} className="mb-4">
           <p className="leading-snug">

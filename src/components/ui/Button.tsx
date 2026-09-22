@@ -66,8 +66,8 @@ const variantStyles = {
 // BTN-02/03/04/12: sm 28px/10px/12px · md 36/14/13 · lg 44/18/14 (HTML do canvas).
 const sizeStyles = {
   sm: 'h-7 px-2.5 text-xs gap-1.5 rounded-sm',
-  md: 'h-9 px-3.5 text-[13px] gap-2 rounded-sm',
-  lg: 'h-11 px-[18px] text-sm gap-2 rounded-sm',
+  md: 'h-9 px-3.5 text-[13px] gap-1.5 rounded-sm',
+  lg: 'h-11 px-[18px] text-[14px] gap-1.5 rounded-sm',
 }
 
 // BTN-10: só-ícone é quadrado (28/36/44), ícone 16px.

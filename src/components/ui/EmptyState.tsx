@@ -50,7 +50,7 @@ export function EmptyState({ icon: Icon, title, hint, action, className, iconSty
           {'href' in action && action.href ? (
             <a
               href={action.href}
-              className="inline-flex items-center justify-center h-7 px-3 text-xs gap-1.5 rounded-sm bg-surface-800 text-surface-100 font-semibold border border-surface-700 hover:bg-surface-700 hover:border-surface-600 transition-all"
+              className="inline-flex items-center justify-center h-7 px-2.5 text-xs gap-1.5 rounded-sm bg-surface-800 text-surface-100 font-semibold border border-[var(--bd2)] hover:bg-[var(--rowhover)] transition-all"
             >
               {action.label}
             </a>

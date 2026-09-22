@@ -23,7 +23,7 @@ interface AvatarProps {
 }
 
 const sizes = {
-  '2xs': 'w-5 h-5 text-[9px]',
+  '2xs': 'w-5 h-5 text-[8.5px]',
   xs: 'w-6 h-6 text-3xs',
   sm: 'w-8 h-8 text-xs',
   '30': 'w-[30px] h-[30px] text-[11px]',

@@ -97,7 +97,7 @@ export function DataTable<Row>({
               faixa --sf2 30px, 11px/600 --tx2, SEM uppercase/tracking. */}
           <tr className="border-b border-surface-700">
             {selectable && (
-              <th className="w-10 px-3 h-[30px]">
+              <th className="w-10 px-3 h-8">
                 <Checkbox
                   aria-label="Selecionar todos"
                   checked={allSelected}
@@ -109,7 +109,7 @@ export function DataTable<Row>({
               <th
                 key={col.key}
                 className={cn(
-                  'px-3 h-[30px] text-2xs font-semibold text-surface-400 whitespace-nowrap',
+                  'px-3 h-8 text-2xs font-semibold text-surface-400 whitespace-nowrap',
                   alignClass(col.align),
                   col.widthClass,
                   col.responsiveClass,
@@ -143,7 +143,7 @@ export function DataTable<Row>({
                   'border-b border-surface-700 transition-colors',
                   onRowClick && 'cursor-pointer',
                   activeKey === key
-                    ? 'bg-brand-500/15 [&>td:first-child]:shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
+                    ? 'bg-[var(--rowhover)] [&>td:first-child]:shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
                     : selected
                       ? 'bg-surface-800/60'
                       : 'hover:bg-[var(--rowhover)]',
@@ -163,7 +163,7 @@ export function DataTable<Row>({
                     key={col.key}
                     className={cn(
                       'px-3 text-surface-300',
-                      dense ? 'py-1' : 'py-2',
+                      dense ? 'py-1' : 'h-9 py-0',
                       alignClass(col.align),
                       col.align === 'right' && 'tabular-nums',
                       col.responsiveClass,
