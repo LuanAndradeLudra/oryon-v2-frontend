@@ -11,7 +11,7 @@ Status: `pendente` · `em curso` · `saturado` (2 ciclos seguidos só com S3 e n
 |---|------|--------|--------|-------------------|
 | T1 | Conversas (lista, chat, composer, painel do contato) | em curso | 1 | 3,7 |
 | T2 | Contatos (tabela, filtros, drawer) | em curso | 1 | 4,0 |
-| T3 | Funis / Negócios (quadro, card, detalhe, Relatórios) | pendente | — | — |
+| T3 | Funis / Negócios (quadro, card, detalhe, Relatórios) | em curso | 1 | 3,7 |
 | T4 | Dashboard | pendente | — | — |
 | T5 | Home | pendente | — | — |
 | T6 | Agentes IA | pendente | — | — |
@@ -63,6 +63,20 @@ Registrado em DECISOES: nenhum.
 Próximo: **ciclo 3 = fluxo F1** (atender conversa da fila até resolver).
 Em paralelo (agentes, mesma rubrica): Cartógrafo T3 Funis · Farol T4 Dashboard/T7 Campanhas · Bússola T11 Configurações/T10 Conectores.
 
+### Ciclo 2 — T3 Funis/Negócios (Cartógrafo) — 2026-09-22 19:4x
+Sem navegador nesta sessão (worktree isolado) — inspeção por leitura de código + testes, não por `getComputedStyle` ao vivo. Notas marcadas com essa ressalva.
+Notas: hierarquia 4 · eficiência 4 · feedback 4 (era 3, antes do PL-C2-CAR-1) · consistência 3 · densidade 4 · copy 4 · a11y 3 · perf 4 · mercado 3 (média 3,7)
+Achados:
+- PL-C2-CAR-1 [S2] (P7) Mover um negócio para uma etapa ABERTA (arrasto ou "Mover ▾") não dava nenhum sinal de sucesso — só o fechamento (Ganho/Perdido) tinha toast+Desfazer (`toastDealClosedWithUndo`); mover entre etapas abertas só tostava no ERRO. É exatamente o caso que o P7 descreve ("ação reversível de 1 clique... executa e mostra toast com Desfazer"), e dropar na coluna errada não tinha saída rápida. — proposta: reusar `moveStage` do próprio board pro Desfazer (chama de novo com a etapa de origem), toast "Movido para `<etapa>`." — esforço P — **feito** `5b283b8`
+- PL-C2-CAR-2 [S2] (P3) Os menus "Mover ▾" e "Transferir de funil" do card eram um `<div absolute>` posicionado à mão (sem portal, sem `useLayer`, fechado por um `document.addEventListener('click', …)` global) — dentro da coluna, que é `overflow-y-auto`, um card perto do fim da lista tinha o menu CORTADO pelo scroll (às vezes de vez invisível). Viola P3.2 (toda camada usa portal + gerenciador). — evidência: `grep -n "absolute right-0 top-full" DealsBoard.tsx` (2 ocorrências, nenhuma via `Dropdown`), enquanto `DealSummary.tsx` no mesmo domínio já usa o primitivo pro mesmo gesto ("Mover etapa"). — proposta: trocar pelo `Dropdown` (portal + pilha de camadas), como o resto do produto — esforço P — **feito** `fcb9b43` (teste ajustado: `DropdownItem` é `role="menuitem"`, não `"button"`)
+- PL-C2-CAR-3 [S2] (P6/P8) Card "Em aberto" dos Relatórios: (a) em funil de processo o hint repetia literalmente o valor já mostrado ("X negócios" no valor, "X negócios hoje" no hint — mesma informação duas vezes); (b) o backend documenta esse bucket como "aberto, HOJE — não filtrado pelo período" (`types/pipelineAnalytics.ts:30`), mas nada na tela avisa — trocar o filtro de Período pra "Ontem" e ver esse número parado, sem explicação, lê como filtro quebrado. De brinde, o hint estava em `text-[11px]`, abaixo do piso de 12px do P8 pra texto informativo. — proposta: hint condicional (nunca repete o valor) + "não filtra por período" explícito + `text-xs` — esforço P — **feito** `0bc3564`
+Observações: `npx tsc -b` limpo e sem erro de lint novo nos 4 commits; suite de `src/components/deals` e `src/components/deals/reports` verde. Não implementado (fora do orçamento de 3 itens, registrado como achado aberto): alvo de toque do "Mover ▾" do card em 22px (abaixo do piso de 32px desktop do P8); Relatórios ainda destoa visualmente do resto do board (pílula de período em `bg-brand-600` cru e `<select>` nativo pro dono, em vez dos chips/`Dropdown` que a barra do quadro já usa — P4 consistência); board sem virtualização de lista (carrega o funil inteiro de uma vez; sem problema no volume de hoje, revisitar se o tenant crescer); sem ação rápida "Marcar ganho/perdido" no `⋯` do card fora do drag (paridade Pipedrive/HubSpot — mudaria o menu do card, registrar se o próximo ciclo achar isso recorrente).
+Registrado em DECISOES: nenhum (os três são correção de defeito, sem ambiguidade — mesmo padrão do Ciclo 1/T1 e Ciclo 2/T2).
+Próximo: revisitar T3 (card/ficha ainda tem G's não abertos: kebab de ação rápida, virtualização) ou aguardar rotação do Maestro.
+
 ## Achados abertos (backlog do loop)
 <!-- Achados vistos e não feitos, para ciclos futuros priorizarem S1/S2 de qualquer tela. -->
 - PL-1-4 [S3] (P6) O "carregando" da lista ainda é spinner + "Carregando…" em vez de skeleton de linhas (`ConversationList.tsx` ~l.175). Perf percebida.
+- PL-C2-CAR-4 [S3] (P8) "Mover ▾" do card do board (alternativa ao drag por toque) tem 22px de altura — abaixo do piso de 32px desktop do P8 (`DealsBoard.tsx`, botão com `h-[22px]`).
+- PL-C2-CAR-5 [S3] (P4) Aba Relatórios do funil não usa o vocabulário do resto da tela: pílula de período em `bg-brand-600` cru (deveria ser o mesmo `SegmentedControl`/chip do board bar) e filtro de dono é um `<select>` nativo (o board bar já tem o padrão `Dropdown` com avatar+nome pro mesmo filtro, em `BoardFilterBar.tsx`).
+- PL-C2-CAR-6 [S3/proposta de produto] (mercado) Card do kanban não tem ação rápida "Marcar ganho/perdido" fora do drag/ficha (HubSpot e Pipedrive têm um atalho no `⋯` do card). Mudaria o menu do card — não implementado por não ser defeito, é decisão de produto; registrar se aparecer de novo.
