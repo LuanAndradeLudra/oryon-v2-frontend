@@ -778,7 +778,11 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
   const slashQuery = text.match(/^\/(\S*)$/)?.[1] ?? ''
 
   return (
-    <div className="px-4 pt-0 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
+    // min-w-0: item de um flex column (ChatWindow) — sem isto o `min-width:
+    // auto` padrão deixa este bloco crescer até caber a fileira de respostas
+    // rápidas inteira (ela tem overflow-x-auto própria, mas só rola dentro de
+    // uma largura já contida) e a fileira vazava a coluna do chat inteira.
+    <div className="px-4 pt-0 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex-shrink-0 min-w-0 bg-transparent">
       <div className="relative">
         {pickerActive && (
           <QuickReplyPicker
@@ -815,15 +819,20 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            // msg-composer traz bg/border via tokens que acompanham o tema
-            // (ver index.css) — por isso a cor base não vem de bg-surface-800/
-            // border-surface-700 aqui. `relative` é necessário pro overlay
-            // absolute do dropzone (abaixo) se posicionar contra este container.
+            // msg-composer traz o FUNDO via token que acompanha o tema (ver
+            // index.css) — por isso a cor base não vem de bg-surface-800 aqui.
+            // `relative` é necessário pro overlay absolute do dropzone
+            // (abaixo) se posicionar contra este container.
             // CONV-CHAT-32/41 (spec/1d-conversas.GAPS.md): sem sombra — o mock
             // é explícito ("Composer não tem sombra").
+            // R2-1D-COMP-03 (medido ao vivo): a borda em repouso é --bd2, não
+            // a linha comum (--color-composer-border, que é --bd) — sobrescrita
+            // aqui com `!important` porque o token vive em index.css, fora do
+            // meu domínio (Leva 0, do Maestro); reportado pra ele ajustar na
+            // fonte quando puder.
             'relative msg-composer rounded-lg px-3 pt-2.5 pb-2 transition-all',
-            'border focus-within:border-brand-500/50',
-            dragOver && 'border-brand-500 ring-1 ring-brand-500/40'
+            'border !border-[var(--bd2)] focus-within:!border-brand-500/50',
+            dragOver && '!border-brand-500 ring-1 ring-brand-500/40'
           )}
         >
           {/* Dropzone: feedback "solte aqui" durante o arraste (SCRUM-275) */}
@@ -945,7 +954,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
               <button
                 ref={attachButtonRef}
                 onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors flex-shrink-0"
+                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-md flex items-center justify-center text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-shrink-0"
                 title="Anexar arquivo"
               >
                 <Paperclip className="w-4 h-4" />
@@ -1010,11 +1019,14 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
                   Janela de 24h aberta · fecha em {windowHoursLeft} h
                 </span>
               )}
-              {/* Emoji */}
+              {/* Emoji — o primitivo (src/components/ui) não é meu domínio; as
+                  classes de raio/hover que faltam (CONV-CHAT-36) entram aqui,
+                  por fora, via `className` (o componente já as mescla com a
+                  base dele em vez de substituir). */}
               <EmojiPickerButton
                 textareaRef={textareaRef}
                 onEmojiInsert={(newValue) => setText(newValue)}
-                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11"
+                className="w-7 h-7 [@media(pointer:coarse)]:w-11 [@media(pointer:coarse)]:h-11 rounded-md hover:bg-[var(--rowhover)]"
               />
 
               {/* Send — aparece com texto E/OU anexos em espera */}
