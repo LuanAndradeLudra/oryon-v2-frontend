@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback, useState, useLayoutEffect, type Mutable
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, MessageSquareOff } from 'lucide-react'
 import { ConversationItem } from './ConversationItem'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
 import { cn } from '@/lib/utils'
@@ -120,6 +121,21 @@ export function ConversationList({
 
   const handleSelect = useCallback((conv: Conversation) => onSelectConversation(conv), [onSelectConversation])
 
+  // PL-1-2: rótulos dos filtros ativos, para o estado vazio dizer o que filtra.
+  const activeFilterLabels = [
+    filters.search ? `busca "${filters.search}"` : null,
+    filters.status && filters.status !== 'all' ? ({ open: 'abertas', pending: 'pendentes', resolved: 'resolvidas' } as Record<string, string>)[filters.status] ?? null : null,
+    filters.assignedTo === 'me' ? 'minhas' : filters.assignedTo === 'unassigned' ? 'fila' : null,
+    filters.unreadOnly ? 'não lidas' : null,
+    filters.aiHandling === 'active' ? 'com IA' : filters.aiHandling === 'paused' ? 'IA pausada' : null,
+    filters.awaitingReply ? 'aguardando resposta' : null,
+    filters.untagged ? 'sem etiqueta' : null,
+    filters.needsReview ? 'precisam de verificação' : null,
+    filters.tagId?.length ? 'etiqueta' : null,
+    filters.startDate ? 'período' : null,
+  ].filter(Boolean) as string[]
+
+
   // Tab badges read straight from the backend-provided counts. The previous
   // implementation derived them from `conversations.length` filtered by status,
   // which broke with pagination — once only 50 of N rows were loaded, the
@@ -177,16 +193,21 @@ export function ConversationList({
             <span className="text-xs text-surface-500">Carregando...</span>
           </div>
         ) : conversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-3 px-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-surface-800 flex items-center justify-center">
-              <MessageSquareOff className="w-6 h-6 text-surface-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-surface-300">Nenhuma conversa</p>
-              <p className="text-xs text-surface-500 mt-1">
-                {filters.search ? 'Tente outro termo de busca' : 'Nenhuma conversa com esses filtros'}
-              </p>
-            </div>
+          /* PL-1-2 (P6): "sem resultados" agora DIZ qual filtro está ativo e traz
+             a ação de limpar — era um bloco local, centrado, sem ação. */
+          <div className="px-3">
+            <EmptyState
+              icon={MessageSquareOff}
+              title={activeFilterLabels.length > 0 ? 'Nenhuma conversa com esses filtros' : 'Nenhuma conversa'}
+              hint={
+                activeFilterLabels.length > 0
+                  ? `Filtros ativos: ${activeFilterLabels.join(' · ')}.`
+                  : 'Quando alguém escrever pelo WhatsApp, a conversa aparece aqui.'
+              }
+              action={activeFilterLabels.length > 0
+                ? { label: 'Limpar filtros', onClick: () => onFiltersChange({ status: 'all' }) }
+                : undefined}
+            />
           </div>
         ) : (
           <>
