@@ -90,7 +90,9 @@ describe('PipelineReportsTab — filtro de período (D2/SCRUM-935)', () => {
     render(<PipelineReportsTab pipeline={PIPELINE} />)
     await waitFor(() => expect(pipelineAnalyticsApi.overview).toHaveBeenCalled())
 
-    fireEvent.click(screen.getByRole('button', { name: 'Todo o período' }))
+    // PL-C2-CAR-6: período agora é o `SegmentedControl` partilhado (mesma peça
+    // do toggle Quadro/Relatórios), cujo item é role="tab", não "button".
+    fireEvent.click(screen.getByRole('tab', { name: 'Todo o período' }))
 
     await waitFor(() => {
       const calls = vi.mocked(pipelineAnalyticsApi.overview).mock.calls

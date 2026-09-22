@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Wallet, Scale3d, Trophy, Percent, Timer } from 'lucide-react'
+import { AlertTriangle, ChevronDown, Wallet, Scale3d, Trophy, Percent, Timer } from 'lucide-react'
 import { pipelineAnalyticsApi, usersApi } from '@/services/api'
 import { resolveRange, type DateRangePreset } from '@/lib/dateRange'
 import { pipelineKindOf } from '@/lib/pipelineKinds'
@@ -7,6 +7,7 @@ import { isMoneyBucket } from '@/types/pipelineAnalytics'
 import type { PipelineOverview } from '@/types/pipelineAnalytics'
 import type { Pipeline, User } from '@/types'
 import { cn } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { StageFunnelChart } from './StageFunnelChart'
 import { WonLostReasonChart } from './WonLostReasonChart'
 import { WonLostTimeSeriesChart } from './WonLostTimeSeriesChart'
@@ -94,35 +95,42 @@ export function PipelineReportsTab({ pipeline }: { pipeline: Pipeline }) {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-      {/* Filtros */}
+      {/* PL-C2-CAR-6 (Eixo 10/P4): filtros da própria tela usavam raio 10
+          (`rounded-xl`), o período era pílula sólida `bg-brand-600` cru (raiz
+          diferente do resto do app — filtro ativo é sempre borda de acento +
+          `accent-soft`, nunca fundo saturado) e o dono era `<select>` nativo
+          sem o vocabulário do chip. Enquanto isso a barra do QUADRO, na aba ao
+          lado, usa o `SegmentedControl` partilhado (raio 7, ativo `--sf2`) e
+          chips 28px com `--bd2`. Mesma tela, mesmo dado (Responsável), duas
+          medidas — agora as duas abas usam a mesma peça. */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center rounded-xl bg-surface-900 border border-surface-700 p-0.5 gap-0.5">
-          {PERIOD_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setPeriod(opt.value)}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                period === opt.value ? 'bg-brand-600 text-surface-950' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800',
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <SegmentedControl
+          label="Período"
+          size="sm"
+          value={period}
+          onChange={setPeriod}
+          options={PERIOD_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+        />
+        <div className="relative flex items-center flex-shrink-0">
+          <select
+            value={ownerFilter}
+            onChange={(e) => setOwnerFilter(e.target.value)}
+            aria-label="Filtrar por dono"
+            className={cn(
+              'appearance-none h-7 pl-3 pr-7 rounded-sm text-xs font-semibold border transition-all cursor-pointer',
+              ownerFilter !== 'all'
+                ? 'border-brand-500 bg-accent-soft text-accent-dark'
+                : 'border-[var(--bd2)] bg-surface-800 text-surface-100 hover:border-surface-500',
+            )}
+          >
+            <option value="all">Todos os donos</option>
+            <option value="unassigned">Sem dono</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.firstName} {u.lastName ?? ''}</option>
+            ))}
+          </select>
+          <ChevronDown className={cn('w-3 h-3 absolute right-2 pointer-events-none flex-shrink-0', ownerFilter !== 'all' ? 'text-accent-dark' : 'text-surface-500')} />
         </div>
-        <select
-          value={ownerFilter}
-          onChange={(e) => setOwnerFilter(e.target.value)}
-          aria-label="Filtrar por dono"
-          className="text-xs px-3 py-1.5 rounded-xl bg-surface-900 border border-surface-700 text-surface-300 focus:outline-none focus:border-brand-500"
-        >
-          <option value="all">Todos os donos</option>
-          <option value="unassigned">Sem dono</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>{u.firstName} {u.lastName ?? ''}</option>
-          ))}
-        </select>
       </div>
 
       {loading || !overview ? (
