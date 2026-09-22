@@ -62,9 +62,11 @@ export async function generateInsights(stats: HomeStats): Promise<string[]> {
 
 function fallbackHomeInsights(stats: HomeStats): string[] {
   const insights: string[] = []
-  if ((stats.conversationsOpen ?? 0) > 0) insights.push(`${stats.conversationsOpen} conversas abertas aguardando atendimento`)
-  if ((stats.unassignedCount ?? 0) > 0) insights.push(`${stats.unassignedCount} conversas sem atendente atribuído`)
-  if ((stats.newContactsThisWeek ?? 0) > 0) insights.push(`${stats.newContactsThisWeek} novos contatos esta semana`)
+  // PL-4-2: milhar com separador, como no resto do app ("5.191 contatos").
+  const n = (v: number) => v.toLocaleString('pt-BR')
+  if ((stats.conversationsOpen ?? 0) > 0) insights.push(`${n(stats.conversationsOpen ?? 0)} conversas abertas aguardando atendimento`)
+  if ((stats.unassignedCount ?? 0) > 0) insights.push(`${n(stats.unassignedCount ?? 0)} conversas sem atendente atribuído`)
+  if ((stats.newContactsThisWeek ?? 0) > 0) insights.push(`${n(stats.newContactsThisWeek ?? 0)} novos contatos esta semana`)
   if (insights.length === 0) insights.push('Nenhuma atividade recente')
   return insights.slice(0, 3)
 }
