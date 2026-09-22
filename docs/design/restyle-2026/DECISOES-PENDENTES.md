@@ -38,6 +38,9 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
 15. **Botão "Enviar" do composer só aparece com texto digitado** (comportamento atual do app). No mock (1d) ele está
     sempre visível, ao lado do aviso de janela. Alternativa: mostrar sempre, desabilitado quando vazio.
 
+16. **Sidebar/shell levemente mais escuro** (pedido do usuário): `#0E1414` (`--sb` do handoff) → `#0A0F0F`.
+    Reverter: `.workspace-shell` em `src/index.css`.
+
 ## Sem dado no backend (`[!]`, não implementado)
 Split Humano/IA por hora e deltas dos KPIs (Dashboard); painel "HOJE"/CSAT do agente; "Rascunho salvo" nos wizards;
 custo estimado e "enviar teste" na campanha; check duplo e nome do agente no chip da lista; Copilot, Nota interna e

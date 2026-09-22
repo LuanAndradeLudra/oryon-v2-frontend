@@ -1475,7 +1475,9 @@ svg[data-oryon-icon] {
 /* SHELL-SIDEBAR-01 (spec shell.md): moldura/sidebar em fundo CHAPADO --sb
    #0E1414 — o gradiente radial preto não existe no mock. */
 .workspace-shell {
-  background: #0E1414;
+  /* Pedido do usuário (2026-09-22): levemente mais escuro que o --sb do
+     handoff (#0E1414). Reverter: #0E1414. */
+  background: #0A0F0F;
 }
 
 /* Chat background — no escuro usa a MESMA cor do shell/sidebar (não o
