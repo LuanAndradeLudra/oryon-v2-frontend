@@ -52,6 +52,12 @@ interface MessageBubbleProps {
   quotedMessage?: Message | null
   /** Start a quoted reply to this message (desktop hover button + mobile swipe). */
   onReply?: (message: Message) => void
+  /** SCRUM-1158 — jump to (scroll + flash) another message already in the
+   *  loaded window, by id. Wired to the reply quote bar, WhatsApp-style. */
+  onJumpToMessage?: (messageId: string) => void
+  /** True for ~1.2s right after `onJumpToMessage` lands here — brief bubble
+   *  flash so the user's eye finds the target message. */
+  highlighted?: boolean
 }
 
 /** Inline sender indicator for OUTBOUND messages, pinned to the LEFT of the
@@ -631,7 +637,7 @@ export function TextContent({ message }: { message: Message }) {
   ) : null
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply, onJumpToMessage, highlighted }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
   // Extra top spacing when a new sender run starts (the avatar sits above).
@@ -791,11 +797,18 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg rounded-br-xs'
               : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-xs',
             showAvatar && isOutbound && 'rounded-br-md rounded-tr-xs',
-            showAvatar && !isOutbound && 'rounded-bl-md rounded-tl-xs'
+            showAvatar && !isOutbound && 'rounded-bl-md rounded-tl-xs',
+            highlighted && 'animate-msg-highlight'
           )}
           style={isOutbound ? { boxShadow: 'var(--bubble-shadow-soft)' } : undefined}
         >
-        {message.contextWamid && <ReplyQuoteBar message={message} quoted={quotedMessage} />}
+        {message.contextWamid && (
+          <ReplyQuoteBar
+            message={message}
+            quoted={quotedMessage}
+            onClick={quotedMessage && onJumpToMessage ? () => onJumpToMessage(quotedMessage.id) : undefined}
+          />
+        )}
         <ReferralBanner message={message} />
         <MediaContent message={message} showTranscription={showTranscription} />
         <TextContent message={message} />

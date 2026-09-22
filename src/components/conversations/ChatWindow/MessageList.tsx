@@ -57,6 +57,9 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
   const isInitialLoadRef = useRef(true)
   const prevFirstIdRef = useRef<string | null>(null)
   const [newMsgIds, setNewMsgIds] = useState<Set<string>>(new Set())
+  // SCRUM-1158 — id da mensagem citada, em destaque logo após um "pular para".
+  const [highlightedId, setHighlightedId] = useState<string | null>(null)
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Index by wamid so a reply bubble can resolve its quoted message from the
   // already-loaded window (no extra fetch). Degrades gracefully when the
@@ -77,6 +80,22 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
   const smoothScrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
+
+  // SCRUM-1158 — WhatsApp-style "pular para a mensagem citada": rola até a
+  // bolha (se já estiver na janela carregada — a mesma que resolve
+  // `quotedMessage`, então "achou" aqui sempre bate com "achou" lá) e pisca
+  // por 1,2s pra guiar o olho. Sem a original carregada não há pra onde
+  // pular — ReplyQuoteBar já degrada com onClick undefined nesse caso.
+  const scrollToMessage = useCallback((messageId: string) => {
+    const el = containerRef.current?.querySelector<HTMLElement>(`[data-message-id="${messageId}"]`)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+    setHighlightedId(messageId)
+    highlightTimerRef.current = setTimeout(() => setHighlightedId(null), 1200)
+  }, [])
+
+  useEffect(() => () => { if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current) }, [])
 
   // On initial load or conversation switch: instantly position at bottom (no scroll animation)
   useLayoutEffect(() => {
@@ -169,6 +188,7 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
         return (
           <div
             key={msg.id}
+            data-message-id={msg.id}
             className={isNew ? (msg.direction === 'outbound' ? 'animate-msg-in-right' : 'animate-msg-in-left') : undefined}
           >
             {showDate && <DateSeparator date={msg.sentAt} />}
@@ -178,6 +198,8 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
               showAvatar={showAvatar}
               quotedMessage={msg.contextWamid ? byWamid.get(msg.contextWamid) ?? null : null}
               onReply={onReply}
+              onJumpToMessage={scrollToMessage}
+              highlighted={highlightedId === msg.id}
             />
           </div>
         )

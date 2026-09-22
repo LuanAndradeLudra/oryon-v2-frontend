@@ -1,5 +1,6 @@
 import type { FC } from 'react'
 import type { Message } from '@/types'
+import { cn } from '@/lib/utils'
 
 /** One-line preview of a quoted message for the reply bar. */
 function previewOf(m: Message): string {
@@ -26,10 +27,24 @@ function authorOf(m: Message): string {
  * message replies to another (`contextWamid`). `quoted` is resolved by
  * MessageList from the already-loaded window; when it isn't available
  * (e.g. the original is outside the loaded page) we degrade gracefully.
+ *
+ * SCRUM-1158 — clicking it jumps to the quoted message (scroll + flash),
+ * mirroring WhatsApp. Only clickable when `quoted` was actually resolved:
+ * `onClick` is undefined otherwise, and there's nothing sensible to jump to.
  */
-export const ReplyQuoteBar: FC<{ message: Message; quoted?: Message | null }> = ({ quoted }) => {
+export const ReplyQuoteBar: FC<{ message: Message; quoted?: Message | null; onClick?: () => void }> = ({ quoted, onClick }) => {
+  const clickable = !!onClick
   return (
-    <div className="mb-1 rounded-md bg-current/10 border-l-2 border-current/40 px-2 py-1 max-w-full">
+    <div
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={clickable ? (e) => { e.stopPropagation(); onClick!() } : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onClick!() } } : undefined}
+      className={cn(
+        'mb-1 rounded-md bg-current/10 border-l-2 border-current/40 px-2 py-1 max-w-full',
+        clickable && 'cursor-pointer hover:bg-current/15 transition-colors'
+      )}
+    >
       {quoted ? (
         <>
           {/* `line-clamp-1` em vez de `truncate`: `truncate` é `white-space:
