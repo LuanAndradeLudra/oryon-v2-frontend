@@ -377,16 +377,21 @@ export function ChatHeader({
       <span className="inline-flex items-center gap-1 h-7 px-2 rounded-sm text-xs font-semibold text-accent-amber bg-accent-amber/[.12] whitespace-nowrap">
         <Bot className="w-3.5 h-3.5" /> Agente IA no controle
       </span>
-      <Button
-        size="sm"
-        variant="primary"
-        onClick={() => {
-          if (onInterveneAi) void onInterveneAi()
-          else void onSetAiPause(new Date(Date.now() + 240 * 60_000).toISOString())
-        }}
-      >
-        Assumir
-      </Button>
+      {/* PL-3-1 (P5): os atalhos J/K/E/R só eram ensinados no estado vazio do
+          chat; depois de abrir uma conversa ninguém mais descobre. O tooltip
+          do próprio botão é onde Intercom/Front ensinam o atalho. */}
+      <Tooltip content="Assumir a conversa (R)" side="bottom">
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={() => {
+            if (onInterveneAi) void onInterveneAi()
+            else void onSetAiPause(new Date(Date.now() + 240 * 60_000).toISOString())
+          }}
+        >
+          Assumir
+        </Button>
+      </Tooltip>
     </>
   ) : (
     <HandoffChip
@@ -453,9 +458,11 @@ export function ChatHeader({
 
         {status !== 'resolved' && (
           <div className="relative">
-            <Button size="sm" variant="neutral" disabled={resolve.loading} onClick={() => void resolve.requestResolve()}>
-              Resolver
-            </Button>
+            <Tooltip content="Resolver e ir para a próxima (E)" side="bottom">
+              <Button size="sm" variant="neutral" disabled={resolve.loading} onClick={() => void resolve.requestResolve()}>
+                Resolver
+              </Button>
+            </Tooltip>
             {resolvePopover}
           </div>
         )}
