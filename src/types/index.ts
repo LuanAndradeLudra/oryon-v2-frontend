@@ -1026,6 +1026,13 @@ export interface Message {
   body?: string
   mediaUrl?: string
   mediaCaption?: string
+  /** Preview estilo WhatsApp (documento) — tamanho/tipo já calculados no
+   *  envio/recebimento; nº de páginas só pra PDF; miniatura da 1ª página
+   *  chega depois, de forma assíncrona (evento `message:media-ready`). */
+  mediaSizeBytes?: number | null
+  mediaMimeType?: string | null
+  mediaPageCount?: number | null
+  mediaThumbnailUrl?: string | null
   /** Whisper transcription for inbound WhatsApp voice notes — null when the
    *  feature flag is off, transcription failed, or type !== 'audio'. */
   transcription?: string | null
@@ -1587,6 +1594,14 @@ export interface SocketMessageStatus {
   messageId: string
   status: MessageStatus
   timestamp: string
+}
+
+/** Miniatura de PDF gerada de forma assíncrona (fila `media-thumbnail`) —
+ *  chega minutos/segundos depois da mensagem já estar na tela. */
+export interface SocketMediaReady {
+  messageId: string
+  conversationId: string
+  mediaThumbnailUrl: string
 }
 
 export interface SocketConversationAssigned {

@@ -48,6 +48,7 @@ import { TagsProvider }         from '@/contexts/TagsContext'
 import { TenantVocabProvider }  from '@/contexts/TenantVocabContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
+import { MediaViewerProvider } from '@/components/ui/MediaViewer'
 import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { DealPanelProvider } from '@/contexts/DealPanelContext'
 import { LayerProvider } from '@/contexts/LayerContext'
@@ -332,6 +333,7 @@ export default function App() {
           <InternalChatProvider>
           <CopilotProvider>
             <ContextMenuProvider>
+              <MediaViewerProvider>
               <DealPanelProvider>
                 <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
                   <AnimatedRoutes />
@@ -341,6 +343,7 @@ export default function App() {
                   <GlobalToastContainer />
                 </div>
               </DealPanelProvider>
+              </MediaViewerProvider>
             </ContextMenuProvider>
           </CopilotProvider>
           </InternalChatProvider>
