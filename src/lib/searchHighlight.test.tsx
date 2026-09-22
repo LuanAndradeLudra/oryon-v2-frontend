@@ -31,11 +31,48 @@ describe('renderHighlightedSnippet', () => {
     expect(mark.style.color).toBe('var(--color-search-highlight-fg)')
   })
 
-  it('vários marcadores no mesmo snippet', () => {
+  it('vários marcadores no mesmo snippet, com texto de verdade entre eles: ficam em caixas separadas', () => {
     const snippet = `Vou ${START}confirmar${END} sua ${START}consulta${END} amanhã`
     const { container } = render(<div>{renderHighlightedSnippet(snippet)}</div>)
     expect(container.textContent).toBe('Vou confirmar sua consulta amanhã')
     expect(container.querySelectorAll('mark')).toHaveLength(2)
+  })
+
+  // SCRUM-1096 — achado do usuário: buscar "boa tarde" destacava "Boa" e
+  // "tarde" em duas caixas coladas com um respiro no meio, porque o
+  // ts_headline do Postgres marca cada PALAVRA separadamente
+  // (`<S>Boa<E> <S>tarde<E>! Vi o anúncio` — confirmado rodando a query real).
+  describe('marcadores vizinhos separados só por espaço viram UMA caixa', () => {
+    it('duas palavras vizinhas (o caso relatado: "boa tarde")', () => {
+      const snippet = `${START}Boa${END} ${START}tarde${END}! Vi o anúncio`
+      const { container } = render(<div>{renderHighlightedSnippet(snippet)}</div>)
+      const marks = container.querySelectorAll('mark')
+      expect(marks).toHaveLength(1)
+      expect(marks[0].textContent).toBe('Boa tarde')
+      expect(container.textContent).toBe('Boa tarde! Vi o anúncio')
+    })
+
+    it('três palavras vizinhas fundem na mesma caixa', () => {
+      const snippet = `${START}bom${END} ${START}dia${END} ${START}sempre${END} ajuda`
+      const { container } = render(<div>{renderHighlightedSnippet(snippet)}</div>)
+      const marks = container.querySelectorAll('mark')
+      expect(marks).toHaveLength(1)
+      expect(marks[0].textContent).toBe('bom dia sempre')
+    })
+
+    it('coladas sem nenhum espaço entre os marcadores também fundem', () => {
+      const snippet = `${START}con${END}${START}firmar${END} amanhã`
+      const { container } = render(<div>{renderHighlightedSnippet(snippet)}</div>)
+      const marks = container.querySelectorAll('mark')
+      expect(marks).toHaveLength(1)
+      expect(marks[0].textContent).toBe('confirmar')
+    })
+
+    it('espaço múltiplo/tab entre os marcadores também funde (é só espaço, não texto)', () => {
+      const snippet = `${START}boa${END}  ${START}tarde${END}`
+      const { container } = render(<div>{renderHighlightedSnippet(snippet)}</div>)
+      expect(container.querySelectorAll('mark')).toHaveLength(1)
+    })
   })
 
   it('nunca produz HTML a partir do conteúdo — símbolos < e > do cliente aparecem como texto, não como tag', () => {
