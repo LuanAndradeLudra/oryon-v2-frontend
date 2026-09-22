@@ -183,7 +183,7 @@
      mais o chão.
      Só o 950 muda: o 900 continua sendo o card, e é a distância entre os dois
      que faz o card existir. */
-  --color-surface-950: #060909;
+  --color-surface-950: #0A0F0F; /* pedido do usuário 22/09: fundo = tom da sidebar (era #060909) */
   --color-surface-900: #0E1414;
   --color-surface-800: #161E1E;
   --color-surface-700: #243333;
@@ -208,7 +208,7 @@
   --color-surface-100-light: #1A1F2E;
   --color-surface-50-light:  #0F1422;
 
-  --color-surface-950-dark: #060909;
+  --color-surface-950-dark: #0A0F0F;
   --color-surface-900-dark: #0E1414;
   --color-surface-800-dark: #161E1E;
   --color-surface-700-dark: #243333;
@@ -266,7 +266,7 @@
   --ink-target: #FFFFFF;
   --ink-amount: 0%;
 
-  --color-board-bar: #060909;
+  --color-board-bar: #0A0F0F;
 
   --color-avatar-surface:  #B5C8C8;
   --color-avatar-initials: #060909;
@@ -1174,7 +1174,7 @@ code, pre, kbd, samp {
   /* Acompanha o chão novo: a sidebar é a moldura do workspace e ficaria mais
      clara que o canvas se mantivesse o #0A0F0F antigo. Mesma matiz do resto
      da escala — G=B. */
-  --color-surface-950: #060909;
+  --color-surface-950: #0A0F0F; /* pedido do usuário 22/09: fundo = tom da sidebar (era #060909) */
   --color-surface-900: #0E1414;
   --color-surface-800: #161E1E;
   --color-surface-700: #243333;

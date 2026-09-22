@@ -41,6 +41,11 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
 16. **Sidebar/shell levemente mais escuro** (pedido do usuário): `#0E1414` (`--sb` do handoff) → `#0A0F0F`.
     Reverter: `.workspace-shell` em `src/index.css`.
 
+17. **Fundo das telas no escuro = tom da sidebar** (pedido do usuário): `--color-surface-950` escuro (`--bg` do handoff)
+    `#060909` → `#0A0F0F` (também a cópia na `.nav-sidebar` e `--color-board-bar`). O fundo fica um pouco mais claro que
+    antes e continua abaixo de `--sf2` `#0E1414` e `--sf` `#161E1E`. Letra do avatar e texto do toast mantidos em
+    `#060909`. Reverter: 4 linhas em `src/index.css`.
+
 ## Sem dado no backend (`[!]`, não implementado)
 Split Humano/IA por hora e deltas dos KPIs (Dashboard); painel "HOJE"/CSAT do agente; "Rascunho salvo" nos wizards;
 custo estimado e "enviar teste" na campanha; check duplo e nome do agente no chip da lista; Copilot, Nota interna e
