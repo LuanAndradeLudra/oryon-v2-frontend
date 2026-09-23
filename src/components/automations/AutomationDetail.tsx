@@ -149,7 +149,9 @@ function FlowSection({ eyebrow, icon, onClick, children }: {
       disabled={!onClick}
       className={cn(
         'w-full text-left group/sec rounded-lg -mx-1.5 px-1.5 py-1.5 transition-colors',
-        onClick && 'hover:bg-surface-800/60 cursor-pointer',
+        // Eixo 10 (tema claro): hover:bg-surface-800/60 sobre o painel, que
+        // é surface-800 — quase invisível. --rowhover sempre visível.
+        onClick && 'hover:bg-[var(--rowhover)] cursor-pointer',
       )}
     >
       <div className="flex items-center gap-1.5 mb-1">
@@ -207,7 +209,7 @@ function FlowCard({ automation, onEdit }: {
       <div className="pt-1.5 mt-1 border-t border-surface-700">
         <button
           onClick={() => onEdit('ia')}
-          className="w-full flex items-start gap-1.5 text-left rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-surface-800/60 transition-colors group/ia"
+          className="w-full flex items-start gap-1.5 text-left rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-[var(--rowhover)] transition-colors group/ia"
         >
           <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0 mt-0.5" />
           <span className="text-2xs text-surface-400 leading-relaxed">{agentBehaviorSentence(automation)}</span>
@@ -374,7 +376,7 @@ export function AutomationDetail({
             onDelete={() => onDelete(automation)}
           />
           {variant === 'overlay' && onClose && (
-            <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors" aria-label="Fechar">
+            <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors" aria-label="Fechar">
               <X className="w-4 h-4" />
             </button>
           )}

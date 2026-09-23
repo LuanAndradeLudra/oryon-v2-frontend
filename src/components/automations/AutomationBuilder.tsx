@@ -191,7 +191,8 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             key="builder-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/50 z-40"
+            // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/50.
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-40"
             onClick={requestClose}
           />
           <motion.div
@@ -244,7 +245,11 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                           'w-full flex items-center gap-2 h-[30px] px-2.5 rounded-xs border text-left transition-colors',
                           isActive
                             ? 'bg-surface-800 border-surface-700'
-                            : 'border-transparent hover:bg-surface-800/50',
+                            // Eixo 10 (tema claro): hover:bg-surface-800/50 —
+                            // o nav é --sf2 (surface-900), quase idêntico a
+                            // surface-800 no claro (#F5F6F8 vs #FFFFFF) —
+                            // hover quase invisível. --rowhover sempre visível.
+                            : 'border-transparent hover:bg-[var(--rowhover)]',
                         )}
                       >
                         <span

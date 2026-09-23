@@ -75,8 +75,11 @@ export function ActivityFeed({ events }: { events: ActivityEvent[] }) {
           // Layout: ícone da operação à esquerda; descrição passiva no
           // topo do bloco direito; rodapé com timestamp à esquerda e
           // ActorChip (ícone monocromático + nome) à direita.
+          // Eixo 10 (tema claro): hover:bg-surface-800/30 sobre o card, que
+          // É surface-800 — no claro (#FFFFFF) fica completamente invisível
+          // (branco + 30% branco = branco). --rowhover.
           return (
-            <div key={event.id} className="flex items-start gap-3 px-5 py-3 border-b border-surface-700 hover:bg-surface-800/30 transition-colors">
+            <div key={event.id} className="flex items-start gap-3 px-5 py-3 border-b border-surface-700 hover:bg-[var(--rowhover)] transition-colors">
               <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5', cfg.bgClass, cfg.iconClass)}>
                 {cfg.icon}
               </div>

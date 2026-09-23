@@ -251,12 +251,15 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
             Mostrando {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} de {sorted.length} agente{sorted.length === 1 ? '' : 's'}
           </p>
           <div className="flex items-center gap-1">
+            {/* Eixo 10: hover:bg-surface-800 sobre o card, que É
+                surface-800 — invisível nos dois temas (cor idêntica, não
+                só o claro). --rowhover. */}
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage <= 1}
               aria-label="Página anterior"
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -268,7 +271,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
               aria-label="Próxima página"
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="flex items-center justify-center w-7 h-7 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
