@@ -463,7 +463,7 @@ export function ContactsPage() {
               {selectedContacts.slice(0, 50).map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-surface-800/60 transition-colors"
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-[var(--rowhover)] transition-colors"
                 >
                   <Avatar name={c.displayName} imageUrl={c.profilePicUrl} size="xs" />
                   <div className="min-w-0 flex-1">
@@ -492,7 +492,7 @@ export function ContactsPage() {
           <button
             onClick={() => { if (!bulkDeleting) setConfirmBulkDelete(false) }}
             disabled={bulkDeleting}
-            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-all disabled:opacity-60"
+            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] transition-all disabled:opacity-60"
           >
             Cancelar
           </button>

@@ -354,7 +354,7 @@ export function DashboardPage() {
                       Métricas Principais
                     </p>
                     <div className="flex-1" />
-                    <div className="h-8 w-[104px] bg-surface-800 border border-surface-700/60 rounded-lg animate-pulse shrink-0" />
+                    <div className="h-8 w-[104px] bg-surface-800 border border-surface-700 rounded-lg animate-pulse shrink-0" />
                   </div>
                   <div className="h-[104px] bg-surface-800 border border-surface-700 rounded-lg animate-pulse" />
                   <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">

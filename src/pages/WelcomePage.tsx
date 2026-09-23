@@ -182,7 +182,7 @@ export function WelcomePage() {
             <a href="#como-funciona" className={`text-sm font-medium transition-colors hover:text-brand-400 ${textSec}`}>Como funciona</a>
             <a href="#planos"        className={`text-sm font-medium transition-colors hover:text-brand-400 ${textSec}`}>Planos</a>
             <button onClick={toggle} title={isLight ? 'Tema escuro' : 'Tema claro'}
-              className={`p-2 rounded-lg transition-colors hover:bg-surface-800/20 ${textSec}`}>
+              className={`p-2 rounded-lg transition-colors hover:bg-[var(--rowhover)] ${textSec}`}>
               {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
             <Link to="/login"

@@ -88,7 +88,7 @@ function ChannelRow({ channel, currentUserId, isActive, onClick }: {
           'w-full flex items-center gap-3 px-4 py-3 text-left transition-colors',
           isActive
             ? 'bg-surface-800 border-r-2 border-brand-500'
-            : 'hover:bg-surface-800/60',
+            : 'hover:bg-[var(--rowhover)]',
         )}
       >
         {/* Avatar */}
@@ -297,7 +297,7 @@ function TeamSidebar({ currentUserId, onNewChat, isAdmin, onCreateChannel }: {
               'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors',
               tab === t.id
                 ? 'bg-brand-500/10 text-brand-400'
-                : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800',
+                : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
             )}
           >
             {t.label}
@@ -465,7 +465,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
         <span className="text-sm font-semibold text-surface-100">
           {isDM ? 'Sobre esta pessoa' : 'Sobre o canal'}
         </span>
-        <button onClick={onClose} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors">
+        <button onClick={onClose} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -529,7 +529,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
                 // Creator can remove anyone except themselves; everyone can leave themselves.
                 const canKick = isCreator && !isSelf
                 return (
-                  <div key={uid} className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface-800 transition-colors">
+                  <div key={uid} className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-[var(--rowhover)] transition-colors">
                     <div className="relative flex-shrink-0">
                       <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white', avatarColor(name))}>
                         {name.charAt(0).toUpperCase()}
@@ -569,7 +569,7 @@ function InfoPanel({ channel, currentUserId, onClose }: {
             {!isDM && !isCreator && channel.memberIds.includes(currentUserId) && (
               <button
                 onClick={handleLeave}
-                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Sair do canal
@@ -669,7 +669,7 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
             placeholder="Pesquisar mensagens…"
             className="flex-1 bg-transparent text-sm text-surface-200 placeholder:text-surface-500 focus:outline-none"
           />
-          <button onClick={toggleSearch} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors">
+          <button onClick={toggleSearch} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -695,12 +695,12 @@ function ChannelViewHeader({ channel, currentUserId, showInfo, onToggleInfo, sea
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button onClick={toggleSearch} className="p-2 rounded-full text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors" title="Pesquisar">
+            <button onClick={toggleSearch} className="p-2 rounded-full text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors" title="Pesquisar">
               <Search className="w-4 h-4" />
             </button>
             <button
               onClick={onToggleInfo}
-              className={cn('p-2 rounded-full transition-colors', showInfo ? 'text-brand-400 bg-brand-500/15' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800')}
+              className={cn('p-2 rounded-full transition-colors', showInfo ? 'text-brand-400 bg-brand-500/15' : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]')}
               title="Informações"
             >
               <Info className="w-4 h-4" />

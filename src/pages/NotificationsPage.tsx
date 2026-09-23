@@ -100,7 +100,7 @@ export function NotificationsPage() {
                         'w-full text-left flex items-start gap-3 px-4 py-3 border-b border-surface-700 transition-colors',
                         n.isRead
                           ? 'bg-surface-950 hover:bg-surface-900'
-                          : 'bg-surface-900/40 hover:bg-surface-900',
+                          : 'bg-[var(--sf2)] hover:bg-surface-900',
                       )}
                     >
                       <span

@@ -93,7 +93,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 p-4">
         {[1, 2].map((i) => (
-          <div key={i} className="h-40 bg-surface-800/60 rounded-lg animate-pulse" />
+          <div key={i} className="h-40 bg-[var(--sf2)] rounded-lg animate-pulse" />
         ))}
       </div>
     )
@@ -112,7 +112,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-4 bg-surface-900/40">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-4 bg-[var(--sf2)]">
       {creatives.map((cr) => {
         const fmt  = FORMAT_CFG[cr.format]
         const isHighFreq   = cr.frequency >= 3.5
@@ -169,7 +169,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
             </div>
 
             {/* Divider */}
-            <div className="mx-3.5 border-t border-surface-700/50" />
+            <div className="mx-3.5 border-t border-surface-700" />
 
             {/* Frequency */}
             <div className="px-3.5 pt-2.5 pb-1.5">
@@ -178,7 +178,7 @@ function CreativesPanel({ adSetId }: { adSetId: string }) {
             </div>
 
             {/* Metrics grid */}
-            <div className="grid grid-cols-4 gap-px bg-surface-700/30 mt-auto border-t border-surface-700/30">
+            <div className="grid grid-cols-4 gap-px bg-surface-700 mt-auto border-t border-surface-700">
               {[
                 { label: 'Impressões', value: cr.impressions.toLocaleString('pt-BR') },
                 { label: 'CTR',        value: `${cr.ctr.toFixed(2)}%` },
@@ -221,7 +221,7 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
   if (loading) {
     return (
       <div className="space-y-2 p-4">
-        {[1, 2].map((i) => <div key={i} className="h-10 bg-surface-800/60 rounded-lg animate-pulse" />)}
+        {[1, 2].map((i) => <div key={i} className="h-10 bg-[var(--sf2)] rounded-lg animate-pulse" />)}
       </div>
     )
   }
@@ -242,7 +242,7 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-surface-700/60">
+          <tr className="border-b border-surface-700">
             <th className="text-left px-4 py-2.5 text-surface-500 font-medium text-3xs uppercase tracking-wide">
               Conjunto
             </th>
@@ -264,8 +264,8 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
                 <tr
                   key={as.id}
                   className={cn(
-                    'border-b border-surface-700/40 cursor-pointer transition-colors',
-                    isOpen ? 'bg-surface-700/30' : 'hover:bg-surface-700/15',
+                    'border-b border-surface-700 cursor-pointer transition-colors',
+                    isOpen ? 'bg-[var(--sf2)]' : 'hover:bg-[var(--rowhover)]',
                   )}
                   onClick={() => setOpenSet(isOpen ? null : as.id)}
                 >
@@ -315,10 +315,10 @@ function AdSetsTable({ campaignId }: { campaignId: string }) {
                 </tr>
 
                 {isOpen && (
-                  <tr key={`${as.id}-cr`} className="border-b border-surface-700/30">
+                  <tr key={`${as.id}-cr`} className="border-b border-surface-700">
                     <td colSpan={8}>
-                      <div className="border-t border-surface-700/40">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-surface-800/30">
+                      <div className="border-t border-surface-700">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-[var(--sf2)]">
                           <LayoutGrid className="w-3.5 h-3.5 text-surface-500" />
                           <p className="text-2xs font-semibold text-surface-400 uppercase tracking-wide">
                             Criativos deste conjunto
@@ -481,7 +481,7 @@ function CampaignDetail({ campaign }: { campaign: AdCampaignMetrics }) {
   const [activeTab, setActiveTab] = useState<'funnel' | 'adsets'>('adsets')
 
   return (
-    <div className="bg-surface-800/20 border-t border-surface-700">
+    <div className="bg-[var(--sf2)] border-t border-surface-700">
 
       {/* Sub-tabs */}
       <div className="flex items-center gap-1 px-5 pt-4 pb-0">
@@ -690,7 +690,7 @@ function CampaignTable({
                     key={camp.platformCampaignId}
                     className={cn(
                       'border-b border-surface-700 transition-colors cursor-pointer',
-                      isOpen ? 'bg-surface-800/40' : 'hover:bg-surface-800/20',
+                      isOpen ? 'bg-[var(--sf2)]' : 'hover:bg-[var(--rowhover)]',
                     )}
                     onClick={() => setSelected(isOpen ? null : camp.platformCampaignId)}
                   >
@@ -981,7 +981,7 @@ function CapiEventsSection() {
               {events.map((evt) => {
                 const stCfg = STATUS_CFG[evt.status]
                 return (
-                  <tr key={evt.id} className="border-b border-surface-700 hover:bg-surface-800/20">
+                  <tr key={evt.id} className="border-b border-surface-700 hover:bg-[var(--rowhover)]">
                     <td className="px-5 py-3">
                       <p className="text-surface-200 font-medium">{evt.contactName}</p>
                       <p className="text-3xs text-surface-500 font-mono">{evt.contactId}</p>

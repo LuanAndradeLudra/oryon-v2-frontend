@@ -167,7 +167,7 @@ function ComparisonTable() {
         </thead>
         <tbody>
           {FEATURE_ROWS.map((row, i) => (
-            <tr key={row.label} className={i % 2 === 0 ? 'bg-surface-900/40' : ''}>
+            <tr key={row.label} className={i % 2 === 0 ? 'bg-[var(--sf2)]' : ''}>
               <td className="py-2.5 pr-6 text-surface-400">{row.label}</td>
               {tiers.map((t) => {
                 const val = row.getValue(t)
