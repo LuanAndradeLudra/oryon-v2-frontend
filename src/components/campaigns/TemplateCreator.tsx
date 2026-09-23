@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { SubcategoryPreview } from './SubcategoryPreview'
+import { SummaryRow } from './SummaryRow'
 import { templatesApi, whatsappNumbersApi } from '@/services/api'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
 import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
@@ -981,15 +982,10 @@ function StepBotoes({
 }
 
 // ─── Step 4: Revisão ──────────────────────────────────────────────────────────
-
-function LinhaResumo({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline gap-3 py-1.5 border-t border-surface-700 first:border-t-0 first:pt-0">
-      <span className="text-[11px] text-surface-500 w-[88px] flex-none">{rotulo}</span>
-      <span className="text-xs text-surface-100 min-w-0 truncate">{children}</span>
-    </div>
-  )
-}
+// SummaryRow (antes LinhaResumo local) extraído pra ./SummaryRow.tsx — o
+// CampaignWizard tinha copiado esta receita à mão com medida diferente
+// (37-38px em vez de 29px, sem divisor). Agora as duas telas usam o mesmo
+// componente de domínio.
 function EtapaAprovacao({ n, titulo, sub, Icone, ativa }: { n: number; titulo: string; sub: string; Icone: typeof Sparkles; ativa?: boolean }) {
   return (
     <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -1021,13 +1017,13 @@ function StepRevisao({
     <div className="flex flex-col">
       <Section title="Resumo" badge="Confira antes de enviar para análise">
         <div className="flex flex-col">
-          <LinhaResumo rotulo="Nome"><span className="font-mono">{name || '—'}</span></LinhaResumo>
-          <LinhaResumo rotulo="Categoria">{CATEGORY_LABELS[category]}</LinhaResumo>
-          <LinhaResumo rotulo="Tipo">{SUBCATEGORY_LABELS[subCategory]}</LinhaResumo>
-          <LinhaResumo rotulo="Idioma">{language}</LinhaResumo>
-          {headerType && <LinhaResumo rotulo="Cabeçalho">{HEADER_TYPES.find((h) => h.value === headerType)?.label ?? headerType}</LinhaResumo>}
-          <LinhaResumo rotulo="Variáveis">{varExamples.length === 0 ? 'nenhuma' : `${varExamples.length} · ${varExamples.join(' · ')}`}</LinhaResumo>
-          <LinhaResumo rotulo="Botões">{buttons.length === 0 ? 'nenhum' : buttons.map((b) => b.text || '(sem texto)').join(' · ')}</LinhaResumo>
+          <SummaryRow label="Nome" value={<span className="font-mono">{name || '—'}</span>} />
+          <SummaryRow label="Categoria" value={CATEGORY_LABELS[category]} />
+          <SummaryRow label="Tipo" value={SUBCATEGORY_LABELS[subCategory]} />
+          <SummaryRow label="Idioma" value={language} />
+          {headerType && <SummaryRow label="Cabeçalho" value={HEADER_TYPES.find((h) => h.value === headerType)?.label ?? headerType} />}
+          <SummaryRow label="Variáveis" value={varExamples.length === 0 ? 'nenhuma' : `${varExamples.length} · ${varExamples.join(' · ')}`} />
+          <SummaryRow label="Botões" value={buttons.length === 0 ? 'nenhum' : buttons.map((b) => b.text || '(sem texto)').join(' · ')} />
         </div>
       </Section>
 

@@ -32,6 +32,7 @@ import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
 import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { TemplatePreview } from './TemplatePreview'
+import { SummaryRow } from './SummaryRow'
 import type {
   Campaign, Contact, ContactIntent, ContactSource, ContactSentiment,
   WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
@@ -422,7 +423,7 @@ export function CampaignWizard({
             key="wizard-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/60 z-[49]"
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[49]"
             onClick={onClose}
           />
 
@@ -442,7 +443,7 @@ export function CampaignWizard({
                   abaixo já separa visualmente), título 15px/700, X mais sutil. */}
               <div className="flex items-center justify-between px-5 pt-4 pb-0 flex-shrink-0">
                 <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-100">Nova campanha</h2>
-                <button onClick={onClose} className="p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all">
+                <button onClick={onClose} className="p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -870,13 +871,16 @@ function Step2({
           seleção mostrada por peso da fonte + risco à esquerda, não por ring
           nem por cartão colorido. */}
       <Faixa label="Destinatários">
-        <div>
+        <div role="radiogroup" aria-label="Como definir os destinatários">
           {SEGMENT_OPTIONS.map((opt) => {
             const Icon = opt.icon
             const isSelected = segmentType === opt.value
             return (
               <button
                 key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
                 onClick={() => onSegmentType(opt.value)}
                 className={cn(
                   'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
@@ -1358,7 +1362,7 @@ function Step4({
       {/* Schedule — mesma vocabulário do "Destinatários" (Etapa 2): faixa de
           linhas com risco à esquerda + peso da fonte, sem cartão/ring. */}
       <Faixa label="Envio">
-        <div>
+        <div role="radiogroup" aria-label="Quando enviar">
           {([
             { value: 'now',   label: 'Enviar agora', icon: Send,  desc: 'Disparo imediato após criar' },
             { value: 'later', label: 'Agendar',       icon: Clock, desc: 'Escolha data e hora do envio' },
@@ -1368,6 +1372,9 @@ function Step4({
             return (
               <button
                 key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
                 onClick={() => onScheduleMode(opt.value)}
                 className={cn(
                   'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
@@ -1424,18 +1431,6 @@ function Step4({
           </Banner>
         </div>
       )}
-    </div>
-  )
-}
-
-// CAMP-WIZ-15/16/18/21 (spec 2c): 1 linha do resumo — grid 120px|1fr|auto,
-// hairline --bd (surface-700), sem grupo/eyebrow em volta.
-function SummaryRow({ label, value, action, strong }: { label: string; value: React.ReactNode; action?: React.ReactNode; strong?: boolean }) {
-  return (
-    <div className="grid grid-cols-[120px_1fr_auto] items-baseline gap-2.5 py-[9px] border-b border-surface-700 last:border-b-0">
-      <span className="text-xs text-surface-400">{label}</span>
-      <span className={cn('text-[13px] text-surface-100 min-w-0 break-words', strong ? 'font-semibold' : 'font-medium')}>{value}</span>
-      {action}
     </div>
   )
 }
@@ -1597,7 +1592,7 @@ function Step5({
             }
             action={<EditLink onClick={() => onEditStep(1)} />}
           />
-          <SummaryRow label="Público" value={publicLabel} action={<EditLink onClick={() => onEditStep(2)} />} />
+          <SummaryRow label="Público" wrap value={publicLabel} action={<EditLink onClick={() => onEditStep(2)} />} />
           {lineLabel && <SummaryRow label="Linha" value={lineLabel} />}
           <SummaryRow label="Envio" value={scheduleDisplay} action={<EditLink onClick={() => onEditStep(4)} />} />
         </div>
@@ -1665,9 +1660,15 @@ function Step5({
                 {filterPills.map((pill, i) => (
                   <span
                     key={i}
-                    className="text-[10px] px-2 py-0.5 rounded font-medium"
+                    className={cn(
+                      'text-[10px] px-2 py-0.5 rounded font-medium',
+                      pill.color ? 'color-chip' : undefined,
+                    )}
                     style={pill.color
-                      ? { backgroundColor: pill.color, color: '#fff' }
+                      // .color-chip escurece a cor 15% antes de aplicar texto
+                      // branco (color-mix), em vez de branco cru sobre a cor
+                      // do dado - uma tag/estágio claro perderia contraste.
+                      ? ({ ['--chip']: pill.color } as React.CSSProperties)
                       : { backgroundColor: 'color-mix(in srgb, var(--color-accent-violet) 15%, transparent)', color: 'var(--color-accent-violet)', border: '1px solid color-mix(in srgb, var(--color-accent-violet) 30%, transparent)' }
                     }
                   >
@@ -1682,7 +1683,7 @@ function Step5({
           {estimatedReach !== null && estimatedReach > 0 && (
             <button
               onClick={() => setShowContactsModal(true)}
-              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-surface-600 text-xs text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
+              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-surface-600 text-[12px] text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
             >
               <Users className="w-3.5 h-3.5" />
               Verificar lista de contatos ({estimatedReach} contato{estimatedReach === 1 ? '' : 's'})
@@ -1801,7 +1802,7 @@ function ContactListModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={onClose} />
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1817,7 +1818,7 @@ function ContactListModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
           >
             <X className="w-4 h-4" />
           </button>
