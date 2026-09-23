@@ -288,10 +288,10 @@ function DeptCard({ dept, waNumbers, onEdit, onDelete }: {
           </div>
 
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-sm text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors" title="Editar">
+            <button onClick={() => onEdit(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors" title="Editar">
               <Pencil className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-sm text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir">
+            <button onClick={() => onDelete(dept)} className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-colors" title="Excluir">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>

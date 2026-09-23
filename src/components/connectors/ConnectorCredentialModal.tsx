@@ -169,7 +169,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
                     <button
                       type="button"
                       onClick={() => setEditingSecret((s) => ({ ...s, [field.key]: true }))}
-                      className="w-full h-9 flex items-center px-3 rounded-lg border border-surface-700 bg-surface-800 font-mono text-sm text-surface-300 pr-9 text-left"
+                      className="w-full h-9 flex items-center px-2.5 rounded-sm border border-[var(--bd2)] bg-surface-800 font-mono text-[13px] text-surface-300 pr-9 text-left"
                     >
                       {field.savedPreview}
                     </button>

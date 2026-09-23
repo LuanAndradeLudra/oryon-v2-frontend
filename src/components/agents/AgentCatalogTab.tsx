@@ -58,7 +58,7 @@ function ProductRow({
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-surface-100 truncate">{product.name}</span>
           {!product.active && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-800 text-surface-500 flex-shrink-0">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-2xs bg-surface-800 text-surface-500 flex-shrink-0">
               inativo
             </span>
           )}

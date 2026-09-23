@@ -209,7 +209,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => { setEditStage(stage); setModalOpen(true) }}
-                      className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
+                      className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -217,7 +217,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                       <Tooltip content={deleteBlockedReason} side="top">
                         <button
                           disabled
-                          className="p-1.5 rounded-lg text-surface-600 opacity-40 cursor-not-allowed transition-all"
+                          className="p-1.5 rounded-xs text-surface-600 opacity-40 cursor-not-allowed transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -225,7 +225,7 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
                     ) : (
                       <button
                         onClick={() => setDeleteStage(stage)}
-                        className="p-1.5 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
+                        className="p-1.5 rounded-xs text-surface-400 hover:text-danger hover:bg-danger/10 transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

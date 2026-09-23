@@ -975,7 +975,7 @@ function HandoffTab({ agent, onUpdate }: { agent: AgentConfigWithTools; onUpdate
 function DocStatusBadge({ status }: { status: string }) {
   if (status === 'ready') return (
     <span
-      className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 border rounded"
+      className="color-chip-soft inline-flex items-center gap-1 h-5 text-[11px] font-semibold px-[7px] rounded-xs border"
       style={{ ['--chip']: 'var(--color-status-active)' } as React.CSSProperties}
     >
       <CheckCircle2 className="w-3 h-3" />Pronto
@@ -983,7 +983,7 @@ function DocStatusBadge({ status }: { status: string }) {
   )
   if (status === 'processing') return (
     <span
-      className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 border rounded"
+      className="color-chip-soft inline-flex items-center gap-1 h-5 text-[11px] font-semibold px-[7px] rounded-xs border"
       style={{ ['--chip']: 'var(--color-status-pending)' } as React.CSSProperties}
     >
       <Loader2 className="w-3 h-3 animate-spin" />Processando
@@ -991,7 +991,7 @@ function DocStatusBadge({ status }: { status: string }) {
   )
   if (status === 'error') return (
     <span
-      className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 border rounded"
+      className="color-chip-soft inline-flex items-center gap-1 h-5 text-[11px] font-semibold px-[7px] rounded-xs border"
       style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
     >
       <AlertCircle className="w-3 h-3" />Erro
@@ -999,7 +999,7 @@ function DocStatusBadge({ status }: { status: string }) {
   )
   return (
     <span
-      className="color-chip inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 border rounded"
+      className="color-chip-soft inline-flex items-center gap-1 h-5 text-[11px] font-semibold px-[7px] rounded-xs border"
       style={{ ['--chip']: 'var(--color-status-muted)' } as React.CSSProperties}
     >
       <Clock className="w-3 h-3" />Pendente

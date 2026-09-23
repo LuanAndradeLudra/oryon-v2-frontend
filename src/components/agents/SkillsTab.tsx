@@ -354,7 +354,7 @@ function SkillRow({
       animate={toggling ? { scale: [1, 1.005, 1] } : { scale: 1 }}
       transition={{ duration: 0.25 }}
       className={cn(
-        'group relative grid grid-cols-[44px_1fr_auto] items-start gap-4 p-4 rounded-xl border transition-colors',
+        'group relative grid grid-cols-[44px_1fr_auto] items-start gap-4 p-4 rounded-lg border transition-colors',
         // Left accent only when active. Border colour comes from the same
         // status-active token used in the header chip — visual continuity.
         'border-l-2',

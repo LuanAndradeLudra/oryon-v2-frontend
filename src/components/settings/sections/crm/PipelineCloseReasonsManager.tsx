@@ -168,10 +168,10 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
                       <option value="lost">Perdido</option>
                       <option value="any">Qualquer</option>
                     </Select>
-                    <button onClick={handleSaveEdit} className="p-1.5 rounded-lg text-accent-dark hover:bg-[var(--rowhover)]">
+                    <button onClick={handleSaveEdit} className="p-1.5 rounded-xs text-accent-dark hover:bg-[var(--rowhover)]">
                       <Check className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => setEditingId(null)} className="p-1.5 rounded-lg text-surface-400 hover:bg-[var(--rowhover)]">
+                    <button onClick={() => setEditingId(null)} className="p-1.5 rounded-xs text-surface-400 hover:bg-[var(--rowhover)]">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -185,7 +185,7 @@ export function PipelineCloseReasonsManager({ pipeline, onChanged }: PipelineClo
                       <span className="text-[11px] text-surface-600 font-mono">{r.key}</span>
                     </div>
                     {canManage && (
-                      <button onClick={() => startEdit(r)} className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all">
+                      <button onClick={() => startEdit(r)} className="p-1.5 rounded-xs text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                     )}

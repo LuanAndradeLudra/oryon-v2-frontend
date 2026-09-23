@@ -138,7 +138,7 @@ export function ConnectorDetailModal({ connector, onClose, onConnect }: Connecto
               type="button"
               onClick={onClose}
               aria-label="Fechar"
-              className="w-7 h-7 rounded-md flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors flex-shrink-0"
+              className="w-7 h-7 rounded-sm flex items-center justify-center text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors flex-shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
