@@ -244,10 +244,15 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
                           onClick={() => moveState.toggle(deal.id)}
                           disabled={busyId === deal.id}
                           aria-label="Mais ações"
-                          className="p-1 rounded text-surface-500 hover:text-surface-100 hover:bg-surface-800 disabled:opacity-50 transition-colors"
+                          // PL-C2-CAR-18 (Eixo10/P4): mesmo gatilho "Mais ações"
+                          // de linha de tabela que ContactsTable.tsx já usa,
+                          // nesta MESMA aba de Contatos — lá é p-1.5/rounded-lg/
+                          // rowhover/ícone 16px; aqui era p-1/rounded cru (4px)/
+                          // bg-surface-800/ícone 14px.
+                          className="p-1.5 rounded-lg text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 transition-colors"
                           data-testid={`deal-move-${deal.id}`}
                         >
-                          <MoreHorizontal className="w-3.5 h-3.5" />
+                          <MoreHorizontal className="w-4 h-4" />
                         </button>
                       }
                     >
