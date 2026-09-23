@@ -25,7 +25,9 @@ export function SetupPage() {
   // ilegível — mesma decisão que já valia no overlay antigo.
   if (isMobile) {
     return (
-      <div className="h-screen w-screen bg-black flex flex-col items-center justify-center px-6 text-center gap-4">
+      // Eixo 10: bg-surface-950 (não bg-black cru) — mesmo token do irmão
+      // MobileFeatureGate.tsx, que resolve certo nos dois temas.
+      <div className="h-screen w-screen bg-surface-950 flex flex-col items-center justify-center px-6 text-center gap-4">
         <div
           className="w-16 h-16 rounded-lg color-chip-soft border flex items-center justify-center"
           style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}

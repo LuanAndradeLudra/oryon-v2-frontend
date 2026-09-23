@@ -154,7 +154,7 @@ function CopilotPageInner() {
           'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all',
           sessionsOpen
             ? 'copilot-sessions-btn-active bg-brand-600/20 border-brand-500/40 text-brand-300'
-            : 'bg-surface-800/60 border-surface-700/60 text-surface-400 hover:text-surface-200 hover:border-surface-600',
+            : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-400 hover:text-surface-200 hover:border-surface-600',
         )}
         title="Conversas (Ctrl/Cmd+B)"
       >
@@ -178,7 +178,7 @@ function CopilotPageInner() {
             'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all',
             artifactsListOpen
               ? 'bg-brand-600/20 border-brand-500/40 text-brand-300'
-              : 'bg-surface-800/60 border-surface-700/60 text-surface-400 hover:text-surface-200 hover:border-surface-600',
+              : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-400 hover:text-surface-200 hover:border-surface-600',
           )}
         >
           <Layers className="w-3.5 h-3.5 flex-shrink-0" />
@@ -219,7 +219,7 @@ function CopilotPageInner() {
                       'w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors',
                       openArtifactItem?.id === art.id
                         ? 'bg-brand-600/15 text-brand-200'
-                        : 'hover:bg-surface-800/60 text-surface-300',
+                        : 'hover:bg-[var(--rowhover)] text-surface-300',
                     )}
                   >
                     <div className={cn(
@@ -256,7 +256,7 @@ function CopilotPageInner() {
           'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all',
           knowledgePanelOpen
             ? 'bg-brand-600/20 border-brand-500/40 text-brand-300'
-            : 'bg-surface-800/60 border-surface-700/60 text-surface-400 hover:text-surface-200 hover:border-surface-600',
+            : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-400 hover:text-surface-200 hover:border-surface-600',
         )}
         title="Base de conhecimento"
       >

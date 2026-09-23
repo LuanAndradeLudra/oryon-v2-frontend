@@ -78,7 +78,7 @@ function ItemRow({ item }: { item: Item }) {
   return (
     <Link
       to={item.href}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-surface-900 transition-colors"
+      className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors"
     >
       <div className="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center flex-shrink-0">
         <item.Icon className="w-5 h-5 text-surface-300" />
@@ -159,7 +159,7 @@ export function MorePage() {
           </p>
           <Link
             to="/settings/notifications"
-            className="flex items-center gap-3 px-4 py-3 hover:bg-surface-900 transition-colors"
+            className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors"
           >
             <div className="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center flex-shrink-0">
               <Bell className="w-5 h-5 text-surface-300" />
