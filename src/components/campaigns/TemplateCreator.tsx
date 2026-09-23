@@ -648,163 +648,105 @@ function StepMensagem({
   readOnly?: boolean
 }) {
   const fieldDisabled = !!readOnly
+  // Direção C + referência de mercado (Meta, Twilio, Wati): campo de altura
+  // fixa, contador DENTRO do campo à direita, tipo de cabeçalho em pílulas,
+  // sem caixas de "boas práticas" — a orientação vira uma linha discreta.
+  const campo = (erro?: string) => cn(
+    'w-full h-8 bg-surface-900 border rounded-sm px-2.5 text-[13px] text-surface-100 placeholder:text-surface-500',
+    'focus:outline-none transition-colors disabled:opacity-60',
+    erro ? 'border-danger/70 focus:border-danger' : 'border-[var(--bd2)] focus:border-brand-500',
+  )
+  const Contador = ({ n, max }: { n: number; max: number }) => (
+    <span className={cn(
+      'absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums pointer-events-none',
+      n > max ? 'text-danger' : 'text-surface-500',
+    )}>{n}/{max}</span>
+  )
+  const Ajuda = ({ children, erro }: { children?: React.ReactNode; erro?: string }) => (
+    <p className={cn('text-[11px] mt-1.5 leading-snug', erro ? 'text-danger' : 'text-surface-500')}>{erro ?? children}</p>
+  )
+
   return (
     <div className="flex flex-col">
-      {/* Section: Identificação */}
-      <Section title="Identificação" required>
-        <div className="space-y-3">
-          <div>
-            <FieldLabel>Nome do template</FieldLabel>
+      <Section title="Nome" required badge="Minúsculas, números e _ · até 512">
+        <div className="flex gap-2">
+          <div className="relative flex-1 min-w-0">
             <input
               value={name}
               onChange={(e) => onName(e.target.value)}
               disabled={fieldDisabled}
               placeholder="ex: boas_vindas_novos_clientes"
-              className={cn(
-                'w-full bg-surface-800 border rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
-                errors.name ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
-              )}
+              className={cn(campo(errors.name), 'pr-16')}
             />
-            {errors.name ? (
-              <p className="text-[11px] text-danger mt-1">{errors.name}</p>
-            ) : (
-              <p className="text-[11px] text-surface-400 mt-1">Apenas letras minúsculas, números e underscore ( _ )</p>
-            )}
+            <Contador n={name.length} max={512} />
           </div>
-          <div>
-            <FieldLabel>Idioma</FieldLabel>
-            <select
-              value={language}
-              onChange={(e) => onLanguage(e.target.value)}
-              disabled={fieldDisabled}
-              className="w-full appearance-none bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 pr-8 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors disabled:opacity-60"
-            >
-              {LANGUAGES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
+          <select
+            value={language}
+            onChange={(e) => onLanguage(e.target.value)}
+            disabled={fieldDisabled}
+            aria-label="Idioma"
+            className={cn(campo(), 'w-44 flex-none appearance-none pr-7')}
+          >
+            {LANGUAGES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
         </div>
+        {errors.name && <Ajuda erro={errors.name} />}
       </Section>
 
-      {/* Section: Cabeçalho */}
-      <Section title="Cabeçalho" badge="Opcional">
-        <p className="text-[11px] text-surface-400 mb-3">
-          Adicione um texto ou mídia no topo da mensagem. A API do Meta analisa e aprova este conteúdo.
-        </p>
-        <div className="grid grid-cols-5 gap-2 mb-3">
-          {HEADER_TYPES.map((ht) => (
-            <button
-              key={ht.value}
-              onClick={() => { if (!fieldDisabled) onHeaderType(ht.value) }}
-              disabled={fieldDisabled}
-              className={cn(
-                'p-2.5 rounded-lg border text-center transition-all',
-                headerType === ht.value
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-surface-700 bg-surface-800/40 hover:border-surface-600',
-                fieldDisabled && 'opacity-60 cursor-not-allowed',
-              )}
-            >
-              <p className={cn('text-xs font-medium', headerType === ht.value ? 'text-brand-300' : 'text-surface-300')}>{ht.label}</p>
-              <p className="text-[10px] text-surface-400 mt-0.5 leading-tight">{ht.desc}</p>
-            </button>
-          ))}
+      <Section title="Cabeçalho" badge="Opcional · uma mídia ou 60 caracteres">
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Tipo de cabeçalho">
+          {HEADER_TYPES.map((ht) => {
+            const ativo = headerType === ht.value
+            return (
+              <button
+                key={ht.value || 'none'}
+                type="button"
+                role="radio"
+                aria-checked={ativo}
+                title={ht.desc}
+                onClick={() => { if (!fieldDisabled) onHeaderType(ht.value) }}
+                disabled={fieldDisabled}
+                className={cn(
+                  'h-7 px-2.5 rounded-sm border text-[11.5px] transition-colors',
+                  ativo
+                    ? 'border-[var(--bd2)] bg-surface-800 text-surface-50 font-semibold'
+                    : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
+                  fieldDisabled && 'cursor-not-allowed',
+                )}
+              >{ht.label}</button>
+            )
+          })}
         </div>
         {headerType === 'TEXT' && (
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <FieldLabel>Texto do cabeçalho</FieldLabel>
-              <span className="text-[11px] text-surface-400">{headerText.length}/60</span>
+          <div className="mt-2.5">
+            <div className="relative">
+              <input
+                value={headerText}
+                onChange={(e) => onHeaderText(sanitizeHeaderText(e.target.value).slice(0, 60))}
+                disabled={fieldDisabled}
+                placeholder="Texto do cabeçalho — pode conter {{1}}"
+                className={cn(campo(errors.headerText), 'pr-14')}
+              />
+              <Contador n={headerText.length} max={60} />
             </div>
-            <input
-              value={headerText}
-              onChange={(e) => onHeaderText(sanitizeHeaderText(e.target.value).slice(0, 60))}
-              disabled={fieldDisabled}
-              placeholder="Texto do cabeçalho — pode conter {{1}}"
-              className={cn(
-                'w-full bg-surface-800 border rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
-                errors.headerText ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
-              )}
-            />
-            {errors.headerText ? (
-              <p className="text-[11px] text-danger mt-1">{errors.headerText}</p>
-            ) : (
-              <p className="text-[11px] text-surface-400 mt-1">
-                Sem emojis, sem * _ ~ e sem quebra de linha — a Meta rejeita o template. Use o body ou o footer para isso.
-              </p>
-            )}
+            <Ajuda erro={errors.headerText}>Sem emoji, sem * _ ~ e sem quebra de linha — a Meta rejeita.</Ajuda>
           </div>
         )}
         {['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && (
-          <div>
-            <FieldLabel>URL da amostra de mídia</FieldLabel>
+          <div className="mt-2.5">
             <input
               value={headerMediaUrl}
               onChange={(e) => onHeaderMediaUrl(e.target.value)}
               disabled={fieldDisabled}
-              placeholder="https://exemplo.com/imagem.jpg"
-              className={cn(
-                'w-full bg-surface-800 border rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors',
-                errors.headerMediaUrl ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
-              )}
+              placeholder="https://exemplo.com/amostra.jpg"
+              className={campo(errors.headerMediaUrl)}
             />
-            {errors.headerMediaUrl ? (
-              <p className="text-[11px] text-danger mt-1">{errors.headerMediaUrl}</p>
-            ) : (
-              <p className="text-[11px] text-surface-400 mt-1">URL pública e acessível. A Meta usará esta amostra para revisar o template.</p>
-            )}
+            <Ajuda erro={errors.headerMediaUrl}>URL pública da amostra que a Meta usa na revisão. {HEADER_TYPES.find((h) => h.value === headerType)?.desc}.</Ajuda>
           </div>
         )}
       </Section>
 
-      {/* Section: Corpo */}
-      <Section title="Corpo" required>
-        <p className="text-[11px] text-surface-400 mb-3">
-          Escreva a mensagem principal. Use variáveis numéricas <code className="text-brand-400 bg-brand-400/10 px-1 rounded">{'{{1}}'}</code> para personalizar o conteúdo por destinatário.
-        </p>
-
-        {/* Best practices callout */}
-        <div className="mb-3 bg-surface-800/60 border border-surface-700/60 rounded-lg overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-surface-700/60">
-            <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0" />
-            <p className="text-[11px] font-semibold text-surface-300">Boas práticas para aprovação mais rápida</p>
-          </div>
-          <ul className="px-3 py-2 space-y-1">
-            {[
-              'Mantenha o corpo abaixo de 640 caracteres — melhora a taxa de entrega.',
-              'Evite maiúsculas excessivas, exclamações e linguagem de spam.',
-              'Não inclua links externos em templates de Utilidade ou Autenticação.',
-              'Preencha exemplos reais para cada {{variável}} — a Meta rejeita valores genéricos como "nome".',
-            ].map((tip, i) => (
-              <li key={i} className="flex items-start gap-1.5 text-[11px] text-surface-400">
-                <span className="text-brand-500 mt-0.5 flex-shrink-0">·</span>
-                {tip}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Formatting toolbar */}
-        <div className="flex items-center gap-1 mb-2 p-1.5 bg-surface-800 border border-surface-700 rounded-lg w-fit">
-          <ToolbarBtn onClick={() => wrapSelection('*')} title="Negrito (Ctrl+B)">
-            <Bold className="w-3.5 h-3.5" />
-          </ToolbarBtn>
-          <ToolbarBtn onClick={() => wrapSelection('_')} title="Itálico (Ctrl+I)">
-            <Italic className="w-3.5 h-3.5" />
-          </ToolbarBtn>
-          <ToolbarBtn onClick={() => wrapSelection('~')} title="Tachado">
-            <Strikethrough className="w-3.5 h-3.5" />
-          </ToolbarBtn>
-          <div className="w-px h-4 bg-surface-700 mx-1" />
-          <button
-            onClick={addVariable}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 text-xs font-medium transition-all"
-            title="Insere {{N}} na posição do cursor"
-          >
-            <Plus className="w-3 h-3" />
-            Adicionar variável
-          </button>
-        </div>
-
+      <Section title="Corpo" required badge="Até 1.024 caracteres · {{1}} vira o valor do contato">
         <div className="relative">
           <textarea
             ref={bodyRef}
@@ -813,72 +755,59 @@ function StepMensagem({
             disabled={fieldDisabled}
             rows={6}
             maxLength={1024}
-            placeholder="Olá, {{1}}! Sua mensagem aqui..."
-            className={cn(
-              'w-full bg-surface-800 border rounded-sm px-3 py-2.5 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none transition-colors resize-none',
-              errors.body ? 'border-danger/60 focus:border-danger' : 'border-surface-700 focus:border-brand-500',
-            )}
+            placeholder="Olá, {{1}}! Sua mensagem aqui…"
+            className={cn(campo(errors.body), 'h-auto py-2 pb-6 leading-[1.55] resize-y min-h-[120px]')}
           />
-          <span className="absolute bottom-2.5 right-3 text-[11px] text-surface-400">{body.length}/1024</span>
+          <span className={cn('absolute right-2.5 bottom-2 text-[11px] tabular-nums pointer-events-none', body.length > 1024 ? 'text-danger' : 'text-surface-500')}>
+            {body.length}/1024
+          </span>
         </div>
-        {errors.body && (
-          <p className="text-[11px] text-danger mt-1.5">{errors.body}</p>
-        )}
-        {errors.vars && !errors.body && (
-          <p className="text-[11px] text-danger mt-1.5">{errors.vars}</p>
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          <ToolbarBtn onClick={() => wrapSelection('*')} title="Negrito (Ctrl+B)"><Bold className="w-3.5 h-3.5" />Negrito</ToolbarBtn>
+          <ToolbarBtn onClick={() => wrapSelection('_')} title="Itálico (Ctrl+I)"><Italic className="w-3.5 h-3.5" />Itálico</ToolbarBtn>
+          <ToolbarBtn onClick={() => wrapSelection('~')} title="Tachado"><Strikethrough className="w-3.5 h-3.5" />Tachado</ToolbarBtn>
+          <ToolbarBtn onClick={addVariable} title="Insere {{N}} na posição do cursor" destaque><Plus className="w-3.5 h-3.5" />Variável</ToolbarBtn>
+        </div>
+        {(errors.body || errors.vars) ? (
+          <Ajuda erro={errors.body ?? errors.vars} />
+        ) : (
+          <Ajuda>Até 640 caracteres entregam melhor · evite caixa alta e exclamações · sem link em Utilidade ou Autenticação.</Ajuda>
         )}
 
-        {/* Variable examples */}
-        {varPositions.length > 0 ? (
-          <div className="mt-3 bg-surface-800/60 border border-surface-700 rounded-lg overflow-hidden">
-            <div className="flex items-start gap-2 px-3 py-2.5 border-b border-surface-700">
-              <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs font-medium text-surface-200">Como funcionam as variáveis</p>
-                <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">
-                  As variáveis são identificadas pela <strong className="text-surface-300">posição numérica</strong> — <code className="text-brand-400">{'{{1}}'}</code>, <code className="text-brand-400">{'{{2}}'}</code>… — não por nome.
-                  Forneça um <strong className="text-surface-300">valor de exemplo</strong> para cada uma: a Meta exige amostras reais para aprovar o template.
-                </p>
-              </div>
-            </div>
-            <div className="divide-y divide-surface-700/60">
+        {varPositions.length > 0 && (
+          <div className="mt-3 border-t border-surface-700 pt-3">
+            <p className="text-[11px] text-surface-500 mb-2 leading-snug">
+              Valor de exemplo para cada variável — a Meta exige amostras reais (não aceita "nome", "valor").
+            </p>
+            <div className="flex flex-col gap-1.5">
               {varPositions.map((pos, i) => (
-                <div key={pos} className="flex items-center gap-3 px-3 py-2.5">
-                  <span className="text-xs font-mono text-brand-400 bg-brand-400/10 px-2 py-0.5 rounded w-10 text-center flex-shrink-0">
+                <div key={pos} className="flex items-center gap-2">
+                  <span className="h-8 w-14 flex-none inline-flex items-center justify-center rounded-sm border border-surface-700 bg-surface-900 font-mono text-[11.5px] text-surface-300">
                     {`{{${pos}}}`}
                   </span>
                   <input
                     value={varExamples[i] ?? ''}
                     onChange={(e) => onVarExamples(varExamples.map((x, idx) => idx === i ? e.target.value : x))}
-                    placeholder={`Valor de exemplo para a variável ${pos}`}
-                    className="flex-1 bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
+                    placeholder={`Exemplo para {{${pos}}} — ex: Ana`}
+                    className={campo()}
                   />
                 </div>
               ))}
             </div>
           </div>
-        ) : (
-          <div className="mt-2 flex items-center gap-2 text-[11px] text-surface-400">
-            <Info className="w-3 h-3 flex-shrink-0" />
-            Clique em <span className="text-brand-400 mx-0.5">+ Adicionar variável</span> para inserir <code className="text-brand-400">{'{{1}}'}</code> na posição do cursor.
-          </div>
         )}
       </Section>
 
-      {/* Section: Rodapé */}
-      <Section title="Rodapé" badge="Opcional">
-        <p className="text-[11px] text-surface-400 mb-2">
-          Texto exibido em cinza abaixo da mensagem. Não suporta variáveis nem formatação.
-        </p>
+      <Section title="Rodapé" badge="Opcional · 60 caracteres · sem variável">
         <div className="relative">
           <input
             value={footer}
             onChange={(e) => onFooter(e.target.value.slice(0, 60))}
             disabled={fieldDisabled}
-            placeholder="Ex: Oryon • Atendimento Digital"
-            className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors pr-12"
+            placeholder="Ex: Equipe Oryon"
+            className={cn(campo(), 'pr-14')}
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-surface-400">{footer.length}/60</span>
+          <Contador n={footer.length} max={60} />
         </div>
       </Section>
     </div>
@@ -1173,18 +1102,25 @@ function Section({ title, required, badge, children }: {
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <label className="text-xs font-medium text-surface-400 mb-1.5 block">{children}</label>
+  return <label className="text-[11.5px] font-medium text-surface-400 mb-1 block">{children}</label>
 }
 
-function ToolbarBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
+function ToolbarBtn({ onClick, title, children, destaque }: {
+  onClick: () => void; title: string; children: React.ReactNode; destaque?: boolean
+}) {
+  // Pílula h-7 / raio 7 — mesma medida dos outros chips de barra do produto.
   return (
     <button
+      type="button"
       onClick={onClick}
       title={title}
-      className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-700 transition-all"
-    >
-      {children}
-    </button>
+      className={cn(
+        'h-7 px-2.5 rounded-sm border inline-flex items-center gap-1.5 text-[11.5px] transition-colors',
+        destaque
+          ? 'border-[var(--bd2)] text-surface-100 hover:bg-[var(--rowhover)]'
+          : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
+      )}
+    >{children}</button>
   )
 }
 
