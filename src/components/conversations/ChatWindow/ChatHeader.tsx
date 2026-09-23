@@ -261,7 +261,7 @@ export function ChatHeader({
             type="button"
             onClick={onBack}
             aria-label="Voltar para conversas"
-            className="-ml-1 w-9 h-9 flex items-center justify-center rounded-lg text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors flex-shrink-0"
+            className="-ml-1 w-9 h-9 flex items-center justify-center rounded-lg text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors flex-shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -311,7 +311,7 @@ export function ChatHeader({
                 aria-label="Mais ações"
                 className={cn(
                   'w-9 h-9 flex items-center justify-center rounded-lg transition-all',
-                  moreOpen ? 'bg-surface-900 text-surface-100' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200',
+                  moreOpen ? 'bg-surface-900 text-surface-100' : 'text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-200',
                 )}
               >
                 <MoreVertical className="w-5 h-5" />
@@ -477,7 +477,7 @@ export function ChatHeader({
               type="button"
               onClick={() => { setStatusOpen(false); setMoreOpen((v) => !v) }}
               aria-label="Mais ações"
-              className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-all"
+              className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
             >
               <MoreHorizontal className="w-[15px] h-[15px]" />
             </button>
@@ -522,7 +522,7 @@ export function ChatHeader({
             aria-expanded={infoOpen}
             className={cn(
               'w-7 h-7 rounded-sm flex items-center justify-center transition-all',
-              infoOpen ? 'bg-surface-900 text-surface-200' : 'text-surface-400 hover:bg-surface-800 hover:text-surface-200'
+              infoOpen ? 'bg-surface-900 text-surface-200' : 'text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-200'
             )}
           >
             <div className="relative">

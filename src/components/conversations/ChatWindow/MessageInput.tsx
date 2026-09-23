@@ -119,7 +119,7 @@ function QuickReplyPicker({
       ref={listRef}
       className="absolute bottom-full left-0 right-0 mb-2 z-50 overlay-surface border rounded-xl overflow-hidden max-h-56 overflow-y-auto"
     >
-      <div className="px-3 py-2 border-b border-surface-700/60 flex items-center gap-1.5 sticky top-0 overlay-bg z-10">
+      <div className="px-3 py-2 border-b border-surface-700 flex items-center gap-1.5 sticky top-0 overlay-bg z-10">
         <Zap className="w-3 h-3 text-accent-dark" />
         <span className="text-[10px] font-semibold text-surface-400 uppercase tracking-wide">
           Respostas rápidas {query ? `— /${query}` : ''}
@@ -131,7 +131,7 @@ function QuickReplyPicker({
           ref={i === activeIndex ? activeRef : null}
           onClick={() => onSelect(r)}
           className={cn(
-            'w-full text-left px-3 py-2.5 transition-colors border-b border-surface-700/40 last:border-0',
+            'w-full text-left px-3 py-2.5 transition-colors border-b border-surface-700 last:border-0',
             i === activeIndex ? 'bg-accent-soft' : 'hover:bg-[var(--rowhover)]'
           )}
         >
@@ -578,13 +578,16 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
   if (blockedReason) {
     return (
       <div className="px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0 bg-transparent">
-        {/* Sem sombra: banner inline (nunca overlay), mesma regra do composer. */}
+        {/* Sem sombra: banner inline (nunca overlay), mesma regra do composer.
+            Eixo 10: currentColor herda o --chip do Banner (suave, 12%) —
+            border-white/bg-white/text-white ficava sem contraste no claro
+            (mesma família do achado em Departments.tsx). */}
         <Banner
           variant="warning"
           action={blockedReason.ctaHref && blockedReason.ctaLabel && (
             <a
               href={blockedReason.ctaHref}
-              className="text-xs font-semibold border border-white/25 bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-lg transition-colors"
+              className="text-xs font-semibold border border-current/25 bg-current/10 hover:bg-current/20 text-current px-3 py-1.5 rounded-lg transition-colors"
             >
               {blockedReason.ctaLabel}
             </a>
@@ -643,7 +646,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
                     <button
                       key={tpl.id}
                       onClick={() => handleSelectTemplate(tpl)}
-                      className="w-full text-left p-2.5 rounded-lg border border-surface-700/50 bg-surface-800/40 hover:bg-surface-800 hover:border-surface-600 transition-colors"
+                      className="w-full text-left p-2.5 rounded-lg border border-surface-700 bg-[var(--sf2)] hover:bg-[var(--rowhover)] hover:border-surface-600 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-xs font-semibold text-surface-200 truncate">{tpl.name}</span>
@@ -677,7 +680,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
                 type="button"
                 onClick={closeTemplateModal}
                 disabled={sendingTemplate}
-                className="px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:bg-surface-800 disabled:opacity-50 transition-colors"
+                className="px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] disabled:opacity-50 transition-colors"
               >
                 Cancelar
               </button>
@@ -725,7 +728,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
                       preenchido. Antes era só um aviso e o template ia sem
                       parâmetros ({{1}} cru / rejeição da Meta). */}
                   {templateSlots.length > 0 ? (
-                    <div className="rounded-lg border border-surface-700 bg-surface-900/60 p-3 space-y-2.5">
+                    <div className="rounded-lg border border-surface-700 bg-[var(--sf2)] p-3 space-y-2.5">
                       <p className="text-[11px] font-semibold text-surface-200">
                         Preencha {templateSlots.length === 1 ? 'a variável' : `as ${templateSlots.length} variáveis`} do template
                       </p>
@@ -799,7 +802,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
         )}
 
         {replyTo && (
-          <div className="mb-2 flex items-center gap-2 rounded-lg bg-surface-800/70 border-l-2 border-brand-500 px-3 py-2">
+          <div className="mb-2 flex items-center gap-2 rounded-lg bg-[var(--sf2)] border-l-2 border-brand-500 px-3 py-2">
             <CornerUpLeft className="w-3.5 h-3.5 text-accent-dark flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-medium text-accent-dark">
@@ -845,7 +848,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
           {/* Preview dos anexos em espera (staging). Fica dentro da caixa, acima
               da textarea — o operador confere/remove antes de enviar. */}
           {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2.5 pb-2.5 border-b border-surface-700/60">
+            <div className="flex flex-wrap gap-2 mb-2.5 pb-2.5 border-b border-surface-700">
               {attachments.map((att) => {
                 const Icon = fileIcon(att.file)
                 const isUploading = att.id === uploadingId
@@ -1053,7 +1056,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
               type="button"
               onClick={() => handleSelectResponse(r)}
               title={r.title}
-              className="flex-shrink-0 text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
+              className="flex-shrink-0 text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
             >
               /{r.shortcut}
             </button>

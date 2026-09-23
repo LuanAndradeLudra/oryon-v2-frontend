@@ -109,7 +109,7 @@ export function ResolveOutcomePanel({ target, contactName, currentAmountCents, h
               key={o.value}
               className={cn(
                 'flex items-start gap-2.5 px-2.5 py-2 rounded-lg border cursor-pointer transition-colors',
-                active ? 'border-brand-500/60 bg-brand-600/10' : 'border-surface-700 hover:bg-surface-800',
+                active ? 'border-brand-500/60 bg-brand-600/10' : 'border-surface-700 hover:bg-[var(--rowhover)]',
               )}
             >
               <input
@@ -245,7 +245,7 @@ function ResolveDealPicker({ candidates, contactName, busy, onPick, onCancel }: 
               disabled={busy}
               onClick={() => onPick(deal.id)}
               data-testid={`resolve-pick-${deal.id}`}
-              className="flex flex-col items-start gap-0.5 px-2.5 py-2 rounded-lg border border-surface-700 hover:bg-surface-800 text-left transition-colors disabled:opacity-50"
+              className="flex flex-col items-start gap-0.5 px-2.5 py-2 rounded-lg border border-surface-700 hover:bg-[var(--rowhover)] text-left transition-colors disabled:opacity-50"
             >
               <span className="text-sm font-medium text-surface-200 truncate max-w-full">{deal.title}</span>
               <span className="text-[11px] text-surface-500 truncate max-w-full">
