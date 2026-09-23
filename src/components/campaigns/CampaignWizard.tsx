@@ -231,6 +231,17 @@ export function CampaignWizard({
     return () => { staleRef.current = true }
   }, [open])
 
+  // Esc fecha o wizard — mesmo comportamento do X e do backdrop (nenhum dos
+  // dois pede confirmação hoje; Esc ficar de fora era a mesma falha "Esc
+  // vaza" já registrada em outras telas do produto, não uma proteção
+  // deliberada contra perda de dado).
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   // ── Init variable mappings when template changes ────────────────────────────
 
   useEffect(() => {
@@ -443,7 +454,7 @@ export function CampaignWizard({
                   abaixo já separa visualmente), título 15px/700, X mais sutil. */}
               <div className="flex items-center justify-between px-5 pt-4 pb-0 flex-shrink-0">
                 <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-100">Nova campanha</h2>
-                <button onClick={onClose} className="p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
+                <button onClick={onClose} aria-label="Fechar" className="p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -1766,6 +1777,12 @@ function ContactListModal({
 }) {
   const [search, setSearch] = useState('')
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   const segmented = useMemo(() => {
     if (segmentType === 'all') return contacts
     if (segmentType === 'tag')
@@ -1818,6 +1835,7 @@ function ContactListModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
           >
             <X className="w-4 h-4" />
