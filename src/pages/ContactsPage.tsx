@@ -51,8 +51,6 @@ import type { Contact, ContactFilters, ContactStage, Tag, Pipeline } from '@/typ
  */
 type CommercialSituation = 'all' | 'no_deal' | 'open_deal' | 'customer'
 
-const CONTACTS_VIEW_KEY = 'oryon:contacts:view'
-
 /**
  * Ordenação padrão da lista: MAIS RECENTES (criação), e não "última interação".
  *
@@ -130,13 +128,16 @@ export function ContactsPage() {
   const [showColumnsModal, setShowColumnsModal] = useState(false)
   const [commercial, setCommercial] = useState<CommercialSituation>('all')
   // Direção A (DECISOES-PENDENTES #33): "Lista" é o padrão; "Tabela" é o modo
-  // denso com colunas configuráveis. A escolha fica no navegador do usuário.
-  const [view, setView] = useState<'list' | 'table'>(() => {
-    try { return localStorage.getItem(CONTACTS_VIEW_KEY) === 'table' ? 'table' : 'list' } catch { return 'list' }
-  })
+  // denso com colunas configuráveis. Estado na URL (regra do PO): `?view=tabela`;
+  // ausente = lista. Sobrevive a recarregar e a voltar de /contacts/:id.
+  const view: 'list' | 'table' = searchParams.get('view') === 'tabela' ? 'table' : 'list'
   const changeView = (v: 'list' | 'table') => {
-    setView(v)
-    try { localStorage.setItem(CONTACTS_VIEW_KEY, v) } catch { /* storage indisponível */ }
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (v === 'table') next.set('view', 'tabela')
+      else next.delete('view')
+      return next
+    }, { replace: true })
   }
   const [templateContact, setTemplateContact] = useState<Contact | null>(null)
   const columnsConfig = useContactColumnsConfig()

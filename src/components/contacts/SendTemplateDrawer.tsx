@@ -81,7 +81,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
                 <h3 className="text-sm font-semibold text-surface-100">Iniciar conversa</h3>
                 <p className="text-[11px] text-surface-500">Enviar template para {contact.displayName}</p>
               </div>
-              <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+              <button onClick={onClose} aria-label="Fechar" className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>

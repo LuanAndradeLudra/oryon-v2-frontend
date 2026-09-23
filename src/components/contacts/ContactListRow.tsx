@@ -70,9 +70,9 @@ export function ContactListRow({
     <div
       className={cn(
         'group relative h-[52px] flex items-center gap-3 pl-3 pr-2.5 rounded-sm transition-colors',
-        active ? 'bg-accent-soft' : 'hover:bg-[var(--rowhover)]',
-        // Filete de seleção: 2px, teal, recuado 14px do topo/base (mockup A).
-        active && 'before:content-[""] before:absolute before:left-0 before:top-3.5 before:bottom-3.5 before:w-0.5 before:rounded-full before:bg-accent-dark',
+        active ? 'bg-[var(--sel)]' : 'hover:bg-[var(--rowhover)]',
+        // Filete de seleção: 2px, marca, recuado 14px do topo/base (mockup A); fundo --sel.
+        active && 'before:content-[""] before:absolute before:left-0 before:top-3.5 before:bottom-3.5 before:w-0.5 before:rounded-full before:bg-brand-500',
       )}
       data-testid="contact-list-row"
       data-contact-id={contact.id}
