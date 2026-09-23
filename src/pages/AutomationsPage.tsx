@@ -20,6 +20,7 @@ import { automationsApi } from '@/services/api'
 import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
 import { AssignWabaModal } from '@/components/common/AssignWabaModal'
+import { ConfirmModal } from '@/components/ui/Modal'
 import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/common/LineFilterChip'
 import { useContextMenuCtx } from '@/components/ui/contextMenuCore'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -120,43 +121,6 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
 // ── Contagens de status (alimentam o SegmentedControl) ───────────────────────
 
 interface Counts { total: number; active: number; inactive: number; draft: number; totalExec: number }
-
-// ── Delete confirm ────────────────────────────────────────────────────────────
-
-function DeleteConfirm({ automation, onConfirm, onCancel }: {
-  automation: Automation; onConfirm: () => void; onCancel: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Eixo 10: scrim do token (--color-scrim-soft, não bg-black/70 cru —
-          errado no claro), painel bg-surface-800 (o Modal primitivo usa
-          --sf, não --bg) e largura 400px como o ConfirmModal (canvas). */}
-      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={onCancel} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-[400px] p-6 text-center"
-      >
-        <div className="w-12 h-12 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center mx-auto mb-4">
-          <Trash2 className="w-5 h-5 text-danger" />
-        </div>
-        <h3 className="text-sm font-semibold text-surface-100 mb-1">Excluir automação?</h3>
-        <p className="text-xs text-surface-500 mb-5">
-          "<span className="text-surface-300">{automation.name}</span>" será removida permanentemente.
-        </p>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-lg border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
-            Cancelar
-          </button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-lg bg-danger hover:bg-danger/90 text-white text-sm font-semibold transition-colors">
-            Excluir
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
 
 function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
   automation: Automation
@@ -765,11 +729,16 @@ export function AutomationsPage() {
       )}
 
       {/* Delete confirm */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <DeleteConfirm automation={deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
-        )}
-      </AnimatePresence>
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Excluir automação?"
+        description="Ela será removida permanentemente."
+        impact={deleteTarget ? { label: `Automação "${deleteTarget.name}"`, tone: 'danger' } : undefined}
+        confirmLabel="Excluir"
+        danger
+      />
 
       {/* Assign-WABA */}
       {assignWabaTarget && (
