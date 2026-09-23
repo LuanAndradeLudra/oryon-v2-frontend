@@ -40,7 +40,7 @@ function TypingIndicator() {
       <div className="w-7 h-7 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0">
         <Bot className="w-3.5 h-3.5 text-surface-400" />
       </div>
-      <div className="bg-surface-800 border border-surface-700/60 rounded-2xl rounded-bl-sm px-4 py-3">
+      <div className="bg-surface-800 border border-surface-700 rounded-2xl rounded-bl-sm px-4 py-3">
         <div className="flex gap-1 items-center h-4">
           {[0, 1, 2].map(i => (
             <span
@@ -407,7 +407,8 @@ export function AgentTestModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/70"
+        // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/70 cru.
+        className="absolute inset-0 bg-[var(--color-scrim-soft)]"
         onClick={handleClose}
       />
 
@@ -473,7 +474,7 @@ export function AgentTestModal({
           </Dropdown>
           <button
             onClick={handleClose}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition"
+            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -555,10 +556,16 @@ export function AgentTestModal({
                           ? 'bg-brand-600 rounded-br-sm text-surface-950'
                           : msg.debug?.guard
                             ? 'bg-surface-800 border border-danger/40 rounded-bl-sm text-surface-100'
-                            : 'bg-surface-800 border border-surface-700/60 rounded-bl-sm text-surface-100',
+                            : 'bg-surface-800 border border-surface-700 rounded-bl-sm text-surface-100',
                       )}>
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                        <p className="text-[10px] mt-1 text-right text-white/70">
+                        {/* Eixo 10: text-white/70 fixo quebrava a bolha do assistente em
+                            tema claro (bg-surface-800 vira branco) — acompanha a cor do
+                            texto principal de cada variante em vez de um branco cru. */}
+                        <p className={cn(
+                          'text-[10px] mt-1 text-right',
+                          msg.role === 'user' ? 'text-surface-950/70' : 'text-surface-400',
+                        )}>
                           {formatTime(msg.ts)}
                         </p>
                       </div>

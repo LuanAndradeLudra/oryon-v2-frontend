@@ -147,8 +147,12 @@ export function ChipOption({
       className={cn(
         'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm',
         'min-h-11 sm:min-h-9 transition-colors cursor-pointer',
-        'focus-visible:outline-none focus-visible:bg-surface-800',
-        selected ? 'bg-surface-800 text-surface-50' : 'text-surface-200 hover:bg-surface-800',
+        // Eixo 10: o painel do Dropdown usa overlay-surface, que em tema claro
+        // e' branco (#FFFFFF) — igual ao surface-800 usado no hover/focus,
+        // tornando o item invisivel ao passar o mouse. --rowhover funciona
+        // sobre qualquer fundo (mesma receita do DropdownItem em ui/Dropdown.tsx).
+        'focus-visible:outline-none focus-visible:bg-[var(--rowhover)]',
+        selected ? 'bg-surface-800 text-surface-50' : 'text-surface-200 hover:bg-[var(--rowhover)]',
       )}
     >
       <span className="truncate">{children}</span>

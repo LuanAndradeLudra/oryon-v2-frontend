@@ -248,7 +248,7 @@ export function DealItemsEditor({ value, onChange, error, disabled, showTotal = 
                 className={cn(
                   'flex-1 flex items-center gap-2 min-w-0 rounded-md px-1.5 py-1.5 text-left transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60',
-                  travadoAberto ? 'cursor-default' : 'cursor-pointer hover:bg-surface-800/60',
+                  travadoAberto ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--rowhover)]',
                 )}
               >
                 <ChevronRight
