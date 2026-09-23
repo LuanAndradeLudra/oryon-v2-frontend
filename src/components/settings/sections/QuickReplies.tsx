@@ -254,7 +254,8 @@ export function QuickReplies() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Excluir resposta rápida"
-        description={`Tem certeza que deseja excluir o atalho "${deleteTarget?.shortcut}"? Esta ação não pode ser desfeita.`}
+        impact={{ label: `Atalho ${deleteTarget?.shortcut ?? ''}`.trim(), tone: 'danger' }}
+        description="Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
       />

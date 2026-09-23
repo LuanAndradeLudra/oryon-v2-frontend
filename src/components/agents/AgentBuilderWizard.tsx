@@ -1352,6 +1352,10 @@ function Step6KB({
         onConfirm={removeDoc}
         title="Remover documento"
         description="O documento será removido da base de conhecimento do agente. Esta ação não pode ser desfeita."
+        impact={(() => {
+          const doc = data.knowledge_docs.find(d => d.id === removeDocTarget)
+          return doc ? { label: `Documento "${doc.name}"`, tone: 'danger' as const } : undefined
+        })()}
         confirmLabel="Remover documento"
         danger
       />

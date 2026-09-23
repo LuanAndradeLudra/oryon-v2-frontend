@@ -204,7 +204,8 @@ export function ProductsManager() {
         onClose={() => setDeleteProduct(null)}
         onConfirm={handleDelete}
         title="Excluir produto"
-        description={`Tem certeza que deseja excluir "${deleteProduct?.name}"? Ele sairá do catálogo.`}
+        impact={{ label: `Produto ${deleteProduct?.name ?? ''}`.trim(), tone: 'danger' }}
+        description="O produto sairá do catálogo. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

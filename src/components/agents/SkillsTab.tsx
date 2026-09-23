@@ -254,8 +254,9 @@ export function SkillsTab({ agentId, tenantId }: Props) {
         onConfirm={handleRemove}
         title="Remover skill do agente?"
         description={removing
-          ? `"${removing.template_name}" será removida deste agente imediatamente. Essa ação não pode ser desfeita — o histórico do agent_skills é apagado (hard delete). Para reatribuir depois, use a tela de Atribuir skill.`
+          ? 'A skill será removida deste agente imediatamente. Essa ação não pode ser desfeita — o histórico do agent_skills é apagado (hard delete). Para reatribuir depois, use a tela de Atribuir skill.'
           : ''}
+        impact={removing ? { label: `Skill "${removing.template_name}"`, tone: 'danger' } : undefined}
         confirmLabel="Remover"
         danger
         loading={removingPending}
