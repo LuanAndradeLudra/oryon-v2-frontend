@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Upload, Settings2, AlertTriangle } from 'lucide-react'
+import { Plus, Upload, Settings2, AlertTriangle, List, Table, SlidersHorizontal } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
 import { isFeatureVisible } from '@/config/featureFlags'
-import { ContactsStatsBar } from '@/components/contacts/ContactsStatsBar'
-import { STATS_COLLAPSE_KEY, contactsSummaryText } from '@/lib/contactsSummary'
+import { contactsSummaryText } from '@/lib/contactsSummary'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
+import { ViewTabs } from '@/components/contacts/ViewTabs'
+import { availableSegments, buildSegmentQuery, getSegment, type SegmentKey } from '@/components/contacts/contactSegments'
 import { CRMConfigDrawer } from '@/components/contacts/CRMConfigDrawer'
 import { ContactsTable } from '@/components/contacts/ContactsTable'
 import { ContactsList } from '@/components/contacts/ContactsList'
@@ -25,6 +26,7 @@ import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { Modal } from '@/components/ui/Modal'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Avatar } from '@/components/ui/Avatar'
 import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
@@ -50,6 +52,25 @@ import type { Contact, ContactFilters, ContactStage, Tag, Pipeline } from '@/typ
 type CommercialSituation = 'all' | 'no_deal' | 'open_deal' | 'customer'
 
 const CONTACTS_VIEW_KEY = 'oryon:contacts:view'
+
+/**
+ * Ordenação padrão da lista: MAIS RECENTES (criação), e não "última interação".
+ *
+ * `ORDER BY lastContactedAt DESC` no Postgres põe os NULL primeiro (o service
+ * não passa NULLS LAST — pendência B1 de ACHADOS-API-CONTATOS-SEGMENTOS), então
+ * todo contato sem conversa sobe ao topo — e, com paginação no servidor, um
+ * reordenamento no cliente não resolve (a 1ª página pode ser toda de NULL).
+ * `createdAt DESC` é total e estável: nunca há NULL. Quando o backend corrigir
+ * o NULLS LAST, voltar para { sortBy: 'lastContactedAt', sortDir: 'desc' }.
+ */
+const DEFAULT_SORT = { sortBy: 'createdAt', sortDir: 'desc' } as const
+
+const SORT_HINT: Record<string, string> = {
+  createdAt: 'mais recentes primeiro',
+  lastContactedAt: 'última interação',
+  leadScore: 'lead score',
+  displayName: 'nome',
+}
 
 const COMMERCIAL_OPTIONS: { key: CommercialSituation; label: string }[] = [
   { key: 'all', label: 'Todos' },
@@ -110,9 +131,13 @@ export function ContactsPage() {
   const [commercial, setCommercial] = useState<CommercialSituation>('all')
   // Direção A (DECISOES-PENDENTES #33): "Lista" é o padrão; "Tabela" é o modo
   // denso com colunas configuráveis. A escolha fica no navegador do usuário.
-  const [view] = useState<'list' | 'table'>(() => {
+  const [view, setView] = useState<'list' | 'table'>(() => {
     try { return localStorage.getItem(CONTACTS_VIEW_KEY) === 'table' ? 'table' : 'list' } catch { return 'list' }
   })
+  const changeView = (v: 'list' | 'table') => {
+    setView(v)
+    try { localStorage.setItem(CONTACTS_VIEW_KEY, v) } catch { /* storage indisponível */ }
+  }
   const [templateContact, setTemplateContact] = useState<Contact | null>(null)
   const columnsConfig = useContactColumnsConfig()
 
@@ -152,7 +177,7 @@ export function ContactsPage() {
     updateContact, createContact, bulkUpdateStage, bulkRemove,
     bulkAddTag, bulkRemoveTag, removeContact, refetch,
   } = useContacts(
-    { sortBy: 'lastContactedAt', sortDir: 'desc' },
+    { ...DEFAULT_SORT },
     { commercial: multiPipeline && commercial !== 'all' ? commercial : undefined },
   )
 
@@ -252,13 +277,56 @@ export function ContactsPage() {
   // pior que omiti-lo.
   // R2-1C-FILT-02: o resumo (opt-in, c/ etiquetas, situação predominante) saiu da
   // faixa de 36px e ficou no tooltip do subtítulo + no botão "Resumo" da barra de filtros.
-  const [statsOpen, setStatsOpen] = useState(() => {
-    try { return localStorage.getItem(STATS_COLLAPSE_KEY) === '0' } catch { return false }
+  // ── Abas de segmentos (contactSegments.ts, do Farol): só as que a API sustenta
+  // (Todos, Quentes) — as demais não existem na tela. A aba ativa é DERIVADA dos
+  // filtros (Quentes ≡ intenção alta, a definição do segmento), então escolher
+  // "Intenção alta" no painel Filtro também acende Quentes, sem estado duplicado.
+  const segments = availableSegments()
+  const activeSegment: SegmentKey = filters.intent === 'high' ? 'hot' : 'all'
+  const isDefaultSort = (f: ContactFilters, seg: SegmentKey) => {
+    const p = getSegment(seg).params
+    return (f.sortBy === DEFAULT_SORT.sortBy && f.sortDir === DEFAULT_SORT.sortDir)
+      || (f.sortBy === p.sortBy && f.sortDir === p.sortDir)
+  }
+  const handleSegmentChange = (key: string) => {
+    const next = key as SegmentKey
+    if (next === activeSegment) return
+    // Sai do segmento atual: tira o que ele impunha (intenção e, se a ordenação
+    // ainda é a padrão dele/da tela, a ordenação) — a escolha manual do usuário fica.
+    const base: ContactFilters = { ...filters }
+    if (getSegment(activeSegment).params.intent !== undefined) delete base.intent
+    if (isDefaultSort(filters, activeSegment)) { delete base.sortBy; delete base.sortDir }
+    const built = buildSegmentQuery(next, base)
+    // "Todos" sem ordenação própria volta ao padrão da tela (ver DEFAULT_SORT).
+    if (built.sortBy === getSegment('all').params.sortBy && base.sortBy === undefined && next === 'all') {
+      built.sortBy = DEFAULT_SORT.sortBy
+      built.sortDir = DEFAULT_SORT.sortDir
+    }
+    setFilters(built)
+  }
+  // Contagem por aba: uma consulta leve (limit=1) por segmento, sobre os demais
+  // filtros do usuário. Falha → sem número (nunca inventa).
+  const [segmentCounts, setSegmentCounts] = useState<Record<string, number>>({})
+  const countBaseKey = JSON.stringify({
+    ...filters, intent: undefined, sortBy: undefined, sortDir: undefined,
+    commercial: multiPipeline && commercial !== 'all' ? commercial : undefined,
   })
-  const toggleStats = () => setStatsOpen((v) => {
-    try { localStorage.setItem(STATS_COLLAPSE_KEY, v ? '1' : '0') } catch { /* storage indisponível */ }
-    return !v
-  })
+  useEffect(() => {
+    let alive = true
+    const base = JSON.parse(countBaseKey) as ContactFilters
+    Promise.all(availableSegments().map((seg) =>
+      contactsApi.list(buildSegmentQuery(seg.key, base), 1, 1)
+        .then((r) => [seg.key, r.data.total] as const)
+        .catch(() => null),
+    )).then((rows) => {
+      if (!alive) return
+      const next: Record<string, number> = {}
+      rows.forEach((row) => { if (row) next[row[0]] = row[1] })
+      setSegmentCounts(next)
+    })
+    return () => { alive = false }
+  }, [countBaseKey])
+
   const summaryText = contactsSummaryText(contacts, total)
   useRegisterTopBarSubtitle(<span title={summaryText}>{`${total.toLocaleString('pt-BR')} contatos`}</span>, [total, summaryText])
 
@@ -287,29 +355,35 @@ export function ContactsPage() {
       >
         Configurar
       </Button>
-      <Button
-        size="sm"
-        variant="neutral"
-        leftIcon={<Upload className="w-3.5 h-3.5" />}
-        onClick={() => setShowImport(true)}
-      >
-        Importar
-      </Button>
-      <Button
-        size="sm"
-        variant="primary"
-        leftIcon={<Plus className="w-3.5 h-3.5" />}
-        onClick={() => setShowNewContact(true)}
-      >
-        Novo {vocab.contact}
-      </Button>
+      {/* Direção A: no desktop, Importar e Novo lead moram na barra da lista
+          (à direita do seletor Lista|Tabela); aqui ficam só no mobile. */}
+      {isMobile && (
+        <>
+          <Button
+            size="sm"
+            variant="neutral"
+            leftIcon={<Upload className="w-3.5 h-3.5" />}
+            onClick={() => setShowImport(true)}
+          >
+            Importar
+          </Button>
+          <Button
+            size="sm"
+            variant="primary"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+            onClick={() => setShowNewContact(true)}
+          >
+            Novo {vocab.contact}
+          </Button>
+        </>
+      )}
     </div>,
     // ATENÇÃO: o nó é registrado na topbar por um efeito com dependências, e o
     // que ela renderiza é a árvore capturada na última registração. Qualquer
     // ESTADO que este bloco leia precisa entrar nesta lista, senão o controle
     // fica congelado no valor antigo e o clique não faz nada visível — foi o
     // que aconteceu quando o botão virou menu (10/09).
-    [total, vocab.contact],
+    [total, vocab.contact, isMobile],
   )
 
   const handleOpenPanel = (contact: Contact) => {
@@ -439,12 +513,49 @@ export function ContactsPage() {
         <ContactsFiltersBar
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          onOpenColumns={() => setShowColumnsModal(true)}
-          summary={{ open: statsOpen, title: summaryText, onToggle: toggleStats }}
+          tags={tags}
           commercial={multiPipeline ? { value: commercial, options: COMMERCIAL_OPTIONS, onChange: (k) => setCommercial(k as CommercialSituation) } : undefined}
+          trailing={(
+            <>
+              {view === 'table' && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  leftIcon={<SlidersHorizontal className="w-3.5 h-3.5" />}
+                  onClick={() => setShowColumnsModal(true)}
+                  title="Configurar colunas"
+                >
+                  Colunas
+                </Button>
+              )}
+              <SegmentedControl
+                label="Modo de exibição"
+                size="sm"
+                value={view}
+                onChange={changeView}
+                options={[
+                  { value: 'list', label: 'Lista', icon: List },
+                  { value: 'table', label: 'Tabela', icon: Table },
+                ]}
+              />
+              <Button size="sm" variant="neutral" leftIcon={<Upload className="w-3.5 h-3.5" />} onClick={() => setShowImport(true)}>
+                Importar
+              </Button>
+              <Button size="sm" variant="primary" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setShowNewContact(true)}>
+                Novo {vocab.contact}
+              </Button>
+            </>
+          )}
         />
 
-        <ContactsStatsBar open={statsOpen} contacts={contacts} total={total} />
+        {!isMobile && (
+          <ViewTabs
+            views={segments.map((seg) => ({ id: seg.key, label: seg.label, count: segmentCounts[seg.key] }))}
+            value={activeSegment}
+            onChange={handleSegmentChange}
+            hint={`ordenado por ${SORT_HINT[filters.sortBy ?? DEFAULT_SORT.sortBy] ?? 'critério escolhido'}`}
+          />
+        )}
 
         <div className={cn(
           'flex-1 min-h-0 grid grid-rows-[minmax(0,1fr)]',

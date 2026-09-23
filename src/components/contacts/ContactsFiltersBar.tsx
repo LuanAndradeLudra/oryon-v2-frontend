@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import { Search, X, ChevronDown, Tag, SlidersHorizontal, Plus, TrendingUp } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Search, X, ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { tagsApi, contactsApi } from '@/services/api'
-import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { contactsApi } from '@/services/api'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import type { ContactFilters, ContactSource, ContactSentiment, ContactIntent, Tag as TagType } from '@/types'
 
@@ -63,7 +64,7 @@ function FilterSelect({ value, onChange, children, placeholder, fullWidth }: {
   onChange: (v: string) => void
   children: React.ReactNode
   placeholder?: string
-  /** Ocupa 100% da largura — usado dentro do painel "+ Filtro". */
+  /** Ocupa 100% da largura — usado dentro do painel "Filtro". */
   fullWidth?: boolean
 }) {
   const active = !!value
@@ -88,128 +89,57 @@ function FilterSelect({ value, onChange, children, placeholder, fullWidth }: {
   )
 }
 
-// ─── Tag multiselect dropdown ─────────────────────────────────────────────────
+// ─── Chip alternável (multi-seleção dentro do painel Filtro) ──────────────────
 
-function TagFilter({ selected, onChange }: {
-  selected: string[]
-  onChange: (ids: string[]) => void
+function ToggleChip({ active, onClick, children, title }: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+  title?: string
 }) {
-  const [open, setOpen] = useState(false)
-  const [tags, setTags] = useState<TagType[]>([])
-  const [search, setSearch] = useState('')
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    tagsApi.list().then((res) => setTags(res.data ?? [])).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  const filtered = search.trim()
-    ? tags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
-    : tags
-
-  const toggle = (id: string) =>
-    onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id])
-
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          'flex items-center gap-[5px] h-7 px-[9px] rounded-sm text-xs font-semibold border transition-all',
-          selected.length > 0
-            ? 'border-brand-500 bg-accent-soft text-accent-dark'
-            : 'border-[var(--bd2)] bg-surface-800 text-surface-100 hover:border-surface-500',
-        )}
-      >
-        <Tag className="w-3.5 h-3.5 flex-shrink-0" />
-        <span>{selected.length > 0 ? `${selected.length} etiqueta${selected.length > 1 ? 's' : ''}` : 'Etiqueta'}</span>
-        <ChevronDown className={cn('w-3 h-3 flex-shrink-0 transition-transform', open && 'rotate-180')} />
-      </button>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      title={title}
+      className={cn(
+        'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-xs font-medium transition-colors max-w-full',
+        active
+          ? 'border-brand-500 bg-accent-soft text-accent-dark font-semibold'
+          : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
 
-      {open && (
-        <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setOpen(false)} />
-      )}
-      {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 w-52 overlay-surface border rounded-xl overflow-hidden">
-          <div className="p-2 border-b border-surface-700">
-            <input
-              autoFocus
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar etiqueta..."
-              className="w-full px-2.5 py-1.5 text-xs bg-surface-900/60 border border-surface-700 rounded-lg text-surface-100 placeholder:text-surface-500 outline-none focus:border-brand-500"
-            />
-          </div>
-          <div className="max-h-48 overflow-y-auto p-1">
-            {filtered.length === 0 ? (
-              <p className="text-xs text-surface-500 text-center py-3">Nenhuma etiqueta</p>
-            ) : (
-              filtered.map((t) => {
-                const active = selected.includes(t.id)
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => toggle(t.id)}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-surface-700/50 transition-colors"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: t.color }}
-                    />
-                    <span className="text-xs text-surface-200 flex-1 truncate">{t.name}</span>
-                    {active && (
-                      <span
-                        className="color-chip w-3.5 h-3.5 rounded-sm flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-                        style={{ ['--chip']: t.color } as React.CSSProperties}
-                      >✓</span>
-                    )}
-                  </button>
-                )
-              })
-            )}
-          </div>
-          {selected.length > 0 && (
-            <div className="p-2 border-t border-surface-700">
-              <button
-                onClick={() => { onChange([]); setOpen(false) }}
-                className="w-full text-xs text-surface-400 hover:text-surface-200 py-1 transition-colors"
-              >
-                Limpar seleção
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+// ─── Grupo de filtros dentro do painel "Filtro" ───────────────────────────────
+
+function FilterGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[10px] uppercase tracking-wider text-surface-500 font-semibold">{label}</p>
+      {children}
     </div>
   )
 }
 
 // ─── Situação (multi-seleção) ─────────────────────────────────────────────────
 
-/** R2-1C-FILT-01: chip "Situação · Qualificado" do mock. `ContactFilters.stage`
- *  já existia no tipo e o backend filtra por `stage IN (...)` — faltava só o
- *  controle. Etapas vêm do CRM do tenant (`useCRMConfig().stages`). */
-function StageFilter({ selected, onChange, baseFilters }: { selected: string[]; onChange: (keys: string[]) => void; baseFilters: ContactFilters }) {
+/** Antes um chip na barra ("Situação · Qualificado"); a direção A tirou os chips
+ *  da barra e a situação passa a morar no painel Filtro — com a MESMA contagem
+ *  por situação de antes (pedido do usuário 22/09): o backend não tem endpoint
+ *  de agregação, mas a listagem devolve `total` respeitando os filtros, então,
+ *  ao abrir o painel, uma consulta leve (limit=1) por situação com os DEMAIS
+ *  filtros ativos. Falha → sem número (nunca inventa). */
+function StageGroup({ selected, onChange, baseFilters }: { selected: string[]; onChange: (keys: string[]) => void; baseFilters: ContactFilters }) {
   const { stages } = useCRMConfig()
-  const [open, setOpen] = useState(false)
-  // Contagem por situação (pedido do usuário 22/09): o backend não tem endpoint
-  // de agregação, mas a listagem devolve `total` respeitando os filtros. Ao abrir
-  // o menu, uma consulta leve (limit=1) por situação com os DEMAIS filtros ativos
-  // (busca, etiquetas, origem, situação comercial…) — exato para a base inteira,
-  // e só custa quando o usuário abre o menu. Falha → sem número (nunca inventa).
   const [counts, setCounts] = useState<Record<string, number>>({})
   const baseKey = JSON.stringify(baseFilters)
   useEffect(() => {
-    if (!open || stages.length === 0) return
+    if (stages.length === 0) return
     let cancelled = false
     const base = JSON.parse(baseKey) as ContactFilters
     Promise.all(stages.map((st) =>
@@ -223,106 +153,67 @@ function StageFilter({ selected, onChange, baseFilters }: { selected: string[]; 
       setCounts(next)
     })
     return () => { cancelled = true }
-  }, [open, baseKey, stages])
+  }, [baseKey, stages])
   if (stages.length === 0) return null
   const ordered = [...stages].sort((a, b) => a.order - b.order)
-  const first = ordered.find((s) => s.key === selected[0])
-  const label = selected.length === 0 ? 'Situação' : selected.length === 1 ? `Situação · ${first?.label ?? selected[0]}` : `Situação · ${selected.length}`
   const toggle = (key: string) =>
     onChange(selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key])
   return (
-    <Dropdown
-      open={open}
-      onClose={() => setOpen(false)}
-      align="left"
-      className="w-56"
-      anchor={
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          data-testid="contacts-filter-stage"
-          className={cn(
-            'flex items-center gap-[5px] h-7 px-[9px] rounded-sm text-xs font-semibold border transition-all whitespace-nowrap',
-            selected.length > 0
-              ? 'border-brand-500 bg-accent-soft text-accent-dark'
-              : 'border-[var(--bd2)] bg-surface-800 text-surface-100 hover:border-surface-500',
-          )}
-        >
-          <span>{label}</span>
-          <ChevronDown className={cn('w-3 h-3 flex-shrink-0 transition-transform', open && 'rotate-180')} />
-        </button>
-      }
-    >
-      <div className="px-1 py-1 flex flex-col gap-0.5 max-h-72 overflow-y-auto">
+    <FilterGroup label="Situação">
+      <div className="flex flex-wrap gap-1.5" data-testid="contacts-filter-stage">
         {ordered.map((st) => (
-          <DropdownItem key={st.key} active={selected.includes(st.key)} onClick={() => toggle(st.key)}>
-            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />
-            <span className="flex-1 truncate">{st.label}</span>
+          <ToggleChip key={st.key} active={selected.includes(st.key)} onClick={() => toggle(st.key)}>
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} aria-hidden />
+            <span className="truncate">{st.label}</span>
             {counts[st.key] !== undefined && (
-              <span className="ml-auto pl-2 text-2xs text-surface-500 tabular-nums">{counts[st.key].toLocaleString('pt-BR')}</span>
+              <span className="text-2xs text-surface-500 tabular-nums">{counts[st.key].toLocaleString('pt-BR')}</span>
             )}
-          </DropdownItem>
+          </ToggleChip>
         ))}
-        {selected.length > 0 && (
-          <DropdownItem onClick={() => { onChange([]); setOpen(false) }}>
-            <X className="w-3.5 h-3.5" /> Limpar
-          </DropdownItem>
-        )}
       </div>
-    </Dropdown>
-  )
-}
-
-// ─── Grupo de filtros dentro do painel "Filtros" ──────────────────────────────
-
-function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-[10px] uppercase tracking-wider text-surface-500 font-semibold">{label}</p>
-      {children}
-    </div>
+    </FilterGroup>
   )
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 //
-// Cabeçalho enxuto: busca + os 2 filtros mais usados inline (Fonte, Etiquetas) +
-// um botão "Filtros" que agrupa o resto (IA, Atividade, Ordenar). Os filtros
-// avançados ativos viram chips removíveis para não ficarem escondidos.
+// Direção A (DECISOES-PENDENTES #33): a barra é só busca (220) + botão "Filtro"
+// + o que a página injetar à direita (`trailing`: Lista|Tabela, Colunas,
+// Importar, Novo lead). Os chips Situação/Etiqueta saíram da barra e foram
+// para dentro do painel Filtro — nenhum filtro se perde; o que está aplicado
+// continua visível como chips removíveis ao lado do botão.
 
 interface ContactsFiltersBarProps {
   filters: ContactFilters
   onFiltersChange: (f: ContactFilters) => void
-  /** README 3.2 — botão "Colunas" (ghost, ícone sliders-horizontal) abre o
-   *  modal "Configurar colunas". */
-  onOpenColumns?: () => void
-  /** R2-1C-FILT-02: a faixa de resumo virou um botão ghost "Resumo" aqui (linha única do mock). */
-  summary?: { open: boolean; title: string; onToggle: () => void }
-  /** Faceta "Situação comercial" (só multi-funil) — vive no menu "+ Filtro". */
+  /** Etiquetas do tenant (a página já as busca para a barra de ação em massa). */
+  tags: TagType[]
+  /** Faceta "Situação comercial" (só multi-funil) — vive no painel Filtro. */
   commercial?: { value: string; options: { key: string; label: string }[]; onChange: (key: string) => void }
+  /** Controles à direita da barra. Só desktop. */
+  trailing?: ReactNode
 }
 
-export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns, summary, commercial }: ContactsFiltersBarProps) {
+export function ContactsFiltersBar({ filters, onFiltersChange, tags, commercial, trailing }: ContactsFiltersBarProps) {
+  const { stages } = useCRMConfig()
   const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
 
   const set = (patch: Partial<ContactFilters>) => onFiltersChange({ ...filters, ...patch })
 
   const clearAll = () => onFiltersChange({ search: filters.search, sortBy: filters.sortBy })
 
-  // Chips dos filtros avançados ativos — mantêm visível o que está aplicado sem
-  // precisar reabrir o painel.
+  // Chips dos filtros aplicados — mantêm visível o que está ativo sem reabrir o painel.
   const chips: { key: string; label: string; onRemove: () => void }[] = []
+  const stageSel = filters.stage ?? []
+  if (stageSel.length > 0) {
+    const first = stages.find((s) => s.key === stageSel[0])
+    chips.push({ key: 'stage', label: stageSel.length === 1 ? `Situação · ${first?.label ?? stageSel[0]}` : `Situação · ${stageSel.length}`, onRemove: () => set({ stage: undefined }) })
+  }
+  const tagSel = filters.tagId ?? []
+  if (tagSel.length > 0) {
+    const first = tags.find((t) => t.id === tagSel[0])
+    chips.push({ key: 'tags', label: tagSel.length === 1 ? `Etiqueta · ${first?.name ?? '1'}` : `Etiquetas · ${tagSel.length}`, onRemove: () => set({ tagId: undefined }) })
+  }
   if (filters.source)        chips.push({ key: 'source',    label: labelOf(SOURCES, filters.source) ?? 'Fonte',             onRemove: () => set({ source: undefined }) })
   if (commercial && commercial.value !== 'all') chips.push({ key: 'commercial', label: commercial.options.find((o) => o.key === commercial.value)?.label ?? 'Situação comercial', onRemove: () => commercial.onChange('all') })
   if (filters.intent)        chips.push({ key: 'intent',    label: labelOf(INTENTS, filters.intent) ?? 'Intenção',       onRemove: () => set({ intent: undefined }) })
@@ -332,24 +223,27 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns, su
   if (filters.optIn !== undefined) chips.push({ key: 'optin', label: filters.optIn ? 'Com opt-in' : 'Sem opt-in', onRemove: () => set({ optIn: undefined }) })
 
   return (
-    <div className="h-11 flex items-center gap-2 px-4 border-b border-surface-700 bg-surface-800 overflow-x-auto">
-      {/* Busca */}
-      <div className="relative flex-shrink-0 w-60">
+    <div className="h-12 flex items-center gap-2 px-4 border-b border-surface-700 bg-surface-800">
+      {/* Busca — 220px no desktop, largura total no mobile */}
+      <div className="relative flex-shrink-0 w-full md:w-[220px]">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
-        <input
+        <Input
+          size="sm"
           type="search"
           inputMode="search"
           value={filters.search ?? ''}
           onChange={(e) => set({ search: e.target.value || undefined })}
           placeholder="Nome, telefone ou e-mail"
+          aria-label="Buscar contatos"
           // [&::-webkit-search-cancel-button]:appearance-none: type="search"
           // já traz o teclado/label "Buscar" no mobile — sem isso o "x" nativo
           // do WebKit duplicaria o botão de limpar customizado logo abaixo.
-          className="w-full h-7 pl-8 pr-7 rounded-sm text-xs border border-[var(--bd2)] bg-surface-800 text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-all [&::-webkit-search-cancel-button]:appearance-none"
+          className="pl-8 pr-7 [&::-webkit-search-cancel-button]:appearance-none"
         />
         {filters.search && (
           <button
             onClick={() => set({ search: undefined })}
+            aria-label="Limpar busca"
             className="absolute right-2 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-100"
           >
             <X className="w-3 h-3" />
@@ -357,35 +251,53 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns, su
         )}
       </div>
 
-      <div className="w-px h-[18px] bg-surface-700 mx-1 flex-shrink-0" />
-
-      {/* Inline: Fonte + Etiquetas + "+ Filtro" (só desktop) */}
-      <div className="hidden md:flex items-center gap-2 flex-shrink-0">
-        <StageFilter
-          selected={filters.stage ?? []}
-          onChange={(keys) => set({ stage: keys.length > 0 ? keys : undefined })}
-          baseFilters={{ ...filters, stage: undefined, ...(commercial && commercial.value !== 'all' ? { commercial: commercial.value as ContactFilters['commercial'] } : {}) }}
-        />
-
-        <TagFilter
-          selected={filters.tagId ?? []}
-          onChange={(ids) => set({ tagId: ids.length > 0 ? ids : undefined })}
-        />
-
-        <div ref={menuRef} className="relative">
-          <button
+      <div className="hidden md:flex items-center gap-2 min-w-0">
+        <div className="relative flex-shrink-0">
+          <Button
+            size="sm"
+            variant="ghost"
+            leftIcon={<SlidersHorizontal className="w-3.5 h-3.5" />}
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-[5px] h-7 px-[9px] rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 transition-colors"
+            aria-haspopup="dialog"
+            aria-expanded={menuOpen}
+            data-testid="contacts-filter-button"
           >
-            <Plus className="w-[13px] h-[13px] flex-shrink-0" />
-            <span>Filtro</span>
-          </button>
+            Filtro
+            {chips.length > 0 && <span className="tabular-nums text-accent-dark">{chips.length}</span>}
+          </Button>
 
           {menuOpen && (
             <div className="overlay-scrim z-40" aria-hidden onMouseDown={() => setMenuOpen(false)} />
           )}
           {menuOpen && (
-            <div className="absolute left-0 top-full mt-1 z-50 w-64 overlay-surface border rounded-xl p-3 flex flex-col gap-3">
+            <div
+              role="dialog"
+              aria-label="Filtros de contatos"
+              className="absolute left-0 top-full mt-1 z-50 w-80 max-h-[70vh] overflow-y-auto overlay-surface border rounded-lg p-3 flex flex-col gap-3"
+            >
+              <StageGroup
+                selected={stageSel}
+                onChange={(keys) => set({ stage: keys.length > 0 ? keys : undefined })}
+                baseFilters={{ ...filters, stage: undefined, ...(commercial && commercial.value !== 'all' ? { commercial: commercial.value as ContactFilters['commercial'] } : {}) }}
+              />
+
+              {tags.length > 0 && (
+                <FilterGroup label="Etiquetas">
+                  <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                    {tags.map((t) => (
+                      <ToggleChip
+                        key={t.id}
+                        active={tagSel.includes(t.id)}
+                        onClick={() => set({ tagId: tagSel.includes(t.id) ? (tagSel.length > 1 ? tagSel.filter((x) => x !== t.id) : undefined) : [...tagSel, t.id] })}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} aria-hidden />
+                        <span className="truncate">{t.name}</span>
+                      </ToggleChip>
+                    ))}
+                  </div>
+                </FilterGroup>
+              )}
+
               <FilterGroup label="Origem">
                 <FilterSelect fullWidth value={filters.source ?? ''} onChange={(v) => set({ source: (v || undefined) as ContactSource | undefined })} placeholder="Fonte">
                   {SOURCES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -429,57 +341,34 @@ export function ContactsFiltersBar({ filters, onFiltersChange, onOpenColumns, su
             </div>
           )}
         </div>
+
+        {/* Chips dos filtros aplicados — inline na mesma linha (README: nunca 2ª linha) */}
+        {chips.length > 0 && (
+          <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto">
+            {chips.map((c) => (
+              <span
+                key={c.key}
+                className="inline-flex items-center gap-[5px] h-7 pl-2.5 pr-1.5 rounded-sm text-xs font-semibold border border-brand-500 bg-accent-soft text-accent-dark whitespace-nowrap"
+              >
+                <span className="font-bold">{c.label}</span>
+                <button onClick={c.onRemove} aria-label={`Remover ${c.label}`} className="hover:opacity-70">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            <button
+              onClick={clearAll}
+              className="text-[11px] text-surface-500 hover:text-surface-300 transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap"
+            >
+              <X className="w-2.5 h-2.5" />
+              Limpar tudo
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Chips dos filtros avançados ativos — inline na mesma linha (README: nunca 2ª linha) */}
-      {chips.length > 0 && (
-        <div className="hidden md:flex items-center gap-1.5 flex-shrink-0">
-          {chips.map((c) => (
-            <span
-              key={c.key}
-              className="inline-flex items-center gap-[5px] h-7 pl-2.5 pr-1.5 rounded-sm text-xs font-semibold border border-brand-500 bg-accent-soft text-accent-dark"
-            >
-              <span className="font-bold">{c.label}</span>
-              <button onClick={c.onRemove} aria-label={`Remover ${c.label}`} className="hover:opacity-70">
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-          <button
-            onClick={clearAll}
-            className="text-[11px] text-surface-500 hover:text-surface-300 transition-colors flex items-center gap-1 flex-shrink-0"
-          >
-            <X className="w-2.5 h-2.5" />
-            Limpar tudo
-          </button>
-        </div>
-      )}
-
-      {summary && (
-        <button
-          type="button"
-          onClick={summary.onToggle}
-          aria-expanded={summary.open}
-          title={summary.title}
-          data-testid="contacts-summary-toggle"
-          className={cn(
-            'hidden md:flex items-center gap-1.5 h-7 px-2 rounded-sm text-xs font-semibold transition-colors ml-auto flex-shrink-0',
-            summary.open ? 'text-accent-dark bg-accent-soft' : 'text-surface-400 hover:text-surface-100',
-          )}
-        >
-          <TrendingUp className="w-3.5 h-3.5 flex-shrink-0" />
-          Resumo
-        </button>
-      )}
-      {onOpenColumns && (
-        <button
-          onClick={onOpenColumns}
-          title="Configurar colunas"
-          className="hidden md:flex items-center gap-1.5 h-7 px-2 rounded-sm text-xs font-semibold text-surface-400 hover:text-surface-100 transition-colors flex-shrink-0 [&:only-child]:ml-auto"
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5 flex-shrink-0" />
-          Colunas
-        </button>
+      {trailing && (
+        <div className="hidden md:flex items-center gap-1.5 ml-auto flex-shrink-0">{trailing}</div>
       )}
     </div>
   )
