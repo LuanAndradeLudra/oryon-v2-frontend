@@ -389,7 +389,11 @@ export function AutomationDetail({
             {onResolveWithAI && (
               <button
                 onClick={() => onResolveWithAI(automation, attention[0])}
-                className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-2xs font-semibold text-white transition-colors"
+                // Eixo 10: border border-white/25 — mesma peça (botão sobre
+                // banner colorido) em AgentDetail/MessageInput/
+                // WhatsappLineRequiredBanner/WorkspaceReadinessBanner, todas
+                // com essa borda; só esta não tinha.
+                className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg border border-white/25 bg-white/15 hover:bg-white/25 text-2xs font-semibold text-white transition-colors"
               >
                 <Sparkles className="w-3 h-3" /> Resolver com IA
               </button>
