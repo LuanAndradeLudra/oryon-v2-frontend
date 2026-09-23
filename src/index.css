@@ -106,6 +106,9 @@
      (contraprova do Cartógrafo, luminância relativa WCAG). A 7%: 0,0065 no
      piso 950 e 0,0083 no piso 800. DECISÕES #30. */
   --rowhover: rgba(255, 255, 255, .07);
+  /* Linha selecionada/aberta em listas e tabelas (Leads, DECISÕES #33):
+     tinta da marca a 10% — distinta do hover (branco) e do --sf2 (piso). */
+  --sel: rgba(45, 212, 191, .10);
 
   /* SCRUM-1097: `--sf2` é o nome que o handoff usa (seções 3.5/3.6/3.8/3.9/
    * 3.11) pro fundo de rail/nav secundário (painel Tutor do wizard, coluna
@@ -962,6 +965,7 @@ code, pre, kbd, samp {
 
   /* SCRUM-1097 (claro): ver comentário dark. */
   --rowhover: rgba(15, 23, 42, 0.035);
+  --sel: rgba(15, 118, 110, .08);
   --bd2: #A3ACBD;
   --color-topbar: var(--color-surface-800);
   --toast: #1A1F2E;

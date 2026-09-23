@@ -14,6 +14,7 @@ import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { type ContactColumnsConfig } from '@/hooks/useContactColumnsConfig'
 import { relativeDate, getActivePipelines, formatPhoneBR, cn } from '@/lib/utils'
+import { formatBRL } from '@/utils/money'
 import { pipelineKindOption, pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import type { Contact, ContactStage, Pipeline } from '@/types'
 
@@ -45,6 +46,48 @@ const COLUMN_TO_SORT_KEY: Record<string, 'displayName' | 'leadScore' | 'lastCont
   lastContactedAt: 'lastContactedAt',
 }
 
+/**
+ * Modo "Tabela" (Direção B, DECISÕES #33) sobre o DataTable, sem tocar em ui/:
+ * o DataTable fixa `h-9` nas células e não tem ganchos de hover/seleção, então
+ * estas variantes de container fazem o trabalho (especificidade maior que a das
+ * classes da linha). Se o DataTable ganhar props de densidade/revelar-no-hover,
+ * esta receita some.
+ *  - linha 44px;
+ *  - checkbox e kebab só no hover/foco da linha (ou selecionado/menu aberto);
+ *    em ponteiro sem hover (touch) ficam sempre visíveis — a regra só vale sob
+ *    `@media (hover:hover)`;
+ *  - linha selecionada em `--sel` (token do mockup; cai em brand a 10% até o
+ *    token existir no index.css).
+ */
+const ROW_RECIPE = [
+  '[&_tbody_td]:h-11',
+  '[@media(hover:hover)]:[&_tbody_tr:not(:hover):not(:focus-within)_.ui-checkbox:not(:checked)]:opacity-0',
+  '[@media(hover:hover)]:[&_tbody_tr:not(:hover):not(:focus-within)_.row-kebab:not(.row-kebab-open)]:opacity-0',
+  '[&_tbody_tr:has(.ui-checkbox:checked)]:bg-[var(--sel,color-mix(in_srgb,var(--color-brand-500)_10%,transparent))]',
+].join(' ')
+
+/** Etiquetas em chips (até `max`, resto em "+N") — mesma peça na coluna
+ *  Etiquetas e inline na célula Nome quando a coluna está oculta. */
+function TagChips({ tags, max = 2, emptyDash = false }: { tags: Contact['tags']; max?: number; emptyDash?: boolean }) {
+  const list = tags ?? []
+  if (list.length === 0) return emptyDash ? <span className="text-surface-500 text-xs">—</span> : null
+  return (
+    <div className="flex gap-1 flex-wrap">
+      {list.slice(0, max).map((tag) => (
+        <span
+          key={tag.id}
+          className="color-chip inline-flex items-center h-[18px] whitespace-nowrap align-middle text-[10.5px] font-semibold px-[7px] rounded-xs border"
+          style={{ ['--chip']: tag.color } as React.CSSProperties}
+          title={tag.name}
+        >
+          {tag.name}
+        </span>
+      ))}
+      {list.length > max && <span className="text-[11px] text-surface-500">+{list.length - max}</span>}
+    </div>
+  )
+}
+
 function ActionsMenuCell({ contact, onOpenPanel, onOpenConversation }: {
   contact: Contact
   onOpenPanel: (c: Contact) => void
@@ -64,7 +107,12 @@ function ActionsMenuCell({ contact, onOpenPanel, onOpenConversation }: {
             aria-label={`Mais ações — ${contact.displayName || contact.waId}`}
             aria-haspopup="menu"
             aria-expanded={open}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+            // row-kebab: escondido até hover/foco da linha (ver ROW_RECIPE);
+            // row-kebab-open mantém visível com o menu aberto.
+            className={cn(
+              'row-kebab p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
+              open && 'row-kebab-open',
+            )}
           >
             <MoreHorizontal className="w-4 h-4" />
           </button>
@@ -311,24 +359,7 @@ export function ContactsTable({
     tags: {
       key: 'tags',
       header: 'Etiquetas',
-      render: (c) => (
-        <div className="flex gap-1 flex-wrap">
-          {(c.tags ?? []).slice(0, 2).map((tag) => (
-            <span
-              key={tag.id}
-              className="color-chip inline-flex items-center h-[18px] whitespace-nowrap align-middle text-[10.5px] font-semibold px-[7px] rounded-xs border"
-              style={{ ['--chip']: tag.color } as React.CSSProperties}
-              title={tag.name}
-            >
-              {tag.name}
-            </span>
-          ))}
-          {(c.tags ?? []).length > 2 && (
-            <span className="text-[11px] text-surface-500">+{(c.tags ?? []).length - 2}</span>
-          )}
-          {(c.tags ?? []).length === 0 && <span className="text-surface-500 text-xs">—</span>}
-        </div>
-      ),
+      render: (c) => <TagChips tags={c.tags} emptyDash />,
     },
     pipelines: {
       key: 'pipelines',
@@ -351,20 +382,26 @@ export function ContactsTable({
     },
     lastContactedAt: {
       key: 'lastContactedAt',
-      header: 'Último contato',
+      // "Quando e quem" (você/agente/sem resposta) do mockup: a API não entrega
+      // quem falou por último no contato — só o relativo, sem inventar o resto.
+      header: 'Última interação',
       sortable: true,
-      align: 'right',
       render: (c) => <span className="text-[13px] text-surface-400 whitespace-nowrap">{relativeDate(c.lastContactedAt)}</span>,
     },
     deals: {
       key: 'deals',
       header: 'Negócios',
       align: 'right',
+      // Valor (R$) em vez de contagem; sem valor, "—" mudo (não "0"). Em aberto
+      // primeiro, senão o ganho — o tooltip diz qual dos dois está sendo mostrado.
       render: (c) => {
-        const openCount = (c.dealsSummary?.byPipeline ?? []).reduce((sum, p) => sum + p.openCount, 0)
+        const s = c.dealsSummary
+        const open = s?.openCents ?? 0
+        const cents = open > 0 ? open : (s?.wonCents ?? 0)
+        if (cents <= 0) return <span className="text-[13px] text-surface-600">—</span>
         return (
-          <span className={cn('text-[13px] tabular-nums', openCount > 0 ? 'text-surface-200' : 'text-surface-500')}>
-            {openCount}
+          <span className="text-[13px] font-medium tabular-nums text-surface-200" title={open > 0 ? 'Valor em aberto' : 'Valor ganho'}>
+            {formatBRL(cents)}
           </span>
         )
       },
@@ -378,14 +415,26 @@ export function ContactsTable({
     },
   }), [stages, onAddToPipeline])
 
+  // Telefone e etiquetas viram subtítulo/chips dentro do Nome enquanto a coluna
+  // própria estiver oculta (padrão); com a coluna ligada, não duplica.
+  const phoneInName = columnsConfig.hiddenKeys.has('phone')
+  const tagsInName = columnsConfig.hiddenKeys.has('tags')
   const nameColumn: DataTableColumn<Contact> = {
     key: 'name',
     header: 'Nome',
     sortable: true,
     render: (c) => (
-      <div className="flex items-center gap-[9px]">
+      <div className="flex items-center gap-[9px] min-w-0">
         <Avatar name={c.displayName} imageUrl={c.profilePicUrl} size="xs" />
-        <p className="text-[13px] font-semibold text-surface-100 truncate">{c.displayName}</p>
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-surface-100 truncate">{c.displayName}</p>
+          {phoneInName && c.waId && (
+            <p className="text-[11px] text-surface-500 tabular-nums truncate">{formatPhoneBR(c.waId)}</p>
+          )}
+        </div>
+        {tagsInName && (c.tags?.length ?? 0) > 0 && (
+          <div className="flex-shrink-0"><TagChips tags={c.tags} /></div>
+        )}
       </div>
     ),
   }
@@ -430,7 +479,7 @@ export function ContactsTable({
   }
 
   return (
-    <div className="flex-1 overflow-auto" onScroll={handleScroll}>
+    <div className={cn('flex-1 overflow-auto', ROW_RECIPE)} onScroll={handleScroll}>
       <DataTable
         columns={columns}
         rows={contacts}
