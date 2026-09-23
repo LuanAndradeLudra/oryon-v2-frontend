@@ -870,13 +870,16 @@ function Step2({
           seleção mostrada por peso da fonte + risco à esquerda, não por ring
           nem por cartão colorido. */}
       <Faixa label="Destinatários">
-        <div>
+        <div role="radiogroup" aria-label="Como definir os destinatários">
           {SEGMENT_OPTIONS.map((opt) => {
             const Icon = opt.icon
             const isSelected = segmentType === opt.value
             return (
               <button
                 key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
                 onClick={() => onSegmentType(opt.value)}
                 className={cn(
                   'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
@@ -1358,7 +1361,7 @@ function Step4({
       {/* Schedule — mesma vocabulário do "Destinatários" (Etapa 2): faixa de
           linhas com risco à esquerda + peso da fonte, sem cartão/ring. */}
       <Faixa label="Envio">
-        <div>
+        <div role="radiogroup" aria-label="Quando enviar">
           {([
             { value: 'now',   label: 'Enviar agora', icon: Send,  desc: 'Disparo imediato após criar' },
             { value: 'later', label: 'Agendar',       icon: Clock, desc: 'Escolha data e hora do envio' },
@@ -1368,6 +1371,9 @@ function Step4({
             return (
               <button
                 key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
                 onClick={() => onScheduleMode(opt.value)}
                 className={cn(
                   'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
