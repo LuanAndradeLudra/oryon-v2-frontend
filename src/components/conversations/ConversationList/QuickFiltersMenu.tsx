@@ -440,14 +440,17 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
         >
           {allUsers.length > 5 && (
             <div className="p-2 border-b border-surface-700">
+              {/* PL-C2-CAR-16 (Eixo10/P4): mesma peça (busca) do header da
+                  lista, medida diferente — `ConversationSearch.tsx` é a
+                  referência da tela (h-7/rounded-sm/bg-surface-800/--bd2). */}
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
                 <input
                   autoFocus
                   value={teamSearch}
                   onChange={(e) => setTeamSearch(e.target.value)}
                   placeholder="Buscar atendente..."
-                  className="w-full pl-7 pr-2.5 py-1.5 text-xs bg-surface-700 border border-surface-600 rounded-lg text-surface-100 placeholder-surface-500 outline-none focus:border-surface-500 transition-colors"
+                  className="w-full h-7 pl-8 pr-2.5 text-xs bg-surface-800 border border-[var(--bd2)] rounded-sm text-surface-100 placeholder-surface-500 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
                 />
               </div>
             </div>
