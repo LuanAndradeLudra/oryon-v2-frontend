@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Três direções de template</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#0f1414;color:#ECF1F1;padding:24px 24px 60px}
+  h1{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+  .rotulo{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2DD4BF;margin:26px 0 4px}
+  .nota{font-size:12.5px;color:#8FA5A5;margin:0 0 14px;max-width:1000px;line-height:1.65}
+  .nota b{color:#ECF1F1;font-weight:600}
+  .nota code{background:#161E1E;border:1px solid #243333;border-radius:4px;padding:0 4px;font-size:11.5px;color:#2DD4BF}
+  .quadro{width:1180px;overflow:hidden;border-radius:10px;margin:0 0 8px;border:1px solid #243333}
+
+  /* ══════════════════════════════════════════════════════════════
+     PREVIEW — valores amostrados pixel a pixel dos prints da Meta.
+     papel de parede #E5DDD5 · balão #FFFFFF · texto #11191D
+     hora #6C7E85 · divisor #EEF2F1
+     botão de LINK/COPIAR #077CB3 (azul) · RESPOSTA RÁPIDA #1B8755 (verde)
+     Sem moldura de celular, sem cabeçalho, sem barra de digitação —
+     a prévia da Meta não tem nada disso.
+     ══════════════════════════════════════════════════════════════ */
+  .wa-painel{background-color:#E5DDD5;border-radius:4px;padding:14px 12px;min-height:300px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23DCD3C9' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 18h9M16.5 13.5v9M68 10l5 5M73 10l-5 5M31 57c2.7-3.8 8-3.8 10.7 0M77 68h8M81 64v8M20 80c3.8-2.7 8-2.7 11.8 0M52 31h8M56 27v8M39 88l4 4M43 88l-4 4M84 39l4 4M88 39l-4 4M8 48c3.4-2.3 6.8-2.3 10.2 0M59 75c3-3 6.8-3 9.8 0M26 34c2-2.4 5.2-2.4 7.2 0'/%3E%3Ccircle cx='75' cy='33' r='3.4'/%3E%3Ccircle cx='25' cy='43' r='2.8'/%3E%3Ccircle cx='59' cy='70' r='3.2'/%3E%3Ccircle cx='14' cy='66' r='2.5'/%3E%3Ccircle cx='45' cy='16' r='2.6'/%3E%3C/g%3E%3C/svg%3E")}
+  .wa-balao{position:relative;width:296px;background:#fff;border-radius:7.5px;border-top-left-radius:0;
+    padding:3px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+  .wa-balao::before{content:'';position:absolute;top:0;left:-8px;width:8px;height:13px;
+    background:#fff;clip-path:polygon(100% 0,100% 100%,0 0)}
+  .wa-img{height:158px;border-radius:6px;overflow:hidden;position:relative;
+    background:linear-gradient(135deg,#0F766E 0%,#14B8A6 46%,#5EEAD4 100%)}
+  .wa-img::after{content:'BLACK FRIDAY';position:absolute;inset:0;display:flex;align-items:center;
+    justify-content:center;font-size:17px;font-weight:800;letter-spacing:.14em;color:rgba(4,32,29,.66)}
+  .wa-conteudo{padding:6px 7px 4px;
+    font-family:'Segoe UI','Helvetica Neue',Roboto,system-ui,sans-serif}
+  .wa-txt{font-size:14.5px;line-height:19px;color:#11191D;white-space:pre-line;word-break:break-word}
+  .wa-txt b{font-weight:600}
+  .wa-var{background:rgba(7,124,179,.12);border-radius:3px;padding:0 2px}
+  .wa-rod{font-size:13px;line-height:17px;color:#6C7E85;margin-top:5px}
+  .wa-hora{font-size:11px;color:#6C7E85;text-align:right;margin-top:1px;padding:0 1px 1px;
+    font-family:'Segoe UI','Helvetica Neue',Roboto,system-ui,sans-serif}
+  .wa-sep{height:1px;background:#EEF2F1;margin:0 -3px}
+  .wa-btn{display:flex;align-items:center;justify-content:center;gap:7px;height:40px;
+    font-size:14.5px;font-weight:400;color:#077CB3;
+    font-family:'Segoe UI','Helvetica Neue',Roboto,system-ui,sans-serif}
+  .wa-btn.verde{color:#1B8755}
+  .wa-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
+
+  /* ══════════ Formulário — direção C (escolhida) ══════════ */
+  .C{display:flex;height:660px;background:#0a0c0c;color:#f4f6f6}
+  .C .form{flex:1;min-width:0;display:flex;flex-direction:column}
+  .C .barra{height:46px;border-bottom:1px solid #1e2525;display:flex;align-items:center;padding:0 20px;gap:10px;flex:none}
+  .C .crumb{font-size:12px;color:#7d8a8a}
+  .C .crumb b{color:#f4f6f6;font-weight:600}
+  .C .passos{display:flex;align-items:center;gap:7px;margin-left:18px}
+  .C .passo{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#5c6767}
+  .C .passo.on{color:#f4f6f6;font-weight:600}
+  .C .passo.ok{color:#7d8a8a}
+  .C .bola{width:14px;height:14px;border-radius:50%;border:1.5px solid #2c3535;flex:none}
+  .C .passo.on .bola{border-color:#f4f6f6;background:linear-gradient(90deg,#f4f6f6 50%,transparent 50%)}
+  .C .passo.ok .bola{border-color:#1B8755;background:#1B8755}
+  .C .corpo{padding:16px 20px;overflow:hidden}
+  .C .grupo{border-top:1px solid #1e2525;padding:13px 0}
+  .C .grupo:first-child{border-top:0;padding-top:0}
+  .C .gl{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  .C .gt{font-size:12.5px;font-weight:700;letter-spacing:-.01em;width:104px;flex:none}
+  .C .gh{font-size:11.5px;color:#6f7c7c}
+  .C .campo{height:30px;border:1px solid #232b2b;border-radius:5px;background:#0f1212;display:flex;
+    align-items:center;padding:0 9px;font-size:12.5px;color:#f4f6f6;margin-bottom:7px}
+  .C .campo.area{height:70px;align-items:flex-start;padding-top:7px;line-height:1.55;margin-bottom:5px}
+  .C .linha{display:flex;gap:6px;align-items:center}
+  .C .pill{height:26px;border:1px solid #232b2b;border-radius:5px;padding:0 9px;display:inline-flex;
+    align-items:center;font-size:11.5px;color:#7d8a8a}
+  .C .pill.on{border-color:#4a5555;color:#f4f6f6;font-weight:600;background:#151a1a}
+  .C .cta{height:28px;border-radius:5px;background:#f4f6f6;color:#0a0c0c;font-size:12px;font-weight:700;
+    display:inline-flex;align-items:center;padding:0 13px}
+  .C .ghost{height:28px;border-radius:5px;border:1px solid #232b2b;font-size:12px;font-weight:600;
+    display:inline-flex;align-items:center;padding:0 11px;color:#a8b3b3}
+  .C .conta{font-size:10.5px;color:#5c6767;font-variant-numeric:tabular-nums}
+  .C .lado{width:372px;flex:none;border-left:1px solid #1e2525;padding:18px 20px;background:#080a0a}
+  .C .cap{font-size:11px;font-weight:600;color:#6f7c7c;margin-bottom:11px;display:flex;align-items:center}
+  .C .seg{margin-left:auto;display:flex;border:1px solid #232b2b;border-radius:5px;overflow:hidden}
+  .C .seg span{font-size:10.5px;padding:3px 9px;color:#6f7c7c}
+  .C .seg span.on{background:#151a1a;color:#f4f6f6;font-weight:600}
+  .C .dica{font-size:11px;color:#5c6767;line-height:1.55;margin-top:12px}
+</style>
+</head>
+<body>
+
+<h1>Criar modelo — prévia refeita a partir dos prints da Meta</h1>
+<p class="nota">Todos os valores do balão foram <b>amostrados pixel a pixel</b> dos três prints, não estimados:
+papel de parede <code>#E5DDD5</code> · balão <code>#FFFFFF</code> · texto <code>#11191D</code> ·
+hora <code>#6C7E85</code> · divisor <code>#EEF2F1</code>.<br>
+Dois achados que eu não teria adivinhado: <b>a cor do botão depende do tipo</b> — link e copiar código saem em
+azul <code>#077CB3</code>, resposta rápida sai em <b>verde</b> <code>#1B8755</code>. E a prévia da Meta
+<b>não tem moldura de celular, nem cabeçalho de conversa, nem barra de digitação</b> — é só o papel de parede com o balão.
+Era isso que fazia a minha versão anterior parecer imitação.</p>
+
+<p class="rotulo">Modelo de marketing — imagem, corpo, rodapé e botão de link</p>
+<div class="quadro">
+  <div class="C">
+    <div class="form">
+      <div class="barra">
+        <span class="crumb">Disparos · Modelos · <b>promo_black_friday_2026</b></span>
+        <div class="passos">
+          <span class="passo ok"><span class="bola"></span>Configurar</span>
+          <span class="passo on"><span class="bola"></span>Editar</span>
+          <span class="passo"><span class="bola"></span>Enviar para análise</span>
+        </div>
+        <span style="margin-left:auto" class="ghost">Salvar rascunho</span>
+        <span class="cta">Enviar para análise</span>
+      </div>
+      <div class="corpo">
+        <div class="grupo">
+          <div class="gl"><span class="gt">Nome</span><span class="gh">minúsculas, sem espaço</span>
+            <span class="conta" style="margin-left:auto">22 / 512</span></div>
+          <div class="linha">
+            <div class="campo" style="flex:1;margin-bottom:0">promo_black_friday_2026</div>
+            <div class="campo" style="width:150px;margin-bottom:0">Marketing ▾</div>
+            <div class="campo" style="width:150px;margin-bottom:0">Português (BR) ▾</div>
+          </div>
+        </div>
+        <div class="grupo">
+          <div class="gl"><span class="gt">Cabeçalho</span><span class="gh">opcional · uma mídia ou 60 caracteres</span></div>
+          <div class="linha">
+            <span class="pill">Nenhum</span><span class="pill">Texto</span>
+            <span class="pill on">Imagem</span><span class="pill">Vídeo</span><span class="pill">Documento</span>
+          </div>
+        </div>
+        <div class="grupo">
+          <div class="gl"><span class="gt">Corpo</span><span class="gh">{{1}} vira o nome do contato</span>
+            <span class="conta" style="margin-left:auto">132 / 1024</span></div>
+          <div class="campo area">*Black Friday chegou!*<br>Oi {{1}}, até 60% OFF em toda a linha — só até domingo. Use o cupom BF60 no site.</div>
+          <div class="linha"><span class="pill">+ Variável</span><span class="pill">Negrito</span>
+            <span class="pill">Itálico</span><span class="pill">Emoji</span></div>
+        </div>
+        <div class="grupo">
+          <div class="gl"><span class="gt">Rodapé</span><span class="gh">opcional · 60 caracteres</span></div>
+          <div class="campo" style="margin-bottom:0;width:340px">Equipe Loja Vida</div>
+        </div>
+        <div class="grupo">
+          <div class="gl"><span class="gt">Botões</span><span class="gh">até 3 · link, telefone ou resposta rápida</span></div>
+          <div class="linha">
+            <div class="campo" style="width:130px;margin-bottom:0">Link ▾</div>
+            <div class="campo" style="width:150px;margin-bottom:0">Ver ofertas</div>
+            <div class="campo" style="width:230px;margin-bottom:0">lojavida.com.br/bf</div>
+            <span class="pill">+ Botão</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lado">
+      <div class="cap">Prévia do modelo
+        <span class="seg"><span class="on">Claro</span><span>Escuro</span></span></div>
+      <div class="wa-painel">
+        <div class="wa-balao">
+          <div class="wa-img"></div>
+          <div class="wa-conteudo">
+            <div class="wa-txt"><b>Black Friday chegou!</b>
+Oi <span class="wa-var">{{1}}</span>, até 60% OFF em toda a linha — só até domingo. Use o cupom BF60 no site.</div>
+            <div class="wa-rod">Equipe Loja Vida</div>
+            <div class="wa-hora">09:41</div>
+          </div>
+          <div class="wa-sep"></div>
+          <div class="wa-btn">
+            <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+            Ver ofertas
+          </div>
+        </div>
+      </div>
+      <p class="dica">Mensagem recebida não tem tique — tique só existe no que o contato envia.</p>
+    </div>
+  </div>
+</div>
+
+<p class="rotulo">Modelo simples — só corpo e resposta rápida (o botão fica verde)</p>
+<div class="quadro">
+  <div class="C">
+    <div class="form">
+      <div class="barra">
+        <span class="crumb">Disparos · Modelos · <b>teste_novidades</b></span>
+        <div class="passos">
+          <span class="passo ok"><span class="bola"></span>Configurar</span>
+          <span class="passo on"><span class="bola"></span>Editar</span>
+          <span class="passo"><span class="bola"></span>Enviar para análise</span>
+        </div>
+        <span style="margin-left:auto" class="ghost">Salvar rascunho</span>
+        <span class="cta">Enviar para análise</span>
+      </div>
+      <div class="corpo">
+        <div class="grupo">
+          <div class="gl"><span class="gt">Nome</span><span class="gh">minúsculas, sem espaço</span>
+            <span class="conta" style="margin-left:auto">15 / 512</span></div>
+          <div class="linha">
+            <div class="campo" style="flex:1;margin-bottom:0">teste_novidades</div>
+            <div class="campo" style="width:150px;margin-bottom:0">Marketing ▾</div>
+            <div class="campo" style="width:150px;margin-bottom:0">Português (BR) ▾</div>
+          </div>
+        </div>
+        <div class="grupo">
+          <div class="gl"><span class="gt">Cabeçalho</span><span class="gh">opcional · uma mídia ou 60 caracteres</span></div>
+          <div class="linha">
+            <span class="pill on">Nenhum</span><span class="pill">Texto</span>
+            <span class="pill">Imagem</span><span class="pill">Vídeo</span><span class="pill">Documento</span>
+          </div>
+        </div>
+        <div class="grupo">
+          <div class="gl"><span class="gt">Corpo</span><span class="gh">sem variável neste modelo</span>
+            <span class="conta" style="margin-left:auto">61 / 1024</span></div>
+          <div class="campo area">Olá, isso é um teste de template.<br>Estamos testando novidades</div>
+          <div class="linha"><span class="pill">+ Variável</span><span class="pill">Negrito</span>
+            <span class="pill">Itálico</span><span class="pill">Emoji</span></div>
+        </div>
+        <div class="grupo">
+          <div class="gl"><span class="gt">Rodapé</span><span class="gh">opcional · 60 caracteres</span></div>
+          <div class="campo" style="margin-bottom:0;width:340px;color:#4a5555">Sem rodapé</div>
+        </div>
+        <div class="grupo">
+          <div class="gl"><span class="gt">Botões</span><span class="gh">até 3 · link, telefone ou resposta rápida</span></div>
+          <div class="linha">
+            <div class="campo" style="width:170px;margin-bottom:0">Resposta rápida ▾</div>
+            <div class="campo" style="width:170px;margin-bottom:0">Quick Reply</div>
+            <span class="pill">+ Botão</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lado">
+      <div class="cap">Prévia do modelo
+        <span class="seg"><span class="on">Claro</span><span>Escuro</span></span></div>
+      <div class="wa-painel">
+        <div class="wa-balao">
+          <div class="wa-conteudo">
+            <div class="wa-txt">Olá, isso é um teste de template.
+Estamos testando novidades</div>
+            <div class="wa-hora">02:34</div>
+          </div>
+          <div class="wa-sep"></div>
+          <div class="wa-btn verde">
+            <svg viewBox="0 0 24 24"><path d="M9 17 4 12l5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+            Quick Reply
+          </div>
+        </div>
+      </div>
+      <p class="dica">Este é o print 3 reproduzido: mesmo texto, mesma hora, mesmo botão verde de resposta rápida.</p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
