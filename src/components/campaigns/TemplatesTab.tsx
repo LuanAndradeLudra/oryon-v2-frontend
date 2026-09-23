@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { templatesApi } from '@/services/api'
 import { TemplateCreator } from './TemplateCreator'
 import { TemplatePreview } from './TemplatePreview'
+import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
 import { CATEGORY_LABELS } from './constants'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
@@ -219,66 +220,63 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
         </Button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5">
-        {loading ? (
-          <SkeletonList items={4} />
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="Nenhum template encontrado"
-            action={
-              templates.length === 0 && hasWhatsappLine
-                ? { label: 'Criar primeiro template', onClick: () => { setEditing(null); setDrawerOpen(true) } }
-                : undefined
-            }
-          />
-        ) : (
-          // SCRUM-1106 (tela 2c): grade de 4 cards — a lista virou linhas
-          // densas demais pra caber num card estreito, então a prévia some
-          // de vista; o mock quer a mensagem visível de cara.
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {filtered.map((tpl) => (
-              <TemplateCard
-                key={tpl.id}
-                template={tpl}
-                onPreview={() => setPreviewTemplate(tpl)}
-                onEdit={() => { setEditing(tpl); setDrawerOpen(true) }}
-                canEdit={canEditTemplate(tpl)}
-                onDelete={() => setDeleteTarget(tpl.id)}
-                onAssignWaba={() => setAssignWabaTarget(tpl)}
-                onDuplicate={waLines.length > 1 ? () => setDuplicateTarget(tpl) : undefined}
-                deleting={deleting === tpl.id}
+      {/* Conteúdo — lista + detalhe (SCRUM-1097, 22/09).
+          A grade de 4 cards saiu: os gerenciadores de modelo do mercado
+          (Twilio Content Template Builder, WhatsApp Manager da própria Meta)
+          são LISTA com busca e filtros, não mosaico de prévias. A prévia não
+          se perde — ganha um painel fixo à direita, que mostra o modelo
+          inteiro em vez do pedaço que cabia dentro do card. */}
+      <div className="flex-1 flex min-h-0">
+        <div className="flex-1 min-w-0 overflow-y-auto">
+          {loading ? (
+            <div className="p-5"><SkeletonList items={6} /></div>
+          ) : filtered.length === 0 ? (
+            <div className="p-5">
+              <EmptyState
+                icon={FileText}
+                title={templates.length === 0 ? 'Nenhum modelo ainda' : 'Nenhum modelo com esses filtros'}
+                hint={templates.length === 0
+                  ? 'Modelos são as mensagens aprovadas pela Meta que você pode disparar a qualquer momento.'
+                  : 'Ajuste a busca, o status ou a linha para ver mais.'}
+                action={
+                  templates.length === 0 && hasWhatsappLine
+                    ? { label: 'Criar primeiro modelo', onClick: () => { setEditing(null); setDrawerOpen(true) } }
+                    : templates.length > 0
+                      ? { label: 'Limpar filtros', onClick: () => { setSearch(''); setStatusFilter('all'); setLineFilter('all') } }
+                      : undefined
+                }
               />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Template Preview Modal */}
-      {previewTemplate && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-          onClick={() => setPreviewTemplate(null)}
-        >
-          <div
-            className="bg-surface-900 rounded-lg border border-surface-700 p-6 max-w-sm w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-surface-100">{previewTemplate.name}</h3>
-              <button
-                onClick={() => setPreviewTemplate(null)}
-                aria-label="Fechar"
-                className="p-1 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
-              >
-                ×
-              </button>
             </div>
-            <TemplatePreview template={previewTemplate} />
-          </div>
+          ) : (
+            <div role="list">
+              {filtered.map((tpl) => (
+                <TemplateRow
+                  key={tpl.id}
+                  template={tpl}
+                  selecionado={previewTemplate?.id === tpl.id}
+                  onSelect={() => setPreviewTemplate(tpl)}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Painel de detalhe. Ponto de quebra em `lg` (1024), não `xl`: medi
+            em 1240px — largura de notebook comum — e com `xl` o painel sumia
+            e, como o modal de prévia saiu, NÃO sobrava jeito nenhum de ver o
+            modelo. Abaixo de 1024 a prévia volta a aparecer ao editar. */}
+        <div className="hidden lg:block w-[360px] xl:w-[392px] flex-none border-l border-surface-700 overflow-y-auto bg-surface-900">
+          <TemplateDetail
+            template={previewTemplate}
+            canEdit={previewTemplate ? canEditTemplate(previewTemplate) : false}
+            onEdit={() => { if (previewTemplate) { setEditing(previewTemplate); setDrawerOpen(true) } }}
+            onDelete={() => { if (previewTemplate) setDeleteTarget(previewTemplate.id) }}
+            onAssignWaba={() => { if (previewTemplate) setAssignWabaTarget(previewTemplate) }}
+            onDuplicate={waLines.length > 1 && previewTemplate ? () => setDuplicateTarget(previewTemplate) : undefined}
+            deleting={!!previewTemplate && deleting === previewTemplate.id}
+          />
+        </div>
+      </div>
 
       {deleteError && (
         <Banner variant="danger" className="mx-5 mb-2">{deleteError}</Banner>
@@ -323,113 +321,133 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
   )
 }
 
-function TemplateCard({
-  template,
-  onPreview,
-  onEdit,
-  onDelete,
-  onAssignWaba,
-  onDuplicate,
-  canEdit,
-  deleting,
-}: {
+/** Trecho do corpo em uma linha — ajuda a reconhecer o modelo sem abri-lo,
+ *  que era a única vantagem real da grade de prévias. */
+function resumoCorpo(body: string): string {
+  return body.replace(/\*(.*?)\*/g, '$1').replace(/\s+/g, ' ').trim()
+}
+
+function TemplateRow({ template, selecionado, onSelect }: {
   template: WhatsAppTemplate
-  onPreview: () => void
+  selecionado: boolean
+  onSelect: () => void
+}) {
+  const cfg = STATUS_CONFIG[template.status]
+  return (
+    <button
+      role="listitem"
+      onClick={onSelect}
+      aria-current={selecionado}
+      className={cn(
+        'w-full flex items-center gap-2.5 h-11 px-4 border-b border-surface-700 text-left transition-colors',
+        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-500 focus-visible:-outline-offset-1',
+        selecionado ? 'bg-[var(--rowhover)]' : 'hover:bg-[var(--rowhover)]',
+      )}
+    >
+      {/* Barra de seleção: ocupa lugar sempre, para o texto não deslocar. */}
+      <span className={cn('w-[2px] h-5 rounded-full flex-none', selecionado ? 'bg-brand-500' : 'bg-transparent')} />
+      <TemplateCategoryTile category={template.category} size={22} />
+      <span className="text-[12.5px] font-semibold text-surface-100 truncate max-w-[210px] flex-none">
+        {template.name}
+      </span>
+      <span className="text-xs text-surface-500 truncate flex-1 min-w-0">{resumoCorpo(template.body)}</span>
+      {template.needsWabaAssignment && (
+        <AlertCircle className="w-3.5 h-3.5 text-warning flex-none" aria-label="Sem linha WhatsApp atribuída" />
+      )}
+      <span className="text-[11px] text-surface-500 tabular-nums flex-none w-12 text-right">{template.language}</span>
+      <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none w-[74px] justify-center', STATUS_CHIP_CLASS[template.status])}>
+        {cfg.label}
+      </span>
+      <span className="text-[11px] text-surface-600 tabular-nums flex-none w-[62px] text-right">
+        {new Date(template.createdAt).toLocaleDateString('pt-BR')}
+      </span>
+    </button>
+  )
+}
+
+function LinhaMeta({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-3 py-1.5 border-t border-surface-700 first:border-t-0">
+      <span className="text-[11px] text-surface-500 w-[72px] flex-none">{rotulo}</span>
+      <span className="text-xs text-surface-200 min-w-0 truncate">{children}</span>
+    </div>
+  )
+}
+
+function TemplateDetail({ template, canEdit, onEdit, onDelete, onAssignWaba, onDuplicate, deleting }: {
+  template: WhatsAppTemplate | null
+  canEdit: boolean
   onEdit: () => void
   onDelete: () => void
   onAssignWaba: () => void
-  /** Only set in multi-WABA tenants — undefined hides the button. */
   onDuplicate?: () => void
-  canEdit: boolean
   deleting: boolean
 }) {
+  if (!template) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-2 px-6 text-center">
+        <Eye className="w-5 h-5 text-surface-600" />
+        <p className="text-xs text-surface-500">Selecione um modelo para ver como ele chega no WhatsApp.</p>
+      </div>
+    )
+  }
+  const cat = TEMPLATE_CATEGORIES[template.category]
   const cfg = STATUS_CONFIG[template.status]
-  const [menuOpen, setMenuOpen] = useState(false)
-  const metaBits = [
-    CATEGORY_LABELS[template.category],
-    template.language,
-    template.buttons && template.buttons.length > 0 ? `${template.buttons.length} botã${template.buttons.length === 1 ? 'o' : 'oes'}` : null,
-    template.bodyVariables && template.bodyVariables.length > 0 ? `${template.bodyVariables.length} variáve${template.bodyVariables.length === 1 ? 'l' : 'is'}` : null,
-  ].filter(Boolean)
-
   return (
-    // TPL-02: card sem hover, borda --bd (surface-700, visível no claro), raio 8px (rounded-lg).
-    <div className="flex flex-col bg-surface-800 border border-surface-700 rounded-lg overflow-hidden group">
-      {/* Header — TPL-03: 2 linhas (nome+chip+menu / meta), TPL-04/05/06. */}
-      <div className="flex flex-col gap-1 px-3 py-2.5 border-b border-surface-700">
-        <div className="flex items-center gap-2">
-          <span className="flex-1 min-w-0 text-xs font-medium text-surface-100 font-mono truncate">{template.name}</span>
-          <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-shrink-0', STATUS_CHIP_CLASS[template.status])}>
-            {cfg.label}
-          </span>
-          <span onClick={(e) => e.stopPropagation()} className="inline-flex flex-shrink-0">
-            <Dropdown
-              open={menuOpen}
-              onClose={() => setMenuOpen(false)}
-              align="right"
-              className="w-48"
-              anchor={
-                <button
-                  onClick={() => setMenuOpen((v) => !v)}
-                  aria-label="Mais ações"
-                  className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-                >
-                  {/* Eixo 10: p-1.5 + w-4 h-4, mesma medida do kebab irmão em
-                      CampaignsTab.tsx (mesma tela, mesmo componente). */}
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              }
-            >
-              <div className="px-1 py-1 flex flex-col gap-0.5">
-                <DropdownItem onClick={() => { onPreview(); setMenuOpen(false) }}>
-                  <Eye className="w-3.5 h-3.5" /> Preview
-                </DropdownItem>
-                {canEdit && (
-                  <DropdownItem onClick={() => { onEdit(); setMenuOpen(false) }}>
-                    <Pencil className="w-3.5 h-3.5" /> Editar
-                  </DropdownItem>
-                )}
-                {template.needsWabaAssignment && (
-                  <DropdownItem onClick={() => { onAssignWaba(); setMenuOpen(false) }}>
-                    <FileText className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
-                  </DropdownItem>
-                )}
-                {onDuplicate && (
-                  <DropdownItem onClick={() => { onDuplicate(); setMenuOpen(false) }}>
-                    <Copy className="w-3.5 h-3.5" /> Duplicar para outra linha
-                  </DropdownItem>
-                )}
-                <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setMenuOpen(false) }}>
-                  {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Excluir
-                </DropdownItem>
-              </div>
-            </Dropdown>
-          </span>
+    <div className="flex flex-col">
+      <div className="px-4 py-3.5 border-b border-surface-700 flex items-start gap-2.5">
+        <TemplateCategoryTile category={template.category} size={34} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold text-surface-50 truncate">{template.name}</p>
+          <p className="text-[11px] text-surface-500">{cat.label} · {template.language}</p>
         </div>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[11px] text-surface-500 truncate">{metaBits.join(' · ')}</span>
-          <WhatsappLineChip whatsappNumberId={template.whatsappNumberId} />
-          <span className="ml-auto text-[11px] text-surface-600 flex-shrink-0">{new Date(template.createdAt).toLocaleDateString('pt-BR')}</span>
-        </div>
+        <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none', STATUS_CHIP_CLASS[template.status])}>
+          {cfg.label}
+        </span>
       </div>
 
-      {/* Corpo — papel de parede do WhatsApp. #E5DDD5 amostrado dos prints
-          do painel da Meta (22/09); o #EFE7DD anterior era de memória. */}
-      <button
-        onClick={onPreview}
-        className="bg-[#E5DDD5] p-3 max-h-[220px] overflow-y-auto text-left cursor-zoom-in"
-        title="Ver prévia completa"
-      >
-        <TemplatePreview template={template} compact variant="card" />
-      </button>
-
-      {/* Rodapé — só o motivo de rejeição, quando existe (TPL-06: meta virou linha 2 do header). */}
       {template.status === 'REJECTED' && template.rejectionReason && (
-        <p className="px-3 py-2 text-[11px] text-danger flex items-start gap-1 line-clamp-2">
-          <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-          {template.rejectionReason}
-        </p>
+        <Banner variant="danger" className="mx-4 mt-3">{template.rejectionReason}</Banner>
       )}
+
+      <div className="px-4 py-3">
+        <TemplatePreview template={template} />
+      </div>
+
+      <div className="px-4 pb-3">
+        <LinhaMeta rotulo="Categoria">{cat.label}</LinhaMeta>
+        <LinhaMeta rotulo="Idioma">{template.language}</LinhaMeta>
+        <LinhaMeta rotulo="Linha">
+          <WhatsappLineChip whatsappNumberId={template.whatsappNumberId} />
+        </LinhaMeta>
+        {template.bodyVariables && template.bodyVariables.length > 0 && (
+          <LinhaMeta rotulo="Variáveis">{template.bodyVariables.join(' · ')}</LinhaMeta>
+        )}
+        {template.buttons && template.buttons.length > 0 && (
+          <LinhaMeta rotulo="Botões">{template.buttons.map((b) => b.text).join(' · ')}</LinhaMeta>
+        )}
+        <LinhaMeta rotulo="Criado">{new Date(template.createdAt).toLocaleDateString('pt-BR')}</LinhaMeta>
+      </div>
+
+      <div className="px-4 pb-4 flex flex-wrap items-center gap-2">
+        {canEdit && <Button size="sm" variant="neutral" onClick={onEdit} leftIcon={<Pencil className="w-3.5 h-3.5" />}>Editar</Button>}
+        {template.needsWabaAssignment && (
+          <Button size="sm" variant="secondary" onClick={onAssignWaba} leftIcon={<FileText className="w-3.5 h-3.5" />}>Atribuir linha</Button>
+        )}
+        {onDuplicate && (
+          <Button size="sm" variant="secondary" onClick={onDuplicate} leftIcon={<Copy className="w-3.5 h-3.5" />}>Duplicar</Button>
+        )}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="ml-auto text-danger"
+          onClick={onDelete}
+          disabled={deleting}
+          leftIcon={deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+        >
+          Excluir
+        </Button>
+      </div>
     </div>
   )
 }
