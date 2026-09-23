@@ -199,6 +199,35 @@ do app — antes ele tinha uma cor e sombra próprias, fora do padrão.
 
 ---
 
+## Notificações (sino no topo, qualquer tela)
+
+**O painel que abre ao clicar no sino foi reestilizado, a seu pedido, na
+mesma linguagem visual nova das telas de Disparos/Modelos** (referências:
+a caixa de entrada do Linear e guias de notificação da Smashing Magazine e
+da Courier). Nada do que os botões fazem mudou, só a aparência:
+
+- **Cabeçalho bem mais enxuto** (de 111px pra 44px de altura) — "Marcar
+  todas como lidas", "Arquivadas" e "Preferências" viraram botões de ícone
+  em vez de texto escrito por extenso.
+- **Filtros numa linha só**: "Não lidas" / "Todas" + a categoria num menu —
+  em vez dos 6 chips pequenos que existiam antes, competindo por espaço.
+- **Cada notificação ficou mais compacta** (de 101px pra 75px, ou 58px
+  quando é uma linha só de texto): um ladrilho colorido indica a categoria
+  (clicar nele filtra a lista pela mesma categoria), aparece o avatar da
+  pessoa quando a notificação é sobre um contato específico, "Urgente"
+  virou um chip pequeno em vez de destaque no texto, e as ações (marcar
+  como lida, arquivar) só aparecem quando você passa o mouse em cima —
+  ficam escondidas o resto do tempo pra não poluir a lista.
+- A tela `/notifications` do celular passa a usar o mesmo desenho de item,
+  então o que você vê no popover do desktop é igual ao que aparece no
+  mobile.
+
+Onde ver: clique no sino no topo de qualquer tela. Confira o cabeçalho, os
+filtros, um item não lido e um lido, e passe o mouse sobre um item pra ver
+as ações aparecerem. Reversível: sim, commit `5ddca38`.
+
+---
+
 ## Tema claro
 
 Isso é o item mais espalhado da lista, então virou **um item só**: uma
@@ -235,6 +264,17 @@ claro, as linhas divisórias e bordas de campo ficaram mais escuras que a
 primeira versão (você achou a primeira versão apagada demais). Se achar que
 foi longe demais ou de menos, é um ajuste fino de cor, rápido de refazer.
 Reversível: sim, é um bloco isolado de cor no código pro tema claro.
+
+**Contraprova no tema ESCURO** (a varredura acima corrigiu o claro, mas a
+correção teve um efeito colateral no escuro que já foi resolvido): o realce
+de "passar o mouse por cima", ao ganhar uma versão que funciona nos dois
+temas, ficou 2,5× mais fraco no escuro do que era antes — visível
+principalmente em cima do fundo mais escuro dos drawers (o painel que desliza
+da lateral, ex. abrir um contato). Já foi reforçado (de 4% pra 7% de branco
+por cima), ficando mais forte que o valor antigo em qualquer fundo. Onde
+ver: no tema ESCURO, abra qualquer drawer de Contatos e passe o mouse nos
+botões do cabeçalho — o realce deve aparecer nítido, não apagado. Reversível:
+sim, é um único valor de cor no bloco escuro do código.
 
 ---
 
