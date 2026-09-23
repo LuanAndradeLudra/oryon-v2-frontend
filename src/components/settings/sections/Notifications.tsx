@@ -10,6 +10,7 @@ import {
   type NotificationCategory,
 } from '@/hooks/useNotificationPreferences'
 import { useNotificationSound } from '@/hooks/useNotificationSound'
+import { CATEGORY_CHIPS } from '@/components/notifications/notificationsMeta'
 
 /**
  * Phase 19: dedicated Settings page for notification preferences. Groups
@@ -17,21 +18,13 @@ import { useNotificationSound } from '@/hooks/useNotificationSound'
  * Mandatory types render locked (security_alert, whatsapp_integration_error).
  */
 
-const CATEGORY_LABELS: Record<NotificationCategory, string> = {
-  conversations: 'Conversas',
-  team: 'Equipe',
-  campaigns: 'Campanhas',
-  automations: 'Automações',
-  security: 'Segurança & integrações',
-}
-
-const CATEGORY_ORDER: NotificationCategory[] = [
-  'conversations',
-  'team',
-  'campaigns',
-  'automations',
-  'security',
-]
+// Rótulos e ordem vêm de CATEGORY_CHIPS — a mesma fonte das seções do sino
+// (Conversas/Equipe/Campanhas/Automações/Segurança). Antes esta página tinha
+// lista própria e chamava a última de "Segurança & integrações".
+const CATEGORY_ORDER = CATEGORY_CHIPS.filter((c) => c.key !== 'all').map((c) => c.key as NotificationCategory)
+const CATEGORY_LABELS = Object.fromEntries(
+  CATEGORY_CHIPS.map((c) => [c.key, c.label]),
+) as Record<NotificationCategory, string>
 
 const CATEGORY_DESCRIPTIONS: Record<NotificationCategory, string> = {
   conversations: 'Novas mensagens e conversas atribuídas a você.',
@@ -87,7 +80,7 @@ export function Notifications() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 text-surface-400">
-              <Volume2 className="w-4 h-4" />
+              <Volume2 className="w-4 h-4" strokeWidth={1.75} />
             </span>
             <div>
               <p className="text-[13px] font-medium text-surface-100">Tocar som</p>
@@ -144,7 +137,7 @@ function PreferenceRow({
     <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
       <div className="flex items-start gap-3 min-w-0">
         {pref.mandatory ? (
-          <span className="mt-0.5 text-warning" title="Obrigatória">
+          <span className="mt-0.5 text-warning">
             <Lock className="w-4 h-4" />
           </span>
         ) : (
@@ -155,8 +148,21 @@ function PreferenceRow({
         <div className="min-w-0">
           <p className="text-[13px] font-medium text-surface-100 flex items-center gap-2">
             {pref.label}
+            {/* Chips na geometria da casa (18px/r5/10.5px, .color-chip-soft) —
+                "obrigatória" ficava só num title (invisível no toque). */}
+            {pref.mandatory && (
+              <span
+                className="color-chip-soft border inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold"
+                style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}
+              >
+                obrigatória
+              </span>
+            )}
             {pref.isOverride && !pref.mandatory && (
-              <span className="text-[10px] font-medium text-accent-dark bg-accent-soft border border-brand-500/25 rounded-xs px-1.5 py-px">
+              <span
+                className="color-chip-soft border inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold"
+                style={{ ['--chip']: 'var(--color-brand-500)' } as React.CSSProperties}
+              >
                 customizado
               </span>
             )}
