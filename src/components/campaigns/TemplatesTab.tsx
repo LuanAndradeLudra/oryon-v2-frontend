@@ -12,7 +12,8 @@ import { TemplateCreator } from './TemplateCreator'
 import { TemplatePreview } from './TemplatePreview'
 import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
 import { CATEGORY_LABELS } from './constants'
-import { ConfirmModal } from '@/components/ui/Modal'
+import { ConfirmModal, Modal } from '@/components/ui/Modal'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
 import { AssignWabaModal } from '@/components/common/AssignWabaModal'
 import { DuplicateTemplateModal } from '@/components/common/DuplicateTemplateModal'
@@ -68,6 +69,12 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
   const [assignWabaTarget, setAssignWabaTarget] = useState<WhatsAppTemplate | null>(null)
   const [duplicateTarget, setDuplicateTarget] = useState<WhatsAppTemplate | null>(null)
   const [lineFilter, setLineFilter] = useState<LineFilterValue>('all')
+  // Responsivo: o painel de detalhe (abaixo) só aparece a partir de `lg`
+  // (1024px, mesmo breakpoint do `hidden lg:block` dele). Abaixo disso não
+  // sobra NENHUM jeito de ver a prévia do modelo — o modal de prévia antigo
+  // saiu junto com o redesenho da lista+painel — então essa media query
+  // decide quando abrir a mesma <TemplateDetail> dentro de um Modal.
+  const belowLg = useMediaQuery('(max-width: 1023px)')
   // Show the "duplicate to line" action only in multi-WABA tenants —
   // single-line tenants have nowhere else to clone to.
   const { numbers: waLines, loading: waLoading } = useWorkspaceNumber()
@@ -165,6 +172,20 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
     return true
   })
 
+  // Compartilhado entre o painel fixo (≥lg) e o Modal (<lg, abaixo) — mesmo
+  // componente, mesmas props, só o contêiner muda por viewport.
+  const detailContent = (
+    <TemplateDetail
+      template={previewTemplate}
+      canEdit={previewTemplate ? canEditTemplate(previewTemplate) : false}
+      onEdit={() => { if (previewTemplate) { setEditing(previewTemplate); setDrawerOpen(true) } }}
+      onDelete={() => { if (previewTemplate) setDeleteTarget(previewTemplate.id) }}
+      onAssignWaba={() => { if (previewTemplate) setAssignWabaTarget(previewTemplate) }}
+      onDuplicate={waLines.length > 1 && previewTemplate ? () => setDuplicateTarget(previewTemplate) : undefined}
+      deleting={!!previewTemplate && deleting === previewTemplate.id}
+    />
+  )
+
   return (
     <div className="flex flex-col h-full">
       {/* WhatsApp gate banner */}
@@ -178,9 +199,12 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
         <Banner variant="warning" className="mx-5 mt-4">{metaLoadWarning}</Banner>
       )}
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
-        <div className="relative flex-1 max-w-xs">
+      {/* Toolbar. flex-wrap (mesmo achado do KpiGrid.tsx/SCRUM-1070): busca +
+          SegmentedControl + LineFilterChip + 2 botões não cabem em 390px sem
+          quebrar linha — sem isto o container cortava o botão fora da tela
+          em vez de rolar. */}
+      <div className="flex items-center gap-3 flex-wrap px-5 py-4 border-b border-surface-700 flex-shrink-0">
+        <div className="relative flex-1 max-w-xs min-w-[160px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
           <input
             value={search}
@@ -264,19 +288,27 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
         {/* Painel de detalhe. Ponto de quebra em `lg` (1024), não `xl`: medi
             em 1240px — largura de notebook comum — e com `xl` o painel sumia
             e, como o modal de prévia saiu, NÃO sobrava jeito nenhum de ver o
-            modelo. Abaixo de 1024 a prévia volta a aparecer ao editar. */}
+            modelo. Abaixo de 1024 o painel vira Modal (ver `belowLg` abaixo
+            — achado da responsividade, R2/T7). */}
         <div className="hidden lg:block w-[360px] xl:w-[392px] flex-none border-l border-surface-700 overflow-y-auto bg-surface-900">
-          <TemplateDetail
-            template={previewTemplate}
-            canEdit={previewTemplate ? canEditTemplate(previewTemplate) : false}
-            onEdit={() => { if (previewTemplate) { setEditing(previewTemplate); setDrawerOpen(true) } }}
-            onDelete={() => { if (previewTemplate) setDeleteTarget(previewTemplate.id) }}
-            onAssignWaba={() => { if (previewTemplate) setAssignWabaTarget(previewTemplate) }}
-            onDuplicate={waLines.length > 1 && previewTemplate ? () => setDuplicateTarget(previewTemplate) : undefined}
-            deleting={!!previewTemplate && deleting === previewTemplate.id}
-          />
+          {detailContent}
         </div>
       </div>
+
+      {/* Abaixo de lg não há painel lateral (some via `hidden lg:block` acima)
+          — sem isto, tablet/celular não tinham NENHUM jeito de ver a prévia
+          do modelo (o antigo modal de prévia foi removido no redesenho da
+          lista+painel). Mesmo <TemplateDetail>, sem mudar o visual dele —
+          só o contêiner muda de painel fixo pra modal. */}
+      <Modal
+        open={belowLg && !!previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+        title={<span className="sr-only">Detalhe do modelo</span>}
+        bodyClassName="p-0"
+        className="max-w-md"
+      >
+        {detailContent}
+      </Modal>
 
       {deleteError && (
         <Banner variant="danger" className="mx-5 mb-2">{deleteError}</Banner>
@@ -354,11 +386,15 @@ function TemplateRow({ template, selecionado, onSelect }: {
       {template.needsWabaAssignment && (
         <AlertCircle className="w-3.5 h-3.5 text-warning flex-none" aria-label="Sem linha WhatsApp atribuída" />
       )}
-      <span className="text-[11px] text-surface-500 tabular-nums flex-none w-12 text-right">{template.language}</span>
+      {/* Responsivo: idioma e data somem abaixo de `sm` (640) — nada de
+          fixo pra encolher sobrava na linha em 390px (soma das larguras
+          fixas passava de 300px antes mesmo do nome). Nome + resumo +
+          chip de status continuam sempre visíveis (o essencial). */}
+      <span className="hidden sm:block text-[11px] text-surface-500 tabular-nums flex-none w-12 text-right">{template.language}</span>
       <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none w-[74px] justify-center', STATUS_CHIP_CLASS[template.status])}>
         {cfg.label}
       </span>
-      <span className="text-[11px] text-surface-600 tabular-nums flex-none w-[62px] text-right">
+      <span className="hidden sm:block text-[11px] text-surface-600 tabular-nums flex-none w-[62px] text-right">
         {new Date(template.createdAt).toLocaleDateString('pt-BR')}
       </span>
     </button>

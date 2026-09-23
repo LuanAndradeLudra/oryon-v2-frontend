@@ -400,7 +400,12 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
         <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none', STATUS_CHIP_CLASS[campaign.status])}>
           {STATUS_CONFIG[campaign.status]?.label ?? campaign.status}
         </span>
-        <span className="text-[13px] font-semibold text-surface-50 truncate">{campaign.name}</span>
+        {/* Responsivo: flex-1 min-w-0 — sem isto um nome de campanha um
+            pouco mais longo não truncava de verdade (flex item sem min-w-0
+            não encolhe abaixo do seu conteúdo, mesmo com `truncate`) e
+            estourava a largura do card em 390px, com chip/badges/data
+            fixos ao redor. */}
+        <span className="flex-1 min-w-0 text-[13px] font-semibold text-surface-50 truncate">{campaign.name}</span>
         {campaign.needsWabaAssignment && <WabaAssignmentBadge onClick={onAssignWaba} />}
         <WhatsappLineChip whatsappNumberId={campaign.whatsappNumberId ?? undefined} />
         <span className="ml-auto text-[11px] text-surface-500 tabular-nums flex-none">
