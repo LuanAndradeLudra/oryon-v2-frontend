@@ -290,7 +290,9 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/70" onClick={onClose} />
+      {/* Eixo 10: scrim do token (--color-scrim-soft), não bg-black/70 cru — preto
+          cru fica pesado demais no tema claro (MODAL-07). */}
+      <div className="fixed inset-0 z-40 bg-[var(--color-scrim-soft)]" onClick={onClose} />
 
       {/* Drawer */}
       <motion.div
@@ -312,7 +314,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
               Relatório de desempenho · {stats.total} contatos · {campaign.sentAt ? fmtDate(campaign.sentAt) : ''}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -617,7 +619,7 @@ export function CampaignReport({ campaign, onClose }: CampaignReportProps) {
                                 const cfg = getPlatformCfg(ab.source)
                                 const isLast = i === analytics.attributionBreakdown.length - 1
                                 return (
-                                  <tr key={ab.source} className={cn('transition-colors hover:bg-surface-800/50', !isLast && 'border-b border-surface-700')}>
+                                  <tr key={ab.source} className={cn('transition-colors hover:bg-[var(--rowhover)]', !isLast && 'border-b border-surface-700')}>
                                     <td className="px-3 py-2">
                                       <div className="flex items-center gap-1.5">
                                         <span style={{ color: cfg.color }}>{cfg.icon}</span>

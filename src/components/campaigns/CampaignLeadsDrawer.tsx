@@ -68,7 +68,9 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/70" onClick={onClose} />
+      {/* Eixo 10: scrim do token (--color-scrim-soft), não bg-black/70 cru — preto
+          cru fica pesado demais no tema claro (MODAL-07). */}
+      <div className="fixed inset-0 z-40 bg-[var(--color-scrim-soft)]" onClick={onClose} />
 
       <motion.div
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
@@ -86,7 +88,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
               {loading ? 'Carregando...' : `${leads.length} lead${leads.length !== 1 ? 's' : ''} · Meta Ads`}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -158,7 +160,7 @@ export function CampaignLeadsDrawer({ campaignId, campaignName, onClose }: Campa
           ) : filtered.length === 0 ? (
             <EmptyState icon={Users} title="Nenhum lead encontrado" className="h-full justify-center" />
           ) : (
-            <div className="divide-y divide-surface-700/60">
+            <div className="divide-y divide-surface-700">
               {filtered.map((lead) => {
                 const outcome = OUTCOME_CONFIG[lead.outcome]
                 return (
