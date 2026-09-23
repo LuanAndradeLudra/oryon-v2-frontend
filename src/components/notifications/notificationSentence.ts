@@ -38,11 +38,15 @@ type Meta = NonNullable<AppNotification['metadata']> & {
   totalContacts?: number
   sent?: number
   failed?: number
-  note?: string
   userNote?: string
   sourceActor?: string
   sourceLabel?: string
   contacts?: Array<{ id?: string; name?: string; phone?: string }>
+  // Chaves reais dos produtores (ACHADOS-BACKEND-NOTIFICACOES.md, Cartógrafo 23/09):
+  stats?: { sent?: number; failed?: number; total?: number }
+  lastSenderName?: string
+  mentionedBy?: { name?: string }
+  affectedCount?: number
 }
 
 const num = (n: number) => n.toLocaleString('pt-BR')
@@ -57,7 +61,10 @@ export function sentenceFor(n: AppNotification): Sentence {
   const contact = m.contactName || (m.contacts && m.contacts[0]?.name) || undefined
   const channel = m.channelName || undefined
   const desc = n.description || undefined
-  const actorSrc = m.sourceActor || m.sourceLabel || undefined
+  const actorSrc = m.sourceActor || m.sourceLabel || m.lastSenderName || m.mentionedBy?.name || undefined
+  const sent = typeof m.sent === 'number' ? m.sent : m.stats?.sent
+  const failed = typeof m.failed === 'number' ? m.failed : m.stats?.failed
+  const total = typeof m.totalContacts === 'number' ? m.totalContacts : m.affectedCount
 
   switch (n.type) {
     case 'new_message':
@@ -95,27 +102,27 @@ export function sentenceFor(n: AppNotification): Sentence {
       return {
         object: m.campaignName,
         action: 'concluída',
-        state: typeof m.sent === 'number' ? { text: `${num(m.sent)} enviadas`, tone: 'ok' } : { text: 'Concluída', tone: 'ok' },
-        context: ctx(typeof m.failed === 'number' && m.failed > 0 && `${num(m.failed)} falhas`, !m.campaignName && desc),
+        state: typeof sent === 'number' ? { text: `${num(sent)} enviadas`, tone: 'ok' } : { text: 'Concluída', tone: 'ok' },
+        context: ctx(typeof failed === 'number' && failed > 0 && `${num(failed)} falhas`),
       }
     case 'campaign_failed':
       if (!m.campaignName) return { object: n.title, action: '', state: desc ? { text: desc, tone: 'danger' } : undefined }
       return {
         object: m.campaignName,
         action: 'falhou',
-        state: { text: typeof m.failed === 'number' ? `${num(m.failed)} não entregues` : (desc || 'Falha no envio'), tone: 'danger' },
-        context: ctx(typeof m.failed === 'number' && desc),
+        state: { text: typeof failed === 'number' ? `${num(failed)} não entregues` : (desc || 'Falha no envio'), tone: 'danger' },
+        context: ctx(typeof failed === 'number' && desc),
       }
     case 'automation_executed':
       if (!m.automationName) return { object: n.title, action: '', excerpt: desc }
       return {
         object: m.automationName,
         action: 'executada',
-        context: ctx(typeof m.totalContacts === 'number' && `${num(m.totalContacts)} contato${m.totalContacts === 1 ? '' : 's'}`, contact, desc && !m.automationName ? desc : undefined),
+        context: ctx(typeof total === 'number' && `${num(total)} contato${total === 1 ? '' : 's'}`, contact),
       }
     case 'automation_note':
-      if (!m.automationName) return { object: n.title, action: '', excerpt: m.userNote || m.note || desc }
-      return { object: m.automationName, action: 'deixou uma nota', excerpt: m.userNote || m.note || desc, context: ctx(contact) }
+      if (!m.automationName) return { object: n.title, action: '', excerpt: m.userNote || desc }
+      return { object: m.automationName, action: 'deixou uma nota', excerpt: m.userNote || desc, context: ctx(contact) }
     case 'whatsapp_integration_error':
       // O tipo cobre mais que "linha caiu" (ex.: template rejeitado numa
       // campanha): sem channelName, o título original é a única verdade.
