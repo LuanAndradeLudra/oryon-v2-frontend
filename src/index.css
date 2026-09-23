@@ -1535,10 +1535,11 @@ h1, h2, h3 {
 }
 
 /* ── WhatsApp line required banner — light theme contrast fix ───────────────*/
+/* .waba-banner: sub-regras .text-amber-* removidas (23/09) — o componente
+   passou a herdar currentColor do Banner e as classes não existiam mais
+   (auditoria de tema claro da Bússola). */
 [data-theme="light"] .waba-banner { color: #78350f; }
-[data-theme="light"] .waba-banner .text-amber-100 { color: #78350f; }
 [data-theme="light"] .waba-banner .text-amber-200\/80 { color: #92400e; }
-[data-theme="light"] .waba-banner .text-amber-300 { color: #b45309; }
 [data-theme="light"] .waba-banner-btn { color: #78350f !important; background-color: rgba(245,158,11,0.25) !important; }
 [data-theme="light"] .waba-banner-btn:hover { background-color: rgba(245,158,11,0.35) !important; }
 
