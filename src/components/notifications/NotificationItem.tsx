@@ -3,9 +3,10 @@ import { Archive } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { AppNotification } from '@/hooks/useNotifications'
 import {
-  CATEGORY_STYLE, categoryOf, priorityOf, contactSubject, inlineActionFor, formatListTime, avatarColorFor, initialsOf,
+  CATEGORY_STYLE, categoryOf, contactSubject, inlineActionFor, formatListTime, avatarColorFor, initialsOf,
 } from '@/lib/notificationsUx'
 import { iconFor } from './notificationsMeta'
+import { sentenceFor, toneFor } from './notificationSentence'
 
 /**
  * Item de notificação — SCRUM-1097 (23/09). Extraído do TopBar para ser a
@@ -33,18 +34,21 @@ export function NotificationItem({
   const navigate = useNavigate()
   const category = categoryOf(n.type)
   const style = CATEGORY_STYLE[category]
-  const priority = priorityOf(n)
   const Icon = iconFor(n.type)
   const subject = contactSubject(n)
   const action = inlineActionFor(n)
-  const urgente = priority === 'urgent'
-  // v2 (23/09, feedback do PO: "não gosto do visual e dos ícones"). Gramática
-  // dos inboxes modernos (Linear, Notion, Vercel, GitHub): MONOCROMÁTICO —
-  // nada de ladrilho colorido por categoria; o único elemento visual é o
-  // ator (avatar com iniciais) ou, sem ator, um ícone mudo num disco de
-  // 28px na cor da superfície. Não lida = peso 600 + ponto de 6px. Linha
-  // como "pílula" dentro da lista (margem lateral, raio 7, hover em
-  // --rowhover), sem divisor entre itens. Urgente = ponto e disco em perigo.
+  const sentence = sentenceFor(n)
+  const tone = toneFor(n, sentence)
+  // v3 — direção A (23/09): frase estruturada (ator · ação · estado ·
+  // contexto). A ÚNICA cor da linha é o estado: perigo (falha/segurança),
+  // aviso (aguardando você), ok (concluído); informativo não tem cor.
+  const tom = {
+    danger: { dot: 'bg-danger', disc: 'border-danger/40 text-danger', text: 'text-danger' },
+    warn:   { dot: 'bg-warning', disc: 'border-warning/40 text-warning', text: 'text-warning' },
+    ok:     { dot: 'bg-success', disc: 'border-success/40 text-success', text: 'text-success' },
+  } as const
+  const t = tone ? tom[tone] : null
+  const avatarName = subject?.name ?? (sentence.actor && !sentence.object ? sentence.actor : undefined)
   return (
     <div
       onClick={onClick}
@@ -57,19 +61,16 @@ export function NotificationItem({
         '[@media(pointer:coarse)]:min-h-[64px]',
       )}
     >
-      {/* Ponto de não lida — alinhado ao meio do avatar/disco. */}
       <span
-        className={cn('absolute left-0 top-[19px] w-1.5 h-1.5 rounded-full', !n.isRead ? (urgente ? 'bg-danger' : 'bg-brand-500') : 'bg-transparent')}
+        className={cn('absolute left-0 top-[19px] w-1.5 h-1.5 rounded-full', !n.isRead ? (t ? t.dot : 'bg-brand-500') : 'bg-transparent')}
         aria-hidden
       />
-      {subject ? (
-        <span className="relative flex-none mt-0.5">
-          <span
-            className={cn('w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white', avatarColorFor(subject.name))}
-            aria-hidden
-          >
-            {initialsOf(subject.name)}
-          </span>
+      {avatarName ? (
+        <span
+          className={cn('w-7 h-7 mt-0.5 rounded-full flex-none flex items-center justify-center text-[11px] font-semibold text-white', avatarColorFor(avatarName))}
+          aria-hidden
+        >
+          {initialsOf(avatarName)}
         </span>
       ) : (
         <button
@@ -78,10 +79,8 @@ export function NotificationItem({
           title={`Filtrar: ${style.label}`}
           aria-label={`Filtrar por ${style.label}`}
           className={cn(
-            'w-7 h-7 mt-0.5 rounded-full flex items-center justify-center flex-none border transition-colors',
-            urgente
-              ? 'border-danger/40 text-danger bg-[var(--sf2)]'
-              : 'border-surface-700 bg-[var(--sf2)] text-surface-400 hover:text-surface-100',
+            'w-7 h-7 mt-0.5 rounded-full flex items-center justify-center flex-none border bg-[var(--sf2)] transition-colors',
+            t ? t.disc : 'border-surface-700 text-surface-400 hover:text-surface-100',
           )}
         >
           <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -89,26 +88,25 @@ export function NotificationItem({
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <p className={cn('text-[13px] leading-[18px] flex-1 min-w-0 truncate', !n.isRead ? 'font-semibold text-surface-50' : 'font-medium text-surface-200')}>
-            {n.title}
+          <p className={cn('text-[13px] leading-[18px] flex-1 min-w-0 truncate', n.isRead ? 'text-surface-300' : 'text-surface-200')}>
+            {sentence.actor && <span className={cn(n.isRead ? 'font-medium text-surface-200' : 'font-semibold text-surface-50')}>{sentence.actor}</span>}
+            {sentence.object && <span className={cn(n.isRead ? 'font-medium text-surface-200' : 'font-semibold text-surface-50')}>{sentence.object}</span>}
+            {sentence.action && <span> {sentence.action}</span>}
           </p>
           <span className="text-[11px] text-surface-500 tabular-nums flex-none group-hover:opacity-0 [@media(pointer:coarse)]:group-hover:opacity-100 [@media(hover:none)]:group-hover:opacity-100 transition-opacity">
             {formatListTime(n.createdAt)}
           </span>
         </div>
-        {n.description && (
-          <p className={cn('text-xs leading-[17px] mt-px', !n.isRead ? 'text-surface-300 line-clamp-2' : 'text-surface-500 line-clamp-1')}>
-            {n.description}
+        {(sentence.state || sentence.excerpt || sentence.context) && (
+          <p className={cn('text-xs leading-[17px] mt-px truncate', n.isRead ? 'text-surface-500' : 'text-surface-400')}>
+            {sentence.state && <span className={cn('font-medium', t ? t.text : '')}>{sentence.state.text}</span>}
+            {!sentence.state && sentence.excerpt && <span>{sentence.excerpt}</span>}
+            {sentence.context && <span className="text-surface-500">{(sentence.state || sentence.excerpt) ? ' · ' : ''}{sentence.context}</span>}
           </p>
         )}
-        {urgente && (
-          <p className="text-[11px] leading-[16px] text-danger font-medium mt-0.5">Urgente</p>
-        )}
       </div>
-      {/* Ações no hover — ocupam o lugar do horário. */}
-      {/* Toque (pointer: coarse) não tem hover: as ações passam a coluna
-          estática à direita, sempre visíveis, com alvos de 36px — senão
-          arquivar/marcar seriam inalcançáveis na página mobile (Farol). */}
+      {/* Toque (pointer: coarse / hover: none) não tem hover: as ações passam a
+          coluna estática à direita, sempre visíveis, com alvos de 36px. */}
       <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity [@media(pointer:coarse)]:static [@media(pointer:coarse)]:opacity-100 [@media(pointer:coarse)]:self-start [@media(pointer:coarse)]:ml-1 [@media(hover:none)]:static [@media(hover:none)]:opacity-100 [@media(hover:none)]:self-start [@media(hover:none)]:ml-1">
         {action && (
           <button

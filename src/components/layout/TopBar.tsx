@@ -166,26 +166,6 @@ const SEARCH_INDEX = ([
 // strings as keys and falling back to a neutral Bell for unknown types.
 
 
-/** Groups notifications by relative-date bucket (Hoje / Ontem / Esta semana / Anteriores). */
-function groupByDate(items: AppNotification[]): Array<{ label: string; items: AppNotification[] }> {
-  const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const startOfYesterday = startOfToday - 86_400_000
-  const startOfWeek = startOfToday - 6 * 86_400_000
-
-  const buckets: Record<string, AppNotification[]> = { Hoje: [], Ontem: [], 'Esta semana': [], Anteriores: [] }
-  for (const n of items) {
-    const t = new Date(n.createdAt).getTime()
-    if (t >= startOfToday) buckets['Hoje'].push(n)
-    else if (t >= startOfYesterday) buckets['Ontem'].push(n)
-    else if (t >= startOfWeek) buckets['Esta semana'].push(n)
-    else buckets['Anteriores'].push(n)
-  }
-  return Object.entries(buckets)
-    .filter(([, arr]) => arr.length > 0)
-    .map(([label, items]) => ({ label, items }))
-}
-
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const TYPE_LABEL: Record<SearchItemType, string> = {
@@ -831,7 +811,6 @@ function NotificationsPanel() {
   const [detail, setDetail] = useState<AppNotification | null>(null)
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [focusedIndex, setFocusedIndex] = useState<number>(-1)
-  const [catOpen, setCatOpen] = useState(false)
   const [ariaAnnouncement, setAriaAnnouncement] = useState<string>('')
   const panelRef = useRef<HTMLDivElement>(null)
   const prefersReducedMotion = useReducedMotion()
@@ -856,15 +835,30 @@ function NotificationsPanel() {
       .map((x) => x.n)
   }, [visible])
 
-  const groups = groupByDate(sortedVisible)
-  const flatItems = useMemo(() => groups.flatMap((g) => g.items), [groups])
+  // Direção A (23/09): seções por CATEGORIA (Conversas, Equipe, Campanhas,
+  // Automações, Segurança), recolhíveis, com contagem de não lidas — o ritmo
+  // visual vem das seções; dentro de cada uma, urgentes primeiro e depois
+  // ordem de chegada. O estado de recolhimento persiste em localStorage.
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem('oryon:notif:collapsed') || '{}') } catch { return {} }
+  })
+  const toggleSection = useCallback((key: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      try { localStorage.setItem('oryon:notif:collapsed', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+  const groups = useMemo(() => {
+    const ordem = CATEGORY_CHIPS.filter((c) => c.key !== 'all')
+    return ordem
+      .map((c) => ({ key: c.key, label: c.label, items: sortedVisible.filter((x) => c.types.includes(x.type)) }))
+      .concat([{ key: 'outros', label: 'Outras', items: sortedVisible.filter((x) => !ordem.some((c) => c.types.includes(x.type))) }])
+      .filter((g) => g.items.length > 0)
+  }, [sortedVisible])
+  const flatItems = useMemo(() => groups.flatMap((g) => (collapsed[g.key] ? [] : g.items)), [groups, collapsed])
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
-  const handleCategoryClick = useCallback((chip: typeof CATEGORY_CHIPS[number]) => {
-    setActiveCategory(chip.key)
-    setFilterTypes(chip.types)
-    setFocusedIndex(-1)
-  }, [setFilterTypes])
 
   // Phase 20 I5: clicking a category chip inside a notification item filters
   // the whole list by that single type. Fast drill-down.
@@ -957,11 +951,28 @@ function NotificationsPanel() {
       <div className="absolute top-full right-0 mt-2 w-[400px] max-w-[calc(100vw-1rem)] overlay-surface border rounded-lg z-50 overflow-hidden animate-slide-in-right">
         <div className="h-11 px-3 flex items-center gap-2 border-b border-surface-700">
           <span className="text-[13px] font-bold text-surface-50 tracking-[-0.01em]">Notificações</span>
-          {!showArchived && unreadCount > 0 && (
-            <span className="text-[11px] text-surface-500 tabular-nums">{unreadCount} não lida{unreadCount === 1 ? '' : 's'}</span>
+          {!showArchived && (
+            <span className="text-[11px] text-surface-500 tabular-nums">
+              {unreadCount > 0 ? `${unreadCount} não lida${unreadCount === 1 ? '' : 's'}` : 'em dia'}
+            </span>
           )}
           {showArchived && <span className="text-[11px] text-surface-500">arquivadas</span>}
           <div className="ml-auto flex items-center gap-0.5">
+            {!showArchived && (
+              <button
+                type="button"
+                onClick={() => setFilter(filter === 'unread' ? 'all' : 'unread')}
+                title={filter === 'unread' ? 'Mostrando só não lidas — clique para ver todas' : 'Mostrar só não lidas'}
+                aria-label="Só não lidas"
+                aria-pressed={filter === 'unread'}
+                className={cn(
+                  'w-7 h-7 rounded-xs flex items-center justify-center transition-colors hover:bg-[var(--rowhover)]',
+                  filter === 'unread' ? 'text-surface-100 bg-[var(--sf2)]' : 'text-surface-500 hover:text-surface-100',
+                )}
+              >
+                <span className={cn('w-2.5 h-2.5 rounded-full border-2 border-current', filter === 'unread' && 'bg-current')} />
+              </button>
+            )}
             {unreadCount > 0 && !showArchived && (
               <button
                 type="button"
@@ -997,53 +1008,6 @@ function NotificationsPanel() {
             </button>
           </div>
         </div>
-        {!showArchived && (
-          <div className="h-10 px-3 flex items-center gap-2 border-b border-surface-700">
-            <SegmentedControl
-              size="sm"
-              label="Filtrar notificações"
-              value={filter}
-              onChange={(v) => setFilter(v as NotifFilter)}
-              options={[
-                { value: 'unread', label: 'Não lidas', count: unreadCount > 0 ? unreadCount : undefined },
-                { value: 'all', label: 'Todas' },
-              ]}
-            />
-            <div className="ml-auto">
-              <Dropdown
-                open={catOpen}
-                onClose={() => setCatOpen(false)}
-                align="right"
-                className="w-44"
-                anchor={
-                  <button
-                    type="button"
-                    onClick={() => setCatOpen((v) => !v)}
-                    aria-haspopup="menu"
-                    aria-expanded={catOpen}
-                    className={cn(
-                      'h-7 pl-2.5 pr-2 rounded-sm border text-[11.5px] inline-flex items-center gap-1 transition-colors',
-                      activeCategory !== 'all'
-                        ? 'border-[var(--bd2)] bg-surface-800 text-surface-50 font-semibold'
-                        : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
-                    )}
-                  >
-                    {CATEGORY_CHIPS.find((c) => c.key === activeCategory)?.label ?? 'Categoria'}
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                }
-              >
-                <div className="px-1 py-1 flex flex-col gap-0.5">
-                  {CATEGORY_CHIPS.map((chip) => (
-                    <DropdownItem key={chip.key} onClick={() => { handleCategoryClick(chip); setCatOpen(false) }}>
-                      <span className={cn(activeCategory === chip.key && 'font-semibold text-surface-50')}>{chip.label}</span>
-                    </DropdownItem>
-                  ))}
-                </div>
-              </Dropdown>
-            </div>
-          </div>
-        )}
         <div ref={panelRef} className="max-h-[28rem] overflow-y-auto py-1" role="list">
           {loading ? (
             <div className="flex justify-center py-8">
@@ -1056,12 +1020,19 @@ function NotificationsPanel() {
               {/* Phase 20 X2: animated list. AnimatePresence handles enter/exit
                   for new and archived items. Reduced-motion disables transitions. */}
               {groups.map((g) => (
-                <div key={g.label}>
-                  <div className="h-7 px-4 flex items-center text-[11px] font-medium text-surface-500 bg-[var(--color-overlay)] sticky top-0 z-10">
-                    {g.label}
-                  </div>
+                <div key={g.key}>
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(g.key)}
+                    aria-expanded={!collapsed[g.key]}
+                    className="w-full h-8 px-4 flex items-center gap-1.5 text-[11px] font-semibold text-surface-400 hover:text-surface-200 bg-[var(--color-overlay)] sticky top-0 z-10 transition-colors"
+                  >
+                    <span>{g.label}</span>
+                    <span className="font-medium text-surface-500 tabular-nums">· {g.items.filter((x) => !x.isRead).length || g.items.length}</span>
+                    <ChevronDown className={cn('ml-auto w-3 h-3 text-surface-500 transition-transform', collapsed[g.key] && '-rotate-90')} />
+                  </button>
                   <AnimatePresence initial={false}>
-                    {g.items.map((n) => {
+                    {!collapsed[g.key] && g.items.map((n) => {
                       const flatIdx = flatItems.findIndex((it) => it.id === n.id)
                       return (
                         <motion.div
