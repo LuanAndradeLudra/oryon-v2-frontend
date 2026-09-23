@@ -35,13 +35,21 @@ export function WhatsappLineRequiredBanner({
   settingsHref = '/settings/numbers',
 }: WhatsappLineRequiredBannerProps) {
   return (
+    // Eixo 10: sem classes/cor fixas — Banner é suave (12% da cor semântica)
+    // e currentColor herda o --chip do próprio Banner. As classes antigas
+    // (.waba-banner/.waba-banner-btn) tinham um patch de tema claro em
+    // index.css que não cobria o texto de descrição (esperava .text-amber-*,
+    // o componente usava .text-white/80) — a descrição ficava sem contraste
+    // no claro mesmo com o patch. currentColor resolve nos dois temas sem
+    // precisar de CSS extra (mesma família do achado em Departments.tsx e
+    // WorkspaceReadinessBanner.tsx).
     <Banner
       variant="warning"
-      className="waba-banner mb-4"
+      className="mb-4"
       action={
         <Link
           to={settingsHref}
-          className="waba-banner-btn flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/25"
+          className="flex items-center gap-1.5 rounded-lg border border-current/25 bg-current/10 px-3 py-1.5 text-xs font-semibold text-current transition-colors hover:bg-current/20"
         >
           Configurar WhatsApp
           <ArrowRight className="h-3 w-3" />
@@ -49,7 +57,7 @@ export function WhatsappLineRequiredBanner({
       }
     >
       <p className="font-semibold">Nenhuma linha WhatsApp conectada</p>
-      <p className="mt-0.5 text-white/80">
+      <p className="mt-0.5 opacity-80">
         Você precisa conectar uma linha WhatsApp Business (WABA) antes de criar {resource}. Todas as operações dependentes são bloqueadas até que exista pelo menos uma linha ativa no tenant.
       </p>
     </Banner>
