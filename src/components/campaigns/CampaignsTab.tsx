@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { DataTable, type DataTableColumn } from '@/components/ui/DataTable'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
 import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
@@ -151,27 +151,45 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
         <LineFilterChip value={lineFilter} onChange={setLineFilter} />
       </div>
 
-      {/* Content — tabela compartilhada (SCRUM-1106, tela 2c): mesma migração
-          pro DataTable já feita em Contatos (leva 3). Colunas por spec:
-          Campanha | Status | Template | Público | Entregues | Lidas |
-          Respostas | Envio | menu. */}
-      <div className="flex-1 overflow-auto">
-        <DataTable
-          columns={campaignColumns({
-            onSend: (id) => handleSend(id),
-            onDelete: (id) => setDeleteTarget(id),
-            onReport: setReportCampaign,
-            onAssignWaba: setAssignWabaTarget,
-            sendingId: sending,
-            deletingId: deleting,
-          })}
-          rows={filtered}
-          rowKey={(c) => c.id}
-          loading={loading}
-          emptyIcon={Send}
-          emptyTitle="Nenhuma campanha de disparo encontrada"
-          emptyHint="Os modelos ativos no Gerenciador do WhatsApp ficam na aba Templates. Aqui você cria disparos em massa que usam esses templates."
-        />
+      {/* Conteúdo — cards com o resultado embutido (SCRUM-1097, 22/09).
+          Saiu a tabela: o PO não gosta dela e, mais grave, o RELATÓRIO — a
+          ação mais importante de uma campanha enviada — estava escondido
+          dentro do menu `···`. Aqui ele é um botão visível no próprio card,
+          junto das métricas, no padrão de Mailchimp/Customer.io. */}
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="p-4 flex flex-col gap-2">
+            {[0, 1, 2].map((i) => <div key={i} className="h-[108px] rounded-lg bg-surface-800 animate-pulse" />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-5">
+            <EmptyState
+              icon={Send}
+              title={campaigns.length === 0 ? 'Nenhum disparo ainda' : 'Nenhum disparo com esses filtros'}
+              hint={campaigns.length === 0
+                ? 'Um disparo envia um modelo aprovado para muitos contatos de uma vez. Os modelos ficam na aba Templates.'
+                : 'Ajuste o status ou a linha para ver mais.'}
+              action={campaigns.length > 0
+                ? { label: 'Limpar filtros', onClick: () => { setStatusFilter('all'); setLineFilter('all') } }
+                : undefined}
+            />
+          </div>
+        ) : (
+          <div className="p-4 flex flex-col gap-2">
+            {filtered.map((c) => (
+              <CampaignCard
+                key={c.id}
+                campaign={c}
+                onSend={() => handleSend(c.id)}
+                onReport={() => setReportCampaign(c)}
+                onDelete={() => setDeleteTarget(c.id)}
+                onAssignWaba={() => setAssignWabaTarget(c)}
+                sending={sending === c.id}
+                deleting={deleting === c.id}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {isMobile ? (
@@ -341,103 +359,134 @@ function MenuCell({ campaign, onSend, onDelete, onReport, onAssignWaba, sending,
   )
 }
 
-function campaignColumns({ onSend, onDelete, onReport, onAssignWaba, sendingId, deletingId }: {
-  onSend: (id: string) => void
-  onDelete: (id: string) => void
-  onReport: (c: Campaign) => void
-  onAssignWaba: (c: Campaign) => void
-  sendingId: string | null
-  deletingId: string | null
-}): DataTableColumn<Campaign>[] {
-  return [
-    {
-      key: 'name',
-      header: 'Campanha',
-      render: (c) => (
-        <div className="flex items-center gap-2 min-w-0">
-          {/* CAMP-TABLE-07: rascunho rebaixa pra --tx2, não compete com os
-              nomes de campanha ativa/enviada. */}
-          <span className={cn('text-[13px] font-semibold truncate', c.status === 'draft' ? 'text-surface-400' : 'text-surface-100')}>{c.name}</span>
-          <WhatsappLineChip whatsappNumberId={c.whatsappNumberId} />
-          {c.needsWabaAssignment && <WabaAssignmentBadge onClick={() => onAssignWaba(c)} />}
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      widthClass: 'w-[120px]',
-      render: statusChip,
-    },
-    {
-      key: 'template',
-      header: 'Template',
-      render: (c) => c.templateName
-        ? <span className="font-mono text-[11.5px] text-surface-400 truncate">{c.templateName}</span>
-        : <span className="text-xs text-surface-500">sem template</span>,
-    },
-    {
-      key: 'total',
-      header: 'Público',
-      widthClass: 'w-[90px]',
-      align: 'right',
-      // CAMP-TABLE-05 (achado ao vivo): sem nowrap, "600 · 95%" quebrava em
-      // 2 linhas na coluna de 90px e dobrava a altura da linha (36px). A
-      // tabela é `table-layout: auto` (sem `table-fixed`), então a coluna
-      // cresce pra caber o conteúdo em vez de cortar — mantém o "· %".
-      render: (c) => c.stats.total > 0
-        ? <span className="tabular-nums text-surface-100 whitespace-nowrap">{c.stats.total.toLocaleString('pt-BR')}</span>
-        : <span className="tabular-nums text-surface-500">—</span>,
-    },
-    {
-      key: 'delivered',
-      header: 'Entregues',
-      widthClass: 'w-[90px]',
-      align: 'right',
-      render: (c) => c.stats.sent > 0
-        ? <span className="tabular-nums text-surface-100 whitespace-nowrap">{c.stats.delivered.toLocaleString('pt-BR')} · {rate(c.stats.delivered, c.stats.sent)}</span>
-        : <span className="tabular-nums text-surface-500">—</span>,
-    },
-    {
-      key: 'read',
-      header: 'Lidas',
-      widthClass: 'w-[90px]',
-      align: 'right',
-      render: (c) => c.stats.sent > 0
-        ? <span className="tabular-nums text-surface-100 whitespace-nowrap">{c.stats.read.toLocaleString('pt-BR')} · {rate(c.stats.read, c.stats.sent)}</span>
-        : <span className="tabular-nums text-surface-500">—</span>,
-    },
-    {
-      key: 'replied',
-      header: 'Respostas',
-      widthClass: 'w-[90px]',
-      align: 'right',
-      render: (c) => typeof c.stats.replied === 'number'
-        ? <span className="tabular-nums text-surface-100 whitespace-nowrap">{c.stats.replied.toLocaleString('pt-BR')}</span>
-        : <span className="tabular-nums text-surface-500">—</span>,
-    },
-    {
-      key: 'sendDate',
-      header: 'Envio',
-      widthClass: 'w-[120px]',
-      align: 'right',
-      render: (c) => <span className="text-surface-400">{sendDate(c)}</span>,
-    },
-    {
-      key: 'menu',
-      header: '',
-      widthClass: 'w-9',
-      render: (c) => (
-        <MenuCell
-          campaign={c}
-          onSend={() => onSend(c.id)}
-          onDelete={() => onDelete(c.id)}
-          onReport={() => onReport(c)}
-          onAssignWaba={() => onAssignWaba(c)}
-          sending={sendingId === c.id}
-          deleting={deletingId === c.id}
-        />
-      ),
-    },
-  ]
+
+/** Número com separador de milhar — usado em todas as métricas do card. */
+const num = (n: number) => n.toLocaleString('pt-BR')
+
+function Metrica({ rotulo, valor, tom }: { rotulo: string; valor: number; tom?: 'perigo' }) {
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <span className={cn('text-[13px] font-semibold tabular-nums', tom === 'perigo' ? 'text-danger' : 'text-surface-100')}>
+        {num(valor)}
+      </span>
+      <span className="text-[11px] text-surface-500">{rotulo}</span>
+    </div>
+  )
+}
+
+function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, sending, deleting }: {
+  campaign: Campaign
+  onSend: () => void
+  onReport: () => void
+  onDelete: () => void
+  onAssignWaba: () => void
+  sending: boolean
+  deleting: boolean
+}) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const s = campaign.stats
+  // "Já saiu da fila" — define se o card mostra progresso e relatório ou as
+  // ações de rascunho. `failed` entra aqui de propósito: quem falhou precisa
+  // do relatório MAIS que quem deu certo.
+  const jaDisparou = ['sending', 'sent', 'failed'].includes(campaign.status)
+  const total = s.total || 0
+  const pct = total > 0 ? Math.min(100, Math.round((s.sent / total) * 100)) : 0
+  const quando = campaign.sentAt ?? campaign.scheduledAt ?? campaign.createdAt
+
+  return (
+    <div className="border border-surface-700 rounded-lg bg-surface-800 px-4 py-3 flex flex-col gap-2.5">
+      {/* Identidade */}
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={cn('inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none', STATUS_CHIP_CLASS[campaign.status])}>
+          {STATUS_CONFIG[campaign.status]?.label ?? campaign.status}
+        </span>
+        <span className="text-[13px] font-semibold text-surface-50 truncate">{campaign.name}</span>
+        {campaign.needsWabaAssignment && <WabaAssignmentBadge onClick={onAssignWaba} />}
+        <WhatsappLineChip whatsappNumberId={campaign.whatsappNumberId ?? undefined} />
+        <span className="ml-auto text-[11px] text-surface-500 tabular-nums flex-none">
+          {new Date(quando).toLocaleDateString('pt-BR')}
+        </span>
+        <Dropdown
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          align="right"
+          className="w-48"
+          anchor={
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={`Mais ações — ${campaign.name}`}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-none"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+            </button>
+          }
+        >
+          <div className="px-1 py-1 flex flex-col gap-0.5">
+            <DropdownItem onClick={() => { navigator.clipboard.writeText(campaign.name).catch(() => {}); setMenuOpen(false) }}>
+              <Copy className="w-3.5 h-3.5" /> Copiar nome
+            </DropdownItem>
+            {campaign.needsWabaAssignment && (
+              <DropdownItem onClick={() => { onAssignWaba(); setMenuOpen(false) }}>
+                <Users className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
+              </DropdownItem>
+            )}
+            <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setMenuOpen(false) }}>
+              {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Excluir
+            </DropdownItem>
+          </div>
+        </Dropdown>
+      </div>
+
+      <p className="text-[11px] text-surface-500 truncate">
+        modelo <span className="text-surface-400">{campaign.templateName}</span>
+        {total > 0 && <> · {num(total)} destinatário{total === 1 ? '' : 's'}</>}
+      </p>
+
+      {/* Progresso + métricas, só quando já existe resultado */}
+      {jaDisparou && total > 0 && (
+        <>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-1.5 rounded-full bg-surface-900 overflow-hidden">
+              <div
+                className={cn('h-full rounded-full transition-[width] duration-500',
+                  campaign.status === 'failed' ? 'bg-danger' : 'bg-brand-500')}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-[11px] text-surface-400 tabular-nums flex-none">
+              {num(s.sent)} / {num(total)}
+            </span>
+          </div>
+          <div className="flex items-center gap-5 flex-wrap">
+            <Metrica rotulo="entregues" valor={s.delivered} />
+            <Metrica rotulo="lidas" valor={s.read} />
+            {s.replied !== undefined && <Metrica rotulo="respostas" valor={s.replied} />}
+            {s.failed > 0 && <Metrica rotulo="falhas" valor={s.failed} tom="perigo" />}
+          </div>
+        </>
+      )}
+
+      {/* Ações — o relatório é botão, não item de menu escondido. */}
+      <div className="flex items-center gap-2 pt-0.5">
+        {jaDisparou ? (
+          <Button size="sm" variant="neutral" onClick={onReport} leftIcon={<BarChart3 className="w-3.5 h-3.5" />}>
+            Ver relatório
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="neutral"
+            onClick={onSend}
+            disabled={sending || campaign.needsWabaAssignment}
+            title={campaign.needsWabaAssignment ? 'Atribua uma linha WhatsApp antes de enviar' : undefined}
+            leftIcon={sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+          >
+            {campaign.status === 'scheduled' ? 'Enviar agora' : 'Enviar'}
+          </Button>
+        )}
+      </div>
+    </div>
+  )
 }
