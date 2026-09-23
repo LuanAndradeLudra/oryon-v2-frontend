@@ -760,7 +760,12 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
                   )}
                 </div>
 
-                {/* WhatsApp preview */}
+                {/* WhatsApp preview — SEM `compact` de propósito: este Modal
+                    (className="max-w-2xl" acima, 672px) não é um popover
+                    apertado, é o modal "Revisar template" numa coluna `auto`
+                    de um grid de 2, com folga de sobra pro bubble de 296px
+                    do TemplatePreview em tamanho cheio (checado por leitura
+                    após a reescrita de paleta de 22/09 — SCRUM-1097). */}
                 <div className="order-1 md:order-2">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Pré-visualização</p>
                   <div className="rounded-lg bg-surface-950 border border-surface-700 p-4 flex items-center justify-center">
