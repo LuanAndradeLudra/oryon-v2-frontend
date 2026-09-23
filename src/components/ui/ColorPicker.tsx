@@ -105,7 +105,7 @@ export function ColorPicker({ value, onChange, swatchesOnly = false, className }
       </div>
 
       {!swatchesOnly && customOpen && (
-        <div className="flex flex-col gap-2 p-2 rounded-md border border-surface-700 bg-surface-900/60 w-fit">
+        <div className="flex flex-col gap-2 p-2 rounded-md border border-surface-700 bg-[var(--sf2)] w-fit">
           {/* react-colorful saturation/hue board + the global CSS we keep
               minimal — its default 200px square fits the modal width. */}
           <HexColorPicker
