@@ -87,6 +87,10 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     quebrava o ritmo (54 vs 71px). Reverter: `608fc2d`.
 28. **Modal de prévia removido do catálogo** (o painel/modal de detalhe o substitui). Reverter: `5495228`.
 
+29. **Divisor entre corpo e botões na prévia do WhatsApp escurecido a pedido do PO** (23/09): amostrado `#EEF2F1`
+    (quase invisível), agora `#D5DBDD`. É o único valor da prévia que **não** é o amostrado. Reverter: `WA.divisor`
+    em `TemplatePreview.tsx`.
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio

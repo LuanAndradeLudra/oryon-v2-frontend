@@ -36,7 +36,9 @@ export const WA = {
   balao: '#FFFFFF',
   texto: '#11191D',
   meta: '#6C7E85',   // hora e rodapé
-  divisor: '#EEF2F1',
+  // Amostrado #EEF2F1; escurecido a pedido do PO (23/09) — o divisor entre o
+  // corpo e o botão quase não aparecia. Desvio deliberado da amostra (DECISÕES #29).
+  divisor: '#D5DBDD',
   azul: '#077CB3',   // URL · telefone · copiar código · flow
   verde: '#1B8755',  // resposta rápida
 } as const
