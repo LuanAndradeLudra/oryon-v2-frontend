@@ -32,6 +32,7 @@ import { useSmartLineDefault } from '@/hooks/useSmartLineDefault'
 import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { TemplatePreview } from './TemplatePreview'
+import { SummaryRow } from './SummaryRow'
 import type {
   Campaign, Contact, ContactIntent, ContactSource, ContactSentiment,
   WhatsAppTemplate, CampaignSegment, CampaignVariableMapping, Tag,
@@ -1434,18 +1435,6 @@ function Step4({
   )
 }
 
-// CAMP-WIZ-15/16/18/21 (spec 2c): 1 linha do resumo — grid 120px|1fr|auto,
-// hairline --bd (surface-700), sem grupo/eyebrow em volta.
-function SummaryRow({ label, value, action, strong }: { label: string; value: React.ReactNode; action?: React.ReactNode; strong?: boolean }) {
-  return (
-    <div className="grid grid-cols-[120px_1fr_auto] items-baseline gap-2.5 py-[9px] border-b border-surface-700 last:border-b-0">
-      <span className="text-xs text-surface-400">{label}</span>
-      <span className={cn('text-[13px] text-surface-100 min-w-0 break-words', strong ? 'font-semibold' : 'font-medium')}>{value}</span>
-      {action}
-    </div>
-  )
-}
-
 // ─── Step 5: Review ────────────────────────────────────────────────────────────
 
 // CAMP-WIZ-19 (spec 2c): chip "Aprovado · Meta" na linha Template do resumo —
@@ -1603,7 +1592,7 @@ function Step5({
             }
             action={<EditLink onClick={() => onEditStep(1)} />}
           />
-          <SummaryRow label="Público" value={publicLabel} action={<EditLink onClick={() => onEditStep(2)} />} />
+          <SummaryRow label="Público" wrap value={publicLabel} action={<EditLink onClick={() => onEditStep(2)} />} />
           {lineLabel && <SummaryRow label="Linha" value={lineLabel} />}
           <SummaryRow label="Envio" value={scheduleDisplay} action={<EditLink onClick={() => onEditStep(4)} />} />
         </div>
