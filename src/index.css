@@ -101,7 +101,11 @@
   /* SCRUM-1097: hover universal de linha/card clicável (DataTable, Sidebar,
    * ConversationItem, Card com onClick) — usar `hover:bg-[var(--rowhover)]`
    * em vez de reinventar `hover:bg-surface-800/50` caso a caso. */
-  --rowhover: rgba(255, 255, 255, 0.04);
+  /* .04 → .07 (23/09): sobre o piso surface-950 (#060909) o hover a 4% dava
+     Δlum 0,0036 contra 0,0094 do antigo surface-800 sólido — 2,5× mais fraco
+     (contraprova do Cartógrafo, luminância relativa WCAG). A 7%: 0,0065 no
+     piso 950 e 0,0083 no piso 800. DECISÕES #30. */
+  --rowhover: rgba(255, 255, 255, .07);
 
   /* SCRUM-1097: `--sf2` é o nome que o handoff usa (seções 3.5/3.6/3.8/3.9/
    * 3.11) pro fundo de rail/nav secundário (painel Tutor do wizard, coluna
