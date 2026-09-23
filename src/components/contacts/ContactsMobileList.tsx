@@ -3,7 +3,7 @@ import { ChevronRight, Phone, Building2, Mail, TrendingUp, Loader2 } from 'lucid
 import { Avatar } from '@/components/ui/Avatar'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { CardListView } from '@/components/common/CardListView'
-import { DealsSummaryChips } from './ContactRow'
+import { DealsSummaryChips } from './DealsSummaryChips'
 import { LeadScorePill } from './LeadScorePill'
 import { relativeDate } from '@/lib/utils'
 import type { Contact } from '@/types'
