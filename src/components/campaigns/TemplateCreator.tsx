@@ -10,6 +10,7 @@ import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { TemplatePreview } from './TemplatePreview'
 import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
+import { WizardProgress } from '@/components/ui/WizardProgress'
 import { SubcategoryPreview } from './SubcategoryPreview'
 import { templatesApi, whatsappNumbersApi } from '@/services/api'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
@@ -347,37 +348,20 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
           </p>
         </div>
 
-        {/* Trilha de passos no vocabulário da direção C: bolinha de 14px +
-            rótulo, sem pílula colorida. Substitui a barra lateral de 176px,
-            que gastava largura permanente para mostrar 4 palavras. */}
-        <div className="ml-auto flex items-center gap-1">
-          {([1, 2, 3, 4] as StepNum[]).map((sN, i) => {
-            const feito = sN < step
-            const atual = sN === step
-            return (
-              <button
-                key={sN}
-                type="button"
-                onClick={() => { if (sN < step) setStep(sN) }}
-                disabled={sN > step}
-                className={cn(
-                  'flex items-center gap-1.5 px-2 h-7 rounded-xs text-[11.5px] transition-colors',
-                  atual ? 'text-surface-50 font-semibold' : feito ? 'text-surface-400 hover:bg-[var(--rowhover)]' : 'text-surface-600',
-                  sN > step && 'cursor-default',
-                )}
-                aria-current={atual ? 'step' : undefined}
-              >
-                <span className={cn(
-                  'w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-none',
-                  feito ? 'bg-brand-500 border-brand-500' : atual ? 'border-surface-100' : 'border-surface-600',
-                )}>
-                  {feito && <Check className="w-2 h-2 text-surface-950" strokeWidth={3} />}
-                  {atual && <span className="w-1.5 h-1.5 rounded-full bg-surface-100" />}
-                </span>
-                {STEP_LABELS[i]}
-              </button>
-            )
-          })}
+        {/* Trilha de passos: primitivo `WizardProgress`, NÃO uma versão à mão.
+            Eu havia escrito uma trilha própria aqui (bolinha de 14px) e o
+            Cartógrafo apontou que isso é o mesmo defeito que venho cobrando de
+            todo mundo — primitivo existente reimplementado ao lado. O
+            primitivo ainda tem respaldo melhor que a minha versão: os valores
+            dele (18px, fundo --acsoft, check) vêm do HTML do canvas
+            (CAMP-WIZ-07..13); os meus vinham de um mockup. Os três wizards do
+            produto passam a mostrar a mesma trilha. */}
+        <div className="ml-auto flex-none">
+          <WizardProgress
+            steps={STEP_LABELS}
+            currentStep={step}
+            onStepClick={(n) => setStep(n as StepNum)}
+          />
         </div>
       </div>
 
