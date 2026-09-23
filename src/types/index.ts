@@ -1188,6 +1188,15 @@ export interface SendMessageDto {
   mediaCaption?: string
   /** wamid of the message being replied to — sent so the client sees a quoted reply. */
   replyToWamid?: string
+  /**
+   * Miniatura da 1ª página de um PDF, renderizada NO NAVEGADOR (pedido do
+   * usuário 2026-09-23) — só pra bolha otimista não ficar sem preview
+   * enquanto a mensagem está "pendente". NUNCA vai pro backend
+   * (messagesApi.send monta o FormData campo a campo, sem incluir isto) —
+   * é puramente local, descartada assim que a miniatura real (gerada no
+   * servidor) chega.
+   */
+  clientThumbnailUrl?: string
 }
 
 // ─── Billing / Plan Types ─────────────────────────────────────────────────────

@@ -16,6 +16,7 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { useToast } from '@/hooks/useToast'
 import { inferMessageType } from '@/lib/inferMessageType'
+import { renderPdfThumbnail } from '@/lib/renderPdfThumbnail'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
 
@@ -32,7 +33,16 @@ const TEMPLATE_HEADER_LABEL: Record<NonNullable<WhatsAppTemplate['headerType']>,
 /** Um anexo "em espera" no input: fica no preview até o operador clicar em
  *  Enviar (UX estilo Claude/ChatGPT). `id` serve de key de render/remoção;
  *  `previewUrl` é uma objectURL só para imagens, revogada ao remover/desmontar. */
-type StagedAttachment = { id: string; file: File; previewUrl?: string }
+type StagedAttachment = {
+  id: string
+  file: File
+  previewUrl?: string
+  /** Miniatura da 1ª página, renderizada no navegador — só pra PDF, resolve
+   *  de forma assíncrona logo após o anexo entrar em espera (ver stageFiles).
+   *  Pedido do usuário 2026-09-23: bolha otimista não fica sem preview
+   *  enquanto a mensagem está "pendente". */
+  thumbnailUrl?: string
+}
 
 /** Tamanho legível para o preview do anexo (B / KB / MB). */
 function formatFileSize(bytes: number): string {
@@ -369,6 +379,7 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
           mediaCaption: inferMessageType(item.file.type) === 'document' ? item.file.name : undefined,
           body: i === 0 ? trimmed || undefined : undefined,
           replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
+          clientThumbnailUrl: item.thumbnailUrl,
         })
         setAttachments((prev) => prev.filter((a) => a.id !== item.id))
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
@@ -519,14 +530,24 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
       )
     }
     if (valid.length === 0) return
-    setAttachments((prev) => [
-      ...prev,
-      ...valid.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-      })),
-    ])
+    const staged = valid.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+    }))
+    setAttachments((prev) => [...prev, ...staged])
+
+    // PDF: renderiza a miniatura da 1ª página no navegador, em paralelo,
+    // sem bloquear o anexo aparecendo na hora. Resolve depois — atualiza só
+    // o anexo certo por id (o operador pode anexar mais arquivos enquanto
+    // isso roda).
+    for (const { id, file } of staged) {
+      if (file.type !== 'application/pdf') continue
+      void renderPdfThumbnail(file).then((thumbnailUrl) => {
+        if (!thumbnailUrl) return
+        setAttachments((prev) => prev.map((a) => (a.id === id ? { ...a, thumbnailUrl } : a)))
+      })
+    }
   }, [])
 
   const removeAttachment = useCallback((id: string) => {
