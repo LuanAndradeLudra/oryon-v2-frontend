@@ -196,7 +196,8 @@ function CustomTriggerForm({
               key={cat}
               onClick={() => setActiveCat(cat)}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                // Eixo 10: h-7/rounded-sm — mesmo achado da barra de ferramentas.
+                'flex items-center gap-1.5 h-7 px-3 rounded-sm text-xs font-medium border transition-colors',
                 activeCat === cat
                   ? 'bg-brand-600/20 border-brand-600 text-brand-300'
                   : 'bg-surface-800 border-surface-700 text-surface-400 hover:text-surface-200 hover:border-surface-600',
@@ -330,7 +331,7 @@ function CustomTriggerForm({
               <div className="flex gap-2">
                 {(['above', 'below'] as const).map((d) => (
                   <button key={d} onClick={() => updateParam({ direction: d })}
-                    className={cn('flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                    className={cn('flex-1 h-7 rounded-sm text-xs font-medium border transition-colors',
                       (trigger.params?.direction ?? 'above') === d
                         ? 'bg-brand-600/20 border-brand-600 text-brand-400'
                         : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-400 hover:text-surface-200',
@@ -417,8 +418,10 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
             <button
               key={s}
               onClick={() => onChange({ status: s })}
+              // Eixo 10: h-7/rounded-sm (não py-1.5/rounded-lg — mesmo
+              // achado da barra de ferramentas, altura por padding).
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                'h-7 px-3 rounded-sm text-xs font-medium border transition-colors',
                 draft.status === s
                   ? 'bg-brand-600/20 border-brand-600 text-brand-400'
                   : 'bg-surface-800 border-surface-700 text-surface-400 hover:text-surface-200',
@@ -549,7 +552,7 @@ export function Step1({ draft, onChange, hideMeta }: { draft: WizardDraft; onCha
                     <div className="flex gap-2">
                       {(['any', 'all'] as const).map((m) => (
                         <button key={m} onClick={() => onChange({ trigger: { ...t, matchMode: m } })}
-                          className={cn('flex-1 px-3 py-2 rounded-lg text-xs font-medium border transition-colors',
+                          className={cn('flex-1 h-7 rounded-sm text-xs font-medium border transition-colors',
                             t.matchMode === m ? 'bg-brand-600/20 border-brand-600 text-brand-400' : 'bg-[var(--sf2)] border-[var(--bd2)] text-surface-400 hover:text-surface-200',
                           )}>
                           {m === 'any' ? 'Qualquer palavra' : 'Todas as palavras'}
@@ -739,7 +742,7 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
           <div className="flex gap-1.5">
             {(['and', 'or'] as const).map((l) => (
               <button key={l} onClick={() => onChange({ conditionsLogic: l })}
-                className={cn('px-3 py-1 rounded-lg text-xs font-semibold border transition-colors',
+                className={cn('h-7 px-3 rounded-sm text-xs font-semibold border transition-colors',
                   draft.conditionsLogic === l ? 'bg-brand-600/20 border-brand-600 text-brand-400' : 'bg-surface-800 border-surface-700 text-surface-500 hover:text-surface-300',
                 )}>
                 {l === 'and' ? 'E (todas verdadeiras)' : 'OU (qualquer verdadeira)'}
@@ -1062,7 +1065,7 @@ function ActionSubForm({
             <div className="flex gap-2">
               {(['POST', 'GET'] as const).map((m) => (
                 <button key={m} onClick={() => onUpdate({ type: 'send_webhook', url: action.url, method: m })}
-                  className={cn('px-3 py-1 rounded-lg text-xs font-mono font-bold border transition-colors',
+                  className={cn('h-7 px-3 rounded-sm text-xs font-mono font-bold border transition-colors',
                     action.method === m ? 'bg-brand-600/20 border-brand-600 text-brand-400' : 'bg-surface-800 border-surface-700 text-surface-500 hover:text-surface-300',
                   )}>
                   {m}
