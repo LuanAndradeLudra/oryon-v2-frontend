@@ -394,8 +394,12 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
           {/* Confirmação de descarte */}
           {askClose && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-black/60" onClick={() => setAskClose(false)} />
-              <div className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-sm p-6 text-center">
+              {/* Eixo 10: scrim do token (--color-scrim-soft), não bg-black/60
+                  cru — o Modal primitivo (MODAL-07) usa o token porque preto
+                  cru fica errado no tema claro; largura 400px, igual ao
+                  ConfirmModal (canvas). */}
+              <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={() => setAskClose(false)} />
+              <div className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-[400px] p-6 text-center">
                 <h3 className="text-sm font-semibold text-surface-100 mb-1">Descartar alterações?</h3>
                 <p className="text-xs text-surface-500 mb-5">As mudanças não salvas serão perdidas.</p>
                 <div className="flex gap-3">

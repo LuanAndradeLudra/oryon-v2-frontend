@@ -124,12 +124,15 @@ function DeleteConfirm({ automation, onConfirm, onCancel }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
+      {/* Eixo 10: scrim do token (--color-scrim-soft, não bg-black/70 cru —
+          errado no claro), painel bg-surface-800 (o Modal primitivo usa
+          --sf, não --bg) e largura 400px como o ConfirmModal (canvas). */}
+      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={onCancel} />
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-950 overlay-frame border rounded-xl w-full max-w-sm p-6 text-center"
+        className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-[400px] p-6 text-center"
       >
         <div className="w-12 h-12 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center mx-auto mb-4">
           <Trash2 className="w-5 h-5 text-danger" />
@@ -159,10 +162,10 @@ function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
+      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={onCancel} />
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-950 overlay-frame border rounded-xl w-full max-w-sm p-5"
+        className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-[400px] p-5"
       >
         <h3 className="text-sm font-semibold text-surface-100 mb-1">Duplicar para outra linha</h3>
         <p className="text-xs text-surface-500 mb-4">
