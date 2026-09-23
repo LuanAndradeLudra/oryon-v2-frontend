@@ -1184,6 +1184,10 @@ export function HandoffRulesPanel({
         onConfirm={deleteRule}
         title="Excluir regra de handoff"
         description="Esta ação é irreversível. A regra será removida e não será mais aplicada nas conversas do agente."
+        impact={(() => {
+          const rule = rules.find(r => r.id === deleteRuleTarget)
+          return rule ? { label: `Regra "${rule.name}"`, tone: 'danger' as const } : undefined
+        })()}
         confirmLabel="Excluir regra"
         danger
       />

@@ -870,6 +870,10 @@ function ToolsTab({
         onConfirm={handleDelete}
         title="Remover ferramenta"
         description="Esta ação é irreversível. A integração com esta ferramenta será removida permanentemente do agente."
+        impact={(() => {
+          const tool = agent.tools.find(t => t.id === deleteToolTarget)
+          return tool ? { label: `Ferramenta "${tool.name}"`, tone: 'danger' as const } : undefined
+        })()}
         confirmLabel="Remover ferramenta"
         danger
         loading={!!deletingId}
@@ -1379,6 +1383,10 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
         onConfirm={handleDelete}
         title="Excluir documento"
         description="Esta ação é irreversível. O documento e todos os chunks indexados serão removidos da base de conhecimento do agente."
+        impact={(() => {
+          const doc = docs.find(d => d.id === deleteDocTarget)
+          return doc ? { label: `Documento "${doc.document_name}"`, tone: 'danger' as const } : undefined
+        })()}
         confirmLabel="Excluir documento"
         danger
         loading={deletingDoc}
@@ -1888,6 +1896,10 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
         onConfirm={handleDelete}
         title="Remover FAQ"
         description="A regra será removida e o agente voltará a responder essas mensagens via IA."
+        impact={(() => {
+          const rule = rules.find(r => r.id === deleteTarget)
+          return rule ? { label: `FAQ "${rule.name}"`, tone: 'danger' as const } : undefined
+        })()}
         confirmLabel="Remover FAQ"
         danger
         loading={deleting}
@@ -2280,7 +2292,8 @@ export function AgentDetail({
             .catch(() => setDeletingAgent(false))
         }}
         title="Desativar agente"
-        description={`Desativar o agente "${agent.name}"? Ele vira rascunho e deixa de responder conversas — pode reativar quando quiser.`}
+        description="Ele vira rascunho e deixa de responder conversas — pode reativar quando quiser."
+        impact={{ label: `Agente "${agent.name}"`, tone: 'warning' }}
         confirmLabel="Desativar"
         danger
         loading={deletingAgent}
