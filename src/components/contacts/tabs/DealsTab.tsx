@@ -398,7 +398,8 @@ export function DealsTab({ contactId, contactName }: { contactId: string; contac
         onClose={() => setDeleteDeal(null)}
         onConfirm={handleDelete}
         title={`Excluir ${pipelineNoun(deletePipeline)}`}
-        description={`Tem certeza que deseja excluir "${deleteDeal?.title}"?`}
+        impact={{ label: `"${deleteDeal?.title}" será excluído permanentemente`, tone: 'danger' }}
+        description="Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

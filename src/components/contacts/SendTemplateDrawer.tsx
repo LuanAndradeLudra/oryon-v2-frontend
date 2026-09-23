@@ -161,9 +161,10 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
         onClose={() => { if (!sending) setPendingTemplate(null) }}
         onConfirm={() => { if (pendingTemplate) void handleSend(pendingTemplate) }}
         title="Enviar template"
+        impact={{ label: `Uma mensagem real será enviada para ${contact.displayName}`, tone: 'warning' }}
         description={
           pendingTemplate
-            ? `Enviar o template "${pendingTemplate.name.replace(/_/g, ' ')}" para ${contact.displayName}?`
+            ? `Enviar o template "${pendingTemplate.name.replace(/_/g, ' ')}"?`
             : ''
         }
         confirmLabel="Enviar"
