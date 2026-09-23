@@ -10,7 +10,7 @@ import { getSocket } from '@/services/socket'
 import {
   visualForActionKey, type RowVisual,
 } from '@/components/conversations/ContactPanel/ConversationActivitySection'
-import { cn } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 // ── Pipeline (contact_history) visual map ─────────────────────────────────────
 // `chip` é consumido via .color-chip + --chip (fundo saturado, ícone branco) —
@@ -166,23 +166,19 @@ export function HistoryTab({ contactId }: HistoryTabProps) {
 
   return (
     <div className="p-4">
-      {/* Segmented filter */}
-      <div className="flex items-center gap-1 mb-4 bg-surface-900 border border-surface-700 rounded-lg p-0.5">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setFilter(t.key)}
-            className={cn(
-              'flex-1 text-xs font-medium px-2 py-1.5 rounded-md transition-colors',
-              filter === t.key
-                ? 'bg-surface-900 text-surface-100'
-                : 'text-surface-400 hover:text-surface-200',
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* PL-C2-CAR-19 (Eixo10/P4): segmentado à mão no padrão "pílula dentro
+          de pílula" que o primitivo SegmentedControl foi feito pra substituir
+          (ver o próprio comentário dele) — e tinha um bug real: o fundo do
+          item ATIVO (bg-surface-900) era IGUAL ao fundo do container
+          (bg-surface-900), então a seleção não aparecia. */}
+      <SegmentedControl
+        label="Filtrar histórico"
+        size="sm"
+        className="w-full mb-4 [&>button]:flex-1"
+        value={filter}
+        onChange={setFilter}
+        options={TABS.map((t) => ({ value: t.key, label: t.label }))}
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
