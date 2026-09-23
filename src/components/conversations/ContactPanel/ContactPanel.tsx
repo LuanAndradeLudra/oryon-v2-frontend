@@ -52,7 +52,7 @@ function UserPickerList({ users, selectedUserId, onSelect }: { users: User[]; se
       <div className="max-h-64 overflow-y-auto -mx-1">
         {selectedUserId && (
           <button onClick={() => onSelect(null)} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-700 rounded-lg transition-all">
-            <div className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center flex-shrink-0"><UserX className="w-4 h-4 text-surface-400" /></div>
+            <div className="w-8 h-8 rounded-full bg-[var(--sf2)] flex items-center justify-center flex-shrink-0"><UserX className="w-4 h-4 text-surface-400" /></div>
             <p className="text-sm text-surface-300">Remover atribuição</p>
           </button>
         )}
