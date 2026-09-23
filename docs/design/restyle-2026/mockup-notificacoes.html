@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duas direções de notificação</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#060909; --sf:#161E1E; --sf2:#0E1414; --bd:#243333; --bd2:#2E4040; --ov:#0E1414;
+    --tx:#ECF1F1; --tx2:#B5C8C8; --tx3:#8FA5A5; --tx4:#5C6767;
+    --ac:#2DD4BF; --danger:#F87171; --warn:#FBBF24; --ok:#34D399;
+    --rowhover:rgba(255,255,255,.07);
+    --av1:#7C3AED; --av2:#0F766E; --av3:#B45309; --av4:#BE123C;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#FAFAFC; --sf:#FFFFFF; --sf2:#F5F6F8; --bd:#C9CFDA; --bd2:#A3ACBD; --ov:#FFFFFF;
+      --tx:#111318; --tx2:#3A4150; --tx3:#6B7385; --tx4:#9098AA;
+      --ac:#0F766E; --danger:#B91C1C; --warn:#B45309; --ok:#047857;
+      --rowhover:rgba(15,23,42,.05);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#FAFAFC; --sf:#FFFFFF; --sf2:#F5F6F8; --bd:#C9CFDA; --bd2:#A3ACBD; --ov:#FFFFFF;
+    --tx:#111318; --tx2:#3A4150; --tx3:#6B7385; --tx4:#9098AA;
+    --ac:#0F766E; --danger:#B91C1C; --warn:#B45309; --ok:#047857;
+    --rowhover:rgba(15,23,42,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);
+       padding:28px 16px 64px;line-height:1.45}
+  .wrap{max-width:1040px;margin:0 auto}
+  h1{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+  .lead{font-size:13px;color:var(--tx3);max-width:70ch;margin-bottom:26px}
+  .lead b{color:var(--tx);font-weight:600}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
+  @media (max-width:880px){.cols{grid-template-columns:1fr}}
+  .dir{display:flex;flex-direction:column;gap:10px}
+  .tag{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ac)}
+  .dir h2{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .dir p.desc{font-size:12.5px;color:var(--tx3);max-width:52ch}
+  .ref{font-size:11px;color:var(--tx4)}
+
+  /* ── popover ── */
+  .pop{width:400px;max-width:100%;background:var(--ov);border:1px solid var(--bd);border-radius:8px;overflow:hidden;
+       box-shadow:0 12px 32px rgba(0,0,0,.28)}
+  .hd{height:44px;padding:0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bd)}
+  .hd .t{font-size:13px;font-weight:700;letter-spacing:-.01em}
+  .hd .n{font-size:11px;color:var(--tx3);font-variant-numeric:tabular-nums}
+  .hd .acts{margin-left:auto;display:flex;gap:2px}
+  .ib{width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx3)}
+  .ib svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  .filters{height:40px;padding:0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bd)}
+  .seg{display:inline-flex;border:1px solid var(--bd);border-radius:7px;overflow:hidden;height:28px}
+  .seg span{padding:0 10px;font-size:12px;display:inline-flex;align-items:center;gap:6px;color:var(--tx3)}
+  .seg span.on{background:var(--sf2);color:var(--tx);font-weight:600}
+  .cnt{font-size:10.5px;font-weight:700;min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+       background:var(--ac);color:#04201D;display:inline-flex;align-items:center;justify-content:center}
+  .list{padding:4px 0}
+  .sec{height:30px;padding:0 14px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--tx3)}
+  .sec .c{color:var(--tx4);font-weight:500;font-variant-numeric:tabular-nums}
+  .sec .chev{margin-left:auto;width:12px;height:12px;stroke:var(--tx4);fill:none;stroke-width:1.75}
+  .day{height:28px;padding:0 16px;display:flex;align-items:center;font-size:11px;font-weight:500;color:var(--tx3)}
+  .row{position:relative;margin:2px 8px;padding:8px 8px 8px 10px;border-radius:7px;display:flex;gap:10px;align-items:flex-start}
+  .row:hover{background:var(--rowhover)}
+  .dot{position:absolute;left:-1px;top:19px;width:6px;height:6px;border-radius:50%;background:var(--ac)}
+  .dot.danger{background:var(--danger)} .dot.warn{background:var(--warn)} .dot.ok{background:var(--ok)}
+  .av{width:28px;height:28px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:600;color:#fff;margin-top:2px}
+  .disc{width:28px;height:28px;border-radius:50%;flex:none;border:1px solid var(--bd);background:var(--sf2);
+        display:inline-flex;align-items:center;justify-content:center;color:var(--tx3);margin-top:2px}
+  .disc svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  .disc.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,transparent)}
+  .disc.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+  .disc.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+  .body{flex:1;min-width:0}
+  .l1{display:flex;align-items:baseline;gap:8px}
+  .l1 .s{flex:1;min-width:0;font-size:13px;line-height:18px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .l1 .s b{font-weight:600;color:var(--tx)}
+  .l1 .s .obj{color:var(--tx)}
+  .row.read .l1 .s b,.row.read .l1 .s .obj{font-weight:500;color:var(--tx2)}
+  .time{font-size:11px;color:var(--tx3);font-variant-numeric:tabular-nums;flex:none}
+  .l2{font-size:12px;line-height:17px;color:var(--tx3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .l2 .ctx{color:var(--tx4)}
+  .l2 .st{font-weight:500}
+  .l2 .st.danger{color:var(--danger)} .l2 .st.warn{color:var(--warn)} .l2 .st.ok{color:var(--ok)}
+  .kbd{height:32px;display:flex;align-items:center;justify-content:center;gap:12px;border-top:1px solid var(--bd);
+       background:var(--sf2);font-size:11px;color:var(--tx3)}
+  .kbd span{display:inline-flex;align-items:center;gap:4px}
+  .kbd i{font-style:normal;font-family:ui-monospace,monospace;font-size:10.5px;min-width:18px;height:18px;padding:0 4px;
+         border:1px solid var(--bd2);border-radius:4px;background:var(--sf2);color:var(--tx3);display:inline-flex;align-items:center;justify-content:center}
+
+  /* ── anatomia ── */
+  .anat{margin-top:36px;border-top:1px solid var(--bd);padding-top:22px}
+  .anat h3{font-size:14px;font-weight:700;margin-bottom:10px}
+  .anat .ex{background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;max-width:560px}
+  .lab{display:grid;grid-template-columns:110px 1fr;gap:6px 14px;font-size:12px;margin-top:12px;max-width:560px}
+  .lab dt{color:var(--tx3)} .lab dd{color:var(--tx2)}
+  .lab dd b{color:var(--tx);font-weight:600}
+  .cmp{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;font-size:12.5px}
+  @media (max-width:880px){.cmp{grid-template-columns:1fr}}
+  .cmp h4{font-size:12px;font-weight:700;margin-bottom:6px}
+  .cmp ul{padding-left:16px;color:var(--tx3)} .cmp li{margin:3px 0} .cmp li b{color:var(--tx)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Duas direções de notificação</h1>
+  <p class="lead">O diagnóstico: <b>ícone não diferencia notificação</b>. Nas duas direções abaixo, a diferença entre uma notificação e outra vem da <b>frase estruturada</b> (quem · fez o quê · onde) e de <b>uma cor de estado usada com parcimônia</b> — vermelho para falha/segurança, âmbar para "aguardando você", verde para concluído, nada para informativo. O que muda entre A e B é <b>como a lista se organiza</b>. Mesmos 14 tipos reais do Oryon, mesmos dados.</p>
+
+  <div class="cols">
+
+    <!-- ══════════ A ══════════ -->
+    <section class="dir">
+      <span class="tag">Direção A</span>
+      <h2>Seções por categoria</h2>
+      <p class="desc">Cada categoria vira uma seção com contagem, recolhível. Dentro da seção tudo é do mesmo tipo, então a lista não precisa diferenciar item a item — o ritmo visual vem das seções.</p>
+      <p class="ref">Referência: Stripe (eventos por categoria), Slack (Atividade por tipo), Notion (por página).</p>
+      <div class="pop">
+        <div class="hd"><span class="t">Notificações</span><span class="n">9 não lidas</span>
+          <div class="acts">
+            <span class="ib" title="Marcar todas como lidas"><svg viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></span>
+            <span class="ib" title="Arquivadas"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
+            <span class="ib" title="Preferências"><svg viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></span>
+          </div>
+        </div>
+        <div class="list">
+          <div class="sec">Conversas <span class="c">· 4</span><svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+          <div class="row"><span class="dot warn"></span><span class="av" style="background:var(--av1)">MS</span>
+            <div class="body"><div class="l1"><span class="s"><b>Maria Souza</b> está aguardando resposta</span><span class="time">2 min</span></div>
+            <div class="l2"><span class="st warn">Há 18 min sem resposta</span> <span class="ctx">· Linha 2 · Vendas</span></div></div></div>
+          <div class="row"><span class="dot"></span><span class="av" style="background:var(--av2)">JP</span>
+            <div class="body"><div class="l1"><span class="s"><b>João Pereira</b> enviou uma mensagem</span><span class="time">9 min</span></div>
+            <div class="l2">"Oi, ainda tem a promoção de ontem?" <span class="ctx">· Linha 1</span></div></div></div>
+          <div class="row"><span class="dot warn"></span><span class="disc warn"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg></span>
+            <div class="body"><div class="l1"><span class="s"><b>Agente Vendas</b> pediu transferência</span><span class="time">14 min</span></div>
+            <div class="l2"><span class="st warn">Cliente pediu humano</span> <span class="ctx">· Carla Dias · Linha 2</span></div></div></div>
+          <div class="row read"><span class="av" style="background:var(--av3)">RL</span>
+            <div class="body"><div class="l1"><span class="s"><b>Rafael Lima</b> foi atribuído a você</span><span class="time">1 h</span></div>
+            <div class="l2"><span class="ctx">por Ana Lima · Linha 1</span></div></div></div>
+
+          <div class="sec">Equipe <span class="c">· 1</span><svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+          <div class="row"><span class="dot"></span><span class="av" style="background:var(--av4)">AL</span>
+            <div class="body"><div class="l1"><span class="s"><b>Ana Lima</b> mencionou você</span><span class="time">25 min</span></div>
+            <div class="l2">"@você consegue olhar o lead da Loja Vida?" <span class="ctx">· #vendas</span></div></div></div>
+
+          <div class="sec">Campanhas <span class="c">· 2</span><svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+          <div class="row"><span class="dot ok"></span><span class="disc ok"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></span>
+            <div class="body"><div class="l1"><span class="s"><span class="obj">Black Friday · Lista VIP</span> concluída</span><span class="time">40 min</span></div>
+            <div class="l2"><span class="st ok">1.284 enviadas</span> <span class="ctx">· 842 lidas · 96 respostas</span></div></div></div>
+          <div class="row"><span class="dot danger"></span><span class="disc danger"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></span>
+            <div class="body"><div class="l1"><span class="s"><span class="obj">Reativação 30 dias</span> falhou</span><span class="time">2 h</span></div>
+            <div class="l2"><span class="st danger">312 não entregues</span> <span class="ctx">· modelo rejeitado pela Meta</span></div></div></div>
+
+          <div class="sec">Segurança <span class="c">· 1</span><svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+          <div class="row"><span class="dot danger"></span><span class="disc danger"><svg viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.7 8.8a2 2 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.6a1 1 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+            <div class="body"><div class="l1"><span class="s"><span class="obj">Linha 3</span> desconectou do WhatsApp</span><span class="time">3 h</span></div>
+            <div class="l2"><span class="st danger">Reconecte para voltar a receber</span></div></div></div>
+        </div>
+        <div class="kbd"><span><i>J</i><i>K</i> navegar</span><span><i>↵</i> abrir</span><span><i>E</i> arquivar</span><span><i>A</i> todas</span></div>
+      </div>
+    </section>
+
+    <!-- ══════════ B ══════════ -->
+    <section class="dir">
+      <span class="tag">Direção B</span>
+      <h2>"Requer ação" primeiro</h2>
+      <p class="desc">Lista única, mas a aba padrão mostra só o que exige você: conversa aguardando, transferência, menção, falha, segurança. O resto vai para "Atualizações". Agrupado por dia. A cor de estado carrega o peso.</p>
+      <p class="ref">Referência: Linear (aba Prioridade), GitHub (cor de estado + motivo), Intercom.</p>
+      <div class="pop">
+        <div class="hd"><span class="t">Notificações</span><span class="n">9 não lidas</span>
+          <div class="acts">
+            <span class="ib"><svg viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></span>
+            <span class="ib"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
+            <span class="ib"><svg viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></span>
+          </div>
+        </div>
+        <div class="filters">
+          <div class="seg"><span class="on">Requer ação <span class="cnt">5</span></span><span>Atualizações</span><span>Todas</span></div>
+        </div>
+        <div class="list">
+          <div class="day">Hoje</div>
+          <div class="row"><span class="dot danger"></span><span class="disc danger"><svg viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.7 8.8a2 2 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.6a1 1 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+            <div class="body"><div class="l1"><span class="s"><span class="obj">Linha 3</span> desconectou do WhatsApp</span><span class="time">3 h</span></div>
+            <div class="l2"><span class="st danger">Reconecte para voltar a receber</span> <span class="ctx">· Segurança</span></div></div></div>
+          <div class="row"><span class="dot warn"></span><span class="av" style="background:var(--av1)">MS</span>
+            <div class="body"><div class="l1"><span class="s"><b>Maria Souza</b> está aguardando resposta</span><span class="time">2 min</span></div>
+            <div class="l2"><span class="st warn">Há 18 min sem resposta</span> <span class="ctx">· Linha 2 · Vendas</span></div></div></div>
+          <div class="row"><span class="dot warn"></span><span class="disc warn"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg></span>
+            <div class="body"><div class="l1"><span class="s"><b>Agente Vendas</b> pediu transferência</span><span class="time">14 min</span></div>
+            <div class="l2"><span class="st warn">Cliente pediu humano</span> <span class="ctx">· Carla Dias · Linha 2</span></div></div></div>
+          <div class="row"><span class="dot"></span><span class="av" style="background:var(--av4)">AL</span>
+            <div class="body"><div class="l1"><span class="s"><b>Ana Lima</b> mencionou você</span><span class="time">25 min</span></div>
+            <div class="l2">"@você consegue olhar o lead da Loja Vida?" <span class="ctx">· #vendas</span></div></div></div>
+          <div class="row"><span class="dot danger"></span><span class="disc danger"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></span>
+            <div class="body"><div class="l1"><span class="s"><span class="obj">Reativação 30 dias</span> falhou</span><span class="time">2 h</span></div>
+            <div class="l2"><span class="st danger">312 não entregues</span> <span class="ctx">· modelo rejeitado pela Meta</span></div></div></div>
+
+          <div class="day">Ontem</div>
+          <div class="row read"><span class="disc"><svg viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.7 8.8a2 2 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.6a1 1 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <div class="body"><div class="l1"><span class="s"><span class="obj">Novo login</span> na sua conta</span><span class="time">ontem 22:10</span></div>
+            <div class="l2"><span class="ctx">Windows · São Paulo · se não foi você, revise a senha</span></div></div></div>
+        </div>
+        <div class="kbd"><span><i>J</i><i>K</i> navegar</span><span><i>↵</i> abrir</span><span><i>E</i> arquivar</span><span><i>A</i> todas</span></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ══════════ anatomia ══════════ -->
+  <section class="anat">
+    <h3>A anatomia da linha — igual nas duas direções</h3>
+    <div class="ex">
+      <div class="row" style="margin:0;padding:0"><span class="dot warn" style="left:-9px"></span><span class="av" style="background:var(--av1)">MS</span>
+        <div class="body"><div class="l1"><span class="s"><b>Maria Souza</b> está aguardando resposta</span><span class="time">2 min</span></div>
+        <div class="l2"><span class="st warn">Há 18 min sem resposta</span> <span class="ctx">· Linha 2 · Vendas</span></div></div></div>
+    </div>
+    <dl class="lab">
+      <dt>Ator</dt><dd><b>Maria Souza</b> — a pessoa (ou o objeto: campanha, linha) em peso 600. É o que você reconhece.</dd>
+      <dt>Ação</dt><dd>"está aguardando resposta" — verbo em texto normal; muda por tipo (enviou, mencionou, concluída, falhou…).</dd>
+      <dt>Estado</dt><dd>"Há 18 min sem resposta" — só quando existe; carrega a <b>única cor</b> da linha (âmbar = você, vermelho = falha, verde = concluído).</dd>
+      <dt>Contexto</dt><dd>"Linha 2 · Vendas" — onde aconteceu, sempre mudo.</dd>
+      <dt>Visual</dt><dd>Avatar do ator quando há pessoa; disco mudo quando é sistema. Nunca ladrilho colorido por categoria.</dd>
+    </dl>
+    <p class="ref" style="margin-top:10px">Tudo isso já existe nos dados (título, descrição, metadados com contato, linha, campanha, automação, contagens). A frase é montada por tipo, com o título atual como reserva.</p>
+
+    <div class="cmp">
+      <div><h4>A ganha quando…</h4><ul>
+        <li>o volume por categoria importa — <b>"tenho 4 de conversas e 2 de campanha"</b> se lê sem abrir nada;</li>
+        <li>o usuário trabalha por módulo (vendas olha Conversas, marketing olha Campanhas);</li>
+        <li>custo: seções recolhíveis exigem estado guardado; lista fica mais longa.</li></ul></div>
+      <div><h4>B ganha quando…</h4><ul>
+        <li>o que importa é <b>"o que eu tenho que fazer agora"</b> — a aba padrão já é a lista de trabalho;</li>
+        <li>o volume é alto e a maioria é informativa (novas mensagens, execuções de automação);</li>
+        <li>custo: depende de classificar bem os 14 tipos em "requer ação" × "atualização" — regra fixa, sem IA.</li></ul></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>
