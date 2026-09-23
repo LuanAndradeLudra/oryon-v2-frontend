@@ -749,14 +749,16 @@ function Step1({
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <span className="text-[11px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded-2xs">{tpl.category}</span>
                           <span className="text-[11px] text-surface-600">{tpl.language}</span>
+                          {/* Direção C: "mesma peça, mesma medida" — 3ª linha
+                              listando variáveis cortada (repetia o que a
+                              Etapa 3 já mostra uma a uma), virou marcador
+                              inline sem alterar a altura da linha. */}
+                          {tpl.bodyVariables && tpl.bodyVariables.length > 0 && (
+                            <span className="text-[11px] text-surface-600">· {tpl.bodyVariables.length} var.</span>
+                          )}
                         </div>
                       </div>
                       <p className="text-xs text-surface-500 line-clamp-1 mt-0.5">{tpl.body.replace(/\n/g, ' ')}</p>
-                      {tpl.bodyVariables && tpl.bodyVariables.length > 0 && (
-                        <p className="text-[11px] text-surface-500 mt-0.5">
-                          {tpl.bodyVariables.length} variáve{tpl.bodyVariables.length === 1 ? 'l' : 'is'}: {tpl.bodyVariables.map((v, i) => `{{${i + 1}}} ${v}`).join(', ')}
-                        </p>
-                      )}
                     </div>
                   </button>
                 )
