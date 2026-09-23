@@ -247,7 +247,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
           onClick={() => setMenuOpen((v) => !v)}
           title="Estender pausa da IA"
           aria-label="Estender pausa"
-          className="w-7 h-7 flex items-center justify-center rounded-sm text-surface-400 hover:bg-surface-800 hover:text-surface-200 disabled:opacity-50 transition-all"
+          className="w-7 h-7 flex items-center justify-center rounded-sm text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-200 disabled:opacity-50 transition-all"
         >
           <ChevronDown className={cn('w-4 h-4 transition-transform', menuOpen && 'rotate-180')} />
         </button>
@@ -266,7 +266,7 @@ export function HandoffChip({ aiPausedUntil, assignedUser, onPause, onResume, on
                   key={opt.label}
                   type="button"
                   onClick={() => handlePause(opt.minutes)}
-                  className="w-full px-3 py-2 text-left text-xs text-surface-200 hover:bg-surface-800 transition-colors"
+                  className="w-full px-3 py-2 text-left text-xs text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
                 >
                   {opt.label}
                 </button>

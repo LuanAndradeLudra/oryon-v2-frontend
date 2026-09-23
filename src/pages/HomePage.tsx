@@ -176,8 +176,10 @@ function AIInsightsWidget({ stats }: { stats: HomeStats }) {
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-3.5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-black" />
+          {/* Eixo 10: mesmo badge do AiInsightsSection.tsx (Dashboard) — bg-white
+              + text-black não é selo de marca, ficava sem contraste no claro. */}
+          <div className="w-7 h-7 rounded-lg bg-brand-500/15 flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-brand-400" />
           </div>
           <span className="text-sm font-semibold text-surface-100">Insights da Oryon AI</span>
         </div>

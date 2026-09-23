@@ -105,7 +105,7 @@ function ActionRow({ action }: { action: AgentAction }) {
       initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
       className={cn(
         'flex items-start gap-2.5 px-2 py-1.5 rounded-md',
-        action.success ? 'bg-surface-900/40' : 'bg-status-error-950/30 border border-status-error-900/40',
+        action.success ? 'bg-[var(--sf2)]' : 'bg-status-error-950/30 border border-status-error-900/40',
       )}
     >
       <span

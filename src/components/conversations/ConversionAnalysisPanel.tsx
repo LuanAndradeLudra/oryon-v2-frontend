@@ -141,7 +141,7 @@ function CapiStatusBadge({
   }
 
   return (
-    <div className="flex items-start gap-2 px-3 py-2 bg-surface-800/50 border border-surface-700 rounded-lg">
+    <div className="flex items-start gap-2 px-3 py-2 bg-[var(--sf2)] border border-surface-700 rounded-lg">
       <Send className="w-3.5 h-3.5 text-[#1877f2] flex-shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-surface-200">Reportar ao Meta CAPI</p>
@@ -474,7 +474,7 @@ export function ConversionAnalysisPanel({ conversationId, contact }: ConversionA
       {phase === 'idle' && (
         <div className="space-y-2.5">
           {hasAttribution && (
-            <div className="flex items-start gap-2 px-2.5 py-2 bg-surface-800/60 rounded-lg border border-surface-700/50">
+            <div className="flex items-start gap-2 px-2.5 py-2 bg-[var(--sf2)] rounded-lg border border-surface-700">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: platformColor }} />
               <p className="text-2xs text-surface-400">
                 Lead com atribuição de anúncio detectada. Analise a conversa para fechar o ciclo de atribuição e calcular o ROAS real.
