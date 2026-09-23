@@ -14,9 +14,11 @@ interface ContactDetailTabsProps {
    *  e virou este link na faixa de abas — mesmo gate de feature flag do
    *  caller, que só passa a prop quando a página completa existe. */
   onExpand?: () => void
+  /** Painel acoplado: recuo de 16px (o "Abrir ficha" vai pro cabeçalho). */
+  compact?: boolean
 }
 
-export function ContactDetailTabs({ activeTab, onChange, dealsCount, conversationsCount, onExpand }: ContactDetailTabsProps) {
+export function ContactDetailTabs({ activeTab, onChange, dealsCount, conversationsCount, onExpand, compact = false }: ContactDetailTabsProps) {
   const { vocab } = useTenantVocab()
   // O rótulo de "Negócios" vem do vocabulário do tenant (vertical-agnostic).
   const tabs: TabOption<TabId>[] = [
@@ -28,13 +30,13 @@ export function ContactDetailTabs({ activeTab, onChange, dealsCount, conversatio
   ]
 
   return (
-    <div className="flex items-center gap-3 px-[18px] pt-3.5">
+    <div className={compact ? 'flex items-center gap-3 px-4 pt-2.5' : 'flex items-center gap-3 px-[18px] pt-3.5'}>
       <Tabs
         tabs={tabs}
         value={activeTab}
         onChange={onChange}
         label="Seções do contato"
-        className="flex-shrink-0"
+        className={compact ? 'flex-1 min-w-0' : 'flex-shrink-0'}
       />
       {onExpand && (
         <button

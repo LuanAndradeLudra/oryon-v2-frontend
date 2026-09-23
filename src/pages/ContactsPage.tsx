@@ -30,6 +30,7 @@ import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
 import { useTableSelection } from '@/hooks/useTableSelection'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useListScrollMemory } from '@/hooks/useListScrollMemory'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { useContactColumnsConfig } from '@/hooks/useContactColumnsConfig'
@@ -38,7 +39,7 @@ import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
 import { tagsApi, pipelinesApi, contactsApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { getApiErrorMessage } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag, Pipeline } from '@/types'
 
 /**
@@ -68,19 +69,24 @@ export function ContactsPage() {
   // SCRUM-1068: sobrevive à troca de rota (/contacts → /contacts/:id → volta),
   // diferente de um useRef local que se perde no unmount da página.
   const listScrollPosRef = useListScrollMemory('contacts-list')
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [initialPanelTab, setInitialPanelTab] = useState<TabId | undefined>(undefined)
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const isLg = useMediaQuery('(min-width: 1024px)')
 
-  // Auto-open contact from URL param (e.g. /contacts?contact=c1)
-  useEffect(() => {
-    const contactParam = searchParams.get('contact')
-    if (contactParam) {
-      setSelectedContactId(contactParam)
-      setSearchParams({}, { replace: true })
-    }
-  }, [searchParams, setSearchParams])
+  // Estado na URL (regra do PO: navegação preserva estado): o contato aberto
+  // vive em `?contact=<id>` — abre o painel ao montar, é escrito ao abrir/trocar
+  // e limpo ao fechar (replace, sem empilhar histórico), preservando os demais
+  // params (`?deal=`, `?pipeline=`…). A URL é a fonte da verdade.
+  const selectedContactId = searchParams.get('contact')
+  const setSelectedContactId = useCallback((id: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (id) next.set('contact', id)
+      else next.delete('contact')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
 
   // D2 (SCRUM-935): `/contacts?pipeline=<id>` (link salvo/atalho de antes do
   // board virar página própria) redireciona pra `/pipelines/<id>` — mantém o
@@ -182,16 +188,61 @@ export function ContactsPage() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const [bulkDeleting, setBulkDeleting] = useState(false)
 
-  // Esc clears selection.
+  // Esc clears selection — com o painel aberto, o Esc é do painel (fecha; o
+  // segundo Esc limpa a seleção).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') clearSelection()
+      if (e.key === 'Escape' && !selectedContactId) clearSelection()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [clearSelection])
+  }, [clearSelection, selectedContactId])
 
   const handleFiltersChange = (f: ContactFilters) => setFilters(f)
+
+  // ── Painel do contato: fechar devolve o foco à linha; ↑/↓ troca de contato ──
+  const activeIndex = selectedContactId ? contacts.findIndex((c) => c.id === selectedContactId) : -1
+  const closePanel = useCallback(() => {
+    const id = selectedContactId
+    setSelectedContactId(null)
+    if (id) {
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>(`[data-contact-open="${CSS.escape(id)}"]`)?.focus()
+      })
+    }
+  }, [selectedContactId, setSelectedContactId])
+
+  useEffect(() => {
+    if (!selectedContactId) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return
+      const t = e.target as HTMLElement | null
+      if (t && (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable)) return
+      // Modal/menu por cima: o Esc e as setas são dele, não do painel.
+      if (document.querySelector('[aria-modal="true"], [role="menu"]')) return
+      if (e.key === 'Escape') { e.preventDefault(); closePanel(); return }
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && activeIndex >= 0) {
+        const down = e.key === 'ArrowDown'
+        const next = contacts[activeIndex + (down ? 1 : -1)]
+        if (!next) {
+          if (down && hasMore && !loadingMore) loadMore()
+          return
+        }
+        e.preventDefault()
+        setInitialPanelTab(undefined)
+        setSelectedContactId(next.id)
+        requestAnimationFrame(() => {
+          document.querySelector(`[data-contact-id="${CSS.escape(next.id)}"]`)?.scrollIntoView({ block: 'nearest' })
+        })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedContactId, activeIndex, contacts, hasMore, loadingMore, loadMore, closePanel, setSelectedContactId])
+
+  // Lg+: painel ACOPLADO ao lado da lista, sem scrim. Abaixo de lg (e no mobile)
+  // segue a sobreposição de tela inteira.
+  const dockedOpen = !isMobile && isLg && !!selectedContactId
 
   // CONT-HDR-03/09 (spec/1c-contatos.GAPS.md): subtítulo dinâmico da TopBar
   // substitui o badge de contagem solto entre os botões. Só "N contatos"
@@ -265,6 +316,14 @@ export function ContactsPage() {
     setInitialPanelTab(undefined)
     setSelectedContactId(contact.id)
   }
+
+  // "Abrir ficha": o painel fica aberto durante a navegação (a troca de rota faz
+  // o crossfade da tela inteira — AnimatedRoutes dá chave própria a
+  // /contacts/:id; fechar antes causaria um slide-out concorrente com o fade).
+  // O contato vai no state para a página nascer sem skeleton.
+  const openProfile = isFeatureVisible('contactProfilePage', user?.email)
+    ? (contact: Contact) => navigate(`/contacts/${contact.id}`, { state: { contact } })
+    : undefined
 
   // Linha da lista: Ctrl/Cmd (ou já existir seleção) marca em vez de abrir —
   // mesmo contrato do clique na linha da tabela.
@@ -387,7 +446,11 @@ export function ContactsPage() {
 
         <ContactsStatsBar open={statsOpen} contacts={contacts} total={total} />
 
-        <div className="flex-1 min-h-0 flex flex-col bg-surface-800">
+        <div className={cn(
+          'flex-1 min-h-0 grid grid-rows-[minmax(0,1fr)]',
+          dockedOpen ? 'grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-[minmax(0,1fr)]',
+        )}>
+        <div className="min-w-0 min-h-0 flex flex-col bg-surface-800">
           {error ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-surface-400">
               <AlertTriangle className="w-8 h-8 text-red-400" />
@@ -423,11 +486,7 @@ export function ContactsPage() {
               onToggleSelect={toggleSelect}
               onOpenConversation={handleOpenConversation}
               onSendTemplate={setTemplateContact}
-              onOpenProfile={
-                isFeatureVisible('contactProfilePage', user?.email)
-                  ? (c) => navigate(`/contacts/${c.id}`, { state: { contact: c } })
-                  : undefined
-              }
+              onOpenProfile={openProfile}
               hasMore={hasMore}
               loadingMore={loadingMore}
               onLoadMore={loadMore}
@@ -483,6 +542,24 @@ export function ContactsPage() {
             </div>
             </>
           )}
+        </div>
+        {dockedOpen && selectedContactId && (
+          <aside
+            aria-label="Detalhe do contato"
+            className="min-w-0 min-h-0 flex flex-col overflow-hidden border-l border-surface-700 bg-surface-800"
+          >
+            <ContactDetailPanel
+              docked
+              contactId={selectedContactId}
+              initialTab={initialPanelTab}
+              onClose={closePanel}
+              onContactUpdate={handleContactUpdate}
+              onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}
+              onExpand={openProfile}
+              footer={activeIndex >= 0 ? `${activeIndex + 1} de ${total.toLocaleString('pt-BR')} · ↑↓ para navegar` : '↑↓ para navegar'}
+            />
+          </aside>
+        )}
         </div>
       </div>
 
@@ -637,9 +714,10 @@ export function ContactsPage() {
         }}
       />
 
-      {/* Detail Panel — Fixed right drawer */}
+      {/* Detail Panel — sobreposição de tela inteira (abaixo de lg / mobile).
+          Em lg+ o painel é o <aside> acoplado acima, sem scrim. */}
       <AnimatePresence>
-        {selectedContactId && (
+        {selectedContactId && !dockedOpen && (
           <>
             <motion.div
               key="contact-backdrop"
@@ -648,7 +726,7 @@ export function ContactsPage() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
               className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[39]"
-              onClick={() => setSelectedContactId(null)}
+              onClick={closePanel}
             />
             <motion.div
               key="contact-panel"
@@ -656,24 +734,15 @@ export function ContactsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full sm:w-[48rem] z-40 bg-surface-800 border-l overlay-frame flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-full z-40 bg-surface-800 border-l overlay-frame flex flex-col"
             >
               <ContactDetailPanel
                 contactId={selectedContactId}
                 initialTab={initialPanelTab}
-                onClose={() => setSelectedContactId(null)}
+                onClose={closePanel}
                 onContactUpdate={handleContactUpdate}
                 onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}
-                onExpand={
-                  isFeatureVisible('contactProfilePage', user?.email)
-                    // O drawer fica aberto durante a navegação: a troca de rota
-                    // faz o crossfade da tela inteira (AnimatedRoutes dá chave
-                    // própria a /contacts/:id) — fechar antes causaria um
-                    // slide-out concorrente com o fade. O contato vai no state
-                    // para a página nascer sem skeleton.
-                    ? (contact) => navigate(`/contacts/${contact.id}`, { state: { contact } })
-                    : undefined
-                }
+                onExpand={openProfile}
               />
             </motion.div>
           </>

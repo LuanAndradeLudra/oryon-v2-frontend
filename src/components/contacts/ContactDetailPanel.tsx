@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import { contactsApi } from '@/services/api'
 import { connectSocket } from '@/services/socket'
@@ -23,9 +23,15 @@ interface ContactDetailPanelProps {
   /** Abre a página completa do contato — recebe o contato já carregado para
    *  a página nascer com dados (sem flash de skeleton na transição). */
   onExpand?: (contact: Contact) => void
+  /** Painel acoplado de ~400px ao lado da lista (Leads, direção A): cabeçalho
+   *  compacto, identidade empilhada no topo e o corpo inteiro rolando junto.
+   *  Sem isto, o layout original de 768px (identidade 260px | conteúdo). */
+  docked?: boolean
+  /** Rodapé fixo do painel acoplado (ex.: "3 de 5.191 · ↑↓ para navegar"). */
+  footer?: ReactNode
 }
 
-export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, initialTab, onExpand }: ContactDetailPanelProps) {
+export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, initialTab, onExpand, docked = false, footer }: ContactDetailPanelProps) {
   const [contact, setContact] = useState<Contact | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? 'overview')
@@ -155,6 +161,23 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
     }
   }
 
+  const tabContent = contact && (
+    <>
+      {activeTab === 'overview'      && <OverviewTab
+        contact={contact}
+        onSave={handleSave}
+        onRefresh={() => {
+          contactsApi.get(contactId).then((r) => { setContact(r.data); onContactUpdate?.(r.data) }).catch(() => {})
+        }}
+        onDealsCountChange={setDealsCount}
+      />}
+      {activeTab === 'deals'         && <DealsTab contactId={contactId} contactName={contact.displayName} />}
+      {activeTab === 'history'       && <HistoryTab contactId={contactId} />}
+      {activeTab === 'conversations' && <ConversationsTab contactId={contactId} />}
+      {activeTab === 'campaigns'     && <CampaignsTab />}
+    </>
+  )
+
   return (
     <div className="flex flex-col h-full">
       {loading || !contact ? (
@@ -167,17 +190,39 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
             contact={contact}
             onClose={onClose}
             onDelete={handleDelete}
+            compact={docked}
+            onExpand={docked && onExpand ? () => onExpand(contact) : undefined}
           />
           <ContactDetailTabs
             activeTab={activeTab}
             onChange={setActiveTab}
             dealsCount={dealsCount}
             conversationsCount={contact.conversationCount}
-            onExpand={onExpand ? () => onExpand(contact) : undefined}
+            onExpand={!docked && onExpand ? () => onExpand(contact) : undefined}
+            compact={docked}
           />
-          {/* Reauditoria de fidelidade (item 4): painel de identidade fixo à
+          {docked ? (
+            <>
+              <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto">
+                <ContactIdentityPanel
+                  stacked
+                  contact={contact}
+                  onSave={handleSave}
+                  onAddTag={handleAddTag}
+                  onRemoveTag={handleRemoveTag}
+                />
+                {tabContent}
+              </div>
+              {footer && (
+                <div className="flex-shrink-0 border-t border-surface-700 px-4 py-2.5 text-xs text-surface-400">
+                  {footer}
+                </div>
+              )}
+            </>
+          ) : (
+          /* Reauditoria de fidelidade (item 4): painel de identidade fixo à
               esquerda, persiste em QUALQUER aba (antes só existia dentro da
-              Visão Geral e sumia ao trocar de aba). */}
+              Visão Geral e sumia ao trocar de aba). */
           <div className="flex-1 min-h-0 flex flex-col md:flex-row">
             <ContactIdentityPanel
               contact={contact}
@@ -186,20 +231,10 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
               onRemoveTag={handleRemoveTag}
             />
             <div ref={bodyRef} className="flex-1 min-w-0 overflow-y-auto">
-              {activeTab === 'overview'      && <OverviewTab
-                contact={contact}
-                onSave={handleSave}
-                onRefresh={() => {
-                  contactsApi.get(contactId).then((r) => { setContact(r.data); onContactUpdate?.(r.data) }).catch(() => {})
-                }}
-                onDealsCountChange={setDealsCount}
-              />}
-              {activeTab === 'deals'         && <DealsTab contactId={contactId} contactName={contact.displayName} />}
-              {activeTab === 'history'       && <HistoryTab contactId={contactId} />}
-              {activeTab === 'conversations' && <ConversationsTab contactId={contactId} />}
-              {activeTab === 'campaigns'     && <CampaignsTab />}
+              {tabContent}
             </div>
           </div>
+          )}
         </>
       )}
     </div>
