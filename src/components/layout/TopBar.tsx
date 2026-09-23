@@ -3,15 +3,9 @@ import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
-  Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send,
-  Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2,
-  Smartphone, CreditCard, UserPlus, Zap, X, Tag, Clock,
-  Filter, Download, PlusCircle, ArrowRight, ChevronRight,
-  LayoutGrid, KanbanSquare, FileText, Inbox,
-  Globe, Users2, BellRing, Plug, BookOpen,
-  AlertCircle, AtSign, Megaphone as MegaphoneIcon, ShieldAlert, UserCheck,
-  User, LogOut,
+  Search, Bell, Sparkles, Home, MessageSquare, BarChart3, Users, Send, Megaphone, Workflow, Bot, MessagesSquare, Settings, Building2, Smartphone, CreditCard, UserPlus, Zap, X, Tag, Clock, Filter, Download, PlusCircle, ArrowRight, ChevronRight, LayoutGrid, KanbanSquare, FileText, Inbox, Globe, Users2, BellRing, Plug, BookOpen, AlertCircle, AtSign, Megaphone as MegaphoneIcon, ShieldAlert, UserCheck, User, LogOut, CheckCheck, Archive, Settings2, ChevronDown,
 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import { useTopBarActions } from '@/contexts/TopBarActionsContext'
@@ -35,7 +29,6 @@ import {
   categoryOf,
   CATEGORY_STYLE,
   priorityOf,
-  PRIORITY_STYLE,
   avatarColorFor,
   initialsOf,
   contactSubject,
@@ -435,172 +428,113 @@ function NotificationItem({
   const category = categoryOf(n.type)
   const style = CATEGORY_STYLE[category]
   const priority = priorityOf(n)
-  const priorityStyle = PRIORITY_STYLE[priority]
   const Icon = iconFor(n.type)
   const subject = contactSubject(n)
   const action = inlineActionFor(n)
-
-  const handleInlineAction = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!action) return
-    navigate(action.href)
-  }
-
-  const handleCategoryChip = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onCategoryClick?.([n.type])
-  }
-
+  // Direção C: sem a faixa colorida de 3px à esquerda (a categoria já está
+  // na cor do ladrilho), sem chip de categoria por linha (vira texto mudo
+  // clicável), urgente = borda esquerda em perigo + chip de 18px. Ações
+  // aparecem no hover como botões de ícone de 28px. Alvo: ~64px por item.
   return (
     <div
       onClick={onClick}
       role="listitem"
       aria-label={`${n.title}. ${n.isRead ? 'Lida' : 'Não lida'}. ${formatListTime(n.createdAt)}`}
       className={cn(
-        'group relative flex items-start gap-3 pl-3 pr-4 py-3 border-l-[3px] cursor-pointer transition-colors',
-        // Phase 20 V1: left accent strip by category
-        style.stripClass,
-        // Phase 20 V3: stronger unread treatment
-        !n.isRead ? 'bg-brand-600/[0.04]' : 'bg-transparent',
-        // Hover + keyboard focus state
+        'group relative flex items-start gap-2.5 pl-3 pr-2 py-2.5 border-b border-surface-700 cursor-pointer transition-colors',
+        !n.isRead ? 'bg-[var(--sf2)]' : 'bg-transparent',
         'hover:bg-[var(--rowhover)]',
-        isFocused && 'bg-[var(--sf2)] ring-1 ring-brand-600/40',
-        // Phase 20 V2: priority visual
-        priorityStyle.containerClass,
-        // Touch targets — min-h bump on coarse pointers (R2)
-        '[@media(pointer:coarse)]:min-h-[72px]',
+        isFocused && 'ring-1 ring-inset ring-brand-500',
+        priority === 'urgent' && 'border-l-2 border-l-danger',
+        '[@media(pointer:coarse)]:min-h-[64px]',
       )}
     >
-      {/* Avatar + icon overlay. Contact-centric notifications show the
-          contact's avatar; others show the plain category icon. */}
+      <span className={cn('w-1.5 h-1.5 rounded-full mt-[9px] flex-none', !n.isRead ? 'bg-brand-500' : 'bg-transparent')} aria-hidden />
       {subject ? (
-        <div className="relative flex-shrink-0 mt-0.5">
-          <div
-            className={cn(
-              'w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold text-white',
-              avatarColorFor(subject.name),
-            )}
-            aria-hidden
-          >
+        <span className="relative flex-none">
+          <span className={cn('w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white', avatarColorFor(subject.name))} aria-hidden>
             {initialsOf(subject.name)}
-          </div>
-          <div
-            className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-surface-900 bg-white"
-          >
-            <Icon className="w-2.5 h-2.5 text-surface-950" />
-          </div>
-        </div>
+          </span>
+          <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center ring-2 ring-[var(--color-overlay)] bg-[var(--sf2)]">
+            <Icon className="w-2 h-2 text-surface-300" />
+          </span>
+        </span>
       ) : (
-        <div
+        <button
+          type="button"
           style={{ ['--chip']: style.chip } as React.CSSProperties}
-          className="color-chip w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border"
-          aria-hidden
+          onClick={(e) => { e.stopPropagation(); onCategoryClick?.([n.type]) }}
+          className="color-chip-soft w-7 h-7 rounded-xs flex items-center justify-center flex-none border hover:brightness-110"
+          title={`Filtrar: ${style.label}`}
+          aria-label={`Filtrar por ${style.label}`}
         >
-          <Icon className="w-4 h-4 text-white" />
-        </div>
+          <Icon className="w-3.5 h-3.5" />
+        </button>
       )}
-
       <div className="flex-1 min-w-0">
-        {/* Title + unread emphasis via weight */}
-        <div className="flex items-start gap-2">
-          <p
-            className={cn(
-              'text-xs leading-snug flex-1 min-w-0',
-              !n.isRead ? 'font-semibold text-surface-50' : 'font-medium text-surface-200',
-            )}
-          >
+        <div className="flex items-baseline gap-2">
+          <p className={cn('text-[13px] leading-[18px] flex-1 min-w-0 truncate', !n.isRead ? 'font-semibold text-surface-50' : 'font-medium text-surface-200')}>
             {n.title}
           </p>
           {priority === 'urgent' && (
             <span
               style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
-              className={cn(
-                'color-chip shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border',
-                priorityStyle.showPulse && 'animate-pulse',
-              )}
+              className="color-chip-soft border inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none"
             >
-              urgente
+              Urgente
             </span>
           )}
+          <span className="text-[11px] text-surface-500 tabular-nums flex-none group-hover:opacity-0 transition-opacity">{formatListTime(n.createdAt)}</span>
         </div>
-
         {n.description && (
-          <p
-            className={cn(
-              'text-xs mt-0.5 line-clamp-2',
-              !n.isRead ? 'text-surface-300' : 'text-surface-500',
-            )}
-          >
+          <p className={cn('text-xs leading-[17px] mt-0.5', !n.isRead ? 'text-surface-300 line-clamp-2' : 'text-surface-500 line-clamp-1')}>
             {n.description}
           </p>
         )}
-
-        {/* Meta row: category chip + contextual time + inline action on hover */}
-        <div className="flex items-center gap-2 mt-1.5">
-          {onCategoryClick && (
-            <button
-              onClick={handleCategoryChip}
-              style={{ ['--chip']: style.chip } as React.CSSProperties}
-              className="color-chip text-3xs font-medium px-1.5 py-0.5 rounded border transition-[filter] hover:brightness-125"
-              title="Filtrar por este tipo"
-            >
-              {style.label}
-            </button>
-          )}
-          <span className="text-3xs text-surface-600">{formatListTime(n.createdAt)}</span>
-          {action && (
-            <button
-              onClick={handleInlineAction}
-              className={cn(
-                'ml-auto text-3xs font-medium px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity',
-                action.variant === 'primary'
-                  ? 'bg-brand-600 text-surface-950 hover:bg-brand-500'
-                  : 'text-brand-300 hover:bg-brand-600/20',
-              )}
-            >
-              {action.label} →
-            </button>
-          )}
-        </div>
       </div>
-
-      {/* Right-side hover actions (mark unread, archive) */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-start mt-1">
+      {/* Ações no hover — 28px, --rowhover; ocupam o lugar do horário. */}
+      <div className="absolute right-2 top-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        {action && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); navigate(action.href) }}
+            className={cn(
+              'h-7 px-2 rounded-xs text-[11px] font-semibold mr-1',
+              action.variant === 'primary'
+                ? 'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] hover:brightness-90'
+                : 'text-surface-200 hover:bg-[var(--rowhover)]',
+            )}
+          >
+            {action.label}
+          </button>
+        )}
         {onMarkUnread && (
           <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); onMarkUnread() }}
-            className="p-1.5 rounded text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:p-2"
+            className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
             title="Marcar como não lida (U)"
             aria-label="Marcar como não lida"
           >
-            <div className="w-3 h-3 rounded-full border-2 border-current" />
+            <span className="w-2.5 h-2.5 rounded-full border-2 border-current" />
           </button>
         )}
         {onArchive && (
           <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); onArchive() }}
-            className="p-1.5 rounded text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:p-2"
+            className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9"
             title="Arquivar (E)"
             aria-label="Arquivar"
           >
-            <X className="w-3 h-3" />
+            <Archive className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
-
-      {/* Unread indicator — bigger than before */}
-      {!n.isRead && (
-        <div
-          className="absolute right-2 top-3 w-2 h-2 rounded-full bg-brand-cta"
-          aria-hidden
-        />
-      )}
     </div>
   )
 }
 
-// Phase 18: metadata keys already rendered by dedicated UI blocks — hidden
-// from the advanced details section so we don't duplicate them.
 const HANDLED_META_KEYS = new Set([
   'contacts',
   'affectedCount',
@@ -1055,6 +989,7 @@ function NotificationsPanel() {
   const [detail, setDetail] = useState<AppNotification | null>(null)
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [focusedIndex, setFocusedIndex] = useState<number>(-1)
+  const [catOpen, setCatOpen] = useState(false)
   const [ariaAnnouncement, setAriaAnnouncement] = useState<string>('')
   const panelRef = useRef<HTMLDivElement>(null)
   const prefersReducedMotion = useReducedMotion()
@@ -1170,62 +1105,103 @@ function NotificationsPanel() {
         {ariaAnnouncement}
       </div>
 
-      <div className="absolute top-full right-0 mt-2 w-[26rem] max-w-[calc(100vw-1rem)] overlay-surface border rounded-2xl z-50 overflow-hidden animate-slide-in-right">
-        <div className="px-4 py-3 border-b border-surface-700 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-surface-100">Notificações</span>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowArchived(!showArchived)}
-                className={cn(
-                  'text-2xs transition-colors',
-                  showArchived ? 'text-brand-300' : 'text-surface-500 hover:text-surface-300',
-                )}
-                title={showArchived ? 'Voltar às ativas' : 'Ver arquivadas'}
-              >
-                {showArchived ? '← ativas' : 'arquivadas'}
-              </button>
-              {unreadCount > 0 && !showArchived && (
-                <button
-                  onClick={() => markAllAsRead()}
-                  className="text-2xs text-brand-400 hover:text-brand-300 transition-colors"
-                  title="Marcar todas como lidas (A)"
-                >
-                  Marcar todas como lidas
-                </button>
-              )}
-            </div>
-          </div>
-
-          {!showArchived && (
-            <div className="flex items-center gap-1">
-              <FilterTab active={filter === 'unread'} onClick={() => setFilter('unread')} count={unreadCount}>Não lidas</FilterTab>
-              <FilterTab active={filter === 'all'} onClick={() => setFilter('all')}>Todas</FilterTab>
-            </div>
+      {/* Painel — SCRUM-1097 (23/09), direção C. Referências: Linear Inbox
+          (prioridade separada, uma linha de filtros), Smashing/Courier
+          ("quem, o quê, por quê em 2 s"; ações em massa; preferências por
+          tipo). Antes: cabeçalho de 111px com três alturas de controle
+          (16/24/21) e chips de 10px; itens de 101px. Agora: cabeçalho de
+          44px com ações como botões de ícone 28×28, uma linha de filtros com
+          SegmentedControl sm + categoria em Dropdown, item de ~64px. */}
+      <div className="absolute top-full right-0 mt-2 w-[400px] max-w-[calc(100vw-1rem)] overlay-surface border rounded-lg z-50 overflow-hidden animate-slide-in-right">
+        <div className="h-11 px-3 flex items-center gap-2 border-b border-surface-700">
+          <span className="text-[13px] font-bold text-surface-50 tracking-[-0.01em]">Notificações</span>
+          {!showArchived && unreadCount > 0 && (
+            <span className="text-[11px] text-surface-500 tabular-nums">{unreadCount} não lida{unreadCount === 1 ? '' : 's'}</span>
           )}
-
-          {/* Phase 19: category chips — narrows the server-side type filter. */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-0.5 -mx-0.5 px-0.5 scrollbar-hide">
-            {CATEGORY_CHIPS.map((chip) => (
+          {showArchived && <span className="text-[11px] text-surface-500">arquivadas</span>}
+          <div className="ml-auto flex items-center gap-0.5">
+            {unreadCount > 0 && !showArchived && (
               <button
-                key={chip.key}
-                onClick={() => handleCategoryClick(chip)}
-                style={activeCategory === chip.key
-                  ? ({ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties)
-                  : undefined}
-                className={cn(
-                  'px-2 py-0.5 rounded-md text-3xs font-medium border shrink-0 transition-colors',
-                  activeCategory === chip.key
-                    ? 'color-chip'
-                    : 'bg-[var(--sf2)] border-surface-700 text-surface-400 hover:text-surface-200',
-                )}
+                type="button"
+                onClick={() => markAllAsRead()}
+                title="Marcar todas como lidas (A)"
+                aria-label="Marcar todas como lidas"
+                className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               >
-                {chip.label}
+                <CheckCheck className="w-3.5 h-3.5" />
               </button>
-            ))}
+            )}
+            <button
+              type="button"
+              onClick={() => setShowArchived(!showArchived)}
+              title={showArchived ? 'Voltar às ativas' : 'Ver arquivadas'}
+              aria-label={showArchived ? 'Voltar às ativas' : 'Ver arquivadas'}
+              aria-pressed={showArchived}
+              className={cn(
+                'w-7 h-7 rounded-xs flex items-center justify-center transition-colors hover:bg-[var(--rowhover)]',
+                showArchived ? 'text-surface-100 bg-[var(--sf2)]' : 'text-surface-500 hover:text-surface-100',
+              )}
+            >
+              <Archive className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/settings/notifications')}
+              title="Preferências de notificação"
+              aria-label="Preferências de notificação"
+              className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
-
+        {!showArchived && (
+          <div className="h-10 px-3 flex items-center gap-2 border-b border-surface-700">
+            <SegmentedControl
+              size="sm"
+              label="Filtrar notificações"
+              value={filter}
+              onChange={(v) => setFilter(v as NotifFilter)}
+              options={[
+                { value: 'unread', label: 'Não lidas', count: unreadCount > 0 ? unreadCount : undefined },
+                { value: 'all', label: 'Todas' },
+              ]}
+            />
+            <div className="ml-auto">
+              <Dropdown
+                open={catOpen}
+                onClose={() => setCatOpen(false)}
+                align="right"
+                className="w-44"
+                anchor={
+                  <button
+                    type="button"
+                    onClick={() => setCatOpen((v) => !v)}
+                    aria-haspopup="menu"
+                    aria-expanded={catOpen}
+                    className={cn(
+                      'h-7 pl-2.5 pr-2 rounded-sm border text-[11.5px] inline-flex items-center gap-1 transition-colors',
+                      activeCategory !== 'all'
+                        ? 'border-[var(--bd2)] bg-surface-800 text-surface-50 font-semibold'
+                        : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
+                    )}
+                  >
+                    {CATEGORY_CHIPS.find((c) => c.key === activeCategory)?.label ?? 'Categoria'}
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                }
+              >
+                <div className="px-1 py-1 flex flex-col gap-0.5">
+                  {CATEGORY_CHIPS.map((chip) => (
+                    <DropdownItem key={chip.key} onClick={() => { handleCategoryClick(chip); setCatOpen(false) }}>
+                      <span className={cn(activeCategory === chip.key && 'font-semibold text-surface-50')}>{chip.label}</span>
+                    </DropdownItem>
+                  ))}
+                </div>
+              </Dropdown>
+            </div>
+          </div>
+        )}
         <div ref={panelRef} className="max-h-[28rem] overflow-y-auto" role="list">
           {loading ? (
             <div className="flex justify-center py-8">
@@ -1239,7 +1215,7 @@ function NotificationsPanel() {
                   for new and archived items. Reduced-motion disables transitions. */}
               {groups.map((g) => (
                 <div key={g.label}>
-                  <div className="px-4 pt-2.5 pb-2 text-3xs font-semibold uppercase tracking-wider text-surface-500 bg-[var(--color-overlay)] border-b border-surface-700 sticky top-0 z-10">
+                  <div className="h-7 px-3 flex items-center text-[11px] font-semibold uppercase tracking-[0.08em] text-surface-500 bg-[var(--color-overlay)] border-b border-surface-700 sticky top-0 z-10">
                     {g.label}
                   </div>
                   <AnimatePresence initial={false}>
@@ -1270,14 +1246,10 @@ function NotificationsPanel() {
                 </div>
               ))}
               {hasMore && (
-                <div className="py-3 text-center">
-                  <button
-                    onClick={() => loadMore()}
-                    disabled={loadingMore}
-                    className="text-2xs text-brand-400 hover:text-brand-300 disabled:opacity-50 transition-colors"
-                  >
+                <div className="py-2 flex justify-center border-t border-surface-700">
+                  <Button size="sm" variant="ghost" onClick={() => loadMore()} disabled={loadingMore}>
                     {loadingMore ? 'Carregando…' : 'Carregar mais'}
-                  </button>
+                  </Button>
                 </div>
               )}
             </>
@@ -1287,12 +1259,12 @@ function NotificationsPanel() {
         {/* Phase 20 X1: keyboard shortcuts hint bar. Discoverable without
             being in the way. */}
         {sortedVisible.length > 0 && (
-          <div className="hidden sm:flex items-center justify-center gap-3 px-3 py-1.5 border-t border-surface-700 bg-surface-950/50 text-[9px] text-surface-600">
-            <Kbd>J</Kbd><Kbd>K</Kbd> navegar
-            <Kbd>↵</Kbd> abrir
-            <Kbd>E</Kbd> arquivar
-            <Kbd>U</Kbd> lida/não
-            <Kbd>A</Kbd> todas
+          <div className="hidden sm:flex items-center justify-center gap-3 h-8 px-3 border-t border-surface-700 bg-[var(--sf2)] text-[11px] text-surface-500">
+            <span className="inline-flex items-center gap-1"><Kbd>J</Kbd><Kbd>K</Kbd> navegar</span>
+            <span className="inline-flex items-center gap-1"><Kbd>↵</Kbd> abrir</span>
+            <span className="inline-flex items-center gap-1"><Kbd>E</Kbd> arquivar</span>
+            <span className="inline-flex items-center gap-1"><Kbd>U</Kbd> lida</span>
+            <span className="inline-flex items-center gap-1"><Kbd>A</Kbd> todas</span>
           </div>
         )}
       </div>
@@ -1303,38 +1275,12 @@ function NotificationsPanel() {
   )
 }
 
-/** Kbd chip for the shortcut hints bar. */
+/** Kbd do rodapé de atalhos — 18px, raio 4 (--radius-2xs, canvas RAD-09). */
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <span className="px-1 py-0.5 rounded border border-surface-700 bg-surface-900 text-surface-400 font-mono text-[9px] leading-none">
+    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-2xs border border-[var(--bd2)] bg-surface-900 text-surface-400 font-mono text-[10.5px] leading-none">
       {children}
     </span>
-  )
-}
-
-function FilterTab({ active, onClick, count, children }: {
-  active: boolean
-  onClick: () => void
-  count?: number
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-2xs font-medium transition-colors',
-        active
-          ? 'bg-surface-800 text-surface-100'
-          : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
-      )}
-    >
-      {children}
-      {count !== undefined && count > 0 && (
-        <span className="rounded-full bg-brand-cta text-surface-950 text-[9px] font-semibold px-1.5 min-w-4 text-center">
-          {count > 99 ? '99+' : count}
-        </span>
-      )}
-    </button>
   )
 }
 
