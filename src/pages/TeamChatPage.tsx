@@ -25,7 +25,7 @@ import { isAdminTier } from '@/lib/roleHelpers'
 import type { InternalChannel, InternalMessage } from '@/types'
 import { MobileFeatureGate } from '@/components/common/MobileFeatureGate'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Emoji } from '@/lib/emojiText'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
 
@@ -765,7 +765,10 @@ export function TeamChatPage() {
 }
 
 function TeamChatPageDesktop() {
-  const { channels, activeChannelId } = useInternalChat()
+  const { channels, activeChannelId, setActiveChannel } = useInternalChat()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const channelParam = searchParams.get('channel')
+  const messageParam = searchParams.get('message')
   const { user } = useAuth()
   const [replyTo, setReplyTo]     = useState<InternalMessage | null>(null)
   const [showInfo, setShowInfo]   = useState(false)
@@ -775,6 +778,36 @@ function TeamChatPageDesktop() {
 
   const currentUserId = user?.id ?? ''
   const activeChannel = channels.find((c) => c.id === activeChannelId) ?? null
+
+  // Deep-link ?channel=<id>[&message=<id>] → URL para estado. Uma vez por valor
+  // de param, e só quando o canal já está carregado (senão espera `channels`).
+  const handledChannelParamRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!channelParam || handledChannelParamRef.current === channelParam) return
+    if (!channels.some((c) => c.id === channelParam)) return
+    handledChannelParamRef.current = channelParam
+    if (channelParam !== activeChannelId) setActiveChannel(channelParam)
+  }, [channelParam, channels, activeChannelId, setActiveChannel])
+
+  // Estado para URL: trocar de canal reflete ?channel= (e descarta ?message=,
+  // que era do canal anterior). replace, pra não empilhar histórico a cada clique.
+  // Só reage a MUDANÇA de canal — no mount o param manda (senão brigaria com o
+  // efeito acima quando o contexto já guarda outro canal ativo).
+  const prevActiveRef = useRef(activeChannelId)
+  useEffect(() => {
+    if (prevActiveRef.current === activeChannelId) return
+    prevActiveRef.current = activeChannelId
+    if (!activeChannelId || activeChannelId === channelParam) return
+    setSearchParams({ channel: activeChannelId }, { replace: true })
+  }, [activeChannelId, channelParam, setSearchParams])
+
+  const clearMessageParam = useCallback(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('message')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
 
   useEffect(() => {
     setSearchQuery('')
@@ -844,6 +877,8 @@ function TeamChatPageDesktop() {
                 currentUserId={currentUserId}
                 onReply={(msg) => setReplyTo(msg)}
                 searchQuery={searchQuery}
+                highlightMessageId={channelParam === activeChannel.id ? messageParam : null}
+                onHighlightDone={clearMessageParam}
               />
               <MessageInput
                 channelId={activeChannel.id}
