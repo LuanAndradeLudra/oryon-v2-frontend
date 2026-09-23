@@ -377,7 +377,11 @@ function TemplateRow({ template, selecionado, onSelect }: {
       {/* Barra de seleção: ocupa lugar sempre, para o texto não deslocar. */}
       <span className={cn('w-[2px] h-5 rounded-full flex-none', selecionado ? 'bg-brand-500' : 'bg-transparent')} />
       <TemplateCategoryTile category={template.category} size={22} />
-      <span className="text-[12.5px] font-semibold text-surface-100 truncate max-w-[210px] flex-none">
+      {/* Medido ao vivo em 390px: max-w-210px fixo deixava só 22px pro
+          resumo (invisível na prática). Abaixo de sm o nome cede espaço
+          (55% da linha) pro resumo aparecer; a partir de sm volta aos
+          210px de sempre. */}
+      <span className="text-[12.5px] font-semibold text-surface-100 truncate max-w-[55%] sm:max-w-[210px] flex-none">
         {template.name}
       </span>
       <span className="text-xs text-surface-500 truncate flex-1 min-w-0">{resumoCorpo(template.body)}</span>
