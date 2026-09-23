@@ -413,10 +413,11 @@ function TemplateCard({
         </div>
       </div>
 
-      {/* Corpo — prévia em fundo #EFE7DD (hex fixo, mockup do WhatsApp) */}
+      {/* Corpo — papel de parede do WhatsApp. #E5DDD5 amostrado dos prints
+          do painel da Meta (22/09); o #EFE7DD anterior era de memória. */}
       <button
         onClick={onPreview}
-        className="bg-[#EFE7DD] p-3 max-h-[220px] overflow-y-auto text-left cursor-zoom-in"
+        className="bg-[#E5DDD5] p-3 max-h-[220px] overflow-y-auto text-left cursor-zoom-in"
         title="Ver prévia completa"
       >
         <TemplatePreview template={template} compact variant="card" />

@@ -1,166 +1,203 @@
+import DOMPurify from 'dompurify'
 import { cn } from '@/lib/utils'
-import type { WhatsAppTemplate } from '@/types'
+import type { TemplateButton, WhatsAppTemplate } from '@/types'
+
+/**
+ * Prévia de modelo do WhatsApp — SCRUM-1097, reescrita em 22/09.
+ *
+ * ORIGEM DOS VALORES: todos os números e cores abaixo foram **amostrados pixel
+ * a pixel** de três capturas do painel de modelos da Meta enviadas pelo PO
+ * (canvas + getImageData; moda da região para fundo, pixel mais escuro para
+ * texto, mais saturado para acento). Nada aqui é estimativa — a versão
+ * anterior era feita de memória e errava em quase tudo.
+ *
+ * O que estava errado antes e por quê importa:
+ *  - papel de parede `#EFE7DD` → o certo é **`#E5DDD5`**;
+ *  - havia uma moldura de celular com cabeçalho verde `#075E54`: a prévia da
+ *    Meta **não tem** moldura, cabeçalho de conversa nem barra de digitação;
+ *  - a bolha mostrava `✓✓`: mensagem **recebida não tem tique** — tique só
+ *    existe no que o próprio contato envia;
+ *  - os botões eram cards soltos FORA da bolha: no WhatsApp eles ficam
+ *    DENTRO, separados por um divisor de 1px;
+ *  - todo botão era azul: a cor **depende do tipo** — resposta rápida sai em
+ *    verde `#1B8755`, link/telefone/copiar saem em azul `#077CB3`;
+ *  - o texto herdava a fonte do produto: o WhatsApp usa a fonte do sistema.
+ *
+ * Só o tema CLARO é fiel. O tema escuro do WhatsApp não foi amostrado (não há
+ * captura de referência), e depois de todo o retrabalho não faz sentido voltar
+ * a inventar valores — quando houver uma captura no escuro, entra aqui.
+ */
+
+/* ── Paleta amostrada (tema claro do WhatsApp) ───────────────────────────── */
+const WA = {
+  papel: '#E5DDD5',
+  balao: '#FFFFFF',
+  texto: '#11191D',
+  meta: '#6C7E85',   // hora e rodapé
+  divisor: '#EEF2F1',
+  azul: '#077CB3',   // URL · telefone · copiar código · flow
+  verde: '#1B8755',  // resposta rápida
+} as const
+
+/** Fonte do sistema — o WhatsApp não usa a tipografia do produto. */
+const FONTE_WA = '"Segoe UI", "Helvetica Neue", Roboto, system-ui, sans-serif'
+
+/** Papel de parede: rabiscos de baixíssimo contraste, como no original. */
+const PAPEL_PAREDE =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23DCD3C9' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 18h9M16.5 13.5v9M68 10l5 5M73 10l-5 5M31 57c2.7-3.8 8-3.8 10.7 0M77 68h8M81 64v8M20 80c3.8-2.7 8-2.7 11.8 0M52 31h8M56 27v8M39 88l4 4M43 88l-4 4M84 39l4 4M88 39l-4 4M8 48c3.4-2.3 6.8-2.3 10.2 0M59 75c3-3 6.8-3 9.8 0M26 34c2-2.4 5.2-2.4 7.2 0'/%3E%3Ccircle cx='75' cy='33' r='3.4'/%3E%3Ccircle cx='25' cy='43' r='2.8'/%3E%3Ccircle cx='59' cy='70' r='3.2'/%3E%3Ccircle cx='14' cy='66' r='2.5'/%3E%3Ccircle cx='45' cy='16' r='2.6'/%3E%3C/g%3E%3C/svg%3E\")"
 
 interface TemplatePreviewProps {
   template: WhatsAppTemplate
-  /** Optional variable substitution values: { '1': 'João', '2': 'Produto X' } */
+  /** Substituição de variáveis: { '1': 'João', '2': 'Produto X' } */
   variables?: Record<string, string>
+  /** Versão reduzida, para caber dentro do card do catálogo. */
   compact?: boolean
-  /** Só importa com `compact` (spec 2c, CAMP-PREVIEW-01/TPL-08): 'frame' —
-   *  bolha dentro do fundo de conversa do WhatsApp com pílula "Hoje" (usado
-   *  no resumo do CampaignWizard); 'card' — bolha densa e clampada, sem
-   *  fundo de conversa próprio (usado dentro do card de TemplatesTab, que já
-   *  tem o próprio wrapper #EFE7DD). Default 'frame'. */
+  /** 'frame' — com o papel de parede em volta; 'card' — só a bolha, para
+   *  quem já tem o próprio fundo. Mantido da API anterior. */
   variant?: 'frame' | 'card'
+  className?: string
 }
-
-// CAMP-PREVIEW-04: variável substituída entra em negrito — mais perto de como
-// o WhatsApp de verdade destaca o valor preenchido num template.
-function substituteVarsHtml(text: string, vars: Record<string, string>): string {
-  return text.replace(/\{\{(\d+)\}\}/g, (_, n) => {
-    const v = vars[n]
-    return v ? `<strong>${v}</strong>` : `{{${n}}}`
-  })
-}
-
-import DOMPurify from 'dompurify'
 
 const SAFE_TAGS = ['strong', 'em', 's', 'br']
 
 function renderBody(text: string, vars: Record<string, string>): string {
-  // Convert WhatsApp markdown to HTML, substitute variables (already bold),
-  // then sanitize.
   const html = text
     .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
     .replace(/_(.*?)_/g, '<em>$1</em>')
     .replace(/~(.*?)~/g, '<s>$1</s>')
     .replace(/\n/g, '<br />')
-  const withVars = substituteVarsHtml(html, vars)
-  return DOMPurify.sanitize(withVars, { ALLOWED_TAGS: SAFE_TAGS })
+    .replace(/\{\{(\d+)\}\}/g, (_, n) => (vars[n] ? `<strong>${vars[n]}</strong>` : `{{${n}}}`))
+  return DOMPurify.sanitize(html, { ALLOWED_TAGS: SAFE_TAGS })
 }
 
-export function TemplatePreview({ template, variables = {}, compact = false, variant = 'frame' }: TemplatePreviewProps) {
-  const headerText = template.headerText ? template.headerText.replace(/\{\{(\d+)\}\}/g, (_, n) => variables[n] ?? `{{${n}}}`) : undefined
-
-  if (compact && variant === 'card') {
-    return <MessageBubble template={template} bodyText={template.body} headerText={headerText} variables={variables} dense />
+/** Ícones do WhatsApp para cada tipo de botão, no traço do app (1.9). */
+function IconeBotao({ type }: { type: TemplateButton['type'] }) {
+  const comum = {
+    width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
   }
-
-  if (compact) {
-    // CAMP-PREVIEW-01/02: bolha dentro do fundo de conversa (sem moldura de
-    // celular), com a pílula "Hoje" que separa o dia — mesmo vocabulário do
-    // preview cheio, só sem status bar.
-    return (
-      <div className="rounded-xl bg-[#EFE7DD] border border-surface-700 px-2.5 py-3 flex flex-col gap-1.5 min-h-[230px]">
-        <span className="self-center text-[10px] text-[#54656F] bg-white px-2 py-0.5 rounded-xs shadow-[0_1px_1px_rgba(0,0,0,.08)]">Hoje</span>
-        <MessageBubble template={template} bodyText={template.body} headerText={headerText} variables={variables} />
-      </div>
-    )
+  if (type === 'QUICK_REPLY') {
+    return <svg {...comum}><path d="M9 17 4 12l5-5" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" /></svg>
   }
-
-  return (
-    <div className="flex items-center justify-center">
-      <div className="w-[280px]">
-        {/* Phone mockup frame — CAMP-PREVIEW-07: sem shadow-2xl (única sombra
-            fora de overlay é a da própria bolha). */}
-        <div className="relative bg-[#EFE7DD] rounded-2xl overflow-hidden border border-surface-700">
-          {/* Status bar */}
-          <div className="bg-[#075E54] text-white px-4 py-2 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
-              {template.name.slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <p className="text-xs font-semibold leading-none">Empresa</p>
-              <p className="text-[10px] text-white/60">online</p>
-            </div>
-          </div>
-
-          {/* Chat area */}
-          <div className="p-3 min-h-[280px] flex flex-col gap-1.5">
-            <span className="self-center text-[10px] text-[#54656F] bg-white px-2 py-0.5 rounded-xs shadow-[0_1px_1px_rgba(0,0,0,.08)]">Hoje</span>
-            <MessageBubble template={template} bodyText={template.body} headerText={headerText} variables={variables} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+  if (type === 'PHONE_NUMBER') {
+    return <svg {...comum}><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.4 2.1L8 9.8a16 16 0 0 0 6 6l1.4-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2Z" /></svg>
+  }
+  if (type === 'COPY_CODE') {
+    return <svg {...comum}><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+  }
+  return <svg {...comum}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><path d="M15 3h6v6" /><path d="M10 14 21 3" /></svg>
 }
 
-function MessageBubble({ template, bodyText, headerText, variables, dense = false }: {
-  template: WhatsAppTemplate
-  bodyText: string
-  headerText?: string
-  variables: Record<string, string>
-  dense?: boolean
-}) {
-  return (
-    <>
-      {/* CAMP-PREVIEW-03/07: raio "cauda" (canto de 2px), sombra fina de
-          bolha real (não shadow-sm genérico), largura máxima 92% em vez de
-          preencher o container inteiro. */}
-      <div className={cn(
-        'bg-white overflow-hidden shadow-[0_1px_1px_rgba(0,0,0,.08)] max-w-[92%]',
-        dense ? 'rounded-[6px_6px_6px_2px]' : 'rounded-[8px_8px_8px_2px]',
-      )}>
-        {/* Header */}
-        {template.headerType === 'IMAGE' && (
-          <div className="bg-[#e5e7eb] h-40 flex items-center justify-center overflow-hidden">
-            {template.headerMediaUrl
-              ? <img src={template.headerMediaUrl} alt="header" className="w-full h-full object-cover" />
-              : <span className="text-[#6b7280] text-xs">Imagem</span>
-            }
-          </div>
-        )}
-        {template.headerType === 'VIDEO' && (
-          <div className="bg-[#1f2937] h-28 flex items-center justify-center">
-            <span className="text-[#9ca3af] text-xs">▶ Vídeo</span>
-          </div>
-        )}
-        {template.headerType === 'DOCUMENT' && (
-          <div className="bg-[#f3f4f6] px-3 py-2 flex items-center gap-2 border-b border-[#e5e7eb]">
-            <span className="text-[10px] font-semibold text-[#4b5563] bg-[#e5e7eb] px-1.5 py-0.5 rounded">PDF</span>
-            <span className="text-xs text-[#4b5563] truncate">documento.pdf</span>
-          </div>
-        )}
-        {template.headerType === 'TEXT' && headerText && (
-          <div className={dense ? 'px-2 pt-1.5' : 'px-3 pt-3 pb-1'}>
-            <p className="text-sm font-bold text-[#111B21]">{headerText}</p>
-          </div>
-        )}
+function corDoBotao(type: TemplateButton['type']) {
+  // Amostrado dos prints: resposta rápida é verde, o resto é azul.
+  return type === 'QUICK_REPLY' ? WA.verde : WA.azul
+}
 
-        {/* Body — CAMP-PREVIEW-01 dense (TPL-08): 11px/1.4, clamp de 3 linhas,
-            padding vertical simétrico (py-1.5) só quando não há header —
-            com header o pb permanece 1 pra não duplicar respiro. */}
-        <div className={dense ? 'px-2 pt-1.5 pb-1.5' : 'px-2 pt-1.5 pb-1'}>
-          <p
-            className={cn('text-[#111B21]', dense ? 'text-[11px] leading-[1.4] line-clamp-3' : 'text-xs leading-[1.4]')}
-            dangerouslySetInnerHTML={{ __html: renderBody(bodyText, variables) }}
-          />
-        </div>
+export function TemplatePreview({
+  template, variables = {}, compact = false, variant = 'frame', className,
+}: TemplatePreviewProps) {
+  const headerText = template.headerText
+    ? template.headerText.replace(/\{\{(\d+)\}\}/g, (_, n) => variables[n] ?? `{{${n}}}`)
+    : undefined
 
-        {/* Footer */}
-        {template.footer && (
-          <div className="px-2 pb-2">
-            <p className="text-[11px] text-[#9ca3af]">{template.footer}</p>
-          </div>
-        )}
+  const bolha = (
+    <div
+      className="relative"
+      style={{
+        width: compact ? '100%' : 296,
+        maxWidth: '100%',
+        background: WA.balao,
+        borderRadius: '7.5px',
+        borderTopLeftRadius: 0,
+        padding: 3,
+        boxShadow: '0 1px .5px rgba(11,20,26,.13)',
+        fontFamily: FONTE_WA,
+      }}
+    >
+      {/* Rabinho: recorte triangular preso ao topo-esquerdo, como no WhatsApp. */}
+      <span
+        aria-hidden
+        style={{
+          position: 'absolute', top: 0, left: -8, width: 8, height: 13,
+          background: WA.balao, clipPath: 'polygon(100% 0, 100% 100%, 0 0)',
+        }}
+      />
 
-        {/* Timestamp */}
-        <div className="px-2 pb-2 flex justify-end">
-          <span className="text-[10px] text-[#667781]">12:00 ✓✓</span>
-        </div>
-      </div>
-
-      {/* Buttons — CAMP-PREVIEW-06: cards irmãos fora da bolha, sem ícone. */}
-      {!dense && template.buttons && template.buttons.length > 0 && (
-        <div className="flex flex-col gap-1.5 max-w-[92%]">
-          {template.buttons.map((btn, i) => (
-            <div key={i} className="bg-white rounded-lg p-2 text-center text-xs font-medium text-[#027EB5] shadow-[0_1px_1px_rgba(0,0,0,.08)]">
-              {btn.text}
-            </div>
-          ))}
+      {/* ── Cabeçalho ── */}
+      {template.headerType === 'IMAGE' && (
+        <div style={{ height: compact ? 96 : 158, borderRadius: 6, overflow: 'hidden', background: '#d9dbdd' }}>
+          {template.headerMediaUrl
+            ? <img src={template.headerMediaUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 12 }}>Imagem</span>}
         </div>
       )}
-    </>
+      {template.headerType === 'VIDEO' && (
+        <div style={{ height: compact ? 84 : 132, borderRadius: 6, background: '#1f2937', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 12 }}>▶ Vídeo</div>
+      )}
+      {template.headerType === 'DOCUMENT' && (
+        <div style={{ borderRadius: 6, background: '#F3F4F6', padding: '9px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#B91C1C', background: '#FEE2E2', borderRadius: 3, padding: '2px 4px' }}>PDF</span>
+          <span style={{ fontSize: 13, color: WA.texto, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>documento.pdf</span>
+        </div>
+      )}
+
+      <div style={{ padding: '6px 7px 4px' }}>
+        {template.headerType === 'TEXT' && headerText && (
+          <p style={{ fontSize: compact ? 13 : 14.5, lineHeight: compact ? '17px' : '19px', fontWeight: 600, color: WA.texto, marginBottom: 2 }}>
+            {headerText}
+          </p>
+        )}
+        <p
+          style={{
+            fontSize: compact ? 12.5 : 14.5,
+            lineHeight: compact ? '16.5px' : '19px',
+            color: WA.texto,
+            wordBreak: 'break-word',
+            ...(compact ? { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' } : null),
+          }}
+          dangerouslySetInnerHTML={{ __html: renderBody(template.body, variables) }}
+        />
+        {template.footer && (
+          <p style={{ fontSize: compact ? 11.5 : 13, lineHeight: compact ? '15px' : '17px', color: WA.meta, marginTop: 5 }}>
+            {template.footer}
+          </p>
+        )}
+        {/* Sem tique: quem recebe nunca vê confirmação de entrega. */}
+        <p style={{ fontSize: 11, color: WA.meta, textAlign: 'right', marginTop: 1, padding: '0 1px 1px' }}>
+          {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        </p>
+      </div>
+
+      {/* ── Botões: dentro da bolha, um divisor de 1px entre cada ── */}
+      {template.buttons?.map((btn, i) => (
+        <div key={`${btn.type}-${i}`}>
+          <div style={{ height: 1, background: WA.divisor, margin: '0 -3px' }} />
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+            height: compact ? 32 : 40, fontSize: compact ? 13 : 14.5, color: corDoBotao(btn.type),
+          }}>
+            <IconeBotao type={btn.type} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{btn.text}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
+  if (variant === 'card') return <div className={className}>{bolha}</div>
+
+  return (
+    <div
+      className={cn('flex justify-start', className)}
+      style={{
+        background: `${PAPEL_PAREDE}, ${WA.papel}`,
+        backgroundColor: WA.papel,
+        borderRadius: 4,
+        padding: compact ? '10px 10px 10px 18px' : '14px 12px 14px 20px',
+        minHeight: compact ? 140 : 300,
+      }}
+    >
+      {bolha}
+    </div>
   )
 }
