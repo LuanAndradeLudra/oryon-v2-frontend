@@ -79,7 +79,7 @@ function MediaViewerOverlay({ message, onClose }: { message: Message | null; onC
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 flex items-center justify-center p-4 md:p-10"
+          className="fixed inset-0 flex flex-col bg-black/90"
           style={{ zIndex }}
           onClick={onClose}
           initial={{ opacity: 0 }}
@@ -87,24 +87,23 @@ function MediaViewerOverlay({ message, onClose }: { message: Message | null; onC
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
         >
-          <div className="absolute inset-0 bg-black/90" />
-
-          <div
-            ref={isImageLike ? zoom.containerRef : undefined}
-            className="relative z-10 flex items-center justify-center w-full h-full"
+          {/* Barra própria, FORA da área do conteúdo (pedido do usuário
+              2026-09-23): antes os botões flutuavam sobre o arquivo, e numa
+              imagem clara ampliada o branco-sobre-transparente sumia — só
+              voltava fechando e reabrindo. Fundo sólido escuro = contraste
+              garantido pra qualquer arquivo, e o conteúdo nunca passa por
+              baixo dela (a área abaixo corta o excedente do zoom).
+              stopPropagation: a barra é filha do overlay, cujo onClick
+              fecha — sem isto, clicar em qualquer botão (ou no vazio da
+              barra) fecharia o visualizador. */}
+          <header
+            className="relative z-10 shrink-0 flex items-center gap-3 min-h-14 px-3 md:px-4 pt-[env(safe-area-inset-top)] bg-black border-b border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
-            {body}
-          </div>
-
-          {/* stopPropagation: esta barra é irmã do container da mídia (que já
-              o faz), não filha — sem isto, o clique em QUALQUER botão dela
-              borbulha até o onClick do overlay e FECHA o visualizador
-              (zoom fecharia a tela; "Baixar" já baixava e fechava junto). */}
-          <div
-            className="absolute top-4 right-4 z-20 flex items-center gap-2"
-            onClick={(e) => e.stopPropagation()}
-          >
+            <p className="min-w-0 flex-1 truncate text-sm font-medium text-white/85">
+              {message?.mediaCaption || (isImageLike ? 'Imagem' : message?.type === 'video' ? 'Vídeo' : 'Documento')}
+            </p>
+            <div className="flex shrink-0 items-center gap-2">
             {isImageLike && (
               // Controles de zoom (pedido do usuário 2026-09-23). O % é
               // também o botão de "restaurar" (volta pra 100%, ajustado à
@@ -161,6 +160,25 @@ function MediaViewerOverlay({ message, onClose }: { message: Message | null; onC
             >
               <X className="w-4 h-4" />
             </button>
+            </div>
+          </header>
+
+          {/* Área do conteúdo: `min-h-0` deixa o flex encolher (sem isso o
+              iframe/imagem empurraria a barra pra fora) e `overflow-hidden`
+              corta o zoom nas bordas DESTA área — a imagem ampliada nunca
+              alcança a barra. Clicar no vazio em volta fecha. */}
+          <div
+            data-viewer-content
+            className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-3 md:p-6"
+            onClick={onClose}
+          >
+            <div
+              ref={isImageLike ? zoom.containerRef : undefined}
+              className="flex items-center justify-center w-full h-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {body}
+            </div>
           </div>
         </motion.div>
       )}
