@@ -53,7 +53,8 @@ export function DealsSummaryChips({
           onClick={(e) => { e.stopPropagation(); onAddToPipeline!(contact, salesDefault) }}
           title="Novo negócio"
           data-testid="pipeline-chip-add"
-          className="flex items-center gap-1 text-[10px] font-medium text-surface-600 hover:text-brand-300 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all whitespace-nowrap"
+          data-row-action=""
+          className="flex items-center gap-1 text-[10px] font-medium text-surface-600 hover:text-brand-300 transition-all whitespace-nowrap"
         >
           <Handshake className="w-3 h-3" /> Novo negócio
         </button>
