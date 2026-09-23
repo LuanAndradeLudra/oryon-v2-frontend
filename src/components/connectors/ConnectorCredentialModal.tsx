@@ -65,6 +65,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
     <Modal
       open
       onClose={onClose}
+      aria-label={`${connector.status === 'installed' ? 'Credencial' : 'Conectar'} ${connector.name}`}
       className="max-w-[520px]"
       title={
         <div className="flex items-start gap-2.5 min-w-0">
