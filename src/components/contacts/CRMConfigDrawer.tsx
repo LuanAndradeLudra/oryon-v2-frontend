@@ -80,7 +80,8 @@ export function CRMConfigDrawer({
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+                aria-label="Fechar"
+                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <X className="w-4 h-4" />
               </button>

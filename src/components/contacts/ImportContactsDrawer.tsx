@@ -539,7 +539,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                 <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-50">Importar contatos</h2>
                 <p className="text-xs text-surface-500 mt-0.5">CSV, JSON ou XML — até 1.000 contatos por vez</p>
               </div>
-              <button onClick={requestClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+              <button onClick={requestClose} aria-label="Fechar" className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -693,7 +693,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                         {pasteText && (
                           <button
                             onClick={() => { setPasteText(''); setParseError(null) }}
-                            className="absolute top-2.5 right-2.5 p-1 rounded text-surface-600 hover:text-surface-400 hover:bg-surface-800 transition-all"
+                            className="absolute top-2.5 right-2.5 p-1 rounded text-surface-600 hover:text-surface-400 hover:bg-[var(--rowhover)] transition-all"
                             title="Limpar"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -1037,7 +1037,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={() => { reset() }}
-                          className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all"
+                          className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
                         >
                           Nova importação
                         </button>
@@ -1060,7 +1060,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
               <div className="flex items-center justify-between px-[18px] py-3.5 border-t border-surface-700 flex-shrink-0">
                 <button
                   onClick={() => setStep(step === 'map' ? 'upload' : 'map')}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Voltar
                 </button>
