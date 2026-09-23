@@ -24,6 +24,7 @@ import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/
 import { useContextMenuCtx } from '@/components/ui/contextMenuCore'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Button } from '@/components/ui/Button'
 import { DataTable, type DataTableColumn, type DataTableSort } from '@/components/ui/DataTable'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Switch } from '@/components/ui/Switch'
@@ -74,10 +75,13 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
+        // Eixo 10: mesma medida do LineFilterChip.tsx (h-7/rounded-sm/--bd2)
+        // — as duas são o mesmo componente (gatilho de filtro), medidas
+        // diferentes antes desta correção.
         className={cn(
-          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
-          'bg-surface-800 border border-surface-700/60 text-surface-200 hover:border-surface-600',
-          open && 'border-brand-500/40 ring-2 ring-brand-500/10',
+          'flex items-center gap-1.5 h-7 px-2.5 rounded-sm text-xs font-medium transition-colors',
+          'bg-surface-800 border border-[var(--bd2)] text-surface-200 hover:bg-[var(--rowhover)]',
+          open && 'border-brand-500',
         )}
       >
         <ListFilter className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
@@ -124,12 +128,15 @@ function DeleteConfirm({ automation, onConfirm, onCancel }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
+      {/* Eixo 10: scrim do token (--color-scrim-soft, não bg-black/70 cru —
+          errado no claro), painel bg-surface-800 (o Modal primitivo usa
+          --sf, não --bg) e largura 400px como o ConfirmModal (canvas). */}
+      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={onCancel} />
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-950 overlay-frame border rounded-xl w-full max-w-sm p-6 text-center"
+        className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-[400px] p-6 text-center"
       >
         <div className="w-12 h-12 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center mx-auto mb-4">
           <Trash2 className="w-5 h-5 text-danger" />
@@ -159,10 +166,10 @@ function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onCancel} />
+      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={onCancel} />
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-950 overlay-frame border rounded-xl w-full max-w-sm p-5"
+        className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-[400px] p-5"
       >
         <h3 className="text-sm font-semibold text-surface-100 mb-1">Duplicar para outra linha</h3>
         <p className="text-xs text-surface-500 mb-4">
@@ -408,25 +415,32 @@ export function AutomationsPage() {
   }
 
   useRegisterTopBarActions(
+    // Eixo 10 (achado ao vivo do usuário): a barra tinha 4 alturas (28/29,7/33)
+    // e 2 raios diferentes — todo controle feito à mão com py-1.5+rounded-lg
+    // em vez da altura fixa h-7+rounded-sm que o resto da casa usa (a pílula
+    // Buscar do TopBar, na mesma tela, é a régua: h28/raio7). Trocado pelos
+    // dois pelo primitivo Button (size="sm" já é exatamente h-7/rounded-sm).
     <div className="flex items-center gap-2">
-      <button
+      <Button
+        variant="neutral"
+        size="sm"
         onClick={() => openCopilot('Quero criar uma automação. Objetivo: ')}
         disabled={!hasWhatsappLine}
         title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar automações' : undefined}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-surface-700 text-surface-300 hover:text-surface-100 hover:border-surface-600 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        leftIcon={<Sparkles className="w-3.5 h-3.5" />}
       >
-        <Sparkles className="w-3.5 h-3.5" />
         Descrever com IA
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="primary"
+        size="sm"
         onClick={openNew}
         disabled={!hasWhatsappLine}
         title={!hasWhatsappLine ? 'Conecte uma linha WhatsApp antes de criar automações' : undefined}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-surface-950 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-brand-600"
+        leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}
       >
-        <Plus className="w-3.5 h-3.5" />
         Nova automação
-      </button>
+      </Button>
     </div>,
     [hasWhatsappLine],
   )
@@ -619,11 +633,13 @@ export function AutomationsPage() {
           <div className="flex items-center gap-3 px-6 py-3 flex-shrink-0">
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+              {/* Eixo 10: h-7 (não py-1.5 ≈ 33px), bg-surface-800/--bd2 —
+                  mesma medida dos outros controles da barra. */}
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar automação..."
-                className="w-full bg-surface-900 border border-surface-700 rounded-sm pl-8 pr-3 py-1.5 text-sm text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
+                className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-3 text-xs text-surface-200 placeholder-surface-600 focus:outline-none focus:border-brand-500/50"
               />
             </div>
             <SegmentedControl label="Filtrar por status" options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
@@ -633,11 +649,13 @@ export function AutomationsPage() {
             {attentionK > 0 && (
               <button
                 onClick={() => setAttentionOnly(v => !v)}
+                // Eixo 10: h-7/rounded-sm, mesma medida dos outros gatilhos
+                // da barra (só a cor de estado muda entre ativo/inativo).
                 className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                  'flex items-center gap-1.5 h-7 px-2.5 rounded-sm text-xs font-semibold border transition-colors',
                   attentionOnly
                     ? 'bg-warning/15 border-warning/40 text-warning'
-                    : 'bg-surface-800 border-surface-700/60 text-surface-300 hover:border-warning/40 hover:text-warning',
+                    : 'bg-surface-800 border-[var(--bd2)] text-surface-300 hover:border-warning/40 hover:text-warning',
                 )}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />

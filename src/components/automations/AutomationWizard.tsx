@@ -802,18 +802,23 @@ export function Step2({ draft, onChange }: { draft: WizardDraft; onChange: (d: P
 
 type ActionType = AutomationAction['type']
 
+// Eixo 10: cor era o hex cru '#a1a1aa' (zinc-400 do Tailwind, fora do
+// token system) repetido nas 11 opções — nenhuma diferenciação real, só um
+// cinza neutro esquecido. Trocado por var(--color-surface-400), o cinza
+// neutro que o app já usa (ícone/legenda mudos em VolumeChart, KpiGrid
+// etc.), com tema claro/escuro corretos.
 const ACTION_OPTIONS: { type: ActionType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { type: 'send_message',        label: 'Enviar template',      description: 'Template aprovado pela Meta',       icon: <FileText className="w-3.5 h-3.5" />,     color: '#a1a1aa' },
-  { type: 'send_text',           label: 'Enviar texto',          description: 'Mensagem de texto livre (24h)',     icon: <MessageSquare className="w-3.5 h-3.5" />, color: '#a1a1aa' },
-  { type: 'assign_agent',        label: 'Atribuir agente',       description: 'Designar para um atendente',       icon: <User className="w-3.5 h-3.5" />,          color: '#a1a1aa' },
-  { type: 'assign_dept',         label: 'Atribuir depto.',       description: 'Encaminhar para departamento',     icon: <Building2 className="w-3.5 h-3.5" />,     color: '#a1a1aa' },
-  { type: 'add_tag',             label: 'Adicionar tag',         description: 'Marcar o contato com uma tag',     icon: <Tag className="w-3.5 h-3.5" />,           color: '#a1a1aa' },
-  { type: 'remove_tag',          label: 'Remover tag',           description: 'Remover tag do contato',           icon: <XCircle className="w-3.5 h-3.5" />,       color: '#a1a1aa' },
-  { type: 'change_stage',        label: 'Mudar situação',        description: 'Mover o contato no ciclo de vida', icon: <GitBranch className="w-3.5 h-3.5" />,     color: '#a1a1aa' },
-  { type: 'set_lead_score',      label: 'Definir lead score',    description: 'Atribuir pontuação 0–100',         icon: <Star className="w-3.5 h-3.5" />,          color: '#a1a1aa' },
-  { type: 'resolve_conversation',label: 'Resolver conversa',     description: 'Marcar conversa como resolvida',   icon: <CheckCircle className="w-3.5 h-3.5" />,   color: '#a1a1aa' },
-  { type: 'send_note',           label: 'Nota interna',          description: 'Adicionar nota à conversa',        icon: <StickyNote className="w-3.5 h-3.5" />,    color: '#a1a1aa' },
-  { type: 'send_webhook',        label: 'Webhook / API',         description: 'Chamar URL externa (POST/GET)',    icon: <Webhook className="w-3.5 h-3.5" />,       color: '#a1a1aa' },
+  { type: 'send_message',        label: 'Enviar template',      description: 'Template aprovado pela Meta',       icon: <FileText className="w-3.5 h-3.5" />,     color: 'var(--color-surface-400)' },
+  { type: 'send_text',           label: 'Enviar texto',          description: 'Mensagem de texto livre (24h)',     icon: <MessageSquare className="w-3.5 h-3.5" />, color: 'var(--color-surface-400)' },
+  { type: 'assign_agent',        label: 'Atribuir agente',       description: 'Designar para um atendente',       icon: <User className="w-3.5 h-3.5" />,          color: 'var(--color-surface-400)' },
+  { type: 'assign_dept',         label: 'Atribuir depto.',       description: 'Encaminhar para departamento',     icon: <Building2 className="w-3.5 h-3.5" />,     color: 'var(--color-surface-400)' },
+  { type: 'add_tag',             label: 'Adicionar tag',         description: 'Marcar o contato com uma tag',     icon: <Tag className="w-3.5 h-3.5" />,           color: 'var(--color-surface-400)' },
+  { type: 'remove_tag',          label: 'Remover tag',           description: 'Remover tag do contato',           icon: <XCircle className="w-3.5 h-3.5" />,       color: 'var(--color-surface-400)' },
+  { type: 'change_stage',        label: 'Mudar situação',        description: 'Mover o contato no ciclo de vida', icon: <GitBranch className="w-3.5 h-3.5" />,     color: 'var(--color-surface-400)' },
+  { type: 'set_lead_score',      label: 'Definir lead score',    description: 'Atribuir pontuação 0–100',         icon: <Star className="w-3.5 h-3.5" />,          color: 'var(--color-surface-400)' },
+  { type: 'resolve_conversation',label: 'Resolver conversa',     description: 'Marcar conversa como resolvida',   icon: <CheckCircle className="w-3.5 h-3.5" />,   color: 'var(--color-surface-400)' },
+  { type: 'send_note',           label: 'Nota interna',          description: 'Adicionar nota à conversa',        icon: <StickyNote className="w-3.5 h-3.5" />,    color: 'var(--color-surface-400)' },
+  { type: 'send_webhook',        label: 'Webhook / API',         description: 'Chamar URL externa (POST/GET)',    icon: <Webhook className="w-3.5 h-3.5" />,       color: 'var(--color-surface-400)' },
 ]
 
 function ActionSubForm({
@@ -1130,7 +1135,9 @@ export function Step3({ draft, onChange, hideAgentBehavior }: { draft: WizardDra
             return (
               <div key={i} className="bg-surface-800 border border-surface-700 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: opt.color + '20', color: opt.color }}>
+                  {/* color-mix, não opt.color + '20': a concatenação de hex-alpha só
+                      funciona em hex literal, opt.color agora é var(--...). */}
+                  <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `color-mix(in srgb, ${opt.color} 20%, transparent)`, color: opt.color }}>
                     {opt.icon}
                   </div>
                   <span className="text-xs font-semibold text-surface-200 flex-1">{i + 1}. {opt.label}</span>
@@ -1162,7 +1169,7 @@ export function Step3({ draft, onChange, hideAgentBehavior }: { draft: WizardDra
                 onClick={() => addAction(opt.type)}
                 className="flex items-center gap-2 p-2.5 rounded-lg border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] text-left transition-colors"
               >
-                <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: opt.color + '20', color: opt.color }}>
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `color-mix(in srgb, ${opt.color} 20%, transparent)`, color: opt.color }}>
                   {opt.icon}
                 </div>
                 <div className="min-w-0">

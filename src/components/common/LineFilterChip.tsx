@@ -56,8 +56,11 @@ export function LineFilterChip({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        // Eixo 10 (achado ao vivo): altura vinha de padding (py-1.5 ≈ 29,7px)
+        // em vez de altura fixa — h-7 + rounded-sm é a "receita da casa"
+        // (mesma medida do Button size="sm" e da pílula Buscar do TopBar).
         className={cn(
-          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
+          'flex items-center gap-1.5 h-7 px-2.5 rounded-sm text-xs font-medium transition-colors',
           'bg-surface-800 border border-[var(--bd2)] text-surface-200 hover:bg-[var(--rowhover)]',
           open && 'border-brand-500',
         )}
