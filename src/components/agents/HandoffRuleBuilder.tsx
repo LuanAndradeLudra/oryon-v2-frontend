@@ -54,7 +54,8 @@ function RuleModal({
   // wizard's framer-motion wrapper) and stays anchored to the viewport.
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70" />
+      {/* Eixo 10: scrim do token (--color-scrim-soft), não bg-black/70 cru. */}
+      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" />
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

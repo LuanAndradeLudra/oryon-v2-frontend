@@ -49,7 +49,8 @@ export function FunnelsConfigDrawer({ open, onClose }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40 z-[39]"
+            // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/40 cru.
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[39]"
             onClick={onClose}
           />
           <motion.div

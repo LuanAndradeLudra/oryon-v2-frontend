@@ -80,7 +80,8 @@ export function DecisionCriteriaTab({
 }) {
   return (
     <div className="flex flex-col gap-4 h-full overflow-y-auto pr-2">
-      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-surface-800/40 border border-surface-700/40">
+      {/* Eixo 10: borda com opacidade arbitraria -> --bd2 solido. */}
+      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-surface-800/40 border border-[var(--bd2)]">
         <AlertCircle className="w-4 h-4 mt-0.5 text-brand-400 flex-shrink-0" />
         <div className="text-xs text-surface-300 leading-relaxed">
           <strong className="text-surface-100">Critérios de decisão</strong> orientam quando o agente
@@ -188,7 +189,9 @@ function CriterionEditor({
         placeholder={BASE_CRITERIA[categoryKey]}
         rows={8}
         spellCheck
-        className="w-full px-3 py-2 rounded-lg bg-surface-950/60 border border-surface-700/50 text-xs text-surface-100 placeholder:text-surface-500 placeholder:whitespace-pre-line focus:outline-none focus:ring-2 focus:ring-brand-500/30 font-mono leading-relaxed resize-y"
+        // Eixo 10: bg/border com opacidade arbitraria -> receita solida de
+        // input do resto do app (bg-surface-800 + --bd2).
+        className="w-full px-3 py-2 rounded-lg bg-surface-800 border border-[var(--bd2)] text-xs text-surface-100 placeholder:text-surface-500 placeholder:whitespace-pre-line focus:outline-none focus:ring-2 focus:ring-brand-500/30 font-mono leading-relaxed resize-y"
       />
 
       <footer className="flex items-center justify-between gap-3">

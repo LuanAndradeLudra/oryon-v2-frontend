@@ -2245,7 +2245,7 @@ export function AgentDetail({
                   <Copy className="w-3.5 h-3.5" />
                   Copiar nome
                 </button>
-                <div className="my-1 border-t border-surface-700/60" />
+                <div className="my-1 border-t border-surface-700" />
                 <button
                   onClick={() => { setMoreOpen(false); setConfirmDeleteOpen(true) }}
                   disabled={deletingAgent}
