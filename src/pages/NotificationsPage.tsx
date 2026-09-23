@@ -1,8 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, Archive, Settings2 } from 'lucide-react'
-import { format, isToday, isYesterday } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { Bell, CheckCheck, Archive, Settings2, ChevronDown, X } from 'lucide-react'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -14,38 +12,16 @@ import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { CATEGORY_CHIPS } from '@/components/notifications/notificationsMeta'
 import { cn } from '@/lib/utils'
 
-// SCRUM-1097 (23/09) — reescrita pra paridade com o popover do sino
-// (TopBar.tsx): mesmo NotificationItem, mesmo hook completo (antes esta
-// pagina nem usava loadMore/hasMore/arquivar/filtro — inventario do Farol).
-// A moldura (cabeçalho, filtros) NÃO copia o markup do popover — são
-// superfícies diferentes (painel de 400px vs página cheia) — só a peça de
-// item e os dados são compartilhados.
-
-// ─── Agrupamento por dia ─────────────────────────────────────────────────────
-// "Hoje" / "Ontem" / data absoluta (dd 'de' MMMM). Agrupa itens adjacentes,
-// preservando a ordem (a lista já chega ordenada por createdAt desc). Mais
-// granular que os 4 baldes do popover (Hoje/Ontem/Esta semana/Anteriores) —
-// deliberado: aqui é a página com mais espaço e mais histórico, então vale
-// manter a data exata em vez de amontoar tudo antes da semana num "Anteriores".
-
-function dayLabel(date: Date): string {
-  if (isToday(date)) return 'Hoje'
-  if (isYesterday(date)) return 'Ontem'
-  return format(date, "dd 'de' MMMM", { locale: ptBR })
-}
-
-function groupByDay(items: AppNotification[]): Array<{ label: string; items: AppNotification[] }> {
-  const groups: Array<{ label: string; items: AppNotification[] }> = []
-  for (const n of items) {
-    const label = dayLabel(new Date(n.createdAt))
-    const last = groups[groups.length - 1]
-    if (last && last.label === label) last.items.push(n)
-    else groups.push({ label, items: [n] })
-  }
-  return groups
-}
+// SCRUM-1097 (23/09) — paridade com o popover do sino (TopBar.tsx): mesmo
+// NotificationItem, mesmo hook completo e, desde a direção A do painel, as
+// mesmas SEÇÕES POR CATEGORIA recolhíveis (mesma chave de localStorage).
+// A moldura (cabeçalho da página, aba lida/não lida) NÃO copia o markup do
+// popover — são superfícies diferentes (painel de 400px vs página cheia).
 
 type NotifFilter = 'all' | 'unread'
+
+/** Mesma chave do popover: recolher "Campanhas" num lugar vale no outro. */
+const COLLAPSED_KEY = 'oryon:notif:collapsed'
 
 /** Descarta link malformado/incompleto — mesma guarda do popover do sino
  *  (TopBar.tsx isValidLink), contra "/undefined" ou "/null" que às vezes
@@ -71,33 +47,61 @@ export function NotificationsPage() {
     markAllAsRead,
     archive,
     loadMore,
+    filterTypes,
     setFilterTypes,
     showArchived,
     setShowArchived,
   } = useNotifications()
 
   // Aba lida/não-lida é filtro client-side sobre a lista já buscada (mesma
-  // lógica do popover); a categoria já vai pro backend via setFilterTypes,
-  // pra não refazer o fetch a cada toggle de aba.
+  // lógica do popover).
   const [filter, setFilter] = useState<NotifFilter>('unread')
-  const [activeCategory, setActiveCategory] = useState<string>('all')
 
   const visible = useMemo(
     () => (filter === 'unread' ? notifications.filter((n) => !n.isRead) : notifications),
     [filter, notifications],
   )
 
-  const handleCategoryClick = useCallback((chip: typeof CATEGORY_CHIPS[number]) => {
-    setActiveCategory(chip.key)
-    setFilterTypes(chip.types)
-  }, [setFilterTypes])
+  // Urgentes primeiro, depois ordem de chegada (sort estável por índice) —
+  // igual ao popover.
+  const sortedVisible = useMemo(() => {
+    const weight = (p?: string) => (p === 'urgent' ? 0 : p === 'low' ? 2 : 1)
+    return visible
+      .map((n, idx) => ({ n, idx }))
+      .sort((a, b) => {
+        const d = weight(a.n.priority) - weight(b.n.priority)
+        return d !== 0 ? d : a.idx - b.idx
+      })
+      .map((x) => x.n)
+  }, [visible])
 
-  // Tocar no disco de tipo de um item filtra a lista inteira por aquele
-  // tipo — mesma fisga de drill-down rápido do popover.
+  // Seções por categoria (Conversas, Equipe, Campanhas, Automações,
+  // Segurança + "Outras" p/ tipo desconhecido), recolhíveis, com contagem.
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '{}') } catch { return {} }
+  })
+  const toggleSection = useCallback((key: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+  const groups = useMemo(() => {
+    const ordem = CATEGORY_CHIPS.filter((c) => c.key !== 'all')
+    return ordem
+      .map((c) => ({ key: c.key, label: c.label, items: sortedVisible.filter((x) => c.types.includes(x.type)) }))
+      .concat([{ key: 'outros', label: 'Outras', items: sortedVisible.filter((x) => !ordem.some((c) => c.types.includes(x.type))) }])
+      .filter((g) => g.items.length > 0)
+  }, [sortedVisible])
+
+  // Tocar no disco de tipo de um item filtra a lista por aquele tipo (mesma
+  // fisga de drill-down do popover). Sem chips de categoria nesta página, a
+  // saída é a faixa "Limpar filtro" logo abaixo — senão viraria beco sem saída.
   const handleItemCategoryClick = useCallback((types: string[]) => {
-    setActiveCategory('custom')
     setFilterTypes(types)
   }, [setFilterTypes])
+  const filtroDeTipoAtivo = filterTypes.length > 0
 
   const handleSelect = async (n: AppNotification) => {
     if (!n.isRead) {
@@ -113,7 +117,7 @@ export function NotificationsPage() {
     // TopBar.tsx, não foi extraída. Aqui elas só marcam como lida por ora.
   }
 
-  const empty = emptyStateFor(activeCategory, filter, showArchived)
+  const empty = emptyStateFor(filtroDeTipoAtivo ? 'custom' : 'all', filter, showArchived)
 
   return (
     <div className="flex flex-col h-full bg-surface-950">
@@ -159,42 +163,31 @@ export function NotificationsPage() {
         }
       />
 
-      {!showArchived && (
+      {(!showArchived || filtroDeTipoAtivo) && (
         <div className="flex-shrink-0 px-3 pt-2.5 pb-2 flex flex-col gap-2 border-b border-surface-700">
-          <SegmentedControl
-            size="md"
-            label="Filtrar notificações"
-            value={filter}
-            onChange={(v) => setFilter(v as NotifFilter)}
-            options={[
-              { value: 'unread', label: 'Não lidas', count: unreadCount > 0 ? unreadCount : undefined },
-              { value: 'all', label: 'Todas' },
-            ]}
-          />
-          {/* Categorias em faixa horizontal rolável — no popover de 400px cabe
-              um Dropdown; numa página de largura cheia, a faixa de chips fica
-              tudo visível de cara, sem esconder atrás de mais um toque. */}
-          <div className="flex items-center gap-1.5 overflow-x-auto -mx-3 px-3 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {CATEGORY_CHIPS.map((chip) => {
-              const active = activeCategory === chip.key
-              return (
-                <button
-                  key={chip.key}
-                  type="button"
-                  onClick={() => handleCategoryClick(chip)}
-                  aria-pressed={active}
-                  className={cn(
-                    'flex-shrink-0 h-9 px-3 rounded-sm border text-[12.5px] font-medium transition-colors whitespace-nowrap',
-                    active
-                      ? 'border-[var(--bd2)] bg-surface-800 text-surface-50 font-semibold'
-                      : 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
-                  )}
-                >
-                  {chip.label}
-                </button>
-              )
-            })}
-          </div>
+          {!showArchived && (
+            <SegmentedControl
+              size="md"
+              label="Filtrar notificações"
+              value={filter}
+              onChange={(v) => setFilter(v as NotifFilter)}
+              options={[
+                { value: 'unread', label: 'Não lidas', count: unreadCount > 0 ? unreadCount : undefined },
+                { value: 'all', label: 'Todas' },
+              ]}
+            />
+          )}
+          {filtroDeTipoAtivo && (
+            <button
+              type="button"
+              onClick={() => setFilterTypes([])}
+              className="self-start h-9 pl-3 pr-2.5 rounded-sm border border-[var(--bd2)] bg-surface-800 text-[12.5px] font-semibold text-surface-50 inline-flex items-center gap-1.5"
+            >
+              Filtrando por tipo
+              <span className="font-medium text-surface-400">· limpar</span>
+              <X className="w-3.5 h-3.5 text-surface-400" strokeWidth={1.75} />
+            </button>
+          )}
         </div>
       )}
 
@@ -204,28 +197,35 @@ export function NotificationsPage() {
             <Spinner className="w-5 h-5 text-brand-400" />
             <span className="text-xs text-surface-500">Carregando...</span>
           </div>
-        ) : visible.length === 0 ? (
+        ) : sortedVisible.length === 0 ? (
           <EmptyState icon={Bell} title={empty.title} hint={empty.hint} className="m-4" />
         ) : (
           <>
-            {groupByDay(visible).map((group) => (
-              <section key={group.label}>
-                <h2 className="px-4 pt-3 pb-1 text-[11px] font-medium text-surface-500">
-                  {group.label}
-                </h2>
-                <div>
-                  {group.items.map((n) => (
-                    <NotificationItem
-                      key={n.id}
-                      n={n}
-                      onClick={() => handleSelect(n)}
-                      onArchive={!showArchived ? () => archive(n.id) : undefined}
-                      onMarkUnread={!showArchived && n.isRead ? () => markAsUnread(n.id) : undefined}
-                      onCategoryClick={handleItemCategoryClick}
-                    />
-                  ))}
-                </div>
-              </section>
+            {groups.map((g) => (
+              <div key={g.key}>
+                {/* Cabeçalho da seção: no popover é h32 (ponteiro fino); aqui a
+                    página é sempre toque, então o alvo é 44px. */}
+                <button
+                  type="button"
+                  onClick={() => toggleSection(g.key)}
+                  aria-expanded={!collapsed[g.key]}
+                  className="w-full h-11 px-4 flex items-center gap-1.5 text-[11px] font-semibold text-surface-400 hover:text-surface-200 bg-surface-950 sticky top-0 z-10 transition-colors"
+                >
+                  <span>{g.label}</span>
+                  <span className="font-medium text-surface-500 tabular-nums">· {g.items.filter((x) => !x.isRead).length || g.items.length}</span>
+                  <ChevronDown className={cn('ml-auto w-3.5 h-3.5 text-surface-500 transition-transform', collapsed[g.key] && '-rotate-90')} strokeWidth={1.75} />
+                </button>
+                {!collapsed[g.key] && g.items.map((n) => (
+                  <NotificationItem
+                    key={n.id}
+                    n={n}
+                    onClick={() => handleSelect(n)}
+                    onArchive={!showArchived ? () => archive(n.id) : undefined}
+                    onMarkUnread={!showArchived && n.isRead ? () => markAsUnread(n.id) : undefined}
+                    onCategoryClick={handleItemCategoryClick}
+                  />
+                ))}
+              </div>
             ))}
             {hasMore && (
               <div className="py-3 flex justify-center">
