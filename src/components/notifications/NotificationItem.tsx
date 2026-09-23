@@ -72,10 +72,10 @@ export function NotificationItem({
         >
           {initialsOf(avatarName)}
         </span>
-      ) : (
+      ) : onCategoryClick ? (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onCategoryClick?.([n.type]) }}
+          onClick={(e) => { e.stopPropagation(); onCategoryClick([n.type]) }}
           title={`Filtrar: ${style.label}`}
           aria-label={`Filtrar por ${style.label}`}
           className={cn(
@@ -85,6 +85,19 @@ export function NotificationItem({
         >
           <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
         </button>
+      ) : (
+        // Sem handler o disco é só marca do tipo (as seções já categorizam):
+        // um <button> sem ação seria alvo morto no toque (achado do Farol).
+        <span
+          title={style.label}
+          aria-hidden
+          className={cn(
+            'w-7 h-7 mt-0.5 rounded-full flex items-center justify-center flex-none border bg-[var(--sf2)]',
+            t ? t.disc : 'border-surface-700 text-surface-400',
+          )}
+        >
+          <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
+        </span>
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">

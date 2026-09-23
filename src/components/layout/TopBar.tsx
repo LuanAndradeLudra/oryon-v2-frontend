@@ -802,14 +802,12 @@ function NotificationsPanel() {
     loadingMore,
     hasMore,
     loadMore,
-    setFilterTypes,
     showArchived,
     setShowArchived,
   } = useNotifications()
   const navigate = useNavigate()
   const [filter, setFilter] = useState<NotifFilter>('unread')
   const [detail, setDetail] = useState<AppNotification | null>(null)
-  const [activeCategory, setActiveCategory] = useState<string>('all')
   const [focusedIndex, setFocusedIndex] = useState<number>(-1)
   const [ariaAnnouncement, setAriaAnnouncement] = useState<string>('')
   const panelRef = useRef<HTMLDivElement>(null)
@@ -859,14 +857,6 @@ function NotificationsPanel() {
   const flatItems = useMemo(() => groups.flatMap((g) => (collapsed[g.key] ? [] : g.items)), [groups, collapsed])
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
-
-  // Phase 20 I5: clicking a category chip inside a notification item filters
-  // the whole list by that single type. Fast drill-down.
-  const handleItemCategoryClick = useCallback((types: string[]) => {
-    setActiveCategory('custom')
-    setFilterTypes(types)
-    setFocusedIndex(-1)
-  }, [setFilterTypes])
 
   const handleItemClick = useCallback((n: AppNotification) => {
     if (!n.isRead) markAsRead(n.id)
@@ -924,7 +914,8 @@ function NotificationsPanel() {
     return () => clearTimeout(t)
   }, [notifications])
 
-  const empty = emptyStateFor(activeCategory, filter, showArchived)
+  // Direção A: sem filtro de categoria (as seções categorizam) — só 'all'.
+  const empty = emptyStateFor('all', filter, showArchived)
 
   // Scroll focused item into view when keyboard nav moves past viewport.
   useEffect(() => {
@@ -1049,7 +1040,6 @@ function NotificationsPanel() {
                             onClick={() => handleItemClick(n)}
                             onArchive={!showArchived ? () => archive(n.id) : undefined}
                             onMarkUnread={!showArchived && n.isRead ? () => markAsUnread(n.id) : undefined}
-                            onCategoryClick={handleItemCategoryClick}
                             isFocused={focusedIndex === flatIdx}
                           />
                         </motion.div>
