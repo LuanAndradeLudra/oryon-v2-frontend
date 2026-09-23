@@ -111,6 +111,9 @@ export function useMessages(conversationId: string | null) {
         body: dto.body,
         mediaUrl: objectUrl ?? undefined,
         mediaCaption: dto.mediaCaption,
+        // Miniatura renderizada no navegador (só PDF) — some assim que a
+        // real (gerada no servidor) chega, ver o `?? ` na troca abaixo.
+        mediaThumbnailUrl: dto.clientThumbnailUrl,
         contextWamid: dto.replyToWamid,
         senderKind: 'operator',
         sentAt: now,
@@ -126,7 +129,14 @@ export function useMessages(conversationId: string | null) {
         setMessages((prev) => {
           const withoutTemp = prev.filter((m) => m.id !== tempId)
           if (withoutTemp.some((m) => m.id === data.id)) return withoutTemp
-          return [...withoutTemp, data]
+          // A miniatura real (gerada no servidor, fila assíncrona) ainda não
+          // chegou neste ponto — sem isto, a miniatura do navegador
+          // desapareceria por alguns segundos bem na hora em que o status
+          // vira "enviado", até `message:media-ready` repor. `data` sempre
+          // vence quando já tiver a sua própria (nunca deveria acontecer tão
+          // rápido, mas não custa a guarda).
+          const merged = { ...data, mediaThumbnailUrl: data.mediaThumbnailUrl ?? dto.clientThumbnailUrl }
+          return [...withoutTemp, merged]
         })
         if (objectUrl) URL.revokeObjectURL(objectUrl)
       } catch (err) {
