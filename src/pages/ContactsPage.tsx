@@ -12,6 +12,8 @@ import { STATS_COLLAPSE_KEY, contactsSummaryText } from '@/lib/contactsSummary'
 import { ContactsFiltersBar } from '@/components/contacts/ContactsFiltersBar'
 import { CRMConfigDrawer } from '@/components/contacts/CRMConfigDrawer'
 import { ContactsTable } from '@/components/contacts/ContactsTable'
+import { ContactsList } from '@/components/contacts/ContactsList'
+import { SendTemplateDrawer } from '@/components/contacts/SendTemplateDrawer'
 import { ContactsMobileList } from '@/components/contacts/ContactsMobileList'
 import { ContactDetailPanel } from '@/components/contacts/ContactDetailPanel'
 import type { TabId } from '@/components/contacts/ContactDetailTabs'
@@ -34,7 +36,7 @@ import { useContactColumnsConfig } from '@/hooks/useContactColumnsConfig'
 import { ContactsColumnsModal } from '@/components/contacts/ContactsColumnsModal'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
-import { tagsApi, pipelinesApi } from '@/services/api'
+import { tagsApi, pipelinesApi, contactsApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
 import { getApiErrorMessage } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag, Pipeline } from '@/types'
@@ -45,6 +47,8 @@ import type { Contact, ContactFilters, ContactStage, Tag, Pipeline } from '@/typ
  * `useContacts`/`?commercial=`) porque a lista é paginada no servidor.
  */
 type CommercialSituation = 'all' | 'no_deal' | 'open_deal' | 'customer'
+
+const CONTACTS_VIEW_KEY = 'oryon:contacts:view'
 
 const COMMERCIAL_OPTIONS: { key: CommercialSituation; label: string }[] = [
   { key: 'all', label: 'Todos' },
@@ -98,6 +102,12 @@ export function ContactsPage() {
   const [showCRMConfig, setShowCRMConfig] = useState(false)
   const [showColumnsModal, setShowColumnsModal] = useState(false)
   const [commercial, setCommercial] = useState<CommercialSituation>('all')
+  // Direção A (DECISOES-PENDENTES #33): "Lista" é o padrão; "Tabela" é o modo
+  // denso com colunas configuráveis. A escolha fica no navegador do usuário.
+  const [view] = useState<'list' | 'table'>(() => {
+    try { return localStorage.getItem(CONTACTS_VIEW_KEY) === 'table' ? 'table' : 'list' } catch { return 'list' }
+  })
+  const [templateContact, setTemplateContact] = useState<Contact | null>(null)
   const columnsConfig = useContactColumnsConfig()
 
   // Funis do tenant — só para os pickers dos drawers (Novo contato/Importar,
@@ -256,6 +266,29 @@ export function ContactsPage() {
     setSelectedContactId(contact.id)
   }
 
+  // Linha da lista: Ctrl/Cmd (ou já existir seleção) marca em vez de abrir —
+  // mesmo contrato do clique na linha da tabela.
+  const handleRowOpen = (contact: Contact, e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey || selectedIds.size > 0) {
+      e.preventDefault()
+      toggleSelect(contact.id)
+      return
+    }
+    handleOpenPanel(contact)
+  }
+
+  // Ação "Abrir conversa" da linha: a conversa mais recente do contato. Sem
+  // conversa não há o que abrir — o caminho é o template (não inventa uma).
+  const handleOpenConversation = (contact: Contact) => {
+    contactsApi.getConversations(contact.id)
+      .then((r) => {
+        const conv = r.data?.data?.[0]
+        if (conv) navigate(`/conversations?id=${conv.id}`)
+        else toast('Este contato ainda não tem conversa. Envie um template para iniciar.', 'info')
+      })
+      .catch(() => toast('Não foi possível abrir a conversa.', 'error'))
+  }
+
   const handleMoveStage = async (contact: Contact, stage: ContactStage) => {
     await updateContact(contact.id, { stage })
   }
@@ -380,6 +413,27 @@ export function ContactsPage() {
             />
           ) : (
             <>
+            {view === 'list' ? (
+            <ContactsList
+              contacts={contacts}
+              loading={loading}
+              activeId={selectedContactId}
+              selectedIds={selectedIds}
+              onOpen={handleRowOpen}
+              onToggleSelect={toggleSelect}
+              onOpenConversation={handleOpenConversation}
+              onSendTemplate={setTemplateContact}
+              onOpenProfile={
+                isFeatureVisible('contactProfilePage', user?.email)
+                  ? (c) => navigate(`/contacts/${c.id}`, { state: { contact: c } })
+                  : undefined
+              }
+              hasMore={hasMore}
+              loadingMore={loadingMore}
+              onLoadMore={loadMore}
+              scrollPositionRef={listScrollPosRef}
+            />
+            ) : (
             <ContactsTable
               contacts={contacts}
               loading={loading}
@@ -400,6 +454,7 @@ export function ContactsPage() {
               sortDir={filters.sortDir}
               onSortChange={(sortBy, sortDir) => setFilters({ ...filters, sortBy, sortDir })}
             />
+            )}
             {/* CONT-FOOTER-01..04 (spec/1c-contatos.GAPS.md): rodapé fixo de
                 40px — "1–N de total" fora de seleção, ações em massa dentro
                 dela (era uma pílula flutuante, BulkActionBar `inline`). As
@@ -515,6 +570,15 @@ export function ContactsPage() {
           </Button>
         </div>
       </Modal>
+
+      {/* "Enviar template" da linha da lista (o do painel vive no header dele). */}
+      {templateContact && (
+        <SendTemplateDrawer
+          contact={templateContact}
+          open
+          onClose={() => setTemplateContact(null)}
+        />
+      )}
 
       {/* Import Contacts Drawer */}
       <ImportContactsDrawer
