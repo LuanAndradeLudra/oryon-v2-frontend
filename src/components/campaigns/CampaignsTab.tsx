@@ -408,40 +408,47 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
         <span className="flex-1 min-w-0 text-[13px] font-semibold text-surface-50 truncate">{campaign.name}</span>
         {campaign.needsWabaAssignment && <WabaAssignmentBadge onClick={onAssignWaba} />}
         <WhatsappLineChip whatsappNumberId={campaign.whatsappNumberId ?? undefined} />
-        <span className="ml-auto text-[11px] text-surface-500 tabular-nums flex-none">
-          {new Date(quando).toLocaleDateString('pt-BR')}
-        </span>
-        <Dropdown
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          align="right"
-          className="w-48"
-          anchor={
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label={`Mais ações — ${campaign.name}`}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-none"
-            >
-              <MoreHorizontal className="w-3.5 h-3.5" />
-            </button>
-          }
-        >
-          <div className="px-1 py-1 flex flex-col gap-0.5">
-            <DropdownItem onClick={() => { navigator.clipboard.writeText(campaign.name).catch(() => {}); setMenuOpen(false) }}>
-              <Copy className="w-3.5 h-3.5" /> Copiar nome
-            </DropdownItem>
-            {campaign.needsWabaAssignment && (
-              <DropdownItem onClick={() => { onAssignWaba(); setMenuOpen(false) }}>
-                <Users className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
+        {/* Medido ao vivo em 390px: card estourava 3px, culpa da data +
+            kebab juntos. A data é o item menos essencial da linha — some
+            abaixo de sm. ml-auto migrou pro wrapper (não fica mais só na
+            data) pra continuar empurrando data+kebab juntos pra direita
+            mesmo quando a data está escondida. */}
+        <div className="ml-auto flex items-center gap-2 flex-none">
+          <span className="hidden sm:inline-flex text-[11px] text-surface-500 tabular-nums flex-none">
+            {new Date(quando).toLocaleDateString('pt-BR')}
+          </span>
+          <Dropdown
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            align="right"
+            className="w-48"
+            anchor={
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label={`Mais ações — ${campaign.name}`}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-none"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </button>
+            }
+          >
+            <div className="px-1 py-1 flex flex-col gap-0.5">
+              <DropdownItem onClick={() => { navigator.clipboard.writeText(campaign.name).catch(() => {}); setMenuOpen(false) }}>
+                <Copy className="w-3.5 h-3.5" /> Copiar nome
               </DropdownItem>
-            )}
-            <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setMenuOpen(false) }}>
-              {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Excluir
-            </DropdownItem>
-          </div>
-        </Dropdown>
+              {campaign.needsWabaAssignment && (
+                <DropdownItem onClick={() => { onAssignWaba(); setMenuOpen(false) }}>
+                  <Users className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
+                </DropdownItem>
+              )}
+              <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setMenuOpen(false) }}>
+                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Excluir
+              </DropdownItem>
+            </div>
+          </Dropdown>
+        </div>
       </div>
 
       <p className="text-[11px] text-surface-500 truncate">
