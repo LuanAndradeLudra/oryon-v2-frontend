@@ -525,7 +525,7 @@ export function BillingSettings() {
                 key={pack.credits}
                 onClick={() => openCredits(pack)}
                 disabled={statusError}
-                className="rounded-sm border border-surface-700 hover:border-brand-500 hover:bg-surface-800 transition-colors p-3 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-surface-700 disabled:hover:bg-transparent"
+                className="rounded-sm border border-surface-700 hover:border-brand-500 hover:bg-[var(--rowhover)] transition-colors p-3 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-surface-700 disabled:hover:bg-transparent"
               >
                 <p className="text-sm font-bold text-surface-100">{pack.credits.toLocaleString('pt-BR')}</p>
                 <p className="text-[11px] text-surface-500">créditos</p>

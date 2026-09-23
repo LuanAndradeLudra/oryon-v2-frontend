@@ -222,7 +222,9 @@ export function CreateUserDrawer({ open, onClose, onCreated }: CreateUserDrawerP
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 z-40"
+            // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/60
+            // cru — preto cru fica pesado demais no tema claro (MODAL-07).
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-40"
             onClick={onClose}
           />
 

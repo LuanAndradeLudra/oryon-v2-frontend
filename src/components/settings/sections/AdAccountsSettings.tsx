@@ -50,13 +50,14 @@ function ConnectDrawer({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      {/* Eixo 10: scrim do token, não bg-black/50 cru — fica pesado demais no claro. */}
+      <div className="fixed inset-0 bg-[var(--color-scrim-soft)] z-40" onClick={onClose} />
       <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface-950 border-l overlay-frame z-50 flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700">
           <p className="text-sm font-semibold text-surface-100">
             Conectar {isMeta ? 'Meta Ads' : 'Google Ads'}
           </p>
-          <button onClick={onClose} className="p-1.5 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
             ✕
           </button>
         </div>
@@ -207,7 +208,7 @@ function ConnectedCard({
             </thead>
             <tbody>
               {campaigns.map((c) => (
-                <tr key={c.platformCampaignId} className="border-b border-surface-700 hover:bg-surface-800/30">
+                <tr key={c.platformCampaignId} className="border-b border-surface-700 hover:bg-[var(--rowhover)]">
                   <td className="pl-0 pr-3 py-2 text-surface-300 truncate max-w-[200px]">{c.platformCampaignName}</td>
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">R$ {c.spend.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</td>
                   <td className="px-3 py-2 text-right text-surface-400 tabular-nums">{c.leadsGenerated}</td>

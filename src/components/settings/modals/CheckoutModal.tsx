@@ -211,7 +211,7 @@ export function CheckoutModal({ open, onClose, onDone, intent }: CheckoutModalPr
                         'flex items-center justify-center gap-2 h-9 rounded-sm border text-[13px] font-medium transition-colors',
                         method === m
                           ? 'border-brand-500 bg-accent-soft text-accent-dark'
-                          : 'border-surface-700 text-surface-300 hover:bg-surface-800',
+                          : 'border-surface-700 text-surface-300 hover:bg-[var(--rowhover)]',
                         cardBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent',
                       )}
                     >
