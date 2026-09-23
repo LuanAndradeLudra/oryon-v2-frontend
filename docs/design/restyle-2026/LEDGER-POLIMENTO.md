@@ -162,3 +162,8 @@ Próximo: ciclo 6 = **fluxo F2** (Lead → contato → negócio → mover etapas
 2. **Cada URL aparece 2–3× no timing** → o interceptor ainda retenta **erro de conexão** (o `db31620` tirou só o timeout; erro de rede sem status continua "transitório").
 3. As durações sobem em degraus exatos (2360 / 4707 / 8243 / 10591) — assinatura da fila de 6 conexões do Chrome. ~14 endpoints no mount × 3 tentativas ÷ 6 canais × 2,4 s → passa de 15 s.
 → Fix pedido ao Farol: parar de retentar erro de conexão (manter retry só para 502/503/504). Esperado: ~40 requisições viram ~14, erro na tela em ~4 s, e o teto de 15 s vira rede de segurança de verdade. **Medição de fechamento pendente.**
+
+**PL-C4-FAR-1 — FECHADO (medição de fechamento pelo Maestro, 2026-09-22 21:5x)**
+Fix do Farol `09df445`: retry só para 502/503/504/408/429 (infra que de fato respondeu) + `ECONNRESET`; erro de conexão pura não é mais retentado.
+Linha do tempo do defeito, toda medida ao vivo com o backend derrubado: **>35 s com página em branco** → 35 s com ErrorState (`9eca7ca`) → 15 s pelo teto (`cb45a9b`) → **entre 6 s e 12 s sem depender do teto** (`09df445`). Com o backend de volta: dashboard normal, 174 números, zero erro — o interceptor é compartilhado por todo o app, então essa era a verificação que importava.
+Nota para não reabrir: depois do fix ainda aparecem 34 requisições para 17 URLs únicas (`auth/me` ×4, `internal/channels` ×3, o resto ×2). **Não é retry residual — é o React StrictMode**, que monta efeito 2× em desenvolvimento e não existe no build de produção. Em produção são ~17 requisições → ~7 s até o erro.
