@@ -1259,9 +1259,16 @@ function Step3({
           </div>
         </div>
 
+        {/* PL-C2-CAR-eixo10: passo 3 não tinha nenhuma faixa própria (Nome/
+            Template/Destinatários dos passos 1-2 ficam alinhados em x=275,
+            este passo ficava só com o rótulo do segmentado) — quebrava o
+            ritmo. Uma faixa "Variáveis" cobrindo a lista inteira já resolve;
+            repetir o título por variável seria redundante com o {{n}} de
+            cada linha. */}
+        <Faixa label="Variáveis">
         <div className="divide-y divide-surface-700">
           {mappings.map((m) => (
-            <div key={m.position} className="py-4">
+            <div key={m.position} className="py-4 first:pt-0">
               <div className="flex items-baseline gap-1.5 mb-2">
                 <span className="text-[12.5px] font-bold text-surface-100">{`{{${m.position}}}`}</span>
                 <span className="text-[12.5px] text-surface-400">{m.variableName}</span>
@@ -1323,6 +1330,7 @@ function Step3({
             </div>
           ))}
         </div>
+        </Faixa>
       </div>
 
       <div className="w-[220px] flex-shrink-0">
