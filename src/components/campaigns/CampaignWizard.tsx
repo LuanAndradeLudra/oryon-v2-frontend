@@ -1683,7 +1683,7 @@ function Step5({
           {estimatedReach !== null && estimatedReach > 0 && (
             <button
               onClick={() => setShowContactsModal(true)}
-              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-surface-600 text-xs text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
+              className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-surface-600 text-[12px] text-surface-400 hover:border-brand-500/50 hover:text-brand-300 transition-all"
             >
               <Users className="w-3.5 h-3.5" />
               Verificar lista de contatos ({estimatedReach} contato{estimatedReach === 1 ? '' : 's'})
