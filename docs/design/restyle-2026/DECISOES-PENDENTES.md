@@ -91,6 +91,17 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     (quase invisível), agora `#D5DBDD`. É o único valor da prévia que **não** é o amostrado. Reverter: `WA.divisor`
     em `TemplatePreview.tsx`.
 
+30. **`--rowhover` no tema escuro sobe de 4% para 7% de branco** (23/09): a troca em massa de `hover:bg-surface-800`
+    por `--rowhover` (necessária no claro, onde surface-800 é branco) deixou o hover **2,5× mais fraco no escuro sobre
+    o piso `surface-950`** dos drawers (Δlum 0,0094 → 0,0036, contraprova do Cartógrafo). A 7%: 0,0065 no piso 950 e
+    0,0083 no piso 800 — acima do antigo em cada piso. Reverter: `--rowhover` no bloco escuro do `index.css`.
+31. **Painel de notificações (popover do sino) reestilizado na direção C** (23/09, pedido do PO): cabeçalho 111→44px com
+    Marcar todas / Arquivadas / Preferências como botões de ícone; filtros numa linha (Não lidas|Todas + categoria em
+    menu, no lugar de 6 chips de 10px); item 101→75/58px com ladrilho colorido por categoria (clicável = filtra), avatar
+    quando há contato, "Urgente" como chip, ações no hover. Comportamento e atalhos preservados. Referências: Linear
+    Inbox; Smashing Magazine e Courier (guias de notificação). A página `/notifications` (mobile) passa a reusar o
+    mesmo item (Farol). Reverter: `5ddca38`.
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
