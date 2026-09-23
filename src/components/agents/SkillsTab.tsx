@@ -410,7 +410,7 @@ function SkillRow({
                 onClick={onTest}
                 disabled={toggling}
                 aria-label="Testar skill"
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-brand-300 hover:bg-surface-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-brand-300 hover:bg-[var(--rowhover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Beaker className="w-3.5 h-3.5" />
               </button>
@@ -421,7 +421,7 @@ function SkillRow({
                 onClick={onEdit}
                 disabled={toggling}
                 aria-label="Editar configuração"
-                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-7 h-7 rounded-md inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>

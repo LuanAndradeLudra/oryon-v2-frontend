@@ -292,7 +292,7 @@ function OpenDensity(props: OpenDealProps) {
                   type="button"
                   onClick={onToggleMove}
                   disabled={busy}
-                  className="inline-flex items-center gap-1.5 h-6 px-1.5 -ml-1.5 rounded-xs text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 h-6 px-1.5 -ml-1.5 rounded-xs text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] disabled:opacity-50 transition-colors"
                   data-testid={`${testIdPrefix}-move-${testIdKey}`}
                   aria-haspopup="menu"
                   aria-expanded={moveOpen}
@@ -326,7 +326,7 @@ function OpenDensity(props: OpenDealProps) {
               type="button"
               onClick={onOpenBoard}
               title="Abrir o quadro deste funil com a ficha em cima — sai desta tela"
-              className="inline-flex items-center gap-1 h-6 px-1.5 rounded-xs text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+              className="inline-flex items-center gap-1 h-6 px-1.5 rounded-xs text-[11px] font-medium text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
               data-testid={`${testIdPrefix}-goboard-${testIdKey}`}
             >
               <ExternalLink className="w-3 h-3" /> No funil
@@ -401,7 +401,7 @@ function OpenDensity(props: OpenDealProps) {
           <button
             type="button"
             onClick={onOpen}
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
             data-testid={`${testIdPrefix}-board-${testIdKey}`}
           >
             <KanbanSquare className="w-3.5 h-3.5" /> Abrir negócio

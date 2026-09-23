@@ -260,7 +260,7 @@ export function DealsBoard({
                 onClick={() => onNewDeal(stage.id)}
                 aria-label={`Novo ${noun} em ${stage.label}`}
                 title={`Novo ${noun} em ${stage.label}`}
-                className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-lg text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+                className="w-11 h-11 md:w-7 md:h-7 flex items-center justify-center rounded-lg text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -379,7 +379,7 @@ export function DealsBoard({
                             // toque, que é o caso comum aqui). `isDesktop`
                             // segue a mesma variável que já decide a opacidade
                             // logo abaixo, não um breakpoint novo.
-                            'flex items-center gap-1 rounded-md border border-[var(--bd2)] font-medium text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            'flex items-center gap-1 rounded-md border border-[var(--bd2)] font-medium text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
                             isDesktop ? 'h-8 px-[7px] text-3xs' : 'min-h-11 px-3 text-xs',
                             stageMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
@@ -414,7 +414,7 @@ export function DealsBoard({
                           }}
                           className={cn(
                             // PL-C2-CAR-4: mesmo ajuste do "Mover ▾" ao lado — 22px → 32/44.
-                            'flex items-center justify-center rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all',
+                            'flex items-center justify-center rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
                             isDesktop ? 'w-8 h-8' : 'w-11 h-11',
                             pipelineMenuDealId === deal.id || !isDesktop ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100',
                           )}
