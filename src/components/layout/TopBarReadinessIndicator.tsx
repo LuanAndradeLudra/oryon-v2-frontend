@@ -106,7 +106,7 @@ export function TopBarReadinessIndicator() {
               type="button"
               onClick={() => setOpen(false)}
               title="Fechar"
-              className="w-6 h-6 rounded-md flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+              className="w-6 h-6 rounded-md flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -124,7 +124,7 @@ export function TopBarReadinessIndicator() {
 
 function IssueCard({ issue, onAction }: { issue: WorkspaceCheck; onAction: () => void }) {
   return (
-    <div className="rounded-xl border border-surface-700 bg-surface-900/40 p-3 flex items-start gap-3">
+    <div className="rounded-xl border border-surface-700 bg-[var(--sf2)] p-3 flex items-start gap-3">
       <span
         className="mt-0.5 w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 color-chip border"
         style={{ ['--chip']: 'var(--color-warning)' } as React.CSSProperties}

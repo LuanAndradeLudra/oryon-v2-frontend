@@ -341,7 +341,7 @@ function SearchDropdown({
                   onMouseEnter={() => onHover(flatIdx)}
                   className={cn(
                     'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
-                    isActive ? 'bg-surface-800' : 'hover:bg-surface-800/60',
+                    isActive ? 'bg-surface-800' : 'hover:bg-[var(--rowhover)]',
                   )}
                 >
                   <div className={cn(
@@ -375,7 +375,7 @@ function SearchDropdown({
               onMouseDown={(e) => { e.preventDefault(); onHover(flatItems.length) }}
               className={cn(
                 'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
-                activeIndex === flatItems.length ? 'bg-surface-800' : 'hover:bg-surface-800/60',
+                activeIndex === flatItems.length ? 'bg-surface-800' : 'hover:bg-[var(--rowhover)]',
               )}
               onMouseEnter={() => onHover(flatItems.length)}
             >
@@ -463,8 +463,8 @@ function NotificationItem({
         // Phase 20 V3: stronger unread treatment
         !n.isRead ? 'bg-brand-600/[0.04]' : 'bg-transparent',
         // Hover + keyboard focus state
-        'hover:bg-surface-800/50',
-        isFocused && 'bg-surface-800/60 ring-1 ring-brand-600/40',
+        'hover:bg-[var(--rowhover)]',
+        isFocused && 'bg-[var(--sf2)] ring-1 ring-brand-600/40',
         // Phase 20 V2: priority visual
         priorityStyle.containerClass,
         // Touch targets — min-h bump on coarse pointers (R2)
@@ -569,7 +569,7 @@ function NotificationItem({
         {onMarkUnread && (
           <button
             onClick={(e) => { e.stopPropagation(); onMarkUnread() }}
-            className="p-1.5 rounded text-surface-500 hover:text-surface-200 hover:bg-surface-800 [@media(pointer:coarse)]:p-2"
+            className="p-1.5 rounded text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:p-2"
             title="Marcar como não lida (U)"
             aria-label="Marcar como não lida"
           >
@@ -579,7 +579,7 @@ function NotificationItem({
         {onArchive && (
           <button
             onClick={(e) => { e.stopPropagation(); onArchive() }}
-            className="p-1.5 rounded text-surface-500 hover:text-surface-200 hover:bg-surface-800 [@media(pointer:coarse)]:p-2"
+            className="p-1.5 rounded text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] [@media(pointer:coarse)]:p-2"
             title="Arquivar (E)"
             aria-label="Arquivar"
           >
@@ -843,7 +843,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-3 sm:px-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--color-scrim-soft)] backdrop-blur-sm px-3 sm:px-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -915,7 +915,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
                 {groupedContacts.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center gap-2.5 p-2 rounded-lg bg-surface-800/40"
+                    className="flex items-center gap-2.5 p-2 rounded-lg bg-[var(--sf2)]"
                   >
                     <div className="w-7 h-7 rounded-full bg-success/15 flex items-center justify-center shrink-0">
                       <UserPlus className="w-3.5 h-3.5 text-success" />
@@ -1171,7 +1171,7 @@ function NotificationsPanel() {
       </div>
 
       <div className="absolute top-full right-0 mt-2 w-[26rem] max-w-[calc(100vw-1rem)] overlay-surface border rounded-2xl z-50 overflow-hidden animate-slide-in-right">
-        <div className="px-4 py-3 border-b border-surface-700/60 space-y-2">
+        <div className="px-4 py-3 border-b border-surface-700 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-surface-100">Notificações</span>
             <div className="flex items-center gap-3">
@@ -1217,7 +1217,7 @@ function NotificationsPanel() {
                   'px-2 py-0.5 rounded-md text-3xs font-medium border shrink-0 transition-colors',
                   activeCategory === chip.key
                     ? 'color-chip'
-                    : 'bg-surface-800/40 border-surface-700 text-surface-400 hover:text-surface-200',
+                    : 'bg-[var(--sf2)] border-surface-700 text-surface-400 hover:text-surface-200',
                 )}
               >
                 {chip.label}
@@ -1239,7 +1239,7 @@ function NotificationsPanel() {
                   for new and archived items. Reduced-motion disables transitions. */}
               {groups.map((g) => (
                 <div key={g.label}>
-                  <div className="px-4 pt-2.5 pb-2 text-3xs font-semibold uppercase tracking-wider text-surface-500 bg-[var(--color-overlay)] border-b border-surface-700/50 sticky top-0 z-10">
+                  <div className="px-4 pt-2.5 pb-2 text-3xs font-semibold uppercase tracking-wider text-surface-500 bg-[var(--color-overlay)] border-b border-surface-700 sticky top-0 z-10">
                     {g.label}
                   </div>
                   <AnimatePresence initial={false}>
@@ -1325,7 +1325,7 @@ function FilterTab({ active, onClick, count, children }: {
         'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-2xs font-medium transition-colors',
         active
           ? 'bg-surface-800 text-surface-100'
-          : 'text-surface-400 hover:text-surface-200 hover:bg-surface-800/50',
+          : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
       )}
     >
       {children}
@@ -1681,7 +1681,7 @@ export function TopBar() {
           onClick={() => setDropOpen(true)}
           title="Buscar"
           aria-label="Abrir busca"
-          className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+          className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
         >
           <Search className="w-4 h-4" />
         </button>
@@ -1694,7 +1694,7 @@ export function TopBar() {
             onClick={() => openCopilot()}
             title="Abrir Copilot"
             aria-label="Abrir Copilot"
-            className="flex items-center justify-center w-7 h-7 rounded-sm text-brand-400 hover:text-brand-300 hover:bg-surface-800 transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-sm text-brand-400 hover:text-brand-300 hover:bg-[var(--rowhover)] transition-colors"
           >
             <Sparkles className="w-4 h-4" />
           </button>
@@ -1706,7 +1706,7 @@ export function TopBar() {
             onClick={() => setNotifOpen((v) => !v)}
             title="Notificações"
             aria-label={unreadCount > 0 ? `Notificações (${unreadCount > 9 ? '9+' : unreadCount} não lidas)` : 'Notificações'}
-            className="relative flex items-center justify-center w-7 h-7 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+            className="relative flex items-center justify-center w-7 h-7 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
@@ -1748,7 +1748,7 @@ export function TopBar() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: 'easeOut' }}
             >
-              <div className="absolute inset-0 bg-black/70" />
+              <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" />
               <motion.div
                 ref={searchRef}
                 className="relative z-10 w-full max-w-xl bg-surface-900 overlay-frame border rounded-2xl overflow-hidden"
