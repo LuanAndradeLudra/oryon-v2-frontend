@@ -85,13 +85,16 @@ function DetailMenu({ automation, onEdit, onDuplicate, onDuplicateToLine, onDele
     return () => window.removeEventListener('click', h)
   }, [open])
 
-  const item = 'w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors'
+  // Eixo 10: mesmas medidas do item do primitivo ui/Dropdown.tsx (h-[30px]
+  // px-2 rounded-[5px] text-[13px] + hover --rowhover) — este menu é feito à
+  // mão (não usa <Dropdown>), mas a MEDIDA da peça deve ser a mesma.
+  const item = 'w-full flex items-center gap-2.5 h-[30px] px-2 rounded-[5px] text-[13px] text-left transition-colors'
 
   return (
     <div className="relative">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}
-        className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+        className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-colors"
         title="Mais ações"
         aria-label="Mais ações"
       >
@@ -104,21 +107,21 @@ function DetailMenu({ automation, onEdit, onDuplicate, onDuplicateToLine, onDele
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute right-0 top-full mt-1 w-52 rounded-xl overlay-surface border py-1 z-30"
+            className="absolute right-0 top-full mt-1 w-52 rounded-lg overlay-surface border p-1 z-30"
             onClick={(e) => e.stopPropagation()}
           >
-            <button className={cn(item, 'text-surface-200 hover:bg-surface-700')} onClick={() => { setOpen(false); onEdit() }}>
+            <button className={cn(item, 'text-surface-200 hover:bg-[var(--rowhover)]')} onClick={() => { setOpen(false); onEdit() }}>
               <Pencil className="w-3.5 h-3.5" /> Editar
             </button>
-            <button className={cn(item, 'text-surface-200 hover:bg-surface-700')} onClick={() => { setOpen(false); onDuplicate() }}>
+            <button className={cn(item, 'text-surface-200 hover:bg-[var(--rowhover)]')} onClick={() => { setOpen(false); onDuplicate() }}>
               <CopyPlus className="w-3.5 h-3.5" /> Duplicar
             </button>
             {onDuplicateToLine && (
-              <button className={cn(item, 'text-surface-200 hover:bg-surface-700')} onClick={() => { setOpen(false); onDuplicateToLine() }}>
+              <button className={cn(item, 'text-surface-200 hover:bg-[var(--rowhover)]')} onClick={() => { setOpen(false); onDuplicateToLine() }}>
                 <ArrowRightLeft className="w-3.5 h-3.5" /> Duplicar para outra linha
               </button>
             )}
-            <button className={cn(item, 'text-surface-200 hover:bg-surface-700')} onClick={() => { setOpen(false); navigator.clipboard?.writeText(automation.name).catch(() => {}) }}>
+            <button className={cn(item, 'text-surface-200 hover:bg-[var(--rowhover)]')} onClick={() => { setOpen(false); navigator.clipboard?.writeText(automation.name).catch(() => {}) }}>
               <Copy className="w-3.5 h-3.5" /> Copiar nome
             </button>
             <div className="my-1 h-px bg-surface-700" />
