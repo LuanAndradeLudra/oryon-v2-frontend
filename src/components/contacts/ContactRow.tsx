@@ -287,7 +287,7 @@ export function ContactRow({
       onContextMenu={onContextMenu}
       className={cn(
         'border-b border-surface-700 cursor-pointer transition-colors group',
-        isSelected ? 'bg-brand-500/5 hover:bg-brand-500/10' : 'hover:bg-surface-800/50',
+        isSelected ? 'bg-brand-500/5 hover:bg-brand-500/10' : 'hover:bg-[var(--rowhover)]',
       )}
     >
       {/* Checkbox */}

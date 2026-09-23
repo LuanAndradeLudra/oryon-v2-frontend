@@ -191,12 +191,12 @@ export function CustomFieldsCard({ contact, onSave, hideTitle = false, flat = fa
   }
 
   const actions = !editing ? (
-    <button onClick={() => setEditing(true)} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+    <button onClick={() => setEditing(true)} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
       <Pencil className="w-3 h-3" />
     </button>
   ) : (
     <div className="flex items-center gap-1">
-      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all">
+      <button onClick={handleCancel} disabled={saving} className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
         <XIcon className="w-3 h-3" />
       </button>
       <button

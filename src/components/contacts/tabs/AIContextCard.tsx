@@ -231,7 +231,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
       <div
         className={cn(
           'flex items-center justify-between py-2 transition-colors rounded-lg',
-          hasData && !generating ? 'cursor-pointer hover:bg-surface-800/40 px-2 -mx-2' : '',
+          hasData && !generating ? 'cursor-pointer hover:bg-[var(--rowhover)] px-2 -mx-2' : '',
         )}
         onClick={hasData && !generating ? () => setCollapsed((v) => !v) : undefined}
       >
@@ -314,7 +314,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {/* Summary */}
               {contact.aiSummary && (
                 <Section label="Resumo analítico" icon={<Lightbulb className="w-3.5 h-3.5" />} iconColor="text-surface-500" delay={justFinished ? 0.1 : 0}>
-                  <p className="text-[13px] text-white leading-relaxed">{contact.aiSummary}</p>
+                  <p className="text-[13px] text-surface-200 leading-relaxed">{contact.aiSummary}</p>
                 </Section>
               )}
 

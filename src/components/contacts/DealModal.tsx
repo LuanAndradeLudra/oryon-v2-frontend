@@ -411,7 +411,7 @@ export function DealModal({ open, contactId, editDeal, pipelines, onClose, onSav
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition-all"
+              className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] transition-all"
             >
               Cancelar
             </button>

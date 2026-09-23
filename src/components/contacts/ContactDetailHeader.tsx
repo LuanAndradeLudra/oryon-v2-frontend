@@ -95,7 +95,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete }: ContactDetai
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
                   aria-label="Mais ações"
-                  className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-all"
+                  className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all"
                 >
                   <MoreHorizontal className="w-[15px] h-[15px]" />
                 </button>
@@ -121,7 +121,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete }: ContactDetai
         <button
           onClick={onClose}
           aria-label="Fechar"
-          className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+          className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
         >
           <X className="w-4 h-4" />
         </button>
