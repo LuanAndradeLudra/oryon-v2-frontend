@@ -302,6 +302,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
         open={belowLg && !!previewTemplate}
         onClose={() => setPreviewTemplate(null)}
         title={<span className="sr-only">Detalhe do modelo</span>}
+        aria-label="Detalhe do modelo"
         bodyClassName="p-0"
         className="max-w-md"
       >
@@ -318,6 +319,10 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
         onConfirm={handleDelete}
         title="Excluir template"
         description="O template será removido do Oryon e da Meta (quando possível). Campanhas que já usaram este template não são afetadas retroativamente."
+        impact={(() => {
+          const tpl = templates.find((t) => t.id === deleteTarget)
+          return tpl ? { label: `Template "${tpl.name}"`, tone: 'danger' as const } : undefined
+        })()}
         confirmLabel="Excluir template"
         danger
         loading={!!deleting}

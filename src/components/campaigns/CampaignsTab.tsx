@@ -241,6 +241,10 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
         onConfirm={handleDelete}
         title="Excluir campanha"
         description="Esta ação é irreversível. A campanha e todo o histórico de envios serão excluídos permanentemente."
+        impact={(() => {
+          const camp = campaigns.find((c) => c.id === deleteTarget)
+          return camp ? { label: `Campanha "${camp.name}"`, tone: 'danger' as const } : undefined
+        })()}
         confirmLabel="Excluir campanha"
         danger
         loading={!!deleting}
