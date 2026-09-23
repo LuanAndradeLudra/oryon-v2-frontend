@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, Archive, Settings2, ChevronDown, X } from 'lucide-react'
+import { Bell, CheckCheck, Archive, Settings2, ChevronDown } from 'lucide-react'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -47,8 +47,6 @@ export function NotificationsPage() {
     markAllAsRead,
     archive,
     loadMore,
-    filterTypes,
-    setFilterTypes,
     showArchived,
     setShowArchived,
   } = useNotifications()
@@ -95,14 +93,6 @@ export function NotificationsPage() {
       .filter((g) => g.items.length > 0)
   }, [sortedVisible])
 
-  // Tocar no disco de tipo de um item filtra a lista por aquele tipo (mesma
-  // fisga de drill-down do popover). Sem chips de categoria nesta página, a
-  // saída é a faixa "Limpar filtro" logo abaixo — senão viraria beco sem saída.
-  const handleItemCategoryClick = useCallback((types: string[]) => {
-    setFilterTypes(types)
-  }, [setFilterTypes])
-  const filtroDeTipoAtivo = filterTypes.length > 0
-
   const handleSelect = async (n: AppNotification) => {
     if (!n.isRead) {
       try {
@@ -117,7 +107,7 @@ export function NotificationsPage() {
     // TopBar.tsx, não foi extraída. Aqui elas só marcam como lida por ora.
   }
 
-  const empty = emptyStateFor(filtroDeTipoAtivo ? 'custom' : 'all', filter, showArchived)
+  const empty = emptyStateFor('all', filter, showArchived)
 
   return (
     <div className="flex flex-col h-full bg-surface-950">
@@ -163,31 +153,18 @@ export function NotificationsPage() {
         }
       />
 
-      {(!showArchived || filtroDeTipoAtivo) && (
-        <div className="flex-shrink-0 px-3 pt-2.5 pb-2 flex flex-col gap-2 border-b border-surface-700">
-          {!showArchived && (
-            <SegmentedControl
-              size="md"
-              label="Filtrar notificações"
-              value={filter}
-              onChange={(v) => setFilter(v as NotifFilter)}
-              options={[
-                { value: 'unread', label: 'Não lidas', count: unreadCount > 0 ? unreadCount : undefined },
-                { value: 'all', label: 'Todas' },
-              ]}
-            />
-          )}
-          {filtroDeTipoAtivo && (
-            <button
-              type="button"
-              onClick={() => setFilterTypes([])}
-              className="self-start h-9 pl-3 pr-2.5 rounded-sm border border-[var(--bd2)] bg-surface-800 text-[12.5px] font-semibold text-surface-50 inline-flex items-center gap-1.5"
-            >
-              Filtrando por tipo
-              <span className="font-medium text-surface-400">· limpar</span>
-              <X className="w-3.5 h-3.5 text-surface-400" strokeWidth={1.75} />
-            </button>
-          )}
+      {!showArchived && (
+        <div className="flex-shrink-0 px-3 pt-2.5 pb-2 border-b border-surface-700">
+          <SegmentedControl
+            size="md"
+            label="Filtrar notificações"
+            value={filter}
+            onChange={(v) => setFilter(v as NotifFilter)}
+            options={[
+              { value: 'unread', label: 'Não lidas', count: unreadCount > 0 ? unreadCount : undefined },
+              { value: 'all', label: 'Todas' },
+            ]}
+          />
         </div>
       )}
 
@@ -222,7 +199,6 @@ export function NotificationsPage() {
                     onClick={() => handleSelect(n)}
                     onArchive={!showArchived ? () => archive(n.id) : undefined}
                     onMarkUnread={!showArchived && n.isRead ? () => markAsUnread(n.id) : undefined}
-                    onCategoryClick={handleItemCategoryClick}
                   />
                 ))}
               </div>
