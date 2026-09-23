@@ -1072,10 +1072,6 @@ function Section({ title, required, badge, children }: {
   )
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <label className="text-[11.5px] font-medium text-surface-400 mb-1 block">{children}</label>
-}
-
 function ToolbarBtn({ onClick, title, children, destaque }: {
   onClick: () => void; title: string; children: React.ReactNode; destaque?: boolean
 }) {
