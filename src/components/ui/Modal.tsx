@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -38,7 +38,14 @@ interface ModalProps {
    * espaçamento interno.
    */
   bodyClassName?: string
+  /** `alertdialog` para confirmações que interrompem (ConfirmModal). */
+  role?: 'dialog' | 'alertdialog'
+  /** Rótulo acessível quando `title` não é string (cabeçalho com nós). */
+  'aria-label'?: string
 }
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /**
  * Generic centered modal. Two non-obvious decisions worth keeping:
@@ -54,7 +61,13 @@ interface ModalProps {
  *    independently. Large content (e.g. the 6k-char system prompt review)
  *    used to push the footer off-screen, hiding the action buttons.
  */
-export function Modal({ open, onClose, title, children, footer, fillHeight, className, bodyClassName }: ModalProps) {
+export function Modal({
+  open, onClose, title, children, footer, fillHeight, className, bodyClassName,
+  role = 'dialog', 'aria-label': ariaLabel,
+}: ModalProps) {
+  const titleId = useId()
+  const panelRef = useRef<HTMLDivElement>(null)
+  const previouslyFocused = useRef<HTMLElement | null>(null)
   // Registro central de camadas (ver LayerContext.tsx) — decide o z-index
   // pela posição real na pilha de overlays abertos, e garante que Esc feche
   // só o overlay do topo mesmo com um Modal empilhado sobre um Drawer (ou
@@ -67,10 +80,39 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
     // jiggle when the user scrolls the modal contents.
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    // Foco entra no diálogo (AUDITORIA-A11Y-CAMADAS.md: ~82 diálogos sem foco
+    // inicial nem devolução): prioridade para `data-autofocus` (ConfirmModal
+    // aponta para Cancelar quando é destrutivo), senão o 1º focável que não
+    // seja o X de fechar, senão o próprio painel. Ao fechar, devolve ao
+    // elemento que abriu — mesma receita do Drawer.
+    previouslyFocused.current = (document.activeElement as HTMLElement) ?? null
+    const raf = requestAnimationFrame(() => {
+      const panel = panelRef.current
+      if (!panel) return
+      const preferred = panel.querySelector<HTMLElement>('[data-autofocus]')
+      const focusables = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE))
+        .filter((el) => el.getAttribute('aria-label') !== 'Fechar')
+      ;(preferred ?? focusables[0] ?? panel).focus({ preventScroll: true })
+    })
     return () => {
+      cancelAnimationFrame(raf)
       document.body.style.overflow = prevOverflow
+      previouslyFocused.current?.focus?.()
     }
   }, [open])
+
+  // Trap de foco: Tab/Shift+Tab circulam dentro do painel. Esc fica com o
+  // LayerContext (fecha só o overlay do topo).
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Tab' || !panelRef.current) return
+    const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
+    if (items.length === 0) { e.preventDefault(); return }
+    const first = items[0]
+    const last = items[items.length - 1]
+    const active = document.activeElement
+    if (e.shiftKey && (active === first || active === panelRef.current)) { e.preventDefault(); last.focus() }
+    else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus() }
+  }
 
   // SSR-safe guard: createPortal needs a DOM target, which doesn't exist
   // during server rendering. Vite's dev server is CSR-only so this is just
@@ -100,8 +142,15 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
           {/* Panel — flex column with capped height so the body scrolls
               while the header/footer stay pinned. MODAL-01: fundo --sf. */}
           <motion.div
+            ref={panelRef}
+            role={role}
+            aria-modal="true"
+            aria-labelledby={typeof title === 'string' ? titleId : undefined}
+            aria-label={typeof title === 'string' ? undefined : ariaLabel}
+            tabIndex={-1}
+            onKeyDown={handleKeyDown}
             className={cn(
-              'relative z-10 bg-surface-800 overlay-frame border rounded-2xl w-full max-w-lg',
+              'relative z-10 bg-surface-800 overlay-frame border rounded-2xl w-full max-w-lg outline-none',
               'flex flex-col max-h-[90vh] overflow-hidden',
               className,
             )}
@@ -114,7 +163,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
             {/* Header — MODAL-02: padding 16 18 0, SEM hairline; título 15/700 -.01em. */}
             <div className="flex items-start justify-between gap-3 px-[18px] pt-4 pb-0 flex-shrink-0">
               {typeof title === 'string'
-                ? <h2 className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">{title}</h2>
+                ? <h2 id={titleId} className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">{title}</h2>
                 : title}
               <button
                 onClick={onClose}
@@ -188,12 +237,17 @@ interface ConfirmModalProps {
   loading?: boolean
 }
 
+const NOOP = () => {}
+
 export function ConfirmModal({
   open, onClose, onConfirm, title, description, impact,
   confirmLabel = 'Confirmar', danger = false, loading = false,
 }: ConfirmModalProps) {
+  // Enquanto confirma (loading) o diálogo não pode ser dispensado por Esc ou
+  // scrim — fechar no meio deixava a ação sem feedback (achado da auditoria).
+  const close = loading ? NOOP : onClose
   return (
-    <Modal open={open} onClose={onClose} title={title} className="max-w-[400px]">
+    <Modal open={open} onClose={close} title={title} className="max-w-[400px]" role="alertdialog">
       {impact && (
         <Banner variant={(impact.tone ?? 'neutral') as BannerVariant} className="mb-4">
           <p className="leading-snug">
@@ -209,11 +263,14 @@ export function ConfirmModal({
       {/* MODAL-02/05: descrição 12.5px; "Cancelar" é neutral, não ghost. */}
       <p className="text-[12.5px] text-surface-400 mt-1 mb-4">{description}</p>
       <div className="flex gap-2 justify-end">
-        <Button variant="neutral" onClick={onClose}>Cancelar</Button>
+        {/* Foco inicial: Cancelar quando destrutivo (Enter não apaga nada por
+            acidente); Confirmar nos demais. */}
+        <Button variant="neutral" onClick={onClose} disabled={loading} data-autofocus={danger ? '' : undefined}>Cancelar</Button>
         <Button
           variant={danger ? 'danger' : 'primary'}
           onClick={onConfirm}
           loading={loading}
+          data-autofocus={danger ? undefined : ''}
         >
           {confirmLabel}
         </Button>

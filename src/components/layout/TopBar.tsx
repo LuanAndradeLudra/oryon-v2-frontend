@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { NotificationItem, Kbd } from '@/components/notifications/NotificationItem'
 import { CATEGORY_CHIPS, iconFor } from '@/components/notifications/notificationsMeta'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLayer } from '@/contexts/LayerContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import { useTopBarActions } from '@/contexts/TopBarActionsContext'
 import { TopBarReadinessIndicator } from './TopBarReadinessIndicator'
@@ -1310,6 +1311,12 @@ export function TopBar() {
     return () => document.removeEventListener('mousedown', handler)
   }, [dropOpen])
 
+  // Esc fecha o popover pelo LayerContext (só quando é o overlay do topo —
+  // o modal de detalhe aberto por cima fecha primeiro). Achado da auditoria
+  // a11y: o sino era a única camada sem Esc.
+  const closeNotif = useCallback(() => setNotifOpen(false), [])
+  useLayer(notifOpen, closeNotif)
+
   // Click outside — notifications
   useEffect(() => {
     if (!notifOpen) return
@@ -1447,6 +1454,8 @@ export function TopBar() {
           <button
             onClick={() => setNotifOpen((v) => !v)}
             title="Notificações"
+            aria-haspopup="dialog"
+            aria-expanded={notifOpen}
             aria-label={unreadCount > 0 ? `Notificações (${unreadCount > 9 ? '9+' : unreadCount} não lidas)` : 'Notificações'}
             className="relative flex items-center justify-center w-7 h-7 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
           >
