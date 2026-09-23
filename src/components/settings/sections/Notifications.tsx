@@ -10,7 +10,7 @@ import {
   type NotificationCategory,
 } from '@/hooks/useNotificationPreferences'
 import { useNotificationSound } from '@/hooks/useNotificationSound'
-import { CATEGORY_CHIPS } from '@/components/notifications/notificationsMeta'
+import { CATEGORY_CHIPS, TYPE_ICON } from '@/components/notifications/notificationsMeta'
 
 /**
  * Phase 19: dedicated Settings page for notification preferences. Groups
@@ -133,6 +133,7 @@ function PreferenceRow({
   onToggle: (enabled: boolean) => void
   onReset: () => void
 }) {
+  const TypeIcon = TYPE_ICON[pref.type] ?? Bell // mesmo mapa do iconFor() do sino
   return (
     <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
       <div className="flex items-start gap-3 min-w-0">
@@ -141,8 +142,10 @@ function PreferenceRow({
             <Lock className="w-4 h-4" />
           </span>
         ) : (
+          // Ícone do TIPO (o mesmo do sino) — um Bell igual em toda linha não
+          // carregava informação.
           <span className="mt-0.5 text-surface-400">
-            <Bell className="w-4 h-4" />
+            <TypeIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
           </span>
         )}
         <div className="min-w-0">
