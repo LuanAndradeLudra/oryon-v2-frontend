@@ -92,7 +92,7 @@ export function NotificationItem({
           <p className={cn('text-[13px] leading-[18px] flex-1 min-w-0 truncate', !n.isRead ? 'font-semibold text-surface-50' : 'font-medium text-surface-200')}>
             {n.title}
           </p>
-          <span className="text-[11px] text-surface-500 tabular-nums flex-none group-hover:opacity-0 [@media(pointer:coarse)]:group-hover:opacity-100 transition-opacity">
+          <span className="text-[11px] text-surface-500 tabular-nums flex-none group-hover:opacity-0 [@media(pointer:coarse)]:group-hover:opacity-100 [@media(hover:none)]:group-hover:opacity-100 transition-opacity">
             {formatListTime(n.createdAt)}
           </span>
         </div>
@@ -109,7 +109,7 @@ export function NotificationItem({
       {/* Toque (pointer: coarse) não tem hover: as ações passam a coluna
           estática à direita, sempre visíveis, com alvos de 36px — senão
           arquivar/marcar seriam inalcançáveis na página mobile (Farol). */}
-      <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity [@media(pointer:coarse)]:static [@media(pointer:coarse)]:opacity-100 [@media(pointer:coarse)]:self-start [@media(pointer:coarse)]:ml-1">
+      <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity [@media(pointer:coarse)]:static [@media(pointer:coarse)]:opacity-100 [@media(pointer:coarse)]:self-start [@media(pointer:coarse)]:ml-1 [@media(hover:none)]:static [@media(hover:none)]:opacity-100 [@media(hover:none)]:self-start [@media(hover:none)]:ml-1">
         {action && (
           <button
             type="button"
