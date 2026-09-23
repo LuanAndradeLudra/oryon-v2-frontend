@@ -3,11 +3,14 @@
 // Mensagens são só `type: 'text'` de propósito: MediaContent/useAuthenticated-
 // MediaSrc tratam `mediaUrl` undefined como no-op, então MessageBubble inteiro
 // (não só TextContent) pode ser exercitado sem mocks pesados — só precisa do
-// ContextMenuProvider (useContextMenu lança sem ele).
+// ContextMenuProvider (useContextMenu lança sem ele) e do MediaViewerProvider
+// (MessageBubble passou a usar useMediaViewer no PR do preview de documento;
+// sem o provider estes testes quebravam — corrigido 2026-09-23).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { MessageList } from './MessageList'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
+import { MediaViewerProvider } from '@/components/ui/MediaViewer'
 import type { Message } from '@/types'
 
 const base: Message = {
@@ -34,7 +37,9 @@ const reply: Message = {
 function renderList(messages: Message[]) {
   return render(
     <ContextMenuProvider>
-      <MessageList messages={messages} loading={false} hasMore={false} onLoadMore={() => {}} />
+      <MediaViewerProvider>
+        <MessageList messages={messages} loading={false} hasMore={false} onLoadMore={() => {}} />
+      </MediaViewerProvider>
     </ContextMenuProvider>,
   )
 }
