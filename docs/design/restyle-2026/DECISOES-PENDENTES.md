@@ -102,6 +102,15 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     Inbox; Smashing Magazine e Courier (guias de notificação). A página `/notifications` (mobile) passa a reusar o
     mesmo item (Farol). Reverter: `5ddca38`.
 
+32. **Painel de notificações — Opção A escolhida pelo PO** (23/09, artifact comparativo A/B em `mockup-notificacoes.html`;
+    diagnóstico: "estão muito misturadas e só os ícones não diferenciam"): **seções por categoria** (Conversas / Equipe /
+    Campanhas / Automações / Segurança + "Outras" para tipos fora do gate; recolhíveis, estado em `localStorage`)
+    substituem os filtros; **frase estruturada** ator/objeto · ação · estado · contexto montada só dos metadados que o
+    backend anexa (`notificationSentence.ts`; sem metadado usa `title`/`description` originais, nunca repete a ação
+    que o título já traz); **uma cor por linha** = o estado (perigo/atenção/ok), não a categoria; toggle "Só não lidas"
+    no cabeçalho de 44px. Item 52px, seção 32px. Reverter: `8bbca26`. A página `/notifications` (mobile) reusa o item
+    — as seções lá ficam a cargo do Farol.
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
