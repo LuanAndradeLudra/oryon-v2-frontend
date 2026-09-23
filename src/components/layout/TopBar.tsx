@@ -1694,7 +1694,7 @@ export function TopBar() {
             onClick={() => openCopilot()}
             title="Abrir Copilot"
             aria-label="Abrir Copilot"
-            className="flex items-center justify-center w-8 h-8 rounded-lg text-brand-400 hover:text-brand-300 hover:bg-surface-800 transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-sm text-brand-400 hover:text-brand-300 hover:bg-surface-800 transition-colors"
           >
             <Sparkles className="w-4 h-4" />
           </button>
@@ -1706,11 +1706,13 @@ export function TopBar() {
             onClick={() => setNotifOpen((v) => !v)}
             title="Notificações"
             aria-label={unreadCount > 0 ? `Notificações (${unreadCount > 9 ? '9+' : unreadCount} não lidas)` : 'Notificações'}
-            className="relative flex items-center justify-center w-8 h-8 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+            className="relative flex items-center justify-center w-7 h-7 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-colors"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-cta text-[9px] font-bold text-surface-950 flex items-center justify-center">
+              /* PL-5-4: canvas 7a põe o contador DENTRO do alvo (top 2 / right 0),
+                 14px e min-width 14 — não pendurado 2px fora do botão a 16px. */
+              <span className="absolute top-0.5 right-0 min-w-[14px] h-3.5 px-[3px] rounded-full bg-brand-cta text-[9px] font-bold text-surface-950 flex items-center justify-center">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}

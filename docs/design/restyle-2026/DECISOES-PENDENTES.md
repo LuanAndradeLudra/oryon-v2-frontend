@@ -50,6 +50,15 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     Reverter: commit `444f486` (`DateRangePicker.tsx`, `VolumeChart.tsx`, `DashboardPage.tsx`); reintroduzir as
     2 opções quando o backend aceitar uma janela maior que 7 dias em `getMessagesAnalytics`.
 
+18. **Escala única de ícone (1,4×) passa a valer também para o `lucide-react`** — `src/lib/icons.tsx` é um
+    drop-in do lucide (alias em `vite.config.ts`) e o `index.css` escalava só `svg[data-oryon-icon]`. Efeito medido:
+    na sidebar, 11 ícones da casa desenhavam 23,1px ao lado de 2 fallbacks desenhando 16,5px — **mesma classe
+    `w-[16.5px]`**, 40% de diferença. A regra agora cobre `svg.lucide` também. Alternativa (não escolhida): desenhar
+    os ícones que faltam no estilo da casa — resolve de vez, mas é trabalho de design (G) e muda o desenho, não só a
+    escala; ou tirar o 1,4× de todo mundo, que encolheria o produto inteiro e desfaria o visual já aprovado.
+    Resíduo conhecido: o traço continua 1.75 (casa) × 2 (lucide) — corrigido caso a caso com `strokeWidth={1.75}`
+    no call site (feito nos 2 da sidebar). Reverter: commit `81c6495` (`src/index.css`).
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
