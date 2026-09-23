@@ -30,9 +30,6 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import {
   categoryOf,
   CATEGORY_STYLE,
-  contactSubject,
-  formatListTime,
-  inlineActionFor,
   emptyStateFor,
 } from '@/lib/notificationsUx'
 
