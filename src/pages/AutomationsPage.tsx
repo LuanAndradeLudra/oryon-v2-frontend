@@ -163,8 +163,10 @@ function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
   )
 }
 
-// Barra de ações em massa — enxuta (Ativar/Desativar/Excluir), com confirmação
-// inline pra exclusão. Kill-switch de incidente: pausar tudo de uma linha ruim.
+// Barra de ações em massa — enxuta (Ativar/Desativar/Excluir). A exclusão só
+// PEDE confirmação (onDelete): o ConfirmModal mora na página, com o alcance
+// (N automações) em destaque. Kill-switch de incidente: pausar tudo de uma
+// linha ruim.
 function BulkBar({ count, onActivate, onDeactivate, onDelete, onClear }: {
   count: number
   onActivate: () => void
@@ -172,7 +174,6 @@ function BulkBar({ count, onActivate, onDeactivate, onDelete, onClear }: {
   onDelete: () => void
   onClear: () => void
 }) {
-  const [confirming, setConfirming] = useState(false)
   const btn = 'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors'
   return (
     <motion.div
@@ -180,36 +181,23 @@ function BulkBar({ count, onActivate, onDeactivate, onDelete, onClear }: {
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 overlay-surface border rounded-xl flex items-center gap-1 pl-4 pr-2 py-2"
     >
-      {confirming ? (
-        <>
-          <span className="text-sm text-surface-200">Excluir <span className="font-semibold text-danger">{count}</span> {count === 1 ? 'automação' : 'automações'}?</span>
-          <div className="h-5 w-px bg-surface-700 mx-1" />
-          <button onClick={() => setConfirming(false)} className={cn(btn, 'text-surface-300 hover:bg-surface-700')}>Cancelar</button>
-          <button onClick={() => { onDelete(); setConfirming(false) }} className={cn(btn, 'text-white bg-danger hover:bg-danger/90')}>
-            <Trash2 className="w-3.5 h-3.5" /> Excluir
-          </button>
-        </>
-      ) : (
-        <>
-          <div className="text-sm text-surface-200 pr-1">
-            <span className="font-semibold text-brand-300">{count}</span> {count === 1 ? 'selecionada' : 'selecionadas'}
-          </div>
-          <div className="h-5 w-px bg-surface-700 mx-1" />
-          <button onClick={onActivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
-            <ToggleRight className="w-4 h-4 text-status-active" /> Ativar
-          </button>
-          <button onClick={onDeactivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
-            <ToggleLeft className="w-4 h-4 text-surface-400" /> Desativar
-          </button>
-          <div className="h-5 w-px bg-surface-700 mx-1" />
-          <button onClick={() => setConfirming(true)} className={cn(btn, 'text-danger hover:bg-danger/10')}>
-            <Trash2 className="w-3.5 h-3.5" /> Excluir
-          </button>
-          <button onClick={onClear} aria-label="Limpar seleção" className="p-1.5 ml-1 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-lg transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </>
-      )}
+      <div className="text-sm text-surface-200 pr-1">
+        <span className="font-semibold text-brand-300">{count}</span> {count === 1 ? 'selecionada' : 'selecionadas'}
+      </div>
+      <div className="h-5 w-px bg-surface-700 mx-1" />
+      <button onClick={onActivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
+        <ToggleRight className="w-4 h-4 text-status-active" /> Ativar
+      </button>
+      <button onClick={onDeactivate} className={cn(btn, 'text-surface-100 hover:bg-surface-700')}>
+        <ToggleLeft className="w-4 h-4 text-surface-400" /> Desativar
+      </button>
+      <div className="h-5 w-px bg-surface-700 mx-1" />
+      <button onClick={onDelete} className={cn(btn, 'text-danger hover:bg-danger/10')}>
+        <Trash2 className="w-3.5 h-3.5" /> Excluir
+      </button>
+      <button onClick={onClear} aria-label="Limpar seleção" className="p-1.5 ml-1 text-surface-400 hover:text-surface-100 hover:bg-surface-700 rounded-lg transition-colors">
+        <X className="w-4 h-4" />
+      </button>
     </motion.div>
   )
 }
@@ -246,6 +234,7 @@ export function AutomationsPage() {
   const [editTarget, setEditTarget]         = useState<Automation | null>(null)
   const [editSection, setEditSection]       = useState<AutomationBuilderSection | undefined>(undefined)
   const [deleteTarget, setDeleteTarget]     = useState<Automation | null>(null)
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [assignWabaTarget, setAssignWabaTarget] = useState<Automation | null>(null)
   const [dupToLineTarget, setDupToLineTarget]   = useState<Automation | null>(null)
 
@@ -764,6 +753,22 @@ export function AutomationsPage() {
         )}
       </AnimatePresence>
 
+      {/* Exclusão em massa — confirmação com o alcance (N) em destaque */}
+      <ConfirmModal
+        open={bulkDeleteOpen && selCount > 0}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={() => { setBulkDeleteOpen(false); void bulkDelete() }}
+        title={`Excluir ${selCount} ${selCount === 1 ? 'automação' : 'automações'}?`}
+        description="Esta ação não pode ser desfeita."
+        impact={{
+          count: selCount,
+          label: selCount === 1 ? 'automação será excluída permanentemente' : 'automações serão excluídas permanentemente',
+          tone: 'danger',
+        }}
+        confirmLabel="Excluir"
+        danger
+      />
+
       {/* Ações em massa */}
       <AnimatePresence>
         {selCount > 0 && (
@@ -771,7 +776,7 @@ export function AutomationsPage() {
             count={selCount}
             onActivate={() => bulkSetActive(true)}
             onDeactivate={() => bulkSetActive(false)}
-            onDelete={bulkDelete}
+            onDelete={() => setBulkDeleteOpen(true)}
             onClear={clearSelection}
           />
         )}
