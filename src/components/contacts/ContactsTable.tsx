@@ -13,7 +13,7 @@ import { DealsSummaryChips } from './ContactRow'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { type ContactColumnsConfig } from '@/hooks/useContactColumnsConfig'
-import { relativeDate, getActivePipelines, formatPhoneBR, cn } from '@/lib/utils'
+import { relativeDate, getActivePipelines, formatPhoneBR } from '@/lib/utils'
 import { formatBRL } from '@/utils/money'
 import { pipelineKindOption, pipelineKindOf, defaultSalesPipeline } from '@/lib/pipelineKinds'
 import type { Contact, ContactStage, Pipeline } from '@/types'
@@ -45,26 +45,6 @@ const COLUMN_TO_SORT_KEY: Record<string, 'displayName' | 'leadScore' | 'lastCont
   score: 'leadScore',
   lastContactedAt: 'lastContactedAt',
 }
-
-/**
- * Modo "Tabela" (Direção B, DECISÕES #33) sobre o DataTable, sem tocar em ui/:
- * o DataTable fixa `h-9` nas células e não tem ganchos de hover/seleção, então
- * estas variantes de container fazem o trabalho (especificidade maior que a das
- * classes da linha). Se o DataTable ganhar props de densidade/revelar-no-hover,
- * esta receita some.
- *  - linha 44px;
- *  - checkbox e kebab só no hover/foco da linha (ou selecionado/menu aberto);
- *    em ponteiro sem hover (touch) ficam sempre visíveis — a regra só vale sob
- *    `@media (hover:hover)`;
- *  - linha selecionada em `--sel` (token do mockup; cai em brand a 10% até o
- *    token existir no index.css).
- */
-const ROW_RECIPE = [
-  '[&_tbody_td]:h-11',
-  '[@media(hover:hover)]:[&_tbody_tr:not(:hover):not(:focus-within)_.ui-checkbox:not(:checked)]:opacity-0',
-  '[@media(hover:hover)]:[&_tbody_tr:not(:hover):not(:focus-within)_.row-kebab:not(.row-kebab-open)]:opacity-0',
-  '[&_tbody_tr:has(.ui-checkbox:checked)]:bg-[var(--sel,color-mix(in_srgb,var(--color-brand-500)_10%,transparent))]',
-].join(' ')
 
 /** Etiquetas em chips (até `max`, resto em "+N") — mesma peça na coluna
  *  Etiquetas e inline na célula Nome quando a coluna está oculta. */
@@ -107,12 +87,11 @@ function ActionsMenuCell({ contact, onOpenPanel, onOpenConversation }: {
             aria-label={`Mais ações — ${contact.displayName || contact.waId}`}
             aria-haspopup="menu"
             aria-expanded={open}
-            // row-kebab: escondido até hover/foco da linha (ver ROW_RECIPE);
-            // row-kebab-open mantém visível com o menu aberto.
-            className={cn(
-              'row-kebab p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all',
-              open && 'row-kebab-open',
-            )}
+            // DataTable revealOnHover: escondido até hover/foco da linha;
+            // data-row-action-open o mantém visível com o menu aberto.
+            data-row-action=""
+            data-row-action-open={open ? '' : undefined}
+            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
           >
             <MoreHorizontal className="w-4 h-4" />
           </button>
@@ -479,7 +458,7 @@ export function ContactsTable({
   }
 
   return (
-    <div className={cn('flex-1 overflow-auto', ROW_RECIPE)} onScroll={handleScroll}>
+    <div className="flex-1 overflow-auto" onScroll={handleScroll}>
       <DataTable
         columns={columns}
         rows={contacts}
@@ -493,6 +472,8 @@ export function ContactsTable({
         onRowClick={handleRowClick}
         onRowContextMenu={handleRowContextMenu}
         activeKey={activeKey}
+        rowHeight="md"
+        revealOnHover
         selectedKeys={onToggleSelect ? selectedIds ?? new Set() : undefined}
         onToggleSelect={onToggleSelect}
         onToggleSelectAll={onSelectAll ? handleToggleSelectAll : undefined}
