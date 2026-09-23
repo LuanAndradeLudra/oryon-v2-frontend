@@ -317,7 +317,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40"
+            className="fixed inset-0 bg-[var(--color-scrim-soft)]"
             style={{ zIndex }}
             onClick={onClose}
           />
@@ -340,7 +340,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
               <button
                 onClick={onClose}
                 aria-label="Fechar"
-                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+                className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -634,7 +634,7 @@ export function NewContactDrawer({ open, onClose, onCreate, onCreated, pipelines
               <button
                 onClick={onClose}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all disabled:opacity-50"
               >
                 Cancelar
               </button>

@@ -65,12 +65,12 @@ export function ConversationsTab({ contactId, onStartConversation }: Conversatio
   }
 
   return (
-    <div className="flex flex-col divide-y divide-surface-700/60">
+    <div className="flex flex-col divide-y divide-surface-700">
       {convs.map((conv) => (
         <button
           key={conv.id}
           onClick={() => handleOpen(conv)}
-          className="flex items-start gap-3 px-4 py-3 hover:bg-surface-800/50 transition-colors text-left group"
+          className="flex items-start gap-3 px-4 py-3 hover:bg-[var(--rowhover)] transition-colors text-left group"
         >
           <MessageSquare className="w-4 h-4 text-surface-400 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">

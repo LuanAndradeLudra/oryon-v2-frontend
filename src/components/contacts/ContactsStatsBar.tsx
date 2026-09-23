@@ -101,7 +101,7 @@ function TotalCard({ contacts, total }: { contacts: Contact[]; total: number }) 
   }
 
   return (
-    <div className="bg-surface-900 rounded-xl px-4 py-2.5 border border-surface-700/50 flex flex-col gap-2 w-full h-full">
+    <div className="bg-surface-900 rounded-xl px-4 py-2.5 border border-surface-700 flex flex-col gap-2 w-full h-full">
       <div className="flex items-center gap-2">
         <div className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 border border-surface-700">
           <Users className="w-3 h-3 text-brand-400" />
@@ -118,7 +118,7 @@ function TotalCard({ contacts, total }: { contacts: Contact[]; total: number }) 
       </div>
 
       {topSources.length > 0 && (
-        <div className="flex flex-col gap-1 pt-0.5 border-t border-surface-700/50">
+        <div className="flex flex-col gap-1 pt-0.5 border-t border-surface-700">
           {topSources.map(([src, count]) => (
             <div key={src} className="flex items-center justify-between gap-2">
               <span className="text-3xs text-surface-500 truncate">{SOURCE_LABEL[src] ?? src}</span>
@@ -159,7 +159,7 @@ function StageCard({
   const maxCount = sorted[0]?.[1] ?? 1
 
   return (
-    <div className="bg-surface-900 rounded-xl px-4 py-2.5 border border-surface-700/50 flex flex-col gap-2 w-full h-full">
+    <div className="bg-surface-900 rounded-xl px-4 py-2.5 border border-surface-700 flex flex-col gap-2 w-full h-full">
       <div className="flex items-center gap-2">
         <div className="w-6 h-6 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 border border-surface-700">
           <TrendingUp className="w-3 h-3 text-brand-400" />
@@ -175,7 +175,7 @@ function StageCard({
       </div>
 
       {sorted.length > 0 && (
-        <div className="flex flex-col gap-1 pt-0.5 border-t border-surface-700/50">
+        <div className="flex flex-col gap-1 pt-0.5 border-t border-surface-700">
           {sorted.slice(0, 3).map(([stage, count]) => (
             <div key={stage} className="flex items-center justify-between gap-2">
               <span className="text-3xs text-surface-500 truncate capitalize">{stage}</span>
@@ -273,12 +273,15 @@ export function ContactsStatsBar({ open, contacts, total, stageCounts }: Contact
               <StageCard contacts={contacts} stageCounts={stageCounts} />
 
               {insightsEnabled && (
-                <div className="md:col-span-2 bg-surface-900 rounded-xl border border-surface-700/60 px-4 py-2.5 flex flex-col gap-2 relative overflow-hidden">
+                <div className="md:col-span-2 bg-surface-900 rounded-xl border border-surface-700 px-4 py-2.5 flex flex-col gap-2 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-brand-600/60 to-transparent rounded-t-xl" />
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-md bg-white flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="w-3 h-3 text-black" />
+                      {/* Eixo 10: bg-white/text-black era fixo, fora do tema (some
+                          no claro) — mesmo tom de marca suave já usado no
+                          indicador equivalente do Dashboard. */}
+                      <div className="w-5 h-5 rounded-md bg-brand-500/15 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-3 h-3 text-brand-400" />
                       </div>
                       <p className="text-2xs font-semibold text-brand-400/70 uppercase tracking-widest">Insights da IA</p>
                     </div>

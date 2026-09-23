@@ -98,7 +98,7 @@ export function ContactProfileHeader({
           onClick={onBack}
           title={backLabel}
           aria-label={backLabel}
-          className="mt-0.5 p-2 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all flex-shrink-0 cursor-pointer"
+          className="mt-0.5 p-2 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -258,7 +258,7 @@ export function ContactProfileHeader({
                 aria-label="Mais ações"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-800 transition-all cursor-pointer"
+                className="w-7 h-7 rounded-sm border border-[var(--bd2)] flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-all cursor-pointer"
               >
                 <MoreHorizontal className="w-[15px] h-[15px]" />
               </button>

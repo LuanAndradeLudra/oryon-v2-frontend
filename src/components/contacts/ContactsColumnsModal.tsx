@@ -113,7 +113,7 @@ export function ContactsColumnsModal({ open, onClose, config, multiPipeline }: C
               className={cn(
                 'flex items-center gap-2.5 h-9 transition-colors',
                 !isLast && 'border-b border-surface-700',
-                overIdx === idx ? 'bg-brand-500/10' : 'hover:bg-surface-800/30',
+                overIdx === idx ? 'bg-brand-500/10' : 'hover:bg-[var(--rowhover)]',
               )}
             >
               <GripVertical className="w-3.5 h-3.5 flex-shrink-0 text-surface-500 cursor-grab active:cursor-grabbing" />

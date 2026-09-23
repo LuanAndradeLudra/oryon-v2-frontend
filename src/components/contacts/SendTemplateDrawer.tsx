@@ -63,7 +63,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50"
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-50"
             onClick={onClose}
           />
 
