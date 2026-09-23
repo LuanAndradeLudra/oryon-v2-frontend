@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Plus, Trash2, Bold, Italic, Strikethrough,
-  Info, ChevronDown, ChevronUp, ChevronRight, ChevronLeft,
-  CheckCircle2, Clock, Sparkles, Check,
+  ChevronDown, ChevronUp, ChevronRight, ChevronLeft,
+  CheckCircle2, Clock, Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
@@ -317,14 +317,6 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
     createdAt: '', updatedAt: '',
   }
 
-  // ── Step subtitles ─────────────────────────────────────────────────────────
-
-  const stepSubtitles = [
-    `${CATEGORIES.find(c => c.value === category)?.label ?? 'Marketing'} · ${SUBCATEGORIES[category].find(s => s.value === subCategory)?.label ?? 'Padrão'}`,
-    `Corpo${headerType ? ' + cabeçalho' : ''}${footer ? ' + rodapé' : ''}`,
-    `${buttons.length} botã${buttons.length === 1 ? 'o' : 'ões'} · opcional`,
-    'Enviar para análise',
-  ]
 
   return (
     <div className="flex flex-col h-full bg-surface-950">
@@ -617,6 +609,20 @@ function StepCategoria({
 
 // ─── Step 2: Mensagem ─────────────────────────────────────────────────────────
 
+// Fora do render: componente criado dentro de outro remonta a cada render
+// (lint react/no-create-components-during-render) e perde foco/estado.
+function Contador({ n, max }: { n: number; max: number }) {
+  return (
+    <span className={cn(
+      'absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums pointer-events-none',
+      n > max ? 'text-danger' : 'text-surface-500',
+    )}>{n}/{max}</span>
+  )
+}
+function Ajuda({ children, erro }: { children?: React.ReactNode; erro?: string }) {
+  return <p className={cn('text-[11px] mt-1.5 leading-snug', erro ? 'text-danger' : 'text-surface-500')}>{erro ?? children}</p>
+}
+
 function StepMensagem({
   name, onName, language, onLanguage,
   headerType, onHeaderType, headerText, onHeaderText,
@@ -656,16 +662,6 @@ function StepMensagem({
   // práticas". Campos são os PRIMITIVOS Input/Select/Textarea em `md` (36px,
   // FIELD-03) — a primeira versão copiava valores à mão em 32px, fora da
   // régua sm 28 / md 36 / lg 44 do sistema.
-  const Contador = ({ n, max }: { n: number; max: number }) => (
-    <span className={cn(
-      'absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums pointer-events-none',
-      n > max ? 'text-danger' : 'text-surface-500',
-    )}>{n}/{max}</span>
-  )
-  const Ajuda = ({ children, erro }: { children?: React.ReactNode; erro?: string }) => (
-    <p className={cn('text-[11px] mt-1.5 leading-snug', erro ? 'text-danger' : 'text-surface-500')}>{erro ?? children}</p>
-  )
-
   return (
     <div className="flex flex-col">
       <Section title="Nome" required badge="Minúsculas, números e _ · até 512">
@@ -842,161 +838,171 @@ function StepBotoes({
   readOnly?: boolean
 }) {
   const fieldDisabled = !!readOnly
+  // Direção C: sem cartão por botão nem caixa de aviso. Cada botão é uma
+  // faixa separada por 1px; o tipo é um Select sm; remover é a ação de
+  // linha padrão (28px, --rowhover). Os primitivos Select/Input fazem o
+  // campo — nada de valor copiado.
   return (
-    <div className="space-y-5">
-      {/* Info banner */}
-      <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-lg">
-        <Info className="w-3.5 h-3.5 text-surface-400 mt-0.5 flex-shrink-0" />
-        <p className="text-[11px] text-surface-400 leading-relaxed">
-          Botões são opcionais — pule este passo se não precisar. Você pode adicionar
-          até <strong className="text-surface-300">3 botões</strong> — a Meta rejeita templates com mais que isso.
-        </p>
-      </div>
-
-      {errors.buttonsGeneral && (
-        <Banner variant="danger">{errors.buttonsGeneral}</Banner>
-      )}
-
-      {/* Button list */}
-      <div className="space-y-2">
-        {buttons.map((btn, i) => {
-          const cfg = BUTTON_TYPES.find((t) => t.value === btn.type)
-          if (!cfg) return null
-          const Icon = cfg.icon
-          return (
-            <div key={i} className="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
-              <div className="flex items-center gap-3 px-3 py-2 border-b border-surface-700/60">
-                <Icon className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
-                <select
-                  value={btn.type}
-                  onChange={(e) => updateButton(i, 'type', e.target.value)}
-                  className="flex-1 appearance-none bg-transparent text-xs text-surface-300 focus:outline-none cursor-pointer"
-                >
-                  {availableButtonTypes.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => removeButton(i)}
-                  className="p-1 rounded-lg text-surface-400 hover:text-danger hover:bg-danger/10 transition-all flex-shrink-0"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="p-3 space-y-2">
+    <div className="flex flex-col">
+      <Section title="Botões" badge="Opcional · até 3 — a Meta rejeita mais que isso">
+        {errors.buttonsGeneral && <Banner variant="danger" className="mb-3">{errors.buttonsGeneral}</Banner>}
+        {buttons.length === 0 && (
+          <p className="text-[11px] text-surface-500 mb-2 leading-snug">
+            Nenhum botão. Resposta rápida, link, telefone ou copiar código — o contato vê cada um como uma linha azul (ou verde) abaixo da mensagem.
+          </p>
+        )}
+        <div className="flex flex-col">
+          {buttons.map((btn, i) => {
+            const cfg = BUTTON_TYPES.find((t) => t.value === btn.type)
+            if (!cfg) return null
+            const Icon = cfg.icon
+            return (
+              <div key={i} className="border-t border-surface-700 first:border-t-0 py-3 first:pt-0 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Icon className="w-3.5 h-3.5 text-surface-400 flex-none" />
+                  <Select
+                    size="sm"
+                    aria-label={`Tipo do botão ${i + 1}`}
+                    className="w-48"
+                    value={btn.type}
+                    onChange={(e) => updateButton(i, 'type', e.target.value)}
+                    disabled={fieldDisabled}
+                  >
+                    {availableButtonTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </Select>
+                  <span className="text-[11px] text-surface-500">Botão {i + 1} de 3</span>
+                  <button
+                    type="button"
+                    onClick={() => removeButton(i)}
+                    disabled={fieldDisabled}
+                    aria-label={`Remover botão ${i + 1}`}
+                    className="ml-auto w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-danger hover:bg-[var(--rowhover)] transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
                 <InputRow
                   value={btn.text}
                   onChange={(v) => updateButton(i, 'text', v)}
                   placeholder={
-                    btn.type === 'QUICK_REPLY'  ? 'Ex: Quero saber mais'   :
-                    btn.type === 'URL'          ? 'Ex: Ver oferta'          :
-                    btn.type === 'PHONE_NUMBER' ? 'Ex: Ligar agora'         :
-                    btn.type === 'FLOW'         ? 'Ex: Preencher formulário':
+                    btn.type === 'QUICK_REPLY'  ? 'Ex: Quero saber mais'    :
+                    btn.type === 'URL'          ? 'Ex: Ver oferta'           :
+                    btn.type === 'PHONE_NUMBER' ? 'Ex: Ligar agora'          :
+                    btn.type === 'FLOW'         ? 'Ex: Preencher formulário' :
                     'Copiar código'
                   }
-                  label="Texto do botão"
+                  label="Texto"
                   maxLength={25}
+                  disabled={fieldDisabled}
                 />
                 {btn.type === 'URL' && (
                   <>
-                    <InputRow
-                      value={btn.url}
-                      onChange={(v) => updateButton(i, 'url', v)}
-                      placeholder="https://seusite.com.br/promo/{{1}} (opcional)"
-                      label="URL de destino"
-                    />
+                    <InputRow value={btn.url} onChange={(v) => updateButton(i, 'url', v)} placeholder="https://seusite.com.br/promo/{{1}}" label="URL" disabled={fieldDisabled} />
                     {/\{\{1\}\}/.test(btn.url) && (
-                      <InputRow
-                        value={btn.urlExample}
-                        onChange={(v) => updateButton(i, 'urlExample', v)}
-                        placeholder="https://seusite.com.br/promo/abc123"
-                        label="URL de exemplo"
-                      />
+                      <InputRow value={btn.urlExample} onChange={(v) => updateButton(i, 'urlExample', v)} placeholder="https://seusite.com.br/promo/abc123" label="URL de exemplo" disabled={fieldDisabled} />
                     )}
                   </>
                 )}
                 {btn.type === 'PHONE_NUMBER' && (
-                  <InputRow value={btn.phoneNumber} onChange={(v) => updateButton(i, 'phoneNumber', v)} placeholder="+55 11 99999-9999" label="Número de telefone" />
-                )}
-                {errors.buttonByIndex?.[i] && (
-                  <p className="text-[11px] text-danger">{errors.buttonByIndex[i]}</p>
+                  <InputRow value={btn.phoneNumber} onChange={(v) => updateButton(i, 'phoneNumber', v)} placeholder="+55 11 99999-9999" label="Telefone" disabled={fieldDisabled} />
                 )}
                 {btn.type === 'FLOW' && (
-                  <InputRow value={btn.flowId} onChange={(v) => updateButton(i, 'flowId', v)} placeholder="ID do Flow no Meta Business Manager" label="Flow ID" />
+                  <InputRow value={btn.flowId} onChange={(v) => updateButton(i, 'flowId', v)} placeholder="ID do Flow no Meta Business Manager" label="Flow ID" disabled={fieldDisabled} />
                 )}
                 {btn.type === 'COPY_CODE' && (
-                  <p className="text-[11px] text-surface-400">
-                    O código OTP será copiado automaticamente ao toque. Nenhuma configuração adicional necessária.
-                  </p>
+                  <p className="text-[11px] text-surface-500 pl-[104px]">O código é copiado ao toque — nada mais a configurar.</p>
+                )}
+                {errors.buttonByIndex?.[i] && (
+                  <p className="text-[11px] text-danger pl-[104px]">{errors.buttonByIndex[i]}</p>
                 )}
               </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Add button picker */}
-      {buttons.length < 3 && (
-        <div>
-          <button
-            onClick={() => onShowAddButton(!showAddButton)}
-            disabled={fieldDisabled}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-surface-600 hover:border-brand-500 rounded-lg text-xs text-surface-400 hover:text-brand-300 transition-all w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Adicionar botão
-            {showAddButton ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
-          </button>
-
-          <AnimatePresence>
-            {showAddButton && (
-              <motion.div
-                initial={{ opacity: 0, y: -4, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: 'auto' }}
-                exit={{ opacity: 0, y: -4, height: 0 }}
-                transition={{ duration: 0.15 }}
-                className="overflow-hidden"
-              >
-                <div className="mt-2 bg-surface-800 border border-surface-700 rounded-lg overflow-hidden divide-y divide-surface-700/60">
-                  {availableButtonTypes.map((bt) => {
-                    const Icon = bt.icon
-                    const alreadyHasType = buttons.some((b) => b.type === bt.value)
-                    const isDisabledType = bt.comingSoon || (bt.value === 'COPY_CODE' && buttons.length > 0) || alreadyHasType
-                    return (
-                      <button
-                        key={bt.value}
-                        onClick={() => !isDisabledType && addButtonOfType(bt.value)}
-                        disabled={isDisabledType}
-                        title={bt.comingSoon ? 'Em breve — este tipo precisa de suporte dedicado e ainda não está disponível.' : undefined}
-                        className={cn(
-                          'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all',
-                          isDisabledType ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-700'
-                        )}
-                      >
-                        <Icon className="w-4 h-4 text-surface-400 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs font-medium text-surface-200">{bt.label}</p>
-                          <p className="text-[11px] text-surface-400">{bt.description}</p>
-                        </div>
-                        {bt.comingSoon ? (
-                          <span className="ml-auto text-[9px] font-semibold uppercase tracking-wide text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded">Em breve</span>
-                        ) : alreadyHasType ? (
-                          <span className="ml-auto text-[10px] text-surface-400">Já adicionado</span>
-                        ) : null}
-                      </button>
-                    )
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            )
+          })}
         </div>
-      )}
+
+        {buttons.length < 3 && (
+          <div className={cn(buttons.length > 0 && 'mt-3 pt-3 border-t border-surface-700')}>
+            <Button
+              size="sm"
+              variant="neutral"
+              onClick={() => onShowAddButton(!showAddButton)}
+              disabled={fieldDisabled}
+              leftIcon={<Plus className="w-3.5 h-3.5" />}
+              rightIcon={showAddButton ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              aria-expanded={showAddButton}
+            >
+              Adicionar botão
+            </Button>
+            <AnimatePresence>
+              {showAddButton && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto' }}
+                  exit={{ opacity: 0, y: -4, height: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2 rounded-sm border border-surface-700 overflow-hidden">
+                    {availableButtonTypes.map((bt) => {
+                      const Icon = bt.icon
+                      const alreadyHasType = buttons.some((b) => b.type === bt.value)
+                      const isDisabledType = bt.comingSoon || (bt.value === 'COPY_CODE' && buttons.length > 0) || alreadyHasType
+                      return (
+                        <button
+                          key={bt.value}
+                          type="button"
+                          onClick={() => !isDisabledType && addButtonOfType(bt.value)}
+                          disabled={isDisabledType}
+                          className={cn(
+                            'w-full flex items-center gap-3 px-3 py-2.5 text-left border-t border-surface-700 first:border-t-0 transition-colors',
+                            isDisabledType ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--rowhover)]',
+                          )}
+                        >
+                          <Icon className="w-3.5 h-3.5 text-surface-400 flex-none" />
+                          <span className="min-w-0">
+                            <span className="block text-[12.5px] font-medium text-surface-200 leading-tight">{bt.label}</span>
+                            <span className="block text-[11px] text-surface-500 leading-snug">{bt.description}</span>
+                          </span>
+                          {bt.comingSoon
+                            ? <span className="ml-auto text-[11px] text-surface-500">em breve</span>
+                            : alreadyHasType
+                              ? <span className="ml-auto text-[11px] text-surface-500">já adicionado</span>
+                              : null}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </Section>
     </div>
   )
 }
 
 // ─── Step 4: Revisão ──────────────────────────────────────────────────────────
+
+function LinhaResumo({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-3 py-1.5 border-t border-surface-700 first:border-t-0 first:pt-0">
+      <span className="text-[11px] text-surface-500 w-[88px] flex-none">{rotulo}</span>
+      <span className="text-xs text-surface-100 min-w-0 truncate">{children}</span>
+    </div>
+  )
+}
+function EtapaAprovacao({ n, titulo, sub, Icone, ativa }: { n: number; titulo: string; sub: string; Icone: typeof Sparkles; ativa?: boolean }) {
+  return (
+    <div className="flex items-start gap-2 min-w-0 flex-1">
+      <Icone className={cn('w-3.5 h-3.5 mt-px flex-none', ativa ? 'text-brand-400' : 'text-surface-500')} />
+      <div className="min-w-0">
+        <p className={cn('text-[12px] leading-tight', ativa ? 'font-semibold text-surface-50' : 'font-medium text-surface-300')}>{n} · {titulo}</p>
+        <p className="text-[11px] text-surface-500 leading-snug">{sub}</p>
+      </div>
+    </div>
+  )
+}
 
 function StepRevisao({
   name, category, subCategory, language, headerType, buttons, varExamples, error,
@@ -1010,78 +1016,34 @@ function StepRevisao({
   varExamples: string[]
   error: string
 }) {
+  // Direção C: o resumo é uma lista rótulo/valor em faixas, e o processo de
+  // aprovação vira uma linha de três passos — nada de cartões. A prévia
+  // completa já está no painel da direita.
   return (
-    <div className="space-y-5">
-      {/* Card: Sobre o template */}
-      <div className="bg-surface-800/50 border border-surface-700 rounded-lg p-4 space-y-2">
-        <p className="text-xs font-bold text-surface-300 uppercase tracking-wider mb-3">Sobre o template</p>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Nome</span>
-          <span className="text-xs font-mono text-brand-300 bg-brand-400/10 px-2 py-0.5 rounded">{name || '—'}</span>
+    <div className="flex flex-col">
+      <Section title="Resumo" badge="Confira antes de enviar para análise">
+        <div className="flex flex-col">
+          <LinhaResumo rotulo="Nome"><span className="font-mono">{name || '—'}</span></LinhaResumo>
+          <LinhaResumo rotulo="Categoria">{CATEGORY_LABELS[category]}</LinhaResumo>
+          <LinhaResumo rotulo="Tipo">{SUBCATEGORY_LABELS[subCategory]}</LinhaResumo>
+          <LinhaResumo rotulo="Idioma">{language}</LinhaResumo>
+          {headerType && <LinhaResumo rotulo="Cabeçalho">{HEADER_TYPES.find((h) => h.value === headerType)?.label ?? headerType}</LinhaResumo>}
+          <LinhaResumo rotulo="Variáveis">{varExamples.length === 0 ? 'nenhuma' : `${varExamples.length} · ${varExamples.join(' · ')}`}</LinhaResumo>
+          <LinhaResumo rotulo="Botões">{buttons.length === 0 ? 'nenhum' : buttons.map((b) => b.text || '(sem texto)').join(' · ')}</LinhaResumo>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Categoria</span>
-          <span className="text-xs text-surface-300 bg-[var(--sf2)] px-2 py-0.5 rounded">{CATEGORY_LABELS[category]}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Subcategoria</span>
-          <span className="text-xs text-surface-300 bg-[var(--sf2)] px-2 py-0.5 rounded">{SUBCATEGORY_LABELS[subCategory]}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Idioma</span>
-          <span className="text-xs text-surface-300">{language}</span>
-        </div>
-        {headerType && (
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-surface-400">Cabeçalho</span>
-            <span className="text-xs text-surface-300">{HEADER_TYPES.find(h => h.value === headerType)?.label ?? headerType}</span>
-          </div>
-        )}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Variáveis</span>
-          <span className="text-xs text-surface-300">{varExamples.length} variáve{varExamples.length === 1 ? 'l' : 'is'}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-surface-400">Botões</span>
-          <span className="text-xs text-surface-300">{buttons.length} botã{buttons.length === 1 ? 'o' : 'ões'}</span>
-        </div>
-      </div>
+      </Section>
 
-      {/* Card: Processo de aprovação */}
-      <div className="bg-surface-800/50 border border-surface-700 rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-surface-700">
-          <p className="text-xs font-bold text-surface-200 uppercase tracking-wider">Processo de aprovação</p>
+      <Section title="Aprovação" badge="Processo automático da Meta">
+        <div className="flex items-start gap-3">
+          <EtapaAprovacao n={1} titulo="Enviado" sub="Submetido à Meta agora" Icone={Sparkles} ativa />
+          <ChevronRight className="w-3 h-3 text-surface-600 mt-1 flex-none" />
+          <EtapaAprovacao n={2} titulo="Em análise" sub="Costuma levar 24–48 h" Icone={Clock} />
+          <ChevronRight className="w-3 h-3 text-surface-600 mt-1 flex-none" />
+          <EtapaAprovacao n={3} titulo="Aprovado" sub="Disponível para disparos" Icone={CheckCircle2} />
         </div>
-        <div className="flex items-center gap-0 text-[11px] p-3">
-          <div className="flex items-center gap-2 px-2 py-2 flex-1 border-r border-surface-700">
-            <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-brand-300">1 · Enviado</p>
-              <p className="text-surface-400">Template submetido à Meta agora</p>
-            </div>
-          </div>
-          <ChevronRight className="w-3 h-3 text-surface-400 flex-shrink-0 mx-1" />
-          <div className="flex items-center gap-2 px-2 py-2 flex-1 border-r border-surface-700">
-            <Clock className="w-3 h-3 text-surface-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-surface-300">2 · Em análise</p>
-              <p className="text-surface-400">Processo automático · 24–48h</p>
-            </div>
-          </div>
-          <ChevronRight className="w-3 h-3 text-surface-400 flex-shrink-0 mx-1" />
-          <div className="flex items-center gap-2 px-2 py-2 flex-1">
-            <CheckCircle2 className="w-3 h-3 text-surface-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-surface-300">3 · Aprovado</p>
-              <p className="text-surface-400">Disponível para campanhas</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      </Section>
 
-      {error && (
-        <Banner variant="danger">{error}</Banner>
-      )}
+      {error && <Banner variant="danger" className="mt-3">{error}</Banner>}
     </div>
   )
 }
@@ -1110,10 +1072,6 @@ function Section({ title, required, badge, children }: {
   )
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <label className="text-[11.5px] font-medium text-surface-400 mb-1 block">{children}</label>
-}
-
 function ToolbarBtn({ onClick, title, children, destaque }: {
   onClick: () => void; title: string; children: React.ReactNode; destaque?: boolean
 }) {
@@ -1133,25 +1091,30 @@ function ToolbarBtn({ onClick, title, children, destaque }: {
   )
 }
 
-function InputRow({ value, onChange, placeholder, label, maxLength }: {
+function InputRow({ value, onChange, placeholder, label, maxLength, disabled }: {
   value: string
   onChange: (v: string) => void
   placeholder: string
   label: string
   maxLength?: number
+  disabled?: boolean
 }) {
+  // Mesma gramática da faixa: rótulo à esquerda (88px, dentro da coluna de
+  // conteúdo da Section), campo = primitivo Input md, contador dentro.
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[11px] text-surface-400 w-24 flex-shrink-0">{label}</span>
-      <div className="flex-1 relative">
-        <input
+    <div className="flex items-center gap-3">
+      <span className="text-[11px] text-surface-500 w-[88px] flex-none">{label}</span>
+      <div className="flex-1 relative min-w-0">
+        <Input
+          size="md"
           value={value}
+          disabled={disabled}
           onChange={(e) => onChange(maxLength ? e.target.value.slice(0, maxLength) : e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-brand-500 transition-colors"
+          className={maxLength ? 'pr-14' : undefined}
         />
         {maxLength && (
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-surface-400">
+          <span className={cn('absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums pointer-events-none', value.length >= maxLength ? 'text-danger' : 'text-surface-500')}>
             {value.length}/{maxLength}
           </span>
         )}
