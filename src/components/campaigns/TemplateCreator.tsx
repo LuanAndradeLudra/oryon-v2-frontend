@@ -9,6 +9,9 @@ import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { TemplatePreview } from './TemplatePreview'
+import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
+import { WizardProgress } from '@/components/ui/WizardProgress'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SubcategoryPreview } from './SubcategoryPreview'
 import { templatesApi, whatsappNumbersApi } from '@/services/api'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
@@ -332,11 +335,34 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
           Templates
         </button>
         <div className="w-px h-4 bg-surface-700" />
-        <h1 className="text-sm font-semibold text-surface-100">
-          {editing ? 'Editar template' : 'Criar novo template'}
-        </h1>
-        <div className="ml-auto flex items-center gap-2 text-xs text-surface-400">
-          Passo {step} de 4 — {STEP_LABELS[step - 1]}
+
+        {/* Identidade da categoria — pedido do PO (22/09): assim que a
+            categoria é escolhida, o ícone dela acompanha o modelo por todo o
+            fluxo, como no painel da Meta. */}
+        <TemplateCategoryTile category={category} size={28} />
+        <div className="min-w-0">
+          <h1 className="text-[13px] font-semibold text-surface-50 leading-tight truncate">
+            {name.trim() || (editing ? 'Editar modelo' : 'Novo modelo')}
+          </h1>
+          <p className="text-[11px] text-surface-500 leading-tight">
+            {TEMPLATE_CATEGORIES[category].label}{language ? ` · ${language}` : ''}
+          </p>
+        </div>
+
+        {/* Trilha de passos: primitivo `WizardProgress`, NÃO uma versão à mão.
+            Eu havia escrito uma trilha própria aqui (bolinha de 14px) e o
+            Cartógrafo apontou que isso é o mesmo defeito que venho cobrando de
+            todo mundo — primitivo existente reimplementado ao lado. O
+            primitivo ainda tem respaldo melhor que a minha versão: os valores
+            dele (18px, fundo --acsoft, check) vêm do HTML do canvas
+            (CAMP-WIZ-07..13); os meus vinham de um mockup. Os três wizards do
+            produto passam a mostrar a mesma trilha. */}
+        <div className="ml-auto flex-none">
+          <WizardProgress
+            steps={STEP_LABELS}
+            currentStep={step}
+            onStepClick={(n) => setStep(n as StepNum)}
+          />
         </div>
       </div>
 
@@ -362,40 +388,6 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: step sidebar */}
-        <div className="w-44 border-r border-surface-700 py-6 px-3 flex flex-col gap-1 flex-shrink-0 bg-surface-950">
-          {([1, 2, 3, 4] as StepNum[]).map((s) => {
-            const done = s < step
-            const current = s === step
-            return (
-              <div
-                key={s}
-                className={cn(
-                  'flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all',
-                  current ? 'bg-brand-500/10' : 'hover:bg-surface-800/50'
-                )}
-              >
-                <div className={cn(
-                  'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold transition-all mt-0.5',
-                  done    ? 'bg-brand-600 text-surface-950' :
-                  current ? 'bg-brand-600/20 border-2 border-brand-500 text-brand-400' :
-                             'bg-surface-800 text-surface-400 border border-surface-700'
-                )}>
-                  {done ? <Check className="w-3 h-3" /> : s}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={cn('text-xs font-semibold', current ? 'text-surface-50' : done ? 'text-surface-200' : 'text-surface-400')}>
-                    {STEP_LABELS[s - 1]}
-                  </p>
-                  <p className="text-[10px] text-surface-400 mt-0.5 leading-tight truncate">
-                    {stepSubtitles[s - 1]}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
         {/* CENTER: form */}
         <div className="flex-1 overflow-y-auto p-7 bg-surface-950">
           {step === 1 && (
@@ -559,110 +551,61 @@ function StepCategoria({
   editing: boolean
   readOnly?: boolean
 }) {
+  // Referência: print do painel da Meta (22/09) — segmentado de 3 células com
+  // ícone + lista de rádio com título e descrição, linha selecionada com
+  // fundo suave. Sem cartões por categoria, sem faixa "como funciona".
+  const disponiveis = CATEGORIES.filter((c) => !c.comingSoon || c.value === category)
+  const emBreve = CATEGORIES.filter((c) => c.comingSoon && c.value !== category)
+  void editing
   return (
-    <div className="space-y-7">
-      {!editing && (
-        <div className="flex items-center gap-0 bg-brand-500/5 border border-brand-500/15 rounded-lg overflow-hidden text-[11px]">
-          <div className="flex items-center gap-2 px-3 py-2.5 flex-1 border-r border-brand-500/15">
-            <Sparkles className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-brand-300">1 · Preencha o modelo</p>
-              <p className="text-surface-400">Categoria, corpo e botões</p>
-            </div>
-          </div>
-          <ChevronRight className="w-3 h-3 text-surface-400 flex-shrink-0 mx-1" />
-          <div className="flex items-center gap-2 px-3 py-2.5 flex-1 border-r border-surface-700/50">
-            <Clock className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-surface-300">2 · Meta analisa</p>
-              <p className="text-surface-400">Processo automático · 24–48h</p>
-            </div>
-          </div>
-          <ChevronRight className="w-3 h-3 text-surface-400 flex-shrink-0 mx-1" />
-          <div className="flex items-center gap-2 px-3 py-2.5 flex-1">
-            <CheckCircle2 className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-surface-300">3 · Template aprovado</p>
-              <p className="text-surface-400">Disponível para campanhas</p>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col">
+      <Section title="Categoria" required badge="Define a cobrança e as regras de aprovação da Meta.">
+        <SegmentedControl
+          size="md"
+          className="w-full [&>*]:flex-1"
+          label="Categoria do modelo"
+          value={category}
+          onChange={(v) => { if (!readOnly) onCategory(v) }}
+          options={disponiveis.map((c) => ({ value: c.value, label: c.label, icon: c.icon }))}
+        />
+        <p className="text-[11px] text-surface-500 mt-2 leading-relaxed">
+          <span className="text-surface-300 font-semibold">Marketing</span> cobra por conversa aberta ·
+          <span className="text-surface-300 font-semibold"> Utilidade</span> tem tarifa reduzida
+          {emBreve.length > 0 && <> · {emBreve.map((c) => c.label).join(', ')} em breve</>}
+        </p>
+      </Section>
 
-      <Section title="Categoria" required>
-        <div className="grid grid-cols-3 gap-2">
-          {CATEGORIES.map(({ value, label, description, icon: Icon, comingSoon }) => {
-            // Keep the existing selection visible even if the category has
-            // since been flagged comingSoon — otherwise editing an old
-            // template would silently fail to render its category.
-            const disabled = !!comingSoon && category !== value
+      <Section title="Tipo" badge="Escolhe o modelo inicial do editor. Não é enviado à Meta.">
+        <div role="radiogroup" aria-label="Tipo do modelo" className="rounded-sm border border-surface-700 overflow-hidden">
+          {SUBCATEGORIES[category].map((sub) => {
+            const ativo = subCategory === sub.value
             return (
               <button
-                key={value}
-                onClick={() => { if (!disabled && !readOnly) onCategory(value) }}
-                disabled={disabled || readOnly}
-                title={disabled ? 'Em breve — esta categoria precisa de um fluxo dedicado e ainda não está disponível.' : undefined}
+                key={sub.value}
+                type="button"
+                role="radio"
+                aria-checked={ativo}
+                onClick={() => { if (!readOnly) onSubCategory(sub.value) }}
+                disabled={readOnly}
                 className={cn(
-                  'text-left p-3 rounded-lg border transition-all relative',
-                  category === value
-                    ? 'border-brand-500 bg-brand-500/10'
-                    : disabled
-                      ? 'border-surface-700 bg-surface-800/20 opacity-60 cursor-not-allowed'
-                      : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
+                  'w-full flex items-start gap-3 px-3 py-2.5 text-left border-t border-surface-700 first:border-t-0 transition-colors',
+                  ativo ? 'bg-[var(--rowhover)]' : 'hover:bg-[var(--rowhover)]',
+                  readOnly && 'cursor-default',
                 )}
               >
-                {comingSoon && (
-                  <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-wide text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded">
-                    Em breve
-                  </span>
-                )}
-                <Icon className={cn('w-4 h-4 mb-2', category === value ? 'text-brand-400' : 'text-surface-400')} />
-                <p className="text-xs font-semibold text-surface-100">{label}</p>
-                <p className="text-[11px] text-surface-400 mt-0.5 leading-relaxed">{description}</p>
+                <span className={cn(
+                  'mt-[3px] w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-none',
+                  ativo ? 'border-brand-500' : 'border-[var(--bd2)]',
+                )}>
+                  {ativo && <span className="w-[7px] h-[7px] rounded-full bg-brand-500" />}
+                </span>
+                <span className="min-w-0">
+                  <span className={cn('block text-[12.5px] leading-tight', ativo ? 'font-semibold text-surface-50' : 'font-medium text-surface-200')}>{sub.label}</span>
+                  <span className="block text-[11px] text-surface-500 mt-0.5 leading-snug">{sub.description}</span>
+                </span>
               </button>
             )
           })}
-        </div>
-
-        {/* Pricing note */}
-        <div className="mt-3 flex items-start gap-2 px-2.5 py-2 bg-surface-800/50 border border-surface-700/60 rounded-lg">
-          <Info className="w-3 h-3 text-surface-400 mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-surface-400 leading-relaxed">
-            <strong className="text-accent-amber">Marketing</strong> cobra por conversa aberta.
-            <strong className="text-accent-blue"> Utilidade</strong> tem tarifa reduzida (transacional).
-            <strong className="text-accent-violet"> Autenticação</strong> usa cobrança única por OTP.
-          </p>
-        </div>
-
-        {/* Subcategory */}
-        <p className="text-[11px] text-surface-400 mt-3 mb-1.5">
-          A subcategoria escolhe um <strong className="text-surface-300">modelo inicial</strong> para o editor — ela não é enviada para a Meta.
-        </p>
-        <div className="space-y-1.5">
-          {SUBCATEGORIES[category].map((sub) => (
-            <button
-              key={sub.value}
-              onClick={() => { if (!readOnly) onSubCategory(sub.value) }}
-              disabled={readOnly}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-sm border text-left transition-all',
-                subCategory === sub.value
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-surface-700 bg-surface-800/30 hover:border-surface-600'
-              )}
-            >
-              <div className={cn(
-                'w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0',
-                subCategory === sub.value ? 'border-brand-500' : 'border-surface-600'
-              )}>
-                {subCategory === sub.value && <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />}
-              </div>
-              <div>
-                <span className="text-xs font-medium text-surface-200">{sub.label}</span>
-                <span className="text-[11px] text-surface-400 ml-2">{sub.description}</span>
-              </div>
-            </button>
-          ))}
         </div>
       </Section>
     </div>
@@ -706,7 +649,7 @@ function StepMensagem({
 }) {
   const fieldDisabled = !!readOnly
   return (
-    <div className="space-y-7">
+    <div className="flex flex-col">
       {/* Section: Identificação */}
       <Section title="Identificação" required>
         <div className="space-y-3">
@@ -1213,14 +1156,18 @@ function Section({ title, required, badge, children }: {
   badge?: string
   children: React.ReactNode
 }) {
+  // Direção C (aprovada 22/09): sem cartão, sem título em caixa alta. Cada
+  // grupo é uma faixa separada por linha de 1px, rótulo à esquerda em coluna
+  // fixa de 104px, campo à direita. Contraste por peso, não por cor.
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-xs font-bold text-surface-200 uppercase tracking-wider">{title}</h3>
-        {required && <span className="text-danger text-xs">*</span>}
-        {badge && <span className="text-[10px] text-surface-400 bg-surface-800 border border-surface-700 px-1.5 py-0.5 rounded-full">{badge}</span>}
+    <div className="grid grid-cols-[104px_1fr] gap-x-4 py-4 border-t border-surface-700 first:border-t-0 first:pt-0">
+      <div className="pt-1.5">
+        <h3 className="text-[12.5px] font-bold text-surface-100 tracking-[-0.01em] leading-tight">
+          {title}{required && <span className="text-surface-500 font-normal"> *</span>}
+        </h3>
+        {badge && <p className="text-[11px] text-surface-500 mt-0.5 leading-snug">{badge}</p>}
       </div>
-      {children}
+      <div className="min-w-0">{children}</div>
     </div>
   )
 }
