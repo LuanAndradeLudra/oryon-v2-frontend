@@ -37,44 +37,54 @@ export function NotificationItem({
   const Icon = iconFor(n.type)
   const subject = contactSubject(n)
   const action = inlineActionFor(n)
-  // Direção C: sem a faixa colorida de 3px à esquerda (a categoria já está
-  // na cor do ladrilho), sem chip de categoria por linha (vira texto mudo
-  // clicável), urgente = borda esquerda em perigo + chip de 18px. Ações
-  // aparecem no hover como botões de ícone de 28px. Alvo: ~64px por item.
+  const urgente = priority === 'urgent'
+  // v2 (23/09, feedback do PO: "não gosto do visual e dos ícones"). Gramática
+  // dos inboxes modernos (Linear, Notion, Vercel, GitHub): MONOCROMÁTICO —
+  // nada de ladrilho colorido por categoria; o único elemento visual é o
+  // ator (avatar com iniciais) ou, sem ator, um ícone mudo num disco de
+  // 28px na cor da superfície. Não lida = peso 600 + ponto de 6px. Linha
+  // como "pílula" dentro da lista (margem lateral, raio 7, hover em
+  // --rowhover), sem divisor entre itens. Urgente = ponto e disco em perigo.
   return (
     <div
       onClick={onClick}
       role="listitem"
       aria-label={`${n.title}. ${n.isRead ? 'Lida' : 'Não lida'}. ${formatListTime(n.createdAt)}`}
       className={cn(
-        'group relative flex items-start gap-2.5 pl-3 pr-2 py-2.5 border-b border-surface-700 cursor-pointer transition-colors',
-        !n.isRead ? 'bg-[var(--sf2)]' : 'bg-transparent',
+        'group relative mx-2 my-0.5 flex items-start gap-3 pl-2.5 pr-2 py-2 rounded-sm cursor-pointer transition-colors',
         'hover:bg-[var(--rowhover)]',
         isFocused && 'ring-1 ring-inset ring-brand-500',
-        priority === 'urgent' && 'border-l-2 border-l-danger',
         '[@media(pointer:coarse)]:min-h-[64px]',
       )}
     >
-      <span className={cn('w-1.5 h-1.5 rounded-full mt-[9px] flex-none', !n.isRead ? 'bg-brand-500' : 'bg-transparent')} aria-hidden />
+      {/* Ponto de não lida — alinhado ao meio do avatar/disco. */}
+      <span
+        className={cn('absolute left-0 top-[19px] w-1.5 h-1.5 rounded-full', !n.isRead ? (urgente ? 'bg-danger' : 'bg-brand-500') : 'bg-transparent')}
+        aria-hidden
+      />
       {subject ? (
-        <span className="relative flex-none">
-          <span className={cn('w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white', avatarColorFor(subject.name))} aria-hidden>
+        <span className="relative flex-none mt-0.5">
+          <span
+            className={cn('w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white', avatarColorFor(subject.name))}
+            aria-hidden
+          >
             {initialsOf(subject.name)}
-          </span>
-          <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center ring-2 ring-[var(--color-overlay)] bg-[var(--sf2)]">
-            <Icon className="w-2 h-2 text-surface-300" />
           </span>
         </span>
       ) : (
         <button
           type="button"
-          style={{ ['--chip']: style.chip } as React.CSSProperties}
           onClick={(e) => { e.stopPropagation(); onCategoryClick?.([n.type]) }}
-          className="color-chip-soft w-7 h-7 rounded-xs flex items-center justify-center flex-none border hover:brightness-110"
           title={`Filtrar: ${style.label}`}
           aria-label={`Filtrar por ${style.label}`}
+          className={cn(
+            'w-7 h-7 mt-0.5 rounded-full flex items-center justify-center flex-none border transition-colors',
+            urgente
+              ? 'border-danger/40 text-danger bg-[var(--sf2)]'
+              : 'border-surface-700 bg-[var(--sf2)] text-surface-400 hover:text-surface-100',
+          )}
         >
-          <Icon className="w-3.5 h-3.5" />
+          <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
         </button>
       )}
       <div className="flex-1 min-w-0">
@@ -82,30 +92,27 @@ export function NotificationItem({
           <p className={cn('text-[13px] leading-[18px] flex-1 min-w-0 truncate', !n.isRead ? 'font-semibold text-surface-50' : 'font-medium text-surface-200')}>
             {n.title}
           </p>
-          {priority === 'urgent' && (
-            <span
-              style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties}
-              className="color-chip-soft border inline-flex items-center h-[18px] px-1.5 rounded-[5px] text-[10.5px] font-bold flex-none"
-            >
-              Urgente
-            </span>
-          )}
-          <span className="text-[11px] text-surface-500 tabular-nums flex-none group-hover:opacity-0 transition-opacity">{formatListTime(n.createdAt)}</span>
+          <span className="text-[11px] text-surface-500 tabular-nums flex-none group-hover:opacity-0 transition-opacity">
+            {formatListTime(n.createdAt)}
+          </span>
         </div>
         {n.description && (
-          <p className={cn('text-xs leading-[17px] mt-0.5', !n.isRead ? 'text-surface-300 line-clamp-2' : 'text-surface-500 line-clamp-1')}>
+          <p className={cn('text-xs leading-[17px] mt-px', !n.isRead ? 'text-surface-300 line-clamp-2' : 'text-surface-500 line-clamp-1')}>
             {n.description}
           </p>
         )}
+        {urgente && (
+          <p className="text-[11px] leading-[16px] text-danger font-medium mt-0.5">Urgente</p>
+        )}
       </div>
-      {/* Ações no hover — 28px, --rowhover; ocupam o lugar do horário. */}
-      <div className="absolute right-2 top-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+      {/* Ações no hover — ocupam o lugar do horário. */}
+      <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
         {action && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); navigate(action.href) }}
             className={cn(
-              'h-7 px-2 rounded-xs text-[11px] font-semibold mr-1',
+              'h-7 px-2 rounded-xs text-[11px] font-semibold mr-0.5',
               action.variant === 'primary'
                 ? 'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] hover:brightness-90'
                 : 'text-surface-200 hover:bg-[var(--rowhover)]',
@@ -133,14 +140,13 @@ export function NotificationItem({
             title="Arquivar (E)"
             aria-label="Arquivar"
           >
-            <Archive className="w-3.5 h-3.5" />
+            <Archive className="w-3.5 h-3.5" strokeWidth={1.75} />
           </button>
         )}
       </div>
     </div>
   )
 }
-
 
 /** Kbd do rodapé de atalhos — 18px, raio 4 (--radius-2xs, canvas RAD-09). */
 export function Kbd({ children }: { children: React.ReactNode }) {

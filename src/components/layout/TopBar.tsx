@@ -1044,7 +1044,7 @@ function NotificationsPanel() {
             </div>
           </div>
         )}
-        <div ref={panelRef} className="max-h-[28rem] overflow-y-auto" role="list">
+        <div ref={panelRef} className="max-h-[28rem] overflow-y-auto py-1" role="list">
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
@@ -1057,7 +1057,7 @@ function NotificationsPanel() {
                   for new and archived items. Reduced-motion disables transitions. */}
               {groups.map((g) => (
                 <div key={g.label}>
-                  <div className="h-7 px-3 flex items-center text-[11px] font-semibold uppercase tracking-[0.08em] text-surface-500 bg-[var(--color-overlay)] border-b border-surface-700 sticky top-0 z-10">
+                  <div className="h-7 px-4 flex items-center text-[11px] font-medium text-surface-500 bg-[var(--color-overlay)] sticky top-0 z-10">
                     {g.label}
                   </div>
                   <AnimatePresence initial={false}>

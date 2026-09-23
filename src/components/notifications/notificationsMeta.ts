@@ -1,3 +1,4 @@
+import type React from 'react'
 import {
   Bell, MessageSquare, UserCheck, Bot, Sparkles, Clock, MessagesSquare, AtSign, Send, AlertCircle,
   Workflow, Zap, Plug, ShieldAlert,
@@ -6,7 +7,7 @@ import {
 /** Metadados de notificação compartilhados pelo popover do sino (TopBar) e
  *  pela página /notifications — SCRUM-1097 (23/09). Só constantes/funções
  *  (fast-refresh exige componentes num arquivo à parte). */
-export const TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+export const TYPE_ICON: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   new_message: MessageSquare,
   conversation_assigned: UserCheck,
   conversation_transferred: UserCheck,
@@ -23,7 +24,7 @@ export const TYPE_ICON: Record<string, React.ComponentType<{ className?: string 
   security_alert: ShieldAlert,
 }
 
-export function iconFor(type: string): React.ComponentType<{ className?: string }> {
+export function iconFor(type: string): React.ComponentType<{ className?: string; strokeWidth?: number }> {
   return TYPE_ICON[type] ?? Bell
 }
 
