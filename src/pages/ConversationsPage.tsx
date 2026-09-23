@@ -683,7 +683,7 @@ export function ConversationsPage() {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.18 }}
                     onClick={() => setInfoOpen(false)}
-                    className="fixed inset-0 bg-black/60 z-[60]"
+                    className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[60]"
                   />
                   <motion.aside
                     key="info-pn"

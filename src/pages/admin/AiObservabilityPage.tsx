@@ -323,7 +323,7 @@ function KpiCard({ label, value, hint }: { label: string; value: string; hint?: 
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex justify-between border-b border-surface-700/50 last:border-0 py-0.5">
+    <div className="flex justify-between border-b border-surface-700 last:border-0 py-0.5">
       <dt className="text-surface-400">{k}</dt>
       <dd className="text-surface-200 font-mono">{v}</dd>
     </div>

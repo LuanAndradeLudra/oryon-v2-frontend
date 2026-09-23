@@ -101,7 +101,7 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
                     onClick={() => { onChange(opt.value); setOpen(false) }}
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-colors',
-                      isActive ? 'bg-brand-500/10 text-surface-100' : 'text-surface-300 hover:bg-surface-800',
+                      isActive ? 'bg-brand-500/10 text-surface-100' : 'text-surface-300 hover:bg-[var(--rowhover)]',
                     )}
                   >
                     <span className="flex-1 font-medium">{opt.label}</span>
@@ -182,7 +182,7 @@ function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
               <button
                 key={l.id}
                 onClick={() => onPick(l.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-surface-800 transition-colors text-left"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-[var(--rowhover)] transition-colors text-left"
               >
                 <Phone className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
                 <span className="text-xs font-medium text-surface-200 flex-1 truncate">{l.label || l.displayPhoneNumber}</span>
@@ -687,7 +687,7 @@ export function AutomationsPage() {
           />
         ) : (
           <div className="flex-1 min-w-0 overflow-hidden flex flex-col px-4 py-3">
-            <div className="flex-1 min-h-0 flex flex-col rounded-lg border border-surface-700 overflow-hidden bg-surface-900/20">
+            <div className="flex-1 min-h-0 flex flex-col rounded-lg border border-surface-700 overflow-hidden bg-[var(--sf2)]">
               <DataTable
                 columns={columns}
                 rows={sortedRows}
@@ -719,7 +719,7 @@ export function AutomationsPage() {
               key="detail-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 bg-black/40 z-[39]"
+              className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[39]"
               onClick={() => setSelectedId(null)}
             />
             <motion.div

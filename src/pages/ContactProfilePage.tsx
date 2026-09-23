@@ -86,7 +86,7 @@ function ProfileTabs({ tabs, active, onChange }: ProfileTabsProps) {
       role="tablist"
       aria-label="Seções do contato"
       onKeyDown={handleKeyDown}
-      className="shrink-0 flex items-center gap-1 border-b border-surface-700/60 overflow-x-auto scroll-thin px-2"
+      className="shrink-0 flex items-center gap-1 border-b border-surface-700 overflow-x-auto scroll-thin px-2"
     >
       {tabs.map((tab) => {
         const isActive = tab.id === active
