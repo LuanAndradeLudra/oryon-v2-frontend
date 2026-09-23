@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duas direções para Leads</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#060909; --sf:#161E1E; --sf2:#0E1414; --bd:#243333; --bd2:#2E4040; --ov:#0E1414;
+    --tx:#ECF1F1; --tx2:#B5C8C8; --tx3:#8FA5A5; --tx4:#5C6767;
+    --ac:#2DD4BF; --acfg:#04201D; --danger:#F87171; --warn:#FBBF24; --ok:#34D399; --info:#60A5FA;
+    --rowhover:rgba(255,255,255,.07); --sel:rgba(45,212,191,.10);
+    --av1:#7C3AED; --av2:#0F766E; --av3:#B45309; --av4:#BE123C; --av5:#1D4ED8; --av6:#4D7C0F;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#FAFAFC; --sf:#FFFFFF; --sf2:#F5F6F8; --bd:#C9CFDA; --bd2:#A3ACBD; --ov:#FFFFFF;
+      --tx:#111318; --tx2:#3A4150; --tx3:#6B7385; --tx4:#9098AA;
+      --ac:#0F766E; --acfg:#FFFFFF; --danger:#B91C1C; --warn:#B45309; --ok:#047857; --info:#1D4ED8;
+      --rowhover:rgba(15,23,42,.05); --sel:rgba(15,118,110,.08);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#FAFAFC; --sf:#FFFFFF; --sf2:#F5F6F8; --bd:#C9CFDA; --bd2:#A3ACBD; --ov:#FFFFFF;
+    --tx:#111318; --tx2:#3A4150; --tx3:#6B7385; --tx4:#9098AA;
+    --ac:#0F766E; --acfg:#FFFFFF; --danger:#B91C1C; --warn:#B45309; --ok:#047857; --info:#1D4ED8;
+    --rowhover:rgba(15,23,42,.05); --sel:rgba(15,118,110,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);
+       padding-block:28px 64px;padding-inline:16px;line-height:1.45}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+  .lead{font-size:13px;color:var(--tx3);max-width:78ch;margin-bottom:22px}
+  .lead b{color:var(--tx);font-weight:600}
+  svg{stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+  /* hoje */
+  .today{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:34px}
+  @media (max-width:760px){.today{grid-template-columns:1fr 1fr}}
+  .today div{border:1px solid var(--bd);border-radius:8px;padding:10px 12px;background:var(--sf)}
+  .today b{display:block;font-size:18px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .today span{font-size:11.5px;color:var(--tx3)}
+
+  .dir{margin-bottom:44px}
+  .tag{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ac)}
+  .dir h2{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:4px 0 4px}
+  .dir p.desc{font-size:12.5px;color:var(--tx3);max-width:80ch;margin-bottom:4px}
+  .ref{font-size:11px;color:var(--tx4);margin-bottom:12px}
+
+  /* ── moldura de tela ── */
+  .screen{background:var(--bg);border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+  .top{height:48px;padding:0 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bd);background:var(--sf)}
+  .top h3{font-size:14px;font-weight:700;letter-spacing:-.01em;margin-right:6px}
+  .n{font-size:11px;color:var(--tx3);font-variant-numeric:tabular-nums}
+  .search{height:28px;width:220px;border:1px solid var(--bd2);border-radius:7px;padding:0 8px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx4);background:var(--sf2)}
+  .search svg{width:13px;height:13px}
+  .btn{height:28px;padding:0 10px;border:1px solid var(--bd2);border-radius:7px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--tx2);background:var(--sf2);white-space:nowrap}
+  .btn svg{width:13px;height:13px}
+  .btn.pri{background:var(--ac);color:var(--acfg);border-color:transparent;font-weight:600}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--tx3)}
+  .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .seg{display:inline-flex;border:1px solid var(--bd2);border-radius:7px;overflow:hidden;height:28px}
+  .seg span{padding:0 9px;font-size:12px;display:inline-flex;align-items:center;gap:5px;color:var(--tx3)}
+  .seg span.on{background:var(--sf2);color:var(--tx);font-weight:600}
+  .seg svg{width:13px;height:13px}
+  .views{height:40px;padding:0 16px;display:flex;align-items:flex-end;gap:2px;border-bottom:1px solid var(--bd);background:var(--sf)}
+  .views span{height:40px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--tx3);border-bottom:2px solid transparent;white-space:nowrap}
+  .views span.on{color:var(--tx);font-weight:600;border-bottom-color:var(--ac)}
+  .views span .n{color:var(--tx4)}
+  .views span.on .n{color:var(--tx3)}
+  .views .plus{margin-left:2px;color:var(--tx4)} .views .plus svg{width:13px;height:13px}
+  .views .end{margin-left:auto;display:flex;gap:6px;height:40px;align-items:center}
+  .body{display:grid;grid-template-columns:1fr 360px;min-height:420px}
+  @media (max-width:880px){.body{grid-template-columns:1fr} .panel{display:none}}
+  .body.full{grid-template-columns:1fr}
+
+  /* lista (A) */
+  .list{padding:4px 8px}
+  .row{position:relative;height:52px;padding:0 10px 0 12px;border-radius:7px;display:flex;align-items:center;gap:12px}
+  .row:hover{background:var(--rowhover)}
+  .row.sel{background:var(--sel)}
+  .row.sel::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:2px;border-radius:2px;background:var(--ac)}
+  .cb{width:14px;height:14px;border:1px solid var(--bd2);border-radius:4px;flex:none;opacity:0}
+  .row:hover .cb,.row.sel .cb{opacity:1}
+  .row.checked .cb{opacity:1;background:var(--ac);border-color:var(--ac)}
+  .av{width:28px;height:28px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff}
+  .who{flex:1;min-width:0}
+  .who .nm{font-size:13px;font-weight:600;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+  .who .nm .hot{width:6px;height:6px;border-radius:50%;background:var(--danger);flex:none}
+  .who .ex{font-size:12px;line-height:16px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .who .ex .me{color:var(--tx4)}
+  .chip{height:20px;padding:0 7px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex:none;
+        border:1px solid var(--bd);color:var(--tx2);background:var(--sf2)}
+  .chip i{width:6px;height:6px;border-radius:50%;background:var(--tx4);font-style:normal}
+  .chip.novo i{background:var(--ac)} .chip.qual i{background:var(--info)} .chip.prop i{background:var(--warn)} .chip.ganho i{background:var(--ok)} .chip.perd i{background:var(--danger)}
+  .meta{width:130px;flex:none;text-align:right;font-size:11.5px;color:var(--tx3);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meta .ch{color:var(--tx4)}
+  .owner{width:22px;height:22px;border-radius:50%;flex:none;font-size:9.5px;font-weight:600;color:#fff;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--sf)}
+  .acts{display:none;gap:2px;margin-left:4px}
+  .row:hover .acts{display:flex}
+  .row:hover .meta{display:none}
+  .ib{width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx3)}
+  .ib svg{width:14px;height:14px}
+  .bulk{margin:4px 8px 0;height:36px;border:1px solid var(--bd);border-radius:7px;background:var(--sf);display:flex;align-items:center;gap:10px;padding:0 10px;font-size:12px}
+  .bulk b{font-weight:600}
+  .bulk .btn{height:24px;font-size:11.5px}
+
+  /* painel (A) */
+  .panel{border-left:1px solid var(--bd);background:var(--sf);display:flex;flex-direction:column}
+  .ph{padding:14px 16px 12px;border-bottom:1px solid var(--bd);display:flex;gap:12px;align-items:flex-start}
+  .ph .av{width:40px;height:40px;font-size:14px}
+  .ph .nm{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:20px}
+  .ph .sub{font-size:12px;color:var(--tx3);margin-top:2px}
+  .ph .tags{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+  .ph .ib{margin-left:auto}
+  .pact{padding:10px 16px;display:flex;gap:6px;border-bottom:1px solid var(--bd)}
+  .pact .btn{flex:1;justify-content:center}
+  .ps{padding:12px 16px;border-bottom:1px solid var(--bd)}
+  .ps h4{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--tx4);margin-bottom:8px}
+  .kv{display:grid;grid-template-columns:96px 1fr;gap:5px 10px;font-size:12.5px}
+  .kv dt{color:var(--tx3)} .kv dd{color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .deal{display:flex;align-items:center;gap:8px;font-size:12.5px}
+  .deal b{font-weight:600;font-variant-numeric:tabular-nums;margin-left:auto}
+  .tl{display:flex;flex-direction:column;gap:8px;font-size:12px}
+  .tl div{display:flex;gap:8px;align-items:flex-start;color:var(--tx2)}
+  .tl .t{color:var(--tx4);font-variant-numeric:tabular-nums;flex:none;width:44px}
+  .tl svg{width:13px;height:13px;flex:none;margin-top:2px;color:var(--tx4)}
+  .pfoot{margin-top:auto;padding:10px 16px;font-size:12px;color:var(--tx3);display:flex;align-items:center;gap:6px}
+  .pfoot svg{width:13px;height:13px}
+
+  /* tabela (B) */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{height:34px;padding:0 10px;text-align:left;font-size:11px;font-weight:600;color:var(--tx3);border-bottom:1px solid var(--bd);white-space:nowrap;background:var(--sf)}
+  thead th.r,tbody td.r{text-align:right}
+  tbody td{height:44px;padding:0 10px;border-bottom:1px solid var(--bd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+  tbody tr:hover td{background:var(--rowhover)}
+  tbody tr.sel td{background:var(--sel)}
+  td.c0,th.c0{width:36px;padding-right:0}
+  tbody tr .cb{opacity:0} tbody tr:hover .cb,tbody tr.sel .cb,tbody tr.checked .cb{opacity:1}
+  .cell{display:flex;align-items:center;gap:10px;min-width:0}
+  .cell .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cell .ph2{font-size:11px;color:var(--tx4);font-variant-numeric:tabular-nums}
+  td.mu{color:var(--tx3);font-variant-numeric:tabular-nums}
+  td .ch{color:var(--tx4)}
+  td .tgs{display:inline-flex;gap:4px}
+  td .tg{height:18px;padding:0 6px;border-radius:4px;font-size:10.5px;font-weight:500;border:1px solid var(--bd);color:var(--tx3);display:inline-flex;align-items:center}
+  td.k{width:44px;text-align:right}
+  td.k .ib{opacity:0} tbody tr:hover td.k .ib{opacity:1}
+  .valor{font-variant-numeric:tabular-nums;font-weight:500}
+  .foot{height:36px;padding:0 16px;display:flex;align-items:center;gap:14px;font-size:11.5px;color:var(--tx3);border-top:1px solid var(--bd);background:var(--sf)}
+  .foot .end{margin-left:auto;display:flex;gap:10px}
+
+  /* anatomia + comparação */
+  .anat{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1000px;font-size:12.5px}
+  @media (max-width:880px){.anat{grid-template-columns:1fr}}
+  .anat h4{font-size:12px;font-weight:700;margin-bottom:6px}
+  .anat ul{padding-left:16px;color:var(--tx3)} .anat li{margin:3px 0} .anat li b{color:var(--tx)}
+  .dec{margin-top:40px;border-top:1px solid var(--bd);padding-top:22px;max-width:900px}
+  .dec h3{font-size:14px;font-weight:700;margin-bottom:10px}
+  .dec ol{padding-left:18px;font-size:12.5px;color:var(--tx2)} .dec li{margin:6px 0} .dec li b{color:var(--tx)}
+  .dec .rec{font-size:12px;color:var(--ac);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Duas direções para Leads</h1>
+  <p class="lead">Diagnóstico da tela atual: uma <b>tabela de banco de dados</b> (12 colunas configuráveis, 6 por padrão) responde "quais são os dados", não "com quem eu ajo agora". Nas duas direções abaixo o <b>nome manda</b>, os sinais secundários são poucos, os segmentos vêm prontos como abas e os controles de linha só aparecem no hover. Dados de exemplo; medidas da tela real em 1240 px.</p>
+
+  <div class="today">
+    <div><b>36 px</b><span>altura da linha hoje, com <em>duas</em> linhas de texto dentro (nome 13 + waId 11)</span></div>
+    <div><b>2×</b><span>telefone aparece duas vezes na mesma linha (sob o nome e na coluna Telefone)</span></div>
+    <div><b>4 de 6</b><span>colunas mostram "—" ou "0" na linha típica (Situação, Etiquetas, Último contato, Negócios)</span></div>
+    <div><b>83 px</b><span>largura do chip "5.191 contatos · 6 opt-in · 14 c/ etiquetas · predominante…"</span></div>
+  </div>
+
+  <!-- ══════════ A ══════════ -->
+  <section class="dir">
+    <span class="tag">Direção A</span>
+    <h2>Lista de pessoas + painel lateral</h2>
+    <p class="desc">A lista mostra uma pessoa por linha (52 px): avatar, <b>nome</b>, a última mensagem em texto mudo, a situação como chip pequeno e quando foi a última interação. Clicar abre o <b>painel ao lado, sem sair da lista</b> — a ficha completa continua existindo pelo "Abrir ficha". Mesma gramática do catálogo de modelos já aprovado.</p>
+    <p class="ref">Referência: Attio (people list + preview), Intercom/Front (contatos como pessoas, ações no hover), Pipedrive Leads Inbox (última atividade como sinal).</p>
+
+    <div class="screen">
+      <div class="top">
+        <h3>Leads</h3>
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Nome, telefone ou e-mail</div>
+        <span class="btn ghost"><svg viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M10 18h4"/></svg>Filtro</span>
+        <div class="right">
+          <div class="seg"><span class="on"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Lista</span><span><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Tabela</span></div>
+          <span class="btn"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg>Importar</span>
+          <span class="btn pri"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Novo lead</span>
+        </div>
+      </div>
+      <div class="views">
+        <span class="on">Todos <span class="n">5.191</span></span>
+        <span>Meus <span class="n">312</span></span>
+        <span>Sem resposta <span class="n">47</span></span>
+        <span>Quentes <span class="n">19</span></span>
+        <span>Novos hoje <span class="n">8</span></span>
+        <span class="plus"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+        <div class="end"><span class="n">ordenado por última interação</span></div>
+      </div>
+      <div class="body">
+        <div class="list">
+          <div class="row sel">
+            <span class="cb"></span><span class="av" style="background:var(--av1)">MS</span>
+            <div class="who"><div class="nm">Maria Souza <span class="hot" title="Sem resposta há 2 h"></span></div><div class="ex">"Oi, ainda tem a promoção de ontem?"</div></div>
+            <span class="chip novo"><i></i>Novo lead</span>
+            <span class="meta">há 2 h <span class="ch">· Linha 2</span></span>
+            <span class="owner" style="background:var(--av2)" title="Ana Lima">AL</span>
+            <div class="acts"><span class="ib" title="Abrir conversa"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z"/></svg></span><span class="ib" title="Enviar template"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/></svg></span><span class="ib" title="Mais"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span></div>
+          </div>
+          <div class="row">
+            <span class="cb"></span><span class="av" style="background:var(--av5)">CD</span>
+            <div class="who"><div class="nm">Carla Dias</div><div class="ex"><span class="me">Você:</span> Proposta enviada, me avisa qualquer dúvida</div></div>
+            <span class="chip prop"><i></i>Proposta</span>
+            <span class="meta">há 3 h <span class="ch">· Linha 1</span></span>
+            <span class="owner" style="background:var(--av2)">AL</span>
+          </div>
+          <div class="row">
+            <span class="cb"></span><span class="av" style="background:var(--av3)">JP</span>
+            <div class="who"><div class="nm">João Pereira</div><div class="ex">Agente IA: agendou avaliação para quinta 14h</div></div>
+            <span class="chip qual"><i></i>Qualificado</span>
+            <span class="meta">ontem <span class="ch">· Linha 2</span></span>
+            <span class="owner" style="background:var(--av4)">RM</span>
+          </div>
+          <div class="row">
+            <span class="cb"></span><span class="av" style="background:var(--av6)">LV</span>
+            <div class="who"><div class="nm">Loja Vida Natural <span class="hot" title="Sem resposta há 26 h"></span></div><div class="ex">"Consegue mandar o catálogo em PDF?"</div></div>
+            <span class="chip qual"><i></i>Qualificado</span>
+            <span class="meta">ontem <span class="ch">· Linha 1</span></span>
+            <span class="owner" style="background:var(--av4)">RM</span>
+          </div>
+          <div class="row">
+            <span class="cb"></span><span class="av" style="background:var(--av4)">RL</span>
+            <div class="who"><div class="nm">Rafael Lima</div><div class="ex"><span class="me">Você:</span> Fechado! Envio o contrato hoje</div></div>
+            <span class="chip ganho"><i></i>Ganho</span>
+            <span class="meta">2 dias <span class="ch">· Linha 1</span></span>
+            <span class="owner" style="background:var(--av2)">AL</span>
+          </div>
+          <div class="row">
+            <span class="cb"></span><span class="av" style="background:var(--av2)">PA</span>
+            <div class="who"><div class="nm">Paula Andrade</div><div class="ex">Veio de anúncio · Campanha Black Friday</div></div>
+            <span class="chip novo"><i></i>Novo lead</span>
+            <span class="meta">3 dias <span class="ch">· Linha 2</span></span>
+            <span class="owner" style="background:var(--bd2);color:var(--tx3)" title="Sem responsável">—</span>
+          </div>
+          <div class="row">
+            <span class="cb"></span><span class="av" style="background:var(--av5)">TB</span>
+            <div class="who"><div class="nm">Tiago Barros</div><div class="ex"><span class="me">Você:</span> Entendo, qualquer coisa estamos aqui</div></div>
+            <span class="chip perd"><i></i>Perdido</span>
+            <span class="meta">1 sem <span class="ch">· Linha 1</span></span>
+            <span class="owner" style="background:var(--av4)">RM</span>
+          </div>
+        </div>
+        <aside class="panel">
+          <div class="ph">
+            <span class="av" style="background:var(--av1)">MS</span>
+            <div>
+              <div class="nm">Maria Souza</div>
+              <div class="sub">+55 11 98765-4321 · Linha 2</div>
+              <div class="tags"><span class="chip novo"><i></i>Novo lead</span><span class="chip">VIP</span><span class="chip">Black Friday</span></div>
+            </div>
+            <span class="ib" title="Abrir ficha"><svg viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M21 14v7H3V3h7"/></svg></span>
+          </div>
+          <div class="pact"><span class="btn pri"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z"/></svg>Abrir conversa</span><span class="btn">Template</span><span class="btn">Negócio</span></div>
+          <div class="ps">
+            <h4>Resumo</h4>
+            <dl class="kv"><dt>Responsável</dt><dd>Ana Lima</dd><dt>Fonte</dt><dd>Anúncio · Meta Ads</dd><dt>Último contato</dt><dd>hoje, 09:12 · sem resposta há 2 h</dd><dt>Opt-in</dt><dd>Sim · 03/09</dd></dl>
+          </div>
+          <div class="ps">
+            <h4>Negócios</h4>
+            <div class="deal"><span class="chip prop"><i></i>Proposta</span>Plano anual<b>R$ 4.500</b></div>
+          </div>
+          <div class="ps">
+            <h4>Atividade recente</h4>
+            <div class="tl">
+              <div><span class="t">09:12</span><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z"/></svg><span>"Oi, ainda tem a promoção de ontem?"</span></div>
+              <div><span class="t">ontem</span><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/></svg><span>Template <em>promo_bf_v2</em> entregue e lido</span></div>
+              <div><span class="t">03/09</span><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Criada por anúncio · campanha Black Friday</span></div>
+            </div>
+          </div>
+          <div class="pfoot"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>1 de 5.191 · ↑↓ para navegar</div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="anat" style="margin-top:14px">
+      <div><h4>O que a linha carrega (e só isso)</h4><ul>
+        <li><b>Nome</b> em 600 — a única coisa em destaque; ponto vermelho só quando está sem resposta.</li>
+        <li><b>Última mensagem</b> em texto mudo: diz o que aconteceu sem abrir nada ("Você:" quando foi seu).</li>
+        <li><b>Situação</b> como chip com ponto colorido (cor = etapa, não decoração).</li>
+        <li><b>Quando · linha</b> à direita, tabular; <b>responsável</b> como avatar de 22 px.</li>
+        <li>Checkbox e ações <b>só no hover</b>; a barra de seleção em massa aparece ao marcar o primeiro.</li>
+      </ul></div>
+      <div><h4>O que sai da tela</h4><ul>
+        <li>Telefone como coluna (fica no painel e no subtítulo da ficha).</li>
+        <li>Etiquetas como coluna (ficam no painel; filtráveis pela busca/segmento).</li>
+        <li>Chip de estatísticas (o resumo mora no "Todos" e no painel).</li>
+        <li>Chips Situação/Etiqueta da barra — viraram segmentos; "Filtro" continua para o avançado.</li>
+        <li>"Configurar colunas" — só existe no modo Tabela.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- ══════════ B ══════════ -->
+  <section class="dir">
+    <span class="tag">Direção B</span>
+    <h2>Tabela enxuta + segmentos</h2>
+    <p class="desc">Continua tabela, mas com <b>5 colunas por padrão</b> e uma só linha de texto por célula (44 px): Nome com avatar, Situação, Última interação, Responsável e Negócios em valor. Telefone e e-mail viram subtítulo mudo do nome; etiquetas aparecem inline (2 + "+N"). Os segmentos são os mesmos da direção A; "Configurar colunas" continua para quem precisa das 12. Clicar abre a ficha (página) como hoje — ou o painel, se você preferir combinar.</p>
+    <p class="ref">Referência: HubSpot (views como abas, colunas por view), Attio (modo tabela por segmento), Linear (checkbox/ações no hover, coluna primária dominante).</p>
+
+    <div class="screen">
+      <div class="top">
+        <h3>Leads</h3>
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Nome, telefone ou e-mail</div>
+        <span class="btn ghost"><svg viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M10 18h4"/></svg>Filtro</span>
+        <div class="right">
+          <span class="btn ghost"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>Colunas</span>
+          <span class="btn"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg>Importar</span>
+          <span class="btn pri"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Novo lead</span>
+        </div>
+      </div>
+      <div class="views">
+        <span class="on">Todos <span class="n">5.191</span></span>
+        <span>Meus <span class="n">312</span></span>
+        <span>Sem resposta <span class="n">47</span></span>
+        <span>Quentes <span class="n">19</span></span>
+        <span>Novos hoje <span class="n">8</span></span>
+        <span class="plus"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+      </div>
+      <div class="body full">
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th class="c0"></th><th>Nome</th><th>Situação</th><th>Última interação</th><th>Responsável</th><th class="r">Negócios</th><th></th></tr></thead>
+          <tbody>
+            <tr class="sel"><td class="c0"><span class="cb"></span></td>
+              <td><div class="cell"><span class="av" style="background:var(--av1)">MS</span><div style="min-width:0"><div class="nm">Maria Souza</div><div class="ph2">+55 11 98765-4321</div></div><span class="tgs"><span class="tg">VIP</span><span class="tg">+1</span></span></div></td>
+              <td><span class="chip novo"><i></i>Novo lead</span></td>
+              <td class="mu">há 2 h <span class="ch">· sem resposta</span></td>
+              <td><div class="cell"><span class="owner" style="background:var(--av2)">AL</span>Ana Lima</div></td>
+              <td class="r valor">R$ 4.500</td>
+              <td class="k"><span class="ib"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span></td></tr>
+            <tr><td class="c0"><span class="cb"></span></td>
+              <td><div class="cell"><span class="av" style="background:var(--av5)">CD</span><div style="min-width:0"><div class="nm">Carla Dias</div><div class="ph2">+55 21 99876-1122</div></div></div></td>
+              <td><span class="chip prop"><i></i>Proposta</span></td>
+              <td class="mu">há 3 h <span class="ch">· você</span></td>
+              <td><div class="cell"><span class="owner" style="background:var(--av2)">AL</span>Ana Lima</div></td>
+              <td class="r valor">R$ 12.000</td>
+              <td class="k"><span class="ib"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span></td></tr>
+            <tr><td class="c0"><span class="cb"></span></td>
+              <td><div class="cell"><span class="av" style="background:var(--av3)">JP</span><div style="min-width:0"><div class="nm">João Pereira</div><div class="ph2">+55 31 98811-0099</div></div></div></td>
+              <td><span class="chip qual"><i></i>Qualificado</span></td>
+              <td class="mu">ontem <span class="ch">· agente IA</span></td>
+              <td><div class="cell"><span class="owner" style="background:var(--av4)">RM</span>Rui Matos</div></td>
+              <td class="r mu">—</td>
+              <td class="k"><span class="ib"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span></td></tr>
+            <tr><td class="c0"><span class="cb"></span></td>
+              <td><div class="cell"><span class="av" style="background:var(--av6)">LV</span><div style="min-width:0"><div class="nm">Loja Vida Natural</div><div class="ph2">+55 11 3333-9000</div></div><span class="tgs"><span class="tg">Atacado</span></span></div></td>
+              <td><span class="chip qual"><i></i>Qualificado</span></td>
+              <td class="mu">ontem <span class="ch">· sem resposta</span></td>
+              <td><div class="cell"><span class="owner" style="background:var(--av4)">RM</span>Rui Matos</div></td>
+              <td class="r valor">R$ 28.900</td>
+              <td class="k"><span class="ib"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span></td></tr>
+            <tr><td class="c0"><span class="cb"></span></td>
+              <td><div class="cell"><span class="av" style="background:var(--av4)">RL</span><div style="min-width:0"><div class="nm">Rafael Lima</div><div class="ph2">+55 41 99120-4455</div></div></div></td>
+              <td><span class="chip ganho"><i></i>Ganho</span></td>
+              <td class="mu">2 dias <span class="ch">· você</span></td>
+              <td><div class="cell"><span class="owner" style="background:var(--av2)">AL</span>Ana Lima</div></td>
+              <td class="r valor">R$ 7.200</td>
+              <td class="k"><span class="ib"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span></td></tr>
+            <tr><td class="c0"><span class="cb"></span></td>
+              <td><div class="cell"><span class="av" style="background:var(--av2)">PA</span><div style="min-width:0"><div class="nm">Paula Andrade</div><div class="ph2">+55 11 97001-2233</div></div></div></td>
+              <td><span class="chip novo"><i></i>Novo lead</span></td>
+              <td class="mu">3 dias <span class="ch">· anúncio</span></td>
+              <td class="mu">—</td>
+              <td class="r mu">—</td>
+              <td class="k"><span class="ib"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span></td></tr>
+            <tr><td class="c0"><span class="cb"></span></td>
+              <td><div class="cell"><span class="av" style="background:var(--av5)">TB</span><div style="min-width:0"><div class="nm">Tiago Barros</div><div class="ph2">+55 51 98222-7788</div></div></div></td>
+              <td><span class="chip perd"><i></i>Perdido</span></td>
+              <td class="mu">1 sem <span class="ch">· você</span></td>
+              <td><div class="cell"><span class="owner" style="background:var(--av4)">RM</span>Rui Matos</div></td>
+              <td class="r mu">—</td>
+              <td class="k"><span class="ib"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+      <div class="foot">5.191 contatos · 6 opt-in · 14 com etiquetas<div class="end"><span>1–50</span><span>›</span></div></div>
+    </div>
+
+    <div class="anat" style="margin-top:14px">
+      <div><h4>O que muda em relação a hoje</h4><ul>
+        <li><b>6 → 5 colunas</b> por padrão, e nenhuma delas vazia na linha típica.</li>
+        <li><b>36 → 44 px</b> com uma linha de texto por célula: telefone é subtítulo de 11 px mudo, não coluna.</li>
+        <li><b>Última interação</b> substitui "Último contato": diz quando <em>e quem</em> (você / agente / sem resposta).</li>
+        <li><b>Negócios</b> em valor (R$), não em contagem "0".</li>
+        <li>Checkbox e kebab <b>só no hover</b>; resumo vai para o rodapé, onde tem espaço.</li>
+      </ul></div>
+      <div><h4>Quando B é melhor que A</h4><ul>
+        <li>Operação que <b>compara e exporta</b> (varrer 50 linhas por valor/situação).</li>
+        <li>Times que já dependem das 12 colunas configuráveis.</li>
+        <li>Custo menor: é a tabela atual com colunas e densidade novas — sem painel novo.</li>
+        <li>Perde: contexto da conversa na linha e o "ver sem sair da lista".</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <div class="dec">
+    <h3>Decisões que são suas</h3>
+    <ol>
+      <li><b>Padrão da tela:</b> A (lista + painel) ou B (tabela enxuta)? <span class="rec">Recomendo A como padrão, com B como modo "Tabela" no mesmo seletor</span> — é o que Attio faz e reaproveita as 12 colunas já feitas.</li>
+      <li><b>Segmentos prontos:</b> Todos · Meus · Sem resposta · Quentes · Novos hoje — quais ficam, quais mudam? ("Quentes" precisa de definição: score ≥ X ou intenção alta.)</li>
+      <li><b>Sinal à direita da linha:</b> última interação (proposto) ou responsável em destaque?</li>
+      <li><b>Clique na linha:</b> painel lateral (A) ou ficha em página inteira (hoje)? No B dá para ter os dois.</li>
+    </ol>
+  </div>
+</div>
+</body>
+</html>

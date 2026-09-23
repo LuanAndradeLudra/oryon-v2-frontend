@@ -111,6 +111,15 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     no cabeçalho de 44px. Item 52px, seção 32px. Reverter: `8bbca26`. A página `/notifications` (mobile) reusa o item
     — as seções lá ficam a cargo do Farol.
 
+33. **Leads/Contatos — Direção A escolhida pelo PO** (23/09, artifact https://claude.ai/artifact/DSCF7t2LGa1vBwdeF6kXNx;
+    diagnóstico: "table view com muita informação ao mesmo tempo"): **lista de pessoas + painel acoplado** como padrão —
+    linha 52px (avatar · nome 600 · última mensagem muda · chip de situação · quando · linha · responsável 22px; checkbox e
+    ações só no hover), **segmentos como abas** (só os que a API sustenta), painel de ≈400px **sem scrim** reusando
+    `ContactDetailPanel` (o drawer de 768px com scrim deixa de existir; "Abrir ficha" leva a `/contacts/:id`), contato
+    aberto em `?contact=id`, abaixo de `lg` o painel vira sobreposição de tela inteira. Telefone/etiquetas/estatísticas
+    saem da linha; a tabela atual vira o modo "Tabela" (Direção B: 5 colunas, 44px, uma linha por célula) no mesmo
+    seletor Lista|Tabela. Reverter: commits da leva (ledger).
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
