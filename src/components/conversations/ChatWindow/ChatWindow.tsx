@@ -6,7 +6,7 @@ import { MessageInput } from './MessageInput'
 import { HandoffStripe } from './AiHandoffBanner'
 import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
-import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, DealOutcomeInput, SocketAnomalyReviewed } from '@/types'
+import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, DealOutcomeInput, SocketAnomalyReviewed, SocketMediaReady } from '@/types'
 
 interface ChatWindowProps {
   conversation: Conversation | null
@@ -56,7 +56,7 @@ export function ChatWindow({
   onSendError, sendBlockedReason,
   onBack,
 }: ChatWindowProps) {
-  const { messages, loading, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, markAnomaliesReviewed } =
+  const { messages, loading, hasMore, fetchMore, sendMessage, addIncomingMessage, updateMessageStatus, updateMediaThumbnail, markAnomaliesReviewed } =
     useMessages(conversation?.id ?? null)
 
   // Outbound quoted reply: which message the operator is replying to. Cleared
@@ -98,19 +98,26 @@ export function ChatWindow({
     const handleAnomalyReviewed = (payload: SocketAnomalyReviewed) => {
       if (payload.conversationId === conversation.id) markAnomaliesReviewed(payload)
     }
+    // Preview estilo WhatsApp — miniatura de PDF chega depois, via fila
+    // assíncrona (media-thumbnail.processor.ts no backend).
+    const handleMediaReady = (payload: SocketMediaReady) => {
+      if (payload.conversationId === conversation.id) updateMediaThumbnail(payload)
+    }
     socket.on('message:new', handleNew)
     socket.on('conversation:updated', handleNew)
     socket.on('message:status', handleStatus)
     socket.on('conversation:ai-pause-updated', handleAiPause)
     socket.on('conversation:anomaly-reviewed', handleAnomalyReviewed)
+    socket.on('message:media-ready', handleMediaReady)
     return () => {
       socket.off('message:new', handleNew)
       socket.off('conversation:updated', handleNew)
       socket.off('message:status', handleStatus)
       socket.off('conversation:ai-pause-updated', handleAiPause)
       socket.off('conversation:anomaly-reviewed', handleAnomalyReviewed)
+      socket.off('message:media-ready', handleMediaReady)
     }
-  }, [conversation?.id, addIncomingMessage, updateMessageStatus, markAnomaliesReviewed, onAiPauseSocketEvent])
+  }, [conversation?.id, addIncomingMessage, updateMessageStatus, updateMediaThumbnail, markAnomaliesReviewed, onAiPauseSocketEvent])
 
   const handleStatusChange = async (status: 'open' | 'pending' | 'resolved', dealOutcome?: DealOutcomeInput) => {
     if (!conversation) return

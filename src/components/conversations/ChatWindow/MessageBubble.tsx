@@ -10,8 +10,11 @@ import type { Message } from '@/types'
 import { WhatsAppText } from '@/lib/whatsappFormatter'
 import { feAudioLog } from '@/lib/audioMediaDebug'
 import { getAuthenticatedMediaUrl, useAuthenticatedMediaSrc } from '@/lib/mediaUrls'
+import { downloadMedia } from '@/lib/downloadMedia'
 import { renderExtendedContent, STRUCTURED_TYPES, ReferralBanner } from './messageRenderers/registry'
 import { ReplyQuoteBar } from './messageRenderers/ReplyQuoteBar'
+import { DocumentCard } from './messageRenderers/DocumentCard'
+import { useMediaViewer } from '@/components/ui/MediaViewer'
 import { AnomalyDetailModal } from './AnomalyDetailModal'
 import { guardReasonLabel } from '@/lib/guardReason'
 
@@ -24,23 +27,9 @@ function reviewedLabel(at: string | null, by?: string | null): string {
   return `Verificada${by ? ` por ${by}` : ''}${when ? ` em ${when}` : ''}`
 }
 
-// Robust media download: fetch blob (works cross-origin as long as CORS is
-// permissive), fall back to opening in a new tab if the browser refuses.
-async function downloadMedia(url: string, filename?: string) {
-  try {
-    const res = await fetch(url, { credentials: 'include' })
-    if (!res.ok) throw new Error('fetch failed')
-    const blob = await res.blob()
-    const objUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = objUrl
-    a.download = filename ?? ''
-    a.click()
-    URL.revokeObjectURL(objUrl)
-  } catch {
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
-}
+// downloadMedia mora em @/lib/downloadMedia.ts — MediaViewer também precisa
+// dele, e importar direto daqui criaria um ciclo (MediaViewer → MessageBubble
+// → MediaViewer, por causa do useMediaViewer usado logo abaixo).
 
 interface MessageBubbleProps {
   message: Message
@@ -52,6 +41,12 @@ interface MessageBubbleProps {
   quotedMessage?: Message | null
   /** Start a quoted reply to this message (desktop hover button + mobile swipe). */
   onReply?: (message: Message) => void
+  /** SCRUM-1158 — jump to (scroll + flash) another message already in the
+   *  loaded window, by id. Wired to the reply quote bar, WhatsApp-style. */
+  onJumpToMessage?: (messageId: string) => void
+  /** True for ~1.2s right after `onJumpToMessage` lands here — brief bubble
+   *  flash so the user's eye finds the target message. */
+  highlighted?: boolean
 }
 
 /** Inline sender indicator for OUTBOUND messages, pinned to the LEFT of the
@@ -173,6 +168,9 @@ function MediaContent({
 }) {
   const [imageError, setImageError] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  // Visualizador in-app (imagem/documento/PDF) — SCRUM sem card, pedido do
+  // usuário 2026-09-22. Substitui os `window.open` em nova guia.
+  const { open: openViewer } = useMediaViewer()
   // Audio playback: one HTMLAudioElement per bubble, driven by rAF so the
   // progress bar moves 60fps-smooth instead of jumping every 250ms (the
   // `timeupdate` cadence). The bar width and time readout are updated by
@@ -404,7 +402,7 @@ function MediaContent({
           decoding="async"
           className="rounded-lg max-w-[280px] max-h-[320px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
           onError={() => setImageError(true)}
-          onClick={() => window.open(authMediaSrc, '_blank')}
+          onClick={() => openViewer(message)}
         />
         {message.mediaCaption && (
           <p className="text-xs mt-1 text-current opacity-80">{message.mediaCaption}</p>
@@ -515,34 +513,7 @@ function MediaContent({
   }
 
   if (message.type === 'document' && message.mediaUrl) {
-    const getDocumentIcon = (url: string) => {
-      const ext = url.split('.').pop()?.toLowerCase()
-      if (ext === 'pdf') return '📄'
-      if (['doc', 'docx'].includes(ext || '')) return '📝'
-      if (['xls', 'xlsx'].includes(ext || '')) return '📊'
-      if (['ppt', 'pptx'].includes(ext || '')) return '📽️'
-      return '📎'
-    }
-
-    return (
-      <a
-        href={authMediaSrc}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 py-2 px-1 hover:bg-current/5 rounded-lg transition-colors"
-      >
-        <div className="w-10 h-10 rounded-lg bg-current/10 flex items-center justify-center text-lg">
-          {getDocumentIcon(authMediaSrc)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">
-            {message.mediaCaption || 'Documento'}
-          </p>
-          <p className="text-xs opacity-60">Toque para abrir</p>
-        </div>
-        <Download className="w-4 h-4 opacity-60" />
-      </a>
-    )
+    return <DocumentCard message={message} onOpen={() => openViewer(message)} />
   }
 
   if (message.type === 'video' && message.mediaUrl) {
@@ -573,7 +544,7 @@ function MediaContent({
           decoding="async"
           className="rounded-lg max-w-[150px] max-h-[150px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
           onError={() => setImageError(true)}
-          onClick={() => window.open(authMediaSrc, '_blank')}
+          onClick={() => openViewer(message)}
         />
       </div>
     )
@@ -616,9 +587,13 @@ function MediaContent({
   return null
 }
 
-function TextContent({ message }: { message: Message }) {
+// Exportado só pra teste (src/.../MessageBubble.test.tsx) — sem hooks, dá pra
+// renderizar isolado sem mockar mídia autenticada/áudio do componente principal.
+export function TextContent({ message }: { message: Message }) {
   // Structured types own their full display via the registry; don't also
   // render the synthetic "[…]" body underneath the rich renderer.
+  // SCRUM-1158: inclui image/video/document — body é sempre a mesma legenda
+  // que MediaContent já desenha embaixo da mídia.
   if (STRUCTURED_TYPES.has(message.type)) return null
   return message.body ? (
     <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
@@ -627,11 +602,14 @@ function TextContent({ message }: { message: Message }) {
   ) : null
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, showAvatar, prevMessage, quotedMessage, onReply, onJumpToMessage, highlighted }: MessageBubbleProps) {
   const isOutbound = message.direction === 'outbound'
   const isSameDirection = prevMessage?.direction === message.direction
   // Extra top spacing when a new sender run starts (the avatar sits above).
   const gap = showAvatar ? 'mt-3' : isSameDirection ? 'mt-0.5' : 'mt-3'
+  // "Abrir imagem/vídeo/documento" no menu de contexto — mesmo visualizador
+  // in-app usado pelo clique direto na mídia (MediaContent).
+  const { open: openViewer } = useMediaViewer()
 
   // Transcription toggle lives here so the "Ver transcrição" control can sit
   // next to the timestamp in the footer; the MediaContent component
@@ -674,29 +652,17 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       const copyLink = () =>
         resolveUrl().then((u) => navigator.clipboard.writeText(u)).catch(() => {})
       if (message.type === 'image') {
-        items.push({
-          label: 'Abrir imagem',
-          icon: ExternalLink,
-          onClick: () => void resolveUrl().then((u) => window.open(u, '_blank', 'noopener,noreferrer')),
-        })
+        items.push({ label: 'Abrir imagem', icon: ExternalLink, onClick: () => openViewer(message) })
         items.push({ label: 'Copiar link da imagem', icon: LinkIcon, onClick: () => void copyLink() })
         items.push({ label: 'Baixar imagem', icon: Download, onClick: () => void resolveUrl().then(downloadMedia) })
       } else if (message.type === 'audio') {
         items.push({ label: 'Baixar áudio', icon: Download, onClick: () => void resolveUrl().then(downloadMedia) })
         items.push({ label: 'Copiar link do áudio', icon: LinkIcon, onClick: () => void copyLink() })
       } else if (message.type === 'video') {
-        items.push({
-          label: 'Abrir vídeo',
-          icon: ExternalLink,
-          onClick: () => void resolveUrl().then((u) => window.open(u, '_blank', 'noopener,noreferrer')),
-        })
+        items.push({ label: 'Abrir vídeo', icon: ExternalLink, onClick: () => openViewer(message) })
         items.push({ label: 'Baixar vídeo', icon: Download, onClick: () => void resolveUrl().then(downloadMedia) })
       } else if (message.type === 'document') {
-        items.push({
-          label: 'Abrir documento',
-          icon: ExternalLink,
-          onClick: () => void resolveUrl().then((u) => window.open(u, '_blank', 'noopener,noreferrer')),
-        })
+        items.push({ label: 'Abrir documento', icon: ExternalLink, onClick: () => openViewer(message) })
         items.push({
           label: 'Baixar documento',
           icon: Download,
@@ -705,7 +671,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       }
     }
     return items
-  }, [message])
+  }, [message, openViewer])
 
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
@@ -787,11 +753,18 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
               ? 'bubble-out-surface bg-bubble-out text-bubble-out-fg rounded-br-xs'
               : 'bubble-in-elevate bg-bubble-in text-[color:var(--color-bubble-in-fg,#f1f5f9)] rounded-bl-xs',
             showAvatar && isOutbound && 'rounded-br-md rounded-tr-xs',
-            showAvatar && !isOutbound && 'rounded-bl-md rounded-tl-xs'
+            showAvatar && !isOutbound && 'rounded-bl-md rounded-tl-xs',
+            highlighted && 'animate-msg-highlight'
           )}
           style={isOutbound ? { boxShadow: 'var(--bubble-shadow-soft)' } : undefined}
         >
-        {message.contextWamid && <ReplyQuoteBar message={message} quoted={quotedMessage} />}
+        {message.contextWamid && (
+          <ReplyQuoteBar
+            message={message}
+            quoted={quotedMessage}
+            onClick={quotedMessage && onJumpToMessage ? () => onJumpToMessage(quotedMessage.id) : undefined}
+          />
+        )}
         <ReferralBanner message={message} />
         <MediaContent message={message} showTranscription={showTranscription} />
         <TextContent message={message} />

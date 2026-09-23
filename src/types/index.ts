@@ -970,6 +970,14 @@ export interface Conversation {
   lastMessagePreview: string
   /** Who sent the last message — drives the sender indicator on the preview. */
   lastMessageSenderKind?: 'client' | 'operator' | 'ai' | 'campaign' | 'rule' | null
+  /**
+   * SCRUM-1096 — trecho de mensagem que bateu a busca atual, com os
+   * marcadores de `lib/searchHighlight.tsx`. Só vem preenchido quando a
+   * busca em curso casou pelo CONTEÚDO da mensagem (não pelo nome/telefone
+   * do contato) — nesse caso a lista mostra este texto no lugar de
+   * `lastMessagePreview`. Aditivo: ausente/null fora de uma busca por conteúdo.
+   */
+  searchSnippet?: string | null
   unreadCount: number
   /** Minimal shape — only the fields the conversation list/header actually
    *  read (id, firstName, lastName for the assignee pill). The realtime
@@ -1018,6 +1026,13 @@ export interface Message {
   body?: string
   mediaUrl?: string
   mediaCaption?: string
+  /** Preview estilo WhatsApp (documento) — tamanho/tipo já calculados no
+   *  envio/recebimento; nº de páginas só pra PDF; miniatura da 1ª página
+   *  chega depois, de forma assíncrona (evento `message:media-ready`). */
+  mediaSizeBytes?: number | null
+  mediaMimeType?: string | null
+  mediaPageCount?: number | null
+  mediaThumbnailUrl?: string | null
   /** Whisper transcription for inbound WhatsApp voice notes — null when the
    *  feature flag is off, transcription failed, or type !== 'audio'. */
   transcription?: string | null
@@ -1579,6 +1594,14 @@ export interface SocketMessageStatus {
   messageId: string
   status: MessageStatus
   timestamp: string
+}
+
+/** Miniatura de PDF gerada de forma assíncrona (fila `media-thumbnail`) —
+ *  chega minutos/segundos depois da mensagem já estar na tela. */
+export interface SocketMediaReady {
+  messageId: string
+  conversationId: string
+  mediaThumbnailUrl: string
 }
 
 export interface SocketConversationAssigned {

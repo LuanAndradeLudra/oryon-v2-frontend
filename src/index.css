@@ -56,6 +56,13 @@
   --color-accent-soft:  rgba(45, 212, 191, 0.14);
   --color-accent-on:    #0A0F0F;
 
+  /* Destaque de busca por conteúdo (SCRUM-1096) — tokens próprios, não
+   * reaproveita --color-accent-soft: esse já é usado no hover do Button
+   * (src/components/ui/Button.tsx), mudar o alpha dele mudaria hover de
+   * botão sem querer. */
+  --color-search-highlight-bg: rgba(45, 212, 191, 0.14);
+  --color-search-highlight-fg: #5EEAD4;
+
   /* aliases de uso frequente nos componentes */
   --color-brand-cta:       #2DD4BF;
   --color-brand-cta-hover: #14B8A6;
@@ -640,6 +647,34 @@ code, pre, kbd, samp {
 .animate-conv-in      { animation: conv-slide-in      0.30s ease-out both; }
 .animate-slide-in-right { animation: slide-in-right   0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+/* SCRUM-1158 — "pular para a mensagem citada": pisca a bolha de destino, tipo
+ * WhatsApp. Achado em code review: animar `background-color` da própria bolha
+ * SUBSTITUI (não sobrepõe) a cor real dela (bg-bubble-out/bg-bubble-in) — o
+ * flash apagava a bolha em vez de destacá-la. Em vez disso, um `::after`
+ * sobreposto (`border-radius: inherit` cobre os cantos variáveis por tipo de
+ * bolha/avatar) com `background-color: currentColor` e `opacity` animada:
+ * compõe POR CIMA da cor real, nas duas bolhas e nos dois temas, sem token
+ * novo. `pointer-events: none` pra não bloquear o clique na ReplyQuoteBar por
+ * baixo. Sem `both`: o fill-mode padrão já reverte sozinho ao terminar, sem
+ * depender do React remover a classe no mesmo instante (a versão anterior
+ * dependia disso e deixava um frame com `background-color: transparent`
+ * grudado). */
+@keyframes msg-highlight-flash {
+  0%, 100% { opacity: 0; }
+  25%, 75% { opacity: 0.18; }
+}
+.animate-msg-highlight { position: relative; }
+.animate-msg-highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  animation: msg-highlight-flash 1.2s ease-in-out;
+}
+
 /* Transcrição de áudio — fade word-by-word */
 @keyframes transcription-word-in {
   from { opacity: 0; transform: translateY(2px); }
@@ -810,6 +845,15 @@ code, pre, kbd, samp {
   --color-accent-dark:  #0F766E;
   --color-accent-soft:  rgba(20, 184, 166, 0.10);
   --color-accent-on:    #FFFFFF;
+
+  /* Destaque de busca (SCRUM-1096) — tokens próprios (ver o bloco escuro
+   * acima pro motivo de não reaproveitar --color-accent-soft). Tinge com o
+   * PRÓPRIO --color-accent-dark (não o --color-accent mais claro): pedido
+   * do usuário foi "caixa mais escura, mais contraste com o texto
+   * destacado" — tingir com o tom escuro dá esse efeito; só subir o alpha
+   * do teal claro deixaria mais saturado, não mais escuro. */
+  --color-search-highlight-bg: rgba(15, 118, 110, 0.16);
+  --color-search-highlight-fg: #0F766E;
 
   /* Bubbles (light) — outbound: teal sólido da marca, texto branco. Contraste
      forte com o canvas cinza (#E4E7ED) e separação total do inbound branco. */

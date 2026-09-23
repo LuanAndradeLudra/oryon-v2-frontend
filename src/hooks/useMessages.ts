@@ -1,16 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { messagesApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
-import type { Message, MessageType, SendMessageDto, SocketAnomalyReviewed, SocketMessageStatus } from '@/types'
-
-/** Mesma classificação que o backend usa (conversations.service.ts) — só
- *  pra decidir que tipo de bolha a mensagem otimista deve nascer como. */
-function inferMessageType(mimeType: string): MessageType {
-  if (mimeType.startsWith('image/')) return 'image'
-  if (mimeType.startsWith('audio/')) return 'audio'
-  if (mimeType.startsWith('video/')) return 'video'
-  return 'document'
-}
+import { inferMessageType } from '@/lib/inferMessageType'
+import type { Message, SendMessageDto, SocketAnomalyReviewed, SocketMediaReady, SocketMessageStatus } from '@/types'
 
 export function useMessages(conversationId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -64,6 +56,15 @@ export function useMessages(conversationId: string | null) {
             }
           : m
       )
+    )
+  }, [])
+
+  /** Preview estilo WhatsApp — a miniatura de PDF é gerada numa fila
+   *  assíncrona (pedido do usuário 2026-09-22, sem card de Jira) e "encaixa"
+   *  na bolha do documento já renderizada, sem precisar refetch. */
+  const updateMediaThumbnail = useCallback((payload: SocketMediaReady) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === payload.messageId ? { ...m, mediaThumbnailUrl: payload.mediaThumbnailUrl } : m))
     )
   }, [])
 
@@ -150,6 +151,7 @@ export function useMessages(conversationId: string | null) {
     fetchMore: () => fetchMessages(false),
     addIncomingMessage,
     updateMessageStatus,
+    updateMediaThumbnail,
     markAnomaliesReviewed,
     sendMessage,
   }
