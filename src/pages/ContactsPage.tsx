@@ -21,6 +21,7 @@ import { BulkActionBar } from '@/components/contacts/BulkActionBar'
 import { CampaignWizard } from '@/components/campaigns/CampaignWizard'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { Modal } from '@/components/ui/Modal'
+import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { useContacts } from '@/hooks/useContacts'
@@ -35,7 +36,7 @@ import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { Fab } from '@/components/common/Fab'
 import { tagsApi, pipelinesApi } from '@/services/api'
 import { isAdminTier } from '@/lib/roleHelpers'
-import { cn, getApiErrorMessage } from '@/lib/utils'
+import { getApiErrorMessage } from '@/lib/utils'
 import type { Contact, ContactFilters, ContactStage, Tag, Pipeline } from '@/types'
 
 /**
@@ -438,21 +439,27 @@ export function ContactsPage() {
       />
 
       {/* Bulk delete confirmation — shared between bar and context menu.
-          Uses the raw Modal so we can preview the contacts being deleted. */}
+          Usa o Modal cru (role=alertdialog) e não o ConfirmModal porque mostra
+          a prévia dos contatos que serão excluídos; o alcance vai no mesmo
+          bloco de impacto (Banner danger + contagem) do ConfirmModal. */}
       <Modal
         open={confirmBulkDelete}
         onClose={() => { if (!bulkDeleting) setConfirmBulkDelete(false) }}
         title={`Excluir ${selectedIds.size} contato${selectedIds.size === 1 ? '' : 's'}`}
         className="max-w-md"
+        role="alertdialog"
       >
-        <div className="flex items-start gap-3 mb-4 p-3 rounded-lg bg-danger/10 border border-danger/30">
-          <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-surface-300 leading-relaxed">
+        <Banner variant="danger" className="mb-4">
+          <p className="leading-snug">
+            <span className="font-display text-base font-bold mr-1.5 tabular-nums">{selectedIds.size}</span>
+            {selectedIds.size === 1 ? 'contato será excluído permanentemente' : 'contatos serão excluídos permanentemente'}
+          </p>
+          <p className="mt-0.5 opacity-80">
             {selectedIds.size === 1
               ? 'Esta ação não pode ser desfeita pela interface.'
               : 'Esta ação não pode ser desfeita pela interface. Revise os contatos abaixo antes de confirmar.'}
           </p>
-        </div>
+        </Banner>
 
         {selectedContacts.length > 0 && (
           <div className="mb-4">
@@ -489,23 +496,23 @@ export function ContactsPage() {
         )}
 
         <div className="flex gap-2 justify-end">
-          <button
+          {/* Foco inicial em Cancelar (destrutivo): Enter não apaga por acidente. */}
+          <Button
+            variant="neutral"
             onClick={() => { if (!bulkDeleting) setConfirmBulkDelete(false) }}
             disabled={bulkDeleting}
-            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] transition-all disabled:opacity-60"
+            data-autofocus=""
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="danger"
             onClick={confirmBulkDeleteAction}
+            loading={bulkDeleting}
             disabled={bulkDeleting || selectedIds.size === 0}
-            className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium transition-all bg-danger text-white hover:bg-red-600',
-              (bulkDeleting || selectedIds.size === 0) && 'opacity-60 cursor-not-allowed',
-            )}
           >
             {bulkDeleting ? 'Excluindo...' : `Excluir ${selectedIds.size} contato${selectedIds.size === 1 ? '' : 's'}`}
-          </button>
+          </Button>
         </div>
       </Modal>
 

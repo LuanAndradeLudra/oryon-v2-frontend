@@ -480,7 +480,8 @@ export function DealDetailHeader({
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => { setConfirmDelete(false); onDelete() }}
         title="Excluir negócio"
-        description={`Tem certeza que deseja excluir "${deal.title}"? Esta ação não pode ser desfeita.`}
+        impact={{ label: `"${deal.title}" será excluído permanentemente`, tone: 'danger' }}
+        description="Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
       />

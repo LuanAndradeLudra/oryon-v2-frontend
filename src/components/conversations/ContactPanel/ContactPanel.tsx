@@ -326,7 +326,8 @@ export function ContactPanel({
         onClose={() => setArchiveOpen(false)}
         onConfirm={() => { onArchive(); setArchiveOpen(false) }}
         title="Arquivar conversa"
-        description={`Tem certeza que deseja arquivar a conversa com ${contact.displayName}? Ela ficará como "Abandonada".`}
+        impact={{ label: `A conversa com ${contact.displayName} ficará como "Abandonada"`, tone: 'warning' }}
+        description="Tem certeza que deseja arquivar esta conversa?"
         confirmLabel="Arquivar"
         danger
       />

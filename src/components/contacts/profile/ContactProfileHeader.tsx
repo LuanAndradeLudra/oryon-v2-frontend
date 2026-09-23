@@ -289,7 +289,8 @@ export function ContactProfileHeader({
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => { setConfirmDelete(false); void onDelete() }}
         title="Excluir contato"
-        description={`Esta ação é irreversível. O contato "${contact.displayName || contact.waId}" e todo o seu histórico serão excluídos permanentemente.`}
+        impact={{ label: `O contato "${contact.displayName || contact.waId}" e todo o seu histórico serão excluídos permanentemente`, tone: 'danger' }}
+        description="Esta ação é irreversível."
         confirmLabel="Excluir contato"
         danger
       />
