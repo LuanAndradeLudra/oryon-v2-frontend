@@ -79,27 +79,38 @@ export function useLayer(open: boolean, onClose: () => void): { zIndex: number; 
 
   const idRef = useRef<number | null>(null)
 
+  // `push`/`pop` (useCallback estáveis) e não o `ctx` inteiro nas dependências:
+  // o valor do contexto é recriado a CADA mudança da pilha (`useMemo` sobre
+  // `stack`), e o próprio `push` muda a pilha — com `[open, ctx]` o efeito
+  // reexecutava a cada push (cleanup → pop → push → novo ctx → …), num loop
+  // infinito de efeitos enquanto qualquer Modal/Drawer/Dropdown estivesse
+  // aberto (achado 2026-09-23 ao tentar testar o MediaViewer: >200 renders
+  // num único mount; o worker do Vitest morria). Ver LayerContext.test.tsx.
+  const push = ctx?.push
+  const pop = ctx?.pop
+  const hasProvider = ctx !== null
+
   // Registro na pilha compartilhada — só roda quando há um LayerProvider
   // por perto (sempre o caso em runtime, ver App.tsx).
   useEffect(() => {
-    if (!ctx || !open) return
-    const id = ctx.push(() => onCloseRef.current())
+    if (!push || !pop || !open) return
+    const id = push(() => onCloseRef.current())
     idRef.current = id
     return () => {
-      ctx.pop(id)
+      pop(id)
       idRef.current = null
     }
-  }, [open, ctx])
+  }, [open, push, pop])
 
   // Fallback sem provider (ex.: Modal/Drawer renderizado isolado num teste
   // de unidade) — Escape continua funcionando, só não coordena com outros
   // overlays por não haver pilha compartilhada pra coordenar com.
   useEffect(() => {
-    if (ctx || !open) return
+    if (hasProvider || !open) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onCloseRef.current() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [open, ctx])
+  }, [open, hasProvider])
 
   if (!ctx) return { zIndex: BASE_Z, isTopmost: true }
 
