@@ -83,7 +83,15 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
       footer={
         <div className="flex items-center gap-2">
           {connector.status === 'installed' && (
-            <button type="button" className="text-xs font-semibold text-danger hover:opacity-80 mr-auto">
+            // Sem serviço de conectores no front (tudo aqui é casca — connectorsMock):
+            // não existe endpoint de remoção pra ligar. Desabilitado até existir;
+            // quando existir, exige ConfirmModal danger + impact (nome do conector).
+            <button
+              type="button"
+              disabled
+              title="Em breve"
+              className="text-xs font-semibold text-danger mr-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Remover credencial
             </button>
           )}
