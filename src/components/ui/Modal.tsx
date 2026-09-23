@@ -119,7 +119,7 @@ export function Modal({ open, onClose, title, children, footer, fillHeight, clas
               <button
                 onClick={onClose}
                 aria-label="Fechar"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-surface-800 hover:text-surface-100 transition-all cursor-pointer"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-all cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

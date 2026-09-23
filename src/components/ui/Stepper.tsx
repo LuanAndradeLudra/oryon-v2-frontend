@@ -51,7 +51,7 @@ export function Stepper({ sections, active, onJump, className }: Props) {
                   'group inline-flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors text-sm flex-shrink-0',
                   isActive
                     ? 'bg-surface-800 text-surface-100 ring-1 ring-surface-600'
-                    : 'text-surface-400 hover:text-surface-200 hover:bg-surface-900/60',
+                    : 'text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]',
                 )}
                 aria-current={isActive ? 'step' : undefined}
               >

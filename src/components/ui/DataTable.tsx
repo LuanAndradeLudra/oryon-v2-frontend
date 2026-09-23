@@ -145,7 +145,7 @@ export function DataTable<Row>({
                   activeKey === key
                     ? 'bg-[var(--rowhover)] [&>td:first-child]:shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
                     : selected
-                      ? 'bg-surface-800/60'
+                      ? 'bg-[var(--sf2)]'
                       : 'hover:bg-[var(--rowhover)]',
                 )}
               >
