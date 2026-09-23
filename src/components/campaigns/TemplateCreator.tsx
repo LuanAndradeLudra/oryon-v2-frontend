@@ -12,6 +12,9 @@ import { TemplatePreview } from './TemplatePreview'
 import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
 import { WizardProgress } from '@/components/ui/WizardProgress'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Textarea } from '@/components/ui/Textarea'
 import { SubcategoryPreview } from './SubcategoryPreview'
 import { templatesApi, whatsappNumbersApi } from '@/services/api'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
@@ -648,14 +651,11 @@ function StepMensagem({
   readOnly?: boolean
 }) {
   const fieldDisabled = !!readOnly
-  // Direção C + referência de mercado (Meta, Twilio, Wati): campo de altura
-  // fixa, contador DENTRO do campo à direita, tipo de cabeçalho em pílulas,
-  // sem caixas de "boas práticas" — a orientação vira uma linha discreta.
-  const campo = (erro?: string) => cn(
-    'w-full h-8 bg-surface-900 border rounded-sm px-2.5 text-[13px] text-surface-100 placeholder:text-surface-500',
-    'focus:outline-none transition-colors disabled:opacity-60',
-    erro ? 'border-danger/70 focus:border-danger' : 'border-[var(--bd2)] focus:border-brand-500',
-  )
+  // Direção C + referência de mercado (Meta, Twilio, Wati): contador DENTRO
+  // do campo à direita, tipo de cabeçalho em pílulas, sem caixas de "boas
+  // práticas". Campos são os PRIMITIVOS Input/Select/Textarea em `md` (36px,
+  // FIELD-03) — a primeira versão copiava valores à mão em 32px, fora da
+  // régua sm 28 / md 36 / lg 44 do sistema.
   const Contador = ({ n, max }: { n: number; max: number }) => (
     <span className={cn(
       'absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] tabular-nums pointer-events-none',
@@ -671,24 +671,27 @@ function StepMensagem({
       <Section title="Nome" required badge="Minúsculas, números e _ · até 512">
         <div className="flex gap-2">
           <div className="relative flex-1 min-w-0">
-            <input
+            <Input
+              size="md"
+              error={errors.name}
               value={name}
               onChange={(e) => onName(e.target.value)}
               disabled={fieldDisabled}
               placeholder="ex: boas_vindas_novos_clientes"
-              className={cn(campo(errors.name), 'pr-16')}
+              className="pr-16"
             />
             <Contador n={name.length} max={512} />
           </div>
-          <select
+          <Select
+            size="md"
             value={language}
             onChange={(e) => onLanguage(e.target.value)}
             disabled={fieldDisabled}
             aria-label="Idioma"
-            className={cn(campo(), 'w-44 flex-none appearance-none pr-7')}
+            className="w-44 flex-none"
           >
             {LANGUAGES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          </Select>
         </div>
         {errors.name && <Ajuda erro={errors.name} />}
       </Section>
@@ -720,12 +723,14 @@ function StepMensagem({
         {headerType === 'TEXT' && (
           <div className="mt-2.5">
             <div className="relative">
-              <input
+              <Input
+                size="md"
+                error={errors.headerText}
                 value={headerText}
                 onChange={(e) => onHeaderText(sanitizeHeaderText(e.target.value).slice(0, 60))}
                 disabled={fieldDisabled}
                 placeholder="Texto do cabeçalho — pode conter {{1}}"
-                className={cn(campo(errors.headerText), 'pr-14')}
+                className="pr-14"
               />
               <Contador n={headerText.length} max={60} />
             </div>
@@ -734,12 +739,13 @@ function StepMensagem({
         )}
         {['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && (
           <div className="mt-2.5">
-            <input
+            <Input
+              size="md"
+              error={errors.headerMediaUrl}
               value={headerMediaUrl}
               onChange={(e) => onHeaderMediaUrl(e.target.value)}
               disabled={fieldDisabled}
               placeholder="https://exemplo.com/amostra.jpg"
-              className={campo(errors.headerMediaUrl)}
             />
             <Ajuda erro={errors.headerMediaUrl}>URL pública da amostra que a Meta usa na revisão. {HEADER_TYPES.find((h) => h.value === headerType)?.desc}.</Ajuda>
           </div>
@@ -748,7 +754,9 @@ function StepMensagem({
 
       <Section title="Corpo" required badge="Até 1.024 caracteres · {{1}} vira o valor do contato">
         <div className="relative">
-          <textarea
+          <Textarea
+            size="md"
+            error={errors.body}
             ref={bodyRef}
             value={body}
             onChange={(e) => onBody(e.target.value)}
@@ -756,7 +764,7 @@ function StepMensagem({
             rows={6}
             maxLength={1024}
             placeholder="Olá, {{1}}! Sua mensagem aqui…"
-            className={cn(campo(errors.body), 'h-auto py-2 pb-6 leading-[1.55] resize-y min-h-[120px]')}
+            className="pb-6 leading-[1.55] resize-y min-h-[120px]"
           />
           <span className={cn('absolute right-2.5 bottom-2 text-[11px] tabular-nums pointer-events-none', body.length > 1024 ? 'text-danger' : 'text-surface-500')}>
             {body.length}/1024
@@ -782,14 +790,14 @@ function StepMensagem({
             <div className="flex flex-col gap-1.5">
               {varPositions.map((pos, i) => (
                 <div key={pos} className="flex items-center gap-2">
-                  <span className="h-8 w-14 flex-none inline-flex items-center justify-center rounded-sm border border-surface-700 bg-surface-900 font-mono text-[11.5px] text-surface-300">
+                  <span className="h-9 w-14 flex-none inline-flex items-center justify-center rounded-sm border border-surface-700 bg-surface-900 font-mono text-[11.5px] text-surface-300">
                     {`{{${pos}}}`}
                   </span>
-                  <input
+                  <Input
+                    size="md"
                     value={varExamples[i] ?? ''}
                     onChange={(e) => onVarExamples(varExamples.map((x, idx) => idx === i ? e.target.value : x))}
                     placeholder={`Exemplo para {{${pos}}} — ex: Ana`}
-                    className={campo()}
                   />
                 </div>
               ))}
@@ -800,12 +808,13 @@ function StepMensagem({
 
       <Section title="Rodapé" badge="Opcional · 60 caracteres · sem variável">
         <div className="relative">
-          <input
+          <Input
+            size="md"
             value={footer}
             onChange={(e) => onFooter(e.target.value.slice(0, 60))}
             disabled={fieldDisabled}
             placeholder="Ex: Equipe Oryon"
-            className={cn(campo(), 'pr-14')}
+            className="pr-14"
           />
           <Contador n={footer.length} max={60} />
         </div>
