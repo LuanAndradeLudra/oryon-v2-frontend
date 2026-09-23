@@ -386,7 +386,11 @@ function TemplateRow({ template, selecionado, onSelect }: {
       <span className="text-[12.5px] font-semibold text-surface-100 truncate max-w-[55%] sm:max-w-[210px] flex-none">
         {template.name}
       </span>
-      <span className="text-xs text-surface-500 truncate flex-1 min-w-0">{resumoCorpo(template.body)}</span>
+      {/* Medido ao vivo: em 390px quem não cabe não é o nome (195px, já
+          abaixo do teto) — é o resumo, sem espaço sobrando ao lado do chip
+          de 74px. Opção (a) escolhida: resumo é reforço de reconhecimento,
+          a mensagem inteira já aparece no painel/Modal de detalhe. */}
+      <span className="hidden sm:block text-xs text-surface-500 truncate flex-1 min-w-0">{resumoCorpo(template.body)}</span>
       {template.needsWabaAssignment && (
         <AlertCircle className="w-3.5 h-3.5 text-warning flex-none" aria-label="Sem linha WhatsApp atribuída" />
       )}
