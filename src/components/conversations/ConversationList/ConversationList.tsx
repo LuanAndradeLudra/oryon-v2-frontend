@@ -145,10 +145,10 @@ export function ConversationList({
     ? { ...statusCounts }
     : { all: 0, open: 0, pending: 0, resolved: 0 }
 
-  // Painel da lista (desktop): largura responsiva — a CONVERSA é o foco
-  // absoluto do Inbox, então a lista cede espaço em telas menores
-  // (360px em laptops, 420px em xl, 480px só em 2xl+). A lane interna fica
-  // em max-w-[440px] + mx-auto, então segue centralizada em qualquer largura.
+  // Painel da lista (desktop): 360px fixo em toda largura (RODADA-2 —
+  // decisão do usuário; era 420/480px por breakpoint, a comentário desatualizado
+  // descrevia o esquema antigo). A lane interna fica em max-w-[440px] + mx-auto,
+  // então segue centralizada mesmo com 360px de painel.
   return (
     <div className={cn(
       'conv-surface flex flex-col h-full w-full sm:w-[360px] bg-surface-800 border-r border-surface-700 flex-shrink-0',

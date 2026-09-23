@@ -153,8 +153,12 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {offFilter && (
+              // PL-C2-CAR-15 (Eixo10/P4): pílula solta (rounded-full, 9px,
+              // uppercase) sem par em nenhum outro lugar do app — os chips de
+              // status logo abaixo, NA MESMA linha do item, já são o
+              // vocabulário certo (h-[17px]/rounded-[5px]/10.5px). Alinhado.
               <span
-                className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/25"
+                className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold bg-warning/15 text-warning border border-warning/25 flex-shrink-0"
                 title={`Movida para "${statusLabel(conversation.status)}" — não corresponde mais ao filtro atual`}
               >
                 {statusLabel(conversation.status)}
