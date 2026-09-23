@@ -635,7 +635,8 @@ function ToolForm({
       ), 'Orienta o agente sobre o que esperar na resposta da API.')}
 
       <div className="flex items-center gap-2 pt-2">
-        <button onClick={onCancel} className="flex-1 px-4 py-2 rounded-sm border border-[var(--bd2)] text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition">
+        {/* Eixo 10: hover:bg-surface-800 quase invisivel sobre o card --sf2 -> --rowhover. */}
+        <button onClick={onCancel} className="flex-1 px-4 py-2 rounded-sm border border-[var(--bd2)] text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition">
           Cancelar
         </button>
         <button
@@ -780,7 +781,7 @@ function ToolsTab({
                   <button
                     onClick={() => handleToggle(tool)}
                     disabled={togglingId === tool.id}
-                    className="p-1 rounded-lg hover:bg-surface-800 transition text-surface-500 hover:text-surface-200"
+                    className="p-1 rounded-lg hover:bg-[var(--rowhover)] transition text-surface-500 hover:text-surface-200"
                     title={tool.enabled ? 'Desativar' : 'Ativar'}
                   >
                     {tool.enabled
@@ -788,7 +789,7 @@ function ToolsTab({
                       : <ToggleLeft  className="w-5 h-5" />
                     }
                   </button>
-                  <button onClick={() => setEditingId(tool.id)} className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-500 hover:text-surface-200 transition">
+                  <button onClick={() => setEditingId(tool.id)} className="p-1.5 rounded-lg hover:bg-[var(--rowhover)] text-surface-500 hover:text-surface-200 transition">
                     <Edit3 className="w-3.5 h-3.5" />
                   </button>
                   <button
@@ -798,7 +799,7 @@ function ToolsTab({
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setExpandedId(expandedId === tool.id ? null : tool.id)} className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-600 hover:text-surface-300 transition">
+                  <button onClick={() => setExpandedId(expandedId === tool.id ? null : tool.id)} className="p-1.5 rounded-lg hover:bg-[var(--rowhover)] text-surface-600 hover:text-surface-300 transition">
                     {expandedId === tool.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
                 </div>
@@ -1440,7 +1441,7 @@ function KnowledgeBaseTab({ agent }: { agent: AgentConfigWithTools }) {
             <button
               type="button"
               onClick={() => setTextModalOpen(false)}
-              className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition"
+              className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] transition"
             >
               Cancelar
             </button>
@@ -1515,9 +1516,12 @@ function RulesTab({
             onClick={() => onSubTabChange(t.id)}
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+              // Eixo 10 (criterio novo): hover:bg-surface-900 era a MESMA cor do
+              // container do pill (bg-[var(--sf2)] = surface-900) -> hover 100%
+              // invisivel nos dois temas (nao so no claro).
               subTab === t.id
                 ? 'bg-surface-800 text-surface-100 ring-1 ring-surface-700'
-                : 'text-surface-500 hover:text-surface-300 hover:bg-surface-900',
+                : 'text-surface-500 hover:text-surface-300 hover:bg-[var(--rowhover)]',
             )}
           >
             {t.icon}
@@ -1686,7 +1690,7 @@ function FaqRuleForm({
         <button
           onClick={onCancel}
           disabled={saving}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition disabled:opacity-50"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition disabled:opacity-50"
         >
           Cancelar
         </button>
@@ -1853,7 +1857,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
                 <button
                   onClick={() => handleToggle(rule)}
                   disabled={togglingId === rule.id}
-                  className="p-1 rounded-lg hover:bg-surface-800 transition text-surface-500 hover:text-surface-200 mt-0.5"
+                  className="p-1 rounded-lg hover:bg-[var(--rowhover)] transition text-surface-500 hover:text-surface-200 mt-0.5"
                   title={rule.enabled ? 'Desativar' : 'Ativar'}
                 >
                   {rule.enabled
@@ -1862,7 +1866,7 @@ function FaqRulesTab({ agent }: { agent: AgentConfigWithTools }) {
                 </button>
                 <button
                   onClick={() => setEditingId(rule.id)}
-                  className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-500 hover:text-surface-200 transition mt-0.5"
+                  className="p-1.5 rounded-lg hover:bg-[var(--rowhover)] text-surface-500 hover:text-surface-200 transition mt-0.5"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                 </button>
@@ -1963,7 +1967,7 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-900 hover:bg-surface-800 border border-surface-700 text-xs text-surface-300 transition disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-900 hover:bg-[var(--rowhover)] border border-surface-700 text-xs text-surface-300 transition disabled:opacity-50"
           >
             <RefreshCw className={cn('w-3 h-3', refreshing && 'animate-spin')} />
             Atualizar
@@ -2245,7 +2249,7 @@ export function AgentDetail({
                   <Copy className="w-3.5 h-3.5" />
                   Copiar nome
                 </button>
-                <div className="my-1 border-t border-surface-700/60" />
+                <div className="my-1 border-t border-surface-700" />
                 <button
                   onClick={() => { setMoreOpen(false); setConfirmDeleteOpen(true) }}
                   disabled={deletingAgent}

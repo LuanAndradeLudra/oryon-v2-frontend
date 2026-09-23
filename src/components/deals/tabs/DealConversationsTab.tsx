@@ -50,7 +50,7 @@ function ConversationRow({ conversation, isOrigin, onOpenBeside }: { conversatio
         onClick={onOpenBeside}
         title="Abrir ao lado"
         data-testid="deal-conversation-open-beside"
-        className="flex-shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium text-surface-300 hover:text-surface-100 hover:bg-surface-800 transition-colors"
+        className="flex-shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium text-surface-300 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
       >
         Abrir ao lado <ArrowUpRight className="w-3 h-3" />
       </button>

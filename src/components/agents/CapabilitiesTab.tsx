@@ -375,7 +375,7 @@ function StatusesPicker({ value, onChange }: { value: ConversationStatus[]; onCh
             <label
               key={opt.id}
               className={cn(
-                'flex items-start gap-2.5 px-2.5 py-2 rounded-md cursor-pointer hover:bg-surface-900/60',
+                'flex items-start gap-2.5 px-2.5 py-2 rounded-md cursor-pointer hover:bg-[var(--rowhover)]',
                 selected && 'bg-surface-900/40',
               )}
             >
@@ -521,7 +521,7 @@ function DealFlagsPicker({
           <label
             key={r.key}
             className={cn(
-              'flex items-start gap-2.5 px-2.5 py-2 rounded-md cursor-pointer hover:bg-surface-900/60',
+              'flex items-start gap-2.5 px-2.5 py-2 rounded-md cursor-pointer hover:bg-[var(--rowhover)]',
               r.checked && 'bg-surface-900/40',
             )}
           >
@@ -602,7 +602,7 @@ function CheckboxList({
           <label
             key={it.id}
             className={cn(
-              'flex items-center gap-2.5 px-2 py-1.5 rounded-md cursor-pointer hover:bg-surface-900/60',
+              'flex items-center gap-2.5 px-2 py-1.5 rounded-md cursor-pointer hover:bg-[var(--rowhover)]',
               selected && 'bg-surface-900/40',
             )}
           >
