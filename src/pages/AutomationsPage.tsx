@@ -20,7 +20,7 @@ import { automationsApi } from '@/services/api'
 import { WabaAssignmentBadge } from '@/components/common/WabaAssignmentBadge'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
 import { AssignWabaModal } from '@/components/common/AssignWabaModal'
-import { ConfirmModal } from '@/components/ui/Modal'
+import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { LineFilterChip, lineMatches, type LineFilterValue } from '@/components/common/LineFilterChip'
 import { useContextMenuCtx } from '@/components/ui/contextMenuCore'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
@@ -122,44 +122,47 @@ function TypeFilterChip({ value, onChange }: { value: AutomationType | 'all'; on
 
 interface Counts { total: number; active: number; inactive: number; draft: number; totalExec: number }
 
-function DuplicateToLineModal({ automation, lines, onPick, onCancel }: {
-  automation: Automation
+function DuplicateToLineModal({ open, automation, lines, onPick, onCancel }: {
+  open: boolean
+  automation: Automation | null
   lines: { id: string; label?: string; displayPhoneNumber: string }[]
   onPick: (lineId: string) => void
   onCancel: () => void
 }) {
+  // ui/Modal (SCRUM-1097): role/aria-modal, foco + devolução, trap de Tab, Esc
+  // pela pilha de camadas, portal e scrim do token — o corpo é só o conteúdo.
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={onCancel} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-[400px] p-5"
-      >
-        <h3 className="text-sm font-semibold text-surface-100 mb-1">Duplicar para outra linha</h3>
-        <p className="text-xs text-surface-500 mb-4">
-          Cria uma cópia de "<span className="text-surface-300">{automation.name}</span>" como rascunho na linha escolhida.
-        </p>
-        <div className="space-y-1.5 max-h-72 overflow-y-auto">
-          {lines.map((l) => {
-            const isCurrent = l.id === automation.whatsappNumberId
-            return (
-              <button
-                key={l.id}
-                onClick={() => onPick(l.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-[var(--rowhover)] transition-colors text-left"
-              >
-                <Phone className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
-                <span className="text-xs font-medium text-surface-200 flex-1 truncate">{l.label || l.displayPhoneNumber}</span>
-                {isCurrent && <span className="text-[10px] text-surface-500 flex-shrink-0">atual</span>}
-              </button>
-            )
-          })}
-        </div>
-        <button onClick={onCancel} className="w-full mt-4 py-2 rounded-lg border border-surface-700 text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">
-          Cancelar
-        </button>
-      </motion.div>
-    </div>
+    <Modal
+      open={open}
+      onClose={onCancel}
+      title="Duplicar para outra linha"
+      className="max-w-[400px]"
+      footer={<Button variant="neutral" className="w-full" onClick={onCancel}>Cancelar</Button>}
+    >
+      {automation && (
+        <>
+          <p className="text-xs text-surface-500 mb-4">
+            Cria uma cópia de "<span className="text-surface-300">{automation.name}</span>" como rascunho na linha escolhida.
+          </p>
+          <div className="space-y-1.5 max-h-72 overflow-y-auto">
+            {lines.map((l) => {
+              const isCurrent = l.id === automation.whatsappNumberId
+              return (
+                <button
+                  key={l.id}
+                  onClick={() => onPick(l.id)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-surface-700 bg-surface-900 hover:border-brand-500/40 hover:bg-[var(--rowhover)] transition-colors text-left"
+                >
+                  <Phone className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
+                  <span className="text-xs font-medium text-surface-200 flex-1 truncate">{l.label || l.displayPhoneNumber}</span>
+                  {isCurrent && <span className="text-[10px] text-surface-500 flex-shrink-0">atual</span>}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </Modal>
   )
 }
 
@@ -742,16 +745,13 @@ export function AutomationsPage() {
       )}
 
       {/* Duplicar para outra linha */}
-      <AnimatePresence>
-        {dupToLineTarget && (
-          <DuplicateToLineModal
-            automation={dupToLineTarget}
-            lines={whatsappLines}
-            onPick={(lineId) => handleDuplicateToLine(dupToLineTarget, lineId)}
-            onCancel={() => setDupToLineTarget(null)}
-          />
-        )}
-      </AnimatePresence>
+      <DuplicateToLineModal
+        open={!!dupToLineTarget}
+        automation={dupToLineTarget}
+        lines={whatsappLines}
+        onPick={(lineId) => { if (dupToLineTarget) handleDuplicateToLine(dupToLineTarget, lineId) }}
+        onCancel={() => setDupToLineTarget(null)}
+      />
 
       {/* Exclusão em massa — confirmação com o alcance (N) em destaque */}
       <ConfirmModal
