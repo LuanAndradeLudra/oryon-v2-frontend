@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useNotifications, type AppNotification } from '@/hooks/useNotifications'
-import { emptyStateFor } from '@/lib/notificationsUx'
+import { emptyStateFor, normalizeNotificationLink } from '@/lib/notificationsUx'
 import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { CATEGORY_CHIPS } from '@/components/notifications/notificationsMeta'
 import { cn } from '@/lib/utils'
@@ -101,7 +101,7 @@ export function NotificationsPage() {
         // silencioso — UI ja foi marcada como lida e proximo reload corrige
       }
     }
-    if (isValidLink(n.link)) navigate(n.link!)
+    if (isValidLink(n.link)) navigate(normalizeNotificationLink(n.link!))
     // Notificações agrupadas sem link próprio (metadata rico, ex. vários
     // contatos) abrem um modal de detalhe no popover — essa peça é local ao
     // TopBar.tsx, não foi extraída. Aqui elas só marcam como lida por ora.
