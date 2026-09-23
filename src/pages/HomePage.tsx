@@ -11,6 +11,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useCopilotContext } from '@/contexts/CopilotContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useFeatureVisibility } from '@/hooks/useFeatureVisibility'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { generateInsights } from '@/services/copilotService'
 import { isFeatureVisible } from '@/config/featureFlags'
@@ -352,7 +353,8 @@ function getQuickActions(role: string): QuickAction[] {
 
 function QuickActions({ role }: { role: string }) {
   const navigate = useNavigate()
-  const actions = getQuickActions(role)
+  const { isRouteVisible } = useFeatureVisibility()
+  const actions = getQuickActions(role).filter((action) => isRouteVisible(action.href))
   return (
     <div className="card-glow bg-surface-900 border border-surface-800 rounded-2xl p-5 h-full">
       <h3 className="text-sm font-semibold text-surface-100 mb-4">Ações rápidas</h3>

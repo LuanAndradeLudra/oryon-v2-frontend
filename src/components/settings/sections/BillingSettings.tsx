@@ -217,6 +217,7 @@ export function BillingSettings() {
   // Falha ao carregar payment-status NÃO assume "novo cliente" (evita cobrança duplicada).
   const [statusError, setStatusError] = useState(false)
   const [packs, setPacks] = useState<CreditPack[]>([])
+  const [invoices, setInvoices] = useState<import('@/services/billingApi').BillingInvoiceRow[]>([])
   const [intent, setIntent] = useState<CheckoutIntent | null>(null)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [canceling, setCanceling] = useState(false)
@@ -226,6 +227,7 @@ export function BillingSettings() {
     // Planos e pacotes são independentes do status — carregam à parte.
     billingApi.getPlans().then((p) => { if (alive) setPlans(p) }).catch(() => {})
     billingApi.getCreditPacks().then((cp) => { if (alive) setPacks(cp) }).catch(() => {})
+    billingApi.getInvoices().then((inv) => { if (alive) setInvoices(inv) }).catch(() => {})
     billingApi.getPaymentStatus()
       .then((s) => { if (alive) { setStatus(s); setStatusError(false) } })
       .catch(() => { if (alive) { setStatus(null); setStatusError(true) } })
@@ -483,8 +485,39 @@ export function BillingSettings() {
         )}
       </SettingsSection>
 
-      {/* Faturas (Asaas) entram na Fase 3 — não há dado real ainda, então não
-          renderizamos uma seção de invoices com placeholder/mock. */}
+      {/* Faturas (F3) — fonte: GET /settings/billing/invoices */}
+      <SettingsSection
+        title="Faturas"
+        description="Cobranças de assinatura, setup, excedente e pacotes."
+      >
+        {invoices.length === 0 ? (
+          <p className="text-sm text-surface-500 py-2">Nenhuma fatura emitida ainda.</p>
+        ) : (
+          <ul className="divide-y divide-surface-800">
+            {invoices.map((inv) => (
+              <li key={inv.id} className="py-2.5 flex items-center justify-between gap-3 text-sm">
+                <div className="min-w-0">
+                  <p className="text-surface-100 font-medium truncate">
+                    {inv.number ?? inv.id.slice(0, 8)} · {inv.kind}
+                  </p>
+                  <p className="text-xs text-surface-500 truncate">
+                    {inv.description ?? '—'}
+                    {inv.dueAt
+                      ? ` · vence ${new Date(inv.dueAt).toLocaleDateString('pt-BR')}`
+                      : ''}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-surface-100 font-semibold">
+                    R$ {Number(inv.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-[11px] uppercase tracking-wide text-surface-500">{inv.status}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SettingsSection>
 
       {/* Checkout (Pix / cartão) */}
       {intent && (
