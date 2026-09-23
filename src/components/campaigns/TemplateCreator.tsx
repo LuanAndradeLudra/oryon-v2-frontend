@@ -467,17 +467,15 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
             )}
           </div>
           <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center">
-            {step === 1 ? (
+            {/* Uma prévia só. A versão antiga mostrava a compacta e, no
+                passo 4, somava uma "completa" embaixo — medido ao vivo:
+                duas prévias empilhadas no mesmo painel. Com a prévia fiel
+                (TemplatePreview reescrito) a completa cabe nos 340px do
+                painel em qualquer passo, então é ela o tempo todo. */}
+            {step === 1 || !body ? (
               <SubcategoryPreview category={category} subCategory={subCategory} />
-            ) : body ? (
-              <TemplatePreview template={previewTemplate} variables={previewVars} compact />
             ) : (
-              <SubcategoryPreview category={category} subCategory={subCategory} />
-            )}
-            {step === 4 && (
-              <div className="mt-4">
-                <TemplatePreview template={previewTemplate} variables={previewVars} />
-              </div>
+              <TemplatePreview template={previewTemplate} variables={previewVars} className="w-full" />
             )}
           </div>
         </div>
