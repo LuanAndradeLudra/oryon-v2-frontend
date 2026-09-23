@@ -59,6 +59,34 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     Resíduo conhecido: o traço continua 1.75 (casa) × 2 (lucide) — corrigido caso a caso com `strokeWidth={1.75}`
     no call site (feito nos 2 da sidebar). Reverter: commit `81c6495` (`src/index.css`).
 
+## Rodada 3 — Disparos, Modelos e Criação de modelo (22–23/09, autonomia dada pelo PO)
+19. **Disparos em cards com resultado embutido** (escolha do PO por AskUserQuestion): a tabela saiu; "Ver relatório"
+    é botão no card (estava dentro do `···`); rascunho/agendada não mostram barra nem métricas (não há resultado);
+    `failed` mostra relatório. Reverter: `0052b60`.
+20. **Catálogo de modelos = lista + painel de detalhe** (o PO não queria a grade; Twilio/WhatsApp Manager são lista):
+    linha de 44px com ícone da categoria, nome, trecho do corpo, idioma, status, data; painel fixo ≥ `lg` (360/392px),
+    modal abaixo. Alternativa: manter grade. Reverter: `5495228` + `6b4b7db`.
+21. **Direção visual C (Attio/Linear — faixas de 1px, rótulo à esquerda em 104px, contraste por peso)** para as três
+    telas, escolhida em artifact comparativo; **não** é a linguagem da Meta (clara) nem o Oryon "arejado".
+    A Meta entrou como referência de **estrutura** (dois painéis, prévia fixa, 3 passos, contador dentro do campo).
+22. **Prévia do WhatsApp fiel só no tema claro**, com valores amostrados pixel a pixel dos 3 prints do PO
+    (`#E5DDD5`, `#FFFFFF`, `#11191D`, `#6C7E85`, `#EEF2F1`, `#077CB3`, `#1B8755`). **Sem tema escuro**: nenhuma
+    captura de referência — precisa de um print do WhatsApp escuro para amostrar. Sem moldura de celular (a prévia
+    da Meta não tem). Sem tique (mensagem recebida). Fonte do sistema. Reverter: `3d8a96b`.
+23. **"Autenticação" sai do segmentado de categoria** (está `comingSoon`): o `SegmentedControl` não tem estado
+    desabilitado e um cartão apagado mentia disponibilidade; vira nota "Autenticação em breve". Alternativa: adicionar
+    `disabled` ao primitivo. Reverter: `805ed4e`.
+24. **Ícones de categoria unificados** (megafone / sino / chave, como a Meta) entre `constants.ts` e
+    `templateCategory.tsx` — antes o segmentado mostrava chave-inglesa/escudo. Reverter: `805ed4e`.
+25. **Trilha de passos = `WizardProgress`** (18px, valores do canvas CAMP-WIZ-07..13) nas três telas; a bolinha de
+    14px do meu mockup foi descartada. **Campos de formulário = `Input/Select/Textarea` md 36px**; a receita de
+    32px do mockup foi descartada por estar fora da régua sm 28 / md 36 / lg 44.
+26. **`StatStrip` (relatório): número 18/700 é um tier compacto**, distinto do KPI de página 26/800 (documentado
+    no componente). Rótulo no piso de 11px.
+27. **Linha de template no wizard sem a 3ª linha de variáveis** (vira "· N var." inline): duplicava a etapa 3 e
+    quebrava o ritmo (54 vs 71px). Reverter: `608fc2d`.
+28. **Modal de prévia removido do catálogo** (o painel/modal de detalhe o substitui). Reverter: `5495228`.
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
