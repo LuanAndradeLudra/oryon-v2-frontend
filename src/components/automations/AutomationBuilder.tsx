@@ -191,7 +191,8 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             key="builder-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/50 z-40"
+            // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/50.
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-40"
             onClick={requestClose}
           />
           <motion.div
@@ -244,7 +245,11 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                           'w-full flex items-center gap-2 h-[30px] px-2.5 rounded-xs border text-left transition-colors',
                           isActive
                             ? 'bg-surface-800 border-surface-700'
-                            : 'border-transparent hover:bg-surface-800/50',
+                            // Eixo 10 (tema claro): hover:bg-surface-800/50 —
+                            // o nav é --sf2 (surface-900), quase idêntico a
+                            // surface-800 no claro (#F5F6F8 vs #FFFFFF) —
+                            // hover quase invisível. --rowhover sempre visível.
+                            : 'border-transparent hover:bg-[var(--rowhover)]',
                         )}
                       >
                         <span
@@ -280,7 +285,12 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                     <div className="grid grid-cols-3 auto-rows-fr gap-2">
                       {onDescribeWithAI && (
                         <button onClick={onDescribeWithAI} className="h-full text-left p-3 rounded-lg border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors">
-                          <Wand2 className="w-4 h-4 text-brand-400 mb-1.5" />
+                          {/* Wand2 não tem versão desenhada da casa em
+                              lib/icons.tsx — cai no lucide cru, traço 2 em
+                              vez de 1.75. strokeWidth explícito por enquanto
+                              (DECISOES-PENDENTES #18, "corrigido caso a
+                              caso"). */}
+                          <Wand2 className="w-4 h-4 text-brand-400 mb-1.5" strokeWidth={1.75} />
                           <p className="text-xs font-semibold text-surface-100">Descrever com IA</p>
                           <p className="text-[10px] text-surface-400 mt-0.5 leading-relaxed">Explique o objetivo e o Copilot monta.</p>
                         </button>

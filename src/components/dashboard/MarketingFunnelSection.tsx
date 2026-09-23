@@ -187,9 +187,12 @@ function AdCampaignsTable({
           <tbody>
             {sorted.map((camp) => (
               <>
+                {/* Eixo 10 (tema claro): mesmo achado do ActivityFeed —
+                    hover:bg-surface-800/30 sobre o card surface-800 é
+                    invisível no claro. --rowhover. */}
                 <tr
                   key={camp.platformCampaignId}
-                  className="border-b border-surface-700 hover:bg-surface-800/30 transition-colors cursor-pointer"
+                  className="border-b border-surface-700 hover:bg-[var(--rowhover)] transition-colors cursor-pointer"
                   onClick={() => setExpanded(expanded === camp.platformCampaignId ? null : camp.platformCampaignId)}
                 >
                   <td className="px-5 py-3">
@@ -291,7 +294,10 @@ function TotalsStrip({ totals }: { totals: MarketingFunnelTotals }) {
     {
       label: 'ROAS Médio',
       value: `${totals.avgRoas.toFixed(1)}x`,
-      icon: <BarChart2 className="w-4 h-4" />,
+      // BarChart2 não tem versão desenhada da casa — strokeWidth explícito
+      // (DECISOES-PENDENTES #18). Componente ainda não montado no Dashboard
+      // (endpoint não existe), corrigido por consistência de qualquer forma.
+      icon: <BarChart2 className="w-4 h-4" strokeWidth={1.75} />,
       color: C.online,
     },
   ]

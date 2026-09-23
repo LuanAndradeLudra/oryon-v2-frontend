@@ -55,9 +55,11 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
       </div>
       {metric.trend !== 0 ? (
         <div className={cn('flex items-center gap-1.5 font-semibold text-[11.5px]', trendColor)}>
+          {/* TrendingDown não tem versão desenhada da casa (só TrendingUp
+              tem, em lib/icons.tsx) — strokeWidth explícito (DECISOES #18). */}
           {metric.trend > 0
             ? <TrendingUp className="w-3 h-3" />
-            : <TrendingDown className="w-3 h-3" />}
+            : <TrendingDown className="w-3 h-3" strokeWidth={1.75} />}
           <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1)}%</span>
           <span className="text-surface-500 font-normal truncate">vs. período anterior</span>
         </div>
@@ -134,7 +136,8 @@ function CustomizerPanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 z-40"
+            // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/50.
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-40"
             onClick={onClose}
           />
           <motion.div
@@ -150,7 +153,10 @@ function CustomizerPanel({
             <p className="text-sm font-semibold text-surface-100">Personalizar KPIs</p>
             <p className="text-xs text-surface-400 mt-0.5">{count} de {MAX} selecionados (mín. {MIN})</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors">
+          {/* Eixo 10 (tema claro): painel é surface-950 (#FAFAFC), hover
+              mirava surface-800 (#FFFFFF) — diferença de ~1% de luminância,
+              quase imperceptível. --rowhover garante contraste real. */}
+          <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -185,7 +191,10 @@ function CustomizerPanel({
                             : 'border-transparent bg-brand-600 text-white hover:bg-brand-500'
                           : disabled
                             ? 'border-surface-700 text-surface-600 cursor-not-allowed'
-                            : 'border-surface-700 text-surface-300 hover:border-surface-700 hover:bg-surface-900/50',
+                            // Eixo 10 (tema claro): mesmo achado do botão
+                            // fechar acima — hover:bg-surface-900/50 contra
+                            // o painel surface-950 é quase imperceptível.
+                            : 'border-surface-700 text-surface-300 hover:border-surface-700 hover:bg-[var(--rowhover)]',
                       )}
                     >
                       <span className={cn(
@@ -251,11 +260,16 @@ export function KpiGrid({
       <div className="flex items-center gap-3 mb-2 flex-wrap">
         <div className="flex-1 min-w-0" />
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {/* Eixo 10 (tema claro): border-surface-700/60 (opacidade
+              arbitrária) -> --bd2 sólido, mesma borda de input/botão do
+              resto do app. Settings2 sem versão desenhada da casa ->
+              strokeWidth explícito (DECISOES #18). Altura h-8 não mexida
+              (não fazia parte do achado, fora do escopo desta leva). */}
           <button
             onClick={() => setCustomizerOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-surface-700/60 hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-[var(--bd2)] hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors shrink-0"
           >
-            <Settings2 className="w-3.5 h-3.5" />
+            <Settings2 className="w-3.5 h-3.5" strokeWidth={1.75} />
             Personalizar
           </button>
         </div>

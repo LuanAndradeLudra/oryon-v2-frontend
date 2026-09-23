@@ -149,7 +149,9 @@ function FlowSection({ eyebrow, icon, onClick, children }: {
       disabled={!onClick}
       className={cn(
         'w-full text-left group/sec rounded-lg -mx-1.5 px-1.5 py-1.5 transition-colors',
-        onClick && 'hover:bg-surface-800/60 cursor-pointer',
+        // Eixo 10 (tema claro): hover:bg-surface-800/60 sobre o painel, que
+        // é surface-800 — quase invisível. --rowhover sempre visível.
+        onClick && 'hover:bg-[var(--rowhover)] cursor-pointer',
       )}
     >
       <div className="flex items-center gap-1.5 mb-1">
@@ -177,7 +179,9 @@ function FlowCard({ automation, onEdit }: {
       </FlowSection>
 
       {conds.length > 0 && (
-        <FlowSection eyebrow="Se" icon={<GitBranch className="w-3 h-3" />} onClick={() => onEdit('condicoes')}>
+        // GitBranch/ExternalLink/Clock nesta tela não têm versão desenhada
+        // da casa (lib/icons.tsx) — traço 1.75 explícito (DECISOES #18).
+        <FlowSection eyebrow="Se" icon={<GitBranch className="w-3 h-3" strokeWidth={1.75} />} onClick={() => onEdit('condicoes')}>
           {conds.map((c, i) => (
             <span key={i}>
               {i > 0 && <span className="text-surface-500 font-medium"> {joiner} </span>}
@@ -205,7 +209,7 @@ function FlowCard({ automation, onEdit }: {
       <div className="pt-1.5 mt-1 border-t border-surface-700">
         <button
           onClick={() => onEdit('ia')}
-          className="w-full flex items-start gap-1.5 text-left rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-surface-800/60 transition-colors group/ia"
+          className="w-full flex items-start gap-1.5 text-left rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-[var(--rowhover)] transition-colors group/ia"
         >
           <Sparkles className="w-3 h-3 text-brand-400 flex-shrink-0 mt-0.5" />
           <span className="text-2xs text-surface-400 leading-relaxed">{agentBehaviorSentence(automation)}</span>
@@ -287,12 +291,12 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
                 <div className="flex items-center gap-3 pt-0.5">
                   {run.conversationId && (
                     <button onClick={() => onOpenConversation(run.conversationId!)} className="inline-flex items-center gap-1 text-2xs text-accent-dark hover:opacity-80 transition-colors">
-                      <ExternalLink className="w-2.5 h-2.5" /> ver conversa
+                      <ExternalLink className="w-2.5 h-2.5" strokeWidth={1.75} /> ver conversa
                     </button>
                   )}
                   {run.contactId && (
                     <button onClick={() => onOpenContact(run.contactId!)} className="inline-flex items-center gap-1 text-2xs text-accent-dark hover:opacity-80 transition-colors">
-                      <ExternalLink className="w-2.5 h-2.5" /> ver contato
+                      <ExternalLink className="w-2.5 h-2.5" strokeWidth={1.75} /> ver contato
                     </button>
                   )}
                 </div>
@@ -372,7 +376,7 @@ export function AutomationDetail({
             onDelete={() => onDelete(automation)}
           />
           {variant === 'overlay' && onClose && (
-            <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors" aria-label="Fechar">
+            <button onClick={onClose} className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors" aria-label="Fechar">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -411,7 +415,7 @@ export function AutomationDetail({
             <p className="text-sm font-display font-bold text-surface-100 tabular-nums">{automation.executionCount.toLocaleString('pt-BR')}</p>
           </div>
           <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5">
-            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Última</p>
+            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" strokeWidth={1.75} /> Última</p>
             <p className="text-xs font-medium text-surface-200 tabular-nums">{automation.lastExecutedAt ? relativeDate(automation.lastExecutedAt) : '—'}</p>
           </div>
           <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 min-w-0">
