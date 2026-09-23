@@ -104,7 +104,7 @@ export function DealsSummaryCard({
 
   return (
     <>
-    <CollapsibleSection title={vocab.deals} storageKey="contact-drawer.deals" actions={addAction}>
+    <CollapsibleSection title={vocab.deals} storageKey="contact-drawer.deals" actions={addAction} className="border-t border-surface-700">
       {deals === null ? (
         <p className="text-xs text-surface-600">Carregando…</p>
       ) : isEmpty ? (

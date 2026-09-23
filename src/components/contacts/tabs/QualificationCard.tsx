@@ -175,7 +175,7 @@ export function QualificationCard({ contact, onSave, hideStage = false, hideTitl
   }
 
   return (
-    <CollapsibleSection title="Qualificação" storageKey="contact-drawer.qualification" actions={actions}>
+    <CollapsibleSection title="Qualificação" storageKey="contact-drawer.qualification" actions={actions} className="border-t border-surface-700">
       {body}
     </CollapsibleSection>
   )

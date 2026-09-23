@@ -70,7 +70,7 @@ export function ContactInsightsCard({ contact }: Props) {
   )
 
   return (
-    <CollapsibleSection title="Visão rápida" storageKey="contact-drawer.insights" actions={actions}>
+    <CollapsibleSection title="Visão rápida" storageKey="contact-drawer.insights" actions={actions} className="border-t border-surface-700">
       <div className="grid grid-cols-2 gap-4">
         {/* Last message */}
         {lastMessage && (

@@ -264,7 +264,7 @@ export function EngagementCard({ contactId, hideTitle = false }: Props) {
   }
 
   return (
-    <CollapsibleSection title="Engajamento" storageKey="contact-drawer.engagement" actions={actions}>
+    <CollapsibleSection title="Engajamento" storageKey="contact-drawer.engagement" actions={actions} className="border-t border-surface-700">
       {body}
     </CollapsibleSection>
   )
