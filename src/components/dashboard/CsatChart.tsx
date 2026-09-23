@@ -15,11 +15,11 @@ export const CsatChart = memo(function CsatChart({ data }: { data: CsatDataPoint
         <p className="text-sm font-semibold text-surface-100">Satisfação & NPS</p>
         <div className="flex items-center gap-4 text-xs text-surface-400">
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 rounded inline-block" style={{ backgroundColor: C.online }} />
+            <span className="w-2.5 h-0.5 rounded-2xs inline-block" style={{ backgroundColor: C.online }} />
             CSAT
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 rounded inline-block" style={{ backgroundColor: C.brand }} />
+            <span className="w-2.5 h-0.5 rounded-2xs inline-block" style={{ backgroundColor: C.brand }} />
             NPS
           </span>
         </div>

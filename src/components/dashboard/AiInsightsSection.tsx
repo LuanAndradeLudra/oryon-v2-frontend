@@ -81,11 +81,11 @@ function SkeletonCard() {
     <div className="bg-surface-800 border border-surface-700 rounded-lg p-5 flex flex-col gap-3 animate-pulse">
       <div className="h-5 w-24 bg-surface-800 rounded-full" />
       <div className="flex flex-col gap-1.5">
-        <div className="h-4 w-3/4 bg-surface-800 rounded" />
-        <div className="h-3 w-full bg-surface-800 rounded" />
-        <div className="h-3 w-2/3 bg-surface-800 rounded" />
+        <div className="h-4 w-3/4 bg-surface-800 rounded-2xs" />
+        <div className="h-3 w-full bg-surface-800 rounded-2xs" />
+        <div className="h-3 w-2/3 bg-surface-800 rounded-2xs" />
       </div>
-      <div className="h-3 w-24 bg-surface-800 rounded" />
+      <div className="h-3 w-24 bg-surface-800 rounded-2xs" />
     </div>
   )
 }
