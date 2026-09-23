@@ -54,7 +54,7 @@ export function MobileFeatureGate({
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="w-9 h-9 flex items-center justify-center rounded-sm text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-sm text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
