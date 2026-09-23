@@ -13,7 +13,7 @@ Nada foi testado ao vivo — as afirmações abaixo são do código.
 | **Todas** | **Sim** | `GET /contacts?sortBy=lastContactedAt&sortDir=desc&page=1&limit=50` → `{data,total,page,limit}` | Ver §5 (contatos sem `lastContactedAt` vêm **primeiro** em DESC). |
 | **Quentes** | **Sim** (por intenção) | `GET /contacts?intent=high&sortBy=leadScore&sortDir=desc` (o `total` é o contador da aba) | Faixa por score (`≥ 80`) **não existe** no servidor — ver §3. Definição de "quente" é decisão do PO: `intent=high` funciona hoje; `leadScore ≥ X` exige param novo. |
 | **Novos hoje** | **Sim, com ressalva** (client-side) | `GET /contacts?sortBy=createdAt&sortDir=desc&limit=100`, filtrar no cliente `createdAt >= meia-noite local` | Sem filtro de data no servidor: contador exato só enquanto houver < 100 novos no dia (senão "99+"). Param novo `createdFrom` resolve limpo. |
-| **Meus** | **Não** (na API de contatos) | — | Contato **não tem responsável**. Responsável mora em `conversations.assignedUserId` (por conversa/linha) e em `deals.ownerUserId`. `GET /contacts` não filtra nem devolve nenhum dos dois. Caminho alternativo com a API atual: `GET /conversations?assignedTo=me&limit=100` (o `contact` vem embutido) — lista por **conversa**, não por contato. Fiel: param novo `assignedTo=me|<uuid>|unassigned` em `/contacts`. |
+| **Meus** | **Não** (na API de contatos) | — | Contato **não tem responsável**. Responsável mora em `conversations.assignedUserId` (por conversa/linha) e em `deals.ownerUserId`. `GET /contacts` não filtra nem devolve nenhum dos dois. Caminho alternativo com a API atual: `GET /conversations?assignedTo=me&limit=100` (o `contact` vem embutido) — lista por **conversa**, não por contato. Fiel: param novo `assignedTo=me\|<uuid>\|unassigned` em `/contacts`. |
 | **Sem resposta** | **Parcial** (via conversas) | `GET /conversations?awaitingReply=true` (server: `lastAgentReplyAt IS NULL OR lastAgentReplyAt < lastMessageAt`, status ≠ resolved/abandoned) | Regra **frouxa**: `lastAgentReplyAt` só marca resposta de **humano**. Conversa em que a IA (ou uma campanha/template) foi a última a falar conta como "sem resposta". O critério fiel é `lastMessageSenderKind = 'client'` — **não é filtrável** hoje. Em `/contacts` não existe nada disso. |
 
 Contadores das abas: cada aba precisa do seu `total`. Para as baseadas em `/contacts` (Todas, Quentes, Novos hoje)
@@ -114,3 +114,21 @@ Em `ContactsService.findAll` / `contacts.controller.ts`, no mesmo padrão dos ba
   `awaitingReply=true`), que já traz preview, `lastMessageSenderKind`, `assignedUser`, `whatsappNumber` e o
   `contact` embutido — porém a lista passa a ser **por conversa** (mesma pessoa pode repetir por linha) e as
   contagens são de conversas. Dá para uma primeira versão, com a ressalva do critério frouxo de "sem resposta".
+
+## 8. Pendências de backend (consolidado) e decisões de 23/09
+
+Decisão do PO/Maestro sobre os segmentos: **entram agora** Todos e Quentes
+(`?intent=high&sortBy=leadScore&sortDir=desc`); **Novos hoje NÃO entra client-side** (o "99/dia" seria um contador
+fingido em tenant grande) e espera `createdFrom`; **Meus** e **Sem resposta** esperam o backend e viram card. A
+definição vive em `src/components/contacts/contactSegments.ts` (com testes), com o motivo de cada indisponível.
+
+Itens de backend, em ordem de destravamento:
+
+| # | Item | Destrava |
+|---|---|---|
+| B1 | **`NULLS LAST` na ordenação** por `lastContactedAt` (em `ContactsService.findAll`, `qb.orderBy(orderCol, orderDir)` → `orderBy(col, dir, 'NULLS LAST')`) | "Todos ordenado por última interação" sem contatos sem conversa no topo. **Já afeta a tela hoje:** `ContactsPage.tsx:139` usa `{ sortBy: 'lastContactedAt', sortDir: 'desc' }` como ordenação padrão e `ContactsFiltersBar.tsx:425` tem `lastContactedAt` como default do seletor — quem consome a página deve saber que o topo pode trazer contatos sem interação até o B1. |
+| B2 | `lastConversation` enriquecido em `GET /contacts` (§6.1) | 2ª linha da lista (texto + direção), "Linha N", responsável |
+| B3 | `assignedTo=me\|unassigned\|<uuid>` em `GET /contacts` | **Meus** |
+| B4 | `awaitingReply=true` em `GET /contacts` com critério fiel (`lastMessageSenderKind='client'`) | **Sem resposta** |
+| B5 | `createdFrom=<ISO>` em `GET /contacts` | **Novos hoje** |
+| B6 | `leadScoreMin=<n>` (ou honrar `leadScoreBand`/`lastContact`, hoje no-op — §3) | "Quentes" por score; conserta os dois filtros de fachada da barra |
