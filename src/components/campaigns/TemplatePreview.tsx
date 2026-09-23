@@ -190,7 +190,10 @@ export function TemplatePreview({
 
   return (
     <div
-      className={cn('flex justify-start', className)}
+      // items-start: o quadro tem min-height e é flex em linha — sem isto o
+      // balão (filho flex) estica até o fundo e sobra um bloco branco vazio
+      // abaixo do último botão (visto pelo PO no passo 3 do criador, 23/09).
+      className={cn('flex justify-start items-start', className)}
       style={{
         background: `${PAPEL_PAREDE}, ${WA.papel}`,
         backgroundColor: WA.papel,
