@@ -21,6 +21,8 @@ import {
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { WizardProgress } from '@/components/ui/WizardProgress'
 import { getReadableTextColor } from '@/lib/colorPalette'
@@ -636,12 +638,14 @@ export function CampaignWizard({
 }
 
 // ─── Faixa (direção C) ───────────────────────────────────────────────────────
-// Mesma receita do `Section`/`campo()` de TemplateCreator.tsx (irmão neste
-// mesmo diretório, comentário próprio: "Direção C, aprovada 22/09") — copiada
-// daqui em vez da minha 1ª leitura do mockup estático (que amostrei com
-// valores levemente diferentes, h-30/raio-5/12.5px). O código já aprovado e
-// em produção vale mais que a minha amostragem de um HTML de referência.
-const CAMPO = 'w-full h-8 bg-surface-900 border border-[var(--bd2)] rounded-sm px-2.5 text-[13px] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors disabled:opacity-60'
+// Mesmo layout do `Section` de TemplateCreator.tsx (irmão neste diretório,
+// comentário próprio: "Direção C, aprovada 22/09"). Os CAMPOS em si usam os
+// primitivos Input/Select/Textarea (md 36px, FIELD-03) — minha 1ª versão
+// copiou um `campo()` a mão que era, ele mesmo, um erro do TemplateCreator
+// (32px, fora da régua sm 28/md 36/lg 44; já corrigido lá pra primitivo).
+// Regra: referência sendo código do próprio autor não dispensa checar se ELE
+// usa primitivo — se não usa, aponta, não copia (mesmo reflexo que já apliquei
+// ao não mexer no WizardProgress).
 
 function Faixa({ label, required, hint, right, children }: {
   label: string
@@ -697,22 +701,23 @@ function Step1({
 
       <div>
         <Faixa label="Nome" required hint="descreva a campanha para achá-la depois no histórico">
-          <input
+          <Input
+            size="md"
             value={campaignName}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Ex: Campanha Black Friday 2026"
-            className={CAMPO}
           />
         </Faixa>
 
         <Faixa label="Template" required right={`${filtered.length} de ${templates.length}`}>
           <div className="relative mb-2">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-            <input
+            <Input
+              size="sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome ou conteúdo..."
-              className={cn(CAMPO, 'pl-8')}
+              className="pl-8"
             />
           </div>
 
@@ -962,11 +967,12 @@ function Step2({
         >
           <div className="relative mb-2">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-            <input
+            <Input
+              size="sm"
               value={contactSearch}
               onChange={(e) => setContactSearch(e.target.value)}
               placeholder="Buscar por nome ou número..."
-              className={cn(CAMPO, 'pl-8')}
+              className="pl-8"
             />
           </div>
           {loadingContacts ? (
@@ -1158,11 +1164,12 @@ function Step2({
           <FilterGroup label={<span className="flex items-center gap-1.5"><Search className="w-3 h-3 text-brand-400" />Busca por contato</span>}>
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500" />
-              <input
+              <Input
+                size="sm"
                 value={filterContactSearch}
                 onChange={(e) => onFilterContactSearch(e.target.value)}
                 placeholder="Buscar por nome ou número..."
-                className={cn(CAMPO, 'pl-7')}
+                className="pl-7"
               />
             </div>
             <p className="text-[10px] text-surface-600 mt-1">Inclui contatos cujo nome ou número de WhatsApp correspondam à busca.</p>
@@ -1270,29 +1277,29 @@ function Step3({
               />
 
               {m.source === 'contact_field' && (
-                <select
+                <Select
+                  size="md"
                   value={m.contactField ?? 'displayName'}
                   onChange={(e) => onUpdate(m.position, { contactField: e.target.value })}
-                  className={CAMPO}
                 >
                   {CONTACT_FIELDS.map((f) => (
                     <option key={f.value} value={f.value}>{f.label}</option>
                   ))}
-                </select>
+                </Select>
               )}
 
               {m.source === 'custom_field' && (
                 fieldDefs.length > 0 ? (
-                  <select
+                  <Select
+                    size="md"
                     value={m.customFieldKey ?? ''}
                     onChange={(e) => onUpdate(m.position, { customFieldKey: e.target.value })}
-                    className={CAMPO}
                   >
                     <option value="" disabled>Selecione um campo…</option>
                     {fieldDefs.map((f) => (
                       <option key={f.key} value={f.key}>{f.label}</option>
                     ))}
-                  </select>
+                  </Select>
                 ) : (
                   <div className="flex items-start gap-2 px-2.5 py-2.5 border border-accent-amber/25 rounded-sm">
                     <Info className="w-3.5 h-3.5 text-accent-amber mt-0.5 flex-shrink-0" />
@@ -1304,11 +1311,11 @@ function Step3({
               )}
 
               {m.source === 'literal' && (
-                <input
+                <Input
+                  size="md"
                   value={m.literal ?? ''}
                   onChange={(e) => onUpdate(m.position, { literal: e.target.value })}
                   placeholder="Digite o valor fixo para todos os destinatários..."
-                  className={CAMPO}
                 />
               )}
             </div>
@@ -1378,7 +1385,8 @@ function Step4({
         <Faixa label="Data e hora">
           <div className="relative">
             <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
-            <input
+            <Input
+              size="md"
               type="datetime-local"
               value={scheduledAt}
               onChange={(e) => onScheduledAt(e.target.value)}
@@ -1388,7 +1396,7 @@ function Step4({
                 const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
                 return local.toISOString().slice(0, 16)
               })()}
-              className={cn(CAMPO, 'pl-8')}
+              className="pl-8"
             />
           </div>
           <p className="text-[11px] text-surface-600 mt-1.5">
@@ -1809,11 +1817,12 @@ function ContactListModal({
         <div className="px-4 py-3 border-b border-surface-700 flex-shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
-            <input
+            <Input
+              size="sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar nesta lista..."
-              className="w-full bg-surface-800 border border-surface-700 rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+              className="pl-8"
             />
           </div>
         </div>
