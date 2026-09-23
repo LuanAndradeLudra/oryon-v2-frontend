@@ -226,3 +226,66 @@ describe('MediaViewer — zoom de imagem', () => {
     expect(percent()).toBe('100%')
   })
 })
+
+// Layout (pedido do usuário 2026-09-23): os botões ficavam flutuando SOBRE o
+// arquivo — numa imagem clara ampliada o branco-sobre-transparente sumia, e só
+// fechar/reabrir trazia de volta. Agora: barra própria (fundo sólido) e o
+// conteúdo numa área separada que corta o excedente do zoom. jsdom não faz
+// layout, então o teste garante a ESTRUTURA que impede a sobreposição.
+describe('MediaViewer — barra de controles separada do conteúdo', () => {
+  const PDF = { type: 'document' as const, mediaMimeType: 'application/pdf', mediaCaption: 'contrato.pdf' }
+  const content = () => q('[data-viewer-content]') as HTMLElement
+
+  beforeEach(() => {
+    mockIsNativePlatform.mockReturnValue(false)
+  })
+
+  it('imagem: zoom, baixar e fechar ficam na barra; a <img> fica só na área de conteúdo', () => {
+    openViewer(base)
+    const bar = screen.getByRole('banner')
+    expect(bar).toContainElement(screen.getByRole('group', { name: 'Zoom' }))
+    expect(bar).toContainElement(screen.getByLabelText('Baixar'))
+    expect(bar).toContainElement(screen.getByLabelText('Fechar'))
+    expect(bar.querySelector('img')).toBeNull()
+    expect(content()).toContainElement(q('img') as HTMLElement)
+  })
+
+  it('PDF: baixar e fechar na barra; o iframe fica só na área de conteúdo (nunca por baixo da barra)', () => {
+    openViewer({ ...base, ...PDF })
+    const bar = screen.getByRole('banner')
+    expect(bar).toContainElement(screen.getByLabelText('Baixar'))
+    expect(bar).toContainElement(screen.getByLabelText('Fechar'))
+    expect(bar.querySelector('iframe')).toBeNull()
+    expect(content()).toContainElement(q('iframe') as HTMLElement)
+  })
+
+  it('a área de conteúdo corta o excedente (overflow-hidden) — o zoom não alcança a barra', () => {
+    openViewer(base)
+    expect(content().className).toContain('overflow-hidden')
+    // A barra é irmã da área de conteúdo, não ancestral nem descendente dela.
+    const bar = screen.getByRole('banner')
+    expect(bar.contains(content())).toBe(false)
+    expect(content().contains(bar)).toBe(false)
+  })
+
+  it('a barra mostra o nome do arquivo (ou um rótulo do tipo)', () => {
+    openViewer({ ...base, ...PDF })
+    expect(screen.getByRole('banner')).toHaveTextContent('contrato.pdf')
+  })
+
+  it('rótulo padrão quando não há nome: "Imagem"', () => {
+    openViewer(base)
+    expect(screen.getByRole('banner')).toHaveTextContent('Imagem')
+  })
+
+  it('clicar no vazio da barra NÃO fecha; clicar no vazio em volta do conteúdo fecha', async () => {
+    openViewer(base)
+    fireEvent.click(screen.getByRole('banner'))
+    await expect(
+      waitFor(() => expect(screen.queryByLabelText('Fechar')).toBeNull(), { timeout: 400 }),
+    ).rejects.toThrow()
+
+    fireEvent.click(content())
+    await waitFor(() => expect(screen.queryByLabelText('Fechar')).toBeNull())
+  })
+})
