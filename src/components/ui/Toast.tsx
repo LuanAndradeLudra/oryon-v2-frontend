@@ -36,6 +36,10 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   if (typeof document === 'undefined') return null
 
   const { icon: Icon, disc } = config[latest.type]
+  // Live region (AUDITORIA-A11Y-CAMADAS.md: o toast nunca era anunciado).
+  // Erro interrompe (`alert`/assertive); o resto é `status`/polite. A região
+  // precisa existir antes do texto trocar, por isso fica no wrapper fixo.
+  const isError = latest.type === 'error'
 
   // Renderizado via Portal em document.body para escapar de qualquer ancestor
   // com `transform` (framer-motion no painel de contato, drawers, etc) — sem
@@ -47,7 +51,12 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
     // inset-x-5 (não só right-5): sem uma borda esquerda também amarrada à
     // viewport, o toast (min-w-[260px]) ficava quase colado na borda esquerda
     // em telas de 320px — margem simétrica dos dois lados agora.
-    <div className="fixed bottom-24 md:bottom-5 inset-x-5 md:left-auto z-[200] flex items-end justify-end pointer-events-none">
+    <div
+      className="fixed bottom-24 md:bottom-5 inset-x-5 md:left-auto z-[200] flex items-end justify-end pointer-events-none"
+      role={isError ? 'alert' : 'status'}
+      aria-live={isError ? 'assertive' : 'polite'}
+      aria-atomic="true"
+    >
       <div
         className={cn(
           'flex items-center gap-2.5 h-10 px-3 rounded-lg min-w-[260px] max-w-[400px] pointer-events-auto',

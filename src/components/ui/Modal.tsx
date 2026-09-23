@@ -233,6 +233,8 @@ interface ConfirmModalProps {
   /** Alcance real da ação, renderizado como bloco destacado acima da descrição — ver `ConfirmModalImpact`. */
   impact?: ConfirmModalImpact
   confirmLabel?: string
+  /** Rótulo da recusa quando "Cancelar" mente — ex.: "Continuar editando". */
+  cancelLabel?: string
   danger?: boolean
   loading?: boolean
 }
@@ -241,7 +243,7 @@ const NOOP = () => {}
 
 export function ConfirmModal({
   open, onClose, onConfirm, title, description, impact,
-  confirmLabel = 'Confirmar', danger = false, loading = false,
+  confirmLabel = 'Confirmar', cancelLabel = 'Cancelar', danger = false, loading = false,
 }: ConfirmModalProps) {
   // Enquanto confirma (loading) o diálogo não pode ser dispensado por Esc ou
   // scrim — fechar no meio deixava a ação sem feedback (achado da auditoria).
@@ -265,7 +267,7 @@ export function ConfirmModal({
       <div className="flex gap-2 justify-end">
         {/* Foco inicial: Cancelar quando destrutivo (Enter não apaga nada por
             acidente); Confirmar nos demais. */}
-        <Button variant="neutral" onClick={onClose} disabled={loading} data-autofocus={danger ? '' : undefined}>Cancelar</Button>
+        <Button variant="neutral" onClick={onClose} disabled={loading} data-autofocus={danger ? '' : undefined}>{cancelLabel}</Button>
         <Button
           variant={danger ? 'danger' : 'primary'}
           onClick={onConfirm}
