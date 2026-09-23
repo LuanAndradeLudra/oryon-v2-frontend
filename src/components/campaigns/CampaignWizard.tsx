@@ -422,7 +422,7 @@ export function CampaignWizard({
             key="wizard-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/60 z-[49]"
+            className="fixed inset-0 bg-[var(--color-scrim-soft)] z-[49]"
             onClick={onClose}
           />
 
@@ -442,7 +442,7 @@ export function CampaignWizard({
                   abaixo já separa visualmente), título 15px/700, X mais sutil. */}
               <div className="flex items-center justify-between px-5 pt-4 pb-0 flex-shrink-0">
                 <h2 className="text-[15px] font-bold tracking-[-0.01em] text-surface-100">Nova campanha</h2>
-                <button onClick={onClose} className="p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition-all">
+                <button onClick={onClose} className="p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -1665,9 +1665,15 @@ function Step5({
                 {filterPills.map((pill, i) => (
                   <span
                     key={i}
-                    className="text-[10px] px-2 py-0.5 rounded font-medium"
+                    className={cn(
+                      'text-[10px] px-2 py-0.5 rounded font-medium',
+                      pill.color ? 'color-chip' : undefined,
+                    )}
                     style={pill.color
-                      ? { backgroundColor: pill.color, color: '#fff' }
+                      // .color-chip escurece a cor 15% antes de aplicar texto
+                      // branco (color-mix), em vez de branco cru sobre a cor
+                      // do dado - uma tag/estágio claro perderia contraste.
+                      ? ({ ['--chip']: pill.color } as React.CSSProperties)
                       : { backgroundColor: 'color-mix(in srgb, var(--color-accent-violet) 15%, transparent)', color: 'var(--color-accent-violet)', border: '1px solid color-mix(in srgb, var(--color-accent-violet) 30%, transparent)' }
                     }
                   >
@@ -1801,7 +1807,7 @@ function ContactListModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={onClose} />
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1817,7 +1823,7 @@ function ContactListModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
           >
             <X className="w-4 h-4" />
           </button>
