@@ -9,6 +9,7 @@ import { WhatsappLineRow } from '@/components/copilot/WhatsappLineRow'
 import { Banner } from '@/components/ui/Banner'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/Modal'
 import { flowSummary, triggerChipLabel, actionLabel } from './automationText'
 import {
   Step1, Step2, Step3, AgentBehaviorSelector, EMPTY_DRAFT, type WizardDraft,
@@ -401,24 +402,19 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             </div>
           </motion.div>
 
-          {/* Confirmação de descarte */}
-          {askClose && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-              {/* Eixo 10: scrim do token (--color-scrim-soft), não bg-black/60
-                  cru — o Modal primitivo (MODAL-07) usa o token porque preto
-                  cru fica errado no tema claro; largura 400px, igual ao
-                  ConfirmModal (canvas). */}
-              <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" onClick={() => setAskClose(false)} />
-              <div className="relative z-10 bg-surface-800 overlay-frame border rounded-xl w-full max-w-[400px] p-6 text-center">
-                <h3 className="text-sm font-semibold text-surface-100 mb-1">Descartar alterações?</h3>
-                <p className="text-xs text-surface-500 mb-5">As mudanças não salvas serão perdidas.</p>
-                <div className="flex gap-3">
-                  <button onClick={() => setAskClose(false)} className="flex-1 py-2 rounded-sm border border-[var(--bd2)] text-surface-300 hover:text-surface-100 text-sm font-medium transition-colors">Continuar editando</button>
-                  <button onClick={() => { setAskClose(false); onClose() }} className="flex-1 py-2 rounded-sm bg-danger hover:bg-danger/90 text-white text-sm font-semibold transition-colors">Descartar</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Confirmação de descarte — ConfirmModal (alertdialog, foco no
+              Cancelar por ser danger, Esc/trap pelo Modal). O rótulo do botão
+              de recusa vira o "Cancelar" padrão (antes "Continuar editando":
+              o ConfirmModal não tem cancelLabel e ui/ não é meu). */}
+          <ConfirmModal
+            open={askClose}
+            onClose={() => setAskClose(false)}
+            onConfirm={() => { setAskClose(false); onClose() }}
+            title="Descartar alterações?"
+            description="As mudanças não salvas serão perdidas."
+            confirmLabel="Descartar"
+            danger
+          />
         </>
       )}
     </AnimatePresence>
