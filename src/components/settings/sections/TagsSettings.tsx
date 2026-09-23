@@ -278,7 +278,8 @@ export function TagsSettings() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Excluir tag"
-        description={`Tem certeza que deseja excluir a tag "${deleteTarget?.name}"? Ela será removida de todas as conversas.`}
+        impact={{ label: `Tag ${deleteTarget?.name ?? ''}`.trim(), tone: 'danger' }}
+        description="Ela será removida de todas as conversas. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
       />

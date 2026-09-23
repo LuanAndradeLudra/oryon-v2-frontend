@@ -278,7 +278,8 @@ export function FunnelsSettings() {
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
         title="Excluir funil"
-        description={`Tem certeza que deseja excluir "${selected?.name}"? Só é possível excluir funis sem negócios.`}
+        impact={{ label: `Funil ${selected?.name ?? ''}`.trim(), tone: 'danger' }}
+        description="Só é possível excluir funis sem negócios. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

@@ -189,7 +189,8 @@ export function PractitionersManager() {
         onClose={() => setDeletePractitioner(null)}
         onConfirm={handleDelete}
         title="Excluir profissional"
-        description={`Tem certeza que deseja excluir "${deletePractitioner?.name}"? Ele sairá do registro.`}
+        impact={{ label: `Profissional ${deletePractitioner?.name ?? ''}`.trim(), tone: 'danger' }}
+        description="O profissional sairá do registro. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

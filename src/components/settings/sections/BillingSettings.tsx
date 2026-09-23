@@ -574,9 +574,13 @@ export function BillingSettings() {
         onClose={() => setCancelOpen(false)}
         onConfirm={confirmCancel}
         title="Cancelar assinatura"
+        impact={{
+          label: accessUntil ? `Acesso mantido até ${accessUntil}` : 'Acesso encerrado imediatamente',
+          tone: accessUntil ? 'warning' : 'danger',
+        }}
         description={accessUntil
-          ? `Sua assinatura será cancelada, mas você mantém o acesso até ${accessUntil}. Não haverá nova cobrança e os créditos não são reembolsados.`
-          : 'Sua assinatura será cancelada e o acesso encerrado. Não haverá nova cobrança.'}
+          ? 'Sua assinatura será cancelada. Não haverá nova cobrança e os créditos não são reembolsados.'
+          : 'Sua assinatura será cancelada. Não haverá nova cobrança.'}
         confirmLabel="Cancelar assinatura"
         danger
         loading={canceling}

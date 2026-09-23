@@ -425,7 +425,8 @@ export function Departments() {
       )}
 
       <ConfirmModal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}
-        title="Excluir setor" description={`Tem certeza que deseja excluir o setor "${deleteTarget?.name}"? Os usuários vinculados não serão afetados.`} confirmLabel="Excluir" danger />
+        title="Excluir setor" impact={{ label: `Setor ${deleteTarget?.name ?? ''}`.trim(), tone: 'danger' }}
+        description="Os usuários vinculados não serão afetados. Esta ação não pode ser desfeita." confirmLabel="Excluir" danger />
     </div>
   )
 }

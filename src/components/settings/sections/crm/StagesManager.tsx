@@ -192,7 +192,8 @@ export function StagesManager() {
         onClose={() => setDeleteStage(null)}
         onConfirm={handleDelete}
         title="Excluir situação"
-        description={`Tem certeza que deseja excluir o estágio "${deleteStage?.label}"? Contatos neste estágio não serão afetados, mas deixarão de ser agrupados.`}
+        impact={{ label: `Situação ${deleteStage?.label ?? ''}`.trim(), tone: 'danger' }}
+        description="Contatos nesta situação não serão afetados, mas deixarão de ser agrupados. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

@@ -183,17 +183,22 @@ export function WhatsAppNumbers() {
     setDependencies(null)
   }
 
-  const disconnectDescription = (() => {
-    const base = `Tem certeza que deseja desconectar o número ${disconnectTarget?.displayPhoneNumber}?`
-    if (!dependencies) return `${base} O atendimento via este número será interrompido imediatamente.`
-    const affected: string[] = []
-    if (dependencies.templates > 0) affected.push(`${dependencies.templates} template(s)`)
-    if (dependencies.campaigns > 0) affected.push(`${dependencies.campaigns} campanha(s)`)
-    if (dependencies.automations > 0) affected.push(`${dependencies.automations} automação(ões)`)
-    if (dependencies.departments.length > 0) affected.push(`${dependencies.departments.length} setor(es)`)
-    if (affected.length === 0) return `${base} O atendimento via este número será interrompido imediatamente.`
-    return `${base} Isso afeta ${affected.join(', ')} vinculados a esta linha. O atendimento será interrompido imediatamente.`
-  })()
+  // Alcance real (impact) = o que está vinculado à linha; a descrição fica com
+  // a consequência fixa (atendimento interrompido).
+  const disconnectAffected: string[] = []
+  if (dependencies) {
+    if (dependencies.templates > 0) disconnectAffected.push(`${dependencies.templates} template(s)`)
+    if (dependencies.campaigns > 0) disconnectAffected.push(`${dependencies.campaigns} campanha(s)`)
+    if (dependencies.automations > 0) disconnectAffected.push(`${dependencies.automations} automação(ões)`)
+    if (dependencies.departments.length > 0) disconnectAffected.push(`${dependencies.departments.length} setor(es)`)
+  }
+  const disconnectImpact = {
+    label: disconnectAffected.length > 0
+      ? `Número ${disconnectTarget?.displayPhoneNumber ?? ''} — afeta ${disconnectAffected.join(', ')} vinculados à linha`
+      : `Número ${disconnectTarget?.displayPhoneNumber ?? ''}`,
+    tone: 'danger' as const,
+  }
+  const disconnectDescription = 'O atendimento via este número será interrompido imediatamente.'
 
   if (loading) {
     return (
@@ -386,6 +391,7 @@ export function WhatsAppNumbers() {
         onClose={() => { setDisconnectTarget(null); setDependencies(null) }}
         onConfirm={handleDisconnect}
         title="Desconectar número"
+        impact={disconnectImpact}
         description={disconnectDescription}
         confirmLabel="Desconectar"
         danger
