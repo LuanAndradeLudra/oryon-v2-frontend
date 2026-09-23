@@ -1,8 +1,9 @@
 import { useState, useCallback, useMemo, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Download } from 'lucide-react'
+import { X, Download, ZoomIn, ZoomOut } from 'lucide-react'
 import { useLayer } from '@/contexts/LayerContext'
+import { useImageZoom } from '@/hooks/useImageZoom'
 import { MediaViewerCtx } from '@/contexts/mediaViewerCore'
 import { useAuthenticatedMediaSrc } from '@/lib/mediaUrls'
 import { downloadMedia } from '@/lib/downloadMedia'
@@ -30,17 +31,27 @@ function MediaViewerOverlay({ message, onClose }: { message: Message | null; onC
   const open = !!message
   const { zIndex } = useLayer(open, onClose)
   const src = useAuthenticatedMediaSrc(message?.mediaUrl)
+  const isImageLike = message?.type === 'image' || message?.type === 'sticker'
+  // Zoom só pra imagem (PDF já tem o zoom do próprio visualizador do
+  // navegador; vídeo não faz sentido). `resetKey`: cada mensagem abre em 1x.
+  const zoom = useImageZoom({ enabled: open && isImageLike, resetKey: message?.id })
 
   if (typeof document === 'undefined') return null
 
-  const isImageLike = message?.type === 'image' || message?.type === 'sticker'
   const isPdf = message?.type === 'document' && (message.mediaMimeType === 'application/pdf' || message.mediaCaption?.toLowerCase().endsWith('.pdf'))
   const canPreviewInline = isImageLike || message?.type === 'video' || (isPdf && !isNativePlatform())
 
   let body: ReactNode = null
   if (message) {
     if (isImageLike) {
-      body = <img src={src} alt={message.mediaCaption || 'Imagem'} className="max-w-full max-h-full object-contain" />
+      body = (
+        <img
+          src={src}
+          alt={message.mediaCaption || 'Imagem'}
+          className="max-w-full max-h-full object-contain"
+          {...zoom.imgProps}
+        />
+      )
     } else if (message.type === 'video') {
       body = <video src={src} controls autoPlay className="max-w-full max-h-full" />
     } else if (isPdf && !isNativePlatform()) {
@@ -78,11 +89,58 @@ function MediaViewerOverlay({ message, onClose }: { message: Message | null; onC
         >
           <div className="absolute inset-0 bg-black/90" />
 
-          <div className="relative z-10 flex items-center justify-center w-full h-full" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={isImageLike ? zoom.containerRef : undefined}
+            className="relative z-10 flex items-center justify-center w-full h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
             {body}
           </div>
 
-          <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          {/* stopPropagation: esta barra é irmã do container da mídia (que já
+              o faz), não filha — sem isto, o clique em QUALQUER botão dela
+              borbulha até o onClick do overlay e FECHA o visualizador
+              (zoom fecharia a tela; "Baixar" já baixava e fechava junto). */}
+          <div
+            className="absolute top-4 right-4 z-20 flex items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {isImageLike && (
+              // Controles de zoom (pedido do usuário 2026-09-23). O % é
+              // também o botão de "restaurar" (volta pra 100%, ajustado à
+              // tela) — mesmo padrão dos visualizadores de imagem comuns.
+              <div className="flex items-center gap-1 rounded-full bg-white/10 p-0.5" role="group" aria-label="Zoom">
+                <button
+                  type="button"
+                  onClick={zoom.zoomOut}
+                  disabled={!zoom.canZoomOut}
+                  title="Diminuir zoom (-)"
+                  aria-label="Diminuir zoom"
+                  className="w-8 h-8 rounded-full hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-center text-white transition-colors"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={zoom.reset}
+                  title="Restaurar zoom (0)"
+                  aria-label="Restaurar zoom"
+                  className="min-w-[3.25rem] h-8 px-1 rounded-full hover:bg-white/20 text-white text-xs font-medium tabular-nums transition-colors"
+                >
+                  {Math.round(zoom.zoom * 100)}%
+                </button>
+                <button
+                  type="button"
+                  onClick={zoom.zoomIn}
+                  disabled={!zoom.canZoomIn}
+                  title="Aumentar zoom (+)"
+                  aria-label="Aumentar zoom"
+                  className="w-8 h-8 rounded-full hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-center text-white transition-colors"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             {canPreviewInline && (
               <button
                 type="button"
