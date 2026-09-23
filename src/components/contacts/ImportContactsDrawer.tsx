@@ -621,7 +621,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           { ext: 'JSON', icon: FileJson, desc: 'Array de objetos ou {"contacts": [...]}' },
                           { ext: 'XML', icon: FileCode2, desc: 'Tags <contact> com campos como sub-elementos.' },
                         ].map(({ ext: e, icon: Icon, desc }) => (
-                          <div key={e} className="bg-surface-800/60 border border-surface-700/50 rounded-lg p-3 flex flex-col gap-1.5">
+                          <div key={e} className="bg-surface-800/60 border border-surface-700 rounded-lg p-3 flex flex-col gap-1.5">
                             <div className="flex items-center gap-1.5">
                               <Icon className="w-3.5 h-3.5 text-accent-dark" />
                               <span className="text-xs font-semibold text-surface-300">.{e.toLowerCase()}</span>
@@ -740,7 +740,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                 <div className="p-5 flex flex-col gap-4">
 
                   {/* File / source badge */}
-                  <div className="flex items-center gap-2 p-3 bg-surface-800/60 border border-surface-700/50 rounded-lg">
+                  <div className="flex items-center gap-2 p-3 bg-surface-800/60 border border-surface-700 rounded-lg">
                     <FileIcon className="w-4 h-4 text-accent-dark flex-shrink-0" />
                     <span className="text-xs font-medium text-surface-300 truncate">
                       {file?.name ?? 'Texto colado'}
@@ -757,7 +757,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       >
                         <Banner variant="info" icon={<Loader2 className="w-4 h-4 animate-spin" />}>
                           <p className="font-medium">IA analisando colunas…</p>
-                          <p className="text-white/70 mt-0.5">Identificando campos automaticamente, mesmo com nomes diferentes</p>
+                          <p className="opacity-70 mt-0.5">Identificando campos automaticamente, mesmo com nomes diferentes</p>
                         </Banner>
                       </motion.div>
                     ) : Object.keys(aiSuggestions).length > 0 ? (
@@ -769,7 +769,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           <p className="font-medium">
                             IA mapeou {Object.values(aiSuggestions).filter((s) => s.field !== '__skip__').length} de {headers.length} colunas
                           </p>
-                          <p className="text-white/70 mt-0.5">Revise abaixo e ajuste se necessário</p>
+                          <p className="opacity-70 mt-0.5">Revise abaixo e ajuste se necessário</p>
                         </Banner>
                       </motion.div>
                     ) : null}
@@ -798,7 +798,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                               'flex items-center gap-3 p-2.5 border rounded-lg transition-colors',
                               isAiMapped
                                 ? 'bg-status-pending-bg border-status-pending-border'
-                                : 'bg-surface-800/40 border-surface-700/50',
+                                : 'bg-surface-800/40 border-surface-700',
                             )}
                           >
                             <div className="flex-1 min-w-0">
@@ -935,11 +935,11 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                   )}
 
                   {/* Preview table */}
-                  <div className="border border-surface-700/60 rounded-lg overflow-hidden">
+                  <div className="border border-surface-700 rounded-lg overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="border-b border-surface-700/60 bg-surface-800/60">
+                          <tr className="border-b border-surface-700 bg-surface-800/60">
                             <th className="px-3 py-2 text-left font-semibold text-surface-500 w-8">#</th>
                             {Object.entries(colMap)
                               .filter(([, f]) => f !== '__skip__')
@@ -955,7 +955,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           {rows.slice(0, 8).map((row, i) => {
                             const { valid, issues } = validateRow(row, colMap)
                             return (
-                              <tr key={i} className={cn('border-b border-surface-700/60 last:border-0', !valid && 'bg-danger/5')}>
+                              <tr key={i} className={cn('border-b border-surface-700 last:border-0', !valid && 'bg-danger/5')}>
                                 {/* Número da linha no ARQUIVO, não a posição na prévia — rows já
                                     exclui o cabeçalho (parseCSV faz lines.slice(1)), então a linha
                                     1 do arquivo é o header e rows[0] é a linha 2. Mesma fórmula (+2)
@@ -983,7 +983,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                       </table>
                     </div>
                     {rows.length > 8 && (
-                      <div className="px-3 py-2 text-center text-[11px] text-surface-600 border-t border-surface-700/60">
+                      <div className="px-3 py-2 text-center text-[11px] text-surface-600 border-t border-surface-700">
                         + {rows.length - 8} linhas não exibidas
                       </div>
                     )}
@@ -1029,7 +1029,7 @@ export function ImportContactsDrawer({ open, onClose, onCreate, onDone, pipeline
                           <p className="font-semibold">{errors.length} falha{errors.length !== 1 ? 's' : ''}</p>
                           <div className="mt-1 max-h-24 overflow-y-auto flex flex-col gap-0.5">
                             {errors.map((e, i) => (
-                              <p key={i} className="text-white/80">{e}</p>
+                              <p key={i} className="opacity-80">{e}</p>
                             ))}
                           </div>
                         </Banner>

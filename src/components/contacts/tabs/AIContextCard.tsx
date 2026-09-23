@@ -393,7 +393,7 @@ export function AIContextCard({ contact, onRefresh }: AIContextCardProps) {
               {/* Last Interaction Summary */}
               {contact.aiLastInteractionSummary && (
                 <Section label="Última interação" icon={<MessageSquareQuote className="w-3.5 h-3.5" />} iconColor="text-surface-500" delay={justFinished ? 0.85 : 0}>
-                  <div className="bg-surface-800/50 border border-surface-700/50 rounded-lg px-3.5 py-3">
+                  <div className="bg-surface-800/50 border border-surface-700 rounded-lg px-3.5 py-3">
                     <p className="text-[13px] text-surface-400 leading-relaxed italic">{contact.aiLastInteractionSummary}</p>
                   </div>
                 </Section>
