@@ -29,7 +29,9 @@ import type { TemplateButton, WhatsAppTemplate } from '@/types'
  */
 
 /* ── Paleta amostrada (tema claro do WhatsApp) ───────────────────────────── */
-const WA = {
+// Exportada: SubcategoryPreview.tsx (prévia animada do passo 1 do criador)
+// reusa a MESMA paleta em vez de duplicar os valores — uma fonte só.
+export const WA = {
   papel: '#E5DDD5',
   balao: '#FFFFFF',
   texto: '#11191D',
@@ -40,7 +42,7 @@ const WA = {
 } as const
 
 /** Fonte do sistema — o WhatsApp não usa a tipografia do produto. */
-const FONTE_WA = '"Segoe UI", "Helvetica Neue", Roboto, system-ui, sans-serif'
+export const FONTE_WA = '"Segoe UI", "Helvetica Neue", Roboto, system-ui, sans-serif'
 
 /** Papel de parede: rabiscos de baixíssimo contraste, como no original. */
 const PAPEL_PAREDE =
