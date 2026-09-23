@@ -58,7 +58,10 @@ export function DuplicateTemplateModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      // Eixo 10: scrim do token (--color-scrim-soft), não bg-black/60 cru —
+      // o Modal primitivo (MODAL-07) documenta esse token porque preto cru
+      // fica errado no tema claro.
+      className="fixed inset-0 bg-[var(--color-scrim-soft)] z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -73,10 +76,12 @@ export function DuplicateTemplateModal({
               O novo template será submetido à Meta na linha escolhida e entra em análise.
             </p>
           </div>
+          {/* hover:bg-surface-800 era invisível — o painel É surface-800,
+              hover contra fundo idêntico não aparecia nunca. */}
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-colors"
+            className="p-1 rounded-md text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -102,9 +107,14 @@ export function DuplicateTemplateModal({
                           type="button"
                           onClick={() => setPickedLineId(n.id)}
                           disabled={saving}
+                          // Eixo 10: bg-brand-500/10 era o mesmo padrão órfão
+                          // já corrigido em DataTable/Dropdown (ui/) nesta
+                          // rodada — trocado por --rowhover; texto mais claro
+                          // (surface-100, permanente) segue distinguindo o
+                          // item escolhido mesmo sem o mouse em cima.
                           className={cn(
                             'w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors',
-                            isPicked ? 'bg-brand-500/10 text-surface-100' : 'text-surface-300 hover:bg-surface-800/60',
+                            isPicked ? 'bg-[var(--rowhover)] text-surface-100' : 'text-surface-300 hover:bg-[var(--rowhover)]',
                           )}
                         >
                           <Phone className="w-4 h-4 text-surface-500 flex-shrink-0" />
@@ -140,7 +150,10 @@ export function DuplicateTemplateModal({
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder={`Padrão: "${template.name}_linha"`}
                   disabled={saving}
-                  className="w-full px-3 py-2 rounded-lg border border-surface-700/60 bg-surface-800/60 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500/50"
+                  // Eixo 10: --bd2 sólido (não border-surface-700/60 com
+                  // opacidade arbitrária) — mesma borda de input do resto
+                  // do app; bg-surface-800 sólido, sem /60.
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--bd2)] bg-surface-800 text-xs text-surface-200 placeholder:text-surface-600 focus:outline-none focus:border-brand-500"
                 />
                 <p className="mt-1 text-[10px] text-surface-500">
                   Snake_case, sem espaços. Use para evitar conflitos de nome.
