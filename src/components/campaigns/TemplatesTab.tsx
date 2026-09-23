@@ -1,17 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Eye, Pencil, Trash2, AlertCircle, Loader2, RefreshCw, Copy, FileText, MoreHorizontal } from 'lucide-react'
+import { Plus, Search, Eye, Pencil, Trash2, AlertCircle, Loader2, RefreshCw, Copy, FileText } from 'lucide-react'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonList } from '@/components/ui/Skeleton'
-import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { cn } from '@/lib/utils'
 import { templatesApi } from '@/services/api'
 import { TemplateCreator } from './TemplateCreator'
 import { TemplatePreview } from './TemplatePreview'
 import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
-import { CATEGORY_LABELS } from './constants'
 import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { WhatsappLineChip } from '@/components/common/WhatsappLineChip'
@@ -210,7 +208,7 @@ export function TemplatesTab({ onCountChange }: { onCountChange?: (n: number) =>
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar template..."
-            className="w-full bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-3 text-xs text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
           />
         </div>
 
