@@ -220,14 +220,14 @@ export function ContactPanel({
             )}
           </div>
           <div className="flex items-center gap-1.5">
-            <Button size="sm" variant="neutral" className="!h-[26px] !px-[9px] !text-[11.5px] !rounded-xs" onClick={() => navigate(`/contacts?contact=${contact.id}`)}>
+            <Button size="sm" variant="neutral" onClick={() => navigate(`/contacts?contact=${contact.id}`)}>
               Ver contato
             </Button>
             {salesPipeline && (
               <Button
                 size="sm"
                 variant="neutral"
-                className="!h-[26px] !px-[9px] !text-[11.5px] !rounded-xs"
+               
                 onClick={() => addToPipeline.requestAdd({ contactId: contact.id, contactName: contact.displayName || contact.waId, pipeline: salesPipeline, conversationId: conversation.id })}
               >
                 Novo negócio

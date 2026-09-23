@@ -288,7 +288,12 @@ export function ConversationActivitySection({ conversationId }: { conversationId
             <button
               type="button"
               onClick={() => setFilterOpen(v => !v)}
-              className="flex items-center gap-1 text-xs text-surface-400 hover:text-surface-200 bg-surface-800 hover:bg-surface-700 border border-surface-700 rounded-lg px-2.5 py-1 transition-colors"
+              /* PL-6-2 (eixo 10): era a TERCEIRA geometria de botão pequeno do
+                 mesmo painel de 308px — raio 10, `py-1` (25,7px de altura) e
+                 borda `--bd` — ao lado de "Ver contato"/"Novo negócio". Agora
+                 usa o recipe `neutral sm` do `Button`: h-7, px-2.5, raio 7,
+                 borda `--bd2`. */
+              className="flex items-center gap-1 h-7 text-xs text-surface-400 hover:text-surface-200 bg-surface-800 hover:bg-surface-700 border border-[var(--bd2)] rounded-sm px-2.5 transition-colors"
             >
               {FILTER_LABELS[filter]}
               <ChevronDown className={cn('w-3 h-3 transition-transform', filterOpen && 'rotate-180')} />
