@@ -203,7 +203,10 @@ function DeptForm({ title, initial, saving, waNumbers, onSave, onCancel }: {
               </p>
               <Banner variant="warning">
                 <p>Para atender conversas, conecte pelo menos um número WhatsApp.</p>
-                <Link to="/settings/numbers" className="mt-2 inline-flex items-center gap-1.5 font-semibold text-white underline underline-offset-2 hover:text-white/80">
+                {/* Eixo 10: sem cor fixa — Banner é suave (12% da cor
+                    semântica sobre o fundo da página) e o link herda essa
+                    cor; texto branco cru ficava sem contraste no claro. */}
+                <Link to="/settings/numbers" className="mt-2 inline-flex items-center gap-1.5 font-semibold underline underline-offset-2 hover:opacity-80">
                   <ExternalLink className="w-3.5 h-3.5" />Conectar primeiro número
                 </Link>
               </Banner>

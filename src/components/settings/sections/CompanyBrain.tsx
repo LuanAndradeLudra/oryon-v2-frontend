@@ -247,10 +247,13 @@ function BrandFilesSection({
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onClick={() => inputRef.current?.click()}
+        // Eixo 10: surface-800 é branco no claro — a 40/70% de opacidade a
+        // zona quase some contra o fundo da página. --sf2/--rowhover têm
+        // valor dedicado nos dois temas.
         className={`flex items-center gap-3 rounded-md border-2 border-dashed px-4 py-3 cursor-pointer transition-all ${
           dragOver
             ? 'border-brand-500 bg-accent-soft'
-            : 'border-surface-700 bg-surface-800/40 hover:border-surface-600 hover:bg-surface-800/70'
+            : 'border-surface-700 bg-[var(--sf2)] hover:border-surface-600 hover:bg-[var(--rowhover)]'
         }`}
       >
         <input ref={inputRef} type="file" multiple accept={ACCEPTED_ATTR} className="sr-only" onChange={handleInput} />
