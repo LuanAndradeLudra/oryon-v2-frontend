@@ -59,6 +59,12 @@ interface DataTableProps<Row> {
   className?: string
   /** Densidade: default (py-2.5) ou compact (py-1.5). */
   dense?: boolean
+  /** Altura da linha: `sm` 36px (padrão) ou `md` 44px — linha com subtítulo
+   *  (nome + telefone) precisa de 44 para uma linha de texto por célula. */
+  rowHeight?: 'sm' | 'md'
+  /** Checkbox e elementos marcados com `data-row-action` só aparecem no hover/
+   *  foco da linha (Linear/Attio). Em ponteiro grosso ficam sempre visíveis. */
+  revealOnHover?: boolean
 }
 
 export function DataTable<Row>({
@@ -68,7 +74,7 @@ export function DataTable<Row>({
   sort, onSortChange,
   onRowClick, onRowContextMenu,
   selectedKeys, onToggleSelect, onToggleSelectAll,
-  activeKey, className, dense,
+  activeKey, className, dense, rowHeight = 'sm', revealOnHover = false,
 }: DataTableProps<Row>) {
   const selectable = !!(selectedKeys && onToggleSelect)
   const allSelected = selectable && rows.length > 0 && rows.every((r) => selectedKeys.has(rowKey(r)))
@@ -89,7 +95,18 @@ export function DataTable<Row>({
     a === 'right' ? 'text-right' : a === 'center' ? 'text-center' : 'text-left'
 
   return (
-    <div className={cn('overflow-x-auto overflow-y-auto', className)}>
+    <div
+      className={cn(
+        'overflow-x-auto overflow-y-auto',
+        // revealOnHover: esconde até hover/foco da linha; checkbox marcado e
+        // ação com menu aberto (`data-row-action-open`) permanecem visíveis.
+        revealOnHover && [
+          '[@media(hover:hover)]:[&_tbody_tr:not(:hover):not(:focus-within)_.ui-checkbox:not(:checked)]:opacity-0',
+          '[@media(hover:hover)]:[&_tbody_tr:not(:hover):not(:focus-within)_[data-row-action]:not([data-row-action-open])]:opacity-0',
+        ],
+        className,
+      )}
+    >
       {/* TABLE-10/23 (spec 1a): números tabulares na tabela inteira. */}
       <table className="w-full text-sm border-collapse tabular-nums">
         <thead className="sticky top-0 z-10 bg-surface-900">
@@ -145,7 +162,7 @@ export function DataTable<Row>({
                   activeKey === key
                     ? 'bg-[var(--rowhover)] [&>td:first-child]:shadow-[inset_2px_0_0_0_var(--color-brand-500)]'
                     : selected
-                      ? 'bg-[var(--sf2)]'
+                      ? 'bg-[var(--sel)]'
                       : 'hover:bg-[var(--rowhover)]',
                 )}
               >
@@ -163,7 +180,7 @@ export function DataTable<Row>({
                     key={col.key}
                     className={cn(
                       'px-3 text-surface-300',
-                      dense ? 'py-1' : 'h-9 py-0',
+                      dense ? 'py-1' : rowHeight === 'md' ? 'h-11 py-0' : 'h-9 py-0',
                       alignClass(col.align),
                       col.align === 'right' && 'tabular-nums',
                       col.responsiveClass,
