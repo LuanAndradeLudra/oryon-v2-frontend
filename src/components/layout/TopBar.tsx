@@ -31,6 +31,7 @@ import {
   categoryOf,
   CATEGORY_STYLE,
   emptyStateFor,
+  normalizeNotificationLink,
 } from '@/lib/notificationsUx'
 
 // ── Page title map ─────────────────────────────────────────────────────────────
@@ -744,7 +745,7 @@ function NotificationDetailModal({ n, onClose }: { n: AppNotification; onClose: 
 
           {isValidLink(n.link) && (
             <button
-              onClick={() => { navigate(n.link!); onClose() }}
+              onClick={() => { navigate(normalizeNotificationLink(n.link!)); onClose() }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-surface-950 text-sm font-semibold transition-colors [@media(pointer:coarse)]:py-3"
             >
               Abrir <ArrowRight className="w-3.5 h-3.5" />
@@ -863,7 +864,7 @@ function NotificationsPanel() {
     if (n.metadata && Object.keys(n.metadata).length > 0) {
       setDetail(n)
     } else if (isValidLink(n.link)) {
-      navigate(n.link!)
+      navigate(normalizeNotificationLink(n.link!))
     }
   }, [markAsRead, navigate])
 
