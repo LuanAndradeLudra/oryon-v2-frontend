@@ -262,104 +262,6 @@ const STATUS_CHIP_CLASS: Record<CampaignStatus, string> = {
   cancelled: 'bg-surface-900 border border-surface-700 text-surface-400',
 }
 
-function statusChip(campaign: Campaign) {
-  const cfg = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft
-  const failRate = campaign.stats.sent > 0 ? Math.round((campaign.stats.failed / campaign.stats.sent) * 100) : 0
-  const label = campaign.status === 'failed' && failRate > 0 ? `Falhou · ${failRate}%` : cfg.label
-  return (
-    <span className={cn('inline-flex items-center h-5 px-[7px] rounded-xs text-[11px] font-semibold gap-[5px]', STATUS_CHIP_CLASS[campaign.status] ?? STATUS_CHIP_CLASS.draft)}>
-      {campaign.status === 'sending' && <i className="w-1.5 h-1.5 rounded-full bg-current not-italic" />}
-      {label}
-    </span>
-  )
-}
-
-function rate(part: number, total: number): string {
-  return total > 0 ? `${Math.round((part / total) * 100)}%` : '—'
-}
-
-// CAMP-TABLE-11: "hoje HH:mm" quando a data cai no dia de hoje, senão
-// "DD mmm" (curto, sem hora) — mais perto do formato do mock ("hoje 09:00",
-// "17 set 10:00") do que o DD/MM cru de antes.
-const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
-
-function isToday(d: Date): boolean {
-  const now = new Date()
-  return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-}
-
-function sendDate(campaign: Campaign): string {
-  const iso = campaign.sentAt ?? campaign.scheduledAt
-  if (!iso) return '—'
-  const d = new Date(iso)
-  const hhmm = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  if (isToday(d)) return `hoje ${hhmm}`
-  const dia = `${d.getDate()} ${MESES_ABREV[d.getMonth()]}`
-  return campaign.scheduledAt && !campaign.sentAt ? `${dia} ${hhmm}` : dia
-}
-
-function MenuCell({ campaign, onSend, onDelete, onReport, onAssignWaba, sending, deleting }: {
-  campaign: Campaign
-  onSend: () => void
-  onDelete: () => void
-  onReport: () => void
-  onAssignWaba: () => void
-  sending: boolean
-  deleting: boolean
-}) {
-  const [open, setOpen] = useState(false)
-  const isSent = campaign.status === 'sent'
-  const canSend = campaign.status === 'draft' || campaign.status === 'scheduled'
-
-  return (
-    <span onClick={(e) => e.stopPropagation()} className="inline-flex">
-      <Dropdown
-        open={open}
-        onClose={() => setOpen(false)}
-        align="right"
-        className="w-48"
-        anchor={
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-all"
-            aria-label="Mais ações"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
-        }
-      >
-        <div className="px-1 py-1 flex flex-col gap-0.5">
-          <DropdownItem onClick={() => { navigator.clipboard.writeText(campaign.name).catch(() => {}); setOpen(false) }}>
-            <Copy className="w-3.5 h-3.5" /> Copiar nome
-          </DropdownItem>
-          {campaign.needsWabaAssignment && (
-            <DropdownItem onClick={() => { onAssignWaba(); setOpen(false) }}>
-              <Users className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
-            </DropdownItem>
-          )}
-          {isSent && (
-            <DropdownItem onClick={() => { onReport(); setOpen(false) }}>
-              <BarChart3 className="w-3.5 h-3.5" /> Ver relatório
-            </DropdownItem>
-          )}
-          {canSend && (
-            <DropdownItem disabled={sending} onClick={() => { onSend(); setOpen(false) }}>
-              {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              {sending ? 'Enviando…' : 'Enviar agora'}
-            </DropdownItem>
-          )}
-          {canSend && (
-            <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setOpen(false) }}>
-              <Trash2 className="w-3.5 h-3.5" /> Excluir
-            </DropdownItem>
-          )}
-        </div>
-      </Dropdown>
-    </span>
-  )
-}
-
-
 /** Número com separador de milhar — usado em todas as métricas do card. */
 const num = (n: number) => n.toLocaleString('pt-BR')
 
@@ -408,40 +310,47 @@ function CampaignCard({ campaign, onSend, onReport, onDelete, onAssignWaba, send
         <span className="flex-1 min-w-0 text-[13px] font-semibold text-surface-50 truncate">{campaign.name}</span>
         {campaign.needsWabaAssignment && <WabaAssignmentBadge onClick={onAssignWaba} />}
         <WhatsappLineChip whatsappNumberId={campaign.whatsappNumberId ?? undefined} />
-        <span className="ml-auto text-[11px] text-surface-500 tabular-nums flex-none">
-          {new Date(quando).toLocaleDateString('pt-BR')}
-        </span>
-        <Dropdown
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          align="right"
-          className="w-48"
-          anchor={
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label={`Mais ações — ${campaign.name}`}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-none"
-            >
-              <MoreHorizontal className="w-3.5 h-3.5" />
-            </button>
-          }
-        >
-          <div className="px-1 py-1 flex flex-col gap-0.5">
-            <DropdownItem onClick={() => { navigator.clipboard.writeText(campaign.name).catch(() => {}); setMenuOpen(false) }}>
-              <Copy className="w-3.5 h-3.5" /> Copiar nome
-            </DropdownItem>
-            {campaign.needsWabaAssignment && (
-              <DropdownItem onClick={() => { onAssignWaba(); setMenuOpen(false) }}>
-                <Users className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
+        {/* Medido ao vivo em 390px: card estourava 3px, culpa da data +
+            kebab juntos. A data é o item menos essencial da linha — some
+            abaixo de sm. ml-auto migrou pro wrapper (não fica mais só na
+            data) pra continuar empurrando data+kebab juntos pra direita
+            mesmo quando a data está escondida. */}
+        <div className="ml-auto flex items-center gap-2 flex-none">
+          <span className="hidden sm:inline-flex text-[11px] text-surface-500 tabular-nums flex-none">
+            {new Date(quando).toLocaleDateString('pt-BR')}
+          </span>
+          <Dropdown
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            align="right"
+            className="w-48"
+            anchor={
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label={`Mais ações — ${campaign.name}`}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="w-7 h-7 rounded-xs flex items-center justify-center text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-colors flex-none"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </button>
+            }
+          >
+            <div className="px-1 py-1 flex flex-col gap-0.5">
+              <DropdownItem onClick={() => { navigator.clipboard.writeText(campaign.name).catch(() => {}); setMenuOpen(false) }}>
+                <Copy className="w-3.5 h-3.5" /> Copiar nome
               </DropdownItem>
-            )}
-            <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setMenuOpen(false) }}>
-              {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Excluir
-            </DropdownItem>
-          </div>
-        </Dropdown>
+              {campaign.needsWabaAssignment && (
+                <DropdownItem onClick={() => { onAssignWaba(); setMenuOpen(false) }}>
+                  <Users className="w-3.5 h-3.5" /> Atribuir linha WhatsApp
+                </DropdownItem>
+              )}
+              <DropdownItem danger disabled={deleting} onClick={() => { onDelete(); setMenuOpen(false) }}>
+                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Excluir
+              </DropdownItem>
+            </div>
+          </Dropdown>
+        </div>
       </div>
 
       <p className="text-[11px] text-surface-500 truncate">
