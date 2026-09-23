@@ -55,9 +55,11 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
       </div>
       {metric.trend !== 0 ? (
         <div className={cn('flex items-center gap-1.5 font-semibold text-[11.5px]', trendColor)}>
+          {/* TrendingDown não tem versão desenhada da casa (só TrendingUp
+              tem, em lib/icons.tsx) — strokeWidth explícito (DECISOES #18). */}
           {metric.trend > 0
             ? <TrendingUp className="w-3 h-3" />
-            : <TrendingDown className="w-3 h-3" />}
+            : <TrendingDown className="w-3 h-3" strokeWidth={1.75} />}
           <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1)}%</span>
           <span className="text-surface-500 font-normal truncate">vs. período anterior</span>
         </div>
@@ -251,11 +253,16 @@ export function KpiGrid({
       <div className="flex items-center gap-3 mb-2 flex-wrap">
         <div className="flex-1 min-w-0" />
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {/* Eixo 10 (tema claro): border-surface-700/60 (opacidade
+              arbitrária) -> --bd2 sólido, mesma borda de input/botão do
+              resto do app. Settings2 sem versão desenhada da casa ->
+              strokeWidth explícito (DECISOES #18). Altura h-8 não mexida
+              (não fazia parte do achado, fora do escopo desta leva). */}
           <button
             onClick={() => setCustomizerOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-surface-700/60 hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-[var(--bd2)] hover:border-surface-600 bg-surface-800 text-xs text-surface-400 hover:text-surface-200 transition-colors shrink-0"
           >
-            <Settings2 className="w-3.5 h-3.5" />
+            <Settings2 className="w-3.5 h-3.5" strokeWidth={1.75} />
             Personalizar
           </button>
         </div>

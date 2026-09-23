@@ -817,7 +817,7 @@ const ACTION_OPTIONS: { type: ActionType; label: string; description: string; ic
   { type: 'assign_dept',         label: 'Atribuir depto.',       description: 'Encaminhar para departamento',     icon: <Building2 className="w-3.5 h-3.5" />,     color: 'var(--color-surface-400)' },
   { type: 'add_tag',             label: 'Adicionar tag',         description: 'Marcar o contato com uma tag',     icon: <Tag className="w-3.5 h-3.5" />,           color: 'var(--color-surface-400)' },
   { type: 'remove_tag',          label: 'Remover tag',           description: 'Remover tag do contato',           icon: <XCircle className="w-3.5 h-3.5" />,       color: 'var(--color-surface-400)' },
-  { type: 'change_stage',        label: 'Mudar situação',        description: 'Mover o contato no ciclo de vida', icon: <GitBranch className="w-3.5 h-3.5" />,     color: 'var(--color-surface-400)' },
+  { type: 'change_stage',        label: 'Mudar situação',        description: 'Mover o contato no ciclo de vida', icon: <GitBranch className="w-3.5 h-3.5" strokeWidth={1.75} />, color: 'var(--color-surface-400)' },
   { type: 'set_lead_score',      label: 'Definir lead score',    description: 'Atribuir pontuação 0–100',         icon: <Star className="w-3.5 h-3.5" />,          color: 'var(--color-surface-400)' },
   { type: 'resolve_conversation',label: 'Resolver conversa',     description: 'Marcar conversa como resolvida',   icon: <CheckCircle className="w-3.5 h-3.5" />,   color: 'var(--color-surface-400)' },
   { type: 'send_note',           label: 'Nota interna',          description: 'Adicionar nota à conversa',        icon: <StickyNote className="w-3.5 h-3.5" />,    color: 'var(--color-surface-400)' },

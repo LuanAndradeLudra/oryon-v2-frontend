@@ -177,7 +177,9 @@ function FlowCard({ automation, onEdit }: {
       </FlowSection>
 
       {conds.length > 0 && (
-        <FlowSection eyebrow="Se" icon={<GitBranch className="w-3 h-3" />} onClick={() => onEdit('condicoes')}>
+        // GitBranch/ExternalLink/Clock nesta tela não têm versão desenhada
+        // da casa (lib/icons.tsx) — traço 1.75 explícito (DECISOES #18).
+        <FlowSection eyebrow="Se" icon={<GitBranch className="w-3 h-3" strokeWidth={1.75} />} onClick={() => onEdit('condicoes')}>
           {conds.map((c, i) => (
             <span key={i}>
               {i > 0 && <span className="text-surface-500 font-medium"> {joiner} </span>}
@@ -287,12 +289,12 @@ function RunRow({ run, onOpenContact, onOpenConversation }: {
                 <div className="flex items-center gap-3 pt-0.5">
                   {run.conversationId && (
                     <button onClick={() => onOpenConversation(run.conversationId!)} className="inline-flex items-center gap-1 text-2xs text-accent-dark hover:opacity-80 transition-colors">
-                      <ExternalLink className="w-2.5 h-2.5" /> ver conversa
+                      <ExternalLink className="w-2.5 h-2.5" strokeWidth={1.75} /> ver conversa
                     </button>
                   )}
                   {run.contactId && (
                     <button onClick={() => onOpenContact(run.contactId!)} className="inline-flex items-center gap-1 text-2xs text-accent-dark hover:opacity-80 transition-colors">
-                      <ExternalLink className="w-2.5 h-2.5" /> ver contato
+                      <ExternalLink className="w-2.5 h-2.5" strokeWidth={1.75} /> ver contato
                     </button>
                   )}
                 </div>
@@ -411,7 +413,7 @@ export function AutomationDetail({
             <p className="text-sm font-display font-bold text-surface-100 tabular-nums">{automation.executionCount.toLocaleString('pt-BR')}</p>
           </div>
           <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5">
-            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Última</p>
+            <p className="text-3xs text-surface-500 mb-1 flex items-center gap-1"><Clock className="w-2.5 h-2.5" strokeWidth={1.75} /> Última</p>
             <p className="text-xs font-medium text-surface-200 tabular-nums">{automation.lastExecutedAt ? relativeDate(automation.lastExecutedAt) : '—'}</p>
           </div>
           <div className="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2.5 min-w-0">

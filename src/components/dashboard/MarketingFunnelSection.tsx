@@ -291,7 +291,10 @@ function TotalsStrip({ totals }: { totals: MarketingFunnelTotals }) {
     {
       label: 'ROAS Médio',
       value: `${totals.avgRoas.toFixed(1)}x`,
-      icon: <BarChart2 className="w-4 h-4" />,
+      // BarChart2 não tem versão desenhada da casa — strokeWidth explícito
+      // (DECISOES-PENDENTES #18). Componente ainda não montado no Dashboard
+      // (endpoint não existe), corrigido por consistência de qualquer forma.
+      icon: <BarChart2 className="w-4 h-4" strokeWidth={1.75} />,
       color: C.online,
     },
   ]

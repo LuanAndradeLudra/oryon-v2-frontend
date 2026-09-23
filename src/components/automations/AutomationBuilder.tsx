@@ -280,7 +280,12 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
                     <div className="grid grid-cols-3 auto-rows-fr gap-2">
                       {onDescribeWithAI && (
                         <button onClick={onDescribeWithAI} className="h-full text-left p-3 rounded-lg border border-surface-700 bg-surface-800 hover:bg-[var(--rowhover)] transition-colors">
-                          <Wand2 className="w-4 h-4 text-brand-400 mb-1.5" />
+                          {/* Wand2 não tem versão desenhada da casa em
+                              lib/icons.tsx — cai no lucide cru, traço 2 em
+                              vez de 1.75. strokeWidth explícito por enquanto
+                              (DECISOES-PENDENTES #18, "corrigido caso a
+                              caso"). */}
+                          <Wand2 className="w-4 h-4 text-brand-400 mb-1.5" strokeWidth={1.75} />
                           <p className="text-xs font-semibold text-surface-100">Descrever com IA</p>
                           <p className="text-[10px] text-surface-400 mt-0.5 leading-relaxed">Explique o objetivo e o Copilot monta.</p>
                         </button>
