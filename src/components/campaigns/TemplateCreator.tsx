@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { TemplatePreview } from './TemplatePreview'
+import { TemplateCategoryTile, TEMPLATE_CATEGORIES } from './templateCategory'
 import { SubcategoryPreview } from './SubcategoryPreview'
 import { templatesApi, whatsappNumbersApi } from '@/services/api'
 import { useWorkspaceNumber } from '@/contexts/WorkspaceNumberContext'
@@ -332,11 +333,51 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
           Templates
         </button>
         <div className="w-px h-4 bg-surface-700" />
-        <h1 className="text-sm font-semibold text-surface-100">
-          {editing ? 'Editar template' : 'Criar novo template'}
-        </h1>
-        <div className="ml-auto flex items-center gap-2 text-xs text-surface-400">
-          Passo {step} de 4 — {STEP_LABELS[step - 1]}
+
+        {/* Identidade da categoria — pedido do PO (22/09): assim que a
+            categoria é escolhida, o ícone dela acompanha o modelo por todo o
+            fluxo, como no painel da Meta. */}
+        <TemplateCategoryTile category={category} size={28} />
+        <div className="min-w-0">
+          <h1 className="text-[13px] font-semibold text-surface-50 leading-tight truncate">
+            {name.trim() || (editing ? 'Editar modelo' : 'Novo modelo')}
+          </h1>
+          <p className="text-[11px] text-surface-500 leading-tight">
+            {TEMPLATE_CATEGORIES[category].label}{language ? ` · ${language}` : ''}
+          </p>
+        </div>
+
+        {/* Trilha de passos no vocabulário da direção C: bolinha de 14px +
+            rótulo, sem pílula colorida. Substitui a barra lateral de 176px,
+            que gastava largura permanente para mostrar 4 palavras. */}
+        <div className="ml-auto flex items-center gap-1">
+          {([1, 2, 3, 4] as StepNum[]).map((sN, i) => {
+            const feito = sN < step
+            const atual = sN === step
+            return (
+              <button
+                key={sN}
+                type="button"
+                onClick={() => { if (sN < step) setStep(sN) }}
+                disabled={sN > step}
+                className={cn(
+                  'flex items-center gap-1.5 px-2 h-7 rounded-xs text-[11.5px] transition-colors',
+                  atual ? 'text-surface-50 font-semibold' : feito ? 'text-surface-400 hover:bg-[var(--rowhover)]' : 'text-surface-600',
+                  sN > step && 'cursor-default',
+                )}
+                aria-current={atual ? 'step' : undefined}
+              >
+                <span className={cn(
+                  'w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-none',
+                  feito ? 'bg-brand-500 border-brand-500' : atual ? 'border-surface-100' : 'border-surface-600',
+                )}>
+                  {feito && <Check className="w-2 h-2 text-surface-950" strokeWidth={3} />}
+                  {atual && <span className="w-1.5 h-1.5 rounded-full bg-surface-100" />}
+                </span>
+                {STEP_LABELS[i]}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -362,40 +403,6 @@ export function TemplateCreator({ onCancel, onSaved, editing }: TemplateCreatorP
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: step sidebar */}
-        <div className="w-44 border-r border-surface-700 py-6 px-3 flex flex-col gap-1 flex-shrink-0 bg-surface-950">
-          {([1, 2, 3, 4] as StepNum[]).map((s) => {
-            const done = s < step
-            const current = s === step
-            return (
-              <div
-                key={s}
-                className={cn(
-                  'flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all',
-                  current ? 'bg-brand-500/10' : 'hover:bg-surface-800/50'
-                )}
-              >
-                <div className={cn(
-                  'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold transition-all mt-0.5',
-                  done    ? 'bg-brand-600 text-surface-950' :
-                  current ? 'bg-brand-600/20 border-2 border-brand-500 text-brand-400' :
-                             'bg-surface-800 text-surface-400 border border-surface-700'
-                )}>
-                  {done ? <Check className="w-3 h-3" /> : s}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={cn('text-xs font-semibold', current ? 'text-surface-50' : done ? 'text-surface-200' : 'text-surface-400')}>
-                    {STEP_LABELS[s - 1]}
-                  </p>
-                  <p className="text-[10px] text-surface-400 mt-0.5 leading-tight truncate">
-                    {stepSubtitles[s - 1]}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
         {/* CENTER: form */}
         <div className="flex-1 overflow-y-auto p-7 bg-surface-950">
           {step === 1 && (
