@@ -4,6 +4,7 @@ import {
   Trash2, BarChart3, Users, Copy, MoreHorizontal,
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
+import { useSearchParams } from 'react-router-dom'
 import { campaignsApi } from '@/services/api'
 import { CampaignWizard } from './CampaignWizard'
 import { CampaignReport } from './CampaignReport'
@@ -54,13 +55,31 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | 'all'>('all')
   const [wizardOpen, setWizardOpen] = useState(false)
-  const [reportCampaign, setReportCampaign] = useState<Campaign | null>(null)
   const [sending, setSending] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+
+  // Relatório aberto vem da URL (?report=<campaignId>): é o destino do
+  // deep-link de campaign_complete/failed (a rota /campaigns/:id não existe)
+  // e sobrevive a reload. Abrir escreve o param (push: o Voltar do navegador
+  // fecha), fechar remove; o updater funcional preserva ?tab= e o resto.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const reportId = searchParams.get('report')
+  const reportCampaign = reportId ? campaigns.find((c) => c.id === reportId) ?? null : null
+  const openReport = (id: string) =>
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set('report', id); return p })
+  const closeReport = useCallback(() =>
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete('report'); return p }, { replace: true }),
+  [setSearchParams])
 
   useEffect(() => {
     campaignsApi.list().then((r) => setCampaigns(r.data)).finally(() => setLoading(false))
   }, [])
+
+  // ?report= apontando pra campanha que não existe (excluída, id errado):
+  // com a lista já carregada, limpa o param em vez de deixar a URL mentindo.
+  useEffect(() => {
+    if (!loading && reportId && !campaigns.some((c) => c.id === reportId)) closeReport()
+  }, [loading, reportId, campaigns, closeReport])
 
   // SCRUM-1106 (tela 2c): contagem no rótulo da aba, no CampaignsPage —
   // reporta em vez de duplicar o fetch lá em cima.
@@ -181,7 +200,7 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
                 key={c.id}
                 campaign={c}
                 onSend={() => handleSend(c.id)}
-                onReport={() => setReportCampaign(c)}
+                onReport={() => openReport(c.id)}
                 onDelete={() => setDeleteTarget(c.id)}
                 onAssignWaba={() => setAssignWabaTarget(c)}
                 sending={sending === c.id}
@@ -211,7 +230,7 @@ export function CampaignsTab({ onCountChange }: { onCountChange?: (n: number) =>
         {reportCampaign && (
           <CampaignReport
             campaign={reportCampaign}
-            onClose={() => setReportCampaign(null)}
+            onClose={closeReport}
           />
         )}
       </AnimatePresence>
