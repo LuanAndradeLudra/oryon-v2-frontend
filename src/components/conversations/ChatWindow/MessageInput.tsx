@@ -15,6 +15,7 @@ import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { useToast } from '@/hooks/useToast'
+import { inferMessageType } from '@/lib/inferMessageType'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
 
@@ -356,9 +357,16 @@ export function MessageInput({ onSend, contactId, windowOpen, disabled, blockedR
       const item = staged[i]
       setUploadingId(item.id)
       try {
+        // Achado 2026-09-23: mandar o nome do arquivo aqui incondicionalmente
+        // contornava a regra do backend (resolveMediaCaption, SCRUM-1158) —
+        // pra ele, um mediaCaption não-vazio é indistinguível de uma legenda
+        // digitada de verdade, então a imagem/vídeo acabava com o nome do
+        // arquivo como legenda mesmo depois daquele fix. mediaCaption só faz
+        // sentido pra DOCUMENTO (vira o título do card); pra imagem/vídeo, a
+        // decisão de "sem legenda" fica só a cargo do backend.
         await onSend({
           file: item.file,
-          mediaCaption: item.file.name,
+          mediaCaption: inferMessageType(item.file.type) === 'document' ? item.file.name : undefined,
           body: i === 0 ? trimmed || undefined : undefined,
           replyToWamid: i === 0 ? replyTo?.wamid ?? undefined : undefined,
         })

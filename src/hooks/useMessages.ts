@@ -1,16 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { messagesApi } from '@/services/api'
 import { withRetry } from '@/lib/utils'
-import type { Message, MessageType, SendMessageDto, SocketAnomalyReviewed, SocketMediaReady, SocketMessageStatus } from '@/types'
-
-/** Mesma classificação que o backend usa (conversations.service.ts) — só
- *  pra decidir que tipo de bolha a mensagem otimista deve nascer como. */
-function inferMessageType(mimeType: string): MessageType {
-  if (mimeType.startsWith('image/')) return 'image'
-  if (mimeType.startsWith('audio/')) return 'audio'
-  if (mimeType.startsWith('video/')) return 'video'
-  return 'document'
-}
+import { inferMessageType } from '@/lib/inferMessageType'
+import type { Message, SendMessageDto, SocketAnomalyReviewed, SocketMediaReady, SocketMessageStatus } from '@/types'
 
 export function useMessages(conversationId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])

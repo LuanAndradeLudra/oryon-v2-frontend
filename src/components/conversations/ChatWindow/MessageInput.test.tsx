@@ -8,6 +8,7 @@ import { MessageInput } from './MessageInput'
 import { ToastContainer } from '@/components/ui/Toast'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
 import { useToast } from '@/hooks/useToast'
+import type { SendMessageDto } from '@/types'
 
 vi.mock('@/services/api', () => ({
   cannedResponsesApi: { fetchAll: vi.fn(async () => []) },
@@ -83,5 +84,50 @@ describe('MessageInput — anexo grande demais (P6, sem alert())', () => {
 
     expect(alertSpy).not.toHaveBeenCalled()
     expect(screen.queryAllByText(/16MB/).length).toBe(before)
+  })
+})
+
+// Achado 2026-09-23 (investigação pós-deploy): o SCRUM-1158 corrigiu o
+// fallback do BACKEND (resolveMediaCaption), mas o MessageInput mandava
+// `mediaCaption: file.name` incondicionalmente pra QUALQUER anexo — pro
+// backend, um mediaCaption não-vazio é indistinguível de legenda digitada de
+// verdade, então a regra por tipo nunca chegava a rodar e a imagem continuava
+// mostrando o nome do arquivo como legenda.
+describe('MessageInput — mediaCaption só pra documento (achado pós SCRUM-1158)', () => {
+  function HarnessSend({ onSend }: { onSend: (dto: SendMessageDto) => Promise<void> }) {
+    return (
+      <ContextMenuProvider>
+        <MessageInput onSend={onSend} contactId="c1" windowOpen />
+      </ContextMenuProvider>
+    )
+  }
+
+  const smallFile = (name: string, type: string) => new File([new Uint8Array(1)], name, { type })
+
+  async function attachAndSend(file: File) {
+    const onSend = vi.fn(async (_dto: SendMessageDto) => {})
+    render(<HarnessSend onSend={onSend} />)
+    const textarea = screen.getByPlaceholderText('Digite uma mensagem ou / para respostas rápidas...')
+    const dropzone = textarea.closest('.msg-composer') as HTMLElement
+    fireEvent.drop(dropzone, { dataTransfer: { types: ['Files'], files: [file] } })
+    await waitFor(() => expect(screen.getByText(file.name)).toBeInTheDocument())
+    fireEvent.click(screen.getByLabelText('Enviar mensagem'))
+    await waitFor(() => expect(onSend).toHaveBeenCalledTimes(1))
+    return onSend.mock.calls[0][0]
+  }
+
+  it('imagem: mediaCaption undefined — nome do arquivo NÃO vira legenda', async () => {
+    const dto = await attachAndSend(smallFile('foto.png', 'image/png'))
+    expect(dto.mediaCaption).toBeUndefined()
+  })
+
+  it('vídeo: mediaCaption undefined, mesmo motivo da imagem', async () => {
+    const dto = await attachAndSend(smallFile('clipe.mp4', 'video/mp4'))
+    expect(dto.mediaCaption).toBeUndefined()
+  })
+
+  it('documento: mediaCaption é o nome do arquivo — continua virando o título do card', async () => {
+    const dto = await attachAndSend(smallFile('contrato.pdf', 'application/pdf'))
+    expect(dto.mediaCaption).toBe('contrato.pdf')
   })
 })
