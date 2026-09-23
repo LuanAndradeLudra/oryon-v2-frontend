@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useId, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import {
   Sparkles, Send, X, Plus, Trash2, Edit3, GripVertical,
   ArrowRight, Check, Loader2, Users, ExternalLink, MessageSquare,
@@ -8,7 +7,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { ConfirmModal } from '@/components/ui/Modal'
+import { ConfirmModal, Modal } from '@/components/ui/Modal'
 import {
   generateHandoffRule,
   type HandoffRule,
@@ -41,60 +40,34 @@ function RuleModal({
   tall?: boolean
   children: React.ReactNode
 }) {
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [open, onClose])
-
-  if (!open) return null
-
-  // Render via portal so the modal escapes any transformed parent (e.g. the
-  // wizard's framer-motion wrapper) and stays anchored to the viewport.
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      {/* Eixo 10: scrim do token (--color-scrim-soft), não bg-black/70 cru. */}
-      <div className="absolute inset-0 bg-[var(--color-scrim-soft)]" />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 10 }}
-        transition={{ duration: 0.15 }}
-        onClick={e => e.stopPropagation()}
-        className={cn(
-          'relative z-10 bg-surface-900 overlay-frame border rounded-2xl flex flex-col w-full',
-          wide ? 'max-w-2xl' : 'max-w-lg',
-          tall ? 'h-[78vh]' : 'max-h-[80vh]',
-        )}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-surface-700 flex-shrink-0">
+  // Casca migrada pro ui/Modal (SCRUM-1097): herda role="dialog"/aria-modal,
+  // foco inicial + devolução, trap de Tab, Esc pela pilha de camadas
+  // (LayerContext), portal e scrim do token. Aqui só o que é específico:
+  // cabeçalho com ícone + subtítulo (title como nó => aria-label), largura
+  // e altura, e corpo sem recuo (os formulários já trazem o próprio).
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      aria-label={title}
+      title={
+        <div className="flex-1 min-w-0 flex items-center gap-3 pb-3">
           {icon && (
             <div className="w-8 h-8 rounded-xl bg-brand-600/15 ring-1 ring-brand-500/25 flex items-center justify-center flex-shrink-0">
               {icon}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-semibold text-surface-100">{title}</h2>
+            <h2 className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">{title}</h2>
             {subtitle && <p className="text-xs text-surface-500 mt-0.5">{subtitle}</p>}
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Fechar"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-500 hover:bg-[var(--rowhover)] hover:text-surface-200 transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {children}
-        </div>
-      </motion.div>
-    </div>,
-    document.body,
+      }
+      className={cn(wide ? 'max-w-2xl' : 'max-w-lg', tall && 'h-[78vh]')}
+      bodyClassName="p-0"
+    >
+      {children}
+    </Modal>
   )
 }
 
@@ -1192,63 +1165,57 @@ export function HandoffRulesPanel({
         danger
       />
 
+      {/* Os 3 modais ficam montados com `open` dirigido pelo estado: o
+          AnimatePresence interno do ui/Modal cuida da saída, e o conteúdo só
+          existe enquanto aberto (formulários nascem zerados a cada abertura). */}
+
       {/* ── Modal: AI Builder ──────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {modal === 'ai_builder' && (
-          <RuleModal
-            open
-            onClose={close}
-            title="Criar regra com IA"
-            subtitle="Descreva o cenário em linguagem natural"
-            icon={<Sparkles className="w-4 h-4 text-brand-400" />}
-            wide
-            tall
-          >
-            <AIRuleBuilder
-              businessContext={businessContext}
-              onRuleCreated={handleRuleCreated}
-              onCancel={close}
-            />
-          </RuleModal>
-        )}
-      </AnimatePresence>
+      <RuleModal
+        open={modal === 'ai_builder'}
+        onClose={close}
+        title="Criar regra com IA"
+        subtitle="Descreva o cenário em linguagem natural"
+        icon={<Sparkles className="w-4 h-4 text-brand-400" />}
+        wide
+        tall
+      >
+        <AIRuleBuilder
+          businessContext={businessContext}
+          onRuleCreated={handleRuleCreated}
+          onCancel={close}
+        />
+      </RuleModal>
 
       {/* ── Modal: Manual Form ─────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {modal === 'manual' && (
-          <RuleModal
-            open
-            onClose={close}
-            title="Nova regra manual"
-            subtitle="Configure palavras-chave, ação e template"
-            icon={<Plus className="w-4 h-4 text-surface-300" />}
-          >
-            <ManualRuleForm
-              onCreated={handleRuleCreated}
-              onCancel={close}
-            />
-          </RuleModal>
-        )}
-      </AnimatePresence>
+      <RuleModal
+        open={modal === 'manual'}
+        onClose={close}
+        title="Nova regra manual"
+        subtitle="Configure palavras-chave, ação e template"
+        icon={<Plus className="w-4 h-4 text-surface-300" />}
+      >
+        <ManualRuleForm
+          onCreated={handleRuleCreated}
+          onCancel={close}
+        />
+      </RuleModal>
 
       {/* ── Modal: Edit Rule ───────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {modal === 'edit' && editingRule && (
-          <RuleModal
-            open
-            onClose={close}
-            title={`Editar: ${editingRule.name}`}
-            subtitle="Ajuste palavras-chave, ação e template"
-            icon={<Edit3 className="w-4 h-4 text-surface-300" />}
-          >
-            <EditRuleForm
-              rule={editingRule}
-              onSaved={handleRuleEdited}
-              onCancel={close}
-            />
-          </RuleModal>
+      <RuleModal
+        open={modal === 'edit' && !!editingRule}
+        onClose={close}
+        title={`Editar: ${editingRule?.name ?? ''}`}
+        subtitle="Ajuste palavras-chave, ação e template"
+        icon={<Edit3 className="w-4 h-4 text-surface-300" />}
+      >
+        {editingRule && (
+          <EditRuleForm
+            rule={editingRule}
+            onSaved={handleRuleEdited}
+            onCancel={close}
+          />
         )}
-      </AnimatePresence>
+      </RuleModal>
     </div>
   )
 }
