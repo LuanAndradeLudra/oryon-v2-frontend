@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { WizardProgress } from '@/components/ui/WizardProgress'
 import { getReadableTextColor } from '@/lib/colorPalette'
 import { Emoji } from '@/lib/emojiText'
@@ -634,6 +635,37 @@ export function CampaignWizard({
   )
 }
 
+// ─── Faixa (direção C) ───────────────────────────────────────────────────────
+// Mesma receita do `Section`/`campo()` de TemplateCreator.tsx (irmão neste
+// mesmo diretório, comentário próprio: "Direção C, aprovada 22/09") — copiada
+// daqui em vez da minha 1ª leitura do mockup estático (que amostrei com
+// valores levemente diferentes, h-30/raio-5/12.5px). O código já aprovado e
+// em produção vale mais que a minha amostragem de um HTML de referência.
+const CAMPO = 'w-full h-8 bg-surface-900 border border-[var(--bd2)] rounded-sm px-2.5 text-[13px] text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors disabled:opacity-60'
+
+function Faixa({ label, required, hint, right, children }: {
+  label: string
+  required?: boolean
+  hint?: React.ReactNode
+  right?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="grid grid-cols-[104px_1fr] gap-x-4 py-4 border-t border-surface-700 first:border-t-0 first:pt-0">
+      <div className="pt-1.5">
+        <h3 className="text-[12.5px] font-bold text-surface-100 tracking-[-0.01em] leading-tight">
+          {label}{required && <span className="text-surface-500 font-normal"> *</span>}
+        </h3>
+        {hint && <p className="text-[11px] text-surface-500 mt-0.5 leading-snug">{hint}</p>}
+      </div>
+      <div className="min-w-0">
+        {right && <div className="flex justify-end text-[11px] text-surface-500 mb-1.5">{right}</div>}
+        {children}
+      </div>
+    </div>
+  )
+}
+
 // ─── Step 1: Template & Name ────────────────────────────────────────────────
 
 function Step1({
@@ -653,9 +685,9 @@ function Step1({
   )
 
   return (
-    <div className="space-y-5">
+    <div>
       {/* Info banner */}
-      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-500/5 border border-brand-500/20 rounded-lg">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 bg-brand-500/5 border border-brand-500/20 rounded-lg mb-1">
         <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
         <p className="text-[11px] text-surface-400 leading-relaxed">
           Apenas templates com status <strong className="text-brand-300">Aprovado</strong> pela Meta podem ser usados em campanhas.
@@ -664,73 +696,69 @@ function Step1({
       </div>
 
       <div>
-        <label className="text-xs font-medium text-surface-400 mb-1.5 block">
-          Nome da campanha <span className="text-danger">*</span>
-        </label>
-        <input
-          value={campaignName}
-          onChange={(e) => onNameChange(e.target.value)}
-          placeholder="Ex: Campanha Black Friday 2026"
-          className="w-full bg-surface-800 border border-surface-700 rounded-sm px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
-        />
-        <p className="text-[11px] text-surface-600 mt-1">Use um nome descritivo para identificar a campanha no histórico.</p>
-      </div>
-
-      <div>
-        <label className="text-xs font-medium text-surface-400 mb-2 block">
-          Selecione o template <span className="text-danger">*</span>
-        </label>
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+        <Faixa label="Nome" required hint="descreva a campanha para achá-la depois no histórico">
           <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome ou conteúdo..."
-            className="w-full bg-surface-800 border border-surface-700 rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+            value={campaignName}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder="Ex: Campanha Black Friday 2026"
+            className={CAMPO}
           />
-        </div>
+        </Faixa>
 
-        {loading ? (
-          <div className="flex items-center justify-center h-24">
-            <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
+        <Faixa label="Template" required right={`${filtered.length} de ${templates.length}`}>
+          <div className="relative mb-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome ou conteúdo..."
+              className={cn(CAMPO, 'pl-8')}
+            />
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-8 space-y-2">
-            <p className="text-sm text-surface-500">Nenhum template aprovado no Oryon</p>
-            <p className="text-xs text-surface-600 max-w-xs mx-auto">
-              Abra a aba Templates e use Sincronizar para importar os modelos ativos da Meta.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {filtered.map((tpl) => (
-              <button
-                key={tpl.id}
-                onClick={() => onSelect(tpl)}
-                className={cn(
-                  'w-full text-left p-3 rounded-lg border transition-all',
-                  selected?.id === tpl.id
-                    ? 'border-brand-500 ring-[3px] ring-accent-soft'
-                    : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
-                )}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium font-mono text-surface-100">{tpl.name}</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded">{tpl.category}</span>
-                    <span className="text-[11px] text-surface-600">{tpl.language}</span>
-                  </div>
-                </div>
-                <p className="text-xs text-surface-500 line-clamp-1">{tpl.body.replace(/\n/g, ' ')}</p>
-                {tpl.bodyVariables && tpl.bodyVariables.length > 0 && (
-                  <p className="text-[11px] text-brand-400/70 mt-1">
-                    {tpl.bodyVariables.length} variáve{tpl.bodyVariables.length === 1 ? 'l' : 'is'}: {tpl.bodyVariables.map((v, i) => `{{${i + 1}}} ${v}`).join(', ')}
-                  </p>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+
+          {loading ? (
+            <div className="flex items-center justify-center h-24">
+              <Loader2 className="w-4 h-4 text-brand-400 animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-surface-500">Nenhum template aprovado no Oryon</p>
+              <p className="text-xs text-surface-600 max-w-xs mx-auto">
+                Abra a aba Templates e use Sincronizar para importar os modelos ativos da Meta.
+              </p>
+            </div>
+          ) : (
+            <div className="max-h-64 overflow-y-auto -mx-1 divide-y divide-surface-700/60">
+              {filtered.map((tpl) => {
+                const isSelected = selected?.id === tpl.id
+                return (
+                  <button
+                    key={tpl.id}
+                    onClick={() => onSelect(tpl)}
+                    className="w-full text-left px-1 py-2 flex items-start gap-2.5 hover:bg-[var(--rowhover)] transition-colors"
+                  >
+                    <Check className={cn('w-3.5 h-3.5 mt-0.5 flex-shrink-0', isSelected ? 'text-brand-400' : 'text-transparent')} strokeWidth={2.5} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={cn('text-[13px] font-mono text-surface-100', isSelected && 'font-semibold')}>{tpl.name}</span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span className="text-[11px] text-surface-500 bg-[var(--sf2)] px-1.5 py-0.5 rounded-2xs">{tpl.category}</span>
+                          <span className="text-[11px] text-surface-600">{tpl.language}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-surface-500 line-clamp-1 mt-0.5">{tpl.body.replace(/\n/g, ' ')}</p>
+                      {tpl.bodyVariables && tpl.bodyVariables.length > 0 && (
+                        <p className="text-[11px] text-surface-500 mt-0.5">
+                          {tpl.bodyVariables.length} variáve{tpl.bodyVariables.length === 1 ? 'l' : 'is'}: {tpl.bodyVariables.map((v, i) => `{{${i + 1}}} ${v}`).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </Faixa>
       </div>
     </div>
   )
@@ -815,63 +843,72 @@ function Step2({
     c.waId.includes(contactSearch)
   )
 
-  const chipBase = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all'
+  // PL-C2-CAR-eixo10: altura vinha de padding (py-1.5 + texto), não de h-*
+  // explícito — mesmo defeito já achado em Automações (Farol) e Funis. Receita
+  // igual à pílula de tipo de cabeçalho do TemplateCreator.tsx (irmão neste
+  // diretório, direção C aprovada): h-7/rounded-sm/px-2.5/11.5px.
+  const chipBase = 'flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-[11.5px] font-medium transition-colors'
   const chipOn   = 'border-transparent text-white'
-  const chipOff  = 'border-surface-700 text-surface-400 hover:border-surface-500 hover:text-surface-200'
+  const chipOff  = 'border-surface-700 text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)]'
+  // Seleção genérica (sem cor de dado por trás, ex. sim/não, fonte, engajamento):
+  // direção C pede quase nenhuma cor — contraste por peso/fundo neutro (mesma
+  // combinação da pílula ativa do TemplateCreator), não pelo brilho de marca.
+  // Cor real (tag/estágio/intenção/sentimento) continua colorida porque ali a
+  // cor É o dado, não é o estado de seleção.
+  const chipOnNeutral = 'border-[var(--bd2)] bg-surface-800 text-surface-50 font-semibold'
 
   return (
-    <div className="space-y-4">
-      {/* Segment type cards */}
-      <div>
-        <label className="text-xs font-medium text-surface-400 mb-2 block">Como definir os destinatários?</label>
-        <div className="grid grid-cols-1 gap-1.5">
+    <div>
+      {/* Segment type — direção C: sem cartão, lista de faixas com hairline;
+          seleção mostrada por peso da fonte + risco à esquerda, não por ring
+          nem por cartão colorido. */}
+      <Faixa label="Destinatários">
+        <div>
           {SEGMENT_OPTIONS.map((opt) => {
             const Icon = opt.icon
+            const isSelected = segmentType === opt.value
             return (
               <button
                 key={opt.value}
                 onClick={() => onSegmentType(opt.value)}
                 className={cn(
-                  'w-full text-left px-3 py-2.5 rounded-sm border transition-all flex items-center gap-3',
-                  segmentType === opt.value
-                    ? 'border-brand-500 ring-[3px] ring-accent-soft'
-                    : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
+                  'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
+                  isSelected ? 'border-brand-500' : 'border-transparent hover:border-surface-600',
                 )}
               >
                 <div className={cn(
                   'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0',
-                  segmentType === opt.value ? 'border-brand-500' : 'border-surface-600'
+                  isSelected ? 'border-brand-500' : 'border-surface-600'
                 )}>
-                  {segmentType === opt.value && <div className="w-2 h-2 rounded-full bg-brand-500" />}
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-brand-500" />}
                 </div>
-                <Icon className={cn('w-4 h-4 flex-shrink-0', segmentType === opt.value ? 'text-brand-400' : 'text-surface-500')} />
+                <Icon className="w-4 h-4 flex-shrink-0 text-surface-500" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-surface-100">{opt.label}</p>
+                  <p className={cn('text-sm text-surface-100', isSelected && 'font-semibold')}>{opt.label}</p>
                   <p className="text-[11px] text-surface-500">{opt.description}</p>
                 </div>
               </button>
             )
           })}
         </div>
-      </div>
+      </Faixa>
 
       {/* Reach estimate */}
       {estimatedReach !== null && (
-        <Banner variant={estimatedReach === 0 ? 'danger' : 'success'}>
-          {estimatedReach === 0
-            ? 'Nenhum contato corresponde aos filtros selecionados'
-            : `Alcance estimado: ${estimatedReach} contato${estimatedReach === 1 ? '' : 's'}`}
-        </Banner>
+        <div className="border-t border-surface-700 py-4">
+          <Banner variant={estimatedReach === 0 ? 'danger' : 'success'}>
+            {estimatedReach === 0
+              ? 'Nenhum contato corresponde aos filtros selecionados'
+              : `Alcance estimado: ${estimatedReach} contato${estimatedReach === 1 ? '' : 's'}`}
+          </Banner>
+        </div>
       )}
 
       {/* Tag picker */}
       {segmentType === 'tag' && (
-        <div>
-          <label className="text-xs font-medium text-surface-400 mb-2 block">
-            Selecione as tags <span className="text-[11px] text-surface-600">(contatos com qualquer uma serão incluídos)</span>
-          </label>
+        <Faixa label="Tags" hint="contatos com qualquer uma serão incluídos">
           {tags.length === 0 ? (
-            <p className="text-xs text-surface-600 py-2">Nenhuma tag cadastrada.</p>
+            <p className="text-xs text-surface-600">Nenhuma tag cadastrada.</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
@@ -887,17 +924,14 @@ function Step2({
               ))}
             </div>
           )}
-        </div>
+        </Faixa>
       )}
 
       {/* Stage picker */}
       {segmentType === 'stage' && (
-        <div>
-          <label className="text-xs font-medium text-surface-400 mb-2 block">
-            Selecione os estágios <span className="text-[11px] text-surface-600">(contatos em qualquer um serão incluídos)</span>
-          </label>
+        <Faixa label="Estágios" hint="contatos em qualquer um serão incluídos">
           {stages.length === 0 ? (
-            <p className="text-xs text-surface-600 py-2">Nenhum estágio configurado no CRM.</p>
+            <p className="text-xs text-surface-600">Nenhum estágio configurado no CRM.</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {stages.map((stage) => (
@@ -913,29 +947,26 @@ function Step2({
               ))}
             </div>
           )}
-        </div>
+        </Faixa>
       )}
 
       {/* Manual contact picker */}
       {segmentType === 'manual' && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-medium text-surface-400">
-              Buscar e selecionar contatos
-            </label>
-            {selectedContactIds.length > 0 && (
-              <button onClick={() => onContactIds([])} className="text-[11px] text-surface-500 hover:text-surface-300 transition-colors">
-                Limpar seleção ({selectedContactIds.length})
-              </button>
-            )}
-          </div>
+        <Faixa
+          label="Contatos"
+          right={selectedContactIds.length > 0 && (
+            <button onClick={() => onContactIds([])} className="hover:text-surface-300 transition-colors">
+              Limpar seleção ({selectedContactIds.length})
+            </button>
+          )}
+        >
           <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500" />
             <input
               value={contactSearch}
               onChange={(e) => setContactSearch(e.target.value)}
               placeholder="Buscar por nome ou número..."
-              className="w-full bg-surface-800 border border-surface-700 rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+              className={cn(CAMPO, 'pl-8')}
             />
           </div>
           {loadingContacts ? (
@@ -945,7 +976,7 @@ function Step2({
           ) : filteredContacts.length === 0 ? (
             <p className="text-xs text-surface-600 text-center py-6">Nenhum contato encontrado</p>
           ) : (
-            <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+            <div className="max-h-56 overflow-y-auto -mx-1">
               {filteredContacts.map((contact) => {
                 const selected = selectedContactIds.includes(contact.id)
                 const stageDef = stages.find((s) => s.key === contact.stage)
@@ -953,10 +984,7 @@ function Step2({
                   <button
                     key={contact.id}
                     onClick={() => toggleContact(contact.id)}
-                    className={cn(
-                      'w-full flex items-center gap-2.5 px-3 py-2 rounded-sm border transition-all text-left',
-                      selected ? 'border-brand-500/50 bg-brand-500/8' : 'border-surface-700/50 hover:border-surface-600 hover:bg-surface-800/60'
-                    )}
+                    className="w-full flex items-center gap-2.5 px-1 py-1.5 rounded-sm text-left hover:bg-[var(--rowhover)] transition-colors"
                   >
                     <div className={cn(
                       'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
@@ -997,13 +1025,13 @@ function Step2({
               {filteredContacts.length} de {contacts.length} contatos · {selectedContactIds.length} selecionados
             </p>
           )}
-        </div>
+        </Faixa>
       )}
 
       {/* Advanced filter */}
       {segmentType === 'filter' && (
-        <div className="space-y-4">
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-lg">
+        <div className="border-t border-surface-700 py-4">
+          <div className="flex items-start gap-2 px-2.5 py-2.5 border border-[var(--bd2)] rounded-sm mb-1">
             <Info className="w-3.5 h-3.5 text-surface-400 mt-0.5 flex-shrink-0" />
             <p className="text-[11px] text-surface-400 leading-relaxed">
               Os critérios marcados são combinados com <strong className="text-surface-300">E</strong> —
@@ -1012,6 +1040,7 @@ function Step2({
             </p>
           </div>
 
+          <div className="divide-y divide-surface-700">
           {/* Filter: stages */}
           {stages.length > 0 && (
             <FilterGroup label="Estágio do CRM">
@@ -1076,12 +1105,7 @@ function Step2({
                 <button
                   key={opt.value}
                   onClick={() => toggleFilterSource(opt.value)}
-                  className={cn(
-                    chipBase,
-                    filterSource.includes(opt.value)
-                      ? 'border-brand-500/50 bg-brand-500/15 text-brand-300'
-                      : chipOff
-                  )}
+                  className={cn(chipBase, filterSource.includes(opt.value) ? chipOnNeutral : chipOff)}
                 >
                   {opt.label}
                 </button>
@@ -1100,12 +1124,7 @@ function Step2({
                 <button
                   key={String(opt.value)}
                   onClick={() => onFilterOptIn(opt.value)}
-                  className={cn(
-                    chipBase,
-                    filterOptIn === opt.value
-                      ? 'border-brand-500/50 bg-brand-500/15 text-brand-300'
-                      : chipOff
-                  )}
+                  className={cn(chipBase, filterOptIn === opt.value ? chipOnNeutral : chipOff)}
                 >
                   {opt.label}
                 </button>
@@ -1143,7 +1162,7 @@ function Step2({
                 value={filterContactSearch}
                 onChange={(e) => onFilterContactSearch(e.target.value)}
                 placeholder="Buscar por nome ou número..."
-                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg pl-7 pr-2.5 py-1.5 text-xs text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
+                className={cn(CAMPO, 'pl-7')}
               />
             </div>
             <p className="text-[10px] text-surface-600 mt-1">Inclui contatos cujo nome ou número de WhatsApp correspondam à busca.</p>
@@ -1160,28 +1179,26 @@ function Step2({
                 <button
                   key={String(opt.value)}
                   onClick={() => onFilterHasConversations(opt.value)}
-                  className={cn(
-                    chipBase,
-                    filterHasConversations === opt.value
-                      ? 'border-brand-500/50 bg-brand-500/15 text-brand-300'
-                      : chipOff
-                  )}
+                  className={cn(chipBase, filterHasConversations === opt.value ? chipOnNeutral : chipOff)}
                 >
                   {opt.label}
                 </button>
               ))}
             </div>
           </FilterGroup>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
+// Direção C: sem cartão — rótulo em negrito numa faixa própria, hairline entre
+// grupos (o pai injeta divide-y). Era bg/border/uppercase, agora é só peso.
 function FilterGroup({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-surface-800/40 border border-surface-700/60 rounded-lg p-3 space-y-2">
-      <p className="text-[11px] font-semibold text-surface-400 uppercase tracking-wide">{label}</p>
+    <div className="py-4 space-y-2">
+      <p className="text-[12.5px] font-bold text-surface-100">{label}</p>
       {children}
     </div>
   )
@@ -1215,11 +1232,15 @@ function Step3({
     previewVars[String(m.position)] = val || `{{${m.position}}}`
   })
 
+  const SOURCE_LABELS: Record<CampaignVariableMapping['source'], string> = {
+    contact_field: 'Campo do contato', custom_field: 'Campo personalizado', literal: 'Valor fixo',
+  }
+
   return (
     <div className="flex gap-5">
-      <div className="flex-1 space-y-4">
+      <div className="flex-1">
         {/* Explanation */}
-        <div className="flex items-start gap-2.5 px-3 py-2.5 bg-surface-800/60 border border-surface-700 rounded-lg">
+        <div className="flex items-start gap-2.5 px-2.5 py-2.5 border border-[var(--bd2)] rounded-sm mb-1">
           <Info className="w-3.5 h-3.5 text-brand-400 mt-0.5 flex-shrink-0" />
           <div className="text-[11px] text-surface-400 space-y-1 leading-relaxed">
             <p>Configure como cada <strong className="text-brand-300">variável numérica</strong> do template será preenchida para cada destinatário no momento do envio.</p>
@@ -1229,81 +1250,70 @@ function Step3({
           </div>
         </div>
 
-        {mappings.map((m) => (
-          <div key={m.position} className="bg-surface-800 rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-brand-400 bg-brand-400/10 px-2 py-0.5 rounded">{`{{${m.position}}}`}</span>
-              <span className="text-sm font-medium text-surface-200">{m.variableName}</span>
-            </div>
+        <div className="divide-y divide-surface-700">
+          {mappings.map((m) => (
+            <div key={m.position} className="py-4">
+              <div className="flex items-baseline gap-1.5 mb-2">
+                <span className="text-[12.5px] font-bold text-surface-100">{`{{${m.position}}}`}</span>
+                <span className="text-[12.5px] text-surface-400">{m.variableName}</span>
+              </div>
 
-            <div className="flex items-center gap-2">
-              {(['contact_field', 'custom_field', 'literal'] as const)
-                .filter((src) => src !== 'custom_field' || fieldDefs.length > 0)
-                .map((src) => (
-                <button
-                  key={src}
-                  onClick={() => onUpdate(m.position, { source: src })}
-                  // Eixo 10: mesmos valores de border-brand-500/50 + bg-500/15
-                  // + hover dos outros grupos de chip-escolha do wizard
-                  // (chipBase/chipOff acima, fora de escopo JS aqui — só os
-                  // literais, não dá pra reusar a const de outra função).
-                  className={cn(
-                    'px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all',
-                    m.source === src
-                      ? 'border-brand-500/50 bg-brand-500/15 text-brand-300'
-                      : 'border-surface-700 text-surface-400 hover:border-surface-500 hover:text-surface-200'
-                  )}
-                >
-                  {src === 'contact_field' ? 'Campo do contato' :
-                   src === 'custom_field'  ? 'Campo personalizado' : 'Valor fixo'}
-                </button>
-              ))}
-            </div>
+              <SegmentedControl
+                label={`Origem do valor de {{${m.position}}}`}
+                size="sm"
+                className="mb-2"
+                value={m.source}
+                onChange={(src) => onUpdate(m.position, { source: src })}
+                options={(['contact_field', 'custom_field', 'literal'] as const)
+                  .filter((src) => src !== 'custom_field' || fieldDefs.length > 0)
+                  .map((src) => ({ value: src, label: SOURCE_LABELS[src] }))}
+              />
 
-            {m.source === 'contact_field' && (
-              <select
-                value={m.contactField ?? 'displayName'}
-                onChange={(e) => onUpdate(m.position, { contactField: e.target.value })}
-                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
-              >
-                {CONTACT_FIELDS.map((f) => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
-            )}
-
-            {m.source === 'custom_field' && (
-              fieldDefs.length > 0 ? (
+              {m.source === 'contact_field' && (
                 <select
-                  value={m.customFieldKey ?? ''}
-                  onChange={(e) => onUpdate(m.position, { customFieldKey: e.target.value })}
-                  className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
+                  value={m.contactField ?? 'displayName'}
+                  onChange={(e) => onUpdate(m.position, { contactField: e.target.value })}
+                  className={CAMPO}
                 >
-                  <option value="" disabled>Selecione um campo…</option>
-                  {fieldDefs.map((f) => (
-                    <option key={f.key} value={f.key}>{f.label}</option>
+                  {CONTACT_FIELDS.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
                   ))}
                 </select>
-              ) : (
-                <div className="flex items-start gap-2 px-3 py-2.5 bg-accent-amber/10 border border-accent-amber/25 rounded-lg">
-                  <Info className="w-3.5 h-3.5 text-accent-amber mt-0.5 flex-shrink-0" />
-                  <p className="text-[11px] text-surface-300 leading-relaxed">
-                    Nenhum campo personalizado cadastrado. Crie um em Configurações → CRM.
-                  </p>
-                </div>
-              )
-            )}
+              )}
 
-            {m.source === 'literal' && (
-              <input
-                value={m.literal ?? ''}
-                onChange={(e) => onUpdate(m.position, { literal: e.target.value })}
-                placeholder="Digite o valor fixo para todos os destinatários..."
-                className="w-full bg-surface-800 border border-[var(--bd2)] rounded-lg px-3 py-2 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 transition-colors"
-              />
-            )}
-          </div>
-        ))}
+              {m.source === 'custom_field' && (
+                fieldDefs.length > 0 ? (
+                  <select
+                    value={m.customFieldKey ?? ''}
+                    onChange={(e) => onUpdate(m.position, { customFieldKey: e.target.value })}
+                    className={CAMPO}
+                  >
+                    <option value="" disabled>Selecione um campo…</option>
+                    {fieldDefs.map((f) => (
+                      <option key={f.key} value={f.key}>{f.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="flex items-start gap-2 px-2.5 py-2.5 border border-accent-amber/25 rounded-sm">
+                    <Info className="w-3.5 h-3.5 text-accent-amber mt-0.5 flex-shrink-0" />
+                    <p className="text-[11px] text-surface-300 leading-relaxed">
+                      Nenhum campo personalizado cadastrado. Crie um em Configurações → CRM.
+                    </p>
+                  </div>
+                )
+              )}
+
+              {m.source === 'literal' && (
+                <input
+                  value={m.literal ?? ''}
+                  onChange={(e) => onUpdate(m.position, { literal: e.target.value })}
+                  placeholder="Digite o valor fixo para todos os destinatários..."
+                  className={CAMPO}
+                />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="w-[220px] flex-shrink-0">
@@ -1327,63 +1337,74 @@ function Step4({
   onScheduledAt: (v: string) => void
 }) {
   return (
-    <div className="space-y-5">
-      {/* Schedule */}
-      <div>
-        <label className="text-xs font-medium text-surface-400 mb-2 block">Quando enviar?</label>
-        <div className="grid grid-cols-2 gap-2">
+    <div>
+      {/* Schedule — mesma vocabulário do "Destinatários" (Etapa 2): faixa de
+          linhas com risco à esquerda + peso da fonte, sem cartão/ring. */}
+      <Faixa label="Envio">
+        <div>
           {([
-            { value: 'now',   label: 'Enviar agora',  icon: <Send className="w-4 h-4" />, desc: 'Disparo imediato após criar' },
-            { value: 'later', label: 'Agendar',        icon: <Clock className="w-4 h-4" />, desc: 'Escolha data e hora do envio' },
-          ] as const).map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => onScheduleMode(opt.value)}
-              className={cn(
-                'p-3 rounded-lg border text-left transition-colors',
-                scheduleMode === opt.value
-                  ? 'border-brand-500 ring-[3px] ring-accent-soft'
-                  : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
-              )}
-            >
-              <span className="text-surface-400">{opt.icon}</span>
-              <p className="text-sm font-medium text-surface-100 mt-1">{opt.label}</p>
-              <p className="text-[11px] text-surface-500">{opt.desc}</p>
-            </button>
-          ))}
+            { value: 'now',   label: 'Enviar agora', icon: Send,  desc: 'Disparo imediato após criar' },
+            { value: 'later', label: 'Agendar',       icon: Clock, desc: 'Escolha data e hora do envio' },
+          ] as const).map((opt) => {
+            const isSelected = scheduleMode === opt.value
+            const Icon = opt.icon
+            return (
+              <button
+                key={opt.value}
+                onClick={() => onScheduleMode(opt.value)}
+                className={cn(
+                  'w-full text-left py-2 flex items-center gap-3 border-l-2 pl-2.5 -ml-2.5 transition-colors',
+                  isSelected ? 'border-brand-500' : 'border-transparent hover:border-surface-600',
+                )}
+              >
+                <div className={cn(
+                  'w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+                  isSelected ? 'border-brand-500' : 'border-surface-600'
+                )}>
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-brand-500" />}
+                </div>
+                <Icon className="w-4 h-4 flex-shrink-0 text-surface-500" />
+                <div className="flex-1">
+                  <p className={cn('text-sm text-surface-100', isSelected && 'font-semibold')}>{opt.label}</p>
+                  <p className="text-[11px] text-surface-500">{opt.desc}</p>
+                </div>
+              </button>
+            )
+          })}
         </div>
+      </Faixa>
 
-        {scheduleMode === 'later' && (
-          <div className="mt-3">
-            <label className="text-xs font-medium text-surface-400 mb-1.5 block">Data e hora do envio</label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
-              <input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => onScheduledAt(e.target.value)}
-                min={(() => {
-                  // toISOString() é UTC — subtrai o offset para obter hora local
-                  const now = new Date()
-                  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
-                  return local.toISOString().slice(0, 16)
-                })()}
-                className="w-full bg-surface-800 border border-surface-700 rounded-sm pl-8 pr-3 py-2 text-sm text-surface-100 focus:outline-none focus:border-brand-500 transition-colors"
-              />
-            </div>
-            <p className="text-[11px] text-surface-600 mt-1.5">
-              Dica: envios nas terças e quartas, entre 9h–11h, tendem a ter maiores taxas de abertura.
-            </p>
+      {scheduleMode === 'later' && (
+        <Faixa label="Data e hora">
+          <div className="relative">
+            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => onScheduledAt(e.target.value)}
+              min={(() => {
+                // toISOString() é UTC — subtrai o offset para obter hora local
+                const now = new Date()
+                const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+                return local.toISOString().slice(0, 16)
+              })()}
+              className={cn(CAMPO, 'pl-8')}
+            />
           </div>
-        )}
-      </div>
+          <p className="text-[11px] text-surface-600 mt-1.5">
+            Dica: envios nas terças e quartas, entre 9h–11h, tendem a ter maiores taxas de abertura.
+          </p>
+        </Faixa>
+      )}
 
       {/* Warning for large reach */}
       {estimatedReach !== null && estimatedReach > 100 && (
-        <Banner variant="warning">
-          Campanhas grandes podem impactar o <strong>limite de conversas</strong> do seu plano e a qualidade do número WhatsApp.
-          Verifique seu saldo antes de enviar.
-        </Banner>
+        <div className="border-t border-surface-700 py-4">
+          <Banner variant="warning">
+            Campanhas grandes podem impactar o <strong>limite de conversas</strong> do seu plano e a qualidade do número WhatsApp.
+            Verifique seu saldo antes de enviar.
+          </Banner>
+        </div>
       )}
     </div>
   )
