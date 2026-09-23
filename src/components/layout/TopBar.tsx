@@ -1405,7 +1405,7 @@ function UserMenu() {
           aria-label="Menu do usuário"
           aria-haspopup="menu"
           aria-expanded={open}
-          className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-surface-800 transition-colors"
+          className="flex items-center justify-center w-7 h-7 rounded-sm hover:bg-[var(--rowhover)] transition-colors"
         >
           <UserMenuTrigger name={name} imageUrl={user?.avatarUrl} active={open} />
         </button>
