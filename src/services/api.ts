@@ -628,20 +628,30 @@ axios.interceptors.request.use((config) => {
 })
 
 // ─── Retry interceptor — exponential backoff for transient failures ───────────
-// Retries 5xx and network errors up to 2 times with 500ms, 1000ms delays.
+// Retries 5xx (real) status codes up to 2 times with 500ms, 1000ms delays.
 //
-// PL-C3-FAR-1 (achado ao vivo do usuário, P6): um ECONNABORTED (timeout —
-// `error.code`, sem `error.response`) caía no mesmo balde de "sem status =
-// transitório" que um ECONNREFUSED rápido. Com o backend inteiro fora do ar
-// (não uma falha passageira), CADA requisição já esperava os 30s inteiros de
-// `timeout` antes de rejeitar — e o interceptor então tentava de novo MAIS
-// duas vezes, cada uma esperando outros 30s. Resultado: até ~91,5s
-// (30+0,5+30+1+30) de tela em loading antes de qualquer catch/ErrorState
-// aparecer — indistinguível de "travado pra sempre" pra quem espera só 30s
-// (foi exatamente o que o usuário mediu ao vivo no Dashboard). Reintentar uma
-// requisição que já demorou 30s pra falhar não ajuda (o problema não é
-// passageiro) — só multiplica a espera. ECONNREFUSED/DNS/etc. continuam
-// retentáveis (falham rápido, vale a pena); só o timeout sai do retry.
+// PL-C3-FAR-1 (db31620): ECONNABORTED (timeout) saiu do retry — reintentar
+// uma requisição que já esperou os 30s inteiros do axios só multiplica a
+// espera, não ajuda.
+//
+// PL-C4-FAR-1 (achado ao vivo do usuário, medido com
+// `performance.getEntriesByType('resource')` durante uma queda real do
+// backend, sem instrumentar código): erro de CONEXÃO (sem `error.response`
+// — `ECONNREFUSED` etc.) TAMBÉM não é transitório quando o backend inteiro
+// está fora do ar, e continuava no retry. Cada conexão recusada NESTA
+// máquina custa ~2,4s (Windows tenta `::1` e depois `127.0.0.1`) — nada
+// instantâneo. No mount de uma página só, ~14 endpoints disparam (auth/me,
+// tags, settings, home/stats, home/snapshot, notifications, …) × até 3
+// tentativas = ~40 requisições de 2,4s cada competindo pelas 6 conexões
+// concorrentes que o Chrome permite por origem — a assinatura em degraus
+// (2360 / 4707 / 8243 / 10591 …ms) medida bate exatamente com essa fila.
+// Isso sozinho explicava telas presas por 15-35s bem depois do PL-C3-FAR-1.
+// Um backend fora do ar não é "transitório" no sentido que compensa
+// reintentar: se a 1ª tentativa falhou por ECONNREFUSED, as outras 2 vão
+// falhar do mesmo jeito ~2,4s depois cada — só custo, nenhum ganho. Só
+// reintenta infra real que respondeu com status (502/503/504/408/429) e
+// `ECONNRESET` (conexão que caiu NO MEIO da resposta — diferente de nunca
+// ter conectado; esse caso pode genuinamente ser passageiro).
 const RETRY_MAX = 2
 const RETRY_STATUS_CODES = new Set([502, 503, 504, 408, 429])
 
@@ -651,11 +661,8 @@ api.interceptors.response.use(undefined, async (error) => {
 
   const retryCount = parseInt(config.headers?.['x-retry-count'] ?? '0', 10)
   const status = error.response?.status
-  const isTimeout = error.code === 'ECONNABORTED'
 
-  // Only retry on transient errors (fast network failures or specific status
-  // codes) — never a timeout, que já pagou o custo todo de esperar.
-  const isTransient = (!status && !isTimeout) || RETRY_STATUS_CODES.has(status)
+  const isTransient = RETRY_STATUS_CODES.has(status) || error.code === 'ECONNRESET'
   if (!isTransient || retryCount >= RETRY_MAX) return Promise.reject(error)
 
   config.headers['x-retry-count'] = String(retryCount + 1)
