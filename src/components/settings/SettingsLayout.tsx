@@ -284,7 +284,7 @@ export function SettingsLayout({ children, currentRole = 'admin', multiPipeline 
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar configuração..."
             aria-label="Buscar configuração"
-            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-[7px] pl-8 pr-7 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
+            className="w-full h-7 bg-surface-800 border border-[var(--bd2)] rounded-sm pl-8 pr-7 text-xs text-surface-200 placeholder:text-surface-500 focus:outline-none focus:border-brand-500/50 transition-colors"
           />
           {/* PL-C2-BUS-1: sem isso, quem digita e erra a palavra fica preso
               numa busca sem resultado — só dava pra limpar apagando letra a

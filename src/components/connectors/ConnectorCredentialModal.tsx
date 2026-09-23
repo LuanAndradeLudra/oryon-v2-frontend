@@ -200,7 +200,7 @@ export function ConnectorCredentialModal({ connector, onClose, onSaved }: Connec
           if (field.kind === 'permissions') {
             return (
               <FormField key={field.key} label={field.label}>
-                <div className="border border-surface-700 rounded-[7px] divide-y divide-surface-700">
+                <div className="border border-surface-700 rounded-sm divide-y divide-surface-700">
                   {field.items.map((item) => {
                     const checked = permissions[item.id]
                     return (
