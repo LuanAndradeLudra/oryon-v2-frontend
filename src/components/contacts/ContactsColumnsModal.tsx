@@ -73,6 +73,7 @@ export function ContactsColumnsModal({ open, onClose, config, multiPipeline }: C
     <Modal
       open={open}
       onClose={onClose}
+      aria-label="Configurar colunas"
       title={
         <div>
           <h2 className="text-[15px] font-display font-bold tracking-[-0.01em] text-surface-50">Configurar colunas</h2>

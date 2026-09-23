@@ -780,7 +780,7 @@ export function NewDealDialog({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={heading} className="max-w-2xl" bodyClassName="p-0">
+    <Modal open={open} onClose={onClose} title={heading} aria-label={headingText} className="max-w-2xl" bodyClassName="p-0">
       {body}
     </Modal>
   )
