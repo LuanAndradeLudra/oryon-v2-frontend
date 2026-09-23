@@ -403,9 +403,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
           </motion.div>
 
           {/* Confirmação de descarte — ConfirmModal (alertdialog, foco no
-              Cancelar por ser danger, Esc/trap pelo Modal). O rótulo do botão
-              de recusa vira o "Cancelar" padrão (antes "Continuar editando":
-              o ConfirmModal não tem cancelLabel e ui/ não é meu). */}
+              recusar por ser danger, Esc/trap pelo Modal). */}
           <ConfirmModal
             open={askClose}
             onClose={() => setAskClose(false)}
@@ -413,6 +411,7 @@ export function AutomationBuilder({ open, onClose, onSaved, editTarget, preset, 
             title="Descartar alterações?"
             description="As mudanças não salvas serão perdidas."
             confirmLabel="Descartar"
+            cancelLabel="Continuar editando"
             danger
           />
         </>
