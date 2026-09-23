@@ -74,7 +74,7 @@ export function FunnelsConfigDrawer({ open, onClose }: Props) {
                 onClick={onClose}
                 title="Fechar"
                 aria-label="Fechar"
-                className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition-all"
+                className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
               >
                 <X className="w-4 h-4" />
               </button>

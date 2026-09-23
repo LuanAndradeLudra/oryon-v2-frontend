@@ -203,7 +203,7 @@ function CriterionEditor({
             <button
               onClick={handleResetToBase}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-surface-400 hover:text-surface-200 hover:bg-surface-800/60 transition disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition disabled:opacity-50"
             >
               <RotateCcw className="w-3 h-3" />
               Restaurar padrão

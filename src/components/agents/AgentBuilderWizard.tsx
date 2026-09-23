@@ -1398,7 +1398,7 @@ function PromptReviewModal({
         <div className="flex justify-end gap-2">
           <button
             type="button" onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-surface-800 transition"
+            className="px-4 py-2 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] transition"
           >
             Cancelar
           </button>
@@ -1638,9 +1638,12 @@ function CapabilitiesReview({
           return (
             <label
               key={entry.id}
+              // Eixo 10 (criterio novo): container do card e' bg-surface-800;
+              // hover:bg-surface-800/40 mistura a MESMA cor em si mesma —
+              // matematicamente 0% de mudanca visual, em qualquer tema.
               className={cn(
                 'flex items-center gap-3 px-2 py-1.5 rounded-md cursor-pointer transition-colors',
-                enabled ? 'bg-brand-950/30' : 'hover:bg-surface-800/40',
+                enabled ? 'bg-brand-950/30' : 'hover:bg-[var(--rowhover)]',
               )}
             >
               <span

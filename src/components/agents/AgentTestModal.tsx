@@ -474,7 +474,7 @@ export function AgentTestModal({
           </Dropdown>
           <button
             onClick={handleClose}
-            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-surface-800 transition"
+            className="p-1.5 rounded-lg text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition"
           >
             <X className="w-4 h-4" />
           </button>

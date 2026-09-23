@@ -82,7 +82,7 @@ function RuleModal({
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-500 hover:bg-surface-800 hover:text-surface-200 transition"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-surface-500 hover:bg-[var(--rowhover)] hover:text-surface-200 transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -245,18 +245,18 @@ function RuleCard({
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <button onClick={onToggle} title={rule.enabled ? 'Desativar' : 'Ativar'} aria-label={rule.enabled ? 'Desativar regra' : 'Ativar regra'}
-            className="p-1 rounded-lg hover:bg-surface-800 transition text-surface-500 hover:text-surface-200">
+            className="p-1 rounded-lg hover:bg-[var(--rowhover)] transition text-surface-500 hover:text-surface-200">
             {rule.enabled
               ? <ToggleRight className="w-5 h-5 text-status-active" />
               : <ToggleLeft  className="w-5 h-5" />}
           </button>
-          <button onClick={onEdit} aria-label="Editar regra" className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-500 hover:text-surface-200 transition">
+          <button onClick={onEdit} aria-label="Editar regra" className="p-1.5 rounded-lg hover:bg-[var(--rowhover)] text-surface-500 hover:text-surface-200 transition">
             <Edit3 className="w-3.5 h-3.5" />
           </button>
           <button onClick={onDelete} aria-label="Excluir regra" className="p-1.5 rounded-lg hover:bg-red-500/10 text-surface-600 hover:text-red-400 transition">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => setExpanded(v => !v)} className="p-1.5 rounded-lg hover:bg-surface-800 text-surface-600 hover:text-surface-300 transition">
+          <button onClick={() => setExpanded(v => !v)} className="p-1.5 rounded-lg hover:bg-[var(--rowhover)] text-surface-600 hover:text-surface-300 transition">
             {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
         </div>
@@ -654,7 +654,7 @@ function DraftEditor({
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 px-4 py-2.5 rounded-sm border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-800 transition"
+          className="flex-1 px-4 py-2.5 rounded-sm border border-surface-700 text-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition"
         >
           Cancelar
         </button>
