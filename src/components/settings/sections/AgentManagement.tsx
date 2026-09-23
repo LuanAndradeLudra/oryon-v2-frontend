@@ -402,7 +402,11 @@ export function AgentManagement() {
         onClose={() => setDeactivateTarget(null)}
         onConfirm={handleToggleActive}
         title={deactivateTarget?.isActive ? 'Desativar usuário' : 'Reativar usuário'}
-        description={`Tem certeza que deseja ${deactivateTarget?.isActive ? 'desativar' : 'reativar'} ${deactivateTarget?.firstName}? ${deactivateTarget?.isActive ? 'Ele perderá acesso à plataforma.' : 'Ele voltará a ter acesso normalmente.'}`}
+        impact={deactivateTarget ? {
+          label: `${deactivateTarget.firstName} ${deactivateTarget.lastName}`,
+          tone: deactivateTarget.isActive ? 'warning' : 'neutral',
+        } : undefined}
+        description={deactivateTarget?.isActive ? 'O usuário perderá acesso à plataforma. Você pode reativá-lo depois.' : 'O usuário voltará a ter acesso normalmente.'}
         confirmLabel={deactivateTarget?.isActive ? 'Desativar' : 'Reativar'}
         danger={deactivateTarget?.isActive}
       />

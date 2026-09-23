@@ -253,7 +253,8 @@ export function PipelineStagesManager({ pipeline, onChanged }: PipelineStagesMan
         onClose={() => setDeleteStage(null)}
         onConfirm={handleDelete}
         title="Excluir estágio"
-        description={`Tem certeza que deseja excluir o estágio "${deleteStage?.label}"? Só é possível excluir estágios sem negócios.`}
+        impact={{ label: `Estágio ${deleteStage?.label ?? ''}`.trim(), tone: 'danger' }}
+        description="Só é possível excluir estágios sem negócios. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

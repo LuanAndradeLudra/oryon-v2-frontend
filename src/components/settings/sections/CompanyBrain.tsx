@@ -354,6 +354,7 @@ function BrandFilesSection({
         onClose={() => setRemoveTarget(null)}
         onConfirm={remove}
         title="Remover arquivo da marca"
+        impact={{ label: `Arquivo ${entries.find(e => e.file.id === removeTarget)?.file.name ?? ''}`.trim(), tone: 'danger' }}
         description="O arquivo será removido do contexto da empresa. Salve para confirmar a remoção permanente."
         confirmLabel="Remover arquivo"
         danger

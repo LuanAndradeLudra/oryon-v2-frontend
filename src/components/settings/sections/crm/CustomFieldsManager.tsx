@@ -148,7 +148,8 @@ export function CustomFieldsManager() {
         onClose={() => setDeleteField(null)}
         onConfirm={handleDelete}
         title="Excluir campo"
-        description={`Tem certeza que deseja excluir o campo "${deleteField?.label}"? Os dados já salvos nos contatos serão perdidos.`}
+        impact={{ label: `Campo ${deleteField?.label ?? ''}`.trim(), tone: 'danger' }}
+        description="Os dados já salvos nos contatos serão perdidos. Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         danger
         loading={deleting}

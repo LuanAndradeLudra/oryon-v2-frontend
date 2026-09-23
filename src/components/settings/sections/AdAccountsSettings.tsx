@@ -176,6 +176,7 @@ function ConnectedCard({
             onClose={() => setConfirmDisconnect(false)}
             onConfirm={() => { onDisconnect(); setConfirmDisconnect(false) }}
             title="Desconectar conta de anúncios"
+            impact={{ label: `Conta ${account.accountName} (${account.accountId})`, tone: 'danger' }}
             description="Esta ação é irreversível. A integração será removida e os dados de campanhas vinculadas não estarão mais disponíveis."
             confirmLabel="Desconectar"
             danger
