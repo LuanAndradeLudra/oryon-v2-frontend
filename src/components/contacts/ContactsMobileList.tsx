@@ -52,7 +52,7 @@ function ContactCard({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
-      className="w-full flex items-stretch gap-3 px-4 py-3.5 bg-surface-900/40 border border-surface-700 rounded-xl hover:bg-surface-900 active:bg-surface-800 transition-colors text-left cursor-pointer"
+      className="w-full flex items-stretch gap-3 px-4 py-3.5 bg-surface-900/40 border border-surface-700 rounded-xl hover:bg-[var(--rowhover)] active:bg-[var(--rowhover)] transition-colors text-left cursor-pointer"
     >
       <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
       <div className="flex-1 min-w-0 flex flex-col gap-1.5">
