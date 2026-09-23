@@ -137,3 +137,28 @@ Verificado e SEM defeito: TopBar 48px, `px-16`, fundo `#161E1E`, hairline inferi
 Registrado em DECISOES: **#18** (escala única de ícone) — ver `DECISOES-PENDENTES.md`.
 Aberto, não feito (fora do orçamento): contador do sino usa `rounded-full` onde o canvas pede raio 7 (idêntico a 14px de altura, sem efeito visual — só vocabulário); `kbd` com 3 grafias diferentes de raio no app (`TopBar.tsx` tem `rounded` cru **e** `rounded-[4px]` no mesmo arquivo, `ChatWindow.tsx` usa `rounded-xs`) — todos computam 4px hoje, então é higiene de token (`--radius-2xs`), não defeito visual.
 Próximo: ciclo 6 = **fluxo F2** (Lead → contato → negócio → mover etapas → ganhar/perder), pela regra do 3º ciclo.
+
+### Ciclos paralelos dos agentes — 2026-09-22 21:0x–21:4x (registrados pelo Maestro)
+**Cartógrafo — T3 Funis (revisita visual) + T6 Agentes IA (completo)**
+- PL-C2-CAR-5/7 chip secundário do cabeçalho de coluna em `rounded` cru contra os 30+ `.color-chip-soft` do app em `rounded-xs`; skeleton do card com raio 10 anunciando um card de raio 8 — `c534726`
+- PL-C2-CAR-6 [S2] (P4) aba Relatórios do funil usava `rounded-xl` + pílula de período em `bg-brand-600` **sólido** (único segmentado assim no app) + `<select>` nativo pro dono, na MESMA página onde a aba Quadro já usa `SegmentedControl` e o recipe de `FilterSelect` — trocado pelos componentes de verdade, não só pelas cores — `196690a`
+- PL-C2-CAR-8/10/13 raio cru → token (`rounded-sm` no input de probabilidade, `--radius-2xs` nos `kbd` do diálogo e no mini-chip do catálogo) — `2c11055`, `244b3aa`, `5a50cea`
+- PL-C2-CAR-9 `DocStatusBadge` (aba Conhecimento) usava `.color-chip` **sólido** — classe de etiqueta — para um STATUS; virou `color-chip-soft` nos 4 estados — `7541ab2`
+- **PL-C2-CAR-11 [S2] o melhor achado da rodada:** os 4 botões do rodapé do `AgentBuilderWizard` eram `<button>` à mão reproduzindo o primitivo com a franja errada — **sem `focus-visible` nenhum dos 4** e, no CTA primário (Continuar/Publicar), `hover:brightness-110` onde todo primary do app usa `brightness-90`: **o botão mais importante do wizard reagia ao contrário do resto do produto**. Trocados pelo `Button`; segundo caso idêntico em "Gerar System Prompt com IA" — `5ef01d9`, `20c43d8`
+- PL-C2-CAR-12 raio 10 onde a escala pede 8, espalhado por Agentes — prova de que era acidente: o **mesmo** botão (mesmo handler, mesmo ícone) aparece 2× na mesma tela com raios diferentes — `6129bc9`
+- Aberto: `HandoffRuleBuilder.tsx` (1.295 linhas) tem mais `rounded-xl` não tocados — decidiu não julgar em bloco sem ver a tela; medir ao vivo quando voltar.
+**Bússola — T10 Conectores + T11 Configurações + início de T9 Agenda**
+- PL-C2-BUS-8 botão de ação de linha unificado em 28×28 (ícone 14, `--radius-xs`, hover `--rowhover`) em **11 arquivos** — a partir da medição ao vivo em `/settings/agents` — `4da0e83`, `d65421d`
+- PL-C2-BUS-9 `ConnectorDetailModal`: X de fechar em raio 8 contra os 28×28/raio 7 do canvas, e `hover:bg-surface-800` **idêntico ao fundo do próprio modal** (hover invisível); `ConnectorCredentialModal`: prévia mascarada da credencial com geometria diferente do `Input` que ela substitui — havia um "pulo" visual ao clicar para editar — `20b8ece`
+- PL-C2-BUS-10 `strokeWidth={1.75}` nos ícones que caem no lucide e ficam ao lado de ícones da casa (ConnectorBadges, WhatsAppHealth, WhatsAppNumbers) — aplicação direta do PL-5-1 — `d00ee75`
+- PL-C2-BUS-11 [S2] T9 Agenda: o chip de Origem do popover tinha **2 caminhos para o mesmo slot** (primitivo para "Agente Vendas", `span` à mão para as demais origens, com altura/raio/peso diferentes) — **o card mudava de tamanho conforme o compromisso** — `1760181`
+- PL-C2-BUS-12 limpeza de token: mais 9 arquivos com `rounded-[7px]/[8px]/[10px]` arbitrário → tokens existentes — `259d9a7`
+**Farol — causa raiz do PL-C4-FAR-1 (fechada pelo Maestro, ver abaixo)**
+- Teto de 35 s → 15 s — `cb45a9b`; descartou por leitura proxy do Vite e instância paralela de axios.
+- PL-C2-FAR-eixo10-2 chip do Step 3 do wizard de campanha com opacidade/padding próprios contra o `chipBase/chipOff` dos outros 4 grupos do mesmo wizard — `ab9e83a`
+
+**Causa raiz do carregamento longo (medida pelo Maestro, sem instrumentar código)** — técnica: `performance.getEntriesByType('resource')` com o backend derrubado dá o tempo de CADA requisição.
+1. Conexão recusada **não é instantânea nesta máquina**: `fetch` para uma porta sem ninguém escutando leva **2.385 ms** (Windows tenta `::1` e depois `127.0.0.1`).
+2. **Cada URL aparece 2–3× no timing** → o interceptor ainda retenta **erro de conexão** (o `db31620` tirou só o timeout; erro de rede sem status continua "transitório").
+3. As durações sobem em degraus exatos (2360 / 4707 / 8243 / 10591) — assinatura da fila de 6 conexões do Chrome. ~14 endpoints no mount × 3 tentativas ÷ 6 canais × 2,4 s → passa de 15 s.
+→ Fix pedido ao Farol: parar de retentar erro de conexão (manter retry só para 502/503/504). Esperado: ~40 requisições viram ~14, erro na tela em ~4 s, e o teto de 15 s vira rede de segurança de verdade. **Medição de fechamento pendente.**

@@ -347,7 +347,7 @@ export function PricingPage() {
           <p className="text-surface-400 text-sm">
             Tem um plano customizado em mente? Redes de clínicas, imobiliárias e agências têm condições especiais.
           </p>
-          <button className="inline-flex items-center gap-2 px-6 py-3 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] font-semibold text-sm transition-colors">
+          <button className="inline-flex items-center gap-2 px-6 py-3 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] font-semibold text-sm transition-colors">
             Falar com um especialista
             <ArrowRight className="w-4 h-4" />
           </button>

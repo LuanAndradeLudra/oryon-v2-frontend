@@ -37,7 +37,7 @@ function FilterDropdown({
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="h-7 inline-flex items-center gap-[5px] rounded-[7px] border border-[var(--bd2)] px-[9px] text-xs font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+          className="h-7 inline-flex items-center gap-[5px] rounded-sm border border-[var(--bd2)] px-[9px] text-xs font-semibold text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
         >
           {activeLabel}
           <ChevronDown className="w-3.5 h-3.5 text-surface-500" />
@@ -96,7 +96,7 @@ export function ScheduleToolbar({
           type="button"
           onClick={onPrev}
           aria-label="Semana anterior"
-          className="w-7 h-7 inline-flex items-center justify-center rounded-[7px] border border-[var(--bd2)] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
+          className="w-7 h-7 inline-flex items-center justify-center rounded-sm border border-[var(--bd2)] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -104,7 +104,7 @@ export function ScheduleToolbar({
           type="button"
           onClick={onNext}
           aria-label="Próxima semana"
-          className="w-7 h-7 inline-flex items-center justify-center rounded-[7px] border border-[var(--bd2)] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
+          className="w-7 h-7 inline-flex items-center justify-center rounded-sm border border-[var(--bd2)] text-surface-400 hover:bg-[var(--rowhover)] hover:text-surface-100 transition-colors"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

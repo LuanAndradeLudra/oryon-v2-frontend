@@ -186,7 +186,7 @@ export function WelcomePage() {
               {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
             <Link to="/login"
-              className="px-4 py-2 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-colors">
+              className="px-4 py-2 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-sm font-semibold transition-colors">
               Entrar
             </Link>
           </nav>
@@ -284,7 +284,7 @@ export function WelcomePage() {
             className="flex flex-col sm:flex-row items-center gap-4"
           >
             <Link to="/login"
-              className="px-7 py-3.5 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-base font-semibold transition-all">
+              className="px-7 py-3.5 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-base font-semibold transition-all">
               Começar agora
             </Link>
             <a href="#como-funciona"
@@ -410,7 +410,7 @@ export function WelcomePage() {
             Junte-se a centenas de empresas que já usam a Oryon para converter conversas em resultados.
           </p>
           <Link to="/login"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-[7px] bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-base font-semibold transition-all">
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-sm bg-[var(--color-btn-primary-bg)] hover:brightness-90 text-[var(--color-btn-primary-fg)] text-base font-semibold transition-all">
             Começar agora <ArrowRight className="w-4 h-4" />
           </Link>
         </FadeIn>

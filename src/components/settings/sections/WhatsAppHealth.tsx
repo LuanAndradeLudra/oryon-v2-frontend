@@ -180,7 +180,7 @@ function SummaryStat({
   value: number
   total?: number
   tone?: 'default' | 'ok' | 'warning'
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
   tooltip?: string
 }) {
   const valueClass = tone === 'warning' ? 'text-status-pending' : 'text-surface-100'
@@ -188,7 +188,7 @@ function SummaryStat({
   return (
     <div title={tooltip}>
       <div className="flex items-center gap-2 text-3xs uppercase tracking-wide text-surface-400">
-        <Icon className="w-3 h-3" />
+        <Icon className="w-3 h-3" strokeWidth={1.75} />
         {label}
       </div>
       <div className={cn('text-2xl font-semibold mt-1', valueClass)}>
@@ -219,7 +219,7 @@ function LineHealthRow({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <Phone className="w-4 h-4 text-brand-400 flex-shrink-0" />
+            <Phone className="w-4 h-4 text-brand-400 flex-shrink-0" strokeWidth={1.75} />
             <span className="text-sm font-semibold text-surface-100 truncate">
               {line.label || formatPhone(line.displayPhoneNumber)}
             </span>
@@ -240,7 +240,7 @@ function LineHealthRow({
               </span>
             ) : (
               <span className="color-chip-soft inline-flex items-center gap-1 h-5 px-[7px] rounded-[5px] text-[11px] font-bold border" style={{ ['--chip']: 'var(--color-danger)' } as React.CSSProperties} title="Sem token — mensagens falharão">
-                <ShieldOff className="w-3 h-3" />
+                <ShieldOff className="w-3 h-3" strokeWidth={1.75} />
                 Sem token
               </span>
             )}
