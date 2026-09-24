@@ -483,20 +483,34 @@ export function ChatHeader({
           }
         >
           <div className="px-1 py-1 flex flex-col gap-0.5">
-            {STATUS_OPTIONS.map(({ value: v, label }) => (
-              <DropdownItem
-                key={v}
-                active={status === v}
-                onClick={() => {
-                  setMoreOpen(false)
-                  if (status === v) return
-                  if (v === 'resolved') void resolve.requestResolve()
-                  else void onStatusChange(v)
-                }}
-              >
-                {label}
-              </DropdownItem>
-            ))}
+            {/* PO, 23/09: cada status carrega a própria cor (azul aberta,
+                âmbar pendente, verde resolvida) — ponto de 6px sempre; a
+                TINTA translúcida (12–18 %) só no status ativo e no hover do
+                próprio item, para o menu não virar um semáforo. */}
+            {STATUS_OPTIONS.map(({ value: v, label }) => {
+              const tone = v === 'open'
+                ? { dot: 'bg-status-open', text: 'text-status-open', tint: 'bg-status-open/[.16] hover:bg-status-open/[.22]', hover: 'hover:bg-status-open/[.10]' }
+                : v === 'pending'
+                  ? { dot: 'bg-cstatus-pending', text: 'text-cstatus-pending', tint: 'bg-cstatus-pending/[.16] hover:bg-cstatus-pending/[.22]', hover: 'hover:bg-cstatus-pending/[.10]' }
+                  : { dot: 'bg-cstatus-resolved', text: 'text-cstatus-resolved', tint: 'bg-cstatus-resolved/[.16] hover:bg-cstatus-resolved/[.22]', hover: 'hover:bg-cstatus-resolved/[.10]' }
+              const isActive = status === v
+              return (
+                <DropdownItem
+                  key={v}
+                  active={isActive}
+                  className={isActive ? cn(tone.tint, tone.text, 'font-medium') : tone.hover}
+                  onClick={() => {
+                    setMoreOpen(false)
+                    if (isActive) return
+                    if (v === 'resolved') void resolve.requestResolve()
+                    else void onStatusChange(v)
+                  }}
+                >
+                  <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', tone.dot)} aria-hidden />
+                  {label}
+                </DropdownItem>
+              )
+            })}
             {/* "Adicionar ao funil" saiu do cabeçalho (o mock não o tem; o painel
                 do contato já tem "Novo negócio"). Nada se perde: aqui abre o
                 mesmo fluxo com detalhes, que deixa escolher o funil. */}

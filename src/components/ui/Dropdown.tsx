@@ -201,11 +201,14 @@ interface DropdownItemProps {
   disabled?: boolean
   /** Atalho de teclado exibido à direita (DROP-04), ex.: "E", "⌘K". */
   shortcut?: string
+  /** Tinta própria do item (ex.: status com sua cor) — vem por último e vence
+   *  o hover/ativo neutros. */
+  className?: string
 }
 
 // DROP-02/03/04 (spec 1a): item 30px, padding 8, raio 5, 13px em --tx; hover
 // e foco em --rowhover (o destrutivo também — só a cor do texto muda).
-export function DropdownItem({ onClick, children, icon: Icon, danger, active, disabled, shortcut }: DropdownItemProps) {
+export function DropdownItem({ onClick, children, icon: Icon, danger, active, disabled, shortcut, className }: DropdownItemProps) {
   return (
     <button
       role="menuitem"
@@ -220,7 +223,8 @@ export function DropdownItem({ onClick, children, icon: Icon, danger, active, di
           : active
             ? 'text-surface-100 bg-[var(--rowhover)]'
             : 'text-surface-100',
-        disabled && 'opacity-40 cursor-not-allowed'
+        disabled && 'opacity-40 cursor-not-allowed',
+        className,
       )}
     >
       {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
