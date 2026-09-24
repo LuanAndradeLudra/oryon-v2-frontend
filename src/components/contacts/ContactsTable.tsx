@@ -429,23 +429,20 @@ export function ContactsTable({
     onSelectAll(allSelected ? [] : contacts.map((c) => c.id))
   }
 
-  // O scroll container é o wrapper do DataTable (vertical E horizontal, com o
-  // thead sticky nele — um único contêiner: a barra horizontal fica no rodapé
-  // visível da área, não abaixo da última linha carregada). O DataTable ainda
-  // não expõe `onScroll`; `scroll` não borbulha, mas a fase de captura chega
-  // até aqui — por isso `onScrollCapture` e o `target` no lugar de currentTarget.
+  // O wrapper do DataTable é o contêiner de rolagem (V+H, thead sticky nele);
+  // o scroll infinito escuta o `onScroll` dele.
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (!hasMore || loadingMore || !onLoadMore) return
-    const el = e.target as HTMLElement
-    if (el.firstElementChild?.tagName !== 'TABLE') return // outro elemento rolável dentro
+    const el = e.currentTarget
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
     if (distanceFromBottom < 320) onLoadMore()
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col" onScrollCapture={handleScroll}>
+    <div className="flex-1 min-h-0 flex flex-col">
       <DataTable
         className="flex-1 min-h-0 h-full"
+        onScroll={handleScroll}
         columns={columns}
         rows={contacts}
         rowKey={(c) => c.id}
