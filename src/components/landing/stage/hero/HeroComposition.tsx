@@ -108,7 +108,7 @@ export function HeroComposition({ frame }: { frame: HeroFrameKey }) {
         {showP3 && (
           <div className="rounded-lg border border-surface-700 bg-surface-900 p-3.5">
             <div className="flex items-center gap-2 mb-2">
-              <Avatar name={HERO.person} size="2xs" />
+              <Avatar name={HERO.person} size="sm" />
               <p className="text-[13px] font-semibold text-surface-100 truncate flex-1">{HERO.deal.title}</p>
             </div>
             <p className="text-xs text-surface-400">{HERO.deal.qty} licenças · <span className="text-surface-100 font-bold">{HERO.deal.total}</span></p>
