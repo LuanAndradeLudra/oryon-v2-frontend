@@ -10,6 +10,7 @@ import { useContextMenuCtx, type ContextMenuEntry } from '@/components/ui/contex
 import { StageBadge } from './StageBadge'
 import { LeadScorePill } from './LeadScorePill'
 import { DealsSummaryChips } from './DealsSummaryChips'
+import { TagChips } from './TagChips'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useMultiPipeline } from '@/hooks/useMultiPipeline'
 import { type ContactColumnsConfig } from '@/hooks/useContactColumnsConfig'
@@ -44,28 +45,6 @@ const COLUMN_TO_SORT_KEY: Record<string, 'displayName' | 'leadScore' | 'lastCont
   name: 'displayName',
   score: 'leadScore',
   lastContactedAt: 'lastContactedAt',
-}
-
-/** Etiquetas em chips (até `max`, resto em "+N") — mesma peça na coluna
- *  Etiquetas e inline na célula Nome quando a coluna está oculta. */
-function TagChips({ tags, max = 2, emptyDash = false }: { tags: Contact['tags']; max?: number; emptyDash?: boolean }) {
-  const list = tags ?? []
-  if (list.length === 0) return emptyDash ? <span className="text-surface-500 text-xs">—</span> : null
-  return (
-    <div className="flex gap-1 flex-wrap">
-      {list.slice(0, max).map((tag) => (
-        <span
-          key={tag.id}
-          className="color-chip inline-flex items-center h-[18px] whitespace-nowrap align-middle text-[10.5px] font-semibold px-[7px] rounded-xs border"
-          style={{ ['--chip']: tag.color } as React.CSSProperties}
-          title={tag.name}
-        >
-          {tag.name}
-        </span>
-      ))}
-      {list.length > max && <span className="text-[11px] text-surface-500">+{list.length - max}</span>}
-    </div>
-  )
 }
 
 function ActionsMenuCell({ contact, onOpenPanel, onOpenConversation }: {

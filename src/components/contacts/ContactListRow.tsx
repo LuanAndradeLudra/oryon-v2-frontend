@@ -4,14 +4,15 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
 import { StageBadge } from './StageBadge'
+import { TagChips } from './TagChips'
 import { cn, relativeDate, formatPhoneBR } from '@/lib/utils'
 import type { Contact, TenantStage } from '@/types'
 
 // Direção A da tela de Leads (DECISOES-PENDENTES #33, mockup-contatos.html):
 // UMA pessoa por linha, 52px. O nome manda; o resto é mudo. Checkbox e ações só
 // aparecem no hover/foco (e ficam sempre visíveis em ponteiro grosso, onde não
-// existe hover). Telefone, etiquetas e estatísticas NÃO moram na linha — estão
-// no painel.
+// existe hover). Telefone e estatísticas NÃO moram na linha — estão no painel. Etiquetas
+// (até 2, "+N" mudo) ficam no fim da 2ª linha; não são clicáveis (filtro no Filtro).
 
 const SOURCE_LABEL: Record<string, string> = {
   whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Facebook', website: 'Website',
@@ -70,6 +71,7 @@ export function ContactListRow({
   const line2 = secondLine(contact)
   const canal = sourceLabel(contact.source)
   const when = relativeDate(contact.lastContactedAt)
+  const hasTags = (contact.tags?.length ?? 0) > 0
 
   return (
     <div
@@ -131,6 +133,7 @@ export function ContactListRow({
           </div>
           <div className="flex items-center gap-2">
             <p className="flex-1 min-w-0 text-xs leading-5 text-surface-400 truncate">{line2}</p>
+            <div className="flex-none"><TagChips tags={contact.tags} max={1} inline /></div>
             {contact.stage && (
               <span className="flex-none">
                 <StageBadge stage={contact.stage} stages={stages} size="sm" />
@@ -142,7 +145,12 @@ export function ContactListRow({
         <>
           <div className="relative pointer-events-none flex-1 min-w-0">
             <p className="text-[13px] font-semibold leading-[18px] text-surface-100 truncate">{name}</p>
-            {line2 && <p className="text-xs leading-4 text-surface-400 truncate">{line2}</p>}
+            {(line2 || hasTags) && (
+              <div className="flex items-center gap-2">
+                <p className="flex-1 min-w-0 text-xs leading-[18px] text-surface-400 truncate">{line2}</p>
+                {hasTags && <div className="flex-none"><TagChips tags={contact.tags} inline /></div>}
+              </div>
+            )}
           </div>
 
           {contact.stage && (
