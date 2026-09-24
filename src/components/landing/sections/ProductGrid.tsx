@@ -1,4 +1,5 @@
 import { StagePoster } from '@/components/landing/stage'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { productGrid, LANDING_ANCHORS } from '../landingCopy'
 
@@ -15,8 +16,20 @@ import { productGrid, LANDING_ANCHORS } from '../landingCopy'
  * CONTÊINER, então cada seção ficava tão alta quanto a página é larga. Agora
  * o quadro tem largura FIXA (560px) e o texto ocupa o resto; a altura da
  * seção passa a depender só da altura do quadro nessa largura, não da tela.
+ *
+ * BUG achado ao medir em 390 (532px de conteúdo pra 387 úteis — estouro
+ * horizontal): a largura fixa em si está corretamente presa a `lg:` — o
+ * problema é que `StagePoster` sem `layout` explícito usa o default
+ * `'desktop'`, que é o SHELL INTEIRO (3 painéis, desenhado pros 560px do
+ * desktop), não uma composição que encolhe. Em mobile o quadro tem `w-full`
+ * (~358px) mas segue renderizando o shell de desktop — dimensionamento sem
+ * contrato por breakpoint. Corrigido: `layout` (e a largura do quadro) agora
+ * seguem o MESMO breakpoint (1024px) do grid — `desktop`/560px em lg+,
+ * `compact` (a coluna única, o mesmo modo que já funciona no HowItWorks) e
+ * `w-full` abaixo disso.
  */
 export function ProductGrid() {
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
   return (
     <section
       id={LANDING_ANCHORS.produto}
@@ -43,8 +56,13 @@ export function ProductGrid() {
                 <h3 className="font-display text-xl sm:text-2xl font-bold tracking-[-0.01em] text-surface-50">{cap.title}</h3>
                 <p className="mt-2.5 max-w-[46ch] text-sm sm:text-base leading-relaxed text-surface-400">{cap.text}</p>
               </div>
-              <div role="img" aria-label={cap.posterLabel} className="reveal w-full lg:w-[560px]" style={{ ['--d' as string]: '90ms' }}>
-                <StagePoster scene={cap.scene} frame={cap.frame} />
+              <div
+                role="img"
+                aria-label={cap.posterLabel}
+                className={cn('reveal', isDesktop ? 'w-[560px]' : 'w-full')}
+                style={{ ['--d' as string]: '90ms' }}
+              >
+                <StagePoster scene={cap.scene} frame={cap.frame} layout={isDesktop ? 'desktop' : 'compact'} />
               </div>
             </div>
           ))}
