@@ -24,7 +24,10 @@
 - Primitivo antes de valor; medir ao vivo por número; **território por arquivo** (abaixo); quem precisa de
   token/`ui/` novo pede ao orquestrador.
 - Checklist anti-genérico: sem logo gigante centralizada, glow atrás de logo, badge "AI-powered", eyebrow
-  decorativo, palavra rotativa, beams/canvas, gradiente roxo, emoji, shimmer, mockup 3D/tilt; H1 ≤ 10 palavras.
+  decorativo, gradiente roxo, emoji, shimmer, mockup 3D/tilt; H1 ≤ 10 palavras.
+  **EXCEÇÕES PEDIDAS PELO PO (24/09) — não remover, não "limpar":** os **feixes animados do fundo do login**
+  (`ui/LoginBeams.tsx`) e a **headline com palavra rotativa** no login. Eu as tinha posto neste checklist por
+  conta própria; o PO as quer de volta. `ui/LoginBeams.tsx` **não** será apagado no fecho.
 
 ## Mensagem e argumentos (copy nasce em `src/components/landing/landingCopy.ts`)
 Âncora: **"Seu WhatsApp atende sozinho — e o humano entra na hora certa."**
