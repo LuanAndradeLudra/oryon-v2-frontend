@@ -1,5 +1,5 @@
 import type {
-  Campaign, Contact, Conversation, Deal, Message, Pipeline, PipelineStage, Product, Tag, TenantStage, User, WhatsAppNumber,
+  Campaign, Contact, Conversation, Deal, Message, Pipeline, PipelineStage, Product, Tag, TenantStage, User, WhatsAppNumber, WhatsAppTemplate,
 } from '@/types'
 import type { TimelineEntry } from '@/components/conversations/ContactPanel/ConversationActivitySection'
 import type { AppNotification } from '@/hooks/useNotifications'
@@ -185,7 +185,7 @@ function msg(
   dir: 'inbound' | 'outbound',
   body: string,
   sentAt: string,
-  autor: 'cliente' | 'ia' | 'pessoa' = 'cliente',
+  autor: 'cliente' | 'ia' | 'pessoa' | 'campanha' = 'cliente',
 ): Message {
   return {
     id: `demo-m-${i}`,
@@ -196,7 +196,7 @@ function msg(
     body,
     sentAt,
     createdAt: sentAt,
-    senderKind: dir === 'inbound' ? 'client' : autor === 'ia' ? 'ai' : 'operator',
+    senderKind: dir === 'inbound' ? 'client' : autor === 'ia' ? 'ai' : autor === 'campanha' ? 'campaign' : 'operator',
     ...(autor === 'pessoa' ? { sentByUserId: HERO_USER.id, sentByUser: HERO_USER } : {}),
   } as Message
 }
@@ -217,6 +217,8 @@ export function heroMessages(at: HeroState): Message[] {
     // resposta" —, dizendo o contrário do que a cena vai mostrar.
     msg(4, 'outbound', 'Combinado! Qualquer coisa é só chamar. 😊', dayAt(1, 9, 22), 'ia'),
   ]
+  // O disparo da campanha: é ele que reabre a conversa de ontem.
+  out.push(msg(10, 'outbound', HERO_TEMPLATE_TEXTO, minutesAgo(6), 'campanha'))
   if (reached(at, 'demanda')) out.push(msg(5, 'inbound', HERO.demand, minutesAgo(4)))
   if (reached(at, 'resposta')) out.push(msg(6, 'outbound', HERO.answer, minutesAgo(3), 'ia'))
   if (reached(at, 'confirma')) out.push(msg(7, 'inbound', HERO.confirm, minutesAgo(2)))
@@ -283,6 +285,12 @@ export function heroDeal(at: HeroState): Deal {
     amountCents: HERO.amountCents,
     currency: 'BRL',
     description: '12 licenças · suporte prioritário',
+    // O item do catálogo que compõe o valor — sem ele o painel do negócio
+    // mostrava "Total R$ 0,00" num negócio de R$ 4.500.
+    lineItems: [{
+      id: 'li-pro-anual', kind: 'catalog', productId: 'pr-pro', productName: 'Plano Pro',
+      variationLabel: 'Anual · por licença', unitPriceCents: 37_500, quantity: 12, order: 1,
+    }],
     originConversationId: 'demo-conv-0',
     originKind: 'manual',
     createdByKind: 'user',
@@ -384,6 +392,32 @@ export function heroTimeline(at: HeroState): TimelineEntry[] {
 // ─── Disparos ──────────────────────────────────────────────────────────────────
 
 /**
+ * O modelo aprovado da campanha "Renovação Pro". É o que chega no WhatsApp da
+ * Marina (a satélite do celular desenha com a `TemplatePreview` real) e o que
+ * aparece como mensagem de campanha na conversa dela.
+ */
+export const HERO_TEMPLATE: WhatsAppTemplate = {
+  id: 'tp-renovacao',
+  tenantId: TENANT,
+  name: 'renovacao_plano_pro',
+  language: 'pt_BR',
+  category: 'MARKETING',
+  status: 'APPROVED',
+  body: 'Olá, {{1}}! Setembro é mês de renovação na Vértice: quem leva a equipe para o *Plano Pro anual* ganha suporte prioritário sem custo extra. Quer que a gente monte uma proposta?',
+  footer: 'Vértice Software',
+  buttons: [
+    { type: 'QUICK_REPLY', text: 'Quero uma proposta' },
+    { type: 'QUICK_REPLY', text: 'Agora não' },
+  ],
+  bodyVariables: ['nome'],
+  whatsappNumberId: 'demo-line-1',
+  createdAt: '2026-09-01T12:00:00.000Z',
+  updatedAt: '2026-09-01T12:00:00.000Z',
+}
+export const HERO_TEMPLATE_VARIAVEIS = { '1': 'Marina' }
+const HERO_TEMPLATE_TEXTO = HERO_TEMPLATE.body.replace('{{1}}', HERO_TEMPLATE_VARIAVEIS['1']).replace(/\*/g, '')
+
+/**
  * As campanhas do tenant. A `Renovação Pro` é a da história: é ela que chega no
  * WhatsApp da Marina e abre a conversa. Os números sobem enquanto o roteiro
  * está em `inicio` (a campanha está saindo) e assentam depois.
@@ -458,7 +492,8 @@ export function heroNotifications(at: HeroState): AppNotification[] {
     createdAt: minutesAgo(1), priority: 'urgent',
     metadata: { contactName: HERO.person, conversationId: 'demo-conv-0' },
   })
-  out.push({
+  // A campanha termina de sair logo depois da cena de Disparos.
+  if (reached(at, 'demanda')) out.push({
     id: 'nt-campanha', type: 'campaign_complete', title: 'Renovação Pro · setembro concluída',
     description: '1.231 enviadas · 1.204 entregues', link: '/campaigns', isRead: true, createdAt: minutesAgo(40),
     metadata: { campaignName: 'Renovação Pro · setembro', sent: 1_231, failed: 9 },

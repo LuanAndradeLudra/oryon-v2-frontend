@@ -19,8 +19,16 @@
  */
 import { prepararAntesDoApp, conectarAoApp } from './preparar'
 import { rotasNaoMapeadas } from './guards'
+import { instalarDiretor, avisarQuandoPronta } from './diretor'
 
 prepararAntesDoApp()
+
+// Tema inicial vindo da landing (`?tema=light`), antes do app ler `useTheme`:
+// sem isto a demonstração nasceria escura e piscaria ao receber o tema.
+if (new URLSearchParams(location.search).get('tema') === 'light') {
+  localStorage.setItem('oryon-theme', 'light')
+  document.documentElement.setAttribute('data-theme', 'light')
+}
 
 type Janela = { __demoRotasNaoMapeadas?: () => string[]; __demoErros?: string[] }
 
@@ -42,6 +50,9 @@ async function subir() {
 
   // Diagnóstico: o que alguma tela pediu e o backend de demonstração não atende.
   ;(window as unknown as Janela).__demoRotasNaoMapeadas = rotasNaoMapeadas
+
+  instalarDiretor()
+  avisarQuandoPronta()
 }
 
 /** Sem backend, um provedor que quebre derruba a árvore em silêncio e o

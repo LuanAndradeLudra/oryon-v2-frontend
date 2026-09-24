@@ -30,6 +30,7 @@ import { AGENTES_DEMO, agenteComFerramentas } from './agentesDemo'
 /** Estado corrente da história, dirigido pelos cues do roteiro. */
 let estado: HeroState = 'inicio'
 export function definirEstado(s: HeroState) { estado = s }
+export function estadoAtual(): HeroState { return estado }
 
 /**
  * O tenant é o VENDEDOR — a empresa que usa o Oryon e atende a Marina. A Loja
@@ -155,7 +156,8 @@ export function instalarBackendDemo() {
 
   // ── A conversa aberta ─────────────────────────────────────────────────────
   rota('conversations/:id/messages', (m, u) => m.toLowerCase() === 'get' && /^\/conversations\/[^/]+\/messages$/.test(u), ({ url }) => ({
-    data: paginado(url.includes('demo-conv-0') ? heroMessages(estado) : []),
+    // A API real devolve da mais NOVA para a mais antiga (`useMessages` inverte).
+    data: paginado(url.includes('demo-conv-0') ? [...heroMessages(estado)].reverse() : []),
   }))
 
   rota('canned-responses', eq('get', '/canned-responses'), () => ({ data: { data: [], hasMore: false } }))
@@ -251,6 +253,25 @@ export function instalarBackendDemo() {
 
   // ── Disparos ──────────────────────────────────────────────────────────────
   rota('campaigns', eq('get', '/campaigns'), () => ({ data: { data: heroCampaigns(estado) } }))
+
+  // Histórico de etapas do negócio da história (painel do negócio).
+  rota('deals/:id/history', (m, u) => m.toLowerCase() === 'get' && /^\/deals\/[^/]+\/history$/.test(u), ({ url }) => {
+    if (!url.includes('demo-deal-0')) return { data: [] }
+    const deal = heroDeal(estado)
+    const linhas = [{
+      id: 'h-1', fromStageId: 'ps-entrada', fromStageLabel: 'Entrada', toStageId: 'ps-qualificacao',
+      toStageLabel: 'Qualificação', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: daysAgoIso(2),
+    }]
+    if (deal.stageId !== 'ps-qualificacao') linhas.unshift({
+      id: 'h-2', fromStageId: 'ps-qualificacao', fromStageLabel: 'Qualificação', toStageId: 'ps-proposta',
+      toStageLabel: 'Proposta', movedByKind: 'ai', movedByActorName: 'Agente Vendas', createdAt: new Date().toISOString(),
+    })
+    if (deal.status === 'won') linhas.unshift({
+      id: 'h-3', fromStageId: 'ps-proposta', fromStageLabel: 'Proposta', toStageId: 'ps-ganho',
+      toStageLabel: 'Ganho', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: new Date().toISOString(),
+    })
+    return { data: linhas }
+  })
 
   rota('deals/:id', (m, u) => m.toLowerCase() === 'get' && /^\/deals\/(?!summary$|ai\/)[^/]+$/.test(u), ({ url }) => {
     const id = url.split('/').pop()

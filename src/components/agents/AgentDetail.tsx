@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Bot, Plus, Wrench, MoreHorizontal, Power, PauseCircle,
   FileText, Trash2, Archive, Save, X, Check, Edit3,
@@ -2083,7 +2084,8 @@ function MetricsTab({ agent: _agent }: { agent: AgentConfigWithTools }) {
 
 // ─── Agent Detail ─────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'prompt' | 'tools' | 'skills' | 'capabilities' | 'criteria' | 'rules' | 'knowledge' | 'catalog' | 'metrics'
+const TABS_VALIDAS = ['overview', 'prompt', 'tools', 'skills', 'capabilities', 'criteria', 'rules', 'knowledge', 'catalog', 'metrics'] as const
+type Tab = (typeof TABS_VALIDAS)[number]
 
 export function AgentDetail({
   agent: initialAgent,
@@ -2097,7 +2099,22 @@ export function AgentDetail({
   onTested: () => void
 }) {
   const [agent, setAgent] = useState<AgentConfigWithTools>(initialAgent)
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
+  // Aba aberta na URL (`?tab=`): voltar, recarregar ou chegar por link reabre
+  // a mesma aba, como `?tab=` em Funis e Disparos.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [activeTab, setActiveTabState] = useState<Tab>(() => {
+    const t = searchParams.get('tab')
+    return t && (TABS_VALIDAS as readonly string[]).includes(t) ? (t as Tab) : 'overview'
+  })
+  const setActiveTab = useCallback((t: Tab) => {
+    setActiveTabState(t)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (t === 'overview') next.delete('tab')
+      else next.set('tab', t)
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
   // Skills tab is the customer-facing surface for n8n-routed capabilities;
   // it replaces the legacy "Ferramentas" tab in the default view. The
   // legacy tab stays available behind Advanced Mode for power users that
@@ -2164,7 +2181,7 @@ export function AgentDetail({
     if (activeTab === 'tools' && !advancedMode) {
       setActiveTab(skillsVisible ? 'skills' : 'overview')
     }
-  }, [activeTab, advancedMode, skillsVisible])
+  }, [activeTab, advancedMode, skillsVisible, setActiveTab])
 
   return (
     <div className="flex flex-col h-full">

@@ -1,4 +1,4 @@
-import { HeroCinema } from '@/components/landing/stage/hero/HeroCinema'
+import { HeroPalco } from '@/components/landing/stage/hero/HeroPalco'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { cn } from '@/lib/utils'
 import { hero, LANDING_ROUTES, LANDING_ANCHORS } from '../landingCopy'
@@ -23,14 +23,10 @@ import { hero, LANDING_ROUTES, LANDING_ANCHORS } from '../landingCopy'
  * deslizamento nem framer-motion: escalonada por `--d` em H1 → parágrafo →
  * CTAs → palco, 90ms entre cada.
  *
- * O palco (25/09): `HeroCinema` — três JANELAS independentes (Conversas, a
- * ficha do contato e Funis), cada uma com moldura e recorte próprios, que se
- * reorganizam ao longo de uma linha do tempo. Não é uma câmera atravessando
- * uma aplicação gigante: é o produto real se reorganizando. A pergunta de
- * controle do PO ("estamos mostrando telas ou tornando visível uma operação
- * que a Oryon compreende e executa?") é respondida pela segunda opção — o que
- * muda é o DADO (mensagem, situação, etiqueta, etapa, responsável), e a
- * composição só decide quem domina o palco a cada momento.
+ * O palco (24/09, noite): `HeroPalco` — o Oryon REAL rodando em modo
+ * demonstração (`/demo.html`, backend em memória) na janela âncora, com
+ * satélites que são componentes reais do produto. Regra do PO: todas as telas
+ * e simulações usam o conteúdo real do software — nada desenhado à mão.
  */
 export function Hero() {
   return (
@@ -38,7 +34,9 @@ export function Hero() {
       id="inicio"
       data-section="hero"
       className={cn(
-        'relative scroll-mt-16 pt-10 sm:pt-12 pb-10 sm:pb-12',
+        // `overflow-x-clip`: a atmosfera do palco sangra para fora da coluna de
+        // propósito, mas nunca pode criar rolagem horizontal na página.
+        'relative overflow-x-clip scroll-mt-16 pt-10 sm:pt-12 pb-10 sm:pb-12',
         // relevo sutil só de token: do degrau 900 ao piso 950
         'bg-[linear-gradient(to_bottom,var(--color-surface-900),var(--color-surface-950)_480px)]',
       )}
@@ -73,10 +71,10 @@ export function Hero() {
            travado em 1120, sobrava pouco para a conversa justamente quando o
            painel abre. O texto continua em 1120 — linha de leitura não deve
            acompanhar o palco. */
-        className="reveal mx-auto mt-6 sm:mt-8 w-full max-w-[1120px] xl:max-w-[1240px] px-4 sm:px-6"
+        className="reveal mx-auto mt-8 sm:mt-10 w-full max-w-[1120px] xl:max-w-[1400px] px-4 sm:px-6"
         style={{ ['--d' as string]: '270ms' }}
       >
-        <HeroCinema />
+        <HeroPalco />
       </div>
     </section>
   )

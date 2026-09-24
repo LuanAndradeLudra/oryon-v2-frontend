@@ -194,6 +194,10 @@ export function ContactProfilePage() {
     setTasks(PROFILE_MOCKS_ENABLED ? mockTasksFor(contactId) : [])
   }, [contactId])
 
+  // Durante a saída animada (`PageTransition`) a página segue montada por
+  // ~120 ms sob a rota NOVA, sem o `id`: sem esta guarda, sair do perfil pelo
+  // menu redirecionava para /contacts em vez da tela clicada.
+  if (!location.pathname.startsWith('/contacts/')) return null
   if (!id) return <Navigate to="/contacts" replace />
   if (!isFeatureVisible('contactProfilePage', user?.email)) {
     return <Navigate to={`/contacts?contact=${id}`} replace />

@@ -183,6 +183,16 @@ export default defineConfig({
     // to browsers — devs without Sentry don't accidentally serve sourcemaps
     // from the public dist.
     sourcemap: sentryAuthToken ? 'hidden' : false,
+    rollupOptions: {
+      // Duas entradas: o app (index.html) e o documento de demonstração que o
+      // Hero da landing abre num iframe (demo.html — o Oryon real com backend
+      // em memória). Os pedaços comuns saem compartilhados, então a demo
+      // reaproveita o que a landing já baixou.
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        demo: path.resolve(__dirname, 'demo.html'),
+      },
+    },
   },
   server: {
     port: 3005,

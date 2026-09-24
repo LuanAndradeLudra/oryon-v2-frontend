@@ -48,6 +48,8 @@ interface Options<S extends string, C extends string> {
    * narrativa: o quadro que se explica sozinho, não necessariamente o último.
    */
   staticIndex: number
+  /** Enquanto falso, o relógio não anda (ex.: a demonstração ainda carregando). */
+  enabled?: boolean
 }
 
 export interface HeroTimeline<S extends string, C extends string> {
@@ -74,7 +76,7 @@ function canObserve(): boolean {
 }
 
 export function useHeroTimeline<S extends string, C extends string>(
-  { cues, tailMs, hostRef, staticIndex }: Options<S, C>,
+  { cues, tailMs, hostRef, staticIndex, enabled = true }: Options<S, C>,
 ): HeroTimeline<S, C> {
   const reduced = useReducedMotion()
   const [observable] = useState(canObserve)
@@ -119,7 +121,7 @@ export function useHeroTimeline<S extends string, C extends string>(
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [canAnimate])
 
-  const running = canAnimate && inView && tabVisible && !paused
+  const running = canAnimate && enabled && inView && tabVisible && !paused
 
   /** Nonce: sem ele, reiniciar já no primeiro cue seria um no-op silencioso. */
   const [runId, setRunId] = useState(0)

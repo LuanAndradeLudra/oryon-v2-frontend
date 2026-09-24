@@ -2,7 +2,7 @@
 // uma tela própria (antes vivia dentro de /contacts, atrás de um segmented
 // control) para caber os relatórios (D1/934) sem espremer o board.
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useNavigate, useSearchParams, Navigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, useLocation, Navigate } from 'react-router-dom'
 import { AlertTriangle, ChevronDown, Check, Search, X, Settings2, Plus } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { pipelinesApi } from '@/services/api'
@@ -42,6 +42,15 @@ export function PipelinePage() {
   // early returns e não pode depender do objeto `pipeline`, que só existe
   // depois de carregar a lista.
   const pipelineIdAtual = id ?? ''
+  /**
+   * Durante a saída animada (`PageTransition`, `mode="wait"`) esta página
+   * continua montada por ~120 ms já sob a rota NOVA — e `useParams` deixa de
+   * trazer o `id`. Sem esta guarda, os redirecionamentos de segurança abaixo
+   * disparavam nesse intervalo e sair do funil pelo menu levava para /home em
+   * vez da tela clicada.
+   */
+  const { pathname } = useLocation()
+  const saindo = !pathname.startsWith('/pipelines/')
   const tab: Tab = searchParams.get('tab') === 'reports' ? 'reports' : 'board'
 
   /**
@@ -235,6 +244,7 @@ export function PipelinePage() {
     noTopo, tab, pipelineValido?.id, etapaInicial?.id, processoAtual, substantivo,
   ])
 
+  if (saindo) return null
   if (!id) return <Navigate to="/home" replace />
 
   if (loading) {
