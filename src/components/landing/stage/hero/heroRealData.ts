@@ -1,7 +1,8 @@
 import type {
-  Contact, Conversation, Deal, Message, Pipeline, PipelineStage, Tag, TenantStage, User, WhatsAppNumber,
+  Campaign, Contact, Conversation, Deal, Message, Pipeline, PipelineStage, Product, Tag, TenantStage, User, WhatsAppNumber,
 } from '@/types'
 import type { TimelineEntry } from '@/components/conversations/ContactPanel/ConversationActivitySection'
+import type { AppNotification } from '@/hooks/useNotifications'
 import { dayAt, daysAgo, hoursAgo, justNow, minutesAgo } from './heroClock'
 import type { HeroState } from './heroStory'
 
@@ -82,7 +83,7 @@ export const HERO_TAGS: Tag[] = [
 export const HERO_USER: User = {
   id: 'demo-user-1',
   tenantId: TENANT,
-  email: 'ana@exemplo.com',
+  email: 'ana@verticesoftware.com.br',
   firstName: 'Ana',
   lastName: 'Prado',
   role: 'agent',
@@ -150,7 +151,7 @@ export function heroConversation(at: HeroState): Conversation {
 
 /** As demais linhas do inbox — densidade real, com tempos plausíveis. */
 const OUTRAS = [
-  { nome: 'Ana Prado',       previa: 'Perfeito, obrigada!',              min: 12,  naoLidas: 0, ia: false },
+  { nome: 'Rafaela Couto',   previa: 'Perfeito, obrigada!',              min: 12,  naoLidas: 0, ia: false },
   { nome: 'Bruno Antunes',   previa: 'Consigo receber ainda hoje?',      min: 27,  naoLidas: 2, ia: true },
   { nome: 'Clínica Norte',   previa: 'Vocês emitem nota no mesmo dia?',  min: 43,  naoLidas: 0, ia: false },
   { nome: 'Diego Ramos',     previa: 'Fechado, pode enviar o contrato.', min: 96,  naoLidas: 0, ia: false },
@@ -377,6 +378,96 @@ export function heroTimeline(at: HeroState): TimelineEntry[] {
     }))
   }
   if (out.length === 0) out.push(pessoa('t0', 'Conversa iniciada', 'conversation_created', 1440))
+  return out
+}
+
+// ─── Disparos ──────────────────────────────────────────────────────────────────
+
+/**
+ * As campanhas do tenant. A `Renovação Pro` é a da história: é ela que chega no
+ * WhatsApp da Marina e abre a conversa. Os números sobem enquanto o roteiro
+ * está em `inicio` (a campanha está saindo) e assentam depois.
+ */
+const BASE_RENOVACAO = 1_240
+export function heroCampaigns(at: HeroState): Campaign[] {
+  const saindo = at === 'inicio'
+  const stats = saindo
+    ? { total: BASE_RENOVACAO, sent: 1_180, delivered: 1_096, read: 612, failed: 9, replied: 74 }
+    : { total: BASE_RENOVACAO, sent: 1_231, delivered: 1_204, read: 871, failed: 9, replied: 138 }
+  const base = { tenantId: TENANT, variableMappings: [], createdByUserId: HERO_USER.id, whatsappNumberId: HERO_LINE.id }
+  return [
+    {
+      ...base, id: 'cp-renovacao', name: 'Renovação Pro · setembro', templateId: 'tp-renovacao',
+      templateName: 'renovacao_plano_pro', segment: { type: 'tag', tagIds: ['tg-vip'] },
+      status: saindo ? 'sending' : 'sent', sentAt: hoursAgo(1), createdAt: daysAgo(1), stats,
+    },
+    {
+      ...base, id: 'cp-webinar', name: 'Convite webinar · gestão de equipes', templateId: 'tp-webinar',
+      templateName: 'convite_webinar', segment: { type: 'all' }, status: 'scheduled',
+      scheduledAt: hoursAgo(-20), createdAt: daysAgo(2),
+      stats: { total: 3_420, sent: 0, delivered: 0, read: 0, failed: 0 },
+    },
+    {
+      ...base, id: 'cp-onboarding', name: 'Boas-vindas · novos clientes', templateId: 'tp-boasvindas',
+      templateName: 'boas_vindas_cliente', segment: { type: 'stage', stages: ['cliente'] }, status: 'sent',
+      sentAt: daysAgo(3), createdAt: daysAgo(4),
+      stats: { total: 186, sent: 186, delivered: 183, read: 151, failed: 3, replied: 42 },
+    },
+    {
+      ...base, id: 'cp-reativacao', name: 'Reativação · inativos 90 dias', templateId: 'tp-reativacao',
+      templateName: 'reativacao_inativos', segment: { type: 'tag', tagIds: ['tg-atacado'] }, status: 'sent',
+      sentAt: daysAgo(8), createdAt: daysAgo(9),
+      stats: { total: 912, sent: 905, delivered: 871, read: 498, failed: 7, replied: 61 },
+    },
+  ] as Campaign[]
+}
+
+// ─── Catálogo ─────────────────────────────────────────────────────────────────
+
+/** O catálogo do vendedor. O Plano Pro anual a R$ 375/licença é o item que o
+ *  Agente Vendas consulta para responder a Marina. */
+export const HERO_PRODUCTS: Product[] = [
+  {
+    id: 'pr-pro', name: 'Plano Pro', sku: 'PRO', category: 'Assinaturas', active: true, order: 1,
+    description: 'Licença por usuário, com suporte prioritário.',
+    priceVariations: [
+      { id: 'pv-pro-anual', label: 'Anual · por licença', amountCents: 37_500, currency: 'BRL', order: 1 },
+      { id: 'pv-pro-mensal', label: 'Mensal · por licença', amountCents: 3_900, currency: 'BRL', order: 2 },
+    ],
+  },
+  {
+    id: 'pr-essencial', name: 'Plano Essencial', sku: 'ESS', category: 'Assinaturas', active: true, order: 2,
+    description: 'Licença por usuário, suporte em horário comercial.',
+    priceVariations: [{ id: 'pv-ess-mensal', label: 'Mensal · por licença', amountCents: 1_900, currency: 'BRL', order: 1 }],
+  },
+  {
+    id: 'pr-implantacao', name: 'Implantação assistida', sku: 'IMP', category: 'Serviços', active: true, order: 3,
+    description: 'Configuração e treinamento da equipe, por loja.',
+    priceVariations: [{ id: 'pv-imp', label: 'Por loja', amountCents: 56_250, currency: 'BRL', order: 1 }],
+  },
+]
+
+// ─── Notificações ─────────────────────────────────────────────────────────────
+
+/** O sino da TopBar acompanha a história: o que já aconteceu vira aviso. */
+export function heroNotifications(at: HeroState): AppNotification[] {
+  const out: AppNotification[] = []
+  if (reached(at, 'assumido')) out.push({
+    id: 'nt-handoff', type: 'agent_handoff', title: `${HERO.person} pediu atendimento humano`,
+    description: `${HERO.agent} chamou você para a conversa`, link: '/conversations', isRead: false,
+    createdAt: minutesAgo(1), priority: 'urgent',
+    metadata: { contactName: HERO.person, conversationId: 'demo-conv-0' },
+  })
+  out.push({
+    id: 'nt-campanha', type: 'campaign_complete', title: 'Renovação Pro · setembro concluída',
+    description: '1.231 enviadas · 1.204 entregues', link: '/campaigns', isRead: true, createdAt: minutesAgo(40),
+    metadata: { campaignName: 'Renovação Pro · setembro', sent: 1_231, failed: 9 },
+  })
+  out.push({
+    id: 'nt-atribuida', type: 'conversation_assigned', title: 'Conversa atribuída a você',
+    description: 'Clínica Norte · Implantação · 4 lojas', link: '/conversations', isRead: true, createdAt: hoursAgo(3),
+    metadata: { contactName: 'Clínica Norte' },
+  })
   return out
 }
 

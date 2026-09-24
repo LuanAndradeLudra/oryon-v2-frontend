@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Bot, Plus,
   ExternalLink, Copy, ToggleRight, Pause, FileText,
@@ -178,6 +179,11 @@ export function AgentsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | AgentConfig['status']>('all')
   const [testedAgentIds, setTestedAgentIds] = useState<Set<string>>(new Set())
   const { toast } = useToast()
+  // Agente aberto na URL (`?agent=<id>`): voltar, recarregar ou chegar por um
+  // link reabre o mesmo agente, como `?deal=` em Funis.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const agentParam = searchParams.get('agent')
+  const pedidoRef = useRef<string | null>(null)
 
   useRegisterTopBarActions(
     <Button size="sm" onClick={() => setShowWizard(true)} leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />}>
@@ -213,7 +219,13 @@ export function AgentsPage() {
 
   useEffect(() => { void load() }, [load])
 
-  const selectAgent = async (id: string) => {
+  const selectAgent = useCallback(async (id: string) => {
+    pedidoRef.current = id
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('agent', id)
+      return next
+    }, { replace: true })
     setLoadingDetail(true)
     try {
       const agent = await getAgent(id)
@@ -221,7 +233,13 @@ export function AgentsPage() {
     } finally {
       setLoadingDetail(false)
     }
-  }
+  }, [setSearchParams])
+
+  // Abre o agente da URL assim que a lista chega (só se ele existir nela).
+  useEffect(() => {
+    if (!agentParam || selectedAgent?.id === agentParam || pedidoRef.current === agentParam) return
+    if (agents.some((a) => a.id === agentParam)) void selectAgent(agentParam)
+  }, [agentParam, agents, selectedAgent?.id, selectAgent])
 
   const handleWizardComplete = (agent: AgentConfigWithTools) => {
     setAgents(prev => [agent, ...prev])
@@ -321,7 +339,10 @@ export function AgentsPage() {
             <AgentDetail
               key={selectedAgent.id}
               agent={selectedAgent}
-              tested={testedAgentIds.has(selectedAgent.id)}
+              // Testado = já tem teste registrado no servidor OU foi testado
+              // nesta sessão. Só a sessão fazia o aviso "ainda não testado"
+              // reaparecer a cada visita, mesmo em agente testado várias vezes.
+              tested={testedAgentIds.has(selectedAgent.id) || (selectedAgent.test_count ?? 0) > 0}
               onTested={() => setTestedAgentIds(prev => new Set([...prev, selectedAgent.id]))}
               onDeleted={() => {
                 setSelectedAgent(null)

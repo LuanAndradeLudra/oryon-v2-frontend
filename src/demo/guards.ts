@@ -50,6 +50,11 @@ export function rotasNaoMapeadas(): string[] {
   return [...naoMapeadas]
 }
 
+/** Zera o registro — usado pelo teste entre uma tela e outra. */
+export function limparRotasNaoMapeadas() {
+  naoMapeadas.clear()
+}
+
 function caminho(url: string): { path: string; params: URLSearchParams } {
   const u = new URL(url, 'http://demo.local')
   return { path: u.pathname.replace(/^\/api/, ''), params: u.searchParams }
@@ -78,9 +83,18 @@ function atender(method: string, url: string, body?: unknown): RespostaDemo {
  * as duas passam pelo adaptador antes de qualquer XHR.
  */
 export function instalarGuardaDeRede() {
-  interface ConfigLike { method?: string; url?: string; baseURL?: string; data?: unknown; headers?: unknown }
+  interface ConfigLike { method?: string; url?: string; baseURL?: string; data?: unknown; headers?: unknown; params?: Record<string, unknown> }
   const adapter = async (config: ConfigLike) => {
-    const url = `${config.baseURL ?? ''}${config.url ?? ''}`
+    let url = `${config.baseURL ?? ''}${config.url ?? ''}`
+    // `params` do axios não estão na URL: sem juntá-los, filtros como
+    // `/deals?contactId=` chegavam ao backend de demonstração sem o filtro.
+    if (config.params) {
+      const u = new URL(url, 'http://demo.local')
+      for (const [k, v] of Object.entries(config.params)) {
+        if (v !== undefined && v !== null) u.searchParams.set(k, String(v))
+      }
+      url = /^https?:\/\//.test(url) ? u.href : u.pathname + u.search
+    }
     const body = typeof config.data === 'string' ? JSON.parse(config.data || 'null') : config.data
     const r = atender(config.method ?? 'get', url, body)
     return { data: r.data ?? null, status: r.status ?? 200, statusText: 'OK', headers: {}, config }
