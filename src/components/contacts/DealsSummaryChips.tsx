@@ -9,9 +9,10 @@ import { openPipelineChips } from '@/lib/contactPipelines'
 import type { Contact, Pipeline } from '@/types'
 
 /** Chips "● Funil · Etapa" por registro ABERTO (F11-884, prancheta 6; B3 ·
- *  SCRUM-929) — densidade `chip` do `DealSummary`, um por funil (I1). Reusado
- *  igual entre `ContactsTable` (desktop) e `ContactCard` (mobile,
- *  `ContactsMobileList`). Lê só o `dealsSummary` já carregado em lote (`GET
+ *  SCRUM-929) — densidade `chip` do `DealSummary`, um por funil (I1). Usado na
+ *  `ContactsTable` (modo Tabela). A lista de pessoas (`ContactListRow`, inclusive a
+ *  variante de toque no mobile) NÃO mostra chips de negócio na linha — ficam no
+ *  painel/ficha. Lê só o `dealsSummary` já carregado em lote (`GET
  *  /deals/summary`, 1 chamada por página) — nenhuma requisição extra para
  *  MOSTRAR o chip; por isso o `chip` do `DealSummary` recebe só funil+etapa,
  *  não o `Deal` inteiro que `row`/`card` (ficha, painel, aba) têm à mão.
