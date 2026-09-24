@@ -1110,7 +1110,7 @@ function UserMenuTrigger({ name, imageUrl, active }: { name: string; imageUrl?: 
       {imageUrl ? (
         <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
       ) : (
-        <span className="bg-avatar-surface text-avatar-initials w-full h-full flex items-center justify-center text-2xs font-semibold">
+        <span className="avatar-operador w-full h-full flex items-center justify-center text-2xs font-semibold">
           {getInitials(name)}
         </span>
       )}

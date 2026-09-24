@@ -641,7 +641,7 @@ function OwnerAvatar({ owner }: { owner: User | null }) {
     return <span className="w-[18px] h-[18px] rounded-[30%] border border-dashed border-[var(--bd2)] flex-shrink-0" aria-hidden />
   }
   return (
-    <span className="w-[18px] h-[18px] rounded-[30%] bg-avatar-surface text-avatar-initials flex items-center justify-center text-[8px] font-bold flex-shrink-0">
+    <span className="w-[18px] h-[18px] rounded-[30%] avatar-operador flex items-center justify-center text-[8px] font-bold flex-shrink-0">
       {getInitials(`${owner.firstName} ${owner.lastName ?? ''}`.trim())}
     </span>
   )

@@ -179,7 +179,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <Avatar name={agent.name} size="sm" online={agent.isOnline} />
+                      <Avatar name={agent.name} size="sm" online={agent.isOnline} kind="operator" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-surface-100">{agent.name}</p>
