@@ -44,3 +44,17 @@ a fórmula por `svh` só funciona com headline curta: a da Attio tem 4 palavras,
 Correção despachada: `min(8.2vw, 16px + 5.333svh)` e H1 encurtado para "Seu WhatsApp atende sozinho." com o resto no lead.
 **Foco AA (`8699e8b`)**: anel global e dos botões passam de `brand-500` para `--color-btn-primary-bg` — 5,25:1 no claro, 10,74:1 no escuro
 (medido ao vivo), acima dos 3:1 da WCAG 1.4.11.
+
+### Login com a moldura da Attio (Bússola `b2c32bd`) + 2ª auditoria (`4a5030f`)
+**Medido ao vivo em `/login` (escuro):** moldura 679×279 — proporção 1120/460 idêntica à deles —, canto superior 13 px,
+**borda inferior 0**, sombra em `--frame-shadow`; o poster é deixado mais alto que a janela e **cortado por baixo**
+(`overflow-hidden`), sem escalar: é exatamente o efeito da Attio. Semântica conferida: `h1` "Oryon" (sr-only) visível,
+`h2` "Entrar" visível, e o `h2` "Marina Exemplo" do quadro de demonstração dentro de `aria-hidden` — o smoke continua válido.
+**Defeito encontrado:** o `StageFrame` ainda desenha o chrome antigo por dentro (raio 8 px nos 4 cantos, borda 0,87 px,
+sombra rasa em `overlay-frame`) → **moldura dentro de moldura**.
+**audit-D2 (7 perguntas, com evidência):** a arquitetura do palco é o oposto da Attio em 3 pilares — motor de passos
+(`useStageTimeline`) + `StageCursor` ligados por padrão, `transform: scale` sobre design fixo 1120×640, e **zero uso**
+de `.reveal`/`.ambient-*`/`--ease-emph` apesar de mesclados; durações em 750/220/500 ms contra a faixa 50–150 ms.
+`framer-motion` está isolado em 2 arquivos, o que torna a remoção barata. P14 limpo.
+**Ordem de ataque despachada:** 1) moldura (defeito visível agora) · 2) tirar timeline+cursor+framer na mesma reforma
+· 3) base sem `scale` (pixels literais ×2) · 4) acabamento de durações.
