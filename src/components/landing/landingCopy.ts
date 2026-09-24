@@ -37,10 +37,12 @@ export const nav = {
 } as const
 
 export const hero = {
-  /** H1 fechado com o PO: 10 palavras, sem enfeite. */
-  titleLine1: 'Seu WhatsApp atende sozinho.',
-  titleLine2: 'O humano entra na hora certa.',
-  lead: 'Agentes IA respondem cada conversa e passam para um Atendente, com todo o contexto, quando o cliente precisa de uma pessoa.',
+  // H1 de 4 palavras (medição da Attio, 24/09: o deles também tem 4 — H1
+  // maior deixa a tipografia atada só à altura da viewport ilegível em
+  // celular, onde a viewport é alta E estreita). "O humano entra na hora
+  // certa" migrou pra 1ª frase do lead.
+  title: 'Seu WhatsApp atende sozinho.',
+  lead: 'O humano entra na hora certa: Agentes IA respondem cada conversa e passam para um Atendente, com todo o contexto, quando o cliente precisa de uma pessoa.',
   primaryCta: 'Entrar',
   secondaryCta: 'Ver o produto',
   stageLabel: 'Demonstração animada do produto',

@@ -19,12 +19,17 @@ function renderPage() {
 const ROTAS_VALIDAS = new Set(['/login'])
 
 describe('WelcomePage', () => {
-  it('renderiza sem crash com o H1 fechado com o PO', () => {
+  it('renderiza sem crash com o H1 de 4 palavras (medição Attio 24/09: svh sozinho só funciona com H1 curto)', () => {
     renderPage()
     const h1 = screen.getByRole('heading', { level: 1 })
-    expect(h1).toHaveTextContent('Seu WhatsApp atende sozinho. O humano entra na hora certa.')
-    // ≤ 10 palavras (checklist anti-genérico)
+    expect(h1).toHaveTextContent('Seu WhatsApp atende sozinho.')
+    // ≤ 10 palavras (checklist anti-genérico) — bem abaixo, de propósito
     expect(h1.textContent!.trim().split(/\s+/).length).toBeLessThanOrEqual(10)
+  })
+
+  it('o lead carrega a 2ª metade da mensagem que saiu do H1', () => {
+    renderPage()
+    expect(screen.getByText(/O humano entra na hora certa/)).toBeInTheDocument()
   })
 
   it('tem as seções na ordem: nav · hero · como funciona · produto · confiança · cta · footer', () => {
