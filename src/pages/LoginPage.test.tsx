@@ -109,7 +109,8 @@ describe('LoginPage', () => {
     try {
       renderLogin()
       const painel = document.querySelector('aside') as HTMLElement
-      expect(within(painel).getByText(/o humano entra na hora certa/i)).toBeInTheDocument()
+      expect(within(painel).getByText('Conversas que')).toBeInTheDocument()
+      expect(within(painel).getByText('convertem.')).toBeInTheDocument()
       // A frase-âncora não pode casar com /entrar/ (o smoke usa getByRole('heading', /entrar/)).
       expect(screen.getAllByRole('heading', { name: /entrar/i })).toHaveLength(1)
       // O palco é estático e decorativo: fica escondido da árvore de acessibilidade.
