@@ -65,6 +65,9 @@ interface DataTableProps<Row> {
   /** Checkbox e elementos marcados com `data-row-action` só aparecem no hover/
    *  foco da linha (Linear/Attio). Em ponteiro grosso ficam sempre visíveis. */
   revealOnHover?: boolean
+  /** Rolagem do contêiner (o DataTable é o único scroll container, V+H) —
+   *  scroll infinito escuta aqui, não num invólucro externo. */
+  onScroll?: (e: React.UIEvent<HTMLDivElement>) => void
 }
 
 export function DataTable<Row>({
@@ -74,7 +77,7 @@ export function DataTable<Row>({
   sort, onSortChange,
   onRowClick, onRowContextMenu,
   selectedKeys, onToggleSelect, onToggleSelectAll,
-  activeKey, className, dense, rowHeight = 'sm', revealOnHover = false,
+  activeKey, className, dense, rowHeight = 'sm', revealOnHover = false, onScroll,
 }: DataTableProps<Row>) {
   const selectable = !!(selectedKeys && onToggleSelect)
   const allSelected = selectable && rows.length > 0 && rows.every((r) => selectedKeys.has(rowKey(r)))
@@ -96,6 +99,7 @@ export function DataTable<Row>({
 
   return (
     <div
+      onScroll={onScroll}
       className={cn(
         'overflow-x-auto overflow-y-auto',
         // revealOnHover: esconde até hover/foco da linha; checkbox marcado e
