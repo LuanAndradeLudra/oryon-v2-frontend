@@ -7,6 +7,7 @@ import { HandoffStripe } from './AiHandoffBanner'
 import { useMessages } from '@/hooks/useMessages'
 import { getSocket } from '@/services/socket'
 import type { Conversation, Message, Tag, User, SocketAiPauseUpdated, SocketMessageNew, DealOutcomeInput, SocketAnomalyReviewed } from '@/types'
+import { windowMsLeft } from '@/lib/conversationEntry'
 
 interface ChatWindowProps {
   conversation: Conversation | null
@@ -120,10 +121,8 @@ export function ChatWindow({
 
   // Janela de 24h do WhatsApp: mesma conta de antes, agora também dizendo
   // quantas horas faltam (R2-1D-COMP: "Janela de 24h aberta · fecha em N h").
-  const windowMsLeft = conversation
-    ? 86_400_000 - (Date.now() - new Date(conversation.lastMessageAt).getTime())
-    : 0
-  const windowOpen = windowMsLeft > 0
+  const windowLeftMs = conversation ? windowMsLeft(conversation.lastMessageAt) : 0
+  const windowOpen = windowLeftMs > 0
 
   if (!conversation) {
     // Estado vazio como CENTRO DE COMANDO — o espaço morto vira onboarding
@@ -206,7 +205,7 @@ export function ChatWindow({
         contactId={conversation.contact.id}
         sending={sending}
         windowOpen={windowOpen}
-        windowHoursLeft={Math.max(1, Math.ceil(windowMsLeft / 3_600_000))}
+        windowHoursLeft={Math.max(1, Math.ceil(windowLeftMs / 3_600_000))}
         blockedReason={sendBlockedReason}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
