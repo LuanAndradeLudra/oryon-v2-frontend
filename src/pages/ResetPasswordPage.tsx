@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
+import { LinkButton } from '@/components/ui/LinkButton'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { AuthHeading } from '@/components/auth/AuthHeading'
 import { PasswordInput } from '@/components/auth/PasswordInput'
@@ -49,12 +50,9 @@ export function ResetPasswordPage() {
             title="Senha redefinida"
             description="Sua senha foi alterada com sucesso. Agora você pode fazer login."
           />
-          <Link
-            to="/login"
-            className="inline-flex items-center justify-center w-full h-11 rounded-sm bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] text-sm font-semibold hover:brightness-90 transition"
-          >
+          <LinkButton to="/login" variant="primary" size="lg" className="w-full">
             Ir para o login
-          </Link>
+          </LinkButton>
         </div>
       ) : (
         <>
