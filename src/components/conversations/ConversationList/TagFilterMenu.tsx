@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, Check, X, Tag } from 'lucide-react'
+import { ChevronDown, Check, X, Tag as TagIcon } from 'lucide-react'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { cn } from '@/lib/utils'
 import type { ConversationFilters, Tag } from '@/types'
@@ -56,7 +56,7 @@ export function TagFilterMenu({ filters, onFiltersChange, allTags }: TagFilterMe
               só o ícone (aria-label/title continuam), e com seleção mostra o
               nome ou a contagem. */}
           {selectedTags.length === 0
-            ? <Tag className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} aria-hidden />
+            ? <TagIcon className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} aria-hidden />
             : selectedTags.length === 1 ? selectedTags[0].name : `Etiqueta · ${selectedTags.length}`}
           <ChevronDown className="w-3 h-3 flex-shrink-0" />
         </button>
