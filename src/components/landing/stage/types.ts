@@ -24,9 +24,10 @@ export interface HeroStageProps {
   scene?: StageScene
   /** Abas exibidas, na ordem. Default: as três. */
   scenes?: StageScene[]
-  /** Toca a timeline quando visível. Default true; false = comporta-se como poster. */
+  /** Liga o movimento quando o quadro está visível (viewport + aba + reduced-motion,
+   *  decidido em `useStagePlayback`). Default true; false = quadro estático. */
   autoplay?: boolean
-  /** Reinicia ao terminar. Default true. */
+  /** Reinicia a sequência ao terminar. Default true. */
   loop?: boolean
   onSceneChange?: (scene: StageScene) => void
   className?: string
@@ -41,7 +42,9 @@ export interface StagePosterProps {
   className?: string
 }
 
-/** Medidas de desenho do quadro; o StageFrame escala por ResizeObserver. */
+/** Medidas de referência do quadro. O `StageFrame` NÃO escala por ResizeObserver
+ *  nem por `transform`: a largura é fluida e cada elemento traz dois conjuntos de
+ *  medidas literais (mobile e `lg:`), para o texto ficar nítido em qualquer tela. */
 export const STAGE_DESIGN = {
   width: 1120,
   height: 640,

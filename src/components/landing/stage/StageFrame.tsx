@@ -41,6 +41,18 @@ export function StageFrame({ layout, title, ambient, description, className, con
     <StageAmbientProvider ambient={ambient}>
       <div
         aria-hidden
+        /**
+         * `inert`, não só `aria-hidden` + `pointer-events-none`.
+         *
+         * Medido em 24/09: o palco tinha **43 elementos focáveis** por dentro
+         * (botões da barra de filtros, o campo de mensagem, os cards do
+         * quadro). Quem navega por teclado caía em 43 paradas mortas no meio
+         * da landing — e `aria-hidden` sobre conteúdo focável é, ele mesmo,
+         * uma violação de ARIA. `inert` tira tudo da ordem de tabulação e da
+         * árvore de acessibilidade de uma vez; a descrição em `sr-only` logo
+         * abaixo continua sendo o que o leitor de tela recebe.
+         */
+        inert
         data-stage-layout={layout}
         data-stage-ambient={ambient ? 'true' : 'false'}
         className={cn(
@@ -57,7 +69,11 @@ export function StageFrame({ layout, title, ambient, description, className, con
           <span className="w-1.5 h-1.5 rounded-full bg-surface-600" />
           <span className="w-1.5 h-1.5 rounded-full bg-surface-600" />
           <span className="hidden lg:inline text-[10.5px] font-semibold text-surface-400 ml-1.5">Oryon · {title}</span>
-          <span className="ml-auto text-[6px] lg:text-[9.5px] font-semibold text-surface-500 whitespace-nowrap">{STAGE_DEMO_LABEL}</span>
+          {/* `surface-400`, não `500`: medido em 24/09 no tema escuro, o selo
+              ficava em 4,45:1 — 0,05 abaixo de AA. E 9px no celular, não 6px:
+              medido em 390px, 6px é ilegível. É a divulgação de P14 ("nada
+              falso na tela"); tem de ser legível, não decorativa. */}
+          <span className="ml-auto text-[9px] lg:text-[9.5px] font-semibold text-surface-400 whitespace-nowrap">{STAGE_DEMO_LABEL}</span>
         </div>
         <div className={cn('relative flex overflow-hidden', contentHeightClassName)}>
           {children}

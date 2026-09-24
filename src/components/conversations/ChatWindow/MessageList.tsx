@@ -75,9 +75,18 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
     if (el) el.scrollTop = el.scrollHeight
   }, [])
 
-  // Smooth scroll to bottom — used when new messages arrive in real-time
+  // Smooth scroll to bottom — used when new messages arrive in real-time.
+  //
+  // Rola o PRÓPRIO contêiner, não `bottomRef.scrollIntoView()`. O resultado
+  // visual é o mesmo, mas `scrollIntoView` rola todos os ancestrais roláveis
+  // junto — e isso tem efeito colateral fora do `AppShell` (onde a página não
+  // rola). Medido em 24/09 no Hero da landing: a chegada da resposta da IA
+  // arrastava a página inteira 470px para baixo, tirando o palco da viewport.
+  // Dentro do app a troca é inócua; fora dele, é a diferença entre funcionar e
+  // dar um salto de scroll.
   const smoothScrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = containerRef.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }, [])
 
   // On initial load or conversation switch: instantly position at bottom (no scroll animation)
@@ -125,6 +134,30 @@ export function MessageList({ messages, loading, hasMore, isTyping, onLoadMore, 
     }
     prevLengthRef.current = messages.length
   }, [messages, smoothScrollToBottom])
+
+  // Re-ancora no fim quando o CONTÊINER muda de tamanho.
+  //
+  // Ao estreitar (abrir o painel do contato, arrastar o divisor, girar o
+  // celular) as bolhas rebrem, `scrollHeight` cresce e o `scrollTop` fica onde
+  // estava: quem lia a última mensagem passa a olhar o meio da conversa. Nada
+  // reposicionava, porque os dois efeitos acima só agem quando a LISTA muda.
+  //
+  // Medido em 24/09 no palco do Hero: no momento em que o painel abre, a
+  // resposta do agente — a mensagem que a legenda está anunciando — saía por
+  // baixo do contêiner. Só re-ancora quem já estava perto do fim; quem subiu
+  // para ler o histórico não é arrastado de volta.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    let atBottom = true
+    const medir = () => {
+      atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    }
+    el.addEventListener('scroll', medir, { passive: true })
+    const ro = new ResizeObserver(() => { if (atBottom) el.scrollTop = el.scrollHeight })
+    ro.observe(el)
+    return () => { el.removeEventListener('scroll', medir); ro.disconnect() }
+  }, [])
 
   // Lazy load older messages when scrolling to top
   const handleScroll = useCallback(() => {

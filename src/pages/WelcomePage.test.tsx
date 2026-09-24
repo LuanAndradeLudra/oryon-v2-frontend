@@ -1,11 +1,51 @@
 // Landing pública (SCRUM-1097, fase "porta de entrada"): renderiza sem crash, H1
 // presente, nenhum link para rota inexistente, âncoras que resolvem, e a regra
 // P14 na copy (zero número, sem vocabulário banido).
-import { describe, it, expect } from 'vitest'
+import type { ReactNode } from 'react'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { WelcomePage } from './WelcomePage'
 import * as copy from '@/components/landing/landingCopy'
+
+/**
+ * O palco do Hero monta os componentes REAIS de Conversas e Funis, e alguns
+ * deles leem contexto do app: `ConversationItem` chama `useAuth` e
+ * `useContextMenu`, `ContactPanel` chama `useCRMConfig`, `useTenantVocab` e
+ * `useDealPanel` — os três primeiros lançam sem provedor.
+ *
+ * Em produção isso funciona porque os provedores do app envolvem TODAS as
+ * rotas, inclusive as públicas (`App.tsx`). Aqui eles entram como stubs
+ * DESLOGADOS, que é o estado do visitante. Vale como registro da dependência:
+ * se a landing um dia sair de dentro dos provedores (pré-render, build
+ * estático), é este bloco que precisa virar provedor de verdade.
+ */
+vi.mock('@/contexts/AuthContext', () => ({
+  AuthProvider: ({ children }: { children: ReactNode }) => children,
+  useAuth: () => ({ user: null, isAuthenticated: false, featureFlags: [], loading: false }),
+}))
+vi.mock('@/contexts/TenantVocabContext', () => ({
+  TenantVocabProvider: ({ children }: { children: ReactNode }) => children,
+  useTenantVocab: () => ({ vocab: {}, t: (x: string) => x }),
+}))
+vi.mock('@/contexts/CRMConfigContext', () => ({
+  CRMConfigProvider: ({ children }: { children: ReactNode }) => children,
+  useCRMConfig: () => ({ stages: [], pipelines: [], customFields: [], products: [], practitioners: [], loadingStages: false, loadingPipelines: false }),
+}))
+vi.mock('@/contexts/DealPanelContext', () => ({
+  DealPanelProvider: ({ children }: { children: ReactNode }) => children,
+  useDealPanel: () => ({ openDeal: () => {}, closeDeal: () => {} }),
+}))
+vi.mock('@/hooks/useContextMenu', () => ({
+  useContextMenu: () => ({ onContextMenu: () => {} }),
+}))
+
+vi.stubGlobal('matchMedia', (query: string) => ({
+  matches: /min-width/.test(query), media: query,
+  addEventListener: () => {}, removeEventListener: () => {},
+  addListener: () => {}, removeListener: () => {},
+  onchange: null, dispatchEvent: () => false,
+}))
 
 function renderPage() {
   return render(

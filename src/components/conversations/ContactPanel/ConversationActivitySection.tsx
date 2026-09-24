@@ -60,7 +60,7 @@ function formatTime(iso: string): string {
 /** Discriminated union normalising the two backend shapes (agent and user)
  *  to a common timeline entry. Anything the row component reads must live
  *  on every branch; the `kind` discriminator picks the icon and accent. */
-type TimelineEntry =
+export type TimelineEntry =
   | {
       kind: 'agent'
       id: string
@@ -106,11 +106,21 @@ export interface ActivityInvalidateDetail {
  *  pick up anything new, but the operator never sees a 2-second blank. */
 const timelineCache = new Map<string, TimelineEntry[]>()
 
-export function ConversationActivitySection({ conversationId }: { conversationId: string }) {
+export function ConversationActivitySection({ conversationId, entries: injected }: {
+  conversationId: string
+  /**
+   * Eventos vindos de FORA, em vez de buscados. Quando presente, a seção não
+   * chama a API nem escuta socket/invalidações — renderiza exatamente o que
+   * recebeu. Existe para superfícies sem sessão que reaproveitam este painel
+   * de verdade (o Hero da landing): antes, a busca voltava 401 e o próprio
+   * componente estampava "Request failed with status code 401" na tela.
+   */
+  entries?: TimelineEntry[]
+}) {
   const [entries, setEntries] = useState<TimelineEntry[] | null>(
-    () => timelineCache.get(conversationId) ?? null,
+    () => injected ?? timelineCache.get(conversationId) ?? null,
   )
-  const [loading, setLoading] = useState(() => !timelineCache.has(conversationId))
+  const [loading, setLoading] = useState(() => (injected ? false : !timelineCache.has(conversationId)))
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -167,6 +177,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
   //   3. Either way, currentIdRef gates late responses so swapping fast
   //      between A → B → C never lets B clobber C.
   useEffect(() => {
+    if (injected) { setEntries(injected); setLoading(false); return }
     const cached = timelineCache.get(conversationId)
     if (cached) {
       setEntries(cached)
@@ -179,7 +190,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
     void loadActivity(conversationId).finally(() => {
       if (currentIdRef.current === conversationId) setLoading(false)
     })
-  }, [conversationId, loadActivity])
+  }, [conversationId, loadActivity, injected])
 
   // Two complementary realtime channels — both refetch with a small debounce
   // so a burst of mutations doesn't fire several /activity calls in a row.
@@ -193,6 +204,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
   //     conversation:ai-pause-updated) and pick up writes from other
   //     operators / agents in real time across tabs and devices.
   useEffect(() => {
+    if (injected) return
     let pending: ReturnType<typeof setTimeout> | null = null
     const refetchSoon = (eventConvId?: string) => {
       if (eventConvId && eventConvId !== currentIdRef.current) return
@@ -235,7 +247,7 @@ export function ConversationActivitySection({ conversationId }: { conversationId
       socket.off('message:new', handleMessageNew)
       socket.off('deal:changed', handleDealChanged)
     }
-  }, [loadActivity])
+  }, [loadActivity, injected])
 
   // Close filter dropdown on outside click
   useEffect(() => {
@@ -597,6 +609,17 @@ export function visualForActionKey(key: string, metadata: Record<string, unknown
     case 'message_sent':
       return { label: 'Enviou uma mensagem', Icon: Send,
                chip: 'var(--color-accent-cyan)' }
+    // As duas ferramentas abaixo caíam no `default` — ponto CINZA na linha do
+    // tempo. Justamente as duas que a IA usa para justificar e executar um
+    // avanço de negócio: a linha que confirma o clímax era a mais apagada da
+    // coluna. Achado numa revisão do palco do Hero em 24/09, mas a correção
+    // vale para a Timeline real do app, que é quem desenha isto.
+    case 'search_catalog':
+      return { label: 'Consultou o catálogo', Icon: FileText,
+               chip: 'var(--color-accent-cyan)' }
+    case 'manage_deal_pipeline':
+      return { label: 'Atualizou o negócio no funil', Icon: MoveRight,
+               chip: 'var(--color-accent-violet)' }
     case 'contact_updated':
       return { label: 'Atualizou contato', Icon: UserCog,
                chip: 'var(--color-accent-violet)' }

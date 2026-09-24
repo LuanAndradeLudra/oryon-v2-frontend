@@ -79,6 +79,8 @@ const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m
 const AutomationsPage   = lazyRoute(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
 const AgentsPage        = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
+// Playground dos frames do Hero (composição estática, revisão visual) — NÃO commitado.
+const HeroPlayground    = lazyRoute(() => import('@/components/landing/stage/hero/HeroPlayground'))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
 const NotificationsPage = lazyRoute(() => import('@/pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
@@ -168,7 +170,7 @@ function sectionKeyOf(pathname: string): string {
 /** Rotas fora do AppShell (login, cadastro, onboarding, páginas públicas). */
 const SHELL_LESS_SECTIONS = new Set([
   '/', '/login', '/register', '/forgot-password', '/reset-password', '/activate',
-  '/set-password', '/setup', '/canva',
+  '/set-password', '/setup', '/canva', '/_hero',
 ])
 
 /**
@@ -354,6 +356,9 @@ function AnimatedRoutes() {
           <Route path="/admin/agents" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de agentes"><AdminAgentEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
+
+          {/* A raiz do App é overflow:hidden — página fora do shell traz o próprio scroll. */}
+          <Route path="/_hero" element={<div className="h-screen w-full overflow-y-auto bg-surface-950"><HeroPlayground /></div>} />
 
           {/* Canva OAuth callback — public, opened as popup */}
           <Route path="/canva/callback" element={<CanvaCallbackPage />} />

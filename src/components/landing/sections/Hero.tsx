@@ -1,4 +1,4 @@
-import { HeroStage } from '@/components/landing/stage'
+import { HeroCinema } from '@/components/landing/stage/hero/HeroCinema'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { cn } from '@/lib/utils'
 import { hero, LANDING_ROUTES, LANDING_ANCHORS } from '../landingCopy'
@@ -22,6 +22,15 @@ import { hero, LANDING_ROUTES, LANDING_ANCHORS } from '../landingCopy'
  * Entrada por desfoque→nítido (`.reveal`, token do orquestrador), NÃO
  * deslizamento nem framer-motion: escalonada por `--d` em H1 → parágrafo →
  * CTAs → palco, 90ms entre cada.
+ *
+ * O palco (25/09): `HeroCinema` — três JANELAS independentes (Conversas, a
+ * ficha do contato e Funis), cada uma com moldura e recorte próprios, que se
+ * reorganizam ao longo de uma linha do tempo. Não é uma câmera atravessando
+ * uma aplicação gigante: é o produto real se reorganizando. A pergunta de
+ * controle do PO ("estamos mostrando telas ou tornando visível uma operação
+ * que a Oryon compreende e executa?") é respondida pela segunda opção — o que
+ * muda é o DADO (mensagem, situação, etiqueta, etapa, responsável), e a
+ * composição só decide quem domina o palco a cada momento.
  */
 export function Hero() {
   return (
@@ -59,10 +68,15 @@ export function Hero() {
       <div
         role="region"
         aria-label={hero.stageLabel}
-        className="reveal mx-auto mt-6 sm:mt-8 w-full max-w-[1120px] px-4 sm:px-6"
+        /* O palco é mais largo que a coluna de texto a partir de `xl`: a tela
+           de Conversas tem três regiões (lista 360 · conversa · painel 308) e,
+           travado em 1120, sobrava pouco para a conversa justamente quando o
+           painel abre. O texto continua em 1120 — linha de leitura não deve
+           acompanhar o palco. */
+        className="reveal mx-auto mt-6 sm:mt-8 w-full max-w-[1120px] xl:max-w-[1240px] px-4 sm:px-6"
         style={{ ['--d' as string]: '270ms' }}
       >
-        <HeroStage scenes={['inbox', 'funil', 'disparo']} />
+        <HeroCinema />
       </div>
     </section>
   )
