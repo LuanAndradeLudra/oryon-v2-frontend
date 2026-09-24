@@ -80,8 +80,10 @@ function SenderAvatar({ message, contact }: { message: Message; contact: { displ
   }
   // IA (senderKind === 'ai', ou ausência de senderKind/sentByUserId).
   return (
-    <div className="w-6 h-6 rounded-xs bg-accent-soft text-accent-dark flex items-center justify-center flex-shrink-0">
-      <Bot className="w-3.5 h-3.5" />
+    // Mesmo gradiente teal do operador (`.avatar-operador`): IA e gente da
+    // casa compartilham a identidade; o contato fica monocromático.
+    <div className="w-6 h-6 rounded-[30%] avatar-operador flex items-center justify-center flex-shrink-0">
+      <Bot className="w-3.5 h-3.5" strokeWidth={1.75} />
     </div>
   )
 }

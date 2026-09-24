@@ -95,7 +95,10 @@ export function Avatar({ name, imageUrl, size = 'md', online, className, kind = 
             // no MESMO par monocromático por tema — o que distingue "é da
             // casa" é a FORMA (quadrado arredondado), não um gradiente teal.
             // `.avatar-operador` (gradiente) saiu de uso.
-            'bg-avatar-surface text-avatar-initials',
+            // Operador volta ao gradiente teal da casa (`.avatar-operador`,
+            // index.css) — pedido do PO em 23/09 ("padrão antigo com teal
+            // gradiente"); o contato segue no par monocromático por tema.
+            kind === 'operator' ? 'avatar-operador' : 'bg-avatar-surface text-avatar-initials',
             sizes[size],
           )}
         >
