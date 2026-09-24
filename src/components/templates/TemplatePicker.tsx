@@ -119,11 +119,14 @@ export function TemplatePicker({ onSelect, query = '', className }: TemplatePick
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <p className="text-sm font-medium text-surface-200 truncate">{tpl.name.replace(/_/g, ' ')}</p>
-              <span className="text-[10px] text-surface-600 bg-surface-800 px-1.5 py-0.5 rounded">{tpl.language}</span>
+              {/* Idioma: chip neutro no padrão da casa (surface-200 sobre surface-700,
+                  como o "IA" da lista) — surface-600 sobre surface-800 era quase
+                  invisível nos dois temas (PO, 24/09). */}
+              <span className="text-[10.5px] font-semibold tabular-nums text-surface-200 bg-surface-700 px-1.5 h-[17px] inline-flex items-center rounded-[5px] flex-shrink-0">{tpl.language}</span>
             </div>
             <p className="text-xs text-surface-400 line-clamp-2">{tpl.body}</p>
             {tpl.footer && (
-              <p className="text-[10px] text-surface-600 mt-1 italic">{tpl.footer}</p>
+              <p className="text-[10.5px] text-surface-500 mt-1 italic">{tpl.footer}</p>
             )}
           </div>
           <div className="flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity">
