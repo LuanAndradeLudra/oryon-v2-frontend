@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, Check, X } from 'lucide-react'
+import { ChevronDown, Check, X, Tag } from 'lucide-react'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { cn } from '@/lib/utils'
 import type { ConversationFilters, Tag } from '@/types'
@@ -51,7 +51,13 @@ export function TagFilterMenu({ filters, onFiltersChange, allTags }: TagFilterMe
           {selectedTags.length === 1 && (
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedTags[0].color }} />
           )}
-          {selectedTags.length === 0 ? 'Etiqueta' : selectedTags.length === 1 ? selectedTags[0].name : `Etiqueta · ${selectedTags.length}`}
+          {/* PO, 23/09: na linha única (chips à esquerda, Minhas/Fila/Todas à
+              direita) a palavra "Etiqueta" não cabe em 335px; em repouso vira
+              só o ícone (aria-label/title continuam), e com seleção mostra o
+              nome ou a contagem. */}
+          {selectedTags.length === 0
+            ? <Tag className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} aria-hidden />
+            : selectedTags.length === 1 ? selectedTags[0].name : `Etiqueta · ${selectedTags.length}`}
           <ChevronDown className="w-3 h-3 flex-shrink-0" />
         </button>
       }

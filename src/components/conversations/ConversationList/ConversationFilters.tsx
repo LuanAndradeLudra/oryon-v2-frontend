@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils'
 import { resolveActivePreset } from '@/lib/dateRange'
 import { resolveHandlingValue } from '@/lib/conversationFilterState'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { QuickFiltersMenu } from './QuickFiltersMenu'
 import { TagFilterMenu } from './TagFilterMenu'
 import type { ConversationFilters, Tag, User } from '@/types'
 
@@ -68,7 +67,7 @@ function Chip({
 }
 
 export function ConversationFiltersBar({
-  filters, onFiltersChange, counts = {}, allTags = [], allUsers = [], needsReviewCount = 0,
+  filters, onFiltersChange, allTags = [], allUsers = [],
 }: ConversationFiltersBarProps) {
   const set = (patch: Partial<ConversationFilters>) => onFiltersChange({ ...filters, ...patch })
 
@@ -127,27 +126,10 @@ export function ConversationFiltersBar({
 
   return (
     <div className="px-3 pt-2.5 pb-2.5 space-y-2">
-      {/* Segmentado + funil */}
-      <div className="flex items-center gap-2">
-        {/* Primitivo SegmentedControl (barra unida do canvas 1d, CONV-LIST-02..05). */}
-        <SegmentedControl
-          label="Atendimento"
-          options={SEGMENTS.map(({ label, value }) => ({ value, label }))}
-          value={segmentValue as 'me' | 'unassigned' | 'all'}
-          onChange={(v) => set({ assignedTo: v })}
-        />
-        <div className="ml-auto">
-          <QuickFiltersMenu
-            filters={filters}
-            onFiltersChange={onFiltersChange}
-            allUsers={allUsers}
-            needsReviewCount={needsReviewCount}
-            counts={counts}
-          />
-        </div>
-      </div>
-
-      {/* Chips rápidos */}
+      {/* PO, 23/09: uma linha só — chips rápidos à esquerda (Não lidas · Com IA ·
+          Etiqueta) e o segmentado Minhas/Fila/Todas à direita. O menu de
+          filtros subiu para a linha da busca (ConversationList); o chip "SLA"
+          saiu (o filtro "Cliente aguardando" continua no menu/pílulas). */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <Chip active={!!filters.unreadOnly} onClick={() => set({ unreadOnly: filters.unreadOnly ? undefined : true })}>
           Não lidas
@@ -158,14 +140,16 @@ export function ConversationFiltersBar({
         >
           Com IA
         </Chip>
-        <Chip
-          active={!!filters.awaitingReply}
-          onClick={() => set({ awaitingReply: filters.awaitingReply ? undefined : true })}
-          title="Cliente aguardando resposta"
-        >
-          SLA
-        </Chip>
         <TagFilterMenu filters={filters} onFiltersChange={onFiltersChange} allTags={allTags} />
+        <div className="ml-auto">
+          {/* Primitivo SegmentedControl (barra unida do canvas 1d, CONV-LIST-02..05). */}
+          <SegmentedControl
+            label="Atendimento"
+            options={SEGMENTS.map(({ label, value }) => ({ value, label }))}
+            value={segmentValue as 'me' | 'unassigned' | 'all'}
+            onChange={(v) => set({ assignedTo: v })}
+          />
+        </div>
       </div>
 
       {pills.length > 0 && (

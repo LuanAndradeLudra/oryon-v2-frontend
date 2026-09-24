@@ -5,6 +5,7 @@ import { ConversationItem } from './ConversationItem'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ConversationSearch } from './ConversationSearch'
 import { ConversationFiltersBar } from './ConversationFilters'
+import { QuickFiltersMenu } from './QuickFiltersMenu'
 import { cn } from '@/lib/utils'
 import type { Contact, Conversation, ConversationFilters, ConversationStatusCounts, Tag, User } from '@/types'
 
@@ -157,13 +158,21 @@ export function ConversationList({
       {/* Search header */}
       <div className="px-3 pt-2.5 pb-0">
         <div className="flex items-center gap-2">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <ConversationSearch
               value={filters.search ?? ''}
               onChange={(search) => onFiltersChange({ ...filters, search })}
             />
           </div>
           {loading && <Loader2 className="w-4 h-4 text-surface-400 animate-spin flex-shrink-0" />}
+          {/* PO, 23/09: o menu de filtros mora ao lado da busca, na mesma linha. */}
+          <QuickFiltersMenu
+            filters={filters}
+            onFiltersChange={onFiltersChange}
+            allUsers={allUsers}
+            needsReviewCount={needsReviewCount}
+            counts={counts}
+          />
 
         </div>
       </div>
