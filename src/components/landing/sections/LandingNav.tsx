@@ -1,9 +1,8 @@
-import { Link } from 'react-router-dom'
 import { Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
+import { LinkButton } from '@/components/ui/LinkButton'
 import { cn } from '@/lib/utils'
 import { nav, LANDING_ROUTES } from '../landingCopy'
-import { ctaPrimary, ctaSize } from './ctaStyles'
 
 /**
  * Nav fixa em vidro (64px). Âncoras só das seções que existem; "Entrar" é o
@@ -55,9 +54,7 @@ export function LandingNav() {
             <Sun className="w-4 h-4 [[data-theme=light]_&]:hidden" strokeWidth={1.75} aria-hidden />
             <Moon className="w-4 h-4 hidden [[data-theme=light]_&]:block" strokeWidth={1.75} aria-hidden />
           </button>
-          <Link to={LANDING_ROUTES.login} className={cn(ctaPrimary, ctaSize.md)}>
-            {nav.cta}
-          </Link>
+          <LinkButton to={LANDING_ROUTES.login}>{nav.cta}</LinkButton>
         </div>
       </div>
     </header>

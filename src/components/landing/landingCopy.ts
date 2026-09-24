@@ -7,7 +7,8 @@
  *   pronto (Agendamentos, Conectores, Copilot, Automações, Marketing, Nexus).
  * - P15: vocabulário do produto — Agente IA (nunca "bot"), Atendente, Conversas,
  *   Leads, Funis · Negócios, Disparos · Modelos de mensagem, Situação · Etapa ·
- *   Etiquetas, Setores, Assumir / Devolver à IA.
+ *   Etiquetas, Setores, Assumir / Reativar IA (auditoria audit-D.md, 24/09: o
+ *   botão do app é "Reativar IA", "Devolver à IA" não existe na interface).
  * - Cada frase abaixo descreve algo que o app faz hoje. Se deixar de ser
  *   verdade, muda aqui — as seções só renderizam.
  *
@@ -47,7 +48,10 @@ export const hero = {
 
 export const howItWorks = {
   title: 'A IA começa a conversa. A sua equipe termina quando precisa.',
-  lead: 'Cada linha do WhatsApp tem um Agente IA. As regras de transferência decidem o momento de chamar uma pessoa.',
+  // Sem lastro pra "toda linha tem um agente": em Configurações > Números
+  // WhatsApp o agente é opcional por número (pode ficar "Nenhum agente —
+  // atendimento humano"). A frase descreve a CAPACIDADE, não uma garantia.
+  lead: 'Cada número do WhatsApp pode ter um Agente IA atribuído. As regras de transferência decidem o momento de chamar uma pessoa.',
   steps: [
     {
       key: 'ia',
@@ -64,7 +68,7 @@ export const howItWorks = {
     {
       key: 'humano',
       title: 'O Atendente conduz',
-      text: 'A equipe responde do mesmo lugar e, quando o assunto volta ao simples, pode Devolver à IA.',
+      text: 'A equipe responde do mesmo lugar e, quando o assunto volta ao simples, pode Reativar a IA.',
       posterLabel: 'Conversa sendo conduzida por um Atendente',
     },
   ],
@@ -73,31 +77,45 @@ export const howItWorks = {
 export const productGrid = {
   title: 'Tudo o que o atendimento usa, em um só lugar.',
   lead: 'Da primeira mensagem ao fechamento, sem trocar de ferramenta.',
-  items: [
+  /**
+   * Uma seção inteira por capacidade — cada uma com o produto operando ao
+   * lado (referência: Attio dedica uma seção por recurso, não um grid de
+   * ícone+texto). `scene` é a cena do palco (`StageScene`); só existem as
+   * três implementadas (inbox/funil/disparo) — Leads e Relatórios, sem cena
+   * própria, ficam na lista compacta abaixo (nada de poster fingido).
+   */
+  capabilities: [
     {
       key: 'conversas',
-      title: 'Conversas',
-      text: 'Uma caixa de entrada para várias linhas do WhatsApp e Setores, com atribuição de Atendente e Etiquetas.',
-    },
-    {
-      key: 'agentes',
-      title: 'Agentes de IA',
-      text: 'Um Agente IA por linha, com o tom de voz e as regras de transferência para um Atendente definidos pela sua equipe.',
+      scene: 'inbox',
+      frame: 'ia',
+      title: 'Conversas com Agente de IA',
+      text: 'Uma caixa de entrada para várias linhas do WhatsApp e Setores. Cada número pode ter um Agente IA com o tom de voz e as regras de transferência definidos pela sua equipe; a conversa passa para um Atendente com o histórico e o resumo.',
+      posterLabel: 'Caixa de entrada de Conversas com o Agente IA respondendo',
     },
     {
       key: 'funis',
+      scene: 'funil',
+      frame: 'final',
       title: 'Funis',
-      text: 'Negócios organizados em Funis, com Etapas, valor e responsável, do primeiro contato ao fechamento.',
+      text: 'Negócios organizados em Funis, com Etapas, valor e responsável — do primeiro contato ao fechamento, arrastando o card entre as etapas.',
+      posterLabel: 'Quadro de Funis com negócios organizados por etapa',
     },
+    {
+      key: 'disparos',
+      scene: 'disparo',
+      frame: 'final',
+      title: 'Disparos',
+      text: 'Envio de Modelos de mensagem aprovados pela Meta para listas de contatos, respeitando a janela de atendimento do WhatsApp.',
+      posterLabel: 'Envio de um Disparo com Modelo de mensagem concluído',
+    },
+  ],
+  /** Sem cena própria no palco — lista compacta, uma linha por item. */
+  compact: [
     {
       key: 'leads',
       title: 'Leads',
       text: 'Cada contato com Situação, Etiquetas e o resumo da última interação gerado pela IA.',
-    },
-    {
-      key: 'disparos',
-      title: 'Disparos',
-      text: 'Envio de Modelos de mensagem aprovados pela Meta para listas de contatos, respeitando a janela de atendimento do WhatsApp.',
     },
     {
       key: 'relatorios',
@@ -124,7 +142,7 @@ export const trust = {
     {
       key: 'verificacao',
       title: 'Guarda de verificação',
-      text: 'Valores, horários, nomes e ações que a IA cita são conferidos. Se algo não confere, a mensagem fica retida para revisão.',
+      text: 'Valores, horários, nomes e ações citados pela IA são conferidos; o que não confere fica retido para revisão.',
     },
     {
       key: 'vocabulario',
