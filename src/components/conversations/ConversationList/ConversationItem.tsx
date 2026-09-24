@@ -158,7 +158,15 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               // status logo abaixo, NA MESMA linha do item, já são o
               // vocabulário certo (h-[17px]/rounded-[5px]/10.5px). Alinhado.
               <span
-                className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold bg-warning/15 text-warning border border-warning/25 flex-shrink-0"
+                className={cn(
+                  'inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold flex-shrink-0',
+                  // Cor do status de destino (azul/âmbar/verde), não "aviso" genérico.
+                  conversation.status === 'open'
+                    ? 'bg-status-open/[.14] text-status-open'
+                    : conversation.status === 'pending'
+                      ? 'bg-cstatus-pending/[.14] text-cstatus-pending'
+                      : 'bg-cstatus-resolved/[.14] text-cstatus-resolved',
+                )}
                 title={`Movida para "${statusLabel(conversation.status)}" — não corresponde mais ao filtro atual`}
               >
                 {statusLabel(conversation.status)}
@@ -200,7 +208,9 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
         <div className="flex items-center gap-1.5 mt-1">
           <div className="flex items-center gap-1.5 min-w-0">
             {status === "resolved" ? (
-              <span className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] border border-surface-700 bg-surface-900 text-[10.5px] font-semibold text-surface-400 flex-shrink-0">
+              /* PO, 23/09: mesma tinta leve do status no menu do cabeçalho
+                 (verde translúcido), não mais o chip neutro. */
+              <span className="inline-flex items-center h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-semibold bg-cstatus-resolved/[.14] text-cstatus-resolved flex-shrink-0">
                 Resolvida
               </span>
             ) : aiActive ? (
