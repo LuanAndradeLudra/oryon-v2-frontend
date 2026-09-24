@@ -99,7 +99,14 @@ function NewConversationFlow({ onClose }: { onClose: () => void }) {
   const backToWho = () => { setContact(null); setTemplateQuery('') }
   const handleModalClose = contact ? backToWho : onClose
 
+  // Fluxo ÚNICO, sem sobreposição: na revisão (etapa 3) o modal de seleção
+  // deixa de ser renderizado (desmonta, sem fade de saída sobreposto) e o
+  // TemplateSendModal fica sozinho na tela. O estado
+  // (contato, busca, filtro de templates) vive aqui, então "Voltar" reabre o
+  // passo 2 exatamente como estava (a lista de templates só recarrega).
   return (
+    <>
+    {!pending && (
     <Modal
       open
       onClose={handleModalClose}
@@ -180,22 +187,27 @@ function NewConversationFlow({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       )}
-
-      {/* Variáveis + prévia + envio (o mesmo modal de Conversas/Leads); ao
-          enviar, abre a conversa já com o template e fecha este fluxo. */}
-      {contact && (
-        <TemplateSendModal
-          template={pending}
-          contactId={contact.id}
-          recipientName={contact.displayName || undefined}
-          onClose={() => setPending(null)}
-          onSent={(res) => {
-            setPending(null)
-            openConversation(res.conversationId)
-          }}
-        />
-      )}
     </Modal>
+    )}
+
+    {/* Etapa 3 — variáveis + prévia + envio (o mesmo modal de Conversas/Leads);
+        "Voltar" (e Esc) retornam ao passo 2; ao enviar, abre a conversa já com o
+        template e fecha o fluxo. */}
+    {contact && (
+      <TemplateSendModal
+        template={pending}
+        contactId={contact.id}
+        recipientName={contact.displayName || undefined}
+        cancelLabel="Voltar"
+        cancelIcon={<ChevronLeft className="w-3.5 h-3.5" />}
+        onClose={() => setPending(null)}
+        onSent={(res) => {
+          setPending(null)
+          openConversation(res.conversationId)
+        }}
+      />
+    )}
+    </>
   )
 }
 

@@ -45,4 +45,11 @@ describe('TemplateSendModal', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(onSent).not.toHaveBeenCalled()
   })
+
+  it('rótulo de recusa: "Cancelar" por padrão (Conversas) e customizável ("Voltar" nos fluxos em etapas)', () => {
+    const { rerender } = render(<TemplateSendModal template={TPL} contactId="c1" onClose={vi.fn()} onSent={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
+    rerender(<TemplateSendModal template={TPL} contactId="c1" cancelLabel="Voltar" onClose={vi.fn()} onSent={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Voltar' })).toBeInTheDocument()
+  })
 })

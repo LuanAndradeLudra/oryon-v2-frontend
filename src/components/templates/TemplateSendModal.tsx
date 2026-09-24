@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Send, Info } from 'lucide-react'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { WhatsAppTemplate } from '@/types'
@@ -33,12 +33,17 @@ interface TemplateSendModalProps {
   /** Quando informado, mostra o aviso de que uma mensagem real será enviada
    *  para essa pessoa (QW-07). Conversas já deixa isso claro pelo contexto. */
   recipientName?: string
+  /** Fecha/volta (Esc, X e o botão de recusa). */
   onClose: () => void
+  /** Rótulo do botão de recusa — "Cancelar" (padrão) ou "Voltar" quando o modal
+   *  é uma etapa de um fluxo (Nova conversa). */
+  cancelLabel?: string
+  cancelIcon?: ReactNode
   /** Envio concluído (o modal NÃO se fecha sozinho — quem chama decide). */
   onSent: (result: { conversationId: string; messageId: string }) => void
 }
 
-export function TemplateSendModal({ template, contactId, recipientName, onClose, onSent }: TemplateSendModalProps) {
+export function TemplateSendModal({ template, contactId, recipientName, onClose, cancelLabel = 'Cancelar', cancelIcon, onSent }: TemplateSendModalProps) {
   // Valores das variáveis, chaves "1","2"… — o formato que o <TemplatePreview>
   // lê pro preview ao vivo. Resetados a cada template escolhido.
   const [vars, setVars] = useState<Record<string, string>>({})
@@ -86,8 +91,8 @@ export function TemplateSendModal({ template, contactId, recipientName, onClose,
           {error && (
             <p role="alert" className="mr-auto text-xs text-danger leading-snug min-w-0">{error}</p>
           )}
-          <Button variant="neutral" onClick={handleClose} disabled={sending}>
-            Cancelar
+          <Button variant="neutral" onClick={handleClose} disabled={sending} leftIcon={cancelIcon}>
+            {cancelLabel}
           </Button>
           <Button
             variant="primary"

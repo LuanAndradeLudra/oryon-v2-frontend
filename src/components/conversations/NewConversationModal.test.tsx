@@ -104,15 +104,47 @@ describe('NewConversationModal', () => {
     expect(screen.queryByRole('button', { name: /Escolher template/ })).not.toBeInTheDocument()
   })
 
-  it('Voltar no passo do template retorna à busca (sem fechar)', async () => {
+  // Fluxo ÚNICO, sem sobreposição: a revisão é a etapa 3 e o modal de seleção sai
+  // da tela enquanto ela está aberta. Esc/Voltar retornam etapa por etapa.
+  it('fluxo completo: contato -> template -> revisar -> Voltar -> passo 2 -> Voltar -> passo 1', async () => {
     listReturns([BIA])
     vi.mocked(contactsApi.getConversations).mockResolvedValue({ data: { data: [] } } as never)
     const onClose = vi.fn()
     render(<NewConversationModal open onClose={onClose} />)
+    const esc = () => fireEvent.keyDown(window, { key: 'Escape' })
+
     search('bia')
     fireEvent.click(await screen.findByRole('button', { name: /Escolher template para Bia Lima/ }))
-    fireEvent.click(await screen.findByRole('button', { name: /Voltar/ }))
+    // Passo 2 com filtro digitado.
+    fireEvent.change(await screen.findByLabelText('Filtrar templates'), { target: { value: 'boas' } })
+    fireEvent.click(await screen.findByText('boas vindas'))
+
+    // Etapa 3: só a revisão na tela (o modal de seleção não é renderizado).
+    expect(await screen.findByText('Revisar template')).toBeInTheDocument()
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.queryByText('Nova conversa')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument()
+
+    // Voltar (botão) -> passo 2 com o mesmo contato e o filtro preservado.
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+    expect(await screen.findByLabelText('Filtrar templates')).toHaveValue('boas')
+    expect(screen.getByText(/Escolha o template para iniciar a conversa com/)).toHaveTextContent('Bia Lima')
+    await waitFor(() => expect(screen.queryByText('Revisar template')).not.toBeInTheDocument())
+
+    // Esc na revisão também é Voltar.
+    fireEvent.click(await screen.findByText('boas vindas'))
+    expect(await screen.findByText('Revisar template')).toBeInTheDocument()
+    esc()
+    expect(await screen.findByLabelText('Filtrar templates')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Revisar template')).not.toBeInTheDocument())
+
+    // Voltar do passo 2 -> passo 1 (sem fechar o modal).
+    fireEvent.click(screen.getByRole('button', { name: /Voltar/ }))
     expect(await screen.findByLabelText('Buscar contato por nome ou telefone')).toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled()
+
+    // Só no passo 1 o Esc fecha o modal.
+    esc()
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })
