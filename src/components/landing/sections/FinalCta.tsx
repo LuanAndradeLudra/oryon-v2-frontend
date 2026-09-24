@@ -1,7 +1,5 @@
-import { Link } from 'react-router-dom'
-import { cn } from '@/lib/utils'
+import { LinkButton } from '@/components/ui/LinkButton'
 import { finalCta, LANDING_ROUTES } from '../landingCopy'
-import { ctaPrimary, ctaSize } from './ctaStyles'
 
 /** Fecho: uma frase e um único caminho — a página termina em "Entrar". */
 export function FinalCta() {
@@ -15,9 +13,9 @@ export function FinalCta() {
           <h2 className="max-w-[26ch] font-display font-extrabold tracking-[-0.02em] leading-[1.1] text-surface-50 text-[clamp(1.5rem,3vw,2.25rem)]">
             {finalCta.title}
           </h2>
-          <Link to={LANDING_ROUTES.login} className={cn(ctaPrimary, ctaSize.lg, 'self-start sm:self-auto flex-none')}>
+          <LinkButton to={LANDING_ROUTES.login} size="lg" className="self-start sm:self-auto flex-none">
             {finalCta.cta}
-          </Link>
+          </LinkButton>
         </div>
       </div>
     </section>

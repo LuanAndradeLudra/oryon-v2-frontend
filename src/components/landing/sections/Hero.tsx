@@ -1,8 +1,7 @@
-import { Link } from 'react-router-dom'
 import { HeroStage } from '@/components/landing/stage'
+import { LinkButton } from '@/components/ui/LinkButton'
 import { cn } from '@/lib/utils'
 import { hero, LANDING_ROUTES, LANDING_ANCHORS } from '../landingCopy'
-import { ctaPrimary, ctaNeutral, ctaSize } from './ctaStyles'
 
 /**
  * Headline + o produto operando logo abaixo (referência: hero da Attio). O H1
@@ -30,12 +29,8 @@ export function Hero() {
           {hero.lead}
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <Link to={LANDING_ROUTES.login} className={cn(ctaPrimary, ctaSize.lg)}>
-            {hero.primaryCta}
-          </Link>
-          <a href={`#${LANDING_ANCHORS.produto}`} className={cn(ctaNeutral, ctaSize.lg)}>
-            {hero.secondaryCta}
-          </a>
+          <LinkButton to={LANDING_ROUTES.login} size="lg">{hero.primaryCta}</LinkButton>
+          <LinkButton href={`#${LANDING_ANCHORS.produto}`} variant="neutral" size="lg">{hero.secondaryCta}</LinkButton>
         </div>
       </div>
 
