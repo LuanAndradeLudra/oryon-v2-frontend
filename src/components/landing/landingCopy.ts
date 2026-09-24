@@ -124,7 +124,7 @@ export const trust = {
     {
       key: 'verificacao',
       title: 'Guarda de verificação',
-      text: 'Valores, horários, nomes e ações que a IA cita são conferidos. Se algo não confere, a mensagem fica retida para revisão.',
+      text: 'Valores, horários, nomes e ações citados pela IA são conferidos; o que não confere fica retido para revisão.',
     },
     {
       key: 'vocabulario',
