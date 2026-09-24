@@ -139,6 +139,12 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     `SegmentedControl` ganhou `variant="ink"`; o `subtle` de outras telas não muda. Referências: Gmail (chip
     preenchido + ativo sólido), Intercom/Front (ativo invertido), Linear/Notion (uma cor só). Reverter: commit desta linha.
 
+37. **"Nova conversa" fica em Conversas** (PO 24/09): modal de 2 passos (contato → template) no lugar do salto para o
+    CRM; conversa ativa abre direto; sem conversa ativa vai por template (regra da Meta fora das 24h); criar contato
+    inline. Esc/X no passo 2 voltam ao passo 1, "Cancelar" fecha tudo; busca só com ≥2 caracteres (sem "recentes" —
+    não há ordenação honesta); mobile no mesmo modal (não edge-to-edge por ora). Referências: WhatsApp Web, Intercom,
+    Front. Reverter: `4984dfe`, `3f98f0e`, `fd5ff17`.
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
