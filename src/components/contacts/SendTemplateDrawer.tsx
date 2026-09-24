@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Loader2, MessageSquare, CheckCircle2 } from 'lucide-react'
-import { templatesApi, contactsApi } from '@/services/api'
-import { ConfirmModal } from '@/components/ui/Modal'
+import { templatesApi } from '@/services/api'
+import { TemplateSendModal } from '@/components/templates/TemplateSendModal'
 import type { WhatsAppTemplate, Contact } from '@/types'
 
 interface SendTemplateDrawerProps {
@@ -16,13 +16,16 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
   const navigate = useNavigate()
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [convId, setConvId] = useState<string | null>(null)
   const [pendingTemplate, setPendingTemplate] = useState<WhatsAppTemplate | null>(null)
 
   useEffect(() => {
     if (!open) return
+    // Reset ao abrir + busca dos templates: o drawer fica montado, então o estado
+    // da abertura anterior precisa ser zerado aqui (o compilador só passou a
+    // analisar este componente depois que o ConfirmModal saiu).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setSent(false)
     setConvId(null)
@@ -32,20 +35,6 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
       .catch(() => setTemplates([]))
       .finally(() => setLoading(false))
   }, [open])
-
-  const handleSend = async (tpl: WhatsAppTemplate) => {
-    setSending(true)
-    try {
-      const res = await contactsApi.sendTemplate(contact.id, tpl.name, tpl.language)
-      setConvId(res.data.conversationId)
-      setSent(true)
-    } catch {
-      // error
-    } finally {
-      setSending(false)
-      setPendingTemplate(null)
-    }
-  }
 
   const handleGoToChat = () => {
     if (convId) navigate(`/conversations?id=${convId}`)
@@ -122,8 +111,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
                     <button
                       key={tpl.id}
                       onClick={() => setPendingTemplate(tpl)}
-                      disabled={sending}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-surface-800/50 transition-colors text-left group disabled:opacity-60"
+                      className="flex items-start gap-3 px-4 py-3 hover:bg-surface-800/50 transition-colors text-left group"
                     >
                       <div className="w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <MessageSquare className="w-4 h-4 text-surface-400" />
@@ -139,11 +127,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
                         )}
                       </div>
                       <div className="flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {sending ? (
-                          <Loader2 className="w-4 h-4 text-accent-dark animate-spin" />
-                        ) : (
-                          <Send className="w-4 h-4 text-accent-dark" />
-                        )}
+                        <Send className="w-4 h-4 text-accent-dark" />
                       </div>
                     </button>
                   ))}
@@ -154,21 +138,19 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
         </>
       )}
 
-      {/* QW-07: envio de template dispara mensagem real pro contato — confirma
-          antes de disparar, mostrando pra quem e qual template. */}
-      <ConfirmModal
-        open={pendingTemplate !== null}
-        onClose={() => { if (!sending) setPendingTemplate(null) }}
-        onConfirm={() => { if (pendingTemplate) void handleSend(pendingTemplate) }}
-        title="Enviar template"
-        impact={{ label: `Uma mensagem real será enviada para ${contact.displayName}`, tone: 'warning' }}
-        description={
-          pendingTemplate
-            ? `Enviar o template "${pendingTemplate.name.replace(/_/g, ' ')}"?`
-            : ''
-        }
-        confirmLabel="Enviar"
-        loading={sending}
+      {/* Escolher o template abre a revisão (variáveis + prévia) e o envio
+          acontece ali, num único diálogo — que também avisa que uma mensagem
+          real vai para o contato (QW-07). */}
+      <TemplateSendModal
+        template={pendingTemplate}
+        contactId={contact.id}
+        recipientName={contact.displayName || undefined}
+        onClose={() => setPendingTemplate(null)}
+        onSent={(res) => {
+          setConvId(res.conversationId)
+          setSent(true)
+          setPendingTemplate(null)
+        }}
       />
     </AnimatePresence>
   )
