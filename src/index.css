@@ -113,6 +113,15 @@
      o maior contraste da linha sem gastar cor. Escuro = claro sobre escuro. */
   --ink-bg: #B9CACA;        /* não é branco puro (PO, 24/09): dois degraus abaixo */
   --ink-bg-hover: #CBDADA;  /* hover no selecionado: tint neutro, um degrau acima */
+
+  /* Moldura de janela das telas em miniatura (landing) — a tela "emerge" do
+     fundo: cantos só no topo, sem borda inferior, sombra profunda. Medido na
+     Attio: rounded-t-13 + border-subtle + shadow-attio-5. */
+  --frame-stroke: rgba(255, 255, 255, .10);
+  --frame-shadow: 0 1px 2px rgba(0,0,0,.28), 0 8px 24px rgba(0,0,0,.36), 0 32px 64px rgba(0,0,0,.44);
+  --frame-chrome: #0E1414;
+  /* Curva assinatura das transições públicas (Attio usa cubic-bezier(.32,.72,0,1)). */
+  --ease-emph: cubic-bezier(.32, .72, 0, 1);
   --ink-fg: #060909;
   /* Painel acoplado do contato (Leads, pedido do PO 23/09): no escuro, o mesmo
      tom da sidebar (#0A0F0F, regra `.workspace-shell` → sidebar mais abaixo),
@@ -978,6 +987,10 @@ code, pre, kbd, samp {
   /* Claro = escuro sobre claro. */
   --ink-bg: #3A4150;        /* não é preto puro (PO, 24/09): dois degraus acima */
   --ink-bg-hover: #4A5163;  /* hover no selecionado: um degrau mais claro */
+
+  --frame-stroke: rgba(15, 23, 42, .10);
+  --frame-shadow: 0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.10), 0 32px 64px rgba(15,23,42,.14);
+  --frame-chrome: #F5F6F8;
   --ink-fg: #FFFFFF;
   /* No claro, levemente tingido no tom da faixa de cabeçalho das colunas
      (surface-900 = #F5F6F8), destacando-se do branco da lista. */
@@ -1652,4 +1665,43 @@ h1, h2, h3 {
 .panel-swap { animation: oryon-panel-swap 180ms cubic-bezier(0.2, 0, 0, 1) backwards; }
 @media (prefers-reduced-motion: reduce) {
   .panel-in, .panel-swap { animation: none; }
+}
+
+/* ── Porta de entrada (landing/login): movimento no modelo da Attio ────────
+   Medições de 24/09 no HTML deles: nenhuma biblioteca de animação; 1318
+   transições CSS concentradas em 50–150ms; os únicos laços de produto são
+   AMBIENTES e lentos (3,6s a 24s), infinitos; entradas por desfoque+opacidade.
+   Nada aqui usa cursor falso nem timeline de passos.                        */
+
+/* Entrada: desfoque → nítido (mais "caro" que deslizar). Use com delay
+   escalonado em irmãos: [--d:80ms] etc. */
+@keyframes oryon-reveal {
+  from { opacity: 0; filter: blur(8px); transform: translateY(8px); }
+  to   { opacity: 1; filter: blur(0);   transform: none; }
+}
+.reveal { animation: oryon-reveal 700ms var(--ease-emph) var(--d, 0ms) backwards; }
+
+/* Pulso de atenção (ex.: "Agente IA respondendo"): anel que nasce e some. */
+@keyframes oryon-ring {
+  0%   { transform: scale(.9); opacity: .55; }
+  70%  { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.ambient-ring { animation: oryon-ring 3.6s var(--ease-emph) infinite; }
+
+/* Respiração de um elemento vivo (cartão em foco, avatar da IA). */
+@keyframes oryon-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+.ambient-bob { animation: oryon-bob 4s ease-in-out infinite; }
+
+/* Faixa que rola sem fim (lista de sinais/atividade). Duração longa de
+   propósito: leitura tranquila, não "carrossel". */
+@keyframes oryon-roll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+.ambient-roll { animation: oryon-roll 24s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .ambient-ring, .ambient-bob, .ambient-roll { animation: none; }
+  .reveal { opacity: 1; filter: none; transform: none; }
 }

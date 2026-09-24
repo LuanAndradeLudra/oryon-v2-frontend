@@ -49,7 +49,6 @@ export const STAGE_DESIGN = {
   compactHeight: 560,
 } as const
 
-/** Rótulo obrigatório no chrome do quadro (P14). Também é a prova de bundle:
- *  `grep -L "Dados de demonstração" dist/assets/index-*.js` deve listar o chunk
- *  de entrada — o palco não pode entrar no bundle do app logado. */
-export const STAGE_DEMO_LABEL = 'Dados de demonstração'
+// O rótulo "Dados de demonstração" mora em `demoLabel.ts` (só o palco importa):
+// este arquivo é importado estaticamente pelo login e uma string aqui vaza
+// para o chunk de entrada (prova de build, 24/09).

@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
-import { STAGE_DEMO_LABEL, type StageLayout } from './types'
+import type { StageLayout } from './types'
+import { STAGE_DEMO_LABEL } from './demoLabel'
 import { StageScaleContext, stageSize } from './stageContext'
 
 interface FrameProps {
