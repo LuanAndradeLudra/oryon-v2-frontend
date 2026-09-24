@@ -12,6 +12,7 @@ import { ConversationsTopBarSlot } from '@/components/layout/ConversationsTopBar
 import { NewConversationModal } from '@/components/conversations/NewConversationModal'
 import { Fab } from '@/components/common/Fab'
 import { useConversations } from '@/hooks/useConversations'
+import { useConversationFromUrl } from '@/hooks/useConversationFromUrl'
 import { useSocket } from '@/hooks/useSocket'
 import { joinConversation, leaveConversation } from '@/services/socket'
 import { conversationsApi } from '@/services/api'
@@ -273,52 +274,28 @@ export function ConversationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations])
 
-  // Restore active conversation from URL on load. Two cases:
-  //   1. Conversation is already in the loaded list → just select it.
-  //   2. Conversation is NOT in the list (most commonly: an external link
-  //      from the CRM "Abrir conversa" button points at a conversation
-  //      whose lastMessageAt falls outside the active period filter, so
-  //      it was excluded from /conversations). Fetch it directly and
-  //      clear the period filter so the operator sees it in the list too.
-  const restoredRef = useRef(false)
-  useEffect(() => {
-    if (restoredRef.current) return
-    const urlId = searchParams.get('id')
-    if (!urlId) return
+  // Conversa aberta ↔ `?id=` (hook): link externo, reload e navegação interna
+  // (ex.: "Nova conversa" → `/conversations?id=<id>` estando nesta página). Se a
+  // conversa não está na lista (fora do filtro de período, ou recém-criada),
+  // busca por id e limpa o filtro de período para ela aparecer na lista também.
+  useConversationFromUrl({
+    urlId: searchParams.get('id'),
+    conversations,
+    loading,
+    activeId: activeConversation?.id ?? null,
+    onFoundInList: (match) => {
+      setActiveConversation(match)
+      if (!isMobile) setInfoOpen(true)
+    },
+    onFetched: (conv) => {
+      setActiveConversation(conv)
+      if (!isMobile) setInfoOpen(true)
+      setFilters((f) => ({ ...f, startDate: undefined, endDate: undefined }))
+    },
+    fetchById: (id) => conversationsApi.get(id).then((r) => r.data),
+  })
 
-    // Case 1: already in the list
-    if (conversations.length > 0) {
-      const match = conversations.find((c) => c.id === urlId)
-      if (match) {
-        setActiveConversation(match)
-        if (!isMobile) setInfoOpen(true)
-        restoredRef.current = true
-        return
-      }
-    }
-
-    // Case 2: wait for the initial fetch to finish before deciding it's
-    // missing. Without this, we'd fire the fallback fetch while the list
-    // is still loading and end up duplicating work.
-    if (loading) return
-
-    // Not in the list — pull it directly. Clear the period filter so the
-    // newly-loaded conversation also surfaces in the list (otherwise the
-    // operator opens a chat but the left column reads "Nenhuma conversa").
-    restoredRef.current = true
-    conversationsApi.get(urlId)
-      .then((r) => {
-        setActiveConversation(r.data)
-        if (!isMobile) setInfoOpen(true)
-        setFilters((f) => ({ ...f, startDate: undefined, endDate: undefined }))
-      })
-      .catch(() => {
-        // Invalid id or no permission — leave the restoredRef true so we
-        // don't retry on every render, and let the empty state explain.
-      })
-  }, [conversations, searchParams, isMobile, loading])
-
-  // Symmetric to the restore effect above: whenever `?id` is gone from the
+  // Symmetric to the URL sync above: whenever `?id` is gone from the
   // URL — via the mobile back gesture/browser-back button (popstate) or the
   // header's back button (navigate(-1), see handleMobileBack) — close the
   // open conversation to match. This is what makes "voltar" a single code
