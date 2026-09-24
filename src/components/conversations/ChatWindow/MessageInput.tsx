@@ -1,32 +1,20 @@
 import { useCallback, useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import {
   Send, Paperclip, AlertTriangle, Zap, Image, FileText, Video, ChevronDown,
-  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2, Info,
+  Scissors, Copy, Clipboard, CopyCheck, CornerUpLeft, X, Loader2,
 } from 'lucide-react'
-import { cn, getApiErrorMessage } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { CannedResponse, Message, SendMessageDto, WhatsAppTemplate } from '@/types'
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton'
 import { Banner } from '@/components/ui/Banner'
-import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
-import { templateVariableSlots, variablesComplete, variablesToArray } from '@/lib/templateVariables'
-import { cannedResponsesApi, contactsApi, templatesApi } from '@/services/api'
+import { TemplateSendModal } from '@/components/templates/TemplateSendModal'
+import { cannedResponsesApi, templatesApi } from '@/services/api'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import type { ContextMenuEntry } from '@/components/ui/ContextMenu'
 import { useToast } from '@/hooks/useToast'
 
 const MAX_FILE_SIZE = 16 * 1024 * 1024 // 16MB — mesmo limite do backend
-
-// Rótulos + acento dos chips de metadados no modal de revisão de template.
-const TEMPLATE_CATEGORY_META: Record<WhatsAppTemplate['category'], { label: string; dot: string }> = {
-  MARKETING:      { label: 'Marketing',    dot: 'bg-brand-400' },
-  UTILITY:        { label: 'Utilidade',    dot: 'bg-[#3B82F6]' },
-  AUTHENTICATION: { label: 'Autenticação', dot: 'bg-warning' },
-}
-const TEMPLATE_HEADER_LABEL: Record<NonNullable<WhatsAppTemplate['headerType']>, string> = {
-  TEXT: 'Texto', IMAGE: 'Imagem', VIDEO: 'Vídeo', DOCUMENT: 'Documento',
-}
 
 /** Um anexo "em espera" no input: fica no preview até o operador clicar em
  *  Enviar (UX estilo Claude/ChatGPT). `id` serve de key de render/remoção;
@@ -315,6 +303,9 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
           r.shortcut.toLowerCase().startsWith(query) ||
           r.title.toLowerCase().includes(query)
       )
+      // Código anterior à extração do modal de template: o React Compiler passou a analisar este componente
+      // (o IIFE do modal saiu) e aponta o padrão; filtrar+abrir o picker ao digitar '/' é intencional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPickerResponses(filtered)
       setPickerActive(filtered.length > 0)
       setActiveIndex(0)
@@ -427,23 +418,6 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
   // Selecting a template opens a review modal (below) instead of sending
   // immediately, so the operator can inspect the full structure first.
   const [previewTemplate, setPreviewTemplate] = useState<WhatsAppTemplate | null>(null)
-  const [sendingTemplate, setSendingTemplate] = useState(false)
-  // SCRUM-807 — valores das variáveis {{n}} do template em revisão, digitados
-  // pelo operador (chaves "1","2"… — o formato que o <TemplatePreview> lê para o
-  // preview ao vivo). Resetados a cada template escolhido. O envio fica
-  // bloqueado enquanto houver variável vazia: o WhatsApp rejeita a contagem
-  // errada e um {{1}} cru chegaria ao cliente.
-  const [templateVars, setTemplateVars] = useState<Record<string, string>>({})
-  const [templateError, setTemplateError] = useState<string | null>(null)
-  const templateSlots = previewTemplate ? templateVariableSlots(previewTemplate) : []
-  const templateReady = variablesComplete(templateSlots, templateVars)
-  const templateMissing = templateSlots.filter((s) => !(templateVars[s.key] ?? '').trim()).length
-  const closeTemplateModal = () => {
-    setPreviewTemplate(null)
-    setTemplateVars({})
-    setTemplateError(null)
-  }
-
   const toggleTemplatePicker = () => {
     if (!templatePickerOpen && templates.length === 0 && !loadingTemplates) {
       setLoadingTemplates(true)
@@ -455,42 +429,11 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
     setTemplatePickerOpen((v) => !v)
   }
 
-  // Step 1 — pick a template: open the review modal (no send yet).
+  // Step 1 — pick a template: open the review modal (no send yet). O passo 2
+  // (variáveis + prévia + envio real) vive em <TemplateSendModal>.
   const handleSelectTemplate = (tpl: WhatsAppTemplate) => {
     setTemplatePickerOpen(false)
-    setTemplateVars({})
-    setTemplateError(null)
     setPreviewTemplate(tpl)
-  }
-
-  // Step 2 — confirm in the modal: send via the REAL WhatsApp template API
-  // (contactsApi.sendTemplate), not a plain-text message. Sending `tpl.body`
-  // as text (the old behavior) failed outside the 24h window — exactly when
-  // this picker is shown. `previewTemplate` is the template chosen in step 1.
-  const handleConfirmSendTemplate = async () => {
-    if (!previewTemplate || sendingTemplate || !templateReady) return
-    setSendingTemplate(true)
-    setTemplateError(null)
-    try {
-      // Meta template flow (R10/SCRUM-807): real WhatsApp template API with
-      // positional variables — not plain-text `tpl.body` (fails outside 24h).
-      await contactsApi.sendTemplate(
-        contactId,
-        previewTemplate.name,
-        previewTemplate.language,
-        variablesToArray(templateSlots, templateVars),
-      )
-      onCancelReply?.()
-      setTemplateSent(true)
-      closeTemplateModal()
-    } catch (err) {
-      // Mantém o modal aberto para corrigir e tentar de novo. A mensagem já vem
-      // classificada do backend (contagem de variáveis, template não aprovado,
-      // códigos da Meta) — mostrada aqui, junto do formulário, não só no toast.
-      setTemplateError(getApiErrorMessage(err, 'Não foi possível enviar o template. Tente novamente.'))
-    } finally {
-      setSendingTemplate(false)
-    }
   }
 
   // Mantém uma referência viva dos anexos para revogar as objectURLs no
@@ -529,7 +472,7 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
         previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
       })),
     ])
-  }, [])
+  }, [toast])
 
   const removeAttachment = useCallback((id: string) => {
     setAttachments((prev) => {
@@ -663,122 +606,19 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
           )}
         </div>
 
-        {/* Template review modal — opened by handleSelectTemplate. Renders the
-            full structure (header / body / footer / buttons) so the operator can
-            validate before sending. Confirm → handleConfirmSendTemplate. */}
-        <Modal
-          open={!!previewTemplate}
-          onClose={() => { if (!sendingTemplate) closeTemplateModal() }}
-          title="Revisar template"
-          className="max-w-2xl"
-          footer={
-            <div className="flex items-center justify-end gap-2">
-              {templateError && (
-                <p role="alert" className="mr-auto text-xs text-red-400 leading-snug min-w-0">{templateError}</p>
-              )}
-              <button
-                type="button"
-                onClick={closeTemplateModal}
-                disabled={sendingTemplate}
-                className="px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:bg-[var(--rowhover)] disabled:opacity-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSendTemplate}
-                disabled={sendingTemplate || !templateReady}
-                title={templateReady ? undefined : 'Preencha todas as variáveis para enviar'}
-                style={{ ['--chip']: 'var(--color-brand-600)' } as React.CSSProperties}
-                className="color-chip inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold border hover:brightness-110 disabled:opacity-60 transition"
-              >
-                {sendingTemplate ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {sendingTemplate ? 'Enviando…' : 'Enviar template'}
-              </button>
-            </div>
-          }
-        >
-          {previewTemplate && (() => {
-            const cat = TEMPLATE_CATEGORY_META[previewTemplate.category]
-            const btnCount = previewTemplate.buttons?.length ?? 0
-            const chip = 'inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700'
-            return (
-              <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
-                {/* Metadata + variables */}
-                <div className="order-2 md:order-1 min-w-0 space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="font-display text-lg font-semibold text-surface-50 leading-tight break-words">{previewTemplate.name}</h3>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={chip}>
-                        <span className={cn('w-1.5 h-1.5 rounded-full', cat?.dot ?? 'bg-surface-500')} />
-                        {cat?.label ?? previewTemplate.category}
-                      </span>
-                      <span className={cn(chip, 'uppercase tracking-wide')}>{previewTemplate.language}</span>
-                      {previewTemplate.headerType && (
-                        <span className={chip}>Cabeçalho: {TEMPLATE_HEADER_LABEL[previewTemplate.headerType]}</span>
-                      )}
-                      {btnCount > 0 && (
-                        <span className={chip}>{btnCount} {btnCount === 1 ? 'botão' : 'botões'}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* SCRUM-807 — um campo por variável do CORPO; o preview ao lado
-                      reflete o que o operador digita e o envio só libera com tudo
-                      preenchido. Antes era só um aviso e o template ia sem
-                      parâmetros ({{1}} cru / rejeição da Meta). */}
-                  {templateSlots.length > 0 ? (
-                    <div className="rounded-lg border border-surface-700 bg-[var(--sf2)] p-3 space-y-2.5">
-                      <p className="text-[11px] font-semibold text-surface-200">
-                        Preencha {templateSlots.length === 1 ? 'a variável' : `as ${templateSlots.length} variáveis`} do template
-                      </p>
-                      {templateSlots.map((slot) => (
-                        <label key={slot.key} className="block min-w-0">
-                          <span className="flex items-center gap-2 text-[11px] mb-1">
-                            <code className="text-accent-dark bg-accent-soft border border-brand-500/25 px-1.5 py-0.5 rounded font-mono shrink-0">{slot.placeholder}</code>
-                            <span className="text-surface-300 truncate">{slot.label}</span>
-                          </span>
-                          <input
-                            type="text"
-                            value={templateVars[slot.key] ?? ''}
-                            onChange={(e) => setTemplateVars((prev) => ({ ...prev, [slot.key]: e.target.value }))}
-                            placeholder={`Valor para ${slot.placeholder}`}
-                            maxLength={1024}
-                            disabled={sendingTemplate}
-                            aria-label={`Variável ${slot.placeholder} — ${slot.label}`}
-                            className="w-full rounded-lg bg-surface-800 border border-surface-700 px-2.5 py-1.5 text-sm text-surface-100 placeholder:text-surface-500 focus:outline-none focus:border-brand-500 disabled:opacity-60"
-                          />
-                        </label>
-                      ))}
-                      {!templateReady && (
-                        <p className="text-[11px] text-surface-400 leading-snug flex items-center gap-1.5">
-                          <Info className="w-3.5 h-3.5 shrink-0" />
-                          {templateMissing === 1 ? 'Falta 1' : `Faltam ${templateMissing}`} de {templateSlots.length}{' '}
-                          {templateSlots.length === 1 ? 'variável' : 'variáveis'} para liberar o envio.
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-surface-500 leading-snug">Template sem variáveis — pronto para envio.</p>
-                  )}
-                </div>
-
-                {/* WhatsApp preview — SEM `compact` de propósito: este Modal
-                    (className="max-w-2xl" acima, 672px) não é um popover
-                    apertado, é o modal "Revisar template" numa coluna `auto`
-                    de um grid de 2, com folga de sobra pro bubble de 296px
-                    do TemplatePreview em tamanho cheio (checado por leitura
-                    após a reescrita de paleta de 22/09 — SCRUM-1097). */}
-                <div className="order-1 md:order-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-500 mb-2">Pré-visualização</p>
-                  <div className="rounded-lg bg-surface-950 border border-surface-700 p-4 flex items-center justify-center">
-                    <TemplatePreview template={previewTemplate} variables={templateVars} />
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
-        </Modal>
+        {/* Template review modal — opened by handleSelectTemplate. Estrutura
+            completa + variáveis + prévia antes de enviar (componente
+            compartilhado com o "Iniciar conversa" dos Leads). */}
+        <TemplateSendModal
+          template={previewTemplate}
+          contactId={contactId}
+          onClose={() => setPreviewTemplate(null)}
+          onSent={() => {
+            onCancelReply?.()
+            setTemplateSent(true)
+            setPreviewTemplate(null)
+          }}
+        />
       </div>
     )
   }
