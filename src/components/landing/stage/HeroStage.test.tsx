@@ -41,12 +41,13 @@ describe('HeroStage', () => {
     vi.unstubAllGlobals()
   })
 
-  it('reduced-motion: laços ambientes desligados, mas o conteúdo (estado mais completo) continua na tela', () => {
+  it('reduced-motion: laços ambientes desligados, mas o conteúdo do liveFrame continua na tela', () => {
     reduced.value = true
     render(<HeroStage />)
     expect(ambientOn()).toBe('false')
     expect(root()).toHaveAttribute('data-stage-mode', 'poster')
-    expect(screen.getByText(DEMO_GUARD_LABEL)).toBeInTheDocument()
+    // Cena 'inbox': liveFrame = 'ia' (fix pontual — o Hero novo substitui esta cena).
+    expect(screen.getByText('Agente IA no controle')).toBeInTheDocument()
   })
 
   it('autoplay=false comporta-se como poster (sem laços ambientes)', () => {

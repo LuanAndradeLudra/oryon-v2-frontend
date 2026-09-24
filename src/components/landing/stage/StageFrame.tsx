@@ -13,6 +13,13 @@ interface FrameProps {
   /** Texto para leitor de tela: o quadro em si é `aria-hidden`. */
   description: string
   className?: string
+  /**
+   * Altura do conteúdo (abaixo do chrome). Default = a régua das cenas de
+   * board (Conversas/Funis/Disparos: 230/460px). O Hero (STORYBOARD-HERO.md)
+   * usa a própria — mudar a câmera do Hero NÃO pode alterar `StagePoster`
+   * (login, seções), e vice-versa: dois contratos de tamanho, uma moldura só.
+   */
+  contentHeightClassName?: string
   children: ReactNode
 }
 
@@ -29,7 +36,7 @@ interface FrameProps {
  * de topo com 3 pontos (não temos abas reais a fechar) e o nome da tela,
  * visível só em `lg` (a barra de 26px do mobile não cabe texto).
  */
-export function StageFrame({ layout, title, ambient, description, className, children }: FrameProps) {
+export function StageFrame({ layout, title, ambient, description, className, contentHeightClassName = 'h-[230px] lg:h-[460px]', children }: FrameProps) {
   return (
     <StageAmbientProvider ambient={ambient}>
       <div
@@ -52,10 +59,7 @@ export function StageFrame({ layout, title, ambient, description, className, chi
           <span className="hidden lg:inline text-[10.5px] font-semibold text-surface-400 ml-1.5">Oryon · {title}</span>
           <span className="ml-auto text-[6px] lg:text-[9.5px] font-semibold text-surface-500 whitespace-nowrap">{STAGE_DEMO_LABEL}</span>
         </div>
-        {/* Altura medida na Attio (460px em lg); metade no mobile — o mesmo
-            fator 2× dos elementos internos, então nada dentro precisa de
-            regra própria de corte. */}
-        <div className="relative h-[230px] lg:h-[460px] flex overflow-hidden">
+        <div className={cn('relative flex overflow-hidden', contentHeightClassName)}>
           {children}
         </div>
       </div>
