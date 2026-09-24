@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
 import { contactsApi } from '@/services/api'
+import { resolveConversationEntry } from '@/lib/conversationEntry'
 import { TemplateSendModal } from '@/components/templates/TemplateSendModal'
 import { TemplatePicker } from '@/components/templates/TemplatePicker'
 import { formatPhoneBR } from '@/lib/utils'
@@ -27,17 +28,10 @@ const MAX_RESULTS = 8
 const MIN_QUERY = 2
 const SEARCH_DEBOUNCE_MS = 300
 
-// ── Stub local (contrato de src/lib/conversationEntry.ts, da Bússola) ─────────
-// `null` = o contato não tem conversa em andamento (precisa de template).
-// Trocar pelo import real quando o arquivo chegar ao épico.
-async function resolveConversationEntry(contactId: string): Promise<{ conversationId: string } | null> {
-  const res = await contactsApi.getConversations(contactId)
-  const active = res.data?.data?.find((c) => c.status === 'open' || c.status === 'pending')
-  return active ? { conversationId: active.id } : null
-}
-
-/** Estado da conversa de um resultado. Ausente no mapa = ainda verificando. */
-type EntryState = { conversationId: string } | null
+/** Estado da conversa de um resultado. Ausente no mapa = ainda verificando.
+ *  `openConversationId` = conversa ATIVA (aberta/pendente); `null` = não há.
+ *  `'error'` = a consulta falhou — NUNCA vira "sem conversa" (não se sabe). */
+type EntryState = { openConversationId: string | null } | 'error'
 
 interface Props {
   open: boolean
@@ -53,6 +47,7 @@ export function NewConversationModal({ open, onClose }: Props) {
 
 function NewConversationFlow({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [creating, setCreating] = useState(false)
@@ -75,17 +70,25 @@ function NewConversationFlow({ onClose }: { onClose: () => void }) {
   const results = searching ? contacts.slice(0, MAX_RESULTS) : []
 
   // Estado real de cada resultado: só consulta quem está na tela e ainda não foi
-  // consultado. Sem resposta = "verificando"; falha = trata como sem conversa
-  // (o caminho seguro é o template, nunca abrir uma conversa que não existe).
+  // consultado. Sem resposta = "verificando"; falha = aviso + "verificar de novo"
+  // (não se sabe se há conversa — não assume nenhum dos dois caminhos).
   useEffect(() => {
     for (const c of results) {
       if (requested.current.has(c.id)) continue
       requested.current.add(c.id)
       resolveConversationEntry(c.id)
-        .then((entry) => setEntries((prev) => ({ ...prev, [c.id]: entry })))
-        .catch(() => setEntries((prev) => ({ ...prev, [c.id]: null })))
+        .then((entry) => setEntries((prev) => ({ ...prev, [c.id]: { openConversationId: entry.openConversationId } })))
+        .catch(() => {
+          setEntries((prev) => ({ ...prev, [c.id]: 'error' }))
+          toast(`Não foi possível verificar a conversa de ${c.displayName || 'este contato'}.`, 'error')
+        })
     }
   })
+
+  const recheck = (id: string) => {
+    requested.current.delete(id)
+    setEntries((prev) => { const next = { ...prev }; delete next[id]; return next })
+  }
 
   const openConversation = (conversationId: string) => {
     onClose()
@@ -169,6 +172,7 @@ function NewConversationFlow({ onClose }: { onClose: () => void }) {
                     entry={entries[c.id]}
                     onOpen={openConversation}
                     onChooseTemplate={setContact}
+                    onRecheck={recheck}
                   />
                 ))}
               </ul>
@@ -211,11 +215,12 @@ function ResultSkeleton() {
   )
 }
 
-function ResultRow({ contact, entry, onOpen, onChooseTemplate }: {
+function ResultRow({ contact, entry, onOpen, onChooseTemplate, onRecheck }: {
   contact: Contact
   entry: EntryState | undefined
   onOpen: (conversationId: string) => void
   onChooseTemplate: (contact: Contact) => void
+  onRecheck: (id: string) => void
 }) {
   const name = contact.displayName || formatPhoneBR(contact.waId) || 'Sem nome'
   return (
@@ -225,13 +230,17 @@ function ResultRow({ contact, entry, onOpen, onChooseTemplate }: {
         <p className="text-[13px] font-semibold leading-[18px] text-surface-100 truncate">{name}</p>
         <p className="text-xs leading-4 text-surface-400 truncate tabular-nums">
           {formatPhoneBR(contact.waId)}
-          {entry && <span className="text-surface-500"> · Conversa aberta</span>}
+          {entry && entry !== 'error' && entry.openConversationId && <span className="text-surface-500"> · Conversa aberta</span>}
         </p>
       </div>
       {entry === undefined ? (
         <Loader2 className="w-3.5 h-3.5 text-surface-500 animate-spin flex-shrink-0" aria-label="Verificando conversa" />
-      ) : entry ? (
-        <Button variant="neutral" size="sm" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={() => onOpen(entry.conversationId)} aria-label={`Abrir conversa com ${name}`}>
+      ) : entry === 'error' ? (
+        <Button variant="neutral" size="sm" onClick={() => onRecheck(contact.id)} aria-label={`Verificar de novo a conversa de ${name}`}>
+          Verificar de novo
+        </Button>
+      ) : entry.openConversationId ? (
+        <Button variant="neutral" size="sm" leftIcon={<MessageSquare className="w-3.5 h-3.5" />} onClick={() => onOpen(entry.openConversationId!)} aria-label={`Abrir conversa com ${name}`}>
           Abrir conversa
         </Button>
       ) : (
