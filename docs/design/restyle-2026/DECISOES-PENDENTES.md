@@ -120,6 +120,17 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     saem da linha; a tabela atual vira o modo "Tabela" (Direção B: 5 colunas, 44px, uma linha por célula) no mesmo
     seletor Lista|Tabela. Reverter: commits da leva (ledger).
 
+34. **Sidebar por clique, não por hover** (23/09, PO: "o mouse encosta no canto e a tela reflui"): estado
+    recolhida (62px) / aberta (228px) escolhido por clique e persistido (`oryon:sidebar-pinned`), `Ctrl/⌘+B`;
+    hover só mostra tooltip. Botão = `PanelLeft` (o do Claude), **sem alfinete**: recolhida, o logo vira o botão no
+    hover/foco; aberta, o botão fica na ponta direita da linha do logo (24px) — nunca numa linha própria. Pílula do
+    item ativo desliza entre itens (`layoutId`). Referências: Claude, Linear, Slack, Notion. Reverter: `a0c249b`.
+35. **Ações da mensagem fora do fluxo** (23/09, PO: "reply e avatar na mesma linha empurram a bolha para o meio"):
+    o botão Responder (28px + gap, `opacity-0`) reservava espaço — toda bolha começava a 68px da borda. Agora as ações
+    (Responder + "⋯") flutuam sobre o lado externo da bolha só no hover, "⋯" e clique direito abrem o MESMO menu (que
+    ganhou "Responder"), bolha começa a 32px (avatar 24 + gap 8), teto 70% → 65% (WhatsApp Web). Avatar mantido na 1ª
+    bolha da sequência (contato / IA / operador). Mobile inalterado (arrastar responde). Reverter: `a0c249b`.
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
