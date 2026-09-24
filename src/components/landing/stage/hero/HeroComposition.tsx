@@ -2,9 +2,27 @@ import { Bot } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { StageRail } from '../primitives/StageRail'
-import { StageConvRow } from '../primitives/StageConvRow'
 import { DEMO_EXISTING } from '../demoData'
 import { HERO, type HeroFrameKey } from './heroData'
+
+/**
+ * Linha do sliver de P0 — NÃO é `StageConvRow`: aquele primitivo é dual-escala
+ * (mobile/`lg:`, para as cenas de board que respiram entre breakpoints); o P0
+ * do Hero é um recorte de câmera FIXA, sempre em `lg` (o container já é
+ * `hidden lg:flex`) — usar o par mobile/lg ali deixaria o glifo de 8,5px do
+ * Avatar `2xs` no DOM à toa. Escala única, a mesma do resto da composição.
+ */
+function HeroShellRow({ name, preview }: { name: string; preview: string }) {
+  return (
+    <div className="flex items-center gap-2 px-2 py-1.5 border-b border-surface-700">
+      <Avatar name={name} size="xs" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold text-surface-100 truncate">{name}</p>
+        <p className="text-[10px] text-surface-500 truncate">{preview}</p>
+      </div>
+    </div>
+  )
+}
 
 /**
  * A composição do Hero — UMA peça só, quatro planos (storyboard §3), cujo
@@ -33,7 +51,7 @@ export function HeroComposition({ frame }: { frame: HeroFrameKey }) {
       <div className="hidden lg:flex flex-none w-[130px] opacity-45 border-r border-surface-700 overflow-hidden">
         <StageRail active="inbox" />
         <div className="flex-1 overflow-hidden">
-          {DEMO_EXISTING.slice(0, 2).map((c) => <StageConvRow key={c.id} conversation={c} />)}
+          {DEMO_EXISTING.slice(0, 2).map((c) => <HeroShellRow key={c.id} name={c.name} preview={c.preview} />)}
         </div>
       </div>
 
