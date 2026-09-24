@@ -5,6 +5,7 @@ import { ConfirmModal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
+import { StageBadge } from './StageBadge'
 import { SendTemplateDrawer } from './SendTemplateDrawer'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -31,7 +32,7 @@ interface ContactDetailHeaderProps {
 }
 
 export function ContactDetailHeader({ contact, onClose, onDelete, compact = false, onExpand, backNav = false }: ContactDetailHeaderProps) {
-  const { pipelines } = useCRMConfig()
+  const { stages, pipelines } = useCRMConfig()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -115,9 +116,14 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
           <div className="flex-1 min-w-0">
             <h2 className="text-[15px] font-bold tracking-[-0.01em] leading-5 text-surface-50 truncate">{contact.displayName}</h2>
             {sub && <p className="text-xs text-surface-400 mt-0.5 truncate">{sub}</p>}
-            {/* Sem chips no cabeçalho (PO, 23/09): etiquetas moram na TagsCard e
-                a situação no bloco "Dados" do painel — o cabeçalho é só
-                identidade (avatar, nome, telefone · e-mail). */}
+            {/* Só a situação aqui. As etiquetas moram numa única seção do painel
+                (TagsCard, editável) — o PO viu o mesmo chip repetido em três
+                lugares do painel acoplado (23/09). */}
+            {contact.stage && (
+              <div className="flex flex-wrap items-center gap-1 mt-2">
+                <StageBadge stage={contact.stage} stages={stages} />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {onExpand && (
@@ -181,6 +187,7 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <h2 className="text-base font-bold tracking-[-0.01em] text-surface-50 truncate">{contact.displayName}</h2>
+          {contact.stage && <StageBadge stage={contact.stage} stages={stages} />}
         </div>
 
         {/* R2-1C-DRAWER-01 (RODADA-2.md): "telefone · e-mail · cliente desde
