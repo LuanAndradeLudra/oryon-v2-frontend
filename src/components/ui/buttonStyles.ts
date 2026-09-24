@@ -20,26 +20,26 @@ export const buttonVariantStyles: Record<ButtonVariant, string[]> = {
   primary: [
     'bg-[var(--color-btn-primary-bg)] text-[var(--color-btn-primary-fg)] font-semibold',
     'hover:brightness-90',
-    'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
+    'focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-[0.45]',
   ],
   neutral: [
     'bg-surface-800 text-surface-100 font-semibold',
     'border border-[var(--bd2)]',
     'hover:bg-surface-700',
-    'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
+    'focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-[0.45]',
   ],
   secondary: [
     'bg-accent-soft text-accent-dark font-semibold',
     'hover:brightness-110',
-    'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
+    'focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-[0.45]',
   ],
   ghost: [
     'bg-transparent text-surface-400 font-semibold px-3',
     'hover:bg-[var(--rowhover)] hover:text-surface-100',
-    'focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
+    'focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
     'disabled:opacity-[0.45]',
   ],
   danger: [

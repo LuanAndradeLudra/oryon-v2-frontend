@@ -1134,7 +1134,11 @@ code, pre, kbd, samp {
  * próprio (ex.: Button com focus-visible:ring + outline-none) continuam
  * vencendo — sem contorno duplicado. */
 :where(button, a[href], [role="tab"], [role="menuitem"], [role="switch"], summary, [tabindex]:not([tabindex="-1"])):focus-visible {
-  outline: 2px solid var(--color-brand-500);
+  /* `--color-btn-primary-bg`, não `--color-brand-500`: no tema claro o brand-500
+     é #14B8A6 sobre #FAFAFC = 2,39:1, abaixo dos 3:1 que a WCAG 1.4.11 exige de
+     indicador de foco (achado da auditoria D, 24/09). O token do botão primário
+     já carrega o desvio por tema: 5,25:1 no claro e 10,74:1 no escuro. */
+  outline: 2px solid var(--color-btn-primary-bg);
   outline-offset: 2px;
   border-radius: 8px;
 }
