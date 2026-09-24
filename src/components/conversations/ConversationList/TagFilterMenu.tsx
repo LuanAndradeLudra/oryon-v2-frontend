@@ -46,7 +46,7 @@ export function TagFilterMenu({ filters, onFiltersChange, allTags }: TagFilterMe
             // quando há etiqueta selecionada ou o menu está aberto; fundo neutro no resto.
             'inline-flex items-center gap-1 h-6 px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer',
             selectedTags.length || open
-              ? 'border-transparent bg-[var(--ink-bg)] text-[var(--ink-fg)]'
+              ? 'border-transparent bg-[var(--ink-bg)] text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)]'
               : 'border-surface-700 bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100',
           )}
         >

@@ -70,7 +70,7 @@ export function SegmentedControl<T extends string>({
               // ELEV-02 (spec 1a): sem sombra fora de overlay.
               variant === 'ink'
                 ? active
-                  ? 'bg-[var(--ink-bg)] text-[var(--ink-fg)]'
+                  ? 'bg-[var(--ink-bg)] text-[var(--ink-fg)] hover:bg-[var(--ink-bg-hover)]'
                   : 'bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100'
                 : active
                   ? solid

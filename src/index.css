@@ -111,7 +111,8 @@
   --sel: rgba(45, 212, 191, .10);
   /* "Tinta" invertida para controle SELECIONADO (filtros da inbox, PO 23/09):
      o maior contraste da linha sem gastar cor. Escuro = claro sobre escuro. */
-  --ink-bg: #ECF1F1;
+  --ink-bg: #B9CACA;        /* não é branco puro (PO, 24/09): dois degraus abaixo */
+  --ink-bg-hover: #CBDADA;  /* hover no selecionado: tint neutro, um degrau acima */
   --ink-fg: #060909;
   /* Painel acoplado do contato (Leads, pedido do PO 23/09): no escuro, o mesmo
      tom da sidebar (#0A0F0F, regra `.workspace-shell` → sidebar mais abaixo),
@@ -975,7 +976,8 @@ code, pre, kbd, samp {
   --rowhover: rgba(15, 23, 42, 0.035);
   --sel: rgba(15, 118, 110, .08);
   /* Claro = escuro sobre claro. */
-  --ink-bg: #111318;
+  --ink-bg: #3A4150;        /* não é preto puro (PO, 24/09): dois degraus acima */
+  --ink-bg-hover: #4A5163;  /* hover no selecionado: um degrau mais claro */
   --ink-fg: #FFFFFF;
   /* No claro, levemente tingido no tom da faixa de cabeçalho das colunas
      (surface-900 = #F5F6F8), destacando-se do branco da lista. */
