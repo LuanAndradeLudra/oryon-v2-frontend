@@ -26,7 +26,7 @@ function canObserve(): boolean {
  *   • `playing` — modo animado E ≥ 30 % do quadro na viewport E aba visível.
  *     Fora disso a timeline congela (zero timers, zero trabalho).
  */
-export function useStagePlayback({ targetRef, autoplay }: Options): { mode: 'play' | 'poster'; playing: boolean } {
+export function useStagePlayback({ targetRef, autoplay }: Options): { mode: 'play' | 'poster'; playing: boolean; inView: boolean; tabVisible: boolean } {
   const reduced = useReducedMotion()
   const [observable] = useState(canObserve)
   const [inView, setInView] = useState(false)
@@ -54,5 +54,5 @@ export function useStagePlayback({ targetRef, autoplay }: Options): { mode: 'pla
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [mode])
 
-  return { mode, playing: mode === 'play' && inView && tabVisible }
+  return { mode, playing: mode === 'play' && inView && tabVisible, inView, tabVisible }
 }

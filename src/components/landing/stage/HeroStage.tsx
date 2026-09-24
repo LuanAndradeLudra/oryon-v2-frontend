@@ -32,7 +32,7 @@ export function HeroStage({
   const rootRef = useRef<HTMLDivElement>(null)
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const layout: StageLayout = isDesktop ? 'desktop' : 'compact'
-  const { mode, playing } = useStagePlayback({ targetRef: rootRef, autoplay })
+  const { mode, playing, inView, tabVisible } = useStagePlayback({ targetRef: rootRef, autoplay })
 
   const def = active ? SCENES[active] : undefined
   if (!def || !active) return null
@@ -43,7 +43,14 @@ export function HeroStage({
   }
 
   return (
-    <div ref={rootRef} className={cn('w-full', className)}>
+    <div
+      ref={rootRef}
+      className={cn('w-full', className)}
+      // Diagnóstico de medição: por que o palco está (ou não) tocando.
+      data-stage-mode={mode}
+      data-stage-inview={inView ? 'true' : 'false'}
+      data-stage-tab-visible={tabVisible ? 'true' : 'false'}
+    >
       {available.length > 1 && (
         <Tabs
           label="Cena do produto"

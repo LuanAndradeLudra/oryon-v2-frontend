@@ -128,3 +128,59 @@ export const DEMO_DEAL_LEAD: DemoDeal = {
 export const FUNIL_SR_DESCRIPTION =
   'Demonstração animada da tela de Funis com dados fictícios: um negócio novo entra em Novo lead, ' +
   'o Agente IA o move para Qualificado e o atendente o arrasta para Proposta enviada.'
+
+// ─── Disparo (cena "Disparos") ───────────────────────────────────────────────
+
+export interface DemoCampaign {
+  id: string
+  name: string
+  status: 'sent' | 'draft'
+  template: string
+  total: number
+  sent: number
+  delivered: number
+  read: number
+  replied: number
+  /** "dd/mm/aaaa". */
+  when: string
+}
+
+/** Campanhas que já estavam na lista. */
+export const DEMO_CAMPAIGNS_BASE: DemoCampaign[] = [
+  { id: 'k-retorno', name: 'Lembrete de retorno', status: 'sent', template: 'lembrete_retorno', total: 48, sent: 48, delivered: 45, read: 31, replied: 9, when: '18/09/2026' },
+  { id: 'k-rascunho', name: 'Novidades do plano anual', status: 'draft', template: 'novidades_plano_anual', total: 0, sent: 0, delivered: 0, read: 0, replied: 0, when: '22/09/2026' },
+]
+
+/** A campanha que é revisada e disparada durante a cena. */
+export const DEMO_CAMPAIGN_NEW = {
+  id: 'k-reabertura',
+  name: 'Aviso de reabertura',
+  template: 'aviso_reabertura',
+  total: 24,
+  delivered: 22,
+  read: 9,
+  replied: 3,
+  audience: 'Situação = Qualificado, Proposta enviada',
+  line: 'Linha principal',
+  when: '24/09/2026',
+} as const
+
+/** Modelo aprovado que o quadro mostra na revisão (prévia com a variável preenchida). */
+export const DEMO_TEMPLATE = {
+  id: 'tpl-demo',
+  tenantId: 'demo',
+  name: 'aviso_reabertura',
+  language: 'pt_BR',
+  category: 'UTILITY',
+  status: 'APPROVED',
+  body: 'Olá {{1}}! Temos novidades no seu plano. Responda SIM para receber os detalhes.',
+  footer: 'Responda PARAR para sair',
+  bodyVariables: ['nome'],
+  createdAt: '2026-09-20T00:00:00Z',
+  updatedAt: '2026-09-20T00:00:00Z',
+} as const
+export const DEMO_TEMPLATE_VARS = { '1': 'Marina' } as const
+
+export const DISPARO_SR_DESCRIPTION =
+  'Demonstração animada da tela de Disparos com dados fictícios: uma campanha com modelo aprovado é ' +
+  'revisada, disparada, e o progresso e os resultados de entrega e leitura aparecem na tela.'
