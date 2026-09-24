@@ -109,6 +109,10 @@
   /* Linha selecionada/aberta em listas e tabelas (Leads, DECISÕES #33):
      tinta da marca a 10% — distinta do hover (branco) e do --sf2 (piso). */
   --sel: rgba(45, 212, 191, .10);
+  /* "Tinta" invertida para controle SELECIONADO (filtros da inbox, PO 23/09):
+     o maior contraste da linha sem gastar cor. Escuro = claro sobre escuro. */
+  --ink-bg: #ECF1F1;
+  --ink-fg: #060909;
   /* Painel acoplado do contato (Leads, pedido do PO 23/09): no escuro, o mesmo
      tom da sidebar (#0A0F0F, regra `.workspace-shell` → sidebar mais abaixo),
      para lista e painel lerem como um só bloco de trabalho. */
@@ -970,6 +974,9 @@ code, pre, kbd, samp {
   /* SCRUM-1097 (claro): ver comentário dark. */
   --rowhover: rgba(15, 23, 42, 0.035);
   --sel: rgba(15, 118, 110, .08);
+  /* Claro = escuro sobre claro. */
+  --ink-bg: #111318;
+  --ink-fg: #FFFFFF;
   /* No claro, levemente tingido no tom da faixa de cabeçalho das colunas
      (surface-900 = #F5F6F8), destacando-se do branco da lista. */
   --panel-bg: var(--color-surface-900);

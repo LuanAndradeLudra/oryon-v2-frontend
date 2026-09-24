@@ -42,10 +42,12 @@ export function TagFilterMenu({ filters, onFiltersChange, allTags }: TagFilterMe
           aria-label="Filtrar por etiqueta"
           title={selectedTags.length ? `Etiquetas: ${selectedTags.map((t) => t.name).join(', ')}` : 'Filtrar por etiqueta'}
           className={cn(
-            'inline-flex items-center gap-1 h-[22px] px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0',
+            // Mesmo vocabulário dos chips (Opção A, PO 23/09): tinta invertida
+            // quando há etiqueta selecionada ou o menu está aberto; fundo neutro no resto.
+            'inline-flex items-center gap-1 h-6 px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer',
             selectedTags.length || open
-              ? 'border-transparent bg-accent-soft text-accent-dark'
-              : 'border-surface-700 text-surface-400 hover:text-surface-100',
+              ? 'border-transparent bg-[var(--ink-bg)] text-[var(--ink-fg)]'
+              : 'border-surface-700 bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100',
           )}
         >
           {selectedTags.length === 1 && (

@@ -31,7 +31,11 @@ interface SegmentedControlProps<T extends string> {
    *   dos badges de tags); o contador do item ativo fica branco com número
    *   preto para contraste. Para filtros de destaque.
    */
-  variant?: 'subtle' | 'solid'
+  /** `ink` (PO, 23/09): selecionado em "tinta" invertida (`--ink-bg/--ink-fg`,
+   *  máximo contraste sem cor) e não selecionado com fundo neutro — o mesmo
+   *  vocabulário dos chips de filtro da inbox, para um único estado
+   *  "selecionado" na linha. */
+  variant?: 'subtle' | 'solid' | 'ink'
   /** aria-label do grupo (obrigatório para leitores de tela). */
   label: string
 }
@@ -64,11 +68,15 @@ export function SegmentedControl<T extends string>({
               size === 'sm' ? 'h-7 px-2.5 text-xs' : size === '32' ? 'h-8 px-2.5 text-xs' : 'h-9 px-3.5 text-[13px]',
               i > 0 && 'border-l border-surface-700',
               // ELEV-02 (spec 1a): sem sombra fora de overlay.
-              active
-                ? solid
-                  ? 'color-chip'
-                  : 'bg-[var(--sf2)] text-surface-100'
-                : 'text-surface-400 hover:text-surface-100',
+              variant === 'ink'
+                ? active
+                  ? 'bg-[var(--ink-bg)] text-[var(--ink-fg)]'
+                  : 'bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100'
+                : active
+                  ? solid
+                    ? 'color-chip'
+                    : 'bg-[var(--sf2)] text-surface-100'
+                  : 'text-surface-400 hover:text-surface-100',
             )}
           >
             {Icon && <Icon className={size === 'md' ? 'w-4 h-4' : 'w-3.5 h-3.5'} />}

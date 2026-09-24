@@ -54,11 +54,13 @@ function Chip({
       aria-pressed={active}
       title={title}
       className={cn(
-        // canvas 1d: chip 22px, raio 6, 11/600; ativo = acsoft sem borda; inativo = borda --bd + tx2.
-        'inline-flex items-center gap-1 h-[22px] px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0',
+        // Opção A (PO, 23/09): um só vocabulário com o segmentado — selecionado em
+        // "tinta" invertida (--ink-bg/--ink-fg), não selecionado com FUNDO neutro
+        // (lê como botão, não como badge), hover escurece. 24px de alto.
+        'inline-flex items-center gap-1 h-6 px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer',
         active
-          ? 'border-transparent bg-accent-soft text-accent-dark'
-          : 'border-surface-700 text-surface-400 hover:text-surface-100',
+          ? 'border-transparent bg-[var(--ink-bg)] text-[var(--ink-fg)]'
+          : 'border-surface-700 bg-surface-800 text-surface-300 hover:bg-[var(--rowhover)] hover:text-surface-100',
       )}
     >
       {children}
@@ -139,6 +141,7 @@ export function ConversationFiltersBar({
           options={SEGMENTS.map(({ label, value }) => ({ value, label }))}
           value={segmentValue as 'me' | 'unassigned' | 'all'}
           onChange={(v) => set({ assignedTo: v })}
+          variant="ink"
           className="flex-shrink-0 [&>button]:px-1.5"
         />
         {/* Chips logo após o segmentado (sem ml-auto): a sobra fica à direita. */}

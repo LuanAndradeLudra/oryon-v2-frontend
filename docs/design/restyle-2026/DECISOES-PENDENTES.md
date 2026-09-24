@@ -131,6 +131,14 @@ Formato: o que foi decidido provisoriamente · alternativa · como reverter.
     ganhou "Responder"), bolha começa a 32px (avatar 24 + gap 8), teto 70% → 65% (WhatsApp Web). Avatar mantido na 1ª
     bolha da sequência (contato / IA / operador). Mobile inalterado (arrastar responde). Reverter: `a0c249b`.
 
+36. **Filtros da inbox — um só vocabulário de "selecionado" (Opção A, PO 24/09):** segmentado Minhas/Fila/Todas e
+    chips Não lidas · ✦ IA · Etiqueta usam a mesma gramática — **selecionado = "tinta" invertida** (`--ink-bg/--ink-fg`:
+    `#ECF1F1/#060909` no escuro, `#111318/#FFFFFF` no claro; máximo contraste sem cor), **não selecionado com fundo
+    neutro** (`surface-800` + borda; hover em `--rowhover`) para ler como botão e não como badge; 24px. Substitui o
+    verde `accent-soft` nos chips (que competia com o verde de status "Resolvida") e a pílula cinza do segmentado.
+    `SegmentedControl` ganhou `variant="ink"`; o `subtle` de outras telas não muda. Referências: Gmail (chip
+    preenchido + ativo sólido), Intercom/Front (ativo invertido), Linear/Notion (uma cor só). Reverter: commit desta linha.
+
 ## Propostas de produto (fora do escopo do redesign)
 - **Visão em cards (kanban) de Contatos por situação** — conversa de 22/09: NÃO fazer agora. Nos CRMs de referência o
   kanban é de negócio (Pipedrive, Close, HubSpot); contato é tabela, com a etapa como coluna/filtro. Salesforce e Attio
