@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { Send, Info } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Send, Info, ChevronLeft } from 'lucide-react'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import type { WhatsAppTemplate } from '@/types'
 import { Modal } from '@/components/ui/Modal'
@@ -33,17 +33,16 @@ interface TemplateSendModalProps {
   /** Quando informado, mostra o aviso de que uma mensagem real será enviada
    *  para essa pessoa (QW-07). Conversas já deixa isso claro pelo contexto. */
   recipientName?: string
-  /** Fecha/volta (Esc, X e o botão de recusa). */
+  /** Encerra: X, Esc e — sem `onBack` — o botão "Cancelar". */
   onClose: () => void
-  /** Rótulo do botão de recusa — "Cancelar" (padrão) ou "Voltar" quando o modal
-   *  é uma etapa de um fluxo (Nova conversa). */
-  cancelLabel?: string
-  cancelIcon?: ReactNode
+  /** Quando o modal é uma ETAPA de um fluxo (Nova conversa): o botão do rodapé
+   *  vira "Voltar" (canto esquerdo) e chama isto; X/Esc continuam encerrando. */
+  onBack?: () => void
   /** Envio concluído (o modal NÃO se fecha sozinho — quem chama decide). */
   onSent: (result: { conversationId: string; messageId: string }) => void
 }
 
-export function TemplateSendModal({ template, contactId, recipientName, onClose, cancelLabel = 'Cancelar', cancelIcon, onSent }: TemplateSendModalProps) {
+export function TemplateSendModal({ template, contactId, recipientName, onClose, onBack, onSent }: TemplateSendModalProps) {
   // Valores das variáveis, chaves "1","2"… — o formato que o <TemplatePreview>
   // lê pro preview ao vivo. Resetados a cada template escolhido.
   const [vars, setVars] = useState<Record<string, string>>({})
@@ -60,6 +59,7 @@ export function TemplateSendModal({ template, contactId, recipientName, onClose,
   const missing = slots.filter((s) => !(vars[s.key] ?? '').trim()).length
 
   const handleClose = () => { if (!sending) onClose() }
+  const handleBack = () => { if (!sending) onBack?.() }
 
   const handleSend = async () => {
     if (!template || sending || !ready) return
@@ -88,12 +88,19 @@ export function TemplateSendModal({ template, contactId, recipientName, onClose,
       className="max-w-2xl"
       footer={
         <div className="flex items-center justify-end gap-2">
+          {onBack ? (
+            <Button variant="neutral" className="mr-auto" onClick={handleBack} disabled={sending} leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}>
+              Voltar
+            </Button>
+          ) : null}
           {error && (
-            <p role="alert" className="mr-auto text-xs text-danger leading-snug min-w-0">{error}</p>
+            <p role="alert" className={cn('text-xs text-danger leading-snug min-w-0', onBack ? 'flex-1' : 'mr-auto')}>{error}</p>
           )}
-          <Button variant="neutral" onClick={handleClose} disabled={sending} leftIcon={cancelIcon}>
-            {cancelLabel}
-          </Button>
+          {!onBack && (
+            <Button variant="neutral" onClick={handleClose} disabled={sending}>
+              Cancelar
+            </Button>
+          )}
           <Button
             variant="primary"
             onClick={handleSend}

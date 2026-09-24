@@ -95,9 +95,9 @@ function NewConversationFlow({ onClose }: { onClose: () => void }) {
     navigate(`/conversations?id=${conversationId}`)
   }
 
-  // Esc/X no passo 2 volta ao passo 1 (não fecha tudo); "Cancelar" fecha.
+  // X e Esc encerram o fluxo INTEIRO em qualquer etapa; só o botão "Voltar" do
+  // rodapé (à esquerda) volta uma etapa.
   const backToWho = () => { setContact(null); setTemplateQuery('') }
-  const handleModalClose = contact ? backToWho : onClose
 
   // Fluxo ÚNICO, sem sobreposição: na revisão (etapa 3) o modal de seleção
   // deixa de ser renderizado (desmonta, sem fade de saída sobreposto) e o
@@ -109,14 +109,14 @@ function NewConversationFlow({ onClose }: { onClose: () => void }) {
     {!pending && (
     <Modal
       open
-      onClose={handleModalClose}
+      onClose={onClose}
       title="Nova conversa"
       className="max-w-[480px] h-[min(560px,90vh)] max-sm:h-[calc(100dvh-2rem)] max-sm:max-w-none max-sm:max-h-none"
       fillHeight
       footer={contact ? (
         <div className="flex items-center justify-between gap-2">
-          <Button variant="ghost" leftIcon={<ChevronLeft className="w-3.5 h-3.5" />} onClick={backToWho}>Voltar</Button>
-          <Button variant="neutral" onClick={onClose}>Cancelar</Button>
+          <Button variant="neutral" leftIcon={<ChevronLeft className="w-3.5 h-3.5" />} onClick={backToWho}>Voltar</Button>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
         </div>
       ) : undefined}
     >
@@ -191,16 +191,15 @@ function NewConversationFlow({ onClose }: { onClose: () => void }) {
     )}
 
     {/* Etapa 3 — variáveis + prévia + envio (o mesmo modal de Conversas/Leads);
-        "Voltar" (e Esc) retornam ao passo 2; ao enviar, abre a conversa já com o
+        "Voltar" (rodapé) retorna ao passo 2; X/Esc encerram tudo; ao enviar, abre a conversa já com o
         template e fecha o fluxo. */}
     {contact && (
       <TemplateSendModal
         template={pending}
         contactId={contact.id}
         recipientName={contact.displayName || undefined}
-        cancelLabel="Voltar"
-        cancelIcon={<ChevronLeft className="w-3.5 h-3.5" />}
-        onClose={() => setPending(null)}
+        onClose={onClose}
+        onBack={() => setPending(null)}
         onSent={(res) => {
           setPending(null)
           openConversation(res.conversationId)

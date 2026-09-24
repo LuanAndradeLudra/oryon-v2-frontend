@@ -46,10 +46,19 @@ describe('TemplateSendModal', () => {
     expect(onSent).not.toHaveBeenCalled()
   })
 
-  it('rótulo de recusa: "Cancelar" por padrão (Conversas) e customizável ("Voltar" nos fluxos em etapas)', () => {
-    const { rerender } = render(<TemplateSendModal template={TPL} contactId="c1" onClose={vi.fn()} onSent={vi.fn()} />)
-    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
-    rerender(<TemplateSendModal template={TPL} contactId="c1" cancelLabel="Voltar" onClose={vi.fn()} onSent={vi.fn()} />)
-    expect(screen.getByRole('button', { name: 'Voltar' })).toBeInTheDocument()
+  it('sem onBack: "Cancelar" encerra (Conversas). Com onBack: "Voltar" volta e X/Esc encerram', () => {
+    const onClose = vi.fn(); const onBack = vi.fn()
+    const { rerender } = render(<TemplateSendModal template={TPL} contactId="c1" onClose={onClose} onSent={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: 'Voltar' })).not.toBeInTheDocument()
+
+    rerender(<TemplateSendModal template={TPL} contactId="c1" onClose={onClose} onBack={onBack} onSent={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+    expect(onBack).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(onClose).toHaveBeenCalledTimes(2)
   })
 })

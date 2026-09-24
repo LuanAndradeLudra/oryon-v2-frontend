@@ -106,13 +106,13 @@ describe('NewConversationModal', () => {
   })
 
   // Fluxo ÚNICO, sem sobreposição: a revisão é a etapa 3 e o modal de seleção sai
-  // da tela enquanto ela está aberta. Esc/Voltar retornam etapa por etapa.
+  // da tela enquanto ela está aberta. "Voltar" (rodapé) retorna etapa por etapa;
+  // X e Esc encerram o fluxo inteiro em QUALQUER etapa.
   it('fluxo completo: contato -> template -> revisar -> Voltar -> passo 2 -> Voltar -> passo 1', async () => {
     listReturns([BIA])
     vi.mocked(contactsApi.getConversations).mockResolvedValue({ data: { data: [] } } as never)
     const onClose = vi.fn()
     render(<LayerProvider><NewConversationModal open onClose={onClose} /></LayerProvider>)
-    const esc = () => fireEvent.keyDown(window, { key: 'Escape' })
 
     search('bia')
     fireEvent.click(await screen.findByRole('button', { name: /Escolher template para Bia Lima/ }))
@@ -131,21 +131,57 @@ describe('NewConversationModal', () => {
     expect(await screen.findByLabelText('Filtrar templates')).toHaveValue('boas')
     expect(screen.getByText(/Escolha o template para iniciar a conversa com/)).toHaveTextContent('Bia Lima')
     await waitFor(() => expect(screen.queryByText('Revisar template')).not.toBeInTheDocument())
-
-    // Esc na revisão também é Voltar.
-    fireEvent.click(await screen.findByText('boas vindas'))
-    expect(await screen.findByText('Revisar template')).toBeInTheDocument()
-    esc()
-    expect(await screen.findByLabelText('Filtrar templates')).toBeInTheDocument()
-    await waitFor(() => expect(screen.queryByText('Revisar template')).not.toBeInTheDocument())
+    expect(onClose).not.toHaveBeenCalled()
 
     // Voltar do passo 2 -> passo 1 (sem fechar o modal).
     fireEvent.click(screen.getByRole('button', { name: /Voltar/ }))
     expect(await screen.findByLabelText('Buscar contato por nome ou telefone')).toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled()
+  })
 
-    // Só no passo 1 o Esc fecha o modal.
-    esc()
+  it('X fecha o fluxo inteiro na revisão (etapa 3)', async () => {
+    listReturns([BIA])
+    vi.mocked(contactsApi.getConversations).mockResolvedValue({ data: { data: [] } } as never)
+    const onClose = vi.fn()
+    render(<LayerProvider><NewConversationModal open onClose={onClose} /></LayerProvider>)
+    search('bia')
+    fireEvent.click(await screen.findByRole('button', { name: /Escolher template para Bia Lima/ }))
+    fireEvent.click(await screen.findByText('boas vindas'))
+    expect(await screen.findByText('Revisar template')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
     expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('X e Esc fecham o fluxo inteiro no passo 2 (não voltam)', async () => {
+    listReturns([BIA])
+    vi.mocked(contactsApi.getConversations).mockResolvedValue({ data: { data: [] } } as never)
+    const onClose = vi.fn()
+    render(<LayerProvider><NewConversationModal open onClose={onClose} /></LayerProvider>)
+    search('bia')
+    fireEvent.click(await screen.findByRole('button', { name: /Escolher template para Bia Lima/ }))
+    await screen.findByLabelText('Filtrar templates')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(2)
+    // Nada voltou ao passo 1.
+    expect(screen.queryByLabelText('Buscar contato por nome ou telefone')).not.toBeInTheDocument()
+  })
+
+  it('Esc no passo 1 e na revisão também encerram', async () => {
+    listReturns([BIA])
+    vi.mocked(contactsApi.getConversations).mockResolvedValue({ data: { data: [] } } as never)
+    const onClose = vi.fn()
+    render(<LayerProvider><NewConversationModal open onClose={onClose} /></LayerProvider>)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+
+    search('bia')
+    fireEvent.click(await screen.findByRole('button', { name: /Escolher template para Bia Lima/ }))
+    fireEvent.click(await screen.findByText('boas vindas'))
+    expect(await screen.findByText('Revisar template')).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(2)
   })
 })
