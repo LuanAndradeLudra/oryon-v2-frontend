@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Loader2, Search, UserPlus, MessageSquare } from 'lucide-react'
+import { Loader2, Search, UserPlus, MessageSquare, ChevronLeft } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -11,8 +11,10 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/useToast'
 import { contactsApi } from '@/services/api'
+import { TemplateSendModal } from '@/components/templates/TemplateSendModal'
+import { TemplatePicker } from '@/components/templates/TemplatePicker'
 import { formatPhoneBR } from '@/lib/utils'
-import type { Contact } from '@/types'
+import type { Contact, WhatsAppTemplate } from '@/types'
 
 // "Nova conversa" dentro de /conversations (PO, 24/09): antes o botão da TopBar
 // e o FAB mandavam pra /contacts. Dois passos num modal só:
@@ -51,10 +53,13 @@ export function NewConversationModal({ open, onClose }: Props) {
 
 function NewConversationFlow({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
-  const { toast } = useToast()
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [creating, setCreating] = useState(false)
+  // Passo 2: contato escolhido (ou recém-criado) e template em revisão.
+  const [contact, setContact] = useState<Contact | null>(null)
+  const [pending, setPending] = useState<WhatsAppTemplate | null>(null)
+  const [templateQuery, setTemplateQuery] = useState('')
   const [entries, setEntries] = useState<Record<string, EntryState>>({})
   const requested = useRef(new Set<string>())
 
@@ -87,24 +92,45 @@ function NewConversationFlow({ onClose }: { onClose: () => void }) {
     navigate(`/conversations?id=${conversationId}`)
   }
 
-  const chooseTemplate = (contact: Contact) => {
-    // Passo 2 (O QUÊ) — entra no próximo commit.
-    toast(`Escolha do template para ${contact.displayName || 'o contato'} entra no próximo passo.`, 'info')
-  }
+  // Esc/X no passo 2 volta ao passo 1 (não fecha tudo); "Cancelar" fecha.
+  const backToWho = () => { setContact(null); setTemplateQuery('') }
+  const handleModalClose = contact ? backToWho : onClose
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleModalClose}
       title="Nova conversa"
       className="max-w-[480px] h-[min(560px,90vh)] max-sm:h-[calc(100dvh-2rem)] max-sm:max-w-none max-sm:max-h-none"
       fillHeight
+      footer={contact ? (
+        <div className="flex items-center justify-between gap-2">
+          <Button variant="ghost" leftIcon={<ChevronLeft className="w-3.5 h-3.5" />} onClick={backToWho}>Voltar</Button>
+          <Button variant="neutral" onClick={onClose}>Cancelar</Button>
+        </div>
+      ) : undefined}
     >
-      {creating ? (
+      {contact ? (
+        <div className="flex flex-col flex-1 min-h-0 gap-3">
+          <p className="text-xs text-surface-400">
+            Escolha o template para iniciar a conversa com{' '}
+            <span className="font-semibold text-surface-200">{contact.displayName || formatPhoneBR(contact.waId)}</span>.
+          </p>
+          <Input
+            value={templateQuery}
+            onChange={(e) => setTemplateQuery(e.target.value)}
+            placeholder="Filtrar templates"
+            aria-label="Filtrar templates"
+          />
+          <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
+            <TemplatePicker onSelect={setPending} query={templateQuery} />
+          </div>
+        </div>
+      ) : creating ? (
         <CreateContactForm
           initialQuery={query.trim()}
           onBack={() => setCreating(false)}
-          onCreated={(c) => { setCreating(false); chooseTemplate(c) }}
+          onCreated={(c) => { setCreating(false); setContact(c) }}
         />
       ) : (
         <div className="flex flex-col flex-1 min-h-0 gap-3">
@@ -142,13 +168,28 @@ function NewConversationFlow({ onClose }: { onClose: () => void }) {
                     contact={c}
                     entry={entries[c.id]}
                     onOpen={openConversation}
-                    onChooseTemplate={chooseTemplate}
+                    onChooseTemplate={setContact}
                   />
                 ))}
               </ul>
             )}
           </div>
         </div>
+      )}
+
+      {/* Variáveis + prévia + envio (o mesmo modal de Conversas/Leads); ao
+          enviar, abre a conversa já com o template e fecha este fluxo. */}
+      {contact && (
+        <TemplateSendModal
+          template={pending}
+          contactId={contact.id}
+          recipientName={contact.displayName || undefined}
+          onClose={() => setPending(null)}
+          onSent={(res) => {
+            setPending(null)
+            openConversation(res.conversationId)
+          }}
+        />
       )}
     </Modal>
   )
