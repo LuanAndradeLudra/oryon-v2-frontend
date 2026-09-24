@@ -78,7 +78,6 @@ const CopilotPage       = lazyRoute(() => import('@/pages/CopilotPage').then(m =
 const MarketingPage     = lazyRoute(() => import('@/pages/MarketingPage').then(m => ({ default: m.MarketingPage })))
 const AutomationsPage   = lazyRoute(() => import('@/pages/AutomationsPage').then(m => ({ default: m.AutomationsPage })))
 const AgentsPage        = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
-const PricingPage       = lazyRoute(() => import('@/pages/PricingPage').then(m => ({ default: m.PricingPage })))
 const TeamChatPage      = lazyRoute(() => import('@/pages/TeamChatPage').then(m => ({ default: m.TeamChatPage })))
 const CanvaCallbackPage = lazyRoute(() => import('@/pages/CanvaCallbackPage').then(m => ({ default: m.CanvaCallbackPage })))
 const MorePage          = lazyRoute(() => import('@/pages/MorePage').then(m => ({ default: m.MorePage })))
@@ -169,7 +168,7 @@ function sectionKeyOf(pathname: string): string {
 /** Rotas fora do AppShell (login, cadastro, onboarding, páginas públicas). */
 const SHELL_LESS_SECTIONS = new Set([
   '/', '/login', '/register', '/forgot-password', '/reset-password', '/activate',
-  '/set-password', '/setup', '/pricing', '/canva',
+  '/set-password', '/setup', '/canva',
 ])
 
 /**
@@ -355,9 +354,6 @@ function AnimatedRoutes() {
           <Route path="/admin/agents" element={
             <ProtectedRoute><RequireSuperAdmin><AdminMobileBlock featureName="Editor de agentes"><AdminAgentEditorPage /></AdminMobileBlock></RequireSuperAdmin></ProtectedRoute>
           } />
-
-          {/* Public pricing */}
-          <Route path="/pricing" element={<PricingPage />} />
 
           {/* Canva OAuth callback — public, opened as popup */}
           <Route path="/canva/callback" element={<CanvaCallbackPage />} />
