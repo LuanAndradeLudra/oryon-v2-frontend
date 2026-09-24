@@ -46,7 +46,7 @@ export interface ContactListRowProps {
   /** Existe alguma linha marcada — checkboxes ficam visíveis em todas. */
   selectionMode?: boolean
   /** `touch` (mobile): SEM checkbox e SEM as 3 ações inline — a linha inteira é
-   *  o alvo, as ações já estão no painel, e a coluna direita é só o "quando". */
+   *  o alvo, as ações já estão no painel, e o "quando" sobe pra linha 1 e a etapa vai pro fim da linha 2. */
   variant?: 'default' | 'touch'
   onOpen: (contact: Contact, e: React.MouseEvent) => void
   /** Sem isto não há checkbox (a página mobile não tem ação em massa). */
@@ -115,25 +115,42 @@ export function ContactListRow({
         <Avatar name={name} imageUrl={contact.profilePicUrl} size="sm" />
       </div>
 
-      <div className="relative pointer-events-none flex-1 min-w-0">
-        <p className="text-[13px] font-semibold leading-[18px] text-surface-100 truncate">{name}</p>
-        {line2 && <p className="text-xs leading-4 text-surface-400 truncate">{line2}</p>}
-      </div>
-
-      {contact.stage && (
-        <div className="relative pointer-events-none flex-shrink-0">
-          <StageBadge stage={contact.stage} stages={stages} size="sm" />
+      {touch ? (
+        /* Touch (padrão WhatsApp): linha 1 = nome + "quando" à direita; linha 2 =
+           subtítulo (trunca) + etapa no FIM. O nome só divide a linha com o
+           "quando" (curto), então não cai a ~120px com etapa longa. */
+        <div className="relative pointer-events-none flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="flex-1 min-w-0 text-[13px] font-semibold leading-[18px] text-surface-100 truncate">{name}</p>
+            <span
+              className="flex-none text-[11px] leading-[18px] text-surface-400 tabular-nums whitespace-nowrap"
+              title={contact.lastContactedAt ? new Date(contact.lastContactedAt).toLocaleString('pt-BR') : undefined}
+            >
+              {when}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="flex-1 min-w-0 text-xs leading-5 text-surface-400 truncate">{line2}</p>
+            {contact.stage && (
+              <span className="flex-none">
+                <StageBadge stage={contact.stage} stages={stages} size="sm" />
+              </span>
+            )}
+          </div>
         </div>
-      )}
+      ) : (
+        <>
+          <div className="relative pointer-events-none flex-1 min-w-0">
+            <p className="text-[13px] font-semibold leading-[18px] text-surface-100 truncate">{name}</p>
+            {line2 && <p className="text-xs leading-4 text-surface-400 truncate">{line2}</p>}
+          </div>
 
-      {/* Touch: coluna direita = só o "quando", auto-width, sempre visível. */}
-      {touch && (
-        <span
-          className="pointer-events-none flex-shrink-0 text-[11.5px] text-surface-400 tabular-nums whitespace-nowrap"
-          title={contact.lastContactedAt ? new Date(contact.lastContactedAt).toLocaleString('pt-BR') : undefined}
-        >
-          {when}
-        </span>
+          {contact.stage && (
+            <div className="relative pointer-events-none flex-shrink-0">
+              <StageBadge stage={contact.stage} stages={stages} size="sm" />
+            </div>
+          )}
+        </>
       )}
 
       {/* "quando · canal" à direita — vira as ações no hover/foco. Ponteiro
