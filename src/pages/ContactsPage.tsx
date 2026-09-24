@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useDeferredValue } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Upload, Settings2, AlertTriangle, List, Table, SlidersHorizontal } from 'lucide-react'
@@ -268,6 +268,14 @@ export function ContactsPage() {
   // Lg+: painel ACOPLADO ao lado da lista, sem scrim. Abaixo de lg (e no mobile)
   // segue a sobreposição de tela inteira.
   const dockedOpen = !isMobile && isLg && !!selectedContactId
+  // Id deferido: React pinta cabeçalho/lista antes de montar o corpo do painel.
+  const deferredContactId = useDeferredValue(selectedContactId)
+  // Semente do painel: o contato como a lista o conhece (nome, telefone,
+  // etapa, etiquetas) — suficiente para o cabeçalho nascer pronto.
+  const seedContact = useMemo(
+    () => (selectedContactId ? contacts.find((c) => c.id === selectedContactId) ?? null : null),
+    [contacts, selectedContactId],
+  )
 
   // CONT-HDR-03/09 (spec/1c-contatos.GAPS.md): subtítulo dinâmico da TopBar
   // substitui o badge de contagem solto entre os botões. Só "N contatos"
@@ -655,21 +663,30 @@ export function ContactsPage() {
             </>
           )}
         </div>
+        {/* Abertura: a coluna de 400px entra de uma vez (um relayout só) e o
+            conteúdo desliza/esmaece em CSS (`.panel-in`). Troca de contato
+            (↑↓/clique): o miolo remonta por `key` com `.panel-swap`, já com o
+            contato da lista como semente — sem spinner. O corpo pesado usa o
+            id DEFERIDO: o cabeçalho pinta primeiro, o resto vem em seguida. */}
         {dockedOpen && selectedContactId && (
           <aside
             aria-label="Detalhe do contato"
-            className="min-w-0 min-h-0 flex flex-col overflow-hidden border-l border-surface-700 bg-surface-800"
+            className="panel-in min-w-0 min-h-0 flex flex-col overflow-hidden border-l border-surface-700 bg-[var(--panel-bg)]"
           >
-            <ContactDetailPanel
-              docked
-              contactId={selectedContactId}
-              initialTab={initialPanelTab}
-              onClose={closePanel}
-              onContactUpdate={handleContactUpdate}
-              onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}
-              onExpand={openProfile}
-              footer={activeIndex >= 0 ? `${activeIndex + 1} de ${total.toLocaleString('pt-BR')} · ↑↓ para navegar` : '↑↓ para navegar'}
-            />
+            <div key={selectedContactId} className="panel-swap flex-1 min-h-0 flex flex-col">
+              <ContactDetailPanel
+                docked
+                contactId={selectedContactId}
+                initialContact={seedContact}
+                deferBody={deferredContactId !== selectedContactId}
+                initialTab={initialPanelTab}
+                onClose={closePanel}
+                onContactUpdate={handleContactUpdate}
+                onContactDeleted={(id) => { removeContact(id); setSelectedContactId(null) }}
+                onExpand={openProfile}
+                footer={activeIndex >= 0 ? `${activeIndex + 1} de ${total.toLocaleString('pt-BR')} · ↑↓ para navegar` : '↑↓ para navegar'}
+              />
+            </div>
           </aside>
         )}
         </div>
@@ -846,7 +863,7 @@ export function ContactsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="fixed top-0 right-0 bottom-0 w-full z-40 bg-surface-800 border-l overlay-frame flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-full z-40 bg-[var(--panel-bg)] border-l overlay-frame flex flex-col"
             >
               <ContactDetailPanel
                 contactId={selectedContactId}
