@@ -34,7 +34,7 @@ export function ViewTabs({ views, value, onChange, hint }: ViewTabsProps) {
         label="Visões de contatos"
         className="flex-1 min-w-0 border-b-0"
       />
-      {hint && <span className="pb-2 text-[11px] text-surface-500 flex-shrink-0 whitespace-nowrap">{hint}</span>}
+      {hint && <span className="hidden sm:inline pb-2 text-[11px] text-surface-500 flex-shrink-0 whitespace-nowrap">{hint}</span>}
     </div>
   )
 }

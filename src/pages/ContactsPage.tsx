@@ -15,7 +15,6 @@ import { CRMConfigDrawer } from '@/components/contacts/CRMConfigDrawer'
 import { ContactsTable } from '@/components/contacts/ContactsTable'
 import { ContactsList } from '@/components/contacts/ContactsList'
 import { SendTemplateDrawer } from '@/components/contacts/SendTemplateDrawer'
-import { ContactsMobileList } from '@/components/contacts/ContactsMobileList'
 import { ContactDetailPanel } from '@/components/contacts/ContactDetailPanel'
 import type { TabId } from '@/components/contacts/ContactDetailTabs'
 import { NewContactDrawer } from '@/components/contacts/NewContactDrawer'
@@ -549,14 +548,12 @@ export function ContactsPage() {
           )}
         />
 
-        {!isMobile && (
-          <ViewTabs
-            views={segments.map((seg) => ({ id: seg.key, label: seg.label, count: segmentCounts[seg.key] }))}
-            value={activeSegment}
-            onChange={handleSegmentChange}
-            hint={`ordenado por ${SORT_HINT[filters.sortBy ?? DEFAULT_SORT.sortBy] ?? 'critério escolhido'}`}
-          />
-        )}
+        <ViewTabs
+          views={segments.map((seg) => ({ id: seg.key, label: seg.label, count: segmentCounts[seg.key] }))}
+          value={activeSegment}
+          onChange={handleSegmentChange}
+          hint={`ordenado por ${SORT_HINT[filters.sortBy ?? DEFAULT_SORT.sortBy] ?? 'critério escolhido'}`}
+        />
 
         <div className={cn(
           'flex-1 min-h-0 grid grid-rows-[minmax(0,1fr)]',
@@ -575,12 +572,15 @@ export function ContactsPage() {
               </button>
             </div>
           ) : isMobile ? (
-            // Mobile: lista vertical pura — tabela larga fica inutilizável em viewport estreita.
-            <ContactsMobileList
+            // Mobile: a mesma lista de pessoas em variante touch (sem checkbox nem
+            // ações inline — as ações estão no painel); tabela larga fica
+            // inutilizável em viewport estreita.
+            <ContactsList
+              variant="touch"
               contacts={contacts}
               loading={loading}
-              onOpenPanel={handleOpenPanel}
-              onOpenDeals={handleOpenDealContact ? (c) => handleOpenDealContact(c.id) : undefined}
+              activeId={selectedContactId}
+              onOpen={handleRowOpen}
               hasMore={hasMore}
               loadingMore={loadingMore}
               onLoadMore={loadMore}

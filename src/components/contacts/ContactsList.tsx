@@ -14,11 +14,13 @@ interface ContactsListProps {
   loading: boolean
   /** Contato com o painel aberto. */
   activeId: string | null
-  selectedIds: Set<string>
+  /** `touch` (mobile): linhas sem checkbox nem ações inline — ver ContactListRow. */
+  variant?: 'default' | 'touch'
+  selectedIds?: Set<string>
   onOpen: (contact: Contact, e: React.MouseEvent) => void
-  onToggleSelect: (id: string) => void
-  onOpenConversation: (contact: Contact) => void
-  onSendTemplate: (contact: Contact) => void
+  onToggleSelect?: (id: string) => void
+  onOpenConversation?: (contact: Contact) => void
+  onSendTemplate?: (contact: Contact) => void
   onOpenProfile?: (contact: Contact) => void
   hasMore?: boolean
   loadingMore?: boolean
@@ -27,19 +29,19 @@ interface ContactsListProps {
   scrollPositionRef?: MutableRefObject<number>
 }
 
-function SkeletonRows() {
+function SkeletonRows({ touch }: { touch: boolean }) {
   return (
     <div aria-hidden className="px-2 py-1">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="h-[52px] flex items-center gap-3 pl-3 pr-2.5 animate-pulse">
-          <span className="w-[14px] flex-shrink-0" />
+          {!touch && <span className="w-[14px] flex-shrink-0" />}
           <span className="w-8 h-8 rounded-full bg-[var(--sf2)] flex-shrink-0" />
           <div className="flex-1 min-w-0 flex flex-col gap-1.5">
             <span className="h-3 w-40 rounded-2xs bg-[var(--sf2)]" />
             <span className="h-2.5 w-64 max-w-full rounded-2xs bg-[var(--sf2)]" />
           </div>
           <span className="h-5 w-20 rounded-xs bg-[var(--sf2)] flex-shrink-0" />
-          <span className="h-3 w-24 rounded-2xs bg-[var(--sf2)] flex-shrink-0" />
+          <span className={touch ? 'h-3 w-10 rounded-2xs bg-[var(--sf2)] flex-shrink-0' : 'h-3 w-24 rounded-2xs bg-[var(--sf2)] flex-shrink-0'} />
         </div>
       ))}
     </div>
@@ -47,7 +49,7 @@ function SkeletonRows() {
 }
 
 export function ContactsList({
-  contacts, loading, activeId, selectedIds,
+  contacts, loading, activeId, variant = 'default', selectedIds,
   onOpen, onToggleSelect, onOpenConversation, onSendTemplate, onOpenProfile,
   hasMore, loadingMore, onLoadMore, scrollPositionRef,
 }: ContactsListProps) {
@@ -68,7 +70,7 @@ export function ContactsList({
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 320) onLoadMore()
   }
 
-  const selectionMode = selectedIds.size > 0
+  const selectionMode = (selectedIds?.size ?? 0) > 0
 
   return (
     <div
@@ -79,7 +81,7 @@ export function ContactsList({
       aria-busy={loading || undefined}
     >
       {loading && contacts.length === 0 ? (
-        <SkeletonRows />
+        <SkeletonRows touch={variant === 'touch'} />
       ) : contacts.length === 0 ? (
         <div className="px-4 pb-4">
           <EmptyState
@@ -96,7 +98,8 @@ export function ContactsList({
               contact={c}
               stages={stages}
               active={activeId === c.id}
-              checked={selectedIds.has(c.id)}
+              variant={variant}
+              checked={selectedIds?.has(c.id) ?? false}
               selectionMode={selectionMode}
               onOpen={onOpen}
               onToggleSelect={onToggleSelect}
