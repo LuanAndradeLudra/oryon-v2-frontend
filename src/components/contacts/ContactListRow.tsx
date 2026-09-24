@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { MessageSquare, Send, MoreHorizontal, ExternalLink, Copy, Phone } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Checkbox } from '@/components/ui/Checkbox'
@@ -61,7 +61,7 @@ export interface ContactListRowProps {
 const ICON_BTN =
   'w-7 h-7 rounded-xs inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-colors'
 
-export function ContactListRow({
+function ContactListRowImpl({
   contact, stages, active, checked = false, selectionMode = false, variant = 'default',
   onOpen, onToggleSelect, onOpenConversation, onSendTemplate, onOpenProfile,
 }: ContactListRowProps) {
@@ -232,3 +232,7 @@ export function ContactListRow({
     </div>
   )
 }
+
+/** Memo raso: a página passa handlers estáveis, então só `active`/`checked`/
+ *  `selectionMode` (e o próprio contato) re-renderizam uma linha. */
+export const ContactListRow = memo(ContactListRowImpl)

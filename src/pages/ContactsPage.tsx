@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Upload, Settings2, AlertTriangle, List, Table, SlidersHorizontal } from 'lucide-react'
@@ -386,33 +386,42 @@ export function ContactsPage() {
     [total, vocab.contact, isMobile],
   )
 
-  const handleOpenPanel = (contact: Contact) => {
+  // Handlers da lista (ContactListRow é React.memo): identidade ESTÁVEL, pra que
+  // abrir/trocar de contato re-renderize só as 2 linhas cujo `active` mudou. O
+  // que muda por render (tamanho da seleção) entra por ref, não por dependência.
+  const handleOpenPanel = useCallback((contact: Contact) => {
     setInitialPanelTab(undefined)
     setSelectedContactId(contact.id)
-  }
+  }, [setSelectedContactId])
 
   // "Abrir ficha": o painel fica aberto durante a navegação (a troca de rota faz
   // o crossfade da tela inteira — AnimatedRoutes dá chave própria a
   // /contacts/:id; fechar antes causaria um slide-out concorrente com o fade).
   // O contato vai no state para a página nascer sem skeleton.
-  const openProfile = isFeatureVisible('contactProfilePage', user?.email)
-    ? (contact: Contact) => navigate(`/contacts/${contact.id}`, { state: { contact } })
-    : undefined
+  const canOpenProfile = isFeatureVisible('contactProfilePage', user?.email)
+  const openProfile = useMemo(
+    () => (canOpenProfile
+      ? (contact: Contact) => navigate(`/contacts/${contact.id}`, { state: { contact } })
+      : undefined),
+    [canOpenProfile, navigate],
+  )
 
   // Linha da lista: Ctrl/Cmd (ou já existir seleção) marca em vez de abrir —
   // mesmo contrato do clique na linha da tabela.
-  const handleRowOpen = (contact: Contact, e: React.MouseEvent) => {
-    if (e.ctrlKey || e.metaKey || selectedIds.size > 0) {
+  const selectionSizeRef = useRef(0)
+  useEffect(() => { selectionSizeRef.current = selectedIds.size }, [selectedIds])
+  const handleRowOpen = useCallback((contact: Contact, e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey || selectionSizeRef.current > 0) {
       e.preventDefault()
       toggleSelect(contact.id)
       return
     }
     handleOpenPanel(contact)
-  }
+  }, [toggleSelect, handleOpenPanel])
 
   // Ação "Abrir conversa" da linha: a conversa mais recente do contato. Sem
   // conversa não há o que abrir — o caminho é o template (não inventa uma).
-  const handleOpenConversation = (contact: Contact) => {
+  const handleOpenConversation = useCallback((contact: Contact) => {
     contactsApi.getConversations(contact.id)
       .then((r) => {
         const conv = r.data?.data?.[0]
@@ -420,7 +429,7 @@ export function ContactsPage() {
         else toast('Este contato ainda não tem conversa. Envie um template para iniciar.', 'info')
       })
       .catch(() => toast('Não foi possível abrir a conversa.', 'error'))
-  }
+  }, [navigate, toast])
 
   const handleMoveStage = async (contact: Contact, stage: ContactStage) => {
     await updateContact(contact.id, { stage })
