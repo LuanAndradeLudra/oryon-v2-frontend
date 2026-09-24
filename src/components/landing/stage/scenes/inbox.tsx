@@ -1,8 +1,8 @@
-import { Home, MessageSquare, Users, Kanban, Megaphone, Search } from 'lucide-react'
+import { MessageSquare, Search } from 'lucide-react'
 import { Tabs } from '@/components/ui/Tabs'
 import { TypingIndicator } from '@/components/conversations/ChatWindow/TypingIndicator'
-import { cn } from '@/lib/utils'
 import { StageConvRow } from '../primitives/StageConvRow'
+import { StageRail } from '../primitives/StageRail'
 import { StageChatHeader, StageHandoffStripe } from '../primitives/StageChatHeader'
 import { StageBubble, StageGuardLine } from '../primitives/StageBubble'
 import { StageEnter } from '../StageMotion'
@@ -11,27 +11,6 @@ import {
 } from '../demoData'
 import type { StageLayout } from '../types'
 import { STEP, leadRow, typedHuman } from './inboxScript'
-
-const RAIL = [Home, MessageSquare, Users, Kanban, Megaphone] as const
-
-/** Trilho de módulos — decorativo; só módulos que existem e estão ligados. */
-function Rail() {
-  return (
-    <div className="w-[52px] flex-shrink-0 flex flex-col items-center gap-1 py-3 border-r border-surface-700 bg-surface-900">
-      {RAIL.map((Icon, i) => (
-        <span
-          key={i}
-          className={cn(
-            'w-8 h-8 rounded-sm flex items-center justify-center text-surface-500',
-            i === 1 && 'bg-[var(--rowhover)] text-surface-100 shadow-[inset_2px_0_0_0_var(--color-brand-500)]',
-          )}
-        >
-          <Icon className="w-4 h-4" strokeWidth={1.75} />
-        </span>
-      ))}
-    </div>
-  )
-}
 
 function ListColumn({ step }: { step: number }) {
   const hasLead = step >= STEP.newRow
@@ -130,7 +109,7 @@ export function InboxScene({ step, layout }: { step: number; layout: StageLayout
   if (layout === 'compact') return <ChatColumn step={Math.max(step, STEP.chatOpen)} pressed={pressed} />
   return (
     <>
-      <Rail />
+      <StageRail active="inbox" />
       <ListColumn step={step} />
       <ChatColumn step={step} pressed={pressed} />
     </>

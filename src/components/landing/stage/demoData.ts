@@ -66,3 +66,65 @@ export const INBOX_SR_DESCRIPTION =
   'Demonstração animada da tela de Conversas com dados fictícios: chega uma mensagem de cliente, ' +
   'o Agente IA responde, o cliente pede uma pessoa e a verificação retém uma resposta com valor; ' +
   'o atendente assume a conversa e responde.'
+
+// ─── Funil (cena "Funis") ────────────────────────────────────────────────────
+
+export interface DemoStage {
+  id: string
+  label: string
+  /** Cor crua da etapa (hex) — o cabeçalho usa `tintaDaEtapa` como o board real. */
+  color: string
+  terminal?: 'won' | 'lost'
+}
+
+export const DEMO_STAGES: DemoStage[] = [
+  { id: 's-novo', label: 'Novo lead', color: '#60A5FA' },
+  { id: 's-qualificado', label: 'Qualificado', color: '#14B8A6' },
+  { id: 's-proposta', label: 'Proposta enviada', color: '#F59E0B' },
+  { id: 's-ganho', label: 'Ganho', color: '#22C55E', terminal: 'won' },
+  { id: 's-perdido', label: 'Perdido', color: '#EF4444', terminal: 'lost' },
+]
+
+export interface DemoDeal {
+  id: string
+  title: string
+  contact: string
+  amountCents: number
+  /** "dd/mm" — previsão de fechamento. */
+  forecast?: string
+  /** Tempo na etapa ("2 d"); `stuck` = "parado N d" em cor de perigo. */
+  time?: string
+  stuck?: boolean
+  /** Movido pela IA (chip âmbar "IA"). */
+  byAi?: boolean
+  /** Iniciais do dono do negócio. */
+  owner?: string
+}
+
+/** Negócios que já estavam no funil (id da etapa -> cards). */
+export const DEMO_DEALS_BASE: Record<string, DemoDeal[]> = {
+  's-novo': [
+    { id: 'd-diego', title: 'Kit inicial · Diego Fictício', contact: 'Diego Fictício', amountCents: 89000, forecast: '03/10', time: '1 d', owner: 'JE' },
+  ],
+  's-qualificado': [
+    { id: 'd-casa', title: 'Plano semestral · Casa Exemplo', contact: 'Casa Exemplo', amountCents: 420000, forecast: '30/09', time: '6 d', stuck: true, owner: 'JE' },
+  ],
+  's-proposta': [
+    { id: 'd-ana', title: 'Plano anual · Ana Modelo', contact: 'Ana Modelo', amountCents: 780000, forecast: '05/10', time: '2 d', owner: 'JE' },
+  ],
+}
+
+/** O negócio que entra e é movido durante a cena. */
+export const DEMO_DEAL_LEAD: DemoDeal = {
+  id: 'd-marina',
+  title: 'Plano trimestral · Marina Exemplo',
+  contact: 'Marina Exemplo',
+  amountCents: 240000,
+  forecast: '02/10',
+  time: 'agora',
+  owner: 'JE',
+}
+
+export const FUNIL_SR_DESCRIPTION =
+  'Demonstração animada da tela de Funis com dados fictícios: um negócio novo entra em Novo lead, ' +
+  'o Agente IA o move para Qualificado e o atendente o arrasta para Proposta enviada.'
