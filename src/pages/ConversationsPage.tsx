@@ -9,6 +9,7 @@ import { ChatWindow } from '@/components/conversations/ChatWindow/ChatWindow'
 import { ContactPanel } from '@/components/conversations/ContactPanel/ContactPanel'
 import { MobilePageHeader } from '@/components/layout/MobilePageHeader'
 import { ConversationsTopBarSlot } from '@/components/layout/ConversationsTopBarSlot'
+import { NewConversationModal } from '@/components/conversations/NewConversationModal'
 import { Fab } from '@/components/common/Fab'
 import { useConversations } from '@/hooks/useConversations'
 import { useSocket } from '@/hooks/useSocket'
@@ -34,6 +35,8 @@ export function ConversationsPage() {
   const navigate = useNavigate()
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
   const [infoOpen, setInfoOpen]     = useState(false)
+  const [newConversationOpen, setNewConversationOpen] = useState(false)
+  const openNewConversation = useCallback(() => setNewConversationOpen(true), [])
   // PL-1-1 (P12/P14): a caixa de entrada abria com o período "Hoje" ligado por
   // padrão — um filtro que o operador não escolheu e que esconde tudo que
   // chegou ontem. Num tenant sem mensagem hoje, a inbox nasce vazia. Intercom,
@@ -582,7 +585,7 @@ export function ConversationsPage() {
   return (
     <>
       {/* CONV-HDR (spec 1d): contagens + chip da linha + "Nova conversa" na TopBar do Shell. */}
-      {!isMobile && <ConversationsTopBarSlot statusCounts={statusCounts} />}
+      {!isMobile && <ConversationsTopBarSlot statusCounts={statusCounts} onNewConversation={openNewConversation} />}
 
       {/* 1 — Conversation list. Mobile and desktop render the SAME list with
           the same props — only the outer wrapper differs (mobile adds the
@@ -729,16 +732,18 @@ export function ConversationsPage() {
           )}
 
       {/* Toast notifications */}
-      {/* Mobile FAB: nova conversa — abre /contacts para escolher um destinatario.
-          So mostra quando lista esta visivel; durante chat ativo, FAB seria
-          ruido. Picker dedicado em bottom sheet fica para PR seguinte. */}
+      {/* Mobile FAB: nova conversa — abre o NewConversationModal (tela cheia no
+          mobile). So mostra quando a lista esta visivel; durante chat ativo,
+          FAB seria ruido. */}
       {showList && !activeConversation && (
         <Fab
           icon={<MessageSquarePlus className="w-6 h-6" />}
           label="Nova conversa"
-          onClick={() => navigate('/contacts')}
+          onClick={openNewConversation}
         />
       )}
+
+      <NewConversationModal open={newConversationOpen} onClose={() => setNewConversationOpen(false)} />
     </>
   )
 }

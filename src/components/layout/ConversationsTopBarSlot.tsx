@@ -5,8 +5,8 @@
 //   • chip da linha "Linha X · conectada" (CONV-HDR-05/06) — linha primária
 //     (ou a única) do `WorkspaceNumberContext`; some se não houver linha ou se
 //     ela não estiver conectada — nunca mostra "conectada" sem evidência;
-//   • botão "Nova conversa" (CONV-HDR-08) — mesma ação do FAB mobile
-//     (abre /contacts para escolher o destinatário).
+//   • botão "Nova conversa" (CONV-HDR-08) — mesma ação do FAB mobile: a página
+//     abre o NewConversationModal (escolher contato → template).
 // Fica em `layout/` (arquivo do orquestrador) e a página só o monta, pra não
 // competir com a leva 1d nos arquivos de `conversations/`.
 //
@@ -14,7 +14,6 @@
 // "Pendentes" nas abas da lista — o header usa a MESMA palavra das abas pra
 // não parecer que são duas contagens diferentes (decisão registrada no GAPS).
 import { Plus } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { useRegisterTopBarActions, useRegisterTopBarSubtitle } from '@/contexts/TopBarActionsContext'
 import { usePrimaryConnectedLine } from '@/hooks/usePrimaryConnectedLine'
@@ -23,10 +22,11 @@ import type { ConversationStatusCounts } from '@/types'
 
 interface Props {
   statusCounts: ConversationStatusCounts
+  /** Abre o modal "Nova conversa" (estado vive na página). */
+  onNewConversation: () => void
 }
 
-export function ConversationsTopBarSlot({ statusCounts }: Props) {
-  const navigate = useNavigate()
+export function ConversationsTopBarSlot({ statusCounts, onNewConversation }: Props) {
   const { connected: lineConnected, label: lineLabel } = usePrimaryConnectedLine()
 
   useRegisterTopBarSubtitle(
@@ -45,10 +45,10 @@ export function ConversationsTopBarSlot({ statusCounts }: Props) {
     // CONV-HDR-08: Button neutral sm (h28, raio 7, borda --bd2, 12px/600), "+" 14px stroke 2.2.
     // Ícone pelo prop `leftIcon` (como os demais botões): como filho solto ele
     // quebrava em linha própria acima do texto (PO, 24/09).
-    <Button variant="neutral" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />} onClick={() => navigate('/contacts')}>
+    <Button variant="neutral" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />} onClick={onNewConversation}>
       Nova conversa
     </Button>,
-    [navigate],
+    [onNewConversation],
   )
 
   return null
