@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
 import React, { useState, createContext, useContext, memo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, useReducedMotion } from 'framer-motion'
 
 interface SidebarContextProps {
   open: boolean
@@ -151,13 +152,15 @@ export const SidebarLink = memo(function SidebarLink({
   onClick?: () => void
 }) {
   const { open, animate } = useSidebar()
+  const reduceMotion = useReducedMotion()
+  const collapsed = animate && !open
 
   const inner = (
     <span
       className={cn(
         // SHELL-SIDEBAR-03 (spec shell.md): item 32px, raio 6, 13px; inativo
         // #8FA5A5 (surface-400 no escuro); ativo pílula clara + 600.
-        'flex items-center w-full h-8 gap-2 px-2 rounded-[6px] transition-colors duration-100',
+        'relative flex items-center w-full h-8 gap-2 px-2 rounded-[6px] transition-colors duration-100',
         // PL-5-3 (eixo 10): recolhida, a barra continuava com o `px-2` + o
         // `gap-2` do rótulo (que fica em `w-0`, mas o gap ainda ocupa) — os 13
         // ícones ficavam com centro em x=28 contra o centro real da barra em
@@ -165,12 +168,24 @@ export const SidebarLink = memo(function SidebarLink({
         // ótico numa coluna de ícones lê como barra torta. Medido ao vivo.
         animate && !open && 'justify-center px-0 gap-0',
         active
-          ? 'bg-white/85 backdrop-blur-sm text-black font-semibold'
+          ? 'text-black font-semibold'
           : 'text-surface-400 hover:bg-white/10 hover:text-white',
       )}
     >
+      {/* Pílula ativa compartilhada (layoutId): ao trocar de página ela
+          DESLIZA do item antigo para o novo em vez de piscar (proposta do
+          Farol no fix das rotas, 23/09). Fica atrás do conteúdo; com
+          prefers-reduced-motion só troca de lugar. */}
+      {active && (
+        <motion.span
+          layoutId="nav-active-pill"
+          aria-hidden
+          className="absolute inset-0 rounded-[6px] bg-white/85 backdrop-blur-sm"
+          transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 40 }}
+        />
+      )}
       {/* Icon wrapper — fixed size so it doesn't shift */}
-      <span className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
+      <span className="relative z-10 flex-shrink-0 w-5 h-5 flex items-center justify-center">
         {icon}
         {/* SIDEBAR-03: contador "Conversas N" — número na pílula quando
             expandida (à direita, abaixo), disco com número sobre o ícone
@@ -192,7 +207,7 @@ export const SidebarLink = memo(function SidebarLink({
       {/* Label — CSS transition instead of AnimatePresence */}
       <span
         className={cn(
-          'flex items-center gap-2 text-[13px] font-medium whitespace-pre overflow-hidden',
+          'relative z-10 flex items-center gap-2 text-[13px] font-medium whitespace-pre overflow-hidden',
           'transition-opacity duration-150',
           // PL-5-3: `flex-1` só quando expandida. Recolhido, o rótulo tem
           // largura 0 mas `flex: 1 1 0%` ainda o faz CRESCER e ocupar a sobra,
@@ -219,9 +234,12 @@ export const SidebarLink = memo(function SidebarLink({
     </span>
   )
 
+  // Recolhida, o rótulo não existe visualmente: `title` faz de tooltip.
+  const title = collapsed ? label : undefined
+
   if (onClick) {
     return (
-      <button onClick={onClick} className={cn('w-full text-left', className)}>
+      <button onClick={onClick} title={title} className={cn('w-full text-left', className)}>
         {inner}
       </button>
     )
@@ -229,7 +247,7 @@ export const SidebarLink = memo(function SidebarLink({
 
   if (href) {
     return (
-      <Link to={href} className={cn('block', className)}>
+      <Link to={href} title={title} className={cn('block', className)}>
         {inner}
       </Link>
     )

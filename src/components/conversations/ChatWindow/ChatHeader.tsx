@@ -20,7 +20,6 @@ import { HandoffChip } from './AiHandoffBanner'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useTenantVocab } from '@/contexts/TenantVocabContext'
-import { StageBadge } from '@/components/contacts/StageBadge'
 import { defaultSalesPipeline } from '@/lib/pipelineKinds'
 import { useResolveWithOutcome } from '@/hooks/useResolveWithOutcome'
 import { ResolveOutcomePopover } from './ResolveOutcomePopover'
@@ -78,7 +77,7 @@ export function ChatHeader({
   // F9 (SCRUM-874): "Adicionar ao funil" a partir da conversa — o registro
   // nasce ligado a ela (`originConversationId`).
   const addToPipeline = useAddToPipeline()
-  const { pipelines, stages } = useCRMConfig()
+  const { pipelines } = useCRMConfig()
   const { vocab } = useTenantVocab()
   /**
    * A3 (SCRUM-925): no mobile o cabeçalho não comporta o "Adicionar ao funil ▾",
@@ -414,9 +413,8 @@ export function ChatHeader({
         <div className="min-w-0">
           <div className="flex items-center gap-2 leading-tight">
             <h2 className="text-[13.5px] font-bold text-surface-100 truncate">{contact.displayName}</h2>
-            {/* CONV-CHAT-05 (spec/1d-conversas.GAPS.md): situação do contato
-                no cabeçalho do chat — existia no ContactPanel, faltava aqui. */}
-            {contact.stage && <StageBadge stage={contact.stage} stages={stages} size="xs" />}
+            {/* Chip de situação saiu do cabeçalho do chat (PO, 23/09): a
+                situação mora no ContactPanel ao lado; aqui é só identidade. */}
           </div>
           {/* R2-1D-HDR: "telefone formatado · visto por último há N" (mock).
               O número da LINHA saiu (já é o ConnectedLineChip da TopBar) e o
