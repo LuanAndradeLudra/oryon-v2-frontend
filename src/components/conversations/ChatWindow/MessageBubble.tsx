@@ -88,25 +88,6 @@ function SenderAvatar({ message, contact }: { message: Message; contact: { displ
   )
 }
 
-/** Inline sender indicator for OUTBOUND messages, pinned to the LEFT of the
- *  meta row. Distinguishes AI / human operator / campaign / rule by glyph — the
- *  useful signal in an omnichannel inbox — at full bubble-foreground contrast.
- *  The sender's name is NOT inline (it's in the bubble's hover tooltip). Inbound
- *  needs none: the customer is identified by the header + left alignment. */
-function SenderInlineIcon({ message }: { message: Message }) {
-  // Icon only, pinned to the left of the meta row — the sender's NAME lives in
-  // the bubble's hover tooltip (senderLabelOf), not inline, so short messages
-  // never widen.
-  const icon = 'w-3 h-3 shrink-0 text-bubble-out-fg'
-  if (message.senderKind === 'campaign') return <Megaphone className={icon} />
-  if (message.senderKind === 'rule') return <Workflow className={icon} />
-  const isAi =
-    message.senderKind === 'ai' ||
-    (message.senderKind == null && !message.sentByUser && !message.sentByUserId)
-  if (!isAi) return <UserRound className={icon} />
-  return <Bot className={icon} />
-}
-
 /** Sender label for the bubble's hover tooltip (outbound only). Operator → full
  *  name; AI → the registered agent name when known, else a generic label;
  *  campaign / rule → their kind. */
@@ -892,7 +873,9 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           {/* Sender attribution pinned to the LEFT of the meta row; the
               timestamp + delivery status sit on the RIGHT (ml-auto). Two
               semantic groups at opposite ends read cleaner than one cluster. */}
-          {isOutbound && <SenderInlineIcon message={message} />}
+          {/* O glifo do remetente (IA / operador / campanha / regra) saiu do
+              rodapé da bolha (PO, 23/09): o avatar em gradiente na 1ª bolha
+              da sequência já diz quem enviou; dentro da bolha era ruído. */}
           <div className="flex items-center gap-1 ml-auto">
             <span className={cn('text-[10.5px]', isOutbound ? 'text-bubble-out-time' : 'text-surface-500')}>
               {timeStr}

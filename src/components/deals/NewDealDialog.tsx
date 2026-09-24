@@ -457,7 +457,7 @@ export function NewDealDialog({
   const FunilIcon = selectedPipeline ? pipelineKindOption(pipelineKindOf(selectedPipeline)).icon : Wallet
 
   const avatarDono = (
-    <span className={cn('w-4 h-4 rounded-[30%] text-[8px] font-semibold grid place-items-center shrink-0', donoUser ? 'avatar-operador' : 'bg-avatar-surface text-avatar-initials')} aria-hidden>
+    <span className={`w-4 h-4 rounded-[30%] text-[8px] font-semibold grid place-items-center shrink-0 ${donoUser ? 'avatar-operador' : 'bg-avatar-surface text-avatar-initials'}`} aria-hidden>
       {ownerUserId === null ? '–' : (donoUser ? iniciais(nomeDe(donoUser)) : '?')}
     </span>
   )
