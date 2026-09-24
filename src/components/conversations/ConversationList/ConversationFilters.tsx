@@ -141,7 +141,8 @@ export function ConversationFiltersBar({
           onChange={(v) => set({ assignedTo: v })}
           className="flex-shrink-0 [&>button]:px-1.5"
         />
-        <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+        {/* Chips logo após o segmentado (sem ml-auto): a sobra fica à direita. */}
+        <div className="ml-1 flex items-center gap-1.5 flex-shrink-0">
           <Chip active={!!filters.unreadOnly} onClick={() => set({ unreadOnly: filters.unreadOnly ? undefined : true })}>
             Não lidas
           </Chip>
