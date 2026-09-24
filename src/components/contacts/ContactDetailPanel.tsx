@@ -29,11 +29,21 @@ interface ContactDetailPanelProps {
   docked?: boolean
   /** Rodapé fixo do painel acoplado (ex.: "3 de 5.191 · ↑↓ para navegar"). */
   footer?: ReactNode
+  /** Contato que a lista já tem em mãos: o painel nasce com ele (sem spinner)
+   *  e só atualiza em silêncio quando o GET volta — é o que deixa a troca
+   *  ↑↓ entre contatos ser um crossfade e não um piscar de esqueleto. */
+  initialContact?: Contact | null
+  /** Enquanto true, monta só cabeçalho (barato) — o corpo (abas e cards) entra
+   *  no render seguinte. Usado com useDeferredValue na página. */
+  deferBody?: boolean
 }
 
-export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, initialTab, onExpand, docked = false, footer }: ContactDetailPanelProps) {
-  const [contact, setContact] = useState<Contact | null>(null)
-  const [loading, setLoading] = useState(true)
+export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onContactDeleted, initialTab, onExpand, docked = false, footer, initialContact, deferBody = false }: ContactDetailPanelProps) {
+  const seed = initialContact && initialContact.id === contactId ? initialContact : null
+  const seedRef = useRef<Contact | null>(seed)
+  seedRef.current = seed
+  const [contact, setContact] = useState<Contact | null>(seed)
+  const [loading, setLoading] = useState(!seed)
   const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? 'overview')
   const { toast } = useToast()
   // Contagem real da aba "Negócios" (README 3.2: "Negócios 4") — reportada
@@ -51,13 +61,18 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
   }, [contactId, initialTab])
 
   useEffect(() => {
-    setLoading(true)
-    setContact(null)
+    const seeded = seedRef.current
+    // Com semente da lista não há spinner: mostra o que já se sabe e troca
+    // pelo dado completo quando chegar. Sem semente (URL direta), spinner.
+    setLoading(!seeded)
+    setContact(seeded)
     setDealsCount(undefined)
+    let cancelled = false
     contactsApi.get(contactId)
-      .then((r) => setContact(r.data))
-      .catch(() => toast('Erro ao carregar contato.', 'error'))
-      .finally(() => setLoading(false))
+      .then((r) => { if (!cancelled) setContact(r.data) })
+      .catch(() => { if (!cancelled) toast('Erro ao carregar contato.', 'error') })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [contactId])
 
   // Live updates for AI profile generation (triggered when a conversation is
@@ -161,7 +176,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
     }
   }
 
-  const tabContent = contact && (
+  const tabContent = contact && !deferBody && (
     <>
       {activeTab === 'overview'      && <OverviewTab
         contact={contact}
