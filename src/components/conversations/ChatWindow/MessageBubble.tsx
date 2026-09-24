@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check, CheckCheck, Clock, AlertCircle, AlertTriangle, MapPin, Mic, Download, Play, Pause,
-  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, Megaphone, CornerUpLeft, Workflow, UserRound,
+  Copy, ExternalLink, Link as LinkIcon, Sparkles, Bot, Megaphone, CornerUpLeft, MoreHorizontal, Workflow, UserRound,
 } from 'lucide-react'
 import { cn, formatFullTime } from '@/lib/utils'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -694,6 +694,11 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
 
   const buildContextMenu = useCallback((): ContextMenuEntry[] => {
     const items: ContextMenuEntry[] = []
+    // Responder é a ação nº 1 do chat: primeira do menu (clique direito, "⋯"
+    // e toque longo caem aqui). Mantém a regra do botão: nunca em falha.
+    if (onReply && message.status !== 'failed') {
+      items.push({ label: 'Responder', icon: CornerUpLeft, onClick: () => onReply(message) })
+    }
     if (message.body) {
       items.push({
         label: 'Copiar mensagem',
@@ -737,7 +742,7 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
       }
     }
     return items
-  }, [message])
+  }, [message, onReply])
 
   const { onContextMenu } = useContextMenu(buildContextMenu)
 
@@ -795,22 +800,11 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           "andar" quando o avatar some. */}
       {showAvatar ? <SenderAvatar message={message} contact={contact} /> : <div className="w-6 h-6 flex-shrink-0" aria-hidden />}
 
-      {/* Desktop reply affordance — appears on hover, beside the bubble. */}
-      {canReply && (
-        <button
-          type="button"
-          onClick={() => onReply!(message)}
-          title="Responder"
-          aria-label="Responder"
-          className="hidden md:flex self-center w-7 h-7 rounded-full items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-surface-700/60 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-        >
-          <CornerUpLeft className="w-3.5 h-3.5" />
-        </button>
-      )}
-
-      {/* Column wrapper — keeps the bubble at max 70% width, aligned to the
-          sender's side. */}
-      <div className={cn('flex flex-col max-w-[70%] min-w-0', isOutbound ? 'items-end' : 'items-start')}>
+      {/* Column wrapper — keeps the bubble at max 65% width (WhatsApp Web),
+          aligned to the sender's side. As ações da mensagem NÃO ficam mais no
+          fluxo da linha: o antigo botão Responder (28px + gap, opacity 0) fazia
+          toda bolha começar a 68px da borda mesmo invisível — PO, 23/09. */}
+      <div className={cn('flex flex-col max-w-[65%] min-w-0', isOutbound ? 'items-end' : 'items-start')}>
         {/* Bubble — soft drop shadow only in light theme (invisible token in
             dark). The sender (AI / operator / campaign / rule) is conveyed by a
             discreet inline icon in the meta row below, outbound only. */}
@@ -832,6 +826,38 @@ export const MessageBubble = memo(function MessageBubble({ message, showAvatar, 
           )}
           style={isOutbound ? { boxShadow: 'var(--bubble-shadow-soft)' } : undefined}
         >
+        {/* Ações flutuantes (Slack/Front): sobrepostas ao lado EXTERNO da
+            bolha, só no hover/foco, sem reservar largura. Responder a um
+            clique; "⋯" abre o mesmo menu do clique direito. Desktop only —
+            no toque, arrastar responde e o toque longo abre o menu. */}
+          <div
+            className={cn(
+              'hidden md:flex absolute top-1/2 -translate-y-1/2 items-center gap-0.5',
+              isOutbound ? 'right-full mr-1.5' : 'left-full ml-1.5',
+              'opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity',
+            )}
+          >
+            {canReply && (
+              <button
+                type="button"
+                onClick={() => onReply!(message)}
+                title="Responder"
+                aria-label="Responder"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+              >
+                <CornerUpLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
+              title="Mais ações"
+              aria-label="Mais ações"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] transition-colors"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" strokeWidth={1.75} />
+            </button>
+          </div>
         {message.contextWamid && <ReplyQuoteBar message={message} quoted={quotedMessage} />}
         <ReferralBanner message={message} />
         <MediaContent message={message} showTranscription={showTranscription} />
