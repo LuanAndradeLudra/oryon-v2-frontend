@@ -58,3 +58,19 @@ de `.reveal`/`.ambient-*`/`--ease-emph` apesar de mesclados; durações em 750/2
 `framer-motion` está isolado em 2 arquivos, o que torna a remoção barata. P14 limpo.
 **Ordem de ataque despachada:** 1) moldura (defeito visível agora) · 2) tirar timeline+cursor+framer na mesma reforma
 · 3) base sem `scale` (pixels literais ×2) · 4) acabamento de durações.
+
+### Palco reescrito na técnica da Attio (Cartógrafo `b97eb6d`)
+Um commit só (os primitivos antigos dependiam do motor que saía na mesma reforma). **Medido ao vivo:**
+`transform: none` (o `scale` morreu), **zero `setTimeout`** no palco, chrome antigo eliminado (0 elementos
+`.overlay-frame`), moldura do hero **1 072×495** = 460 da janela + 34 da barra, a medida literal deles;
+texto de **8,5 a 13,5 px em 50 nós, nítido** — a escala dupla (mobile e `lg:`, razão 2×) substituiu a
+reamostragem. `useStageTimeline` e `StageCursor` apagados; `framer-motion` sobra só como detector de
+`useReducedMotion`. Cenas viraram função pura de `StageFrameKey` (5 estados estáticos cada), 23 testes.
+**Defeito medido:** o quadro do hero está **100 % parado** — `.ambient-ring`/`.ambient-bob`/`.ambient-roll`
+ausentes, porque o ring só vale no quadro `ia`, o bob no funil e o roll no disparo, e o `liveFrame` da cena
+inbox é o pós-handoff. Correção despachada: toda cena precisa de ≥ 1 laço ambiente no seu `liveFrame`.
+**Efeito colateral:** a landing subiu de 4 352 para 4 856 px (a moldura é mais alta, e é medida da Attio —
+não encolher). Orçamento recalibrado para 4 200 px em 1240, cortando em "produto" (1 506).
+**Pendente no login:** `PosterWindow` do `AuthBrandPanel` virou moldura dentro de moldura (medi 679×279 e
+678×495, idênticas) agora que o `StageFrame` traz a janela nativamente — remoção despachada, junto com os
+feixes e a headline rotativa que o PO pediu de volta.
