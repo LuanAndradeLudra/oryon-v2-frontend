@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Loader2, MessageSquare, CheckCircle2 } from 'lucide-react'
+import { X, Send, Loader2, MessageSquare } from 'lucide-react'
 import { templatesApi } from '@/services/api'
 import { TemplateSendModal } from '@/components/templates/TemplateSendModal'
 import type { WhatsAppTemplate, Contact } from '@/types'
@@ -16,8 +17,6 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
   const navigate = useNavigate()
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([])
   const [loading, setLoading] = useState(true)
-  const [sent, setSent] = useState(false)
-  const [convId, setConvId] = useState<string | null>(null)
   const [pendingTemplate, setPendingTemplate] = useState<WhatsAppTemplate | null>(null)
 
   useEffect(() => {
@@ -27,8 +26,6 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
     // analisar este componente depois que o ConfirmModal saiu).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
-    setSent(false)
-    setConvId(null)
     setPendingTemplate(null)
     templatesApi.list('APPROVED')
       .then((r) => setTemplates(Array.isArray(r.data) ? r.data : []))
@@ -36,14 +33,11 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
       .finally(() => setLoading(false))
   }, [open])
 
-  const handleGoToChat = () => {
-    if (convId) navigate(`/conversations?id=${convId}`)
-    onClose()
-  }
-
   if (!open) return null
 
-  return (
+  // Portal em document.body (como ui/Drawer): o `fixed` não pode depender de
+  // nenhum ancestral sem transform — o painel acoplado do contato anima.
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -77,25 +71,7 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
-              {sent ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 px-6 text-center">
-                  <div
-                    className="w-12 h-12 rounded-full color-chip flex items-center justify-center"
-                    style={{ ['--chip']: 'var(--color-success)' } as React.CSSProperties}
-                  >
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <p className="text-sm font-medium text-surface-200">Template enviado com sucesso</p>
-                  <p className="text-xs text-surface-500">A conversa foi criada e está aguardando resposta do contato.</p>
-                  <button
-                    onClick={handleGoToChat}
-                    className="mt-2 flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-brand-600 text-surface-950 hover:bg-brand-500 transition-colors"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    Ir para a conversa
-                  </button>
-                </div>
-              ) : loading ? (
+              {loading ? (
                 <div className="flex items-center justify-center py-16">
                   <Loader2 className="w-5 h-5 text-accent-dark animate-spin" />
                 </div>
@@ -147,11 +123,13 @@ export function SendTemplateDrawer({ contact, open, onClose }: SendTemplateDrawe
         recipientName={contact.displayName || undefined}
         onClose={() => setPendingTemplate(null)}
         onSent={(res) => {
-          setConvId(res.conversationId)
-          setSent(true)
+          // O chat abre já com o template renderizado.
           setPendingTemplate(null)
+          onClose()
+          navigate(`/conversations?id=${res.conversationId}`)
         }}
       />
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }
