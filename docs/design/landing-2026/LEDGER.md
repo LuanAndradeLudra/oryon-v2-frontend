@@ -35,3 +35,12 @@ acompanha o tema claro/escuro, não envelhece com a UI).
 **Redirecionamento das frentes:** B reescreve o palco (mata `scale` e timeline, adota pixels literais ×2, moldura de
 janela, movimento ambiente); C adota tipografia por `svh`, troca a grade de 6 cards por seções de capacidade com quadro
 e corrige os 2 achados altos da auditoria; D aplica a moldura no login e faz a 2ª auditoria cruzada, agora do palco.
+
+### Medição pós-virada (Farol `a8684a3` + `0fd4ed1` + `f3f3eba`)
+**1240×751:** total 4 487 (meta 3 600) — nav 64 · hero 1 078 · como-funciona 834 · produto **1 536** · confiança 532 · cta 354 · footer 89.
+H1 com a fórmula da Attio funcionando: 56,07 px / entrelinha 53,27 / tracking −0,84. Stubs do palco zerados (posters reais).
+**Defeitos:** (1) o palco caiu para **45 % visível na dobra** (topo y=473; antes 63 %); (2) em **390×844 o H1 sai com 61 px em 7 linhas** —
+a fórmula por `svh` só funciona com headline curta: a da Attio tem 4 palavras, a nossa tem 10, e celular é alto (844) e estreito (390).
+Correção despachada: `min(8.2vw, 16px + 5.333svh)` e H1 encurtado para "Seu WhatsApp atende sozinho." com o resto no lead.
+**Foco AA (`8699e8b`)**: anel global e dos botões passam de `brand-500` para `--color-btn-primary-bg` — 5,25:1 no claro, 10,74:1 no escuro
+(medido ao vivo), acima dos 3:1 da WCAG 1.4.11.
