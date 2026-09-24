@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MessageSquare, Clock, CalendarDays, Eye, Tag, Repeat2, UserPlus } from 'lucide-react'
+import { MessageSquare, Clock, CalendarDays, Eye, Repeat2, UserPlus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { contactsApi } from '@/services/api'
@@ -110,26 +110,8 @@ export function ContactInsightsCard({ contact }: Props) {
           />
         )}
 
-        {/* Tags */}
-        {(contact.tags?.length ?? 0) > 0 && (
-          <div className="col-span-2">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Tag className="w-3.5 h-3.5 text-surface-500" />
-              <p className="text-[11px] text-surface-500 font-medium">Tags</p>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {contact.tags!.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="color-chip text-[11px] font-medium px-2 py-0.5 rounded-full border"
-                  style={{ ['--chip']: tag.color } as React.CSSProperties}
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Etiquetas NÃO se repetem aqui: a única seção delas no painel é a
+            TagsCard (editável). Pedido do PO, 23/09. */}
       </div>
     </CollapsibleSection>
   )

@@ -96,7 +96,6 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
   ) : null
   )
 
-  const tags = contact.tags ?? []
   const overlays = (
     <>
       <SendTemplateDrawer
@@ -117,20 +116,12 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
           <div className="flex-1 min-w-0">
             <h2 className="text-[15px] font-bold tracking-[-0.01em] leading-5 text-surface-50 truncate">{contact.displayName}</h2>
             {sub && <p className="text-xs text-surface-400 mt-0.5 truncate">{sub}</p>}
-            {(contact.stage || tags.length > 0) && (
+            {/* Só a situação aqui. As etiquetas moram numa única seção do painel
+                (TagsCard, editável) — o PO viu o mesmo chip repetido em três
+                lugares do painel acoplado (23/09). */}
+            {contact.stage && (
               <div className="flex flex-wrap items-center gap-1 mt-2">
-                {contact.stage && <StageBadge stage={contact.stage} stages={stages} />}
-                {tags.slice(0, 3).map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="color-chip inline-flex items-center h-5 px-[7px] rounded-xs border text-[10.5px] font-semibold whitespace-nowrap max-w-[120px] truncate"
-                    style={{ ['--chip']: tag.color } as React.CSSProperties}
-                    title={tag.name}
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-                {tags.length > 3 && <span className="text-[11px] text-surface-500">+{tags.length - 3}</span>}
+                <StageBadge stage={contact.stage} stages={stages} />
               </div>
             )}
           </div>
