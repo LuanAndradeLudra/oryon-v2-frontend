@@ -43,8 +43,9 @@ export function ConversationsTopBarSlot({ statusCounts }: Props) {
 
   useRegisterTopBarActions(
     // CONV-HDR-08: Button neutral sm (h28, raio 7, borda --bd2, 12px/600), "+" 14px stroke 2.2.
-    <Button variant="neutral" size="sm" onClick={() => navigate('/contacts')}>
-      <Plus className="w-3.5 h-3.5" strokeWidth={2.2} />
+    // Ícone pelo prop `leftIcon` (como os demais botões): como filho solto ele
+    // quebrava em linha própria acima do texto (PO, 24/09).
+    <Button variant="neutral" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" strokeWidth={2.2} />} onClick={() => navigate('/contacts')}>
       Nova conversa
     </Button>,
     [navigate],
