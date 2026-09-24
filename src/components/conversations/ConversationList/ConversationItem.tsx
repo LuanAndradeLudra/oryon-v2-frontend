@@ -215,7 +215,10 @@ export const ConversationItem = memo(function ConversationItem({ conversation, i
               </span>
             ) : aiActive ? (
               <span
-                className="inline-flex items-center gap-1 h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-accent-amber bg-accent-amber/[.12] flex-shrink-0"
+                // PO, 23/09: IA é neutro (cinza claro no escuro, cinza mais
+                // escuro no claro — os tokens surface-* invertem por tema), não
+                // âmbar: âmbar agora é a cor do status "Pendente".
+                className="inline-flex items-center gap-1 h-[17px] px-1.5 rounded-[5px] text-[10.5px] font-bold text-surface-200 bg-surface-700 flex-shrink-0"
                 title="IA respondendo nesta conversa"
               >
                 <Bot className="w-3 h-3" />

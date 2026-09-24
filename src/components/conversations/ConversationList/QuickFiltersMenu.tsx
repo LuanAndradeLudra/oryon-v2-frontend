@@ -169,6 +169,9 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
     setCustomRange(undefined)
     setCalendarOpen(false)
     set({ startDate: range.startDate, endDate: range.endDate })
+    // Período é escolha única: fecha (híbrido, PO 23/09). Limpar (clique no
+    // ativo) e "Personalizado" (abre o calendário) mantêm o menu.
+    setOpen(false); setFlyout(null)
   }
 
   const applyCustomRange = () => {
@@ -176,6 +179,7 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
     const resolved = resolveRange('custom', customRange.from, customRange.to)
     set({ startDate: resolved.startDate, endDate: resolved.endDate })
     setCalendarOpen(false)
+    setOpen(false); setFlyout(null)
   }
 
   const anyActive =
@@ -316,7 +320,10 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
                 pressed={active}
                 leading={tone ? <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', tone.dot)} aria-hidden /> : undefined}
                 className={tone ? (active ? cn(tone.on, 'font-medium') : tone.off) : undefined}
-                onClick={() => set({ status: value })}
+                // Híbrido (PO, 23/09): escolha ÚNICA que redefine a lista
+                // (status, período) fecha o menu; toggles combináveis (Não
+                // lidas, Com IA, SLA, Equipe, etiquetas) ficam abertos.
+                onClick={() => { set({ status: value }); setOpen(false); setFlyout(null) }}
                 trailing={(count ?? 0) > 0 ? (
                   <span className="text-[11px] text-surface-500 tabular-nums">{(count ?? 0) > 999 ? '999+' : count}</span>
                 ) : undefined}
