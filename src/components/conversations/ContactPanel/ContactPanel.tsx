@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X, Search, Check, UserX,
@@ -14,7 +14,7 @@ import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { isAiActive } from '@/lib/conversationSignals'
 import { ConversionAnalysisPanel } from '@/components/conversations/ConversionAnalysisPanel'
-import { ConversationActivitySection, type TimelineEntry } from './ConversationActivitySection'
+import { ConversationActivitySection } from './ConversationActivitySection'
 import { ContactPanelDeals } from './ContactPanelDeals'
 import { roleLabel } from '@/lib/roleHelpers'
 import { isFeatureVisible } from '@/config/featureFlags'
@@ -23,7 +23,7 @@ import { StageBadge } from '@/components/contacts/StageBadge'
 import { useCRMConfig } from '@/contexts/CRMConfigContext'
 import { useAddToPipeline } from '@/hooks/useAddToPipeline'
 import { defaultSalesPipeline } from '@/lib/pipelineKinds'
-import type { Conversation, Tag, TenantStage, User } from '@/types'
+import type { Conversation, Tag, User } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -105,58 +105,6 @@ interface ContactPanelProps {
   onAssign: (user: User | null) => void
   onTransfer: (user: User) => void
   onArchive: () => void
-  /**
-   * Esconde a Timeline (`ConversationActivitySection`). Ela é a ÚNICA seção
-   * deste painel que busca na montagem (histórico de atividade), e numa
-   * superfície pública sem sessão isso vira "Request failed with status code
-   * 401" na tela (visto pelo PO no Hero em 24/09). Usado só pelo Hero da
-   * landing, que reaproveita este painel de verdade com dados de demonstração.
-   */
-  hideTimeline?: boolean
-  /**
-   * Eventos da Timeline vindos por prop, em vez de buscados. Preferir isto a
-   * `hideTimeline`: a seção continua na tela, com a mesma aparência de
-   * produção, só que sem rede. Ver `ConversationActivitySection`.
-   */
-  timelineEntries?: TimelineEntry[]
-  /**
-   * Situações do tenant vindas por prop, em vez do `CRMConfigContext`.
-   *
-   * O contexto só busca com `isAuthenticated` — correto — mas isso deixa o
-   * `StageBadge` sem nenhuma definição numa superfície pública, e a situação
-   * do contato cai no estado "chave órfã" (texto cru, sem cor). Mesmo
-   * princípio de `timelineEntries`: a seção continua sendo a de produção, os
-   * dados é que vêm de fora.
-   */
-  stagesOverride?: TenantStage[]
-  /**
-   * Substitui a seção NEGÓCIOS (`ContactPanelDeals`). Aquela seção é uma
-   * máquina de rede inteira (`useContactPipelines` + socket + toasts) e, sem
-   * o flag `FF_MULTI_PIPELINE` do `/auth/me`, ela simplesmente não renderiza —
-   * o painel público ficaria sem a parte mais importante da história.
-   *
-   * Em vez de duplicar o hook, quem chama monta a MESMA camada de
-   * apresentação (`DealSummary`, densidade `row`) com dados controlados. A
-   * implementação de produção continua única e intocada.
-   */
-  dealsSlot?: ReactNode
-  /**
-   * Superfície de DEMONSTRAÇÃO (o palco do Hero na landing). Duas coisas
-   * mudam, ambas achadas em revisão:
-   *
-   *  • As seções recolhíveis deixam de ler o `localStorage` do app. A landing
-   *    é servida na MESMA origem, então um visitante que um dia recolheu
-   *    "Dados" veria o painel da demonstração abrir com a SITUAÇÃO escondida —
-   *    justamente o que a história está mostrando. O conteúdo da demonstração
-   *    não pode depender da preferência privada de quem visita.
-   *  • As ações do contato ("Ver contato", "Novo negócio") somem. O botão
-   *    "Novo negócio" só não aparecia por acidente: ele depende de
-   *    `defaultSalesPipeline(pipelines)`, vazio sem sessão — mas a rota `/`
-   *    continua acessível para quem ESTÁ logado, e aí a demonstração passaria
-   *    a exibir "Novo negócio" ao lado de um negócio que a história diz que já
-   *    existia.
-   */
-  demo?: boolean
 }
 
 // ─── ContactPanel ─────────────────────────────────────────────────────────────
@@ -164,13 +112,12 @@ interface ContactPanelProps {
 export function ContactPanel({
   conversation, allTags, allUsers, onClose,
   onAddTag, onRemoveTag, onCreateTag, onDeleteTag,
-  onAssign, onTransfer, onArchive, hideTimeline = false, timelineEntries, stagesOverride, dealsSlot, demo = false,
+  onAssign, onTransfer, onArchive,
 }: ContactPanelProps) {
   const { contact, tags = [], assignedUser, createdAt, lastMessageAt } = conversation
 
   const navigate = useNavigate()
-  const { stages: ctxStages, pipelines } = useCRMConfig()
-  const stages = stagesOverride ?? ctxStages
+  const { stages, pipelines } = useCRMConfig()
   const addToPipeline = useAddToPipeline()
   const salesPipeline = defaultSalesPipeline(pipelines)
 
@@ -272,9 +219,6 @@ export function ContactPanel({
               <p className="text-[10px] text-surface-500 mt-0.5">Visto {formatRelativeTime(contact.lastSeenAt)}</p>
             )}
           </div>
-          {/* Não renderiza, em vez de esconder por classe: numa superfície de
-              demonstração o botão não deve existir no DOM. */}
-          {!demo && (
           <div className="flex items-center gap-1.5">
             <Button size="sm" variant="neutral" onClick={() => navigate(`/contacts?contact=${contact.id}`)}>
               Ver contato
@@ -290,13 +234,12 @@ export function ContactPanel({
               </Button>
             )}
           </div>
-          )}
         </div>
 
         {/* DADOS */}
         <CollapsibleSection
           title="Dados"
-          storageKey={`${demo ? 'hero-demo.' : ''}conv-panel.info`}
+          storageKey="conv-panel.info"
           className="border-t border-surface-700"
           actions={
             <div className="flex items-center gap-2">
@@ -329,7 +272,7 @@ export function ContactPanel({
         {/* ETIQUETAS · N */}
         <CollapsibleSection
           title={`Etiquetas · ${tags.length}`}
-          storageKey={`${demo ? 'hero-demo.' : ''}conv-panel.tags`}
+          storageKey="conv-panel.tags"
           className="border-t border-surface-700"
           actions={
             <button onClick={() => setTagOpen(true)} className="text-[11.5px] font-semibold text-accent-dark hover:underline">
@@ -359,23 +302,21 @@ export function ContactPanel({
         </CollapsibleSection>
 
         {/* NEGÓCIOS · N (só aparece quando há registro — ver ContactPanelDeals) */}
-        {dealsSlot ?? (isFeatureVisible('contactPanelDeals') && (
+        {isFeatureVisible('contactPanelDeals') && (
           <ContactPanelDeals contactId={contact.id} contactName={contact.displayName} conversationId={conversation.id} />
-        ))}
+        )}
 
         {/* RESUMO DA IA — feature real (ConversionAnalysisPanel) ocupa este lugar. */}
         {isFeatureVisible('conversionAnalysisPanel') && (
           <ConversionAnalysisPanel conversationId={conversation.id} contact={contact} />
         )}
 
-        <CollapsibleSection title="Mais dados" storageKey={`${demo ? 'hero-demo.' : ''}conv-panel.more`} defaultOpen={false} className="border-t border-surface-700">
+        <CollapsibleSection title="Mais dados" storageKey="conv-panel.more" defaultOpen={false} className="border-t border-surface-700">
           <InfoTable rows={extraRows} />
         </CollapsibleSection>
 
-        {/* Timeline — ver `hideTimeline`: é a única seção que busca na montagem. */}
-        {!hideTimeline && (
-          <ConversationActivitySection conversationId={conversation.id} entries={timelineEntries} />
-        )}
+        {/* Timeline */}
+        <ConversationActivitySection conversationId={conversation.id} />
 
       </div>
 

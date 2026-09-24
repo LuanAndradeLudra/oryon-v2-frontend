@@ -505,15 +505,3 @@ export function heroNotifications(at: HeroState): AppNotification[] {
   })
   return out
 }
-
-// ─── Callbacks ────────────────────────────────────────────────────────────────
-
-/**
- * O palco é decorativo: a moldura é `inert` + `aria-hidden` +
- * `pointer-events-none`, e todo callback é no-op. Isso é higiene, não a
- * garantia de isolamento — a garantia é não montar nada que busque, e as
- * costuras de dados (`timelineEntries`, `stagesOverride`, `dealsSlot`, `demo`)
- * são o que fecha essa porta.
- */
-export const NOOP = () => {}
-export const NOOP_ASYNC = async () => {}

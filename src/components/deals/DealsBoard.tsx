@@ -331,7 +331,6 @@ export function DealsBoard({
                 }}
                 onDragEnd={() => { setDraggingId(null); setOverStageId(null) }}
                 onClick={() => onOpenDeal?.(deal.id)}
-                data-deal-id={deal.id}
                 data-testid={highlightDealId === deal.id ? 'deal-card-highlighted' : undefined}
                 className={cn(
                   // README 3.4: borda 1px, raio 8px, padding 10px 12px.

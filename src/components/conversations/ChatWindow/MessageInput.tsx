@@ -53,12 +53,6 @@ interface MessageInputProps {
   windowOpen: boolean
   /** Horas restantes da janela de 24h (só pra o aviso do rodapé do composer). */
   windowHoursLeft?: number
-  /**
-   * Superfície de DEMONSTRAÇÃO (o palco do Hero na landing): o composer
-   * aparece exatamente como em produção, mas não busca nada na montagem.
-   * Ver o efeito das respostas rápidas abaixo.
-   */
-  demo?: boolean
   disabled?: boolean
   /**
    * When set, the input is locked with a clear explanation instead of
@@ -144,7 +138,7 @@ function QuickReplyPicker({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MessageInput({ onSend, contactId, sending, windowOpen, windowHoursLeft, demo = false, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
+export function MessageInput({ onSend, contactId, sending, windowOpen, windowHoursLeft, disabled, blockedReason, replyTo, onCancelReply }: MessageInputProps) {
   const { toast } = useToast()
   const [text, setText] = useState('')
   const [templateSent, setTemplateSent] = useState(false)
@@ -273,16 +267,10 @@ export function MessageInput({ onSend, contactId, sending, windowOpen, windowHou
   const videoInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
 
-  // Load canned responses once.
-  //
-  // `demo` desliga a única busca que este composer faz na montagem. Medido em
-  // 24/09 no Hero da landing: sem sessão, cada montagem disparava um
-  // `GET /api/canned-responses` que só podia voltar 401. Callback no-op não
-  // impede efeito de montagem — a fronteira tem que ser explícita.
+  // Load canned responses once
   useEffect(() => {
-    if (demo) return
     cannedResponsesApi.fetchAll().then(setAllResponses).catch(() => {})
-  }, [demo])
+  }, [])
 
   // Close attach menu when clicking outside. We MUST check that the click
   // wasn't on the menu (or its toggle), otherwise a mousedown on one of the
