@@ -192,6 +192,7 @@ export function ContactDetailPanel({ contactId, onClose, onContactUpdate, onCont
             onDelete={handleDelete}
             compact={docked}
             onExpand={docked && onExpand ? () => onExpand(contact) : undefined}
+            backNav={!docked}
           />
           <ContactDetailTabs
             activeTab={activeTab}

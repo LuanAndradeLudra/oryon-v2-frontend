@@ -42,13 +42,17 @@ export interface ContactListRowProps {
   /** Painel aberto neste contato — fundo + filete de 2px à esquerda. */
   active: boolean
   /** Marcado para ação em massa. */
-  checked: boolean
+  checked?: boolean
   /** Existe alguma linha marcada — checkboxes ficam visíveis em todas. */
-  selectionMode: boolean
+  selectionMode?: boolean
+  /** `touch` (mobile): SEM checkbox e SEM as 3 ações inline — a linha inteira é
+   *  o alvo, as ações já estão no painel, e a coluna direita é só o "quando". */
+  variant?: 'default' | 'touch'
   onOpen: (contact: Contact, e: React.MouseEvent) => void
-  onToggleSelect: (id: string) => void
-  onOpenConversation: (contact: Contact) => void
-  onSendTemplate: (contact: Contact) => void
+  /** Sem isto não há checkbox (a página mobile não tem ação em massa). */
+  onToggleSelect?: (id: string) => void
+  onOpenConversation?: (contact: Contact) => void
+  onSendTemplate?: (contact: Contact) => void
   /** Sem isto o item "Abrir ficha" some do menu Mais (ficha completa desligada). */
   onOpenProfile?: (contact: Contact) => void
 }
@@ -57,9 +61,10 @@ const ICON_BTN =
   'w-7 h-7 rounded-xs inline-flex items-center justify-center text-surface-400 hover:text-surface-100 hover:bg-[var(--rowhover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-colors'
 
 export function ContactListRow({
-  contact, stages, active, checked, selectionMode,
+  contact, stages, active, checked = false, selectionMode = false, variant = 'default',
   onOpen, onToggleSelect, onOpenConversation, onSendTemplate, onOpenProfile,
 }: ContactListRowProps) {
+  const touch = variant === 'touch'
   const [menuOpen, setMenuOpen] = useState(false)
   const name = contact.displayName || formatPhoneBR(contact.waId) || 'Sem nome'
   const line2 = secondLine(contact)
@@ -89,20 +94,22 @@ export function ContactListRow({
         className="absolute inset-0 rounded-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       />
 
-      <span
-        className={cn(
-          'relative z-10 flex-shrink-0 w-[14px] transition-opacity',
-          checked || selectionMode
-            ? 'opacity-100'
-            : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100',
-        )}
-      >
-        <Checkbox
-          checked={checked}
-          onChange={() => onToggleSelect(contact.id)}
-          aria-label={`Selecionar ${name}`}
-        />
-      </span>
+      {!touch && onToggleSelect && (
+        <span
+          className={cn(
+            'relative z-10 flex-shrink-0 w-[14px] transition-opacity',
+            checked || selectionMode
+              ? 'opacity-100'
+              : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100',
+          )}
+        >
+          <Checkbox
+            checked={checked}
+            onChange={() => onToggleSelect(contact.id)}
+            aria-label={`Selecionar ${name}`}
+          />
+        </span>
+      )}
 
       <div className="relative pointer-events-none flex-shrink-0">
         <Avatar name={name} imageUrl={contact.profilePicUrl} size="sm" />
@@ -119,8 +126,19 @@ export function ContactListRow({
         </div>
       )}
 
+      {/* Touch: coluna direita = só o "quando", auto-width, sempre visível. */}
+      {touch && (
+        <span
+          className="pointer-events-none flex-shrink-0 text-[11.5px] text-surface-400 tabular-nums whitespace-nowrap"
+          title={contact.lastContactedAt ? new Date(contact.lastContactedAt).toLocaleString('pt-BR') : undefined}
+        >
+          {when}
+        </span>
+      )}
+
       {/* "quando · canal" à direita — vira as ações no hover/foco. Ponteiro
           grosso não tem hover: as ações ficam sempre visíveis. */}
+      {!touch && (
       <div className="relative flex-shrink-0 w-[130px] flex justify-end">
         <span
           className={cn(
@@ -138,12 +156,16 @@ export function ContactListRow({
             menuOpen ? 'flex' : 'hidden group-hover:flex group-focus-within:flex [@media(pointer:coarse)]:flex',
           )}
         >
-          <button type="button" className={ICON_BTN} title="Abrir conversa" aria-label={`Abrir conversa com ${name}`} onClick={() => onOpenConversation(contact)}>
-            <MessageSquare className="w-3.5 h-3.5" />
-          </button>
-          <button type="button" className={ICON_BTN} title="Enviar template" aria-label={`Enviar template para ${name}`} onClick={() => onSendTemplate(contact)}>
-            <Send className="w-3.5 h-3.5" />
-          </button>
+          {onOpenConversation && (
+            <button type="button" className={ICON_BTN} title="Abrir conversa" aria-label={`Abrir conversa com ${name}`} onClick={() => onOpenConversation(contact)}>
+              <MessageSquare className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {onSendTemplate && (
+            <button type="button" className={ICON_BTN} title="Enviar template" aria-label={`Enviar template para ${name}`} onClick={() => onSendTemplate(contact)}>
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          )}
           <Dropdown
             open={menuOpen}
             onClose={() => setMenuOpen(false)}
@@ -181,6 +203,7 @@ export function ContactListRow({
           </Dropdown>
         </div>
       </div>
+      )}
     </div>
   )
 }

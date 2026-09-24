@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, MoreHorizontal, Trash2, MessageSquare, ExternalLink } from 'lucide-react'
+import { X, MoreHorizontal, Trash2, MessageSquare, ExternalLink, ArrowLeft } from 'lucide-react'
 import { ConfirmModal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -26,9 +26,12 @@ interface ContactDetailHeaderProps {
   compact?: boolean
   /** "Abrir ficha" — só no modo compacto (no completo é o link das abas). */
   onExpand?: () => void
+  /** Sobreposição de tela inteira (abaixo de lg): seta "Voltar" no lugar do X —
+   *  regra do PO de voltar. No painel acoplado o X continua. */
+  backNav?: boolean
 }
 
-export function ContactDetailHeader({ contact, onClose, onDelete, compact = false, onExpand }: ContactDetailHeaderProps) {
+export function ContactDetailHeader({ contact, onClose, onDelete, compact = false, onExpand, backNav = false }: ContactDetailHeaderProps) {
   const { stages, pipelines } = useCRMConfig()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -178,6 +181,16 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
 
   return (
     <div className="flex items-center gap-3 px-[18px] pt-3.5 pb-0 flex-shrink-0">
+      {backNav && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Voltar"
+          className="-ml-1.5 p-1.5 rounded-sm text-surface-400 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all flex-shrink-0"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+      )}
       <Avatar name={contact.displayName} imageUrl={contact.profilePicUrl} size="md" />
 
       <div className="flex-1 min-w-0">
@@ -212,13 +225,15 @@ export function ContactDetailHeader({ contact, onClose, onDelete, compact = fals
           </Button>
         )}
         {deleteMenu}
-        <button
-          onClick={onClose}
-          aria-label="Fechar"
-          className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        {!backNav && (
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="p-1.5 rounded-sm text-surface-500 hover:text-surface-200 hover:bg-[var(--rowhover)] transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {overlays}
