@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { X, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { resolveActivePreset } from '@/lib/dateRange'
 import { resolveHandlingValue } from '@/lib/conversationFilterState'
@@ -55,7 +55,7 @@ function Chip({
       title={title}
       className={cn(
         // canvas 1d: chip 22px, raio 6, 11/600; ativo = acsoft sem borda; inativo = borda --bd + tx2.
-        'inline-flex items-center h-[22px] px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0',
+        'inline-flex items-center gap-1 h-[22px] px-2 rounded-xs border text-[11px] font-semibold whitespace-nowrap transition-colors flex-shrink-0',
         active
           ? 'border-transparent bg-accent-soft text-accent-dark'
           : 'border-surface-700 text-surface-400 hover:text-surface-100',
@@ -130,25 +130,29 @@ export function ConversationFiltersBar({
           Etiqueta) e o segmentado Minhas/Fila/Todas à direita. O menu de
           filtros subiu para a linha da busca (ConversationList); o chip "SLA"
           saiu (o filtro "Cliente aguardando" continua no menu/pílulas). */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <Chip active={!!filters.unreadOnly} onClick={() => set({ unreadOnly: filters.unreadOnly ? undefined : true })}>
-          Não lidas
-        </Chip>
-        <Chip
-          active={filters.aiHandling === 'active'}
-          onClick={() => set({ aiHandling: filters.aiHandling === 'active' ? 'all' : 'active' })}
-        >
-          Com IA
-        </Chip>
-        <TagFilterMenu filters={filters} onFiltersChange={onFiltersChange} allTags={allTags} />
-        <div className="ml-auto">
-          {/* Primitivo SegmentedControl (barra unida do canvas 1d, CONV-LIST-02..05). */}
-          <SegmentedControl
-            label="Atendimento"
-            options={SEGMENTS.map(({ label, value }) => ({ value, label }))}
-            value={segmentValue as 'me' | 'unassigned' | 'all'}
-            onChange={(v) => set({ assignedTo: v })}
-          />
+      <div className="flex items-center gap-1.5 flex-nowrap">
+        {/* Primitivo SegmentedControl (barra unida do canvas 1d, CONV-LIST-02..05),
+            à ESQUERDA e mais compacto (px 6 em vez de 10) para os seis filtros
+            caberem numa linha de 335px (PO, 23/09). */}
+        <SegmentedControl
+          label="Atendimento"
+          options={SEGMENTS.map(({ label, value }) => ({ value, label }))}
+          value={segmentValue as 'me' | 'unassigned' | 'all'}
+          onChange={(v) => set({ assignedTo: v })}
+          className="flex-shrink-0 [&>button]:px-1.5"
+        />
+        <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+          <Chip active={!!filters.unreadOnly} onClick={() => set({ unreadOnly: filters.unreadOnly ? undefined : true })}>
+            Não lidas
+          </Chip>
+          <Chip
+            active={filters.aiHandling === 'active'}
+            onClick={() => set({ aiHandling: filters.aiHandling === 'active' ? 'all' : 'active' })}
+            title="Conversas com IA respondendo"
+          >
+            <Sparkles className="w-3 h-3" strokeWidth={1.75} aria-hidden /> IA
+          </Chip>
+          <TagFilterMenu filters={filters} onFiltersChange={onFiltersChange} allTags={allTags} />
         </div>
       </div>
 
