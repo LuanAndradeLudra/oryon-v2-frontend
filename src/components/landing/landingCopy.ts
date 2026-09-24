@@ -7,7 +7,8 @@
  *   pronto (Agendamentos, Conectores, Copilot, Automações, Marketing, Nexus).
  * - P15: vocabulário do produto — Agente IA (nunca "bot"), Atendente, Conversas,
  *   Leads, Funis · Negócios, Disparos · Modelos de mensagem, Situação · Etapa ·
- *   Etiquetas, Setores, Assumir / Devolver à IA.
+ *   Etiquetas, Setores, Assumir / Reativar IA (auditoria audit-D.md, 24/09: o
+ *   botão do app é "Reativar IA", "Devolver à IA" não existe na interface).
  * - Cada frase abaixo descreve algo que o app faz hoje. Se deixar de ser
  *   verdade, muda aqui — as seções só renderizam.
  *
@@ -47,7 +48,10 @@ export const hero = {
 
 export const howItWorks = {
   title: 'A IA começa a conversa. A sua equipe termina quando precisa.',
-  lead: 'Cada linha do WhatsApp tem um Agente IA. As regras de transferência decidem o momento de chamar uma pessoa.',
+  // Sem lastro pra "toda linha tem um agente": em Configurações > Números
+  // WhatsApp o agente é opcional por número (pode ficar "Nenhum agente —
+  // atendimento humano"). A frase descreve a CAPACIDADE, não uma garantia.
+  lead: 'Cada número do WhatsApp pode ter um Agente IA atribuído. As regras de transferência decidem o momento de chamar uma pessoa.',
   steps: [
     {
       key: 'ia',
@@ -64,7 +68,7 @@ export const howItWorks = {
     {
       key: 'humano',
       title: 'O Atendente conduz',
-      text: 'A equipe responde do mesmo lugar e, quando o assunto volta ao simples, pode Devolver à IA.',
+      text: 'A equipe responde do mesmo lugar e, quando o assunto volta ao simples, pode Reativar a IA.',
       posterLabel: 'Conversa sendo conduzida por um Atendente',
     },
   ],

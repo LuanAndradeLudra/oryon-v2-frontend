@@ -26,7 +26,7 @@ export function Trust() {
         <h2 className="font-display font-extrabold tracking-[-0.02em] leading-[1.1] text-surface-50 text-[clamp(1.75rem,3.4vw,2.5rem)]">
           {trust.title}
         </h2>
-        <p className="mt-3 max-w-[60ch] text-base leading-relaxed text-surface-300">{trust.lead}</p>
+        <p className="mt-3 max-w-[60ch] text-base leading-relaxed text-surface-400">{trust.lead}</p>
 
         <ul className="mt-8 divide-y divide-surface-700 border-y border-surface-700">
           {trust.items.map((item) => {
@@ -40,7 +40,7 @@ export function Trust() {
                   <Icon className="w-4 h-4 flex-none text-surface-400" strokeWidth={1.75} aria-hidden />
                   {item.title}
                 </h3>
-                <p className="text-sm leading-relaxed text-surface-300">{item.text}</p>
+                <p className="text-sm leading-relaxed text-surface-400">{item.text}</p>
               </li>
             )
           })}

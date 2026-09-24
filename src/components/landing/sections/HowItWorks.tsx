@@ -16,7 +16,7 @@ export function HowItWorks() {
         <h2 className="max-w-[24ch] font-display font-extrabold tracking-[-0.02em] leading-[1.1] text-surface-50 text-[clamp(1.75rem,3.4vw,2.5rem)]">
           {howItWorks.title}
         </h2>
-        <p className="mt-4 max-w-[60ch] text-base leading-relaxed text-surface-300">{howItWorks.lead}</p>
+        <p className="mt-4 max-w-[60ch] text-base leading-relaxed text-surface-400">{howItWorks.lead}</p>
 
         <ol className="mt-8 grid gap-10 md:grid-cols-3 md:gap-8">
           {howItWorks.steps.map((step) => (
@@ -28,7 +28,7 @@ export function HowItWorks() {
                 <StagePoster scene="inbox" frame={step.key} layout="compact" />
               </div>
               <h3 className="mt-5 font-display text-lg font-bold tracking-[-0.01em] text-surface-50">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-surface-300">{step.text}</p>
+              <p className="mt-2 text-sm leading-relaxed text-surface-400">{step.text}</p>
             </li>
           ))}
         </ol>
