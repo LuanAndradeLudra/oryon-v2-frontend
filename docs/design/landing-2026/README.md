@@ -57,7 +57,8 @@ só `@/components/landing/stage` (index) e `@/components/ui/*`; não se importam
 3. Onda 2: B entrega inbox → C/D trocam stub; B faz funil e disparo; C liga abas; A mede.
 4. Onda 3: polimento cruzado (B audita D; C audita fidelidade de B; D audita C) — 2 ciclos; A mede e consolida
    no `LEDGER.md`.
-5. Fecho (A): apagar `ui/LoginBeams.tsx`, smoke, typecheck/lint/test/build, merge no épico. Sem push/PR.
+5. Fecho (A): smoke, typecheck/lint/test/build, merge no épico. Sem push/PR.
+   (`ui/LoginBeams.tsx` **fica** — ver exceções do PO acima.)
 
 ## Verificação (A, ao vivo, 2 temas, 1440 e 390)
 LCP < 2,5 s (elemento = H1/frame DOM); alturas por `[data-section]`; contraste AA; 390 sem overflow-x e
