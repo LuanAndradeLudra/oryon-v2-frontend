@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act, cleanup } from '@testing-library/react'
 import { HeroStage } from './HeroStage'
 import { StagePoster } from './StagePoster'
-import { STAGE_DEMO_LABEL } from './types'
+import { STAGE_DEMO_LABEL } from './demoLabel'
 import { DEMO_GUARD_LABEL } from './demoData'
 
 const reduced = vi.hoisted(() => ({ value: false }))
