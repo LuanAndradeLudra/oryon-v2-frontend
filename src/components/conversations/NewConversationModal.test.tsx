@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { NewConversationModal } from './NewConversationModal'
 import { contactsApi, templatesApi } from '@/services/api'
+import { LayerProvider } from '@/contexts/LayerContext'
 import type { Contact, WhatsAppTemplate } from '@/types'
 
 const navigate = vi.fn()
@@ -110,7 +111,7 @@ describe('NewConversationModal', () => {
     listReturns([BIA])
     vi.mocked(contactsApi.getConversations).mockResolvedValue({ data: { data: [] } } as never)
     const onClose = vi.fn()
-    render(<NewConversationModal open onClose={onClose} />)
+    render(<LayerProvider><NewConversationModal open onClose={onClose} /></LayerProvider>)
     const esc = () => fireEvent.keyDown(window, { key: 'Escape' })
 
     search('bia')
