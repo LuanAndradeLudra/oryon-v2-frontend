@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { motion, useAnimate, useMotionValue, useReducedMotion, useTransform } from 'framer-motion'
 import { Pause, Play } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -6,10 +6,13 @@ import { cn } from '@/lib/utils'
 import { useHeroTimeline } from './useHeroTimeline'
 import { HERO_CUES, HERO_ROTAS, HERO_STATIC_CUE, HERO_TAIL_MS, type HeroCena, type HeroState } from './heroStory'
 import { reached } from './heroRealData'
-import {
-  Bandeja, ConteudoCelular, ConteudoLinhaDoTempo, ConteudoNotificacoes, Satelite, TITULOS_SATELITES,
-  type PoseSatelite,
-} from './HeroSatelites'
+import { Bandeja, Satelite, TITULOS_SATELITES, type PoseSatelite } from './HeroSatelites'
+
+// O conteúdo das satélites (componentes reais do produto, com dependências
+// pesadas) só é baixado quando a demonstração fica pronta.
+const ConteudoCelular = lazy(() => import('./HeroSatelitesConteudo').then((m) => ({ default: m.ConteudoCelular })))
+const ConteudoNotificacoes = lazy(() => import('./HeroSatelitesConteudo').then((m) => ({ default: m.ConteudoNotificacoes })))
+const ConteudoLinhaDoTempo = lazy(() => import('./HeroSatelitesConteudo').then((m) => ({ default: m.ConteudoLinhaDoTempo })))
 
 /**
  * O PALCO DO HERO — o Oryon de verdade, operando.
@@ -268,8 +271,8 @@ export function HeroPalco({ className }: { className?: string }) {
           </motion.div>
 
           {/* AS SATÉLITES — só no desktop; no celular o palco é a âncora. */}
-          {!celular && (
-            <>
+          {!celular && pronta && (
+            <Suspense fallback={null}>
               <Satelite pose={POSES.celular} visivel={pronta && vis.celular} atraso={0.25} titulo={TITULOS_SATELITES.celular} y={ySatelites}>
                 <ConteudoCelular />
               </Satelite>
@@ -279,7 +282,7 @@ export function HeroPalco({ className }: { className?: string }) {
               <Satelite pose={POSES.linhaDoTempo} visivel={pronta && vis.linhaDoTempo} atraso={0.35} titulo={TITULOS_SATELITES.linhaDoTempo} y={ySatelites}>
                 <ConteudoLinhaDoTempo at={state} />
               </Satelite>
-            </>
+            </Suspense>
           )}
         </div>
       </div>

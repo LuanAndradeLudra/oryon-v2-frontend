@@ -1,13 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { motion, useReducedMotion, type MotionValue } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
-import { NotificationItem } from '@/components/notifications/NotificationItem'
-import { ConversationActivitySection } from '@/components/conversations/ContactPanel/ConversationActivitySection'
-import {
-  HERO, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroNotifications, heroTimeline,
-} from './heroRealData'
-import type { HeroState } from './heroStory'
+import { HERO } from './heroRealData'
 
 /**
  * A BANDEJA — a moldura de todas as janelas do palco (a âncora e as
@@ -91,7 +85,9 @@ export function Satelite({
     <motion.div
       className="absolute"
       style={{ left: pose.x, top: pose.y, width: pose.w, transformOrigin: pose.origem, zIndex: 30, y }}
-      initial={false}
+      // Montada só quando a demonstração fica pronta: nasce escondida para a
+      // primeira entrada também ser animada.
+      initial={{ opacity: 0, scale: 0.94, filter: 'blur(3px)' }}
       animate={visivel
         ? { opacity: 1, scale: 1, filter: 'blur(0px)' }
         : { opacity: 0, scale: 0.94, filter: 'blur(3px)' }}
@@ -103,38 +99,6 @@ export function Satelite({
         {children}
       </Bandeja>
     </motion.div>
-  )
-}
-
-const NOOP = () => {}
-
-// ─── As três satélites — cada uma é um componente REAL do produto ───────────
-
-/** O modelo aprovado da campanha, como o WhatsApp mostra (`TemplatePreview`). */
-export function ConteudoCelular() {
-  return (
-    <div className="pointer-events-none">
-      <TemplatePreview template={HERO_TEMPLATE} variables={HERO_TEMPLATE_VARIAVEIS} variant="frame" />
-    </div>
-  )
-}
-
-/** O sino da TopBar: os mesmos itens de notificação do produto. */
-export function ConteudoNotificacoes({ at }: { at: HeroState }) {
-  const lista = heroNotifications(at)
-  return (
-    <div className="flex flex-col divide-y divide-surface-800 bg-surface-900 py-1">
-      {lista.map((n) => <NotificationItem key={n.id} n={n} onClick={NOOP} />)}
-    </div>
-  )
-}
-
-/** A linha do tempo da conversa da Marina — o painel real, com os eventos da história. */
-export function ConteudoLinhaDoTempo({ at }: { at: HeroState }) {
-  return (
-    <div className="bg-surface-900 px-4 pb-3">
-      <ConversationActivitySection conversationId="demo-conv-0" entries={heroTimeline(at)} />
-    </div>
   )
 }
 
