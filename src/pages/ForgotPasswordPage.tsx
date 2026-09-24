@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2 } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
+import { AuthLayout } from '@/components/auth/AuthLayout'
+import { AuthHeading } from '@/components/auth/AuthHeading'
 import { api, SKIP_AUTH_REFRESH } from '@/services/api'
-
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -32,84 +33,68 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-surface-950 px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-sm"
-      >
-        <div className="flex flex-col items-center mb-8">
-          <img
-            src="/oryon-logo.svg"
-            alt="Oryon"
-            className="w-16 h-16 mb-4 select-none"
-            draggable={false}
+    <AuthLayout>
+      {sent ? (
+        <div className="flex flex-col items-start gap-4" role="status">
+          <div className="w-10 h-10 rounded-full bg-status-active-bg flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5 text-status-active" strokeWidth={1.75} />
+          </div>
+          <AuthHeading
+            title="E-mail enviado"
+            description={
+              <>
+                Se uma conta existir com <strong className="text-surface-200 break-all">{email}</strong>,
+                você receberá um link para redefinir sua senha. Verifique sua caixa de entrada.
+              </>
+            }
           />
-          <h1 className="text-xl font-bold text-surface-50">Oryon</h1>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+            Voltar ao login
+          </Link>
         </div>
+      ) : (
+        <>
+          <AuthHeading
+            title="Esqueceu a senha?"
+            description="Digite seu e-mail e enviaremos um link para redefinir a senha."
+          />
 
-        {sent ? (
-          <div className="text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-status-active-bg flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-6 h-6 text-status-active" />
-            </div>
-            <h2 className="text-xl font-bold text-surface-50">E-mail enviado</h2>
-            <p className="text-sm text-surface-400 leading-relaxed">
-              Se uma conta existir com <strong className="text-surface-200">{email}</strong>,
-              você receberá um link para redefinir sua senha. Verifique sua caixa de entrada.
-            </p>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <FormField label="E-mail">
+              <Input
+                type="email"
+                size="lg"
+                autoComplete="email"
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                error={error || undefined}
+              />
+            </FormField>
+
+            {error && <Banner variant="danger">{error}</Banner>}
+
+            <Button type="submit" variant="primary" size="lg" loading={loading} disabled={loading || !email.trim()} className="w-full">
+              Enviar link
+            </Button>
+          </form>
+
+          <div className="mt-6">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300 transition-colors mt-4"
+              className="inline-flex items-center gap-1.5 text-sm text-surface-400 hover:text-surface-200 transition-colors"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
               Voltar ao login
             </Link>
           </div>
-        ) : (
-          <>
-            <div className="mb-7">
-              <h2 className="text-2xl font-bold text-surface-50">Esqueceu a senha?</h2>
-              <p className="text-sm text-surface-400 mt-1">
-                Digite seu e-mail e enviaremos um link para redefinir a senha.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-surface-300 uppercase tracking-wide">
-                  E-mail
-                </label>
-                <Input
-                  type="email"
-                  autoComplete="email"
-                  autoFocus
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                />
-              </div>
-
-              {error && (
-                <Banner variant="danger">{error}</Banner>
-              )}
-
-              <Button type="submit" variant="primary" size="lg" loading={loading} disabled={loading || !email.trim()} className="w-full mt-1">Enviar link</Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-surface-400 hover:text-surface-200 transition-colors"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Voltar ao login
-              </Link>
-            </div>
-          </>
-        )}
-      </motion.div>
-    </div>
+        </>
+      )}
+    </AuthLayout>
   )
 }
