@@ -86,8 +86,18 @@ export function ConversationFiltersBar({
 
   // Pílulas dos filtros que moram no menu do funil — ficam visíveis (e
   // removíveis) aqui pra o operador sempre ver o que está estreitando a lista.
-  const pills: { key: string; label: string; onRemove: () => void }[] = []
-  if (activeStatus) pills.push({ key: 'status', label: STATUS_LABEL[activeStatus] ?? activeStatus, onRemove: () => set({ status: 'all' }) })
+  const pills: { key: string; label: string; onRemove: () => void; className?: string }[] = []
+  // PO, 23/09: a pílula do status ecoa a cor do menu (azul/âmbar/verde, tinta leve).
+  if (activeStatus) pills.push({
+    key: 'status',
+    label: STATUS_LABEL[activeStatus] ?? activeStatus,
+    onRemove: () => set({ status: 'all' }),
+    className: activeStatus === 'open'
+      ? 'border-transparent bg-status-open/[.14] text-status-open'
+      : activeStatus === 'pending'
+        ? 'border-transparent bg-cstatus-pending/[.14] text-cstatus-pending'
+        : 'border-transparent bg-cstatus-resolved/[.14] text-cstatus-resolved',
+  })
   if (activePeriod) pills.push({ key: 'period', label: PERIOD_LABEL[activePeriod] ?? 'Período', onRemove: () => set({ startDate: undefined, endDate: undefined }) })
   if (aiPaused) pills.push({ key: 'paused', label: 'IA pausada', onRemove: () => set({ aiHandling: 'all' }) })
   if (teamPicked) pills.push({ key: 'team', label: teamLabel, onRemove: () => set({ assignedTo: 'all' }) })
@@ -163,7 +173,7 @@ export function ConversationFiltersBar({
           {pills.map((p) => (
             <span
               key={p.key}
-              className="inline-flex items-center gap-1 h-5 pl-2 pr-1.5 rounded-sm border border-surface-700 bg-surface-900 text-[11px] font-semibold text-surface-200"
+              className={cn('inline-flex items-center gap-1 h-5 pl-2 pr-1.5 rounded-sm border border-surface-700 bg-surface-900 text-[11px] font-semibold text-surface-200', p.className)}
             >
               {p.label}
               {/* PL-1-3 (P10): área de clique de 16px no "x" — o ícone segue 10px,

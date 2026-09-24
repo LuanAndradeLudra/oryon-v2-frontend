@@ -78,7 +78,7 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
 }
 
 function MenuRow({
-  icon: Icon, active, chevron, pressed, onClick, children, trailing,
+  icon: Icon, active, chevron, pressed, onClick, children, trailing, leading, className,
 }: {
   icon?: typeof Users
   active?: boolean
@@ -87,6 +87,10 @@ function MenuRow({
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
   children: React.ReactNode
   trailing?: React.ReactNode
+  /** Marca antes do rótulo (ex.: ponto colorido do status). */
+  leading?: React.ReactNode
+  /** Tinta própria da linha (status com sua cor) — vence o hover/ativo neutros. */
+  className?: string
 }) {
   return (
     <button
@@ -96,9 +100,11 @@ function MenuRow({
       className={cn(
         'w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors',
         active ? 'text-surface-50 bg-[var(--rowhover)]' : 'text-surface-200 hover:bg-[var(--rowhover)]',
+        className,
       )}
     >
       {Icon && <Icon className="w-4 h-4 flex-shrink-0 opacity-90" />}
+      {leading}
       <span className="flex-1 truncate">{children}</span>
       {trailing}
       {active && !chevron && <Check className="w-4 h-4 flex-shrink-0 text-surface-200" />}
@@ -294,11 +300,22 @@ export function QuickFiltersMenu({ filters, onFiltersChange, allUsers = [], need
           {STATUS_ITEMS.map(({ label, value }) => {
             const count = counts[value]
             const active = (filters.status ?? 'all') === value
+            // PO, 23/09: mesmo padrão do menu do cabeçalho do chat — ponto na
+            // cor do status e tinta translúcida só no ativo/hover do item.
+            const tone = value === 'open'
+              ? { dot: 'bg-status-open', on: 'bg-status-open/[.16] text-status-open hover:bg-status-open/[.22]', off: 'hover:bg-status-open/[.10]' }
+              : value === 'pending'
+                ? { dot: 'bg-cstatus-pending', on: 'bg-cstatus-pending/[.16] text-cstatus-pending hover:bg-cstatus-pending/[.22]', off: 'hover:bg-cstatus-pending/[.10]' }
+                : value === 'resolved'
+                  ? { dot: 'bg-cstatus-resolved', on: 'bg-cstatus-resolved/[.16] text-cstatus-resolved hover:bg-cstatus-resolved/[.22]', off: 'hover:bg-cstatus-resolved/[.10]' }
+                  : null
             return (
               <MenuRow
                 key={value}
                 active={active}
                 pressed={active}
+                leading={tone ? <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', tone.dot)} aria-hidden /> : undefined}
+                className={tone ? (active ? cn(tone.on, 'font-medium') : tone.off) : undefined}
                 onClick={() => set({ status: value })}
                 trailing={(count ?? 0) > 0 ? (
                   <span className="text-[11px] text-surface-500 tabular-nums">{(count ?? 0) > 999 ? '999+' : count}</span>
