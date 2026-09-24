@@ -1,7 +1,8 @@
-// Palco do hero: reduced-motion -> poster; a timeline avança por UM setTimeout
-// encadeado; fora da viewport/aba oculta congela; unmount limpa o timer.
+// Palco (técnica da Attio, dissecção 24/09): estado ESTÁTICO por cena, sem
+// timeline nem cursor falso — então não há timers para avançar. reduced-motion
+// e autoplay=false só desligam os laços ambientes; o conteúdo não muda.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, act, cleanup } from '@testing-library/react'
+import { render, screen, act, fireEvent, cleanup } from '@testing-library/react'
 import { HeroStage } from './HeroStage'
 import { StagePoster } from './StagePoster'
 import { STAGE_DEMO_LABEL } from './demoLabel'
@@ -26,149 +27,114 @@ function setInView(inView: boolean) {
   act(() => { ioCallbacks.forEach((cb) => cb([{ isIntersecting: inView, intersectionRatio: inView ? 1 : 0 }])) })
 }
 
-/** Um `act` por beat: o próximo timer só existe depois que o React comita o passo. */
-function beats(...delays: number[]) {
-  for (const d of delays) act(() => { vi.advanceTimersByTime(d) })
-}
-
-const playing = () => document.querySelector('[data-stage-playing]')?.getAttribute('data-stage-playing')
+const ambientOn = () => document.querySelector('[data-stage-ambient]')?.getAttribute('data-stage-ambient')
+const root = () => document.querySelector('[data-stage-mode]') as HTMLElement
 
 describe('HeroStage', () => {
   beforeEach(() => {
     reduced.value = false
     ioCallbacks = []
-    vi.useFakeTimers()
     vi.stubGlobal('IntersectionObserver', FakeIO)
-    // Desktop (>= 768px).
-    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-      matches: true, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn(),
-    })) as unknown as typeof window.matchMedia
   })
   afterEach(() => {
     cleanup()
-    vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
-  it('reduced-motion: mostra o poster (quadro do handoff), sem timer e sem playing', () => {
+  it('reduced-motion: laços ambientes desligados, mas o conteúdo (estado mais completo) continua na tela', () => {
     reduced.value = true
     render(<HeroStage />)
-    expect(playing()).toBe('false')
-    // Quadro "handoff": a linha de guarda já está na tela.
-    expect(screen.getAllByText(DEMO_GUARD_LABEL).length).toBeGreaterThan(0)
-    expect(vi.getTimerCount()).toBe(0)
+    expect(ambientOn()).toBe('false')
+    expect(root()).toHaveAttribute('data-stage-mode', 'poster')
+    expect(screen.getByText(DEMO_GUARD_LABEL)).toBeInTheDocument()
   })
 
-  it('autoplay=false comporta-se como poster', () => {
+  it('autoplay=false comporta-se como poster (sem laços ambientes)', () => {
     render(<HeroStage autoplay={false} />)
-    expect(playing()).toBe('false')
-    expect(vi.getTimerCount()).toBe(0)
+    expect(ambientOn()).toBe('false')
   })
 
-  it('jsdom sem IntersectionObserver utilizável: poster', () => {
+  it('jsdom sem IntersectionObserver utilizável: sem laços ambientes', () => {
     vi.stubGlobal('IntersectionObserver', undefined)
     render(<HeroStage />)
-    expect(playing()).toBe('false')
-    expect(vi.getTimerCount()).toBe(0)
+    expect(root()).toHaveAttribute('data-stage-mode', 'poster')
+    expect(ambientOn()).toBe('false')
   })
 
-  it('rótulo permanente "Dados de demonstração" no chrome do quadro', () => {
+  it('sai da viewport: desliga o ambiente; volta a ligar ao reentrar', () => {
     render(<HeroStage />)
-    expect(screen.getByText(STAGE_DEMO_LABEL)).toBeInTheDocument()
-  })
-
-  it('timeline: os beats avançam com fake timers, sempre com UM timer pendente', () => {
-    render(<HeroStage />)
-    expect(playing()).toBe('true')
-    // Passo 0: chat vazio, sem a nova conversa.
-    expect(screen.getByText('Selecione uma conversa')).toBeInTheDocument()
-    expect(screen.queryByText('Marina Exemplo')).not.toBeInTheDocument()
-    expect(vi.getTimerCount()).toBe(1)
-
-    beats(900) // -> passo 1: nova linha
-    expect(screen.getAllByText('Marina Exemplo').length).toBeGreaterThan(0)
-    expect(screen.getByText('Selecione uma conversa')).toBeInTheDocument()
-    expect(vi.getTimerCount()).toBe(1)
-
-    beats(800) // -> passo 2: chat abre
-    expect(screen.queryByText('Selecione uma conversa')).not.toBeInTheDocument()
-    expect(screen.getByText('Agente IA no controle')).toBeInTheDocument()
-    expect(screen.queryByText(DEMO_GUARD_LABEL)).not.toBeInTheDocument()
-
-    // até a linha de guarda (passo 6): 2 -> 3 -> 4 -> 5 -> 6
-    beats(1000, 1100, 1500, 1100)
-    expect(screen.getByText(DEMO_GUARD_LABEL)).toBeInTheDocument()
-    expect(screen.getByText('Verificação pendente')).toBeInTheDocument()
-
-    // Assumir (6 -> 7 cursor -> 8 clique -> 9) -> humano no controle
-    beats(1700, 900, 380)
-    expect(screen.queryByText('Agente IA no controle')).not.toBeInTheDocument()
-    expect(vi.getTimerCount()).toBe(1)
-  })
-
-  it('volta ao início ao terminar (loop) e não acumula timers', () => {
-    render(<HeroStage />)
-    // Percorre o roteiro inteiro (soma dos holds) e mais um pouco: dá a volta.
-    for (let i = 0; i < 40; i++) beats(3300)
-    expect(vi.getTimerCount()).toBe(1)
-    expect(playing()).toBe('true')
-  })
-
-  it('sai da viewport: congela (zero timers); volta a tocar ao reentrar', () => {
-    render(<HeroStage />)
-    expect(vi.getTimerCount()).toBe(1)
+    expect(ambientOn()).toBe('true')
     setInView(false)
-    expect(playing()).toBe('false')
-    expect(vi.getTimerCount()).toBe(0)
+    expect(ambientOn()).toBe('false')
+    expect(root()).toHaveAttribute('data-stage-inview', 'false')
     setInView(true)
-    expect(playing()).toBe('true')
-    expect(vi.getTimerCount()).toBe(1)
+    expect(ambientOn()).toBe('true')
   })
 
-  it('aba oculta: congela', () => {
+  it('aba oculta: desliga o ambiente', () => {
     render(<HeroStage />)
     Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
     act(() => { document.dispatchEvent(new Event('visibilitychange')) })
-    expect(playing()).toBe('false')
-    expect(vi.getTimerCount()).toBe(0)
+    expect(ambientOn()).toBe('false')
+    expect(root()).toHaveAttribute('data-stage-tab-visible', 'false')
     Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
     act(() => { document.dispatchEvent(new Event('visibilitychange')) })
-    expect(playing()).toBe('true')
+    expect(ambientOn()).toBe('true')
   })
 
-  it('unmount limpa o timer pendente', () => {
-    const { unmount } = render(<HeroStage />)
-    expect(vi.getTimerCount()).toBe(1)
-    unmount()
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('quadro aria-hidden + descrição sr-only; sem pointer-events', () => {
+  it('não cria NENHUM timer — não há timeline a avançar', () => {
+    vi.useFakeTimers()
     render(<HeroStage />)
-    const frame = document.querySelector('[data-stage-playing]') as HTMLElement
+    expect(vi.getTimerCount()).toBe(0)
+    setInView(false)
+    setInView(true)
+    expect(vi.getTimerCount()).toBe(0)
+    vi.useRealTimers()
+  })
+
+  it('rótulo permanente "Dados de demonstração" no chrome da janela', () => {
+    render(<HeroStage />)
+    expect(screen.getAllByText(STAGE_DEMO_LABEL).length).toBeGreaterThan(0)
+  })
+
+  it('moldura de janela: cantos só no topo, sem borda inferior, três pontos no chrome', () => {
+    render(<HeroStage />)
+    const frame = document.querySelector('[data-stage-ambient]') as HTMLElement
+    expect(frame.className).toContain('rounded-t-[13px]')
+    expect(frame.className).toContain('border-b-0')
+    expect(frame.querySelectorAll('span.rounded-full').length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('quadro aria-hidden + descrição sr-only', () => {
+    render(<HeroStage />)
+    const frame = document.querySelector('[data-stage-ambient]') as HTMLElement
     expect(frame).toHaveAttribute('aria-hidden', 'true')
-    expect(frame.className).toContain('pointer-events-none')
     expect(document.querySelector('p.sr-only')?.textContent).toContain('Agente Vendas')
+  })
+
+  it('troca de cena pelas abas mostra a cena correta e avisa o chamador', () => {
+    const onSceneChange = vi.fn()
+    render(<HeroStage onSceneChange={onSceneChange} />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Funis' }))
+    expect(onSceneChange).toHaveBeenCalledWith('funil')
+    expect(screen.getByText('Oryon · Funis')).toBeInTheDocument()
+  })
+
+  it('oferece as três cenas (nenhuma aba morta)', () => {
+    render(<HeroStage />)
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Conversas', 'Funis', 'Disparos'])
   })
 })
 
 describe('StagePoster', () => {
-  it('cada quadro congela um passo e nunca tem timer', () => {
-    vi.useFakeTimers()
-    const { rerender } = render(<StagePoster scene="inbox" frame="inicio" />)
-    expect(screen.queryByText(DEMO_GUARD_LABEL)).not.toBeInTheDocument()
-    rerender(<StagePoster scene="inbox" frame="handoff" />)
+  it('nunca liga laços ambientes, mesmo mostrando o mesmo estado do HeroStage', () => {
+    render(<StagePoster scene="inbox" frame="final" />)
+    expect(ambientOn()).toBe('false')
     expect(screen.getByText(DEMO_GUARD_LABEL)).toBeInTheDocument()
-    rerender(<StagePoster scene="inbox" frame="humano" />)
-    expect(screen.queryByText('Agente IA no controle')).not.toBeInTheDocument()
-    expect(vi.getTimerCount()).toBe(0)
-    expect(screen.getByText(STAGE_DEMO_LABEL)).toBeInTheDocument()
-    vi.useRealTimers()
   })
 
-  it('layout compact mostra só a coluna do chat', () => {
+  it('layout compact esconde a lista/trilho, mostra só a coluna do chat', () => {
     render(<StagePoster scene="inbox" frame="ia" layout="compact" />)
-    expect(screen.queryByText('Buscar conversas')).not.toBeInTheDocument()
     expect(document.querySelector('[data-stage-layout="compact"]')).toBeInTheDocument()
   })
 })

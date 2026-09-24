@@ -1,27 +1,20 @@
 import type { ReactNode } from 'react'
-import { motion } from 'framer-motion'
-import { StageMotionContext, useStageAnimate } from './stageContext'
+import { StageAmbientContext } from './stageContext'
 
-export function StageMotionProvider({ animate, children }: { animate: boolean; children: ReactNode }) {
-  return <StageMotionContext.Provider value={{ animate }}>{children}</StageMotionContext.Provider>
+export function StageAmbientProvider({ ambient, children }: { ambient: boolean; children: ReactNode }) {
+  return <StageAmbientContext.Provider value={ambient}>{children}</StageAmbientContext.Provider>
 }
 
-/** Entrada de um elemento do quadro (opacity + translate curto). */
-export function StageEnter({
-  children, className, from = 'below',
-}: { children: ReactNode; className?: string; from?: 'below' | 'left' | 'right' | 'none' }) {
-  const animate = useStageAnimate()
-  if (!animate) return <div className={className}>{children}</div>
-  const x = from === 'left' ? -10 : from === 'right' ? 10 : 0
-  const y = from === 'below' ? 8 : 0
+/**
+ * Entrada de um bloco do quadro: desfoque -> nítido (`.reveal`, index.css),
+ * não deslizamento — técnica da Attio (dissecção de 24/09), mais "cara" que
+ * `transform`. `delayMs` escalona irmãos (`--d`). Roda uma vez, no mount; sem
+ * timeline nem passo, então não há por que reexecutar.
+ */
+export function StageReveal({ children, className, delayMs = 0 }: { children: ReactNode; className?: string; delayMs?: number }) {
   return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, x, y }}
-      animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ duration: 0.22, ease: 'easeOut' }}
-    >
+    <div className={className ? `reveal ${className}` : 'reveal'} style={{ ['--d' as string]: `${delayMs}ms` }}>
       {children}
-    </motion.div>
+    </div>
   )
 }

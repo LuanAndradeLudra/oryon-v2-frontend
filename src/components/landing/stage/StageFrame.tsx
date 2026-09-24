@@ -1,16 +1,15 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/Badge'
 import type { StageLayout } from './types'
 import { STAGE_DEMO_LABEL } from './demoLabel'
-import { StageScaleContext, stageSize } from './stageContext'
+import { StageAmbientProvider } from './StageMotion'
 
 interface FrameProps {
   layout: StageLayout
-  /** Título da janela (esquerda do chrome), ex.: "Conversas". */
+  /** Título da janela, na barra de topo (lg apenas — ver DOTS abaixo). */
   title: string
-  /** Estado da timeline — vira `data-stage-playing` (a medição usa esse atributo). */
-  playing: boolean
+  /** Laços ambientes ligados (autoplay && !reduced-motion) — vira `data-stage-ambient`. */
+  ambient: boolean
   /** Texto para leitor de tela: o quadro em si é `aria-hidden`. */
   description: string
   className?: string
@@ -18,54 +17,49 @@ interface FrameProps {
 }
 
 /**
- * Moldura do palco: desenha SEMPRE no tamanho de design (1120×640, ou 360×560 no
- * `compact`) e escala por `transform: scale()` para caber na largura do contêiner
- * (ResizeObserver). Assim as telas não reflowam nem trocam de breakpoint ao
- * redimensionar. Chrome de 32px com o rótulo permanente "Dados de demonstração"
- * (P14). Sombra só aqui (`overlay-frame`), pointer-events none, sem foco.
+ * Moldura do palco — dissecção do HTML real de attio.com (24/09/2026), não
+ * screenshot/vídeo nem `transform: scale`: DOM remontado, largura FLUIDA
+ * (`w-full`), com um único bloco de conteúdo cujos elementos trazem DOIS
+ * conjuntos de medidas literais (mobile e `lg:`, razão 2×) — o texto fica
+ * nítido em qualquer tela, ao contrário do frame de 1120×640 escalado que o
+ * PO reprovou.
+ *
+ * Janela de navegador (medida na Attio): cantos arredondados só no TOPO, SEM
+ * borda/canto inferior — a tela é cortada embaixo, como se continuasse. Barra
+ * de topo com 3 pontos (não temos abas reais a fechar) e o nome da tela,
+ * visível só em `lg` (a barra de 26px do mobile não cabe texto).
  */
-export function StageFrame({ layout, title, playing, description, className, children }: FrameProps) {
-  const { width, height } = stageSize(layout)
-  const outerRef = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
-
-  useLayoutEffect(() => {
-    const el = outerRef.current
-    if (!el) return
-    const measure = () => {
-      const w = el.getBoundingClientRect().width
-      if (w > 0) setScale(w / width)
-    }
-    measure()
-    if (typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [width])
-
+export function StageFrame({ layout, title, ambient, description, className, children }: FrameProps) {
   return (
-    <div
-      ref={outerRef}
-      className={cn('relative w-full', className)}
-      style={{ aspectRatio: `${width} / ${height}` }}
-      data-stage-frame
-      data-stage-layout={layout}
-    >
+    <StageAmbientProvider ambient={ambient}>
       <div
         aria-hidden
-        data-stage-playing={playing ? 'true' : 'false'}
-        className="absolute left-0 top-0 rounded-lg border overlay-frame bg-surface-900 overflow-hidden pointer-events-none select-none flex flex-col"
-        style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+        data-stage-layout={layout}
+        data-stage-ambient={ambient ? 'true' : 'false'}
+        className={cn(
+          'relative w-full overflow-hidden rounded-t-[13px] border border-[var(--frame-stroke)] border-b-0',
+          'bg-surface-900 shadow-[var(--frame-shadow)] pointer-events-none select-none',
+          className,
+        )}
       >
-        <div className="h-8 flex-shrink-0 flex items-center justify-between px-3 border-b border-surface-700 bg-surface-900">
-          <span className="text-[11px] font-semibold text-surface-400">Oryon · {title}</span>
-          <Badge>{STAGE_DEMO_LABEL}</Badge>
+        <div
+          className="h-[26px] lg:h-[34px] flex-shrink-0 flex items-center gap-1.5 px-2.5 lg:px-3.5"
+          style={{ background: 'var(--frame-chrome)' }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-surface-600" />
+          <span className="w-1.5 h-1.5 rounded-full bg-surface-600" />
+          <span className="w-1.5 h-1.5 rounded-full bg-surface-600" />
+          <span className="hidden lg:inline text-[10.5px] font-semibold text-surface-400 ml-1.5">Oryon · {title}</span>
+          <span className="ml-auto text-[6px] lg:text-[9.5px] font-semibold text-surface-500 whitespace-nowrap">{STAGE_DEMO_LABEL}</span>
         </div>
-        <div className="relative flex-1 min-h-0 flex">
-          <StageScaleContext.Provider value={scale}>{children}</StageScaleContext.Provider>
+        {/* Altura medida na Attio (460px em lg); metade no mobile — o mesmo
+            fator 2× dos elementos internos, então nada dentro precisa de
+            regra própria de corte. */}
+        <div className="relative h-[230px] lg:h-[460px] flex overflow-hidden">
+          {children}
         </div>
       </div>
       <p className="sr-only">{description}</p>
-    </div>
+    </StageAmbientProvider>
   )
 }

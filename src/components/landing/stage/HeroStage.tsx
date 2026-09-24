@@ -1,38 +1,31 @@
 import { useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Tabs } from '@/components/ui/Tabs'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { StageBoard } from './StageBoard'
 import { SCENES } from './scenes/registry'
-import type { SceneDef } from './scenes/types'
 import { useStagePlayback } from './useStagePlayback'
-import { useStageTimeline } from './useStageTimeline'
-import type { HeroStageProps, StageLayout, StageScene } from './types'
+import type { HeroStageProps, StageScene } from './types'
 
 const SCENE_LABEL: Record<StageScene, string> = { inbox: 'Conversas', funil: 'Funis', disparo: 'Disparos' }
 
-/** Cena animada: dona da timeline (um `setTimeout` encadeado). Remonta a cada troca de cena. */
-function AnimatedScene({ def, layout, playing, loop }: { def: SceneDef; layout: StageLayout; playing: boolean; loop: boolean }) {
-  const step = useStageTimeline({ delays: def.delays, playing, loop })
-  return <StageBoard def={def} layout={layout} step={step} animate playing={playing} showCursor />
-}
-
 /**
  * Palco do hero (landing e login): o produto "operando" com dados de
- * demonstração. Anima só quando visível (>= 30 % na viewport, aba ativa); com
- * reduced-motion, `autoplay=false` ou sem IntersectionObserver mostra o poster
- * (quadro "handoff" estático). Abaixo de 768px usa o layout `compact`.
+ * demonstração — técnica da Attio (dissecção de 24/09/2026), não a timeline de
+ * passos anterior. Cada cena é um estado ESTÁTICO impecável (`liveFrame`) mais
+ * 2-3 laços ambientes em CSS puro; sem roteiro, sem cursor falso. `autoplay`
+ * liga/desliga só os laços (via `ambient`); `loop` não se aplica mais a este
+ * palco (não existe timeline para repetir) — mantido na prop por contrato.
+ * Largura fluida: os primitivos internos trazem duas escalas literais
+ * (mobile/`lg:`), então o mesmo DOM se ajusta sozinho, sem JS de layout.
  */
 export function HeroStage({
-  scene = 'inbox', scenes = ['inbox', 'funil', 'disparo'], autoplay = true, loop = true, onSceneChange, className,
+  scene = 'inbox', scenes = ['inbox', 'funil', 'disparo'], autoplay = true, onSceneChange, className,
 }: HeroStageProps) {
   const available = scenes.filter((s) => SCENES[s])
   const initial = available.includes(scene) ? scene : available[0]
   const [active, setActive] = useState<StageScene | undefined>(initial)
   const rootRef = useRef<HTMLDivElement>(null)
-  const isDesktop = useMediaQuery('(min-width: 768px)')
-  const layout: StageLayout = isDesktop ? 'desktop' : 'compact'
-  const { mode, playing, inView, tabVisible } = useStagePlayback({ targetRef: rootRef, autoplay })
+  const { mode, ambient, inView, tabVisible } = useStagePlayback({ targetRef: rootRef, autoplay })
 
   const def = active ? SCENES[active] : undefined
   if (!def || !active) return null
@@ -46,7 +39,7 @@ export function HeroStage({
     <div
       ref={rootRef}
       className={cn('w-full', className)}
-      // Diagnóstico de medição: por que o palco está (ou não) tocando.
+      // Diagnóstico de medição: por que os laços ambientes estão (ou não) ligados.
       data-stage-mode={mode}
       data-stage-inview={inView ? 'true' : 'false'}
       data-stage-tab-visible={tabVisible ? 'true' : 'false'}
@@ -60,11 +53,7 @@ export function HeroStage({
           className="mb-2"
         />
       )}
-      {mode === 'poster' ? (
-        <StageBoard def={def} layout={layout} step={def.posterStep.handoff} animate={false} playing={false} />
-      ) : (
-        <AnimatedScene key={`${active}-${layout}`} def={def} layout={layout} playing={playing} loop={loop} />
-      )}
+      <StageBoard def={def} layout="desktop" frame={def.liveFrame} ambient={ambient} />
     </div>
   )
 }

@@ -3,11 +3,12 @@ import { SCENES } from './scenes/registry'
 import type { StagePosterProps } from './types'
 
 /**
- * Quadro estático de uma cena (login, seções da landing, reduced-motion): o mesmo
- * quadro do HeroStage congelado num passo (`frame`), sem timer, sem cursor e sem
- * entradas animadas. Cena ainda não implementada cai na de Conversas.
+ * Quadro estático de uma cena (login, seções da landing, reduced-motion): o
+ * mesmo estado por `frame`, sem NENHUM laço ambiente (`ambient={false}`) — é o
+ * quadro parado mesmo, não uma versão "pausada" do palco vivo. Cena ainda não
+ * implementada cai na de Conversas.
  */
 export function StagePoster({ scene, frame = 'handoff', layout = 'desktop', className }: StagePosterProps) {
   const def = SCENES[scene] ?? SCENES.inbox!
-  return <StageBoard def={def} layout={layout} step={def.posterStep[frame]} animate={false} playing={false} className={className} />
+  return <StageBoard def={def} layout={layout} frame={frame} ambient={false} className={className} />
 }

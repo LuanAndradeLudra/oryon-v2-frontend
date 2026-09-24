@@ -1,49 +1,41 @@
-// Cena Disparos: função pura do passo — revisão -> disparo -> progresso -> resultado.
+// Cena Disparos: estado ESTÁTICO por frame — revisão -> enviando -> enviada,
+// sem roteiro nem cursor clicando.
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { StagePoster } from '../StagePoster'
-import { HeroStage } from '../HeroStage'
-import { newCampaignAt, STEP } from './disparoScript'
+import { DEMO_CAMPAIGN_NEW } from '../demoData'
 
-describe('roteiro de disparos', () => {
-  it('a campanha só existe depois do clique e o progresso só cresce até 100 %', () => {
-    expect(newCampaignAt(0)).toBeNull()
-    expect(newCampaignAt(STEP.press)).toBeNull()
-    const a = newCampaignAt(STEP.sending)!
-    const b = newCampaignAt(STEP.half)!
-    const c = newCampaignAt(STEP.done)!
-    expect(a.status).toBe('sending')
-    expect(a.sent).toBeLessThan(b.sent)
-    expect(b.sent).toBeLessThan(c.sent)
-    expect(c.status).toBe('sent')
-    expect(c.sent).toBe(24)
-  })
-})
-
-describe('StagePoster · disparo', () => {
-  it('revisão: resumo do assistente, prévia do modelo com a variável e aviso da janela de 24 h', () => {
+describe('cena Disparos · StagePoster', () => {
+  it('inicio/ia: revisão do assistente, com a prévia do modelo e o aviso da janela de 24h', () => {
     render(<StagePoster scene="disparo" frame="inicio" />)
     expect(screen.getByText('Revisar e disparar')).toBeInTheDocument()
-    // A variável entra no corpo (pode vir em <b>: compara o texto corrido).
     expect(document.body.textContent).toContain('Olá Marina!')
     expect(screen.getByText(/fora da janela de 24 h/)).toBeInTheDocument()
-    expect(screen.getByText('Disparar')).toBeInTheDocument()
+    expect(screen.getAllByText('Disparar').length).toBeGreaterThan(0)
   })
 
-  it('durante o envio: card "Enviando" e a barra de resumo; no fim, "Enviada"', () => {
-    const { unmount } = render(<StagePoster scene="disparo" frame="humano" />)
+  it('handoff: envio em andamento, abaixo de 100 %', () => {
+    render(<StagePoster scene="disparo" frame="handoff" />)
     expect(screen.getByText('Enviando')).toBeInTheDocument()
     expect(screen.getByText('Disparando agora…')).toBeInTheDocument()
-    unmount()
+    expect(screen.getByText(`${Math.round(DEMO_CAMPAIGN_NEW.total * 0.25)} / ${DEMO_CAMPAIGN_NEW.total}`)).toBeInTheDocument()
+  })
+
+  it('humano: mais avançado que handoff', () => {
+    render(<StagePoster scene="disparo" frame="humano" />)
+    expect(screen.getByText(`${Math.round(DEMO_CAMPAIGN_NEW.total * 0.62)} / ${DEMO_CAMPAIGN_NEW.total}`)).toBeInTheDocument()
+  })
+
+  it('final: disparo concluído, 100 %', () => {
     render(<StagePoster scene="disparo" frame="final" />)
     expect(screen.getByText('Disparo concluído')).toBeInTheDocument()
     expect(screen.getAllByText('Enviada').length).toBeGreaterThan(0)
+    expect(screen.getByText(`${DEMO_CAMPAIGN_NEW.total} / ${DEMO_CAMPAIGN_NEW.total}`)).toBeInTheDocument()
   })
-})
 
-describe('HeroStage · três cenas', () => {
-  it('oferece Conversas, Funis e Disparos (nenhuma aba morta)', () => {
-    render(<HeroStage autoplay={false} />)
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Conversas', 'Funis', 'Disparos'])
+  it('compact: mostra só o painel/lista relevante ao estado', () => {
+    render(<StagePoster scene="disparo" frame="inicio" layout="compact" />)
+    expect(document.querySelector('[data-stage-layout="compact"]')).toBeInTheDocument()
+    expect(screen.getByText('Revisar e disparar')).toBeInTheDocument()
   })
 })
