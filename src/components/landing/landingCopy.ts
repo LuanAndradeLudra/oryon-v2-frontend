@@ -230,6 +230,8 @@ export const perguntas = {
     {
       pergunta: 'Quanto custa a Oryon?',
       resposta: 'Cada operação é diferente, por isso trabalhamos com proposta comercial, montada para o seu volume de atendimento e a sua equipe. Fale com a gente e receba a sua.',
+      /** Sem canal comercial publicado, não mandamos "falar com a gente". */
+      respostaSemContato: 'Cada operação é diferente, por isso trabalhamos com proposta comercial, montada para o seu volume de atendimento e a sua equipe.',
     },
     {
       pergunta: 'Em quanto tempo começo a usar?',

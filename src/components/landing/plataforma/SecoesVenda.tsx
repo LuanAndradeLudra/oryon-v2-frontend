@@ -152,7 +152,10 @@ export function SecaoPerguntas() {
         </div>
         <Revelar atraso={0.1}>
           <div className="border-t border-[var(--landing-borda)]">
-            {perguntas.itens.map((q) => <Pergunta key={q.pergunta} pergunta={q.pergunta} resposta={q.resposta} />)}
+            {perguntas.itens.map((q) => (
+              <Pergunta key={q.pergunta} pergunta={q.pergunta}
+                resposta={!contatoDisponivel && 'respostaSemContato' in q ? q.respostaSemContato : q.resposta} />
+            ))}
           </div>
         </Revelar>
       </div>
