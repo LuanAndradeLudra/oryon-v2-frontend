@@ -188,7 +188,7 @@ export function WhatsAppIphone({ at, cena }: { at: HeroState; cena: HeroCena }) 
           <span className="inline-block rounded-md bg-white/90 px-2.5 py-1 text-[12px] font-medium shadow-[0_1px_.5px_rgba(11,20,26,.13)]" style={{ color: '#54656F' }}>Hoje</span>
         </div>
         <div className="self-start" style={{ maxWidth: '86%' }}>
-          <TemplatePreview template={HERO_TEMPLATE} variables={HERO_TEMPLATE_VARIAVEIS} variant="card" />
+          <TemplatePreview template={HERO_TEMPLATE} variables={HERO_TEMPLATE_VARIAVEIS} variant="card" sentAt={hhmm(6)} />
         </div>
         <AnimatePresence initial={false}>
           {mensagens.map((m) => <Bolha key={m.id} texto={m.texto} hora={m.hora} minha={m.minha} />)}

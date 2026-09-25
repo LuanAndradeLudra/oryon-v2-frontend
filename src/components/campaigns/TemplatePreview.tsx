@@ -59,6 +59,8 @@ interface TemplatePreviewProps {
   /** 'frame' — com o papel de parede em volta; 'card' — só a bolha, para
    *  quem já tem o próprio fundo. Mantido da API anterior. */
   variant?: 'frame' | 'card'
+  /** Hora exibida na bolha (HH:MM). Padrão: a hora atual. */
+  sentAt?: string
   className?: string
 }
 
@@ -98,7 +100,7 @@ function corDoBotao(type: TemplateButton['type']) {
 }
 
 export function TemplatePreview({
-  template, variables = {}, compact = false, variant = 'frame', className,
+  template, variables = {}, compact = false, variant = 'frame', className, sentAt,
 }: TemplatePreviewProps) {
   const headerText = template.headerText
     ? template.headerText.replace(/\{\{(\d+)\}\}/g, (_, n) => variables[n] ?? `{{${n}}}`)
@@ -168,7 +170,7 @@ export function TemplatePreview({
         )}
         {/* Sem tique: quem recebe nunca vê confirmação de entrega. */}
         <p style={{ fontSize: 11, color: WA.meta, textAlign: 'right', marginTop: 1, padding: '0 1px 1px' }}>
-          {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          {sentAt ?? new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
 

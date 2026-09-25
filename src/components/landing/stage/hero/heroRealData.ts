@@ -375,19 +375,22 @@ function pessoa(id: string, summary: string, action: string, min: number, metada
 }
 
 export function heroTimeline(at: HeroState): TimelineEntry[] {
-  const out: TimelineEntry[] = []
+  // A história começa com o template da campanha chegando à Marina (hoje, há
+  // 6 min) — o filtro padrão da linha do tempo é "Hoje", e um evento de ontem
+  // deixava o painel em "Nenhum evento no período" por boa parte da cena.
+  const out: TimelineEntry[] = [
+    pessoa('t0', 'Template enviado', 'template_sent', 6, { templateName: 'renovacao_plano_pro' }),
+  ]
   if (reached(at, 'situacao')) out.push(agente('t1', 'Situação do contato: Novo → Em negociação', 'update_contact', 3))
   if (reached(at, 'etiqueta')) out.push(agente('t2', `Adicionou a etiqueta "${HERO.tag}" à conversa`, 'add_tag_to_conversation', 3))
   if (reached(at, 'avanco')) out.push(agente('t3', 'Moveu o negócio de Qualificação para Proposta', 'manage_deal_pipeline', 2))
   if (reached(at, 'assumido')) out.push(agente('t4', `Chamou ${HERO.atendente} para a conversa`, 'assign_conversation', 1))
   if (reached(at, 'ganho')) {
-    out.shift() // mantém quatro linhas: a mais antiga cede lugar ao desfecho
     out.push(pessoa('t5', `Negócio "${HERO.dealTitle}" ganho`, 'deal_won', 0, {
       dealTitle: HERO.dealTitle, amountCents: HERO.amountCents, pipelineKind: 'sales',
     }))
   }
-  if (out.length === 0) out.push(pessoa('t0', 'Conversa iniciada', 'conversation_created', 1440))
-  return out
+  return out.slice(-4) // quatro linhas: as mais antigas cedem lugar
 }
 
 // ─── Disparos ──────────────────────────────────────────────────────────────────

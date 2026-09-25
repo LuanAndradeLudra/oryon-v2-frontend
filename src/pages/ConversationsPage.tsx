@@ -14,8 +14,8 @@ import { Fab } from '@/components/common/Fab'
 import { useConversations } from '@/hooks/useConversations'
 import { useConversationFromUrl } from '@/hooks/useConversationFromUrl'
 import { useSocket } from '@/hooks/useSocket'
-import { joinConversation, leaveConversation } from '@/services/socket'
-import { conversationsApi } from '@/services/api'
+import { connectSocket, joinConversation, leaveConversation } from '@/services/socket'
+import { contactsApi, conversationsApi } from '@/services/api'
 import { useToast } from '@/hooks/useToast'
 import { useTagsAndUsers } from '@/hooks/useTagsAndUsers'
 import { useContacts } from '@/hooks/useContacts'
@@ -222,6 +222,25 @@ export function ConversationsPage() {
   const syncActive = useCallback((id: string, patch: Partial<Conversation>) => {
     setActiveConversation((prev) => prev?.id === id ? { ...prev, ...patch } : prev)
   }, [])
+
+  // O backend avisa `contact:updated` quando a situação ou as etiquetas do
+  // contato mudam (inclusive pelo Agente IA). Sem ouvir o evento, a ficha da
+  // conversa aberta seguia com a situação antiga até recarregar a página.
+  const activeContactId = activeConversation?.contact?.id
+  useEffect(() => {
+    if (!activeContactId) return
+    const socket = connectSocket()
+    const onContactUpdated = (p: { contactId?: string }) => {
+      if (p?.contactId !== activeContactId) return
+      contactsApi.get(activeContactId).then((res) => {
+        setActiveConversation((prev) => prev?.contact?.id === activeContactId
+          ? { ...prev, contact: { ...prev.contact, ...res.data } }
+          : prev)
+      }).catch(() => { /* a ficha segue com o último dado conhecido */ })
+    }
+    socket.on('contact:updated', onContactUpdated)
+    return () => { socket.off('contact:updated', onContactUpdated) }
+  }, [activeContactId])
 
   // ── Actions ────────────────────────────────────────────────────────────────
 

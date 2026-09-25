@@ -73,6 +73,9 @@ function emitirTransicao(de: HeroState, para: HeroState) {
   // Escritas do agente no CRM (situação, etiqueta): `conversation:updated`.
   if (passou('situacao') || passou('etiqueta')) {
     emitirDoServidor('conversation:updated', { conversationId: CONVERSA })
+    // A situação e as etiquetas são do CONTATO: o backend avisa `contact:updated`
+    // e a ficha da conversa aberta relê o contato.
+    emitirDoServidor('contact:updated', { contactId: contato.id })
   }
 
   // O negócio mudou de etapa: `deal:changed` — o quadro e a ficha recarregam.
