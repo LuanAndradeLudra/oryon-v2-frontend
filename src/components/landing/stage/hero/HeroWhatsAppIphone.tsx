@@ -3,6 +3,10 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { TemplatePreview, WA, FONTE_WA } from '@/components/campaigns/TemplatePreview'
 import { HERO, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, reached } from './heroRealData'
 import type { HeroCena, HeroState } from './heroStory'
+import { minutesAgo } from './heroClock'
+
+/** HH:MM do relógio da demonstração — o mesmo das mensagens no Oryon. */
+const hhmm = (min: number) => new Date(minutesAgo(min)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
 /**
  * O WHATSAPP NO IPHONE DA MARINA — o outro lado da conversa.
@@ -152,9 +156,9 @@ export function WhatsAppIphone({ at, cena }: { at: HeroState; cena: HeroCena }) 
   const digitado = useDigitacao(rascunho, rascunho === HERO.demand ? 1100 : 900)
 
   const mensagens: { id: string; texto: string; hora: string; minha?: boolean }[] = []
-  if (reached(at, 'demanda')) mensagens.push({ id: 'd', texto: HERO.demand, hora: '09:14', minha: true })
-  if (reached(at, 'resposta')) mensagens.push({ id: 'r', texto: HERO.answer, hora: '09:14' })
-  if (reached(at, 'confirma')) mensagens.push({ id: 'c', texto: HERO.confirm, hora: '09:15', minha: true })
+  if (reached(at, 'demanda')) mensagens.push({ id: 'd', texto: HERO.demand, hora: hhmm(4), minha: true })
+  if (reached(at, 'resposta')) mensagens.push({ id: 'r', texto: HERO.answer, hora: hhmm(3) })
+  if (reached(at, 'confirma')) mensagens.push({ id: 'c', texto: HERO.confirm, hora: hhmm(2), minha: true })
 
   return (
     <div
@@ -163,7 +167,7 @@ export function WhatsAppIphone({ at, cena }: { at: HeroState; cena: HeroCena }) 
     >
       {/* ── Barra de status do iOS ── */}
       <div className="flex h-[54px] flex-shrink-0 items-center justify-between px-[34px] pt-[6px]" style={{ background: BARRA_IOS }}>
-        <span className="text-[17px] font-semibold tracking-[-0.2px] text-black" style={{ fontFamily: '-apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif' }}>9:41</span>
+        <span className="text-[17px] font-semibold tracking-[-0.2px] text-black" style={{ fontFamily: '-apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif' }}>{hhmm(0).replace(/^0/, '')}</span>
         <span className="flex items-center gap-[6px]"><Sinal /><WiFi /><Bateria /></span>
       </div>
 

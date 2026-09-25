@@ -10,8 +10,8 @@ import type { HeroCue } from './useHeroTimeline'
  *
  * A história, em quatro capítulos:
  *  1. Disparos — a campanha "Renovação Pro" sai e o relatório mostra o retorno;
- *  2. Atendimento com IA — a Marina responde, o Agente IA atende com o preço
- *     do catálogo e atualiza o CRM sozinho;
+ *  2. Atendimento com IA — a Marina responde, o Agente IA atende com o valor
+ *     do catálogo e atualiza situação e etiqueta no CRM;
  *  3. Funil de vendas — o negócio avança de etapa junto com a conversa;
  *  4. A equipe no controle — ela pede uma pessoa, a Ana assume e fecha.
  *
@@ -130,25 +130,25 @@ export const HERO_CAPITULOS: readonly HeroCapitulo[] = [
   {
     id: 'disparos',
     titulo: 'Campanhas no WhatsApp',
-    valor: 'Dispare para a base inteira e acompanhe entrega, leitura e resposta em tempo real.',
+    valor: 'Dispare para a sua base e acompanhe entrega, leitura e resposta.',
     cue: 0,
   },
   {
     id: 'atendimento',
     titulo: 'Atendimento com IA',
-    valor: 'O Agente IA responde na hora, com o preço do seu catálogo, e atualiza o CRM sozinho.',
+    valor: 'O Agente IA responde na hora com o que você ensinou e deixa situação e etiquetas em dia.',
     cue: idx((c) => c.composition === 'conversa'),
   },
   {
     id: 'funil',
-    titulo: 'Funil que anda sozinho',
-    valor: 'Cada conversa move o negócio de etapa — o funil reflete o que está acontecendo agora.',
+    titulo: 'Funil em dia',
+    valor: 'A conversa avança o negócio de etapa, e o quadro mostra onde cada venda está.',
     cue: idx((c) => c.composition === 'funil'),
   },
   {
     id: 'equipe',
     titulo: 'A equipe no controle',
-    valor: 'A IA chama a pessoa certa na hora certa — e quem fecha a venda é sempre a sua equipe.',
+    valor: 'A IA chama uma pessoa quando o cliente pede — e, por padrão, quem fecha a venda é a sua equipe.',
     cue: idx((c) => c.state === 'pedido') - 1,
   },
 ]
@@ -177,7 +177,7 @@ export function batidaDe(estado: HeroState, cena: HeroCena): string {
   switch (estado) {
     case 'inicio': return 'A Marina recebe a campanha no WhatsApp'
     case 'demanda': return 'A Marina responde pedindo uma proposta'
-    case 'resposta': return 'O Agente IA responde na hora, com o preço do catálogo'
+    case 'resposta': return 'O Agente IA responde na hora, com o valor do catálogo'
     case 'confirma': return 'A Marina confirma o interesse'
     case 'situacao': return 'A IA atualiza a situação do contato no CRM'
     case 'etiqueta': return 'e etiqueta a conversa como "proposta enviada"'
