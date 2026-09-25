@@ -586,3 +586,95 @@ Funis lado a lado com o cabecalho do funil visivel e legivel.
 das areas tocadas passando, e o teste de composicao cobre agora os tres
 regimes (nenhuma janela visivel fora do canvas, escalas entre 0,58 e 1,05, uma
 superficie dominante por vez).
+
+
+# Rodada de 24/09 (noite) — o Hero passa a rodar o Oryon REAL
+
+## Por que
+
+O PO aprovou a direção "plano fixo + satélites" (referência: Attio, medida ao
+vivo), mas reprovou a fidelidade do protótipo: casca, menu e satélites eram
+desenhados à mão (`HeroShell`, `HeroSatellites`). Regra nova do PO: **todas as
+telas e simulações usam o conteúdo real do software.** Montar pedaços do app
+fora do app nunca fica idêntico ao app — a abordagem mudou.
+
+## Arquitetura
+
+- **`demo.html` + `src/demo/`** — o app de produção inteiro (provedores de
+  `App.tsx`, `AppShell`, `NavSidebar`, `TopBar`, páginas reais) num documento
+  isolado, servido num iframe.
+  - `guards.ts`: `localStorage`/`sessionStorage` em memória; adaptador nas
+    DUAS instâncias de axios (a `api` e a global, que o `AuthContext` usa);
+    `fetch`/XHR vedados; registro de rotas não mapeadas.
+  - `backend.ts` + `agentesDemo.ts`: banco em memória do tenant fictício
+    **Vértice Software** (vendedor) atendendo a Marina Alves (Loja Vida
+    Natural, cliente). Rotas descobertas pelo registro, nunca por suposição.
+  - `preparar.ts`: ordem de instalação (antes/depois do app) e o socket falso
+    (costura `setSocketFactory` em `services/socket.ts`).
+  - `diretor.ts`: recebe `{estado, cena}` da landing por `postMessage` e vira
+    isso nos MESMOS eventos que o backend real emite (`message:new`,
+    `conversation:updated/assigned/status-updated/ai-pause-updated/resolved`,
+    `deal:changed`, `notification:new`) + troca de rota. Nada toca o DOM.
+- **`HeroPalco.tsx`** — o palco na landing: âncora com o iframe em 1152×720
+  (menor largura em que Conversas mostra lista, conversa e painel juntos),
+  UM fator de escala para o palco inteiro; satélites com componentes reais
+  (`TemplatePreview`, `NotificationItem`, `ConversationActivitySection`),
+  carregados só quando a demo fica pronta; paralaxe no scroll; "corte" curto
+  de câmera na troca de módulo; tema sincronizado; pôster = o spinner do
+  próprio app; celular = só a âncora, com a `AppShellMobile` real.
+
+## O roteiro (`heroStory.ts`, ~46 s)
+
+Disparos (a campanha "Renovação Pro" sai; o celular mostra o modelo) →
+Conversas (Marina responde, o Agente IA responde com o preço do catálogo,
+atualiza situação e etiqueta) → Funis (o card anda de Qualificação para
+Proposta ao vivo; no celular, o painel do negócio) → Agentes IA (aba
+Capacidades do Agente Vendas: fechar venda desligado) → Conversas (Marina pede
+uma pessoa, a Ana assume, a IA pausa, a Ana fecha) → recomeço.
+
+Uma função por satélite: **celular** = a campanha chegando; **linha do
+tempo** = o que a IA fez enquanto a âncora mostra outro módulo; **sino** = só
+o alerta que chama a Ana.
+
+## Bugs reais do produto achados pela demo (e corrigidos)
+
+1. **Sair de `/pipelines/:id` pelo menu levava para `/home`** (e de
+   `/contacts/:id` para `/contacts`): durante a saída animada do
+   `PageTransition`, a página segue montada sob a rota nova, `useParams`
+   perde o `id` e o redirecionamento de segurança disparava.
+2. **"Agente ainda não testado" aparecia em todo agente** a cada visita — só
+   a sessão era considerada, não o `test_count` do servidor.
+
+Melhorias de produto que vieram junto: `/agents?agent=<id>` e
+`?tab=<aba>` no detalhe do agente (estado de tela na URL, regra do PO);
+`PageTransition` extraído para `components/layout/`.
+
+## Limpeza
+
+Removidos os componentes desenhados à mão (HeroShell, HeroSatellites, HeroPlano,
+HeroStage, HeroWindow, HeroSurfaces, HeroCinema, HeroNarrative, HeroPanelDeals,
+heroComposition). `ContactPanel`, `MessageInput` e `DealsBoard` voltaram a ser
+idênticos ao original (as costuras `demo`/`dealsSlot`/`stagesOverride`/
+`hideTimeline` viraram código morto).
+
+## Medições
+
+- Legibilidade (1440×900): fator 0,914 → texto principal do app (13 px) ≈ 12 px
+  efetivos; metadados 8–10 px. Em 1240×751 o fator cai para ~0,82 (≈ 10,6 px).
+- Peso (build de produção, gzip): landing base 412 KB (inalterada); o Hero
+  soma poucos KB na primeira carga (satélites tardias); a demo baixa depois,
+  ~280 KB nas primeiras cenas (+ Funis/Agentes).
+- LCP (build de produção, local, 3 medições): antes 3.048 ms (mediana), agora
+  3.020 ms. O LCP é o H1 — os ~3 s vêm da animação `.reveal` do título
+  (nasce transparente e desfocado), não do palco. Sugestão: começar o H1
+  visível.
+- Testes: `src/demo/demoRotas.test.tsx` (5 telas do roteiro, nenhuma chamada
+  não mapeada) + 266 testes das áreas tocadas; typecheck limpo.
+
+## Pendências
+
+- Captura lado a lado demo × app real logado (precisa do login do PO).
+- Números de Disparos não sobem ao vivo (a tela de campanhas não escuta
+  socket no produto — fiel ao real).
+- `prefers-reduced-motion` usa o quadro estático (Funis logo após o avanço);
+  não foi possível emular a preferência no navegador de teste.
