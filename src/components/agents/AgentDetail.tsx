@@ -2106,6 +2106,14 @@ export function AgentDetail({
     const t = searchParams.get('tab')
     return t && (TABS_VALIDAS as readonly string[]).includes(t) ? (t as Tab) : 'overview'
   })
+  // A URL manda: voltar/avançar do navegador (ou um link) que troque só o
+  // `?tab=` com a tela montada também troca a aba — antes o valor era lido
+  // uma vez, na montagem, e a aba ficava parada.
+  const tabDaUrl = searchParams.get('tab')
+  useEffect(() => {
+    const alvo: Tab = tabDaUrl && (TABS_VALIDAS as readonly string[]).includes(tabDaUrl) ? (tabDaUrl as Tab) : 'overview'
+    setActiveTabState((atual) => (atual === alvo ? atual : alvo))
+  }, [tabDaUrl])
   const setActiveTab = useCallback((t: Tab) => {
     setActiveTabState(t)
     setSearchParams((prev) => {
