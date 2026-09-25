@@ -128,12 +128,16 @@ export function instalarBackendDemo() {
   rota('conversations', eq('get', '/conversations'), ({ params }) => {
     // `?status=` filtra como o backend real (a "Fila agora" do Dashboard pede
     // só as pendentes).
+    // A aba "Todas" manda `status=all` — sem filtro (antes filtrava tudo fora e
+    // o cabeçalho dizia "0 abertas · 0 pendentes").
     const status = params?.get('status')
-    const lista = heroConversations(estado).filter((c) => !status || c.status === status)
+    const todas = heroConversations(estado)
+    const lista = todas.filter((c) => !status || status === 'all' || c.status === status)
+    const conta = (s: string) => todas.filter((c) => c.status === s).length
     return {
       data: {
         ...paginado(lista),
-        statusCounts: { open: lista.length, pending: 0, resolved: 0, abandoned: 0 },
+        statusCounts: { open: conta('open'), pending: conta('pending'), resolved: conta('resolved'), abandoned: conta('abandoned') },
         needsReviewCount: 0,
       },
     }
