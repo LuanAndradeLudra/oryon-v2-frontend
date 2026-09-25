@@ -39,6 +39,11 @@ const RANGE_OPTIONS: { value: 'today' | '7d'; label: string }[] = [
   { value: '7d', label: '7 dias' },
 ]
 
+/** "2026-09-14" → "14/09": o eixo mostrava a data ISO crua. */
+function diaMes(iso: string): string {
+  return /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : iso
+}
+
 function todayIso(): string {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -105,7 +110,7 @@ export const VolumeChart = memo(function VolumeChart({ data, range, onRangeChang
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barGap={2}>
-              <XAxis dataKey="date" tick={{ fill: C.axis, fontSize: 10.5 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="date" tickFormatter={diaMes} tick={{ fill: C.axis, fontSize: 10.5 }} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip content={<SimpleTooltip />} cursor={{ fill: C.surface8, fillOpacity: 0.5 }} />
               <Bar dataKey="inbound" name="Recebidas" stackId="volume" isAnimationActive={false}

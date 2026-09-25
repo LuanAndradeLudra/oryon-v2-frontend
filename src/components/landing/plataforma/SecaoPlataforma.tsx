@@ -60,7 +60,7 @@ const RECORTES: Record<string, Recorte> = {
   agente: { x: 356, y: 44, w: 924, h: 676 },
   // O Dashboard de ponta a ponta: indicadores, volume, funil, fila e equipe —
   // um recorte mais estreito cortava cartões pela metade.
-  painel: { x: 52, y: 56, w: 1222, h: 382 },
+  painel: { x: 62, y: 56, w: 1218, h: 382 },
 }
 
 interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; recorte: Recorte; titulo: string }

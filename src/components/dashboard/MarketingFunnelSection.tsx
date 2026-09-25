@@ -225,7 +225,7 @@ function AdCampaignsTable({
                     </span>
                   </td>
                   <td className="px-3 py-3 text-right text-surface-300 tabular-nums">
-                    {camp.conversionRate.toFixed(1)}%
+                    {camp.conversionRate.toFixed(1).replace('.', ',')}%
                   </td>
                   <td className="px-3 py-3 text-right">
                     {expanded === camp.platformCampaignId

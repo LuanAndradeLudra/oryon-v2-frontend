@@ -54,13 +54,15 @@ const EQUIPE = [
   { userId: 'demo-user-4', name: 'Diego Souza', conversations: 4, resolved: 3, online: false },
 ]
 
-/** Volume diário das últimas duas semanas (entrada × saída). */
+/** Volume diário dos últimos 7 dias (entrada × saída) — o máximo que o
+ *  endpoint real devolve e que o gráfico espera. */
 function volume() {
-  const base = [72, 81, 64, 58, 90, 96, 44, 38, 85, 93, 88, 79, 97, 101]
+  const base = [44, 38, 85, 93, 88, 79, 97]
   return base.map((v, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (base.length - 1 - i))
-    return { date: d.toISOString().slice(0, 10), inbound: v, outbound: Math.round(v * 1.08) }
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` // data LOCAL, como o filtro "Hoje"
+    return { date, inbound: v, outbound: Math.round(v * 1.08) }
   })
 }
 

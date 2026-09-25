@@ -5,7 +5,7 @@ export function formatKpiValue(value: number, unit: KpiUnit): string {
     case 'count':
       return value.toLocaleString('pt-BR')
     case 'percent':
-      return `${value.toFixed(1)}%`
+      return `${value.toFixed(1).replace('.', ',')}%` // pt-BR: 71,0%
     case 'seconds': {
       if (value === 0) return '—'
       if (value < 60) return `${Math.round(value)}s`
@@ -19,7 +19,7 @@ export function formatKpiValue(value: number, unit: KpiUnit): string {
       return m > 0 ? `${h}h ${m}m` : `${h}h`
     }
     case 'csat_score':
-      return value === 0 ? '—' : `${value.toFixed(1)}`
+      return value === 0 ? '—' : value.toFixed(1).replace('.', ',')
     case 'nps_score':
       return value > 0 ? `+${Math.round(value)}` : `${Math.round(value)}`
     case 'currency':

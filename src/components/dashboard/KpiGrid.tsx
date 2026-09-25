@@ -60,7 +60,7 @@ function KpiStripCell({ metric, support }: { metric: KpiMetric; support?: { text
           {metric.trend > 0
             ? <TrendingUp className="w-3 h-3" />
             : <TrendingDown className="w-3 h-3" strokeWidth={1.75} />}
-          <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1)}%</span>
+          <span>{metric.trend > 0 ? '+' : ''}{metric.trend.toFixed(1).replace('.', ',')}%</span>
           <span className="text-surface-500 font-normal truncate">vs. período anterior</span>
         </div>
       ) : support ? (
