@@ -234,8 +234,8 @@ function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number;
         // o zoom compensa a redução do cartão (0,66) para o texto do WhatsApp
         // ficar legível (≈ 0,75 do tamanho real), e o close mostra o fim da
         // conversa — onde a pergunta e a resposta chegam.
-        <div className="flex h-[330px] items-end justify-center overflow-hidden">
-          <div className="-mb-[24px] [zoom:1.9]" style={{ width: 234, height: 456 }}><ConteudoWhatsAppAparelho at={at} cena="conversa" /></div>
+        <div className="flex h-[272px] items-end justify-center overflow-hidden">
+          <div className="-mb-[24px] [zoom:1.57]" style={{ width: 234, height: 456 }}><ConteudoWhatsAppAparelho at={at} cena="conversa" /></div>
         </div>
       )
     case 'medir-0':
@@ -248,7 +248,7 @@ function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number;
         actorType: (l.metadata.actorType === 'ai' ? 'agent' : 'user') as ActivityEvent['actorType'],
         subject: l.subject, timestamp: l.timestamp,
       }))
-      return <div className="relative h-[230px] overflow-hidden px-2 py-1"><ActivityFeed events={eventos} /></div>
+      return <div className="relative h-[330px] overflow-hidden px-2 py-1"><ActivityFeed events={eventos} /></div>
     }
     case 'equipe-0': {
       // O sino: a transferência entra no topo quando a IA chama a Ana.
@@ -401,7 +401,7 @@ function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i
     <Revelar atraso={0.15 + i * 0.08} className={cn('flex min-w-0', esticar && 'flex-1')}>
       <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
         <div className="flex min-h-[104px] flex-1 flex-col justify-center border-b border-[var(--landing-borda)] bg-surface-950 py-1.5">
-          <div aria-hidden inert className="pointer-events-none select-none [zoom:0.66]">
+          <div aria-hidden inert data-evidencia className="pointer-events-none select-none [zoom:0.8]">
             <VisualCartao bloco={bloco} i={i} at={at} cena={cena} ciclo={ciclo} />
           </div>
         </div>

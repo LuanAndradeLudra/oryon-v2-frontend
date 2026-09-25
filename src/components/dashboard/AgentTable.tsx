@@ -220,7 +220,7 @@ export function AgentTable({ agents }: { agents: AgentMetrics[] }) {
                 <td className="px-4 py-3.5">
                   {agent.csat > 0 ? (
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-semibold text-surface-100 tabular-nums">{agent.csat.toFixed(1)}</span>
+                      <span className="text-sm font-semibold text-surface-100 tabular-nums">{agent.csat.toFixed(1).replace('.', ',')}</span>
                       <span className="text-xs text-away">★</span>
                     </div>
                   ) : <span className="text-xs text-surface-600">—</span>}

@@ -41,7 +41,7 @@ export const StatusDonut = memo(function StatusDonut({ data }: { data: StatusDis
 
       <div className="flex flex-col gap-2 mt-3">
         {slices.map((s) => {
-          const pct = total > 0 ? ((s.value / total) * 100).toFixed(1) : '0.0'
+          const pct = total > 0 ? ((s.value / total) * 100).toFixed(1).replace('.', ',') : '0,0'
           return (
             <div key={s.name} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">

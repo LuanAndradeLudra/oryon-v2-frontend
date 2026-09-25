@@ -62,7 +62,7 @@ function FunnelChart({ campaigns }: { campaigns: AdCampaignMetrics[] }) {
         {stages.map((stage, i) => {
           const widthPct = Math.max(20, (stage.value / max) * 100)
           const nextConv = i < stages.length - 1 && stages[i].value > 0
-            ? ((stages[i + 1].value / stages[i].value) * 100).toFixed(1)
+            ? ((stages[i + 1].value / stages[i].value) * 100).toFixed(1).replace('.', ',')
             : null
           return (
             <div key={stage.label} className="flex-1 flex flex-col items-center gap-1.5">
