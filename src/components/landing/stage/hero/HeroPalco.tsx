@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { motion, useAnimate, useMotionValue, useReducedMotion, useTransform } from 'framer-motion'
+import { motion, useAnimate, useReducedMotion, useSpring } from 'framer-motion'
 import { Pause, Play } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
@@ -10,7 +10,7 @@ import {
 } from './heroStory'
 import { reached } from './heroRealData'
 import { Bandeja, Satelite, SateliteAparelho, TITULOS_SATELITES, type PoseSatelite } from './HeroSatelites'
-import { HeroCapitulos } from './HeroCapitulos'
+import { HeroLegenda } from './HeroLegenda'
 
 // O conteúdo das satélites (componentes reais do produto, com dependências
 // pesadas) só é baixado quando a demonstração fica pronta.
@@ -56,7 +56,9 @@ const APP = { w: 1152, h: 720 }
 const APP_CELULAR = { w: 390, h: 760 }
 /** Tela do aparelho satélite: o app mobile a 60 %. */
 const TELA_APARELHO = { escala: 0.6, w: APP_CELULAR.w * 0.6, h: APP_CELULAR.h * 0.6 }
-const PALCO = { w: 1480, h: 812 }
+const PALCO = { w: 1480, h: 876 }
+/** A legenda: centrada sobre a borda de baixo da âncora, como num filme. */
+const LEGENDA = { w: 660, sobreposicao: 64 }
 const ANCORA = { x: 158, y: 22 }
 
 /**
@@ -174,6 +176,24 @@ export function HeroPalco({ className }: { className?: string }) {
   const [srcAncora] = useState(() => srcDemo(semMovimento ? HERO_ROTAS.funil : HERO_ROTAS.disparos))
   const pronta = usePronta(ancoraRef)
 
+  // ── Foco: o anel de luz sobre o que acabou de mudar na tela ───────────────
+  // O diretor (dentro do iframe) mede o elemento e manda o retângulo; aqui só
+  // se desenha um anel por cima — direção do olhar, não interface.
+  const [foco, setFoco] = useState<{ id: number; rect: { x: number; y: number; w: number; h: number }; raio: number } | null>(null)
+  useEffect(() => {
+    let limpar: ReturnType<typeof setTimeout> | undefined
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== location.origin || !ancoraRef.current || e.source !== ancoraRef.current.contentWindow) return
+      const d = e.data as { canal?: string; tipo?: string; id?: number; rect?: { x: number; y: number; w: number; h: number }; raio?: number }
+      if (d?.canal !== CANAL || d.tipo !== 'foco' || !d.rect) return
+      setFoco({ id: d.id ?? Date.now(), rect: d.rect, raio: d.raio ?? 8 })
+      if (limpar) clearTimeout(limpar)
+      limpar = setTimeout(() => setFoco(null), 2600)
+    }
+    window.addEventListener('message', onMsg)
+    return () => { window.removeEventListener('message', onMsg); if (limpar) clearTimeout(limpar) }
+  }, [])
+
   // ── Relógio da história ────────────────────────────────────────────────────
   const { state, composition, index, paused, canAnimate, running, togglePause, irPara } = useHeroTimeline<HeroState, HeroCena>({
     cues: HERO_CUES, tailMs: HERO_TAIL_MS, hostRef, staticIndex: HERO_STATIC_CUE, enabled: pronta,
@@ -223,26 +243,37 @@ export function HeroPalco({ className }: { className?: string }) {
     return () => ro.disconnect()
   }, [palco.w])
 
-  // ── Paralaxe do scroll: a âncora recua, as molduras sobem mais rápido ──────
-  const progresso = useMotionValue(0)
+  // ── Scroll em DOIS ESTADOS (como a Attio), nunca ligado pixel a pixel ─────
+  //
+  // Reescalar a tela a cada pixel rolado (e o antigo "avanço de câmera", que
+  // reescalava continuamente durante a cena) fazia o texto do app ser
+  // redesenhado a cada quadro — o conteúdo parecia TREMER (relato do PO,
+  // 24/09). Agora: passou de 40 px, a âncora recua UMA vez para 0,97 e as
+  // molduras sobem, com mola; voltando ao topo, desfaz. Entre um estado e
+  // outro, tudo fica parado e nítido.
+  const [rolou, setRolou] = useState(false)
   useEffect(() => {
     if (semMovimento) return
     const alvo = rolador(hostRef.current)
-    const ler = () => {
-      const topo = alvo instanceof Window ? alvo.scrollY : alvo.scrollTop
-      progresso.set(Math.max(0, Math.min(1, topo / 520)))
-    }
+    const ler = () => setRolou((alvo instanceof Window ? alvo.scrollY : alvo.scrollTop) > 40)
     ler()
     alvo.addEventListener('scroll', ler, { passive: true })
     return () => alvo.removeEventListener('scroll', ler)
-  }, [semMovimento, progresso])
-  const escalaAncora = useTransform(progresso, [0, 1], [1, 0.965])
-  const yJanelas = useTransform(progresso, [0, 1], [0, -46])
-  const yAparelhos = useTransform(progresso, [0, 1], [0, -84])
+  }, [semMovimento])
+  const mola = { stiffness: 90, damping: 22, mass: 1 }
+  const escalaAncora = useSpring(1, mola)
+  const yJanelas = useSpring(0, mola)
+  const yAparelhos = useSpring(0, mola)
+  useEffect(() => {
+    escalaAncora.set(rolou ? 0.97 : 1)
+    yJanelas.set(rolou ? -26 : 0)
+    yAparelhos.set(rolou ? -48 : 0)
+  }, [rolou, escalaAncora, yJanelas, yAparelhos])
 
-  // ── Câmera: avanço lento durante a cena + corte na troca de módulo ─────────
+  // ── Corte na troca de módulo ───────────────────────────────────────────────
+  // Um "respiro" curto sobre a tela enquanto a rota troca por baixo: a nova
+  // tela surge de um desfoque leve, sem piscar. Nenhuma escala contínua.
   const [cenaRef, animarCena] = useAnimate()
-  const [cameraRef, animarCamera] = useAnimate()
   const cenaAnterior = useRef<HeroCena | null>(null)
   const saltoAnterior = useRef(0)
   useEffect(() => {
@@ -251,22 +282,13 @@ export function HeroPalco({ className }: { className?: string }) {
     saltoAnterior.current = saltos
     const mudou = cenaAnterior.current !== composition || pulou
     cenaAnterior.current = composition
-    if (!mudou) return
+    if (!mudou || !cenaRef.current) return
     const vazia = composition === 'reinicio'
-    if (cenaRef.current) {
-      void animarCena(cenaRef.current, vazia
-        ? { opacity: 0, filter: 'blur(6px)' }
-        : { opacity: [0.4, 1], filter: ['blur(5px)', 'blur(0px)'] },
-        { duration: vazia ? 0.35 : 0.55, ease: [0.22, 0.8, 0.2, 1] })
-    }
-    // Avanço lento (1 % em ~6 s) e volta seca no corte seguinte — a sensação
-    // de câmera viva sem mover o plano. A troca de gaveta (relatório) é a
-    // mesma cena na mesma tela: continua o avanço em vez de reiniciar.
-    if (cameraRef.current && composition !== 'relatorio') {
-      void animarCamera(cameraRef.current, vazia ? { scale: 1 } : { scale: [1, 1.012] },
-        vazia ? { duration: 0.3 } : { duration: 6.5, ease: 'linear' })
-    }
-  }, [composition, saltos, pronta, semMovimento, animarCena, cenaRef, animarCamera, cameraRef])
+    void animarCena(cenaRef.current, vazia
+      ? { opacity: 0, filter: 'blur(4px)' }
+      : { opacity: [0.35, 1], filter: ['blur(4px)', 'blur(0px)'] },
+      { duration: vazia ? 0.45 : 0.8, ease: [0.16, 1, 0.3, 1] })
+  }, [composition, saltos, pronta, semMovimento, animarCena, cenaRef])
 
   const vis = visibilidade(state, composition)
   const cantos = diagonal(composition === 'reinicio' ? 'conversa' : composition)
@@ -323,7 +345,7 @@ export function HeroPalco({ className }: { className?: string }) {
               style={{ background: 'color-mix(in srgb, var(--color-brand-500) 22%, transparent)' }}
             />
             <Bandeja titulo="Oryon" className="hero-ancora h-full w-full">
-              <div ref={cameraRef} className="absolute inset-0 origin-center">
+              <div className="absolute inset-0">
                 <div ref={cenaRef} className="absolute inset-0">
                   {montar && (
                     <iframe
@@ -347,6 +369,28 @@ export function HeroPalco({ className }: { className?: string }) {
                 </div>
               )}
             </Bandeja>
+
+            {/* O ANEL DE FOCO — acende sobre o elemento que acabou de mudar
+                (a resposta da IA, a situação, o card que andou) e se apaga. */}
+            {foco && !semMovimento && foco.rect.y + foco.rect.h > 0 && foco.rect.y < app.h && (
+              <motion.div
+                key={foco.id}
+                aria-hidden
+                className="absolute pointer-events-none"
+                style={{
+                  left: 6 + foco.rect.x - 5,
+                  top: 30 + Math.max(0, foco.rect.y) - 5,
+                  width: foco.rect.w + 10,
+                  height: Math.min(foco.rect.h, app.h - Math.max(0, foco.rect.y)) + 10,
+                  borderRadius: foco.raio + 5,
+                  zIndex: 5,
+                  boxShadow: '0 0 0 2px color-mix(in srgb, var(--color-brand-400) 90%, transparent), 0 0 28px 6px color-mix(in srgb, var(--color-brand-500) 38%, transparent)',
+                }}
+                initial={{ opacity: 0, scale: 1.08 }}
+                animate={{ opacity: [0, 1, 1, 0], scale: [1.08, 1, 1, 1.01] }}
+                transition={{ duration: 2.4, times: [0, 0.18, 0.75, 1], ease: [0.16, 1, 0.3, 1] }}
+              />
+            )}
           </motion.div>
 
           {/* ── AS DEMAIS MOLDURAS — só no desktop ────────────────────────────── */}
@@ -370,20 +414,58 @@ export function HeroPalco({ className }: { className?: string }) {
             </Suspense>
           )}
         </div>
+
+        {/* A LEGENDA (desktop) — camada própria por cima de tudo, fora do
+            palco inerte para os segmentos serem clicáveis, com o mesmo fator
+            de escala. Entra depois da âncora, subindo. */}
+        {!celular && (
+          <div
+            className="absolute top-0 pointer-events-none"
+            style={{
+              width: palco.w, height: palco.h,
+              left: `calc(50% - ${(palco.w * fit) / 2}px)`,
+              transform: `scale(${fit})`, transformOrigin: 'top left', zIndex: 40,
+            }}
+          >
+            <motion.div
+              className="absolute pointer-events-auto"
+              style={{
+                width: LEGENDA.w,
+                left: ANCORA.x + (APP.w + 12) / 2 - LEGENDA.w / 2,
+                top: ANCORA.y + APP.h + 36 - LEGENDA.sobreposicao,
+              }}
+              initial={{ opacity: 0, y: 24, filter: 'blur(6px)' }}
+              animate={pronta ? { opacity: 1, y: 0, filter: 'blur(0px)' } : { opacity: 0, y: 24, filter: 'blur(6px)' }}
+              transition={semMovimento ? { duration: 0 } : { type: 'spring', stiffness: 80, damping: 20, delay: 0.5 }}
+            >
+              <HeroLegenda
+                capitulos={HERO_CAPITULOS}
+                ativo={capitulo}
+                batida={batida}
+                duracoes={duracoes}
+                rodando={running && pronta}
+                chaveProgresso={`${capitulo}-${saltos}`}
+                onIr={irParaCapitulo}
+              />
+            </motion.div>
+          </div>
+        )}
       </div>
 
-      {/* A LEGENDA: os capítulos da demonstração, com o valor de cada um e a
-          narração do momento. */}
-      <HeroCapitulos
-        className="mt-6 sm:mt-8 px-1"
-        capitulos={HERO_CAPITULOS}
-        ativo={capitulo}
-        batida={batida}
-        duracoes={duracoes}
-        rodando={running && pronta}
-        chaveProgresso={`${capitulo}-${saltos}`}
-        onIr={irParaCapitulo}
-      />
+      {/* No celular a legenda vem logo abaixo da âncora, sem sobrepô-la. */}
+      {celular && (
+        <HeroLegenda
+          compacta
+          className="mt-4"
+          capitulos={HERO_CAPITULOS}
+          ativo={capitulo}
+          batida={batida}
+          duracoes={duracoes}
+          rodando={running && pronta}
+          chaveProgresso={`${capitulo}-${saltos}`}
+          onIr={irParaCapitulo}
+        />
+      )}
 
       {/* Rodapé: a divulgação dos dados fictícios, ao lado da pausa. */}
       <div className="relative mt-5 flex items-center justify-between gap-3 px-1">

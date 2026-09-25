@@ -111,7 +111,7 @@ export function Satelite({
           : { opacity: 0, scale: 0.94, filter: 'blur(3px)' }}
         transition={semMovimento
           ? { duration: 0 }
-          : { type: 'spring', stiffness: 210, damping: 30, mass: 0.9, delay: visivel ? atraso : 0 }}
+          : { type: 'spring', stiffness: 120, damping: 24, mass: 1, delay: visivel ? atraso : 0 }}
       >
         <Bandeja titulo={titulo} conteudoClassName={conteudoClassName} className="hero-satelite">
           {children}
@@ -177,7 +177,7 @@ export function SateliteAparelho({
         animate={visivel ? { opacity: 1, y: 0, rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1 } : escondido}
         transition={semMovimento
           ? { duration: 0 }
-          : { type: 'spring', stiffness: 150, damping: 22, mass: 1, delay: visivel ? atraso : 0 }}
+          : { type: 'spring', stiffness: 95, damping: 20, mass: 1.1, delay: visivel ? atraso : 0 }}
       >
         <Aparelho>{children}</Aparelho>
       </motion.div>

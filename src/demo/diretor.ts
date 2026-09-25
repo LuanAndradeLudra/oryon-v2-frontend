@@ -31,6 +31,7 @@ export type MensagemParaDemo =
 export type MensagemDaDemo =
   | { canal: typeof CANAL; tipo: 'pronta' }
   | { canal: typeof CANAL; tipo: 'rota'; rota: string }
+  | { canal: typeof CANAL; tipo: 'foco'; id: number; rect: { x: number; y: number; w: number; h: number }; raio: number }
 
 type Janela = { __demoNavegar?: (to: string) => void; __demoRota?: () => string; __demoFecharPainel?: () => void }
 
@@ -129,7 +130,10 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
   // busca de novo quando for montada.
   const recomeco = !reached(estado, de)
   definirEstado(estado)
-  if (!recomeco && de !== estado) emitirTransicao(de, estado)
+  if (!recomeco && de !== estado) {
+    emitirTransicao(de, estado)
+    focar(estado)
+  }
 
   const w = window as unknown as Janela
   if (cena !== cenaAtual) {
@@ -177,6 +181,79 @@ export function instalarDiretor() {
  * Avisa a landing quando o app terminou de desenhar a primeira tela — é o
  * sinal para trocar o pôster pela demonstração viva.
  */
+// ─── Foco: para onde a câmera aponta o olhar ────────────────────────────────
+
+/**
+ * O que acabou de mudar na tela, por estado — um trecho de texto do produto
+ * que identifica o elemento. O diretor só MEDE onde ele está e avisa a
+ * landing, que desenha um anel de luz por cima (efeito de câmera, fora do
+ * app). Nada aqui altera a interface.
+ */
+const FOCOS: Partial<Record<HeroState, { texto: string; bolha?: boolean }>> = {
+  demanda: { texto: 'Preciso de uma proposta pra 12', bolha: true },
+  resposta: { texto: 'O Plano Pro anual sai por', bolha: true },
+  situacao: { texto: 'Em negociação' },
+  etiqueta: { texto: 'proposta enviada' },
+  avanco: { texto: 'Plano Pro anual · 12', bolha: true },
+  assumido: { texto: 'Ana Prado' },
+  humano: { texto: 'aqui é a Ana', bolha: true },
+}
+
+/** O elemento visível mais interno cujo texto contém o trecho. */
+function acharTexto(trecho: string): HTMLElement | null {
+  const raiz = document.getElementById('main-content') ?? document.body
+  const candidatos = [...raiz.querySelectorAll<HTMLElement>('p, span, div, h4, button')]
+    .filter((e) => e.children.length <= 2 && (e.textContent ?? '').includes(trecho))
+  // O MENOR elemento visível com o texto: o chip da etiqueta, não a linha da
+  // linha do tempo que também a menciona.
+  let melhor: HTMLElement | null = null
+  let menorArea = Infinity
+  for (const e of candidatos) {
+    const r = e.getBoundingClientRect()
+    if (r.width <= 0 || r.height <= 0 || r.bottom <= 0 || r.top >= window.innerHeight) continue
+    const area = r.width * r.height
+    if (area < menorArea) { menorArea = area; melhor = e }
+  }
+  return melhor
+}
+
+/** Sobe até o "cartão" que contém o texto (bolha de mensagem, card do quadro). */
+function subirAteCartao(e: HTMLElement): HTMLElement {
+  let atual: HTMLElement = e
+  for (let i = 0; i < 7 && atual.parentElement; i++) {
+    const cs = getComputedStyle(atual)
+    const temFundo = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent'
+    if (temFundo && parseFloat(cs.borderTopLeftRadius) >= 6 && atual.getBoundingClientRect().width > 120) return atual
+    atual = atual.parentElement
+  }
+  return e
+}
+
+let focoSeq = 0
+function focar(estado: HeroState) {
+  const alvo = FOCOS[estado]
+  if (!alvo) return
+  const seq = ++focoSeq
+  const inicio = Date.now()
+  const tentar = () => {
+    if (seq !== focoSeq) return
+    const achado = acharTexto(alvo.texto)
+    if (!achado) {
+      if (Date.now() - inicio < 1800) setTimeout(tentar, 120)
+      return
+    }
+    // Um quadro depois de achar: a mensagem acabou de entrar e ainda anima.
+    setTimeout(() => {
+      if (seq !== focoSeq) return
+      const el = alvo.bolha ? subirAteCartao(achado) : achado
+      const r = el.getBoundingClientRect()
+      const raio = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 8
+      avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect: { x: r.left, y: r.top, w: r.width, h: r.height }, raio })
+    }, 420)
+  }
+  setTimeout(tentar, 250)
+}
+
 export function avisarQuandoPronta() {
   const inicio = Date.now()
   const checar = () => {
