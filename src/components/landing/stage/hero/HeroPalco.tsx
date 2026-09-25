@@ -361,9 +361,23 @@ export function HeroPalco({ className }: { className?: string }) {
                   )}
                 </div>
               </div>
-              {/* Pôster: enquanto o app carrega, o fundo do próprio app com o
-                  indicador de carregamento dele — nada desenhado à mão. */}
-              {!pronta && (
+              {/* PÔSTER — uma CAPTURA da própria demonstração, na primeira cena
+                  (Disparos), nos dois temas: o visitante vê o produto no
+                  primeiro quadro, e o app vivo assume por cima com um
+                  crossfade — a mesma tela, sem salto. Gerado com o Edge em
+                  modo headless (ver HERO-CICLOS.md). No celular e com
+                  movimento reduzido a primeira tela é outra: ali vale o
+                  indicador de carregamento do próprio app. */}
+              {!celular && !semMovimento ? (
+                <img
+                  src={tema === 'light' ? '/hero/demo-poster-claro.png' : '/hero/demo-poster-escuro.png'}
+                  alt=""
+                  aria-hidden
+                  decoding="async"
+                  className="absolute left-0 top-0 transition-opacity duration-700"
+                  style={{ width: app.w, height: app.h, opacity: pronta ? 0 : 1, pointerEvents: 'none' }}
+                />
+              ) : !pronta && (
                 <div className="absolute inset-0 flex items-center justify-center bg-surface-950">
                   <div className="w-7 h-7 border-2 border-brand-500 border-t-transparent rounded-full animate-spin opacity-70" />
                 </div>

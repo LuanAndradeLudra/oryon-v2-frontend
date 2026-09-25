@@ -41,7 +41,10 @@ export function Hero() {
         'bg-[linear-gradient(to_bottom,var(--color-surface-900),var(--color-surface-950)_480px)]',
       )}
     >
-      <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-6">
+      {/* Texto CENTRADO no mesmo eixo do palco (como a referência): título,
+          lead e CTAs alinhados à esquerda numa coluna mais estreita que o
+          palco criavam dois eixos brigando na primeira dobra. */}
+      <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-6 text-center">
         <h1
           className="reveal font-display font-extrabold text-surface-50 text-[clamp(30px,min(8.2vw,16px+5.333svh),72px)] leading-[0.95] tracking-[clamp(-2.2px,2.08px-0.3733svh,-1.1px)]"
           style={{ ['--d' as string]: '0ms' }}
@@ -49,13 +52,13 @@ export function Hero() {
           {hero.title}
         </h1>
         <p
-          className="reveal mt-4 max-w-[58ch] text-base sm:text-lg leading-relaxed text-surface-400"
+          className="reveal mx-auto mt-4 max-w-[54ch] text-base sm:text-lg leading-relaxed text-surface-400 text-balance"
           style={{ ['--d' as string]: '90ms' }}
         >
           {hero.lead}
         </p>
         <div
-          className="reveal mt-6 flex flex-wrap items-center gap-3"
+          className="reveal mt-7 flex flex-wrap items-center justify-center gap-3"
           style={{ ['--d' as string]: '180ms' }}
         >
           <LinkButton to={LANDING_ROUTES.login} size="lg">{hero.primaryCta}</LinkButton>
