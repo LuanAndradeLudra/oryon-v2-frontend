@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, MessageCircle, Smartphone, Settings2, Rocket } from 'lucide-react'
+import { ChevronDown, MessageCircle, Smartphone, Settings2, Rocket, Check, PencilLine, Layers, LayoutDashboard, BookOpen, MessagesSquare, Users, KanbanSquare, Megaphone, BarChart3, ArrowUpRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LinkButton } from '@/components/ui/LinkButton'
-import { contato, contatoDisponivel, linkContato, implantacao, perguntas, fecho, LANDING_ROUTES } from '../landingCopy'
+import { contato, contatoDisponivel, linkContato, implantacao, perguntas, fecho, plataforma, LANDING_ROUTES } from '../landingCopy'
 
 /**
  * As seções de CONVERSÃO depois da Plataforma (25/09). Cada uma derruba uma
@@ -61,6 +61,8 @@ function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo: string
 // ─── Implantação ─────────────────────────────────────────────────────────────
 
 const ICONES_PASSO = [Smartphone, Settings2, Rocket]
+const ICONES_DEPOIS = { ajuste: PencilLine, crescer: Layers, acompanhar: LayoutDashboard } as const
+const ICONES_CAPITULO = { conhecer: BookOpen, atender: MessagesSquare, equipe: Users, funil: KanbanSquare, campanhas: Megaphone, medir: BarChart3 } as const
 
 export function SecaoImplantacao() {
   const semMovimento = useReducedMotion()
@@ -92,11 +94,39 @@ export function SecaoImplantacao() {
                     <p className="mt-5 text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{p.quem}</p>
                     <p className="mt-1.5 font-display text-[13px] font-semibold tracking-[-0.01em] text-surface-50">{p.titulo}</p>
                     <p className="mt-2 max-w-[34ch] text-[12px] leading-relaxed text-surface-400">{p.texto}</p>
+                    {/* O que sai deste passo — concreto, verificável. */}
+                    <ul className="mt-4 space-y-2 border-t border-[var(--landing-borda)] pt-4">
+                      {p.entregas.map((e) => (
+                        <li key={e} className="flex items-start gap-2 text-[11.5px] leading-snug text-surface-300">
+                          <Check className="mt-[1px] h-3.5 w-3.5 flex-shrink-0 text-[var(--landing-destaque)]" strokeWidth={2.2} aria-hidden />
+                          <span>{e}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </li>
                 </Revelar>
               )
             })}
           </ol>
+        </div>
+
+        {/* Depois do ar: o ajuste passa a ser do cliente, na própria Oryon. */}
+        <Revelar atraso={0.2} className="mt-16">
+          <p className="font-display text-[13px] font-semibold tracking-[-0.01em] text-surface-50">{implantacao.depois.titulo}</p>
+        </Revelar>
+        <div className="mt-5 grid gap-px overflow-hidden rounded-2xl bg-[var(--landing-borda)] ring-1 ring-[var(--landing-borda)] md:grid-cols-3">
+          {implantacao.depois.itens.map((d, i) => {
+            const Icone = ICONES_DEPOIS[d.key]
+            return (
+              <Revelar key={d.key} atraso={0.25 + i * 0.12} className="bg-[var(--landing-cartao)] p-6">
+                <span className="flex h-[26px] w-[26px] items-center justify-center rounded-xl bg-surface-900 text-[var(--landing-destaque)] ring-1 ring-surface-700">
+                  <Icone className="h-[13px] w-[13px]" strokeWidth={1.8} aria-hidden />
+                </span>
+                <p className="mt-3.5 font-display text-[12px] font-semibold tracking-[-0.01em] text-surface-50">{d.titulo}</p>
+                <p className="mt-2 max-w-[40ch] text-[12px] leading-relaxed text-surface-400">{d.texto}</p>
+              </Revelar>
+            )
+          })}
         </div>
 
         <Revelar atraso={0.4} className="mt-12">
@@ -144,20 +174,26 @@ export function SecaoPerguntas() {
   return (
     <section id="perguntas" data-section="perguntas" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28">
       <div className="landing-container grid gap-12 lg:grid-cols-[1fr_1.4fr] lg:gap-20">
-        <div>
+        {/* Com treze perguntas, o título acompanha a leitura (desktop). */}
+        <div className="lg:sticky lg:top-24 lg:self-start">
           <Cabecalho eyebrow={perguntas.eyebrow} titulo={perguntas.title} cinza={perguntas.titleCinza} />
           <Revelar atraso={0.2} className="mt-8">
             <BotaoContato longo={false} />
           </Revelar>
         </div>
-        <Revelar atraso={0.1}>
-          <div className="border-t border-[var(--landing-borda)]">
-            {perguntas.itens.map((q) => (
-              <Pergunta key={q.pergunta} pergunta={q.pergunta}
-                resposta={!contatoDisponivel && 'respostaSemContato' in q ? q.respostaSemContato : q.resposta} />
-            ))}
-          </div>
-        </Revelar>
+        <div className="space-y-10">
+          {perguntas.grupos.map((g, gi) => (
+            <Revelar key={g.titulo} atraso={0.1 + gi * 0.08}>
+              <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{g.titulo}</p>
+              <div className="mt-2 border-t border-[var(--landing-borda)]">
+                {g.itens.map((q) => (
+                  <Pergunta key={q.pergunta} pergunta={q.pergunta}
+                    resposta={!contatoDisponivel && 'respostaSemContato' in q ? q.respostaSemContato : q.resposta} />
+                ))}
+              </div>
+            </Revelar>
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -184,7 +220,39 @@ export function SecaoFecho() {
           <BotaoContato />
           <LinkButton to={LANDING_ROUTES.login} variant={contatoDisponivel ? 'neutral' : 'primary'} size="lg">{fecho.entrar}</LinkButton>
         </Revelar>
+      </div>
 
+      {/* Recapitulando: os seis capítulos da Plataforma, cada um um atalho de
+          volta para a sua cena — quem chegou até aqui revê o que quiser. */}
+      <div className="landing-container relative mt-20">
+        <Revelar className="text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{fecho.recapEyebrow}</p>
+          <p className="mx-auto mt-2 max-w-[40ch] font-display text-[13px] font-semibold tracking-[-0.01em] text-surface-50 text-balance">{fecho.recapTitulo}</p>
+        </Revelar>
+        <ol className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {plataforma.blocos.map((b, i) => {
+            const Icone = ICONES_CAPITULO[b.id as keyof typeof ICONES_CAPITULO] ?? BookOpen
+            return (
+              <Revelar key={b.id} atraso={0.1 + i * 0.07} className="list-none">
+                <a
+                  href={`#plataforma-${b.id}`}
+                  className="group flex h-full items-start gap-3 rounded-2xl bg-[var(--landing-cartao)] p-4 text-left ring-1 ring-[var(--landing-borda)] transition-colors hover:ring-brand-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)]"
+                >
+                  <span className="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-xl bg-surface-900 text-[var(--landing-destaque)] ring-1 ring-surface-700">
+                    <Icone className="h-[13px] w-[13px]" strokeWidth={1.8} aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[11px] font-semibold text-surface-500">
+                      {String(i + 1).padStart(2, '0')} · {b.indice}
+                    </span>
+                    <span className="mt-1 block text-[12px] font-semibold leading-snug text-surface-50">{b.destaque}</span>
+                  </span>
+                  <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-surface-500 transition-colors group-hover:text-[var(--landing-destaque)]" aria-hidden />
+                </a>
+              </Revelar>
+            )
+          })}
+        </ol>
       </div>
     </section>
   )

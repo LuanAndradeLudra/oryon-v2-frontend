@@ -60,26 +60,43 @@ export const trust = {
   // permissões por agente, a pausa manual e a conexão oficial.
   title: 'A IA trabalha dentro de limites.',
   titleCinza: 'Você define quais são.',
+  /** A frase que prepara a tela real (aba Capacidades do agente). */
+  lead: 'Cada Agente IA tem a sua lista de capacidades, uma por uma, na própria configuração. O que estiver desligado, ele não faz — e o que ele faz fica registrado.',
+  tela: 'Oryon · Agentes IA',
+  // 26/09 (2ª revisão): três itens ao lado da tela, falando do que ela mostra;
+  // três embaixo, do que acontece em volta da conversa. "Fechar venda" corrigido:
+  // o backend RECUSA ganho/perdido de venda pela IA mesmo com o opt-in
+  // (deals.service › aiCloseDeal) — a versão anterior dizia "se você liberar".
   items: [
+    {
+      key: 'permissoes',
+      title: 'Você liga o que ela pode fazer',
+      text: 'Mudar a situação do contato, etiquetar, mover o negócio de etapa, chamar uma pessoa: cada capacidade tem o seu interruptor e os seus limites.',
+    },
+    {
+      key: 'venda',
+      title: 'Ganho ou perdido é de uma pessoa',
+      text: 'A IA avança o negócio entre as etapas; marcar a venda como ganha ou perdida, não. O sistema recusa, mesmo que alguém tente liberar.',
+    },
+    {
+      key: 'historico',
+      title: 'Tudo fica no histórico',
+      text: 'Cada ação da IA entra na linha do tempo do contato, com o nome do agente — dá para ver o que ela fez e quando.',
+    },
     {
       key: 'verificacao',
       title: 'Resposta conferida antes de sair',
       text: 'Valores, horários, nomes e ações citados pela IA são conferidos com os seus dados; o que não confere fica retido para revisão da equipe.',
     },
     {
-      key: 'permissoes',
-      title: 'Você decide o que ela pode fazer',
-      text: 'Ferramentas e regras de transferência ficam na configuração de cada agente. Fechar negócios, por exemplo, só se a sua empresa liberar.',
-    },
-    {
       key: 'controle',
       title: 'A equipe assume quando quiser',
-      text: 'Um clique em Assumir pausa a IA naquela conversa; Reativar IA devolve quando o Atendente terminar.',
+      text: 'Um clique em Assumir pausa a IA naquela conversa, pelo tempo que você definir na configuração do agente; Reativar IA devolve a conversa.',
     },
     {
       key: 'conexao',
-      title: 'Conexão oficial',
-      text: 'A integração usa a API oficial do WhatsApp Business, da Meta.',
+      title: 'Conexão oficial, regras da Meta',
+      text: 'A integração usa a API oficial do WhatsApp Business. Fora da janela de atendimento, a conversa só reabre com um modelo aprovado pela Meta.',
     },
   ],
 } as const
@@ -163,7 +180,7 @@ export const plataforma = {
       texto: 'Quando a cliente pede para falar com alguém, a IA chama a pessoa certa, com o histórico completo, e sai de cena enquanto ela atende.',
       cartoes: [
         { titulo: 'Avisada na hora.', texto: 'A atendente recebe a notificação e abre a conversa inteira — sem perguntar de novo ao cliente.' },
-        { titulo: 'A venda fica com a sua equipe.', texto: 'A IA prepara e avança o negócio; por padrão, quem fecha é uma pessoa — a IA só fecha se você liberar.' },
+        { titulo: 'A venda fica com a sua equipe.', texto: 'A IA prepara e avança o negócio; marcar ganho ou perdido é sempre de uma pessoa.' },
       ],
     },
     {
@@ -208,50 +225,133 @@ export const implantacao = {
       quem: 'Você',
       titulo: 'Libera o seu número',
       texto: 'Você configura o número de WhatsApp e o deixa liberado pela Meta — a conexão é a oficial, pela API do WhatsApp Business.',
+      entregas: [
+        'O número de WhatsApp que vai atender',
+        'A conta liberada pela Meta, na API oficial',
+        'Quem da equipe atende, e em quais setores',
+      ],
     },
     {
       quem: 'Nós',
       titulo: 'Configuramos a Oryon',
-      texto: 'Agentes IA, catálogo, base de conhecimento, funis, equipe e regras de transferência: toda a configuração é feita pela nossa equipe.',
+      texto: 'Toda a configuração é feita pela nossa equipe, a partir do jeito que a sua empresa já vende e atende.',
+      entregas: [
+        'Agentes IA com instruções, conhecimento e catálogo',
+        'Funis com as etapas do seu processo de venda',
+        'Equipe, setores e regras de transferência',
+      ],
     },
     {
       quem: 'Juntos',
       titulo: 'A IA começa a atender',
-      texto: 'Você recebe a Oryon pronta, com a IA atendendo e a sua equipe no comando.',
+      texto: 'Antes de ligar, o agente passa pelo chat de teste. Depois, a IA atende no seu número e a equipe acompanha pelo painel.',
+      entregas: [
+        'Conversas de teste com o agente, antes de ligar',
+        'Ajustes de respostas e capacidades com você',
+        'A IA ligada no número, com a equipe no comando',
+      ],
     },
   ],
+  /** O que muda depois do ar — tudo na própria Oryon, sem depender de nós. */
+  depois: {
+    titulo: 'Depois de no ar, o ajuste é seu.',
+    itens: [
+      {
+        key: 'ajuste',
+        titulo: 'Mudou a condição? Atualize e salve.',
+        texto: 'Instruções, base de conhecimento e catálogo ficam na tela de cada agente — as próximas respostas já seguem a versão nova.',
+      },
+      {
+        key: 'crescer',
+        titulo: 'Mais de um número, mais de um agente.',
+        texto: 'Cada número de WhatsApp tem o seu Agente IA; vendas, suporte e pós-venda podem ter o seu, cada um com a sua equipe.',
+      },
+      {
+        key: 'acompanhar',
+        titulo: 'A operação numa tela.',
+        texto: 'O Dashboard mostra fila, conversas abertas, volume e equipe online — o mesmo do capítulo Medir o resultado.',
+      },
+    ],
+  },
 } as const
 
 export const perguntas = {
   eyebrow: 'Perguntas',
   title: 'Perguntas frequentes.',
   titleCinza: 'O que quem está decidindo costuma perguntar.',
-  itens: [
+  // 26/09: de seis para treze perguntas, em três grupos — cada resposta
+  // amarrada a um comportamento do produto que a página mostra ou que foi
+  // conferido no código (chat de teste, espera por mensagens seguidas, linha
+  // do tempo, relatório da campanha, ganho/perdido recusado para a IA).
+  grupos: [
     {
-      pergunta: 'Quanto custa a Oryon?',
-      resposta: 'Cada operação é diferente, por isso trabalhamos com proposta comercial, montada para o seu volume de atendimento e a sua equipe. Fale com a gente e receba a sua.',
-      /** Sem canal comercial publicado, não mandamos "falar com a gente". */
-      respostaSemContato: 'Cada operação é diferente, por isso trabalhamos com proposta comercial, montada para o seu volume de atendimento e a sua equipe.',
+      titulo: 'Implantação e WhatsApp',
+      itens: [
+        {
+          pergunta: 'Quanto custa a Oryon?',
+          resposta: 'Cada operação é diferente, por isso trabalhamos com proposta comercial, montada para o seu volume de atendimento e a sua equipe. Fale com a gente e receba a sua.',
+          /** Sem canal comercial publicado, não mandamos "falar com a gente". */
+          respostaSemContato: 'Cada operação é diferente, por isso trabalhamos com proposta comercial, montada para o seu volume de atendimento e a sua equipe.',
+        },
+        {
+          pergunta: 'Em quanto tempo começo a usar?',
+          resposta: 'Em até 7 dias. Você libera o seu número na Meta e nós configuramos toda a plataforma.',
+        },
+        {
+          pergunta: 'O que eu preciso fazer na implantação?',
+          resposta: 'A parte do número: configurar o WhatsApp e deixá-lo liberado pela Meta, e dizer quem da equipe atende. Agentes IA, catálogo, funis, setores e regras ficam com a gente.',
+        },
+        {
+          pergunta: 'É o WhatsApp oficial?',
+          resposta: 'Sim. A Oryon usa a conexão oficial do WhatsApp Business, pela API da Meta.',
+        },
+        {
+          pergunta: 'Posso conectar mais de um número?',
+          resposta: 'Sim. Cada número conectado tem o seu Agente IA — vendas, suporte e pós-venda podem ter números e agentes diferentes.',
+        },
+      ],
     },
     {
-      pergunta: 'Em quanto tempo começo a usar?',
-      resposta: 'Em até 7 dias. Você libera o seu número na Meta e nós configuramos toda a plataforma.',
+      titulo: 'Agente IA',
+      itens: [
+        {
+          pergunta: 'De onde a IA tira as respostas?',
+          resposta: 'Das instruções, da base de conhecimento e do catálogo configurados em cada agente — e valores citados são conferidos antes de a resposta sair.',
+        },
+        {
+          pergunta: 'E quando a IA não souber responder?',
+          resposta: 'Ela chama uma pessoa da equipe, com a conversa inteira à vista. O que ela não consegue conferir com os seus dados fica retido para revisão, em vez de ir para o cliente.',
+        },
+        {
+          pergunta: 'A IA pode fechar vendas sozinha?',
+          resposta: 'Não. A IA avança o negócio entre as etapas do funil, mas marcar uma venda como ganha ou perdida é sempre decisão de uma pessoa — o sistema recusa, mesmo que alguém tente liberar.',
+        },
+        {
+          pergunta: 'A IA responde fora do horário da equipe?',
+          resposta: 'Sim, assim que a mensagem chega. E, por padrão, se o cliente manda várias mensagens seguidas, o agente espera ele terminar de escrever para responder tudo de uma vez.',
+        },
+        {
+          pergunta: 'Dá para testar o agente antes de ligar?',
+          resposta: 'Sim. Cada agente tem um chat de teste: você conversa com ele como se fosse um cliente antes de colocá-lo no número.',
+        },
+      ],
     },
     {
-      pergunta: 'O que eu preciso fazer na implantação?',
-      resposta: 'Só a parte do número: configurar o WhatsApp e deixá-lo liberado pela Meta. Agentes IA, catálogo, funis, equipe e regras ficam com a gente.',
-    },
-    {
-      pergunta: 'É o WhatsApp oficial?',
-      resposta: 'Sim. A Oryon usa a conexão oficial do WhatsApp Business, pela API da Meta.',
-    },
-    {
-      pergunta: 'A IA pode fechar vendas sozinha?',
-      resposta: 'Só se a sua empresa liberar. Por padrão, o Agente IA avança o negócio de etapa e quem fecha a venda é uma pessoa da sua equipe.',
-    },
-    {
-      pergunta: 'De onde a IA tira as respostas?',
-      resposta: 'Das instruções, da base de conhecimento e do catálogo configurados em cada agente — e valores citados são conferidos antes de a resposta sair.',
+      titulo: 'No dia a dia',
+      itens: [
+        {
+          pergunta: 'Por onde a minha equipe atende?',
+          resposta: 'Pela Oryon, no computador ou no celular. A caixa de Conversas reúne tudo, com as mensagens da IA e das pessoas no mesmo histórico.',
+        },
+        {
+          pergunta: 'Consigo ver o que a IA fez em cada conversa?',
+          resposta: 'Sim. Situação, etiquetas, etapa do negócio e transferências feitas pela IA entram na linha do tempo do contato, com o nome do agente.',
+        },
+        {
+          pergunta: 'Posso disparar campanhas para a minha base?',
+          resposta: 'Sim, com modelos aprovados pela Meta. O relatório de cada campanha mostra entregas, leituras e respostas — e cada resposta cai no atendimento com IA.',
+        },
+      ],
     },
   ],
 } as const
@@ -262,4 +362,7 @@ export const fecho = {
   /** Sem canal comercial configurado: nada de prometer conversa. */
   leadSemContato: 'Já usa a Oryon? Entre e continue de onde parou.',
   entrar: 'Já sou cliente',
+  /** O caminho da conversa, recapitulado: um atalho de volta para cada capítulo. */
+  recapEyebrow: 'Recapitulando',
+  recapTitulo: 'Do que a IA sabe ao resultado medido, numa plataforma só.',
 } as const

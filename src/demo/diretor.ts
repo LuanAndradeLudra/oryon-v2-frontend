@@ -203,6 +203,8 @@ const PRONTA_CENA: Partial<Record<HeroCena, string>> = {
   'agente-instrucoes': 'Use só valores e condições',
   'agente-conhecimento': 'Renovação de setembro',
   'agente-catalogo': 'Implantação assistida',
+  'agente-capacidades': 'Capacidades de CRM',
+  'agente-capacidades-funil': 'Capacidades de CRM',
   painel: 'Volume de Mensagens',
 }
 
@@ -282,6 +284,8 @@ type Alvo = {
   /** O texto é o TÍTULO de um bloco: o alvo é o bloco inteiro (título e
    *  conteúdo), não a faixa do título. */
   bloco?: boolean
+  /** O alvo pode estar fora da área visível da tela: rola até ele antes de medir. */
+  rolar?: boolean
 }
 
 // Situação, etiqueta e a chamada da Ana: a mudança que a câmera aponta é na
@@ -343,6 +347,11 @@ const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
   'agente-instrucoes': { texto: 'Use só valores e condições' },
   'agente-conhecimento': { texto: 'Renovação de setembro', bolha: true },
   'agente-catalogo': { texto: 'Plano Pro', bolha: true },
+  // Limites da IA: chamar uma pessoa (permitido) e mover o negócio — onde a
+  // própria tela diz que fechar venda nunca é permitido. O card do funil fica
+  // abaixo da dobra do app: a câmera rola até ele.
+  'agente-capacidades': { texto: 'Atribuir conversa a um atendente', bolha: true, rolar: true },
+  'agente-capacidades-funil': { texto: 'Mover negócio ou registro no funil', bolha: true, rolar: true },
   // O Dashboard: a fila (a Marina esperando), os indicadores, o volume.
   'painel-fila': { texto: 'Fila agora', bolha: true },
   'painel-indicadores': { texto: 'Conversas Ativas', bolha: true },
@@ -402,6 +411,25 @@ const FOCO_ASSENTAR_MAX_MS = 1400
  * mudança de tamanho. Cada mudança vai para a landing, que desenha o contorno
  * e o conector na mesma geometria. Nada aqui altera a interface.
  */
+/**
+ * Centraliza o alvo rolando SÓ o contêiner rolável do app que o contém.
+ * `scrollIntoView` não serve: ele sobe pelos frames e rolava também a página
+ * da landing (medido: o visitante era puxado e a moldura ia parar sob o menu).
+ */
+function rolarAte(el: HTMLElement) {
+  let cont: HTMLElement | null = el.parentElement
+  while (cont && cont !== document.body) {
+    const oy = getComputedStyle(cont).overflowY
+    if ((oy === 'auto' || oy === 'scroll') && cont.scrollHeight > cont.clientHeight) break
+    cont = cont.parentElement
+  }
+  if (!cont || cont === document.body) return
+  const c = cont.getBoundingClientRect()
+  const r = el.getBoundingClientRect()
+  const topo = cont.scrollTop + (r.top - c.top) - Math.max(0, (c.height - r.height) / 2)
+  cont.scrollTo({ top: Math.max(0, topo), behavior: 'smooth' })
+}
+
 function focarAlvo(alvo: Alvo, atrasoMs: number) {
   const seq = ++focoSeq
   const inicio = performance.now()
@@ -414,7 +442,12 @@ function focarAlvo(alvo: Alvo, atrasoMs: number) {
     if (seq !== focoSeq) return
     const agora = performance.now()
     // O React pode trocar o nó (a lista recarrega): acha de novo.
-    if (!el || !el.isConnected) el = acharAlvo(alvo)
+    if (!el || !el.isConnected) {
+      el = acharAlvo(alvo)
+      // Uma vez por alvo encontrado: a rolagem suave leva alguns quadros, e a
+      // medida abaixo só entra no ar quando o retângulo para de mudar.
+      if (el && alvo.rolar) rolarAte(el)
+    }
     if (!el) {
       if (agora - inicio < atrasoMs + 2200) { requestAnimationFrame(quadro); return }
       encerrarFoco()

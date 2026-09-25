@@ -41,6 +41,8 @@ export type HeroCena =
   // Seção Plataforma (26/09): a configuração do agente e o Dashboard — cada
   // cena é uma aba ou um ponto da MESMA tela real; o Hero não as usa.
   | 'agente-instrucoes' | 'agente-conhecimento' | 'agente-catalogo'
+  // Seção Limites da IA: a aba Capacidades do mesmo agente.
+  | 'agente-capacidades' | 'agente-capacidades-funil'
   | 'painel' | 'painel-fila' | 'painel-indicadores' | 'painel-volume'
 
 export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
@@ -52,6 +54,8 @@ export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   'agente-instrucoes': '/agents?agent=ag-vendas&tab=prompt',
   'agente-conhecimento': '/agents?agent=ag-vendas&tab=knowledge',
   'agente-catalogo': '/agents?agent=ag-vendas&tab=catalog',
+  'agente-capacidades': '/agents?agent=ag-vendas&tab=capabilities',
+  'agente-capacidades-funil': '/agents?agent=ag-vendas&tab=capabilities',
   painel: '/dashboard',
   'painel-fila': '/dashboard',
   'painel-indicadores': '/dashboard',
@@ -148,7 +152,7 @@ export const HERO_CAPITULOS: readonly HeroCapitulo[] = [
   {
     id: 'equipe',
     titulo: 'A equipe no controle',
-    valor: 'A IA chama uma pessoa quando o cliente pede — e, por padrão, quem fecha a venda é a sua equipe.',
+    valor: 'A IA chama uma pessoa quando o cliente pede — e quem fecha a venda é sempre a sua equipe.',
     cue: idx((c) => c.state === 'pedido') - 1,
   },
 ]
