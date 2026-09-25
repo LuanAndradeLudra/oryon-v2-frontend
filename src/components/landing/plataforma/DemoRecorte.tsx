@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { pedirMontagem, tornarVisivel, cancelarMontagem, liberar } from './filaDeMontagem'
 import { useReducedMotion } from 'framer-motion'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
@@ -77,29 +78,45 @@ export function DemoRecorte({
   const semMovimento = useReducedMotion()
   const celular = !useMediaQuery('(min-width: 768px)')
 
-  // ── Montar só com o recorte na tela; desmontar depois que sai ─────────────
+  // ── Montar perto da tela, UM POR VEZ (filaDeMontagem); desmontar depois que sai ─
   const [montar, setMontar] = useState(false)
+  const pedidoRef = useRef<number | null>(null)
   useEffect(() => {
     const el = hostRef.current
     if (!el || typeof IntersectionObserver === 'undefined') { setMontar(true); return }
-    let entrar: ReturnType<typeof setTimeout> | undefined
     let sair: ReturnType<typeof setTimeout> | undefined
-    const io = new IntersectionObserver(([e]) => {
+    let montado = false
+    // A raiz tem de ser o contêiner que rola a landing: com a viewport como
+    // raiz, o recorte já chega recortado por ele e a margem não vale nada.
+    const root = el.closest('[data-landing-root]')
+    // Pré-carga com uma tela de antecedência (com 200 px, cada capítulo
+    // aparecia com spinner por 0,6–1,2 s — medido no build de produção).
+    const perto = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
         clearTimeout(sair)
-        entrar = setTimeout(() => setMontar(true), 200)
+        if (montado || pedidoRef.current !== null) return
+        pedidoRef.current = pedirMontagem(false, () => { montado = true; setMontar(true) })
       } else {
-        clearTimeout(entrar)
-        sair = setTimeout(() => setMontar(false), 2500)
+        if (!montado && pedidoRef.current !== null) { cancelarMontagem(pedidoRef.current); pedidoRef.current = null; return }
+        sair = setTimeout(() => {
+          if (pedidoRef.current !== null) cancelarMontagem(pedidoRef.current)
+          pedidoRef.current = null
+          montado = false
+          setMontar(false)
+        }, 2500)
       }
-      // Uma tela de antecedência: com 200 px, cada capítulo aparecia com o
-      // spinner por 0,6–1,2 s (medido no build de produção). Assim só os
-      // vizinhos do capítulo em leitura ficam montados. A raiz tem de ser o
-      // contêiner que rola a landing: com a viewport como raiz, o recorte já
-      // chega recortado por ele e a margem não vale nada.
-    }, { root: el.closest('[data-landing-root]'), rootMargin: '100% 0px' })
-    io.observe(el)
-    return () => { io.disconnect(); clearTimeout(entrar); clearTimeout(sair) }
+    }, { root, rootMargin: '100% 0px' })
+    // Já na tela e ainda esperando a vez: passa na frente.
+    const naTela = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !montado && pedidoRef.current !== null) tornarVisivel(pedidoRef.current)
+    }, { root })
+    perto.observe(el)
+    naTela.observe(el)
+    return () => {
+      perto.disconnect(); naTela.disconnect(); clearTimeout(sair)
+      if (pedidoRef.current !== null) cancelarMontagem(pedidoRef.current)
+      pedidoRef.current = null
+    }
   }, [])
 
   const [pronta, setPronta] = useState(false)
@@ -108,7 +125,11 @@ export function DemoRecorte({
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== location.origin || !iframeRef.current || e.source !== iframeRef.current.contentWindow) return
       const d = e.data as { canal?: string; tipo?: string }
-      if (d?.canal === CANAL && d.tipo === 'pronta') setPronta(true)
+      if (d?.canal === CANAL && d.tipo === 'pronta') {
+        setPronta(true)
+        // A montagem terminou: libera a vez para o próximo recorte.
+        if (pedidoRef.current !== null) liberar(pedidoRef.current)
+      }
     }
     window.addEventListener('message', onMsg)
     return () => window.removeEventListener('message', onMsg)

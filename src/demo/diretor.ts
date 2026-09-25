@@ -366,12 +366,26 @@ type Retangulo = { x: number; y: number; w: number; h: number }
  * `visivel` cai quando sobra menos da metade ou quando outra camada do app
  * (um painel, um menu) cobre o centro do alvo.
  */
+/** Os ancestrais que recortam o alvo, calculados uma vez por elemento: o
+ *  getComputedStyle de cada ancestral a cada quadro pesava em máquina fraca. */
+const recortadores = new WeakMap<HTMLElement, HTMLElement[]>()
+function ancestraisQueRecortam(el: HTMLElement): HTMLElement[] {
+  let lista = recortadores.get(el)
+  if (!lista) {
+    lista = []
+    for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+      const cs = getComputedStyle(a)
+      if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') lista.push(a)
+    }
+    recortadores.set(el, lista)
+  }
+  return lista
+}
+
 function medir(el: HTMLElement): { rect: Retangulo; visivel: boolean } {
   const r = el.getBoundingClientRect()
   let x1 = r.left, y1 = r.top, x2 = r.right, y2 = r.bottom
-  for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
-    const cs = getComputedStyle(a)
-    if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue
+  for (const a of ancestraisQueRecortam(el)) {
     const c = a.getBoundingClientRect()
     x1 = Math.max(x1, c.left); y1 = Math.max(y1, c.top); x2 = Math.min(x2, c.right); y2 = Math.min(y2, c.bottom)
   }
@@ -437,6 +451,8 @@ function focarAlvo(alvo: Alvo, atrasoMs: number) {
   let ultimo = ''
   let parado = 0
   let noArDesde = 0
+  let quietos = 0
+  let anterior = ''
 
   const quadro = () => {
     if (seq !== focoSeq) return
@@ -470,7 +486,13 @@ function focarAlvo(alvo: Alvo, atrasoMs: number) {
       avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect, raio, visivel })
     }
     if (noArDesde && agora - noArDesde > FOCO_NO_AR_MS) { encerrarFoco(); return }
-    requestAnimationFrame(quadro)
+    // No ar e parado: confere a cada 120 ms em vez de a cada quadro (o
+    // alvo só se mexe se a tela rolar ou a lista recarregar — e aí volta ao
+    // ritmo de quadro até assentar de novo).
+    quietos = noArDesde && chave === anterior ? quietos + 1 : 0
+    anterior = chave
+    if (quietos > 12) setTimeout(() => requestAnimationFrame(quadro), 120)
+    else requestAnimationFrame(quadro)
   }
   setTimeout(() => { if (seq === focoSeq) requestAnimationFrame(quadro) }, atrasoMs)
 }

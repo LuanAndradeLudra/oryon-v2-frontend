@@ -335,11 +335,37 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaS
       }
       const g: Geometria = { anel, raio: m.raio + 5, anelVisivel, caminho, veu }
       const chave = JSON.stringify([Math.round(anel.x), Math.round(anel.y), Math.round(anel.w), Math.round(anel.h), anelVisivel, caminho?.d])
-      if (chave !== ultimo) { ultimo = chave; setGeo(g) }
+      if (chave !== ultimo) { ultimo = chave; mudou = true; setGeo(g) }
     }
-    const laco = () => { calcular(); quadro = requestAnimationFrame(laco) }
+    // Medir o layout a cada quadro custa caro em máquina fraca (medido: ~4% da
+    // CPU só em getBoundingClientRect). Enquanto algo se mexe, mede a cada
+    // quadro; parado há ~12 quadros, confere a cada 120 ms — e acorda na hora
+    // com rolagem, redimensionamento ou aviso novo da demo.
+    let mudou = false
+    let quietos = 0
+    let espera = 0
+    const laco = () => {
+      mudou = false
+      calcular()
+      quietos = mudou || !noAr ? 0 : quietos + 1
+      if (quietos > 12) espera = window.setTimeout(() => { espera = 0; quadro = requestAnimationFrame(laco) }, 120)
+      else quadro = requestAnimationFrame(laco)
+    }
+    const acordar = () => {
+      quietos = 0
+      if (espera) { clearTimeout(espera); espera = 0; quadro = requestAnimationFrame(laco) }
+    }
+    const rolador = raizRef.current?.closest('[data-landing-root]') ?? window
+    rolador.addEventListener('scroll', acordar, { passive: true })
+    window.addEventListener('resize', acordar)
+    window.addEventListener('message', acordar)
     laco()
-    return () => { cancelAnimationFrame(quadro); setGeo(null) }
+    return () => {
+      cancelAnimationFrame(quadro); clearTimeout(espera); setGeo(null)
+      rolador.removeEventListener('scroll', acordar)
+      window.removeEventListener('resize', acordar)
+      window.removeEventListener('message', acordar)
+    }
   }, [id, raizRef, anotacaoRef, palcoRef, veuNaSecao])
 
   if (!tomada || !geo) return null
