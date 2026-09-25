@@ -132,15 +132,28 @@ export const plataforma = {
   eyebrow: 'Plataforma',
   title: 'Do primeiro "oi" ao resultado medido.',
   titleCinza: 'Cada etapa acontecendo na própria Oryon.',
+  // Ordem (26/09): de onde vem o que a IA sabe → como ela atende → quando a
+  // equipe assume → como o negócio avança → como a base é reativada → como a
+  // operação mede o resultado.
   blocos: [
+    {
+      id: 'conhecer',
+      indice: 'Ensinar a IA',
+      destaque: 'Ela responde com o que você ensinou.',
+      texto: 'As instruções, a base de conhecimento e o catálogo liberado ficam na configuração de cada agente — é disso que sai cada resposta.',
+      cartoes: [
+        { titulo: 'A resposta sai daqui.', texto: 'O valor da proposta vem do catálogo; a condição de setembro, de um documento da base de conhecimento.' },
+        { titulo: 'Mudou? Atualize e pronto.', texto: 'Edite um documento ou libere outro produto — as próximas respostas passam a seguir a versão nova.' },
+      ],
+    },
     {
       id: 'atender',
       indice: 'Atender com IA',
       destaque: 'Resposta na hora, a qualquer hora.',
-      texto: 'A cliente pede uma proposta e o Agente IA responde na hora, com os valores do seu catálogo — de dia ou de madrugada.',
+      texto: 'A cliente pede uma proposta e recebe a resposta na hora, de dia ou de madrugada — enquanto o contato é atualizado no CRM.',
       cartoes: [
         { titulo: 'Situação e etiquetas em dia.', texto: 'O Agente IA atualiza a situação do contato e as etiquetas durante a conversa — cada mudança fica registrada com quem fez.' },
-        { titulo: 'Com base no seu catálogo.', texto: 'Valores e condições saem do catálogo liberado ao agente e são conferidos antes de a resposta sair.' },
+        { titulo: 'No WhatsApp de sempre.', texto: 'A cliente conversa pelo WhatsApp que já usa — sem aplicativo novo, link ou formulário.' },
       ],
     },
     {
@@ -171,6 +184,16 @@ export const plataforma = {
       cartoes: [
         { titulo: 'Do jeito que o cliente vê.', texto: 'O modelo chega com o nome dele e botões de resposta — um toque e a conversa começa.' },
         { titulo: 'Leituras e respostas contadas.', texto: 'Entregues, lidas, respostas e conversões de cada campanha, num relatório só.' },
+      ],
+    },
+    {
+      id: 'medir',
+      indice: 'Medir o resultado',
+      destaque: 'A operação inteira numa tela.',
+      texto: 'O Dashboard mostra, numa tela, quantas conversas estão em atendimento, quem espera na fila, o volume da semana e a equipe online.',
+      cartoes: [
+        { titulo: 'Onde está cada conversa.', texto: 'Ativas, na fila e resolvidas hoje — o retrato do atendimento agora.' },
+        { titulo: 'O que acabou de acontecer.', texto: 'Transferências e conversas resolvidas entram no feed de atividade, com quem fez.' },
       ],
     },
   ],

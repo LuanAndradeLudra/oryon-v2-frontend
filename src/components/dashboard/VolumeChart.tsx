@@ -92,7 +92,10 @@ export const VolumeChart = memo(function VolumeChart({ data, range, onRangeChang
           </div>
         )}
       </div>
-      <div className="flex-1 h-[170px] min-h-[170px] pt-3.5 px-3.5 pb-2">
+      {/* Altura FIXA (26/09): com `flex-1` num cartão de altura indefinida, os
+          100% do ResponsiveContainer resolviam para zero e o gráfico sumia —
+          medido na demonstração da landing, mesmo layout do app. */}
+      <div className="h-[170px] flex-shrink-0 pt-3.5 px-3.5 pb-2">
         {chartData.length === 0 ? (
           // P6: gráfico vazio não desenha eixos em branco — "Hoje" pode não
           // ter mensagem nenhuma ainda (dia começando, fora do horário).

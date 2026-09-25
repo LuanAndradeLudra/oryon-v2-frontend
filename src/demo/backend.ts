@@ -5,7 +5,8 @@ import {
   heroNotifications, heroTimeline,
 } from '../components/landing/stage/hero/heroRealData'
 import type { HeroState } from '../components/landing/stage/hero/heroStory'
-import { AGENTES_DEMO, agenteComFerramentas } from './agentesDemo'
+import { AGENTES_DEMO, CATALOGO_VENDAS, CONHECIMENTO_VENDAS, agenteComFerramentas } from './agentesDemo'
+import { heroActivityFeed, heroHomeSnapshot, heroHomeStats, heroPipelineOverview } from './dashboardDemo'
 import { ANALYTICS_RENOVACAO, CONVERSAS_RENOVACAO } from './campanhaDemo'
 
 /**
@@ -124,8 +125,11 @@ export function instalarBackendDemo() {
   }))
 
   // ── Conversas ─────────────────────────────────────────────────────────────
-  rota('conversations', eq('get', '/conversations'), () => {
-    const lista = heroConversations(estado)
+  rota('conversations', eq('get', '/conversations'), ({ params }) => {
+    // `?status=` filtra como o backend real (a "Fila agora" do Dashboard pede
+    // só as pendentes).
+    const status = params?.get('status')
+    const lista = heroConversations(estado).filter((c) => !status || c.status === status)
     return {
       data: {
         ...paginado(lista),
@@ -134,6 +138,14 @@ export function instalarBackendDemo() {
       },
     }
   })
+
+  // ── Dashboard (dados fictícios em dashboardDemo.ts) ─────────────────────────
+  rota('home/stats', eq('get', '/home/stats'), () => ({ data: heroHomeStats(estado) }))
+  rota('home/snapshot', eq('get', '/home/snapshot'), () => ({ data: heroHomeSnapshot(estado) }))
+  rota('activity-feed', eq('get', '/activity-feed'), () => ({ data: { data: heroActivityFeed(estado) } }))
+  rota('analytics/pipelines/:id/overview', (m, u) => m.toLowerCase() === 'get' && /^\/analytics\/pipelines\/[^/]+\/overview$/.test(u), () => ({
+    data: heroPipelineOverview(estado),
+  }))
 
   rota('conversations/unread-total', eq('get', '/conversations/unread-total'), () => ({
     data: { totalUnread: 0 },
@@ -242,6 +254,17 @@ export function instalarBackendDemo() {
   rota('agents/builder/configs', eq('get', '/agents/builder/configs'), () => ({ data: { data: AGENTES_DEMO } }))
   rota('agents/builder/configs/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+$/.test(u), ({ url }) => ({
     data: { data: agenteComFerramentas(url.split('/').pop()!) },
+  }))
+  // A base de conhecimento (aba Conhecimento) — só o agente da história tem.
+  rota('agents/builder/configs/:id/knowledge', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/knowledge$/.test(u), ({ url }) => ({
+    data: { data: url.includes('/ag-vendas/') ? CONHECIMENTO_VENDAS.map(({ content: _c, ...d }) => d) : [] },
+  }))
+  rota('agents/builder/configs/:id/knowledge/:doc', (m, u) => m.toLowerCase() === 'get' && /^\/agents\/builder\/configs\/[^/]+\/knowledge\/[^/]+$/.test(u), ({ url }) => ({
+    data: { data: CONHECIMENTO_VENDAS.find((d) => d.id === url.split('/').pop()) ?? null },
+  }))
+  // O que do catálogo o agente pode citar (aba Catálogo).
+  rota('agent-catalog/:id', (m, u) => m.toLowerCase() === 'get' && /^\/agent-catalog\/[^/]+$/.test(u), ({ url }) => ({
+    data: url.endsWith('/ag-vendas') ? HERO_PRODUCTS.filter((p) => CATALOGO_VENDAS.includes(p.id)) : [],
   }))
 
   // ── Linhas de WhatsApp ────────────────────────────────────────────────────

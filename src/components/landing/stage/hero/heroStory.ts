@@ -36,7 +36,12 @@ export type HeroState =
   | 'ganho'      // a Atendente fecha o negócio como ganho
 
 /** O módulo do app em cena. Cada um é uma rota real. */
-export type HeroCena = 'disparos' | 'relatorio' | 'conversa' | 'funil' | 'reinicio'
+export type HeroCena =
+  | 'disparos' | 'relatorio' | 'conversa' | 'funil' | 'reinicio'
+  // Seção Plataforma (26/09): a configuração do agente e o Dashboard — cada
+  // cena é uma aba ou um ponto da MESMA tela real; o Hero não as usa.
+  | 'agente-instrucoes' | 'agente-conhecimento' | 'agente-catalogo'
+  | 'painel' | 'painel-fila' | 'painel-indicadores' | 'painel-volume'
 
 export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   disparos: '/campaigns',
@@ -44,6 +49,13 @@ export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   relatorio: '/campaigns?report=cp-renovacao',
   conversa: '/conversations?id=demo-conv-0',
   funil: '/pipelines/pl-vendas',
+  'agente-instrucoes': '/agents?agent=ag-vendas&tab=prompt',
+  'agente-conhecimento': '/agents?agent=ag-vendas&tab=knowledge',
+  'agente-catalogo': '/agents?agent=ag-vendas&tab=catalog',
+  painel: '/dashboard',
+  'painel-fila': '/dashboard',
+  'painel-indicadores': '/dashboard',
+  'painel-volume': '/dashboard',
 }
 
 type Cue = HeroCue<HeroState, HeroCena>

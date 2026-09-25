@@ -10,6 +10,13 @@ import { ConversationActivitySection } from '@/components/conversations/ContactP
 import { DealSummary } from '@/components/deals/DealSummary'
 import { MessageBubble } from '@/components/conversations/ChatWindow/MessageBubble'
 import { TypingIndicator } from '@/components/conversations/ChatWindow/TypingIndicator'
+import { KnowledgeDocArtifact } from '@/components/agents/KnowledgeDocArtifact'
+import { StatusDonut } from '@/components/dashboard/StatusDonut'
+import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
+import type { ActivityEvent } from '@/types/dashboard'
+import { CONHECIMENTO_VENDAS } from '@/demo/agentesDemo'
+import { heroActivityFeed, heroHomeSnapshot } from '@/demo/dashboardDemo'
+import { ConteudoWhatsAppAparelho } from '../stage/hero/HeroSatelitesConteudo'
 import { contato, contatoDisponivel, linkContato, plataforma } from '../landingCopy'
 import { DemoRecorte, type Recorte } from './DemoRecorte'
 import {
@@ -48,11 +55,27 @@ const RECORTES: Record<string, Recorte> = {
   // A gaveta do relatório da campanha.
   // Até a legenda do gráfico (a 640 px ela saía cortada).
   relatorio: { x: 684, y: 0, w: 596, h: 656 },
+  // O detalhe do agente (medido: começa em x ≈ 360): cabeçalho, abas e a aba.
+  agente: { x: 356, y: 44, w: 924, h: 676 },
+  // O Dashboard de ponta a ponta: indicadores, volume, funil, fila e equipe —
+  // um recorte mais estreito cortava cartões pela metade.
+  painel: { x: 52, y: 56, w: 1222, h: 382 },
 }
 
 interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; recorte: Recorte; titulo: string }
 
 const HISTORIAS: Record<string, Historia> = {
+  // A configuração do agente, aba por aba: instruções → conhecimento → catálogo.
+  conhecer: {
+    titulo: 'Oryon · Agentes IA',
+    rota: HERO_ROTAS['agente-instrucoes'], estado: 'inicio', recorte: RECORTES.agente,
+    cues: [
+      { t: 0, state: 'inicio', composition: 'agente-instrucoes' },
+      { t: 4600, composition: 'agente-conhecimento' },
+      { t: 9400, composition: 'agente-catalogo' },
+      { t: 14800, composition: 'agente-catalogo' },
+    ],
+  },
   atender: {
     titulo: 'Oryon · Conversas',
     rota: HERO_ROTAS.conversa, estado: 'inicio', recorte: RECORTES.conversa,
@@ -88,6 +111,20 @@ const HISTORIAS: Record<string, Historia> = {
     cues: [
       { t: 0, state: 'inicio', composition: 'relatorio' },
       { t: 9600, composition: 'relatorio' },
+    ],
+  },
+  // O Dashboard no momento em que a Marina espera na fila: o holofote passa
+  // pela fila, pelos indicadores e pelo volume da semana. A tela não muda de dado (o Dashboard
+  // real busca uma vez ao abrir) — só o olhar percorre.
+  medir: {
+    titulo: 'Oryon · Relatórios',
+    rota: HERO_ROTAS.painel, estado: 'assumido', recorte: RECORTES.painel,
+    cues: [
+      { t: 0, state: 'assumido', composition: 'painel' },
+      { t: 2400, composition: 'painel-fila' },
+      { t: 7000, composition: 'painel-indicadores' },
+      { t: 11600, composition: 'painel-volume' },
+      { t: 16200, composition: 'painel-volume' },
     ],
   },
 }
@@ -148,7 +185,7 @@ function Contador({ para }: { para: number }) {
  * quantas vezes o laço recomeçou). O que acontece na tela aparece no cartão no
  * mesmo momento, com os componentes reais do produto.
  */
-function VisualCartao({ bloco, i, at, ciclo }: { bloco: string; i: number; at: HeroState; ciclo: number }) {
+function VisualCartao({ bloco, i, at, cena, ciclo }: { bloco: string; i: number; at: HeroState; cena: HeroCena; ciclo: number }) {
   const contatoMarina = { displayName: HERO.person, profilePicUrl: null }
   const mensagem = (id: string) => heroMessages('humano').find((m) => m.id === id)!
   const chave = `${bloco}-${i}`
@@ -163,15 +200,49 @@ function VisualCartao({ bloco, i, at, ciclo }: { bloco: string; i: number; at: H
         </Surgir>
       )
     }
-    case 'atender-1':
-      // A cliente pergunta → o agente "digita" → a resposta com o preço chega.
+    case 'conhecer-0':
+      // O agente "digita" enquanto a tela mostra instruções e conhecimento; a
+      // resposta à Marina chega quando o catálogo aparece — o valor e a
+      // condição que ela cita estão na tela ao lado.
       return (
-        <Surgir chave={`${ciclo}-${reached(at, 'resposta') ? 'resposta' : 'digitando'}`} className="px-3 py-1">
-          {reached(at, 'resposta')
-            ? <MessageBubble message={mensagem('demo-m-6')} contact={contatoMarina} showAvatar />
-            : <div className="flex justify-end"><TypingIndicator /></div>}
+        <div className="px-3 py-1">
+          <MessageBubble message={mensagem('demo-m-5')} contact={contatoMarina} showAvatar />
+          <Surgir chave={`${ciclo}-${cena === 'agente-catalogo' ? 'resposta' : 'digitando'}`}>
+            {cena === 'agente-catalogo'
+              ? <MessageBubble message={mensagem('demo-m-6')} contact={contatoMarina} showAvatar />
+              : <div className="flex justify-end"><TypingIndicator /></div>}
+          </Surgir>
+        </div>
+      )
+    case 'conhecer-1': {
+      // O documento da base de conhecimento, no componente real de documento.
+      const doc = CONHECIMENTO_VENDAS.find((d) => d.id === 'kd-renovacao')!
+      return (
+        <Surgir chave={`${ciclo}`} className="px-3 py-2">
+          <KnowledgeDocArtifact title={doc.document_name} content={doc.content} readOnly />
         </Surgir>
       )
+    }
+    case 'atender-1':
+      // O lado da cliente: o WhatsApp dela, com a pergunta e a resposta
+      // chegando — um close da tela do aparelho.
+      return (
+        <div className="flex h-[210px] items-end justify-center overflow-hidden">
+          <div className="-mb-[18px] [zoom:0.9]"><ConteudoWhatsAppAparelho at={at} cena="conversa" /></div>
+        </div>
+      )
+    case 'medir-0':
+      // A distribuição por status (ativas, na fila, resolvidas) — o cartão do
+      // Dashboard que o recorte não mostra.
+      return <div className="px-2 py-1"><StatusDonut data={heroHomeSnapshot(at).statusDistribution} /></div>
+    case 'medir-1': {
+      const eventos = heroActivityFeed(at).map((l) => ({
+        id: l.id, type: l.type as ActivityEvent['type'], actorName: l.actor,
+        actorType: (l.metadata.actorType === 'ai' ? 'agent' : 'user') as ActivityEvent['actorType'],
+        subject: l.subject, timestamp: l.timestamp,
+      }))
+      return <div className="relative h-[230px] overflow-hidden px-2 py-1"><ActivityFeed events={eventos} /></div>
+    }
     case 'equipe-0': {
       // O sino: a transferência entra no topo quando a IA chama a Ana.
       const lista = heroNotifications(at)
@@ -288,8 +359,11 @@ function Revelar({ children, atraso = 0, className }: { children: ReactNode; atr
  * Sem largura para nada ao lado (tablet, celular), tudo empilha:
  * palco → evidências.
  */
-type Arranjo = 'lado' | 'panoramico' | 'vertical'
+type Arranjo = 'lado' | 'panoramico' | 'vertical' | 'abaixo'
 const COMPOSICAO: Record<string, Arranjo> = {
+  conhecer: 'lado',
+  // Dashboard: tela larga demais para dividir a largura — evidências embaixo.
+  medir: 'abaixo',
   atender: 'lado',
   equipe: 'lado',
   funil: 'panoramico',
@@ -311,7 +385,7 @@ function folgaDoPalco() {
 type Bloco = (typeof plataforma.blocos)[number]
 
 /** Uma evidência: o componente real em cima, a frase embaixo. */
-function Beneficio({ bloco, i, c, esticar, at, ciclo }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean; at: HeroState; ciclo: number }) {
+function Beneficio({ bloco, i, c, esticar, at, cena, ciclo }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean; at: HeroState; cena: HeroCena; ciclo: number }) {
   return (
     // Esticada, a evidência divide a altura do palco (flex-1): a folga vai para
     // a área do visual, centrado — nunca um vão entre as duas.
@@ -319,7 +393,7 @@ function Beneficio({ bloco, i, c, esticar, at, ciclo }: { bloco: string; i: numb
       <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
         <div className="flex min-h-[104px] flex-1 flex-col justify-center border-b border-[var(--landing-borda)] bg-surface-950 py-1.5">
           <div aria-hidden inert className="pointer-events-none select-none [zoom:0.66]">
-            <VisualCartao bloco={bloco} i={i} at={at} ciclo={ciclo} />
+            <VisualCartao bloco={bloco} i={i} at={at} cena={cena} ciclo={ciclo} />
           </div>
         </div>
         <div className="px-5 pb-4 pt-3.5">
@@ -356,14 +430,16 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
 
   // Cabe algo ao lado do palco? E, no vertical, cabem as duas evidências lado a lado?
   const sobra = palco ? largura - palco - VAO : 0
-  const aoLado = palco > 0 && sobra >= EVIDENCIAS_MIN
+  const aoLado = palco > 0 && sobra >= EVIDENCIAS_MIN && arranjo !== 'abaixo'
   const tresColunas = aoLado && arranjo === 'vertical' && sobra >= 2 * EVIDENCIA_COLUNA_MIN + VAO
   const preencher = aoLado && arranjo === 'panoramico'
   // O passo da mini-história da tela — os cartões ao lado reagem a ele.
   const [passo, setPasso] = useState<HeroState>(h.estado)
   const [ciclo, setCiclo] = useState(0)
-  const onPasso = useCallback((estado: HeroState, _cena: HeroCena, indice: number) => {
+  const [cenaAtual, setCenaAtual] = useState<HeroCena>(h.cues[0].composition ?? 'conversa')
+  const onPasso = useCallback((estado: HeroState, cena: HeroCena, indice: number) => {
     setPasso(estado)
+    setCenaAtual(cena)
     if (indice === 0) setCiclo((n) => n + 1)
   }, [])
   const colunas = !aoLado ? undefined
@@ -411,10 +487,10 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
         {/* As evidências: ao lado (empilhadas, dividindo a altura do palco), em
             duas colunas altas (vertical) ou embaixo. */}
         {tresColunas
-          ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={passo} ciclo={ciclo} />)
+          ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={passo} cena={cenaAtual} ciclo={ciclo} />)
           : (
             <div className={aoLado ? 'flex min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
-              {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={passo} ciclo={ciclo} />)}
+              {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={passo} cena={cenaAtual} ciclo={ciclo} />)}
             </div>
           )}
       </div>

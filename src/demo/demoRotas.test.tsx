@@ -37,6 +37,11 @@ const TELAS: { rota: string; aparece: string | RegExp }[] = [
   { rota: '/campaigns?report=cp-renovacao', aparece: /Funil de engajamento/ },
   { rota: '/pipelines/pl-vendas?deal=demo-deal-0', aparece: /Anual · por licença/ },
   { rota: '/agents?agent=ag-vendas&tab=capabilities', aparece: 'Capacidades de CRM' },
+  // Seção Plataforma (26/09): de onde vem o conhecimento e o Dashboard.
+  { rota: '/agents?agent=ag-vendas&tab=prompt', aparece: /Use só valores e condições/ },
+  { rota: '/agents?agent=ag-vendas&tab=knowledge', aparece: 'Renovação de setembro' },
+  { rota: '/agents?agent=ag-vendas&tab=catalog', aparece: 'Implantação assistida' },
+  { rota: '/dashboard', aparece: 'Volume de Mensagens' },
 ]
 
 describe('demonstração da landing — rotas do roteiro', () => {

@@ -273,6 +273,15 @@ function acharAlvo(alvo: Alvo): HTMLElement | null {
 const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
   disparos: { texto: 'Renovação Pro · setembro', bolha: true },
   relatorio: { texto: 'Funil de engajamento' },
+  // O agente: a regra que manda usar só o catálogo; o documento da condição de
+  // setembro; o produto que a resposta cita.
+  'agente-instrucoes': { texto: 'Use só valores e condições' },
+  'agente-conhecimento': { texto: 'Renovação de setembro', bolha: true },
+  'agente-catalogo': { texto: 'Plano Pro', bolha: true },
+  // O Dashboard: a fila (a Marina esperando), os indicadores, o volume.
+  'painel-fila': { texto: 'Fila agora', bolha: true },
+  'painel-indicadores': { texto: 'Conversas Ativas', bolha: true },
+  'painel-volume': { texto: 'Volume de Mensagens', bolha: true },
 }
 
 type Retangulo = { x: number; y: number; w: number; h: number }

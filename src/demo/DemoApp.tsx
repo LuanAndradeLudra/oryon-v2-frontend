@@ -21,6 +21,7 @@ const PipelinesIndexPage = lazyRoute(() => import('@/pages/PipelinesIndexPage').
 const CampaignsPage = lazyRoute(() => import('@/pages/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
 const AgentsPage = lazyRoute(() => import('@/pages/AgentsPage').then(m => ({ default: m.AgentsPage })))
 const HomePage = lazyRoute(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
+const DashboardPage = lazyRoute(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 
 /** O que `ProtectedRoute` monta para uma sessão já autenticada e com o
  *  workspace pronto: `AppShell` + `PageTransition`. `RequireAuth` e
@@ -100,6 +101,7 @@ export function DemoApp({ inicial = '/conversations' }: { inicial?: string }) {
                               <Route path="/pipelines/:id" element={<Pagina><PipelinePage /></Pagina>} />
                               <Route path="/campaigns" element={<Pagina><CampaignsPage /></Pagina>} />
                               <Route path="/agents" element={<Pagina><AgentsPage /></Pagina>} />
+                              <Route path="/dashboard" element={<Pagina><DashboardPage /></Pagina>} />
                             </Routes>
                           </Suspense>
                         </div>
