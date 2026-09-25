@@ -12,6 +12,7 @@ import { reached } from './heroRealData'
 import { Bandeja, Satelite, SateliteAparelho, TITULOS_SATELITES, type PoseSatelite } from './HeroSatelites'
 import { HeroCapitulosLinha } from './HeroCapitulosLinha'
 import { HeroAnotacao, type FocoAnotado } from './HeroAnotacao'
+import { HeroNarracao } from './HeroNarracao'
 
 // O conteúdo das satélites (componentes reais do produto, com dependências
 // pesadas) só é baixado quando a demonstração fica pronta.
@@ -183,17 +184,15 @@ export function HeroPalco({ className }: { className?: string }) {
   // O diretor (dentro do iframe) mede o elemento e manda o retângulo; aqui só
   // se desenha um anel por cima — direção do olhar, não interface.
   const [foco, setFoco] = useState<FocoAnotado | null>(null)
-  /** A narração do instante em que o foco chegou (vira o texto da anotação). */
-  const batidaRef = useRef('')
   useEffect(() => {
     let limpar: ReturnType<typeof setTimeout> | undefined
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== location.origin || !ancoraRef.current || e.source !== ancoraRef.current.contentWindow) return
       const d = e.data as { canal?: string; tipo?: string; id?: number; rect?: { x: number; y: number; w: number; h: number }; raio?: number }
       if (d?.canal !== CANAL || d.tipo !== 'foco' || !d.rect) return
-      setFoco({ id: d.id ?? Date.now(), rect: d.rect, raio: d.raio ?? 8, texto: batidaRef.current })
+      setFoco({ id: d.id ?? Date.now(), rect: d.rect, raio: d.raio ?? 8 })
       if (limpar) clearTimeout(limpar)
-      limpar = setTimeout(() => setFoco(null), 3500)
+      limpar = setTimeout(() => setFoco(null), 3100)
     }
     window.addEventListener('message', onMsg)
     return () => { window.removeEventListener('message', onMsg); if (limpar) clearTimeout(limpar) }
@@ -216,7 +215,6 @@ export function HeroPalco({ className }: { className?: string }) {
   }, [])
   const capitulo = capituloDe(state, composition, index)
   const batida = batidaDe(state, composition)
-  batidaRef.current = batida
   /** Conta os pulos por clique — reinicia a barra e força o corte de câmera. */
   const [saltos, setSaltos] = useState(0)
   const irParaCapitulo = (c: HeroCapitulo) => {
@@ -321,7 +319,7 @@ export function HeroPalco({ className }: { className?: string }) {
       {/* OS CAPÍTULOS — uma linha fina acima do palco (o que acontece em cada
           momento é dito pelas anotações, dentro da cena). */}
       <HeroCapitulosLinha
-        className="mb-4 sm:mb-5"
+        className="mb-3"
         capitulos={HERO_CAPITULOS}
         ativo={capitulo}
         duracoes={duracoes}
@@ -329,6 +327,10 @@ export function HeroPalco({ className }: { className?: string }) {
         chaveProgresso={`${capitulo}-${saltos}`}
         onIr={irParaCapitulo}
       />
+
+      {/* A NARRAÇÃO — o que está acontecendo agora, fora do palco, com as cores
+          invertidas em relação ao tema (decisão do PO, 24/09). */}
+      <HeroNarracao texto={batida} className="mb-5 sm:mb-6 px-1" />
 
       <div
         ref={hostRef}
