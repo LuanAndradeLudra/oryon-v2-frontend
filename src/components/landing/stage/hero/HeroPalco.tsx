@@ -52,12 +52,14 @@ const ConteudoNegocio = lazy(() => carregar().then((m) => ({ default: m.Conteudo
 
 // ─── Geometria do palco (coordenadas de desenho) ─────────────────────────────
 
-const APP = { w: 1152, h: 720 }
+// 16:9 (1280 × 720): em 1152 o selo "Agente IA no controle" e os botões do
+// cabeçalho do chat empurravam o nome do contato para fora (medido 24/09).
+const APP = { w: 1280, h: 720 }
 const APP_CELULAR = { w: 390, h: 760 }
 /** Tela do aparelho satélite: o app mobile a 60 %. */
 const TELA_APARELHO = { escala: 0.6, w: APP_CELULAR.w * 0.6, h: APP_CELULAR.h * 0.6 }
-const PALCO = { w: 1480, h: 812 }
-const ANCORA = { x: 158, y: 22 }
+const PALCO = { w: 1560, h: 812 }
+const ANCORA = { x: 134, y: 22 }
 
 /**
  * DIAGONAIS — decisão do PO (24/09): as duas janelas satélite ficam sempre em
@@ -69,11 +71,11 @@ const ANCORA = { x: 158, y: 22 }
  */
 const CANTOS = {
   supEsq: { x: 0, y: 24, w: 372, origem: '100% 100%' },
-  supDir: { x: 1108, y: 24, w: 372, origem: '0% 100%' },
+  supDir: { x: 1188, y: 24, w: 372, origem: '0% 100%' },
   infEsq: { x: 0, y: 452, w: 372, origem: '100% 0%' },
   // O card do negócio é baixo (~190 px): mais para baixo, para encostar na
   // quina da âncora e a diagonal ficar nítida.
-  infDir: { x: 1108, y: 556, w: 372, origem: '0% 0%' },
+  infDir: { x: 1188, y: 556, w: 372, origem: '0% 0%' },
 } satisfies Record<string, PoseSatelite>
 
 /** O aparelho (WhatsApp da cliente) mora no canto inferior esquerdo. */

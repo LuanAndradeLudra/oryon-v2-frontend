@@ -744,7 +744,7 @@ mesmo tempo, mantendo o padrão.
   `public/hero/demo-poster-{escuro,claro}.png`, com crossfade para o app vivo.
   Para regenerar (dev server em :3011, Windows):
   `msedge --headless --disable-gpu --hide-scrollbars --user-data-dir=<pasta>
-  --window-size=1152,720 --virtual-time-budget=15000 --screenshot=<arquivo>.png
+  --window-size=1280,720 --virtual-time-budget=15000 --screenshot=<arquivo>.png
   "http://localhost:3011/demo.html?rota=%2Fcampaigns&tema=dark"` (e `tema=light`).
   O Edge devolve na hora e grava o arquivo alguns segundos depois.
 - **Texto centrado** no eixo do palco (título, lead, CTAs), como a referência.
