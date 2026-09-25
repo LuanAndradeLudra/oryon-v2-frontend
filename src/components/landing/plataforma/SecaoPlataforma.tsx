@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { AnimatePresence, animate, motion, useReducedMotion } from 'framer-motion'
 import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
 import { StatStrip } from '@/components/campaigns/StatStrip'
@@ -433,6 +434,10 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
   const aoLado = palco > 0 && sobra >= EVIDENCIAS_MIN && arranjo !== 'abaixo'
   const tresColunas = aoLado && arranjo === 'vertical' && sobra >= 2 * EVIDENCIA_COLUNA_MIN + VAO
   const preencher = aoLado && arranjo === 'panoramico'
+  // Configurar agentes é desktop no próprio produto (no celular ele avisa "use
+  // o desktop"): ali o capítulo conta a história só pelas evidências.
+  const celular = !useMediaQuery('(min-width: 768px)')
+  const semTela = celular && b.id === 'conhecer'
   // O passo da mini-história da tela — os cartões ao lado reagem a ele.
   const [passo, setPasso] = useState<HeroState>(h.estado)
   const [ciclo, setCiclo] = useState(0)
@@ -469,6 +474,7 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
 
       <div className="mt-6 grid gap-4 sm:gap-5" style={colunas ? { gridTemplateColumns: colunas, gap: VAO } : undefined}>
         {/* A operação, na tela. */}
+        {!semTela && (
         <Revelar atraso={0.1} className="min-w-0">
           <div className={cn(
             'flex h-full justify-center rounded-2xl bg-[var(--landing-palco)]',
@@ -483,14 +489,15 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
             </div>
           </div>
         </Revelar>
+        )}
 
         {/* As evidências: ao lado (empilhadas, dividindo a altura do palco), em
             duas colunas altas (vertical) ou embaixo. */}
         {tresColunas
-          ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={passo} cena={cenaAtual} ciclo={ciclo} />)
+          ? b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar at={passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)
           : (
             <div className={aoLado ? 'flex min-w-0 flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
-              {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={passo} cena={cenaAtual} ciclo={ciclo} />)}
+              {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={aoLado} at={passo} cena={semTela ? 'agente-catalogo' : cenaAtual} ciclo={ciclo} />)}
             </div>
           )}
       </div>

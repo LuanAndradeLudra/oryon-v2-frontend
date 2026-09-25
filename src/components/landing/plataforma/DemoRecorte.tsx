@@ -142,7 +142,11 @@ export function DemoRecorte({
   avisar.current = onLimite
   useLayoutEffect(() => {
     const medir = () => {
-      const orcamento = Math.min(ALTURA.max, Math.max(ALTURA.min, window.innerHeight - foraDoRecorte))
+      // O teto de altura é do desktop; no celular (tela alta e estreita) manda
+      // a altura da tela — com o teto, a moldura encolhia para 260 px de largura.
+      const orcamento = celular
+        ? Math.max(ALTURA.min, window.innerHeight - foraDoRecorte)
+        : Math.min(ALTURA.max, Math.max(ALTURA.min, window.innerHeight - foraDoRecorte))
       // A borda da bandeja (12 px) e a barra de título (30 px) ficam fora da região.
       const porAltura = (orcamento - 36) * (regiao.w / regiao.h) + 12
       const porAmpliacao = regiao.w * (celular ? 1 : AMPLIACAO_MAX) + 12
