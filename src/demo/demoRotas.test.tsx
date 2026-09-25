@@ -32,6 +32,8 @@ afterEach(() => cleanup())
 
 const TELAS: { rota: string; aparece: string | RegExp }[] = [
   { rota: '/conversations?id=demo-conv-0', aparece: /Bom dia! Vocês têm plano anual/ },
+  // A lista inteira na aba "Todas" (status=all) — não só a conversa aberta.
+  { rota: '/conversations', aparece: 'Rafaela Couto' },
   { rota: '/pipelines', aparece: 'Migração de base' },
   { rota: '/campaigns', aparece: /Renovação Pro · setembro/ },
   { rota: '/campaigns?report=cp-renovacao', aparece: /Funil de engajamento/ },
