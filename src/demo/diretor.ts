@@ -145,6 +145,9 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
         w.__demoNavegar?.(rota)
         avisarPai({ canal: CANAL, tipo: 'rota', rota })
       }
+      const alvo = FOCOS_CENA[cena]
+      // A cena precisa montar (e a gaveta do relatório, deslizar) antes da medida.
+      if (alvo) focarAlvo(alvo, 900)
     }
   } else if (recomeco && cena !== 'reinicio') {
     // Voltar no tempo NA MESMA tela (clicar num capítulo anterior, ambos em
@@ -189,18 +192,25 @@ export function instalarDiretor() {
  * landing, que desenha um anel de luz por cima (efeito de câmera, fora do
  * app). Nada aqui altera a interface.
  */
-const FOCOS: Partial<Record<HeroState, { texto: string; bolha?: boolean }>> = {
-  demanda: { texto: 'Preciso de uma proposta pra 12', bolha: true },
-  resposta: { texto: 'O Plano Pro anual sai por', bolha: true },
+type Alvo = { texto: string; bolha?: boolean; direita?: boolean }
+
+/**
+ * `direita`: o texto das mensagens aparece duas vezes em Conversas — na prévia
+ * da lista (à esquerda) e na bolha do chat. A bolha é a ocorrência mais à
+ * direita; sem isto o anel ia para a prévia da lista.
+ */
+const FOCOS: Partial<Record<HeroState, Alvo>> = {
+  demanda: { texto: 'Preciso de uma proposta pra 12', bolha: true, direita: true },
+  resposta: { texto: 'O Plano Pro anual sai por', bolha: true, direita: true },
   situacao: { texto: 'Em negociação' },
   etiqueta: { texto: 'proposta enviada' },
   avanco: { texto: 'Plano Pro anual · 12', bolha: true },
-  assumido: { texto: 'Ana Prado' },
-  humano: { texto: 'aqui é a Ana', bolha: true },
+  assumido: { texto: 'Ana Prado', direita: true },
+  humano: { texto: 'aqui é a Ana', bolha: true, direita: true },
 }
 
 /** O elemento visível mais interno cujo texto contém o trecho. */
-function acharTexto(trecho: string): HTMLElement | null {
+function acharTexto(trecho: string, direita = false): HTMLElement | null {
   const raiz = document.getElementById('main-content') ?? document.body
   const candidatos = [...raiz.querySelectorAll<HTMLElement>('p, span, div, h4, button')]
     .filter((e) => e.children.length <= 2 && (e.textContent ?? '').includes(trecho))
@@ -211,7 +221,8 @@ function acharTexto(trecho: string): HTMLElement | null {
   for (const e of candidatos) {
     const r = e.getBoundingClientRect()
     if (r.width <= 0 || r.height <= 0 || r.bottom <= 0 || r.top >= window.innerHeight) continue
-    const area = r.width * r.height
+    // Com `direita`, vence a ocorrência mais à direita; senão, a menor.
+    const area = direita ? -r.left : r.width * r.height
     if (area < menorArea) { menorArea = area; melhor = e }
   }
   return melhor
@@ -229,29 +240,39 @@ function subirAteCartao(e: HTMLElement): HTMLElement {
   return e
 }
 
+/** Foco por CENA — o que a câmera aponta ao chegar num módulo sem ação de estado. */
+const FOCOS_CENA: Partial<Record<HeroCena, Alvo>> = {
+  disparos: { texto: 'Renovação Pro · setembro', bolha: true },
+  relatorio: { texto: 'Funil de engajamento' },
+}
+
 let focoSeq = 0
 function focar(estado: HeroState) {
   const alvo = FOCOS[estado]
-  if (!alvo) return
+  if (alvo) focarAlvo(alvo, 250)
+}
+
+function focarAlvo(alvo: Alvo, atrasoMs: number) {
   const seq = ++focoSeq
   const inicio = Date.now()
   const tentar = () => {
     if (seq !== focoSeq) return
-    const achado = acharTexto(alvo.texto)
+    const achado = acharTexto(alvo.texto, alvo.direita)
     if (!achado) {
       if (Date.now() - inicio < 1800) setTimeout(tentar, 120)
       return
     }
-    // Um quadro depois de achar: a mensagem acabou de entrar e ainda anima.
+    // Espera a mensagem entrar e o chat terminar a rolagem suave até ela —
+    // medir antes deixava o anel acima do elemento.
     setTimeout(() => {
       if (seq !== focoSeq) return
       const el = alvo.bolha ? subirAteCartao(achado) : achado
       const r = el.getBoundingClientRect()
       const raio = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 8
       avisarPai({ canal: CANAL, tipo: 'foco', id: seq, rect: { x: r.left, y: r.top, w: r.width, h: r.height }, raio })
-    }, 420)
+    }, 850)
   }
-  setTimeout(tentar, 250)
+  setTimeout(tentar, atrasoMs)
 }
 
 export function avisarQuandoPronta() {

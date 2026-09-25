@@ -10,7 +10,8 @@ import {
 } from './heroStory'
 import { reached } from './heroRealData'
 import { Bandeja, Satelite, SateliteAparelho, TITULOS_SATELITES, type PoseSatelite } from './HeroSatelites'
-import { HeroLegenda } from './HeroLegenda'
+import { HeroCapitulosLinha } from './HeroCapitulosLinha'
+import { HeroAnotacao, type FocoAnotado } from './HeroAnotacao'
 
 // O conteúdo das satélites (componentes reais do produto, com dependências
 // pesadas) só é baixado quando a demonstração fica pronta.
@@ -181,16 +182,18 @@ export function HeroPalco({ className }: { className?: string }) {
   // ── Foco: o anel de luz sobre o que acabou de mudar na tela ───────────────
   // O diretor (dentro do iframe) mede o elemento e manda o retângulo; aqui só
   // se desenha um anel por cima — direção do olhar, não interface.
-  const [foco, setFoco] = useState<{ id: number; rect: { x: number; y: number; w: number; h: number }; raio: number } | null>(null)
+  const [foco, setFoco] = useState<FocoAnotado | null>(null)
+  /** A narração do instante em que o foco chegou (vira o texto da anotação). */
+  const batidaRef = useRef('')
   useEffect(() => {
     let limpar: ReturnType<typeof setTimeout> | undefined
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== location.origin || !ancoraRef.current || e.source !== ancoraRef.current.contentWindow) return
       const d = e.data as { canal?: string; tipo?: string; id?: number; rect?: { x: number; y: number; w: number; h: number }; raio?: number }
       if (d?.canal !== CANAL || d.tipo !== 'foco' || !d.rect) return
-      setFoco({ id: d.id ?? Date.now(), rect: d.rect, raio: d.raio ?? 8 })
+      setFoco({ id: d.id ?? Date.now(), rect: d.rect, raio: d.raio ?? 8, texto: batidaRef.current })
       if (limpar) clearTimeout(limpar)
-      limpar = setTimeout(() => setFoco(null), 2600)
+      limpar = setTimeout(() => setFoco(null), 3500)
     }
     window.addEventListener('message', onMsg)
     return () => { window.removeEventListener('message', onMsg); if (limpar) clearTimeout(limpar) }
@@ -213,6 +216,7 @@ export function HeroPalco({ className }: { className?: string }) {
   }, [])
   const capitulo = capituloDe(state, composition, index)
   const batida = batidaDe(state, composition)
+  batidaRef.current = batida
   /** Conta os pulos por clique — reinicia a barra e força o corte de câmera. */
   const [saltos, setSaltos] = useState(0)
   const irParaCapitulo = (c: HeroCapitulo) => {
@@ -314,26 +318,17 @@ export function HeroPalco({ className }: { className?: string }) {
         />
       </div>
 
-      {/* A LEGENDA — no topo, logo acima das telas, no lugar que era dos
-          botões do Hero (decisão do PO, 24/09): caixa translúcida com o
-          capítulo, a trilha clicável, a narração do momento e o valor. */}
-      <motion.div
-        className="relative mx-auto mb-4 sm:mb-6 w-full max-w-[600px]"
-        initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        transition={semMovimento ? { duration: 0 } : { duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
-      >
-        <HeroLegenda
-          compacta={celular}
-          capitulos={HERO_CAPITULOS}
-          ativo={capitulo}
-          batida={batida}
-          duracoes={duracoes}
-          rodando={running && pronta}
-          chaveProgresso={`${capitulo}-${saltos}`}
-          onIr={irParaCapitulo}
-        />
-      </motion.div>
+      {/* OS CAPÍTULOS — uma linha fina acima do palco (o que acontece em cada
+          momento é dito pelas anotações, dentro da cena). */}
+      <HeroCapitulosLinha
+        className="mb-4 sm:mb-5"
+        capitulos={HERO_CAPITULOS}
+        ativo={capitulo}
+        duracoes={duracoes}
+        rodando={running && pronta}
+        chaveProgresso={`${capitulo}-${saltos}`}
+        onIr={irParaCapitulo}
+      />
 
       <div
         ref={hostRef}
@@ -407,26 +402,10 @@ export function HeroPalco({ className }: { className?: string }) {
               )}
             </Bandeja>
 
-            {/* O ANEL DE FOCO — acende sobre o elemento que acabou de mudar
-                (a resposta da IA, a situação, o card que andou) e se apaga. */}
+            {/* A ANOTAÇÃO — o anel de luz sobre o que acabou de mudar, com um
+                rótulo preso a ele dizendo o que aconteceu. Some em ~3 s. */}
             {foco && !semMovimento && foco.rect.y + foco.rect.h > 0 && foco.rect.y < app.h && (
-              <motion.div
-                key={foco.id}
-                aria-hidden
-                className="absolute pointer-events-none"
-                style={{
-                  left: 6 + foco.rect.x - 5,
-                  top: 30 + Math.max(0, foco.rect.y) - 5,
-                  width: foco.rect.w + 10,
-                  height: Math.min(foco.rect.h, app.h - Math.max(0, foco.rect.y)) + 10,
-                  borderRadius: foco.raio + 5,
-                  zIndex: 5,
-                  boxShadow: '0 0 0 2px color-mix(in srgb, var(--color-brand-400) 90%, transparent), 0 0 28px 6px color-mix(in srgb, var(--color-brand-500) 38%, transparent)',
-                }}
-                initial={{ opacity: 0, scale: 1.08 }}
-                animate={{ opacity: [0, 1, 1, 0], scale: [1.08, 1, 1, 1.01] }}
-                transition={{ duration: 2.4, times: [0, 0.18, 0.75, 1], ease: [0.16, 1, 0.3, 1] }}
-              />
+              <HeroAnotacao key={foco.id} foco={foco} area={{ w: app.w, h: app.h }} origem={{ x: 6, y: 30 }} />
             )}
           </motion.div>
 
