@@ -46,11 +46,11 @@ export function HeroLegenda({
       className={cn(
         // Caixa TRANSLÚCIDA (pedido do PO): vidro fosco sobre a atmosfera do
         // palco — diferente das molduras das telas, que são opacas.
-        'hero-legenda relative rounded-[20px] backdrop-blur-xl backdrop-saturate-150',
+        'hero-legenda relative rounded-[16px] backdrop-blur-xl backdrop-saturate-150',
         'bg-white/[.045] ring-1 ring-white/[.10] [[data-theme=light]_&]:bg-white/[.55] [[data-theme=light]_&]:ring-black/[.07]',
         'shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_20px_50px_-24px_rgba(0,0,0,.6)]',
         '[[data-theme=light]_&]:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_10px_30px_-12px_rgba(11,13,24,.12)]',
-        compacta ? 'px-4 pt-3.5 pb-4' : 'px-6 pt-4 pb-5',
+        compacta ? 'px-4 pt-3 pb-3.5' : 'px-5 pt-3 pb-3.5',
         className,
       )}
     >
@@ -65,7 +65,7 @@ export function HeroLegenda({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 6 }}
             transition={{ duration: semMovimento ? 0 : 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className={cn('flex-shrink-0 font-semibold uppercase tracking-[.14em] text-brand-400', compacta ? 'text-[10.5px]' : 'text-[11.5px]')}
+            className={cn('flex-shrink-0 font-semibold uppercase tracking-[.14em] text-brand-400', compacta ? 'text-[10px]' : 'text-[10.5px]')}
           >
             {String(i + 1).padStart(2, '0')} · {cap.titulo}
           </motion.p>
@@ -102,13 +102,13 @@ export function HeroLegenda({
       </div>
 
       {/* ── Narração: palavra por palavra, do desfoque para o nítido ── */}
-      <div className={cn('relative mt-2', compacta ? 'min-h-[46px]' : 'min-h-[34px]')}>
+      <div className={cn('relative mt-1.5', compacta ? 'min-h-[38px]' : 'min-h-[22px]')}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.p
             key={batida}
             className={cn(
               'font-display font-semibold tracking-[-0.015em] text-surface-50 text-balance',
-              compacta ? 'text-[17px] leading-[1.3]' : 'text-[23px] leading-[1.35]',
+              compacta ? 'text-[14.5px] leading-[1.3]' : 'text-[16px] leading-[1.35]',
             )}
             initial="oculto"
             animate="visivel"
@@ -142,7 +142,7 @@ export function HeroLegenda({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: semMovimento ? 0 : 0.4 }}
-          className={cn('mt-1.5 text-surface-400 leading-snug', compacta ? 'text-[12.5px]' : 'text-[14px]')}
+          className={cn('mt-1 text-surface-400 leading-snug', compacta ? 'text-[12px]' : 'text-[12.5px]')}
         >
           {cap.valor}
         </motion.p>

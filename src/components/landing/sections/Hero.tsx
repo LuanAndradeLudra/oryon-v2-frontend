@@ -69,7 +69,7 @@ export function Hero() {
            travado em 1120, sobrava pouco para a conversa justamente quando o
            painel abre. O texto continua em 1120 — linha de leitura não deve
            acompanhar o palco. */
-        className="reveal mx-auto mt-7 sm:mt-8 w-full max-w-[1120px] xl:max-w-[1400px] px-4 sm:px-6"
+        className="reveal mx-auto mt-7 sm:mt-8 w-full max-w-[1120px] xl:max-w-[1480px] px-4 sm:px-6 xl:px-3"
         style={{ ['--d' as string]: '270ms' }}
       >
         <HeroPalco />

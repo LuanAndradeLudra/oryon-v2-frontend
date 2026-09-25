@@ -4,44 +4,22 @@
  * entram quando a demonstração está pronta, e estes componentes puxam
  * dependências pesadas que não precisam atrasar a primeira pintura da landing.
  */
-import { TemplatePreview, WA, FONTE_WA } from '@/components/campaigns/TemplatePreview'
 import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { ConversationActivitySection } from '@/components/conversations/ContactPanel/ConversationActivitySection'
 import { DealSummary } from '@/components/deals/DealSummary'
 import {
-  HERO, HERO_PIPELINE, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroDeal, heroNotifications, heroTimeline,
+  HERO, HERO_PIPELINE, heroDeal, heroNotifications, heroTimeline,
 } from './heroRealData'
-import type { HeroState } from './heroStory'
+import type { HeroCena, HeroState } from './heroStory'
+import { WhatsAppIphone } from './HeroWhatsAppIphone'
 
 const NOOP = () => {}
 
 // ─── As três satélites — cada uma é um componente REAL do produto ───────────
 
-/** O modelo aprovado da campanha, como o WhatsApp mostra (`TemplatePreview`). */
-/**
- * A tela do celular da Marina: o papel de parede do WhatsApp (a paleta
- * amostrada dos prints da Meta, exportada pela própria `TemplatePreview`) com
- * a mensagem da campanha como ela chega — a prévia REAL do modelo, na variante
- * "só a bolha". Em cima, a barra de status do aparelho e a linha da empresa
- * que enviou; nada de cabeçalho inventado de conversa.
- */
-export function ConteudoWhatsAppAparelho() {
-  return (
-    <div className="relative h-full w-full overflow-hidden" style={{ background: WA.papel, fontFamily: FONTE_WA }}>
-      <div className="flex items-center justify-between px-5 pt-[9px] text-[10px] font-semibold text-[#11191D]">
-        <span>9:41</span>
-        <span className="tracking-[2px]">●●●</span>
-      </div>
-      <div className="mt-6 px-3 text-center">
-        <span className="inline-block rounded-md bg-white/80 px-2 py-0.5 text-[9.5px] text-[#54656F] shadow-[0_1px_.5px_rgba(11,20,26,.13)]">
-          Hoje
-        </span>
-      </div>
-      <div className="mt-3 pl-4 pr-3 origin-top-left" style={{ transform: 'scale(.72)', width: '139%' }}>
-        <TemplatePreview template={HERO_TEMPLATE} variables={HERO_TEMPLATE_VARIAVEIS} variant="card" />
-      </div>
-    </div>
-  )
+/** O WhatsApp no iPhone da Marina — ver `HeroWhatsAppIphone`. */
+export function ConteudoWhatsAppAparelho({ at, cena }: { at: HeroState; cena: HeroCena }) {
+  return <WhatsAppIphone at={at} cena={cena} />
 }
 
 /** O sino da TopBar: os mesmos itens de notificação do produto. */

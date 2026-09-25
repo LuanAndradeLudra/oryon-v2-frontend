@@ -316,7 +316,7 @@ export function HeroPalco({ className }: { className?: string }) {
           botões do Hero (decisão do PO, 24/09): caixa translúcida com o
           capítulo, a trilha clicável, a narração do momento e o valor. */}
       <motion.div
-        className="relative mx-auto mb-5 sm:mb-7 w-full max-w-[720px]"
+        className="relative mx-auto mb-4 sm:mb-6 w-full max-w-[600px]"
         initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={semMovimento ? { duration: 0 } : { duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
@@ -433,7 +433,7 @@ export function HeroPalco({ className }: { className?: string }) {
             <Suspense fallback={null}>
               <SateliteAparelho pose={APARELHO} visivel={vis.whatsapp} atraso={0.2} y={yAparelhos} lado="esquerda">
                 <div style={{ width: TELA_APARELHO.w, height: TELA_APARELHO.h }}>
-                  <ConteudoWhatsApp />
+                  <ConteudoWhatsApp at={state} cena={composition} />
                 </div>
               </SateliteAparelho>
 
