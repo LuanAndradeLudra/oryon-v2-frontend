@@ -92,7 +92,12 @@ export function DemoRecorte({
         clearTimeout(entrar)
         sair = setTimeout(() => setMontar(false), 2500)
       }
-    }, { rootMargin: '200px 0px' })
+      // Uma tela de antecedência: com 200 px, cada capítulo aparecia com o
+      // spinner por 0,6–1,2 s (medido no build de produção). Assim só os
+      // vizinhos do capítulo em leitura ficam montados. A raiz tem de ser o
+      // contêiner que rola a landing: com a viewport como raiz, o recorte já
+      // chega recortado por ele e a margem não vale nada.
+    }, { root: el.closest('[data-landing-root]'), rootMargin: '100% 0px' })
     io.observe(el)
     return () => { io.disconnect(); clearTimeout(entrar); clearTimeout(sair) }
   }, [])
