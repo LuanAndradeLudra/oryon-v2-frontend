@@ -33,10 +33,12 @@ export type HeroState =
   | 'ganho'      // a Atendente fecha o negócio como ganho
 
 /** O módulo do app em cena. Cada um é uma rota real. */
-export type HeroCena = 'disparos' | 'conversa' | 'funil' | 'agente' | 'reinicio'
+export type HeroCena = 'disparos' | 'relatorio' | 'conversa' | 'funil' | 'agente' | 'reinicio'
 
 export const HERO_ROTAS: Record<Exclude<HeroCena, 'reinicio'>, string> = {
   disparos: '/campaigns',
+  // O relatório real da campanha abre por cima da lista (a gaveta do produto).
+  relatorio: '/campaigns?report=cp-renovacao',
   conversa: '/conversations?id=demo-conv-0',
   funil: '/pipelines/pl-vendas',
   agente: '/agents?agent=ag-vendas&tab=capabilities',
@@ -47,34 +49,35 @@ const S = (t: number, state: HeroState): Cue => ({ t, state })
 const C = (t: number, composition: HeroCena): Cue => ({ t, composition })
 
 export const HERO_CUES: readonly Cue[] = [
-  // ── Disparos: a campanha sai e chega no WhatsApp da Marina ────────────────
+  // ── Disparos: a campanha sai; o relatório abre com os números dela ────────
   { t: 0, state: 'inicio', composition: 'disparos' },
+  C(1900, 'relatorio'),
 
   // ── Conversas: ela responde, o Agente IA atende sozinho ───────────────────
-  C(5200, 'conversa'),
-  S(6600, 'demanda'),
-  S(9400, 'resposta'),
+  C(7200, 'conversa'),
+  S(8600, 'demanda'),
+  S(11400, 'resposta'),
   // Parado: a resposta traz preço e condição — precisa ser lida.
-  S(13400, 'confirma'),
-  S(15400, 'situacao'),
-  S(17600, 'etiqueta'),
+  S(15400, 'confirma'),
+  S(17400, 'situacao'),
+  S(19600, 'etiqueta'),
 
   // ── Funis: o negócio anda junto com a conversa ────────────────────────────
-  C(20600, 'funil'),
-  S(22200, 'avanco'),
+  C(22600, 'funil'),
+  S(24200, 'avanco'),
 
   // ── Agentes IA: o que o agente pode (e não pode) fazer ────────────────────
-  C(26600, 'agente'),
+  C(28600, 'agente'),
 
   // ── Conversas: a passagem para a pessoa, e quem fecha é ela ───────────────
-  C(32200, 'conversa'),
-  S(33400, 'pedido'),
-  S(35800, 'assumido'),
-  S(38400, 'humano'),
-  S(41400, 'ganho'),
+  C(34200, 'conversa'),
+  S(35400, 'pedido'),
+  S(37800, 'assumido'),
+  S(40400, 'humano'),
+  S(43400, 'ganho'),
 
   // ── Reinício: o palco esvazia antes de os dados voltarem ao começo ────────
-  C(45600, 'reinicio'),
+  C(47800, 'reinicio'),
 ] as const
 
 /** Tempo com o palco vazio, antes de recomeçar. */

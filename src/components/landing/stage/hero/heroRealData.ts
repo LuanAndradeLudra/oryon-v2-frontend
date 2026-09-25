@@ -426,8 +426,8 @@ const BASE_RENOVACAO = 1_240
 export function heroCampaigns(at: HeroState): Campaign[] {
   const saindo = at === 'inicio'
   const stats = saindo
-    ? { total: BASE_RENOVACAO, sent: 1_180, delivered: 1_096, read: 612, failed: 9, replied: 74 }
-    : { total: BASE_RENOVACAO, sent: 1_231, delivered: 1_204, read: 871, failed: 9, replied: 138 }
+    ? { total: BASE_RENOVACAO, sent: 1_180, delivered: 1_096, read: 612, failed: 9, replied: 74, conversions: 17 }
+    : { total: BASE_RENOVACAO, sent: 1_231, delivered: 1_204, read: 871, failed: 9, replied: 138, conversions: 26 }
   const base = { tenantId: TENANT, variableMappings: [], createdByUserId: HERO_USER.id, whatsappNumberId: HERO_LINE.id }
   return [
     {

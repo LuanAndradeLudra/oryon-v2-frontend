@@ -8,7 +8,7 @@ import { TenantVocabProvider } from '@/contexts/TenantVocabContext'
 import { CRMConfigProvider } from '@/contexts/CRMConfigContext'
 import { TagsProvider } from '@/contexts/TagsContext'
 import { ContextMenuProvider } from '@/components/ui/ContextMenu'
-import { DealPanelProvider } from '@/contexts/DealPanelContext'
+import { DealPanelProvider, useDealPanel } from '@/contexts/DealPanelContext'
 import { CopilotProvider } from '@/contexts/CopilotContext'
 import { InternalChatProvider } from '@/contexts/InternalChatContext'
 import { AppShell } from '@/components/layout/AppShell'
@@ -34,7 +34,7 @@ function Pagina({ children }: { children: ReactNode }) {
   )
 }
 
-type Janela = { __demoNavegar?: (to: string) => void; __demoRota?: () => string }
+type Janela = { __demoNavegar?: (to: string) => void; __demoRota?: () => string; __demoFecharPainel?: () => void }
 
 /** Ponte do roteiro: navegar entre módulos é trocar de rota, como um clique
  *  no menu faria. */
@@ -46,6 +46,20 @@ function PonteDeNavegacao() {
     w.__demoNavegar = (to) => navigate(to)
     w.__demoRota = () => pathname + search
   }, [navigate, pathname, search])
+  return null
+}
+
+/**
+ * Ponte do painel de negócio: o painel é global (fica por cima de qualquer
+ * rota). No uso real ninguém troca de tela com ele aberto — o fundo escurecido
+ * fecha no primeiro clique. O diretor chama o mesmo `closeDeal` antes de
+ * trocar de módulo, como a pessoa faria.
+ */
+function PonteDoPainel() {
+  const { closeDeal } = useDealPanel()
+  useEffect(() => {
+    (window as unknown as Janela).__demoFecharPainel = closeDeal
+  }, [closeDeal])
   return null
 }
 
@@ -76,6 +90,7 @@ export function DemoApp({ inicial = '/conversations' }: { inicial?: string }) {
                   <CopilotProvider>
                     <ContextMenuProvider>
                       <DealPanelProvider>
+                        <PonteDoPainel />
                         <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--color-surface-950)' }}>
                           <Suspense fallback={null}>
                             <Routes>

@@ -34,6 +34,7 @@ const TELAS: { rota: string; aparece: string | RegExp }[] = [
   { rota: '/conversations?id=demo-conv-0', aparece: /Bom dia! Vocês têm plano anual/ },
   { rota: '/pipelines', aparece: 'Migração de base' },
   { rota: '/campaigns', aparece: /Renovação Pro · setembro/ },
+  { rota: '/campaigns?report=cp-renovacao', aparece: /Funil de engajamento/ },
   { rota: '/pipelines/pl-vendas?deal=demo-deal-0', aparece: /Anual · por licença/ },
   { rota: '/agents?agent=ag-vendas&tab=capabilities', aparece: 'Capacidades de CRM' },
 ]

@@ -6,6 +6,7 @@ import {
 } from '../components/landing/stage/hero/heroRealData'
 import type { HeroState } from '../components/landing/stage/hero/heroStory'
 import { AGENTES_DEMO, agenteComFerramentas } from './agentesDemo'
+import { ANALYTICS_RENOVACAO, CONVERSAS_RENOVACAO } from './campanhaDemo'
 
 /**
  * O BACKEND DE DEMONSTRAÇÃO — um banco em memória com um tenant fictício
@@ -253,6 +254,13 @@ export function instalarBackendDemo() {
 
   // ── Disparos ──────────────────────────────────────────────────────────────
   rota('campaigns', eq('get', '/campaigns'), () => ({ data: { data: heroCampaigns(estado) } }))
+  // O relatório real da campanha (`?report=`), aberto pela cena de Disparos.
+  rota('campaigns/:id/analytics', (m, u) => m.toLowerCase() === 'get' && /^\/campaigns\/[^/]+\/analytics$/.test(u), () => ({
+    data: ANALYTICS_RENOVACAO,
+  }))
+  rota('campaigns/:id/conversations', (m, u) => m.toLowerCase() === 'get' && /^\/campaigns\/[^/]+\/conversations$/.test(u), () => ({
+    data: CONVERSAS_RENOVACAO,
+  }))
 
   // Histórico de etapas do negócio da história (painel do negócio).
   rota('deals/:id/history', (m, u) => m.toLowerCase() === 'get' && /^\/deals\/[^/]+\/history$/.test(u), ({ url }) => {

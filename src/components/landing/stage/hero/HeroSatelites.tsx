@@ -102,8 +102,73 @@ export function Satelite({
   )
 }
 
+/**
+ * O APARELHO — a segunda família de moldura do palco: um celular.
+ *
+ * A bandeja diz "janela de computador"; o aparelho diz "no bolso". Corpo
+ * escuro de 14 px com cantos de 40 px, ilha no topo e um brilho fino na borda
+ * (luz, não sombra). O que vai dentro continua sendo do produto: o WhatsApp da
+ * cliente (`TemplatePreview`) ou o Oryon mobile de verdade (um iframe da
+ * demonstração a 390 px, com a `AppShellMobile` real).
+ */
+export function Aparelho({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        'hero-aparelho relative rounded-[40px] p-[12px] bg-[#0B0F10]',
+        'ring-1 ring-white/[.14] [[data-theme=light]_&]:ring-black/[.18]',
+        className,
+      )}
+      style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,.10), 0 30px 70px -20px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.5)' }}
+    >
+      <div className="relative overflow-hidden rounded-[29px] bg-surface-950">
+        {children}
+        {/* Ilha do topo, por cima do conteúdo, como num aparelho de verdade. */}
+        <span aria-hidden className="absolute left-1/2 top-[8px] -translate-x-1/2 h-[22px] w-[86px] rounded-full bg-black" />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Uma satélite em forma de APARELHO: entra subindo e endireitando de uma leve
+ * inclinação 3D (como alguém levantando o celular para mostrar), e sai
+ * deitando de volta. Movimento distinto do "brotar" das janelas, para as duas
+ * famílias de moldura não se confundirem.
+ */
+export function SateliteAparelho({
+  pose, visivel, atraso = 0, children, y, lado = 'direita',
+}: {
+  pose: PoseSatelite
+  visivel: boolean
+  atraso?: number
+  children: ReactNode
+  y?: MotionValue<number>
+  /** De que lado da âncora está — a inclinação aponta para o centro. */
+  lado?: 'esquerda' | 'direita'
+}) {
+  const semMovimento = useReducedMotion()
+  const giro = lado === 'direita' ? -14 : 14
+  const escondido = { opacity: 0, y: 60, rotateX: 18, rotateY: giro, rotateZ: lado === 'direita' ? 3 : -3, scale: 0.92 }
+  return (
+    <div className="absolute" style={{ left: pose.x, top: pose.y, width: pose.w, zIndex: 35, perspective: 1400 }}>
+      <motion.div
+        style={{ y, transformOrigin: '50% 100%' }}
+        initial={escondido}
+        animate={visivel ? { opacity: 1, y: 0, rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1 } : escondido}
+        transition={semMovimento
+          ? { duration: 0 }
+          : { type: 'spring', stiffness: 150, damping: 22, mass: 1, delay: visivel ? atraso : 0 }}
+      >
+        <Aparelho>{children}</Aparelho>
+      </motion.div>
+    </div>
+  )
+}
+
 export const TITULOS_SATELITES = {
   celular: `WhatsApp · ${HERO.person}`,
   notificacoes: 'Notificações',
   linhaDoTempo: `${HERO.person} · atividade`,
+  negocio: 'Negócio · Vendas',
 }

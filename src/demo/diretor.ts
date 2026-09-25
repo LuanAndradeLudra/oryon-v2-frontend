@@ -32,7 +32,7 @@ export type MensagemDaDemo =
   | { canal: typeof CANAL; tipo: 'pronta' }
   | { canal: typeof CANAL; tipo: 'rota'; rota: string }
 
-type Janela = { __demoNavegar?: (to: string) => void; __demoRota?: () => string }
+type Janela = { __demoNavegar?: (to: string) => void; __demoRota?: () => string; __demoFecharPainel?: () => void }
 
 const CONVERSA = 'demo-conv-0'
 
@@ -104,13 +104,20 @@ function emitirTransicao(de: HeroState, para: HeroState) {
 }
 
 /**
- * No celular o quadro do funil mostra uma coluna por vez e o card da história
- * fica fora da tela; ali a cena abre o painel do próprio negócio (`?deal=`,
- * recurso do app), onde a mudança de etapa aparece.
+ * A rota de cada cena.
+ *  • No DESKTOP a demonstração segue o roteiro inteiro.
+ *  • No CELULAR (a landing em tela pequena roda o app a 390 px, com a
+ *    `AppShellMobile` real) só entra o que faz sentido no bolso: a conversa e o
+ *    negócio. Nas cenas de Disparos e Agentes ele fica onde está (`null` = não
+ *    navega). O quadro do funil mostra uma coluna por vez e o card da história
+ *    ficaria fora da tela; ali a cena abre o painel do próprio negócio (`?deal=`).
  */
-function rotaDa(cena: Exclude<HeroCena, 'reinicio'>): string {
-  if (cena === 'funil' && window.innerWidth < 768) return `${HERO_ROTAS.funil}?deal=demo-deal-0`
-  return HERO_ROTAS[cena]
+function rotaDa(cena: Exclude<HeroCena, 'reinicio'>): string | null {
+  const celular = window.innerWidth < 768
+  if (!celular) return HERO_ROTAS[cena]
+  if (cena === 'conversa') return HERO_ROTAS.conversa
+  if (cena === 'funil') return `${HERO_ROTAS.funil}?deal=demo-deal-0`
+  return null
 }
 
 let cenaAtual: HeroCena | null = null
@@ -128,9 +135,12 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
     cenaAtual = cena
     if (cena !== 'reinicio') {
       const rota = rotaDa(cena)
-      const w = window as unknown as Janela
-      w.__demoNavegar?.(rota)
-      avisarPai({ canal: CANAL, tipo: 'rota', rota })
+      if (rota) {
+        const w = window as unknown as Janela
+        w.__demoFecharPainel?.()
+        w.__demoNavegar?.(rota)
+        avisarPai({ canal: CANAL, tipo: 'rota', rota })
+      }
     }
   }
 }
