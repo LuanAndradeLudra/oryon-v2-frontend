@@ -146,7 +146,10 @@ export function DemoRecorte({
       // a altura da tela — com o teto, a moldura encolhia para 260 px de largura.
       const orcamento = celular
         ? Math.max(ALTURA.min, window.innerHeight - foraDoRecorte)
-        : Math.min(ALTURA.max, Math.max(ALTURA.min, window.innerHeight - foraDoRecorte))
+        // Teto que acompanha a altura da tela: 419 px até ~900 de altura (o
+        // tamanho pedido pelo PO em 26/09), mais em telas altas — em 1920 × 1080
+        // a moldura fixa em 419 ficava pequena ao lado de evidências largas.
+        : Math.min(Math.min(560, Math.max(ALTURA.max, window.innerHeight * 0.47 - 4)), Math.max(ALTURA.min, window.innerHeight - foraDoRecorte))
       // A borda da bandeja (12 px) e a barra de título (30 px) ficam fora da região.
       const porAltura = (orcamento - 36) * (regiao.w / regiao.h) + 12
       const porAmpliacao = regiao.w * (celular ? 1 : AMPLIACAO_MAX) + 12

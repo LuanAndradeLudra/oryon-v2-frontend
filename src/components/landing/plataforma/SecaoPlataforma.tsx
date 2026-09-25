@@ -455,7 +455,9 @@ function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (e
   }, [])
   const colunas = !aoLado ? undefined
     : tresColunas ? `${palco}px minmax(0, 1fr) minmax(0, 1fr)`
-    : `${palco}px minmax(${EVIDENCIAS_MIN}px, 1fr)`
+    // O palco divide a largura com as evidências (1,3 : 1), nunca menor que a
+    // moldura: a tela real é a superfície principal, centrada no palco.
+    : `minmax(${palco}px, 1.3fr) minmax(${EVIDENCIAS_MIN}px, 1fr)`
 
   return (
     <article
