@@ -324,6 +324,14 @@ const OUTROS = [
   { id: 'd-4', title: 'Renovação · 8 licenças', person: 'Móveis Aurora',   stageId: HERO_STAGE_QUALIFICACAO, cents: 300_000, dias: 1 },
   { id: 'd-5', title: 'Treinamento da equipe',  person: 'Studio Bemviver', stageId: HERO_STAGE_PROPOSTA,     cents: 187_500, dias: 3 },
   { id: 'd-6', title: 'Upgrade de plano',       person: 'Casa Verde',      stageId: 'ps-negociacao',         cents: 562_500, dias: 2 },
+  // Mais um por etapa: com um ou dois cards, o quadro ficava mais da metade
+  // vazio na moldura da Plataforma. Valores no preço da história (R$ 375/licença).
+  // Sempre ACRESCENTAR no fim: o `contactId` sai do índice (demo-dc-3/5 são
+  // citados no relatório da campanha).
+  { id: 'd-7', title: 'Plano Pro · 5 licenças',  person: 'Ótica Lumière',   stageId: HERO_STAGE_QUALIFICACAO, cents: 187_500, dias: 4 },
+  { id: 'd-8', title: 'Renovação · 20 licenças', person: 'Grupo Tavares',   stageId: HERO_STAGE_PROPOSTA,     cents: 750_000, dias: 1 },
+  { id: 'd-9', title: 'Integração com ERP',      person: 'Farmácia Viva',   stageId: 'ps-negociacao',         cents: 412_500, dias: 5 },
+  { id: 'd-10', title: 'Plano Essencial · 3 lojas', person: 'Padaria Estrela', stageId: 'ps-entrada',        cents: 135_000, dias: 1 },
 ]
 
 const HERO_OTHER_DEALS: Deal[] = OUTROS.map((d, i) => ({

@@ -77,6 +77,10 @@ function atender(method: string, url: string, body?: unknown): RespostaDemo {
   return { status: 204, data: null }
 }
 
+let emVoo = 0
+/** Requisições do app ao backend de demonstração ainda sem resposta. */
+export function requisicoesEmVoo() { return emVoo }
+
 /**
  * Adaptador de axios. É o ponto certo porque o app usa DUAS instâncias — a
  * `api` configurada e o `axios` global, que o `AuthContext` chama direto — e
@@ -85,19 +89,26 @@ function atender(method: string, url: string, body?: unknown): RespostaDemo {
 export function instalarGuardaDeRede() {
   interface ConfigLike { method?: string; url?: string; baseURL?: string; data?: unknown; headers?: unknown; params?: Record<string, unknown> }
   const adapter = async (config: ConfigLike) => {
-    let url = `${config.baseURL ?? ''}${config.url ?? ''}`
-    // `params` do axios não estão na URL: sem juntá-los, filtros como
-    // `/deals?contactId=` chegavam ao backend de demonstração sem o filtro.
-    if (config.params) {
-      const u = new URL(url, 'http://demo.local')
-      for (const [k, v] of Object.entries(config.params)) {
-        if (v !== undefined && v !== null) u.searchParams.set(k, String(v))
+    emVoo++
+    try {
+      let url = `${config.baseURL ?? ''}${config.url ?? ''}`
+      // `params` do axios não estão na URL: sem juntá-los, filtros como
+      // `/deals?contactId=` chegavam ao backend de demonstração sem o filtro.
+      if (config.params) {
+        const u = new URL(url, 'http://demo.local')
+        for (const [k, v] of Object.entries(config.params)) {
+          if (v !== undefined && v !== null) u.searchParams.set(k, String(v))
+        }
+        url = /^https?:\/\//.test(url) ? u.href : u.pathname + u.search
       }
-      url = /^https?:\/\//.test(url) ? u.href : u.pathname + u.search
+      const body = typeof config.data === 'string' ? JSON.parse(config.data || 'null') : config.data
+      const r = atender(config.method ?? 'get', url, body)
+      return { data: r.data ?? null, status: r.status ?? 200, statusText: 'OK', headers: {}, config }
+    } finally {
+      // Solta no próximo macrotask: o componente ainda precisa receber a
+      // resposta e renderizar antes de a tela contar como "pintada".
+      setTimeout(() => { emVoo-- }, 0)
     }
-    const body = typeof config.data === 'string' ? JSON.parse(config.data || 'null') : config.data
-    const r = atender(config.method ?? 'get', url, body)
-    return { data: r.data ?? null, status: r.status ?? 200, statusText: 'OK', headers: {}, config }
   }
 
   const janela = window as unknown as { __demoAdapter?: unknown }

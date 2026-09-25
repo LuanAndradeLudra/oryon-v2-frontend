@@ -181,6 +181,15 @@ function rolador(el: HTMLElement | null): HTMLElement | Window {
   return window
 }
 
+/** A rota que pintou é a esperada? Mesmo caminho e, se a esperada abre uma
+ *  gaveta por query (`?report=`), a mesma gaveta. */
+function mesmaRota(pintou: string, esperada: string) {
+  const a = new URL(pintou, 'http://demo.local')
+  const b = new URL(esperada, 'http://demo.local')
+  if (a.pathname !== b.pathname) return false
+  return [...b.searchParams.keys()].filter((k) => k === 'report' || k === 'tab').every((k) => a.searchParams.get(k) === b.searchParams.get(k))
+}
+
 /** `true` quando o iframe avisou que desenhou a primeira tela. */
 function usePronta(ref: React.RefObject<HTMLIFrameElement | null>) {
   const [pronta, setPronta] = useState(false)
@@ -342,18 +351,50 @@ export function HeroPalco({ className }: { className?: string }) {
   const [cenaRef, animarCena] = useAnimate()
   const cenaAnterior = useRef<HeroCena | null>(null)
   const saltoAnterior = useRef(0)
+  // O app mantém a tela anterior até a rota nova montar (medido: ~1 s entre o
+  // corte e a troca real, que depois "estalava" em opacidade cheia). O corte
+  // esmaece na hora e só acende quando o iframe avisa `pintou` — ou no teto.
+  const pintura = useRef<{ rota: string; acender: () => void } | null>(null)
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== location.origin || !ancoraRef.current || e.source !== ancoraRef.current.contentWindow) return
+      const d = e.data as { canal?: string; tipo?: string }
+      if (d?.canal !== CANAL || d.tipo !== 'pintou' || !pintura.current) return
+      // Só a rota que a cena nova pediu: um aviso atrasado da tela anterior
+      // não acende o corte antes da hora.
+      if (mesmaRota((d as { rota?: string }).rota ?? '', pintura.current.rota)) pintura.current.acender()
+    }
+    window.addEventListener('message', onMsg)
+    return () => window.removeEventListener('message', onMsg)
+  }, [])
   useEffect(() => {
     if (!pronta || semMovimento) { cenaAnterior.current = composition; return }
     const pulou = saltoAnterior.current !== saltos
     saltoAnterior.current = saltos
-    const mudou = cenaAnterior.current !== composition || pulou
+    const trocou = cenaAnterior.current !== composition
+    const mudou = trocou || pulou
     cenaAnterior.current = composition
     if (!mudou || !cenaRef.current) return
-    const vazia = composition === 'reinicio'
-    void animarCena(cenaRef.current, vazia
-      ? { opacity: 0, filter: 'blur(4px)' }
-      : { opacity: [0.35, 1], filter: ['blur(4px)', 'blur(0px)'] },
-      { duration: vazia ? 0.7 : 1.15, ease: [0.16, 1, 0.3, 1] })
+    const el = cenaRef.current
+    if (composition === 'reinicio') {
+      void animarCena(el, { opacity: 0, filter: 'blur(4px)' }, { duration: 0.7, ease: [0.16, 1, 0.3, 1] })
+      return
+    }
+    let vivo = true
+    let teto = 0
+    void animarCena(el, { opacity: 0.35, filter: 'blur(4px)' }, { duration: 0.25, ease: 'easeOut' })
+    const acender = () => {
+      if (!vivo) return
+      vivo = false
+      clearTimeout(teto)
+      void animarCena(el, { opacity: 1, filter: 'blur(0px)' }, { duration: 0.9, ease: [0.16, 1, 0.3, 1] })
+    }
+    // Clique num capítulo da mesma cena: a rota não muda, nada a esperar.
+    if (!trocou) { teto = window.setTimeout(acender, 250); return () => { vivo = false; clearTimeout(teto) } }
+    const registro = { rota: HERO_ROTAS[composition], acender }
+    pintura.current = registro
+    teto = window.setTimeout(acender, 1600)
+    return () => { vivo = false; clearTimeout(teto); if (pintura.current === registro) pintura.current = null }
   }, [composition, saltos, pronta, semMovimento, animarCena, cenaRef])
 
   const vis = visibilidade(state, composition)

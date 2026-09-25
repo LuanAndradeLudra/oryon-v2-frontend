@@ -18,6 +18,7 @@
  */
 import { definirEstado, estadoAtual } from './backend'
 import { emitirDoServidor } from './preparar'
+import { requisicoesEmVoo } from './guards'
 import {
   HERO, HERO_USER, heroContact, heroConversation, heroDeal, heroMessages, heroNotifications, reached,
 } from '@/components/landing/stage/hero/heroRealData'
@@ -31,6 +32,8 @@ export type MensagemParaDemo =
 export type MensagemDaDemo =
   | { canal: typeof CANAL; tipo: 'pronta' }
   | { canal: typeof CANAL; tipo: 'rota'; rota: string }
+  /** A rota nova já pintou (enviado pela ponte de navegação do `DemoApp`). */
+  | { canal: typeof CANAL; tipo: 'pintou'; rota: string }
   /** O alvo em foco, a cada quadro em que muda (id = a tomada). `visivel`:
    *  falso quando o alvo saiu da área rolável ou ficou coberto. */
   | { canal: typeof CANAL; tipo: 'foco'; id: number; rect: { x: number; y: number; w: number; h: number }; raio: number; visivel: boolean }
@@ -168,6 +171,7 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
         w.__demoFecharPainel?.()
         w.__demoNavegar?.(rota)
         avisarPai({ canal: CANAL, tipo: 'rota', rota })
+        avisarQuandoPintar(rota, cena)
       }
       const alvo = FOCOS_CENA[cena]
       // A cena precisa montar (e a gaveta do relatório, deslizar) antes da medida.
@@ -185,6 +189,52 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
       setTimeout(() => w.__demoNavegar?.(rota), 60)
     }
   }
+}
+
+/** Um texto que só existe quando a tela da cena já pintou com os dados. */
+const PRONTA_CENA: Partial<Record<HeroCena, string>> = {
+  disparos: 'Convite webinar',
+  relatorio: 'Funil de engajamento',
+  conversa: 'Rafaela Couto',
+  funil: 'Migração de base',
+  'agente-instrucoes': 'Use só valores e condições',
+  'agente-conhecimento': 'Renovação de setembro',
+  'agente-catalogo': 'Implantação assistida',
+  painel: 'Volume de Mensagens',
+}
+
+let pinturaPendente = 0
+
+/**
+ * Avisa a landing quando a rota nova JÁ ESTÁ NA TELA. O app mantém a tela
+ * anterior até a nova montar (medido: ~1 s), e o corte de câmera do palco
+ * espera por isto em vez de acender sobre a tela velha. Espera o caminho do
+ * roteador bater com o pedido; depois, dois quadros e um respiro para as
+ * primeiras respostas do backend de demonstração pintarem.
+ */
+function avisarQuandoPintar(rota: string, cena: HeroCena) {
+  const sinal = PRONTA_CENA[cena]
+  const id = ++pinturaPendente
+  const alvo = new URL(rota, 'http://demo.local').pathname
+  const w = window as unknown as Janela
+  const inicio = performance.now()
+  let calmo = 0
+  const checar = () => {
+    if (id !== pinturaPendente) return
+    const atual = new URL(w.__demoRota?.() ?? '/', 'http://demo.local').pathname
+    const passou = performance.now() - inicio > 3000
+    // O roteador troca o caminho antes de a página preguiçosa montar (tela em
+    // branco): só conta quando o texto da tela nova já está no documento.
+    const naTela = !sinal || (document.body.innerText ?? '').includes(sinal)
+    if (!passou && (atual !== alvo || !naTela)) { calmo = 0; setTimeout(checar, 50); return }
+    // E o backend de demonstração quieto por 100 ms: as listas já chegaram.
+    calmo = requisicoesEmVoo() === 0 ? calmo + 1 : 0
+    if (!passou && calmo < 2) { setTimeout(checar, 50); return }
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => {
+      if (id === pinturaPendente) avisarPai({ canal: CANAL, tipo: 'pintou', rota })
+    }, 150)))
+  }
+  checar()
 }
 
 /** O tema acompanha o da landing — o mesmo mecanismo de `useTheme`. */
