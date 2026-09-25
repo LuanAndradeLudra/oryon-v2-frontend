@@ -21,7 +21,7 @@ import type { HeroCena, HeroState } from './heroStory'
  *  • a barra de digitação — "+", campo arredondado com a figurinha dentro,
  *    câmera e microfone — e o indicador de início embaixo.
  *
- * A Marina DIGITA no campo e envia: a mesma mensagem que chega no Oryon, no
+ * A Marina DIGITA no campo e envia: a mesma mensagem que chega na Oryon, no
  * mesmo instante. A resposta do Agente IA chega aqui também.
  */
 

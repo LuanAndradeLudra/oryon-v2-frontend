@@ -22,7 +22,7 @@ import { hero } from '../landingCopy'
  * deslizamento nem framer-motion: escalonada por `--d` em H1 → parágrafo →
  * CTAs → palco, 90ms entre cada.
  *
- * O palco (24/09, noite): `HeroPalco` — o Oryon REAL rodando em modo
+ * O palco (24/09, noite): `HeroPalco` — a Oryon REAL rodando em modo
  * demonstração (`/demo.html`, backend em memória) na janela âncora, com
  * satélites que são componentes reais do produto. Regra do PO: todas as telas
  * e simulações usam o conteúdo real do software — nada desenhado à mão.

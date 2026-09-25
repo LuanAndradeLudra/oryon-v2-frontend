@@ -8,7 +8,7 @@ import { useHeroTimeline, type HeroCue } from '../stage/hero/useHeroTimeline'
 import type { HeroCena, HeroState } from '../stage/hero/heroStory'
 
 /**
- * O RECORTE — um "plano de detalhe" do Oryon real, para as seções da página.
+ * O RECORTE — um "plano de detalhe" da Oryon real, para as seções da página.
  *
  * O Hero mostra o app inteiro (plano geral). Cada bloco da seção Plataforma
  * mostra, AMPLIADA, só a região que importa para aquele recurso — o chat, o

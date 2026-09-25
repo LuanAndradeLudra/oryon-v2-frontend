@@ -10,7 +10,7 @@ import { ConversationActivitySection } from '@/components/conversations/ContactP
 import { DealSummary } from '@/components/deals/DealSummary'
 import { MessageBubble } from '@/components/conversations/ChatWindow/MessageBubble'
 import { TypingIndicator } from '@/components/conversations/ChatWindow/TypingIndicator'
-import { contato, linkContato, plataforma } from '../landingCopy'
+import { contato, contatoDisponivel, linkContato, plataforma } from '../landingCopy'
 import { DemoRecorte, type Recorte } from './DemoRecorte'
 import {
   HERO, HERO_PIPELINE, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroCampaigns, heroDeal, heroHistoricoGanho, reached, heroMessages, heroNotifications, heroTimeline,
@@ -26,7 +26,7 @@ import type { HeroCue } from '../stage/hero/useHeroTimeline'
  * à direita, um bloco por trabalho:
  *
  *  1. a afirmação — o destaque em branco, a explicação em cinza;
- *  2. um RECORTE do Oryon real, ampliado na região que importa, contando a sua
+ *  2. um RECORTE da Oryon real, ampliado na região que importa, contando a sua
  *     própria mini-história (o chat, o funil, a gaveta do relatório);
  *  3. dois cartões de benefício, cada um com um componente real do produto.
  *
@@ -515,17 +515,18 @@ export function SecaoPlataforma() {
               </div>
             ))}
 
-            {/* Fecho da seção: a ação de conversão. */}
+            {/* Fecho da seção: a ação de conversão — só com o canal configurado. */}
+            {contatoDisponivel && (
             <Revelar className="mt-16 sm:mt-20">
               <div className="flex flex-col items-start gap-4 rounded-2xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:flex-row sm:items-center sm:justify-between sm:p-8">
                 <p className="max-w-[34ch] font-display text-[13px] font-semibold leading-snug tracking-[-0.01em] text-surface-50">
-                  Veja o Oryon atendendo no seu WhatsApp.
+                  Veja a Oryon atendendo no seu WhatsApp.
                   <span className="block text-surface-400 text-[12px] font-medium mt-1">Converse com o nosso Agente IA — ele mesmo te mostra.</span>
                 </p>
                 <LinkButton
                   href={linkContato()}
-                  target={contato.whatsapp ? '_blank' : undefined}
-                  rel={contato.whatsapp ? 'noopener noreferrer' : undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   size="lg"
                   className="flex-none"
                   leftIcon={<MessageCircle className="h-4 w-4" strokeWidth={2.2} />}
@@ -534,6 +535,7 @@ export function SecaoPlataforma() {
                 </LinkButton>
               </div>
             </Revelar>
+            )}
           </div>
         </div>
         </div>

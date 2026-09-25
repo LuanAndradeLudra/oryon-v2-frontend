@@ -8,7 +8,7 @@ export function Footer() {
       <div className="landing-container py-8 flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="flex items-center gap-2">
           <img src="/oryon-logo.svg" alt="" className="w-6 h-6 select-none" draggable={false} />
-          <span className="font-display text-sm font-bold tracking-[-0.01em] text-surface-50">{footer.homeLabel}</span>
+          <img src="/oryon-wordmark.png" alt={footer.homeLabel} className="oryon-wordmark h-[12px] w-auto select-none" draggable={false} />
         </div>
         <span className="text-xs text-surface-400">{footer.legal}</span>
         <Link

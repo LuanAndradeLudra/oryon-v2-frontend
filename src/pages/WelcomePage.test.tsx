@@ -68,17 +68,17 @@ function renderPage() {
 const ROTAS_VALIDAS = new Set(['/login'])
 
 describe('WelcomePage', () => {
-  it('renderiza sem crash com o H1 de 4 palavras (medição Attio 24/09: svh sozinho só funciona com H1 curto)', () => {
+  it('renderiza sem crash com o H1 curto (medição Attio 24/09: svh sozinho só funciona com H1 curto)', () => {
     renderPage()
     const h1 = screen.getByRole('heading', { level: 1 })
-    expect(h1).toHaveTextContent('Seu WhatsApp atende sozinho.')
+    expect(h1).toHaveTextContent(copy.hero.title)
     // ≤ 10 palavras (checklist anti-genérico) — bem abaixo, de propósito
     expect(h1.textContent!.trim().split(/\s+/).length).toBeLessThanOrEqual(10)
   })
 
-  it('o lead carrega a 2ª metade da mensagem que saiu do H1', () => {
+  it('o lead diz de onde vem a resposta e quando a equipe entra', () => {
     renderPage()
-    expect(screen.getByText(/O humano entra na hora certa/)).toBeInTheDocument()
+    expect(screen.getByText(copy.hero.lead)).toBeInTheDocument()
   })
 
   it('tem as seções na escada de consciência: nav · hero · plataforma · implantação · limites da IA · perguntas · cta · footer', async () => {
@@ -96,7 +96,7 @@ describe('WelcomePage', () => {
     expect(root.className).toContain('overflow-y-auto')
   })
 
-  it('CTAs: a conversa comercial é o CTA principal; "Entrar"/"Já sou cliente" (→ /login) para quem já usa — o hero não tem botões', async () => {
+  it('CTAs: conversa comercial só com o número configurado; "Entrar"/"Já sou cliente" (→ /login) sempre — o hero não tem botões', async () => {
     renderPage()
     await screen.findByText(copy.fecho.title, undefined, { timeout: 8000 })
     const entrar = [
@@ -104,9 +104,16 @@ describe('WelcomePage', () => {
       screen.getByRole('link', { name: copy.fecho.entrar }),
     ]
     expect(entrar).toHaveLength(3) // nav, fecho, rodapé
-    const contato = screen.getAllByRole('link', { name: new RegExp(copy.contato.cta + '|' + copy.contato.ctaLongo) })
-    expect(contato.length).toBeGreaterThanOrEqual(4) // nav, plataforma, implantação, perguntas, fecho
-    contato.forEach((a) => expect(a).toHaveAttribute('href', copy.linkContato()))
+    const contato = screen.queryAllByRole('link', { name: new RegExp(copy.contato.cta + '|' + copy.contato.ctaLongo) })
+    if (copy.contatoDisponivel) {
+      expect(contato.length).toBeGreaterThanOrEqual(4) // nav, plataforma, implantação, perguntas, fecho
+      contato.forEach((a) => expect(a).toHaveAttribute('href', copy.linkContato()))
+    } else {
+      // Sem número: nenhum botão promete uma conversa que ainda não atende.
+      expect(contato).toHaveLength(0)
+      expect(screen.getByText(copy.fecho.leadSemContato)).toBeInTheDocument()
+      expect(screen.queryByText(/a configurar em/)).toBeNull()
+    }
     entrar.forEach((a) => expect(a).toHaveAttribute('href', '/login'))
     expect(screen.queryByRole('link', { name: 'Ver o produto' })).toBeNull()
   })

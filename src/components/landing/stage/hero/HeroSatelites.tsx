@@ -132,7 +132,7 @@ export function Satelite({
  * A bandeja diz "janela de computador"; o aparelho diz "no bolso". Corpo
  * escuro de 7 px com cantos de 36 px (borda fina, PO 25/09), ilha baixa no topo e um brilho fino na borda
  * (luz, não sombra). O que vai dentro continua sendo do produto: o WhatsApp da
- * cliente (`TemplatePreview`) ou o Oryon mobile de verdade (um iframe da
+ * cliente (`TemplatePreview`) ou a Oryon mobile de verdade (um iframe da
  * demonstração a 390 px, com a `AppShellMobile` real).
  */
 export function Aparelho({ children, className }: { children: ReactNode; className?: string }) {

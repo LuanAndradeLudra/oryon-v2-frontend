@@ -1,7 +1,7 @@
 import type { HeroCue } from './useHeroTimeline'
 
 /**
- * O ROTEIRO — uma operação real atravessando os módulos do Oryon.
+ * O ROTEIRO — uma operação real atravessando os módulos da Oryon.
  *
  * O palco roda o PRÓPRIO app em modo demonstração (`src/demo/`). O roteiro não
  * desenha nada: cada cue muda o estado do backend de demonstração (`state`) ou

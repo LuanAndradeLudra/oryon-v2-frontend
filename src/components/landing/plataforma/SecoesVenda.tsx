@@ -3,7 +3,7 @@ import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, MessageCircle, Smartphone, Settings2, Rocket } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LinkButton } from '@/components/ui/LinkButton'
-import { contato, linkContato, implantacao, perguntas, fecho, LANDING_ROUTES } from '../landingCopy'
+import { contato, contatoDisponivel, linkContato, implantacao, perguntas, fecho, LANDING_ROUTES } from '../landingCopy'
 
 /**
  * As seções de CONVERSÃO depois da Plataforma (25/09). Cada uma derruba uma
@@ -11,7 +11,7 @@ import { contato, linkContato, implantacao, perguntas, fecho, LANDING_ROUTES } f
  *
  *  • Implantação — "vai dar trabalho?" → até 7 dias, quase tudo com a gente;
  *  • Perguntas   — preço, prazo, número oficial, limites da IA;
- *  • Fecho       — a conversa no WhatsApp com o próprio Agente IA do Oryon.
+ *  • Fecho       — a conversa no WhatsApp com o próprio Agente IA da Oryon.
  */
 
 function Revelar({ children, atraso = 0, className }: { children: ReactNode; atraso?: number; className?: string }) {
@@ -29,12 +29,14 @@ function Revelar({ children, atraso = 0, className }: { children: ReactNode; atr
   )
 }
 
+/** O botão da conversa comercial — só existe com o número configurado. */
 function BotaoContato({ className, longo = true }: { className?: string; longo?: boolean }) {
+  if (!contatoDisponivel) return null
   return (
     <LinkButton
       href={linkContato()}
-      target={contato.whatsapp ? '_blank' : undefined}
-      rel={contato.whatsapp ? 'noopener noreferrer' : undefined}
+      target="_blank"
+      rel="noopener noreferrer"
       size="lg"
       className={className}
       leftIcon={<MessageCircle className="h-4 w-4" strokeWidth={2.2} />}
@@ -173,15 +175,13 @@ export function SecaoFecho() {
           <h2 className="font-display font-extrabold tracking-[-0.03em] leading-[1.05] text-surface-50 text-[clamp(1.3rem,2.98vw,2.24rem)] text-balance">
             {fecho.title}
           </h2>
-          <p className="mx-auto mt-5 max-w-[46ch] text-[12.5px] leading-relaxed text-surface-400 text-balance">{fecho.lead}</p>
+          <p className="mx-auto mt-5 max-w-[46ch] text-[12.5px] leading-relaxed text-surface-400 text-balance">{contatoDisponivel ? fecho.lead : fecho.leadSemContato}</p>
         </Revelar>
         <Revelar atraso={0.15} className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <BotaoContato />
-          <LinkButton to={LANDING_ROUTES.login} variant="neutral" size="lg">{fecho.entrar}</LinkButton>
+          <LinkButton to={LANDING_ROUTES.login} variant={contatoDisponivel ? 'neutral' : 'primary'} size="lg">{fecho.entrar}</LinkButton>
         </Revelar>
-        {import.meta.env.DEV && !contato.whatsapp && (
-          <p className="mt-6 text-[12px] text-surface-500">Número de WhatsApp comercial a configurar em <code>landingCopy.ts</code> (<code>contato.whatsapp</code>).</p>
-        )}
+
       </div>
     </section>
   )

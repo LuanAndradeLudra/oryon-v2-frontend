@@ -1,10 +1,10 @@
 import { motion, useReducedMotion } from 'framer-motion'
-import { Plug, UserCheck, ShieldCheck, Hand } from 'lucide-react'
+import { Plug, SlidersHorizontal, ShieldCheck, Hand } from 'lucide-react'
 import { trust } from '../landingCopy'
 
 const ICONS = {
   conexao: Plug,
-  contexto: UserCheck,
+  permissoes: SlidersHorizontal,
   verificacao: ShieldCheck,
   controle: Hand,
 } as const

@@ -52,7 +52,7 @@ const ConteudoLinhaDoTempo = lazy(() => carregar().then((m) => ({ default: m.Con
 const ConteudoNegocio = lazy(() => carregar().then((m) => ({ default: m.ConteudoNegocio })))
 
 /**
- * O PALCO DO HERO — o Oryon de verdade, operando, em várias molduras.
+ * O PALCO DO HERO — a Oryon de verdade, operando, em várias molduras.
  *
  *  • A ÂNCORA é o próprio app, num iframe (`/demo.html`) com backend de
  *    demonstração em memória. Plano fixo durante o ciclo.
@@ -65,7 +65,7 @@ const ConteudoNegocio = lazy(() => carregar().then((m) => ({ default: m.Conteudo
  * Enquadramento (25/09): o conjunto — título, narração, palco e controles —
  * cabe na altura útil da tela em desktop comum. A escala respeita a MENOR
  * restrição entre largura e altura, com um piso de legibilidade; antes de
- * encolher o texto além do alvo, a tela do app fica mais BAIXA (o Oryon é
+ * encolher o texto além do alvo, a tela do app fica mais BAIXA (a Oryon é
  * responsivo: 1280 × 580 é o mesmo app, com menos linhas à vista). A escala é
  * uma por viewport — nunca muda durante o ciclo.
  *
@@ -383,7 +383,7 @@ export function HeroPalco({ className }: { className?: string }) {
       <div
         ref={hostRef}
         role="img"
-        aria-label="Demonstração do Oryon: uma campanha chega no WhatsApp de uma cliente, o Agente IA atende, atualiza o contato e avança o negócio no funil, e uma atendente assume e fecha a venda."
+        aria-label="Demonstração da Oryon: uma campanha chega no WhatsApp de uma cliente, o Agente IA atende, atualiza o contato e avança o negócio no funil, e uma atendente assume e fecha a venda."
         className="relative w-full select-none"
         style={{ height: palco.h * fit }}
       >
@@ -509,7 +509,7 @@ export function HeroPalco({ className }: { className?: string }) {
       {/* A BARRA DE CONTROLE — capítulos, a divulgação dos dados e a pausa,
           como num player: o título, a narração e o palco ficam juntos em cima. */}
       <div ref={barraRef} className="relative mt-3.5 flex items-center gap-3 px-1 md:grid md:grid-cols-[1fr_auto_1fr]">
-        <p className="hidden md:block text-[11.5px] text-surface-500">O Oryon de verdade, com dados fictícios.</p>
+        <p className="hidden md:block text-[11.5px] text-surface-500">A Oryon de verdade, com dados fictícios.</p>
         <HeroCapitulosLinha
           className="flex-1 md:col-start-2"
           capitulos={HERO_CAPITULOS}
@@ -532,7 +532,7 @@ export function HeroPalco({ className }: { className?: string }) {
           )}
         </div>
       </div>
-      <p className="md:hidden mt-1 text-center text-[11px] text-surface-500">O Oryon de verdade, com dados fictícios.</p>
+      <p className="md:hidden mt-1 text-center text-[11px] text-surface-500">A Oryon de verdade, com dados fictícios.</p>
     </div>
   )
 }
