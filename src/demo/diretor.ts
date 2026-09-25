@@ -136,6 +136,21 @@ function aplicarPasso(estado: HeroState, cena: HeroCena) {
   }
 
   const w = window as unknown as Janela
+  // Voltar no tempo para uma cena com rota: a página já montada guarda o que
+  // aconteceu depois. Uma passagem por outra rota faz o app remontar e buscar
+  // tudo no estado certo (vale para o laço dos recortes da seção Plataforma).
+  if (recomeco && cena !== 'reinicio' && cena !== cenaAtual) {
+    cenaAtual = cena
+    const rota = rotaDa(cena)
+    if (rota) {
+      w.__demoFecharPainel?.()
+      w.__demoNavegar?.(rota === HERO_ROTAS.disparos ? HERO_ROTAS.conversa : HERO_ROTAS.disparos)
+      setTimeout(() => w.__demoNavegar?.(rota), 60)
+      const alvo = FOCOS_CENA[cena]
+      if (alvo) focarAlvo(alvo, 900)
+    }
+    return
+  }
   if (cena !== cenaAtual) {
     cenaAtual = cena
     if (cena !== 'reinicio') {

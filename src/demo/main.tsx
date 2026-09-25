@@ -19,9 +19,16 @@
  */
 import { prepararAntesDoApp, conectarAoApp } from './preparar'
 import { rotasNaoMapeadas } from './guards'
+import { definirEstado } from './backend'
+import type { HeroState } from '@/components/landing/stage/hero/heroStory'
 import { instalarDiretor, avisarQuandoPronta } from './diretor'
 
 prepararAntesDoApp()
+
+// Estado inicial da história (`?estado=avanco`): os recortes da seção
+// Plataforma abrem já no momento que mostram, sem esperar o roteiro inteiro.
+const estadoInicial = new URLSearchParams(location.search).get('estado') as HeroState | null
+if (estadoInicial) definirEstado(estadoInicial)
 
 // Tema inicial vindo da landing (`?tema=light`), antes do app ler `useTheme`:
 // sem isto a demonstração nasceria escura e piscaria ao receber o tema.

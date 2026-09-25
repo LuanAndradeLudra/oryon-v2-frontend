@@ -1,12 +1,13 @@
-import { Sun, Moon } from 'lucide-react'
+import { Sun, Moon, MessageCircle } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { cn } from '@/lib/utils'
-import { nav, LANDING_ROUTES } from '../landingCopy'
+import { nav, LANDING_ROUTES, contato, linkContato } from '../landingCopy'
 
 /**
- * Nav fixa em vidro (64px). Âncoras só das seções que existem; "Entrar" é o
- * único CTA (teal). O botão de tema mostra o ícone do tema de DESTINO pelo
+ * Nav fixa em vidro (64px). Âncoras só das seções que existem. O CTA teal é a
+ * conversa comercial ("Falar com a gente", no WhatsApp com o Agente IA do
+ * próprio Oryon); "Entrar" fica neutro, para quem já é cliente. O botão de tema mostra o ícone do tema de DESTINO pelo
  * atributo `data-theme` do <html> (CSS) — sem ternário de tema no JSX.
  */
 export function LandingNav() {
@@ -21,7 +22,7 @@ export function LandingNav() {
         'bg-[color-mix(in_srgb,var(--color-surface-950)_72%,transparent)] backdrop-blur-md',
       )}
     >
-      <div className="mx-auto h-full w-full max-w-[1120px] px-4 sm:px-6 flex items-center gap-6">
+      <div className="mx-auto h-full w-full max-w-[1280px] px-4 sm:px-6 flex items-center gap-6">
         <a
           href="#inicio"
           aria-label={nav.homeLabel}
@@ -54,7 +55,15 @@ export function LandingNav() {
             <Sun className="w-4 h-4 [[data-theme=light]_&]:hidden" strokeWidth={1.75} aria-hidden />
             <Moon className="w-4 h-4 hidden [[data-theme=light]_&]:block" strokeWidth={1.75} aria-hidden />
           </button>
-          <LinkButton to={LANDING_ROUTES.login}>{nav.cta}</LinkButton>
+          <LinkButton to={LANDING_ROUTES.login} variant="neutral" className="hidden sm:inline-flex">{nav.cta}</LinkButton>
+          <LinkButton
+            href={linkContato()}
+            target={contato.whatsapp ? '_blank' : undefined}
+            rel={contato.whatsapp ? 'noopener noreferrer' : undefined}
+            leftIcon={<MessageCircle className="h-4 w-4" strokeWidth={2.2} />}
+          >
+            {contato.cta}
+          </LinkButton>
         </div>
       </div>
     </header>

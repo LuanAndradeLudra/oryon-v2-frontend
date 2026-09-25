@@ -1,6 +1,14 @@
+import { lazy, Suspense } from 'react'
 import {
-  LandingNav, Hero, HowItWorks, ProductGrid, Trust, FinalCta, Footer,
+  LandingNav, Hero, Trust, Footer,
 } from '@/components/landing/sections'
+
+// Abaixo da primeira dobra: carrega depois do Hero (demo, recortes e
+// componentes reais pesam — não podem atrasar a primeira pintura).
+const SecaoPlataforma = lazy(() => import('@/components/landing/plataforma/SecaoPlataforma').then((m) => ({ default: m.SecaoPlataforma })))
+const SecaoImplantacao = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoImplantacao })))
+const SecaoPerguntas = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoPerguntas })))
+const SecaoFecho = lazy(() => import('@/components/landing/plataforma/SecoesVenda').then((m) => ({ default: m.SecaoFecho })))
 
 /**
  * Landing pública (`/`) — SCRUM-1097, fase "porta de entrada". Reescrita
@@ -21,10 +29,16 @@ export function WelcomePage() {
       <LandingNav />
       <main>
         <Hero />
-        <HowItWorks />
-        <ProductGrid />
-        <Trust />
-        <FinalCta />
+        {/* A escada de consciência: o que é (Hero) → como resolve cada problema
+            (Plataforma) → vai dar trabalho? (Implantação) → posso confiar?
+            (limites da IA) → dúvidas finais (Perguntas) → conversa (Fecho). */}
+        <Suspense fallback={<div className="min-h-[60vh]" />}>
+          <SecaoPlataforma />
+          <SecaoImplantacao />
+          <Trust />
+          <SecaoPerguntas />
+          <SecaoFecho />
+        </Suspense>
       </main>
       <Footer />
     </div>
