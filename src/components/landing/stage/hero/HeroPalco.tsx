@@ -73,7 +73,9 @@ const CANTOS = {
   supEsq: { x: 0, y: 24, w: 372, origem: '100% 100%' },
   supDir: { x: 1108, y: 24, w: 372, origem: '0% 100%' },
   infEsq: { x: 0, y: 452, w: 372, origem: '100% 0%' },
-  infDir: { x: 1108, y: 452, w: 372, origem: '0% 0%' },
+  // O card do negócio é baixo (~190 px): mais para baixo, para encostar na
+  // quina da âncora e a diagonal ficar nítida.
+  infDir: { x: 1108, y: 556, w: 372, origem: '0% 0%' },
 } satisfies Record<string, PoseSatelite>
 
 /** O aparelho (WhatsApp da cliente) mora no canto inferior esquerdo. */

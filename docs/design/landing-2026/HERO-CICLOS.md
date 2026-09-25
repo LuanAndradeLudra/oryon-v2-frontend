@@ -723,3 +723,30 @@ mesmo tempo, mantendo o padrão.
   capítulo pula a demonstração (`irPara` no `useHeroTimeline`); voltar no
   tempo na mesma tela força o app a remontar (diretor passa por outra rota sob
   o corte de câmera). No celular: só o capítulo ativo, trilha segmentada.
+
+## Rodada contínua (24/09, noite) — cinema, nitidez e primeira impressão
+
+- **Tremedeira eliminada.** Causa: o "avanço de câmera" (escala 1 → 1,012
+  contínua durante a cena) e a escala da âncora ligada ao scroll pixel a pixel
+  faziam o navegador redesenhar o texto do app a cada quadro. Agora não há
+  nenhuma escala contínua: o scroll tem DOIS estados (como a Attio) — passou de
+  40 px, âncora 0,97 e molduras sobem, com mola; entre estados, tudo parado.
+- **Legenda de cinema** (`HeroLegenda.tsx`) no lugar da grade de capítulos:
+  cartão sólido centrado sobre a borda de baixo da âncora (o lugar da legenda
+  num filme), com capítulo + trilha clicável, narração em corpo 23 entrando
+  palavra por palavra do desfoque para o nítido, e o valor do capítulo. No
+  celular, abaixo da âncora.
+- **Anel de foco:** o diretor mede o elemento que acabou de mudar (a mensagem
+  da Marina, a resposta da IA, a situação, a etiqueta, o card no funil, a Ana
+  como responsável, a mensagem dela) e a landing acende um anel de luz por
+  cima por ~2,4 s. Direção do olhar, fora do app.
+- **Pôster real:** o primeiro quadro é uma CAPTURA da própria demo (Disparos),
+  `public/hero/demo-poster-{escuro,claro}.png`, com crossfade para o app vivo.
+  Para regenerar (dev server em :3011, Windows):
+  `msedge --headless --disable-gpu --hide-scrollbars --user-data-dir=<pasta>
+  --window-size=1152,720 --virtual-time-budget=15000 --screenshot=<arquivo>.png
+  "http://localhost:3011/demo.html?rota=%2Fcampaigns&tema=dark"` (e `tema=light`).
+  O Edge devolve na hora e grava o arquivo alguns segundos depois.
+- **Texto centrado** no eixo do palco (título, lead, CTAs), como a referência.
+- Molas mais macias nas molduras; corte de cena mais longo e suave; card do
+  negócio no canto inferior direito encostado na quina da âncora.
