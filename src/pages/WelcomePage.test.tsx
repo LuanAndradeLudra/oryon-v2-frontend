@@ -85,12 +85,12 @@ describe('WelcomePage', () => {
     expect(root.className).toContain('overflow-y-auto')
   })
 
-  it('CTAs: "Entrar" (→ /login) na nav, no hero, no fecho e no rodapé; "Ver o produto" → #produto', () => {
+  it('CTAs: "Entrar" (→ /login) na nav, no fecho e no rodapé — o hero não tem botões (o lugar é da legenda da demo)', () => {
     renderPage()
     const entrar = screen.getAllByRole('link', { name: 'Entrar' })
-    expect(entrar).toHaveLength(4)
+    expect(entrar).toHaveLength(3)
     entrar.forEach((a) => expect(a).toHaveAttribute('href', '/login'))
-    expect(screen.getByRole('link', { name: 'Ver o produto' })).toHaveAttribute('href', '#produto')
+    expect(screen.queryByRole('link', { name: 'Ver o produto' })).toBeNull()
   })
 
   it('nenhum link para rota inexistente: só /login e âncoras que existem na página', () => {

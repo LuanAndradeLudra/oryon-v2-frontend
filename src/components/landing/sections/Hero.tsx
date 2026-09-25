@@ -1,7 +1,6 @@
 import { HeroPalco } from '@/components/landing/stage/hero/HeroPalco'
-import { LinkButton } from '@/components/ui/LinkButton'
 import { cn } from '@/lib/utils'
-import { hero, LANDING_ROUTES, LANDING_ANCHORS } from '../landingCopy'
+import { hero } from '../landingCopy'
 
 /**
  * Headline + o produto operando logo abaixo (referência: hero da Attio, HTML
@@ -57,13 +56,9 @@ export function Hero() {
         >
           {hero.lead}
         </p>
-        <div
-          className="reveal mt-7 flex flex-wrap items-center justify-center gap-3"
-          style={{ ['--d' as string]: '180ms' }}
-        >
-          <LinkButton to={LANDING_ROUTES.login} size="lg">{hero.primaryCta}</LinkButton>
-          <LinkButton href={`#${LANDING_ANCHORS.produto}`} variant="neutral" size="lg">{hero.secondaryCta}</LinkButton>
-        </div>
+        {/* Sem botões aqui (decisão do PO, 24/09): o lugar deles é da legenda
+            da demonstração, que abre o palco logo abaixo. "Entrar" continua
+            no cabeçalho, no fecho e no rodapé. */}
       </div>
 
       <div
@@ -74,7 +69,7 @@ export function Hero() {
            travado em 1120, sobrava pouco para a conversa justamente quando o
            painel abre. O texto continua em 1120 — linha de leitura não deve
            acompanhar o palco. */
-        className="reveal mx-auto mt-8 sm:mt-10 w-full max-w-[1120px] xl:max-w-[1400px] px-4 sm:px-6"
+        className="reveal mx-auto mt-7 sm:mt-8 w-full max-w-[1120px] xl:max-w-[1400px] px-4 sm:px-6"
         style={{ ['--d' as string]: '270ms' }}
       >
         <HeroPalco />

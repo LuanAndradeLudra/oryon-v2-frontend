@@ -56,9 +56,7 @@ const APP = { w: 1152, h: 720 }
 const APP_CELULAR = { w: 390, h: 760 }
 /** Tela do aparelho satélite: o app mobile a 60 %. */
 const TELA_APARELHO = { escala: 0.6, w: APP_CELULAR.w * 0.6, h: APP_CELULAR.h * 0.6 }
-const PALCO = { w: 1480, h: 876 }
-/** A legenda: centrada sobre a borda de baixo da âncora, como num filme. */
-const LEGENDA = { w: 660, sobreposicao: 64 }
+const PALCO = { w: 1480, h: 812 }
 const ANCORA = { x: 158, y: 22 }
 
 /**
@@ -314,6 +312,27 @@ export function HeroPalco({ className }: { className?: string }) {
         />
       </div>
 
+      {/* A LEGENDA — no topo, logo acima das telas, no lugar que era dos
+          botões do Hero (decisão do PO, 24/09): caixa translúcida com o
+          capítulo, a trilha clicável, a narração do momento e o valor. */}
+      <motion.div
+        className="relative mx-auto mb-5 sm:mb-7 w-full max-w-[720px]"
+        initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={semMovimento ? { duration: 0 } : { duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+      >
+        <HeroLegenda
+          compacta={celular}
+          capitulos={HERO_CAPITULOS}
+          ativo={capitulo}
+          batida={batida}
+          duracoes={duracoes}
+          rodando={running && pronta}
+          chaveProgresso={`${capitulo}-${saltos}`}
+          onIr={irParaCapitulo}
+        />
+      </motion.div>
+
       <div
         ref={hostRef}
         role="img"
@@ -431,57 +450,7 @@ export function HeroPalco({ className }: { className?: string }) {
           )}
         </div>
 
-        {/* A LEGENDA (desktop) — camada própria por cima de tudo, fora do
-            palco inerte para os segmentos serem clicáveis, com o mesmo fator
-            de escala. Entra depois da âncora, subindo. */}
-        {!celular && (
-          <div
-            className="absolute top-0 pointer-events-none"
-            style={{
-              width: palco.w, height: palco.h,
-              left: `calc(50% - ${(palco.w * fit) / 2}px)`,
-              transform: `scale(${fit})`, transformOrigin: 'top left', zIndex: 40,
-            }}
-          >
-            <motion.div
-              className="absolute pointer-events-auto"
-              style={{
-                width: LEGENDA.w,
-                left: ANCORA.x + (APP.w + 12) / 2 - LEGENDA.w / 2,
-                top: ANCORA.y + APP.h + 36 - LEGENDA.sobreposicao,
-              }}
-              initial={{ opacity: 0, y: 24, filter: 'blur(6px)' }}
-              animate={pronta ? { opacity: 1, y: 0, filter: 'blur(0px)' } : { opacity: 0, y: 24, filter: 'blur(6px)' }}
-              transition={semMovimento ? { duration: 0 } : { type: 'spring', stiffness: 80, damping: 20, delay: 0.5 }}
-            >
-              <HeroLegenda
-                capitulos={HERO_CAPITULOS}
-                ativo={capitulo}
-                batida={batida}
-                duracoes={duracoes}
-                rodando={running && pronta}
-                chaveProgresso={`${capitulo}-${saltos}`}
-                onIr={irParaCapitulo}
-              />
-            </motion.div>
-          </div>
-        )}
       </div>
-
-      {/* No celular a legenda vem logo abaixo da âncora, sem sobrepô-la. */}
-      {celular && (
-        <HeroLegenda
-          compacta
-          className="mt-4"
-          capitulos={HERO_CAPITULOS}
-          ativo={capitulo}
-          batida={batida}
-          duracoes={duracoes}
-          rodando={running && pronta}
-          chaveProgresso={`${capitulo}-${saltos}`}
-          onIr={irParaCapitulo}
-        />
-      )}
 
       {/* Rodapé: a divulgação dos dados fictícios, ao lado da pausa. */}
       <div className="relative mt-5 flex items-center justify-between gap-3 px-1">

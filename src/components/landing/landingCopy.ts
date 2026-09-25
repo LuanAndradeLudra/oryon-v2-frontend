@@ -43,8 +43,6 @@ export const hero = {
   // certa" migrou pra 1ª frase do lead.
   title: 'Seu WhatsApp atende sozinho.',
   lead: 'O humano entra na hora certa: Agentes IA respondem cada conversa e passam para um Atendente, com todo o contexto, quando o cliente precisa de uma pessoa.',
-  primaryCta: 'Entrar',
-  secondaryCta: 'Ver o produto',
   stageLabel: 'Demonstração animada do produto',
 } as const
 

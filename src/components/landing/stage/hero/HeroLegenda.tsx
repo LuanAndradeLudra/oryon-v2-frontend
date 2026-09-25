@@ -9,8 +9,9 @@ import type { HeroCapitulo, HeroCapituloId } from './heroStory'
  * ela entrega, com algo "mais cinematográfico" que uma grade de capítulos
  * embaixo do palco. A resposta é uma legenda de filme:
  *
- *  • um cartão escuro, SÓLIDO, centrado sobre a borda de baixo da âncora — o
- *    lugar da legenda num filme, sem disputar com o H1 lá em cima;
+ *  • uma caixa TRANSLÚCIDA no topo do palco, logo acima das telas, no lugar
+ *    que era dos botões do Hero (decisão do PO, 24/09) — aparece já na
+ *    primeira dobra, como o título de cena de um filme;
  *  • em cima, o capítulo ("02 · Atendimento com IA") e a trilha: quatro
  *    segmentos, o ativo enchendo no ritmo da cena (e parando junto com ela).
  *    Cada segmento é clicável e pula a demonstração para o capítulo;
@@ -43,9 +44,12 @@ export function HeroLegenda({
   return (
     <div
       className={cn(
-        'hero-legenda relative rounded-[18px] bg-surface-900 ring-1 ring-white/[.09] [[data-theme=light]_&]:ring-black/[.07]',
-        'shadow-[inset_0_1px_0_rgba(255,255,255,.06),0_30px_70px_-20px_rgba(0,0,0,.8),0_0_0_1px_rgba(0,0,0,.35)]',
-        '[[data-theme=light]_&]:shadow-[0_1px_2px_rgba(11,13,24,.05),0_8px_20px_rgba(11,13,24,.08),0_30px_60px_-20px_rgba(11,13,24,.18)]',
+        // Caixa TRANSLÚCIDA (pedido do PO): vidro fosco sobre a atmosfera do
+        // palco — diferente das molduras das telas, que são opacas.
+        'hero-legenda relative rounded-[20px] backdrop-blur-xl backdrop-saturate-150',
+        'bg-white/[.045] ring-1 ring-white/[.10] [[data-theme=light]_&]:bg-white/[.55] [[data-theme=light]_&]:ring-black/[.07]',
+        'shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_20px_50px_-24px_rgba(0,0,0,.6)]',
+        '[[data-theme=light]_&]:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_10px_30px_-12px_rgba(11,13,24,.12)]',
         compacta ? 'px-4 pt-3.5 pb-4' : 'px-6 pt-4 pb-5',
         className,
       )}
