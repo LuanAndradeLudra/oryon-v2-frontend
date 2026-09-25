@@ -317,7 +317,7 @@ function focar(estado: HeroState) {
 }
 
 /** Quanto tempo a tomada fica no ar depois que o alvo assenta. */
-const FOCO_NO_AR_MS = 3400
+const FOCO_NO_AR_MS = 4600
 /** Espera máxima para o alvo parar de se mexer antes de aparecer. */
 const FOCO_ASSENTAR_MAX_MS = 1400
 

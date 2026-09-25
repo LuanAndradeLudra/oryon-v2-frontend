@@ -50,7 +50,14 @@ type Cue = HeroCue<HeroState, HeroCena>
 const S = (t: number, state: HeroState): Cue => ({ t, state })
 const C = (t: number, composition: HeroCena): Cue => ({ t, composition })
 
-export const HERO_CUES: readonly Cue[] = [
+/**
+ * RITMO (25/09, pedido do PO): o palco corria rápido demais para quem vê pela
+ * primeira vez. Todo o roteiro é esticado por este fator — as proporções entre
+ * os passos ficam as mesmas; muda só o tempo para entender cada um.
+ */
+export const HERO_RITMO = 1.3
+
+const CUES_BASE: readonly Cue[] = [
   // ── 1 · Disparos: a campanha sai; o relatório abre com os números dela ────
   { t: 0, state: 'inicio', composition: 'disparos' },
   C(1900, 'relatorio'),
@@ -73,11 +80,14 @@ export const HERO_CUES: readonly Cue[] = [
   S(30800, 'pedido'),
   S(33200, 'assumido'),
   S(35800, 'humano'),
+  // O fechamento é o clímax: mais tempo em cena (6,2 s) para ser lido.
   S(38800, 'ganho'),
 
   // ── Reinício: o palco esvazia antes de os dados voltarem ao começo ────────
-  C(43200, 'reinicio'),
+  C(45000, 'reinicio'),
 ] as const
+
+export const HERO_CUES: readonly Cue[] = CUES_BASE.map((c) => ({ ...c, t: Math.round(c.t * HERO_RITMO) }))
 
 /** Tempo com o palco vazio, antes de recomeçar. */
 export const HERO_TAIL_MS = 900

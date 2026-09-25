@@ -19,11 +19,13 @@ import { HeroNarracao } from './HeroNarracao'
  * chamada da Ana. O painel do contato não se atualiza ao vivo no produto (só
  * recarregando) — a mudança visível é a linha do tempo e o sino.
  */
-const FOCOS_SATELITE: Partial<Record<HeroState, { satelite: string; texto: string }>> = {
+const FOCOS_SATELITE: Partial<Record<HeroState, { satelite: string; texto: string; inteira?: boolean; noArMs?: number }>> = {
   situacao: { satelite: 'linhaDoTempo', texto: 'Em negociação' },
   etiqueta: { satelite: 'linhaDoTempo', texto: 'proposta enviada' },
   assumido: { satelite: 'notificacoes', texto: 'pediu transferência' },
-  ganho: { satelite: 'negocio', texto: 'Ganho' },
+  // O fechamento ilumina a JANELA inteira do negócio (não só uma linha) e fica
+  // no ar até o fim do passo — é o resultado da história toda.
+  ganho: { satelite: 'negocio', texto: 'Ganho', inteira: true, noArMs: 7400 },
 }
 
 /** A LINHA inteira que contém o texto, dentro de uma janela satélite. */
@@ -39,7 +41,7 @@ function acharLinha(janela: HTMLElement, texto: string): HTMLElement | null {
 }
 
 /** Quanto a tomada de uma janela fica no ar. */
-const SATELITE_NO_AR_MS = 3400
+const SATELITE_NO_AR_MS = 4600
 
 // O conteúdo das satélites (componentes reais do produto, com dependências
 // pesadas) só é baixado quando a demonstração fica pronta.
@@ -107,7 +109,7 @@ function cantos(h: number) {
 
 /** O aparelho (WhatsApp da cliente), à esquerda, rente à base da âncora. */
 function aparelho(h: number): PoseSatelite {
-  return { x: 0, y: h - 434, w: TELA_APARELHO.w + 24, origem: '100% 50%' }
+  return { x: 0, y: h - 434, w: TELA_APARELHO.w + 14, origem: '100% 50%' }
 }
 
 function diagonal(cena: HeroCena, h: number) {
@@ -208,7 +210,8 @@ export function HeroPalco({ className }: { className?: string }) {
   const ancoraRef = useRef<HTMLIFrameElement>(null)
   const semMovimento = useReducedMotion()
   const celular = !useMediaQuery('(min-width: 768px)')
-  const comConector = useMediaQuery('(min-width: 1024px)') && !semMovimento
+  const comConector = !celular && !semMovimento
+  const corredorLargo = useMediaQuery('(min-width: 1024px)')
   const tema = useTemaDaPagina()
 
   // ── Carregamento tardio: o app só começa a carregar depois da página ──────
@@ -238,7 +241,7 @@ export function HeroPalco({ className }: { className?: string }) {
   // ── Foco nas janelas da landing (situação, etiqueta, chamada da Ana) ──────
   // Mesmo ciclo da tomada do app: entra quando a janela assenta, fica ~3,4 s,
   // sai antes do passo seguinte — e sai NA HORA se o passo mudar.
-  const [tomadaJanela, setTomadaJanela] = useState<(Tomada & { satelite: string; texto: string }) | null>(null)
+  const [tomadaJanela, setTomadaJanela] = useState<(Tomada & { satelite: string; texto: string; inteira?: boolean }) | null>(null)
   useEffect(() => {
     const cfg = FOCOS_SATELITE[state]
     // Só na cena da conversa: trocar de cena encerra a tomada (a janela
@@ -246,7 +249,7 @@ export function HeroPalco({ className }: { className?: string }) {
     if (!pronta || semMovimento || celular || !cfg || composition !== 'conversa') return
     const id = Date.now()
     const t1 = setTimeout(() => setTomadaJanela({ id, saindo: false, ...cfg }), 200)
-    const t2 = setTimeout(() => setTomadaJanela((t) => (t?.id === id ? { ...t, saindo: true } : t)), 200 + SATELITE_NO_AR_MS)
+    const t2 = setTimeout(() => setTomadaJanela((t) => (t?.id === id ? { ...t, saindo: true } : t)), 200 + (cfg.noArMs ?? SATELITE_NO_AR_MS))
     return () => {
       clearTimeout(t1); clearTimeout(t2)
       setTomadaJanela((t) => (t?.id === id ? { ...t, saindo: true } : t))
@@ -300,7 +303,7 @@ export function HeroPalco({ className }: { className?: string }) {
       const topo = host.getBoundingClientRect().top - topoTela + rolado
       const barra = (barraRef.current?.offsetHeight ?? 0) + 14
       const disponivel = alturaTela - topo - barra - 14
-      const q = enquadrar(largura, disponivel, celular, comConector ? CORREDOR : 0)
+      const q = enquadrar(largura, disponivel, celular, comConector ? (corredorLargo ? CORREDOR : 28) : 0)
       setQuadro((a) => (a.fit === q.fit && a.h === q.h ? a : q))
     }
     medir()
@@ -308,7 +311,7 @@ export function HeroPalco({ className }: { className?: string }) {
     ro?.observe(host)
     window.addEventListener('resize', medir)
     return () => { ro?.disconnect(); window.removeEventListener('resize', medir) }
-  }, [celular, comConector])
+  }, [celular, comConector, corredorLargo])
   const { fit, h: appH } = quadro
   const app = celular ? { w: APP_CELULAR.w, h: appH } : { w: APP_W, h: appH }
   const palco = celular ? { w: APP_CELULAR.w + 12, h: appH + 36 } : { w: PALCO_W, h: appH + EXTRA_H }
@@ -350,7 +353,7 @@ export function HeroPalco({ className }: { className?: string }) {
     void animarCena(cenaRef.current, vazia
       ? { opacity: 0, filter: 'blur(4px)' }
       : { opacity: [0.35, 1], filter: ['blur(4px)', 'blur(0px)'] },
-      { duration: vazia ? 0.45 : 0.8, ease: [0.16, 1, 0.3, 1] })
+      { duration: vazia ? 0.7 : 1.15, ease: [0.16, 1, 0.3, 1] })
   }, [composition, saltos, pronta, semMovimento, animarCena, cenaRef])
 
   const vis = visibilidade(state, composition)
@@ -375,7 +378,7 @@ export function HeroPalco({ className }: { className?: string }) {
 
       {/* A NARRAÇÃO — o que acontece agora, fora do palco, em faixa de altura
           fixa (a troca de frase nunca move o palco). */}
-      <HeroNarracao texto={batida} pilulaRef={pilulaRef} className="relative mb-[var(--hero-gap-palco,16px)] px-1" />
+      <HeroNarracao texto={batida} pilulaRef={pilulaRef} className="relative z-[45] mb-[var(--hero-gap-palco,16px)] px-1" />
 
       <div
         ref={hostRef}
@@ -483,17 +486,22 @@ export function HeroPalco({ className }: { className?: string }) {
             raizRef={raizRef}
             anotacaoRef={comConector ? pilulaRef : undefined}
             palcoRef={comConector ? palcoRef : undefined}
+            veuNaSecao
           />
           <HeroFoco
             tomada={tomadaJanela}
             medir={(base) => {
               if (!tomadaJanela) return null
               const janela = palcoRef.current?.querySelector<HTMLElement>(`[data-satelite="${tomadaJanela.satelite}"]`) ?? null
-              return medirNoElemento(janela && acharLinha(janela, tomadaJanela.texto), janela, base)
+              const alvo = janela && (tomadaJanela.inteira
+                ? janela.querySelector<HTMLElement>('.hero-bandeja')
+                : acharLinha(janela, tomadaJanela.texto))
+              return medirNoElemento(alvo, janela, base, tomadaJanela.inteira)
             }}
             raizRef={raizRef}
             anotacaoRef={comConector ? pilulaRef : undefined}
             palcoRef={palcoRef}
+            veuNaSecao
           />
         </>
       )}

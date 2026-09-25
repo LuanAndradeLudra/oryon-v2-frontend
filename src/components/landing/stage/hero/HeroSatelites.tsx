@@ -104,7 +104,7 @@ export function Satelite({
       animate={{ left: pose.x, top: pose.y }}
       transition={semMovimento || !visivel
         ? { duration: 0 }
-        : { type: 'spring', stiffness: 70, damping: 18, mass: 1 }}
+        : { type: 'spring', stiffness: 45, damping: 16, mass: 1 }}
     >
       <motion.div
         style={{ transformOrigin: pose.origem }}
@@ -116,7 +116,7 @@ export function Satelite({
           : { opacity: 0, scale: 0.94, filter: 'blur(3px)' }}
         transition={semMovimento
           ? { duration: 0 }
-          : { type: 'spring', stiffness: 120, damping: 24, mass: 1, delay: visivel ? atraso : 0 }}
+          : { type: 'spring', stiffness: 75, damping: 20, mass: 1, delay: visivel ? atraso : 0 }}
       >
         <Bandeja titulo={titulo} conteudoClassName={conteudoClassName} className="hero-satelite">
           {children}
@@ -130,7 +130,7 @@ export function Satelite({
  * O APARELHO — a segunda família de moldura do palco: um celular.
  *
  * A bandeja diz "janela de computador"; o aparelho diz "no bolso". Corpo
- * escuro de 14 px com cantos de 40 px, ilha no topo e um brilho fino na borda
+ * escuro de 7 px com cantos de 36 px (borda fina, PO 25/09), ilha baixa no topo e um brilho fino na borda
  * (luz, não sombra). O que vai dentro continua sendo do produto: o WhatsApp da
  * cliente (`TemplatePreview`) ou o Oryon mobile de verdade (um iframe da
  * demonstração a 390 px, com a `AppShellMobile` real).
@@ -139,7 +139,7 @@ export function Aparelho({ children, className }: { children: ReactNode; classNa
   return (
     <div
       className={cn(
-        'hero-aparelho relative rounded-[40px] p-[12px] bg-[#0B0F10]',
+        'hero-aparelho relative rounded-[36px] p-[7px] bg-[#0B0F10]',
         'ring-1 ring-white/[.14] [[data-theme=light]_&]:ring-black/[.18]',
         className,
       )}
@@ -148,7 +148,7 @@ export function Aparelho({ children, className }: { children: ReactNode; classNa
       <div className="relative overflow-hidden rounded-[29px] bg-surface-950">
         {children}
         {/* Ilha do topo, por cima do conteúdo, como num aparelho de verdade. */}
-        <span aria-hidden className="absolute left-1/2 top-[8px] -translate-x-1/2 h-[22px] w-[86px] rounded-full bg-black" />
+        <span aria-hidden className="absolute left-1/2 top-[7px] -translate-x-1/2 h-[16px] w-[70px] rounded-full bg-black" />
       </div>
     </div>
   )
@@ -183,7 +183,7 @@ export function SateliteAparelho({
         animate={visivel ? { opacity: 1, y: 0, rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1 } : escondido}
         transition={semMovimento
           ? { duration: 0 }
-          : { type: 'spring', stiffness: 95, damping: 20, mass: 1.1, delay: visivel ? atraso : 0 }}
+          : { type: 'spring', stiffness: 60, damping: 17, mass: 1.1, delay: visivel ? atraso : 0 }}
       >
         <Aparelho>{children}</Aparelho>
       </motion.div>

@@ -35,7 +35,9 @@ export function Hero() {
       className={cn(
         // `overflow-x-clip`: a atmosfera do palco sangra para fora da coluna de
         // propósito, mas nunca pode criar rolagem horizontal na página.
-        'relative overflow-x-clip scroll-mt-16 pb-10 sm:pb-12',
+        // `isolate`: o véu do holofote (z 40, dentro da seção) nunca passa por
+        // cima do menu fixo quando a página rola.
+        'relative isolate overflow-x-clip scroll-mt-16 pb-10 sm:pb-12',
         // Espaçamento do conjunto título → narração → palco em TOKENS (25/09):
         // encolhem juntos em telas baixas, para o conjunto caber na altura.
         'pt-[var(--hero-gap-topo)]',

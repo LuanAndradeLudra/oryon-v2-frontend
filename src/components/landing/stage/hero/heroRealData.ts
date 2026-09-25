@@ -1,4 +1,5 @@
 import type {
+  DealStageHistoryEntry,
   Campaign, Contact, Conversation, Deal, Message, Pipeline, PipelineStage, Product, Tag, TenantStage, User, WhatsAppNumber, WhatsAppTemplate,
 } from '@/types'
 import type { TimelineEntry } from '@/components/conversations/ContactPanel/ConversationActivitySection'
@@ -504,4 +505,18 @@ export function heroNotifications(at: HeroState): AppNotification[] {
     metadata: { contactName: 'Clínica Norte' },
   })
   return out
+}
+
+/**
+ * As passagens de etapa do negócio da história, já em Ganho — as mesmas linhas
+ * do backend de demonstração (`deals/:id/history`): a Ana pôs em Qualificação,
+ * a IA levou para Proposta, a Ana fechou. Usadas onde o negócio aparece
+ * FECHADO fora do app (a janela do Hero, o cartão da seção Plataforma).
+ */
+export function heroHistoricoGanho(): DealStageHistoryEntry[] {
+  return [
+    { id: 'h-3', fromStageId: 'ps-proposta', fromStageLabel: 'Proposta', toStageId: 'ps-ganho', toStageLabel: 'Ganho', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: minutesAgo(1) },
+    { id: 'h-2', fromStageId: 'ps-qualificacao', fromStageLabel: 'Qualificação', toStageId: 'ps-proposta', toStageLabel: 'Proposta', movedByKind: 'ai', movedByActorName: 'Agente Vendas', createdAt: minutesAgo(6) },
+    { id: 'h-1', fromStageId: 'ps-entrada', fromStageLabel: 'Entrada', toStageId: 'ps-qualificacao', toStageLabel: 'Qualificação', movedByKind: 'user', movedByActorName: 'Ana Prado', createdAt: daysAgo(2) },
+  ] as DealStageHistoryEntry[]
 }

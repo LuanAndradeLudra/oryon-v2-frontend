@@ -34,10 +34,10 @@ const APP = { w: 1280, h: 720 }
 const APP_CELULAR = { w: 390, h: 600 }
 const CANAL = 'oryon-hero'
 /** Ampliação máxima de uma região (1 = tamanho real do app). */
-const AMPLIACAO_MAX = 1.35
+const AMPLIACAO_MAX = 0.87
 /** Cabeçalho fixo + frase do bloco + moldura + folgas, fora do recorte. */
 const FORA_DO_RECORTE = 300
-const ALTURA = { min: 300, max: 640 }
+const ALTURA = { min: 202, max: 419 }
 
 export interface Recorte { x: number; y: number; w: number; h: number }
 
@@ -47,7 +47,7 @@ function temaDaPagina(): 'dark' | 'light' {
 }
 
 export function DemoRecorte({
-  titulo, rota, estado, cues, recorte, className, onLimite, foraDoRecorte = FORA_DO_RECORTE,
+  titulo, rota, estado, cues, recorte, className, onLimite, foraDoRecorte = FORA_DO_RECORTE, preencherAltura = false, onPasso,
 }: {
   titulo: string
   /** Rota em que o app nasce. */
@@ -64,6 +64,12 @@ export function DemoRecorte({
   /** Altura da tela reservada ao que fica fora do recorte (cabeçalho, frase do
    *  recurso, folgas). Menor quando o conteúdo já está empilhado e rola. */
   foraDoRecorte?: number
+  /** A moldura ocupa a ALTURA do contêiner (ao lado de evidências mais altas):
+   *  o recorte revela mais do app real para baixo — nunca estica a imagem,
+   *  nunca fica menor que a proporção natural nem passa do fim da tela do app. */
+  preencherAltura?: boolean
+  /** Cada passo da mini-história (estado, cena, índice do cue — 0 = recomeçou). */
+  onPasso?: (estado: HeroState, cena: HeroCena, indice: number) => void
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -105,12 +111,19 @@ export function DemoRecorte({
   const foco = useFocoDaDemo(iframeRef)
 
   // ── A mini-história do bloco ───────────────────────────────────────────────
-  const { state, composition } = useHeroTimeline<HeroState, HeroCena>({
+  const { state, composition, index } = useHeroTimeline<HeroState, HeroCena>({
     cues, tailMs: 900, hostRef, staticIndex: cues.length - 1, enabled: pronta,
   })
   useEffect(() => {
     if (pronta) iframeRef.current?.contentWindow?.postMessage({ canal: CANAL, tipo: 'passo', estado: state, cena: composition }, location.origin)
   }, [pronta, state, composition])
+  // O passo também sai para o artigo: os cartões de evidência ao lado reagem
+  // à MESMA história que a tela conta (e sabem quando o laço recomeça).
+  const avisarPasso = useRef(onPasso)
+  avisarPasso.current = onPasso
+  useEffect(() => {
+    if (pronta) avisarPasso.current?.(state, composition, index)
+  }, [pronta, state, composition, index])
 
   const [tema, setTema] = useState(temaDaPagina)
   useEffect(() => {
@@ -140,10 +153,11 @@ export function DemoRecorte({
     return () => window.removeEventListener('resize', medir)
   }, [regiao.w, regiao.h, celular, foraDoRecorte])
   const [tela, setTela] = useState(0)
+  const [telaAltura, setTelaAltura] = useState(0)
   useLayoutEffect(() => {
     const el = telaRef.current
     if (!el) return
-    const medir = () => setTela(el.clientWidth)
+    const medir = () => { setTela(el.clientWidth); setTelaAltura(el.clientHeight) }
     medir()
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
     ro?.observe(el)
@@ -154,14 +168,21 @@ export function DemoRecorte({
   const [src] = useState(() => `/demo.html?rota=${encodeURIComponent(rota)}&estado=${estado}&tema=${temaDaPagina()}`)
 
   return (
-    <div className={cn('w-full', className)}>
-        <div ref={hostRef} className="relative" aria-hidden>
-          <Bandeja titulo={titulo} className="w-full">
+    <div className={cn('w-full', preencherAltura && 'h-full', className)}>
+        <div ref={hostRef} className={cn('relative', preencherAltura && 'h-full')} aria-hidden>
+          <Bandeja titulo={titulo} className={cn('w-full', preencherAltura && 'h-full')}>
             <div
               ref={telaRef}
               inert
               className="relative w-full overflow-hidden pointer-events-none select-none"
-              style={{ aspectRatio: `${regiao.w} / ${regiao.h}` }}
+              style={preencherAltura && tela > 0
+                ? {
+                    height: '100%',
+                    minHeight: Math.round(tela * (regiao.h / regiao.w)),
+                    // Até o fim da tela do app: abaixo disso não há mais app.
+                    maxHeight: Math.round((app.h - regiao.y) * (tela / regiao.w)),
+                  }
+                : { aspectRatio: `${regiao.w} / ${regiao.h}` }}
             >
               {montar && (
                 <iframe

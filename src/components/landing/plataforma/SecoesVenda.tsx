@@ -48,7 +48,7 @@ function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo: string
   return (
     <Revelar className="max-w-[64rem]">
       <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{eyebrow}</p>
-      <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.75rem,3.4vw,2.75rem)] text-balance">
+      <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.16rem,2.17vw,1.73rem)] text-balance">
         <span className="text-surface-50">{titulo}</span>{' '}
         <span className="text-surface-500">{cinza}</span>
       </h2>
@@ -69,7 +69,7 @@ export function SecaoImplantacao() {
 
         <div className="relative mt-14 sm:mt-16">
           {/* A linha do tempo que se desenha ao entrar na tela (desktop). */}
-          <div aria-hidden className="absolute left-0 right-0 top-[27px] hidden h-px bg-surface-800 md:block">
+          <div aria-hidden className="absolute left-0 right-0 top-[16px] hidden h-px bg-surface-800 md:block">
             <motion.div
               className="h-full origin-left bg-gradient-to-r from-brand-500 via-brand-400 to-brand-500"
               initial={semMovimento ? false : { scaleX: 0 }}
@@ -84,12 +84,12 @@ export function SecaoImplantacao() {
               return (
                 <Revelar key={p.titulo} atraso={0.25 + i * 0.25}>
                   <li className="list-none">
-                    <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-900 ring-1 ring-surface-700 text-[var(--landing-destaque)]">
-                      <Icone className="h-6 w-6" strokeWidth={1.8} />
+                    <span className="relative z-10 flex h-[34px] w-[34px] items-center justify-center rounded-2xl bg-surface-900 ring-1 ring-surface-700 text-[var(--landing-destaque)]">
+                      <Icone className="h-[14.5px] w-[14.5px]" strokeWidth={1.8} />
                     </span>
                     <p className="mt-5 text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{p.quem}</p>
-                    <p className="mt-1.5 font-display text-[20px] font-semibold tracking-[-0.01em] text-surface-50">{p.titulo}</p>
-                    <p className="mt-2 max-w-[34ch] text-[15px] leading-relaxed text-surface-400">{p.texto}</p>
+                    <p className="mt-1.5 font-display text-[13px] font-semibold tracking-[-0.01em] text-surface-50">{p.titulo}</p>
+                    <p className="mt-2 max-w-[34ch] text-[12px] leading-relaxed text-surface-400">{p.texto}</p>
                   </li>
                 </Revelar>
               )
@@ -118,7 +118,7 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
         aria-expanded={aberta}
         className="flex w-full items-center justify-between gap-6 py-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-btn-primary-bg)] rounded-md"
       >
-        <span className="text-[16.5px] font-semibold text-surface-50">{pergunta}</span>
+        <span className="text-[12px] font-semibold text-surface-50">{pergunta}</span>
         <ChevronDown className={cn('h-5 w-5 flex-shrink-0 text-surface-500 transition-transform duration-300', aberta && 'rotate-180')} />
       </button>
       <AnimatePresence initial={false}>
@@ -130,7 +130,7 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
             transition={{ duration: semMovimento ? 0 : 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <p className="max-w-[62ch] pb-6 text-[15px] leading-relaxed text-surface-400">{resposta}</p>
+            <p className="max-w-[62ch] pb-6 text-[12px] leading-relaxed text-surface-400">{resposta}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -170,10 +170,10 @@ export function SecaoFecho() {
       />
       <div className="relative mx-auto w-full max-w-[960px] px-4 text-center sm:px-6">
         <Revelar>
-          <h2 className="font-display font-extrabold tracking-[-0.03em] leading-[1.05] text-surface-50 text-[clamp(2rem,4.6vw,3.5rem)] text-balance">
+          <h2 className="font-display font-extrabold tracking-[-0.03em] leading-[1.05] text-surface-50 text-[clamp(1.3rem,2.98vw,2.24rem)] text-balance">
             {fecho.title}
           </h2>
-          <p className="mx-auto mt-5 max-w-[46ch] text-[17px] leading-relaxed text-surface-400 text-balance">{fecho.lead}</p>
+          <p className="mx-auto mt-5 max-w-[46ch] text-[12.5px] leading-relaxed text-surface-400 text-balance">{fecho.lead}</p>
         </Revelar>
         <Revelar atraso={0.15} className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <BotaoContato />

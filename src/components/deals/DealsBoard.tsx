@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, MoreVertical, ArrowRightLeft, UserPlus, Clock, Phone, Plus, Handshake, ChevronDown, CalendarClock } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown, DropdownItem } from '@/components/ui/Dropdown'
@@ -75,6 +76,10 @@ export function DealsBoard({
   onOpenDeal,
   users = [],
 }: DealsBoardProps) {
+  // O card anda entre colunas (ver o invólucro do card). Desligado com
+  // movimento reduzido e em quadros muito grandes, onde medir todos os cards a
+  // cada renderização custaria mais do que a animação vale.
+  const semMovimento = useReducedMotion()
   // `useIsMobile` (matchMedia + resize listener) em vez de `window.innerWidth`
   // lido direto no render — o valor cru só era recalculado quando ALGUM
   // OUTRO estado mudasse a re-renderizar o componente; redimensionar a janela
@@ -154,6 +159,7 @@ export function DealsBoard({
   // contato já com este funil selecionado. Só aparece sem NENHUM card e com
   // os dados carregados — durante o loading o skeleton das colunas basta.
   const totalCards = stages.reduce((n, st) => n + (dealsByStage[st.id]?.length ?? 0), 0)
+  const animarCards = !semMovimento && totalCards <= 200
   const showEmpty = !loading && totalCards === 0 && (!!onAddContact || !!onNewDeal)
   // Etapa de partida do "Novo negócio" — a 1ª NÃO-terminal. Criar direto num
   // terminal é 400 no backend desde a A4 (fechar exige motivo), então nem o
@@ -271,7 +277,7 @@ export function DealsBoard({
         {/* Lista de cards */}
         <div
           className={cn(
-            'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-lg transition-all duration-200 min-h-[80px]',
+            'flex flex-col gap-2 flex-1 overflow-y-auto pb-4 rounded-lg transition-[background-color,border-color,box-shadow] duration-200 min-h-[80px]',
             isOver ? 'bg-brand-500/5 ring-2 ring-brand-500/30 ring-inset' : 'bg-transparent',
             loading && cards.length > 0 && 'opacity-50',
           )}
@@ -321,8 +327,19 @@ export function DealsBoard({
             )
           ) : (
             cards.map((deal) => (
-              <div
+              // O CARD ANDA (25/09): quando um negócio muda de etapa — arrastado,
+              // pelo menu ou pela IA em tempo real —, o card desliza da coluna
+              // antiga para a nova (`layoutId` compartilhado entre colunas), em vez
+              // de sumir de uma e aparecer na outra. A animação mora num invólucro:
+              // o card é arrastado com drag HTML5 nativo, e o `motion.div`
+              // intercepta `onDragStart`/`onDragEnd`.
+              <motion.div
                 key={deal.id}
+                layoutId={animarCards ? `deal-card-${deal.id}` : undefined}
+                layout={animarCards ? 'position' : false}
+                transition={{ type: 'spring', stiffness: 150, damping: 26, mass: 1 }}
+              >
+              <div
                 ref={highlightDealId === deal.id ? (el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : undefined}
                 draggable
                 onDragStart={(e) => {
@@ -446,6 +463,7 @@ export function DealsBoard({
                   <SalesCardBody deal={deal} onOpenContact={onOpenContact} users={users} siblings={openByContact.get(deal.contactId ?? '') ?? 1} />
                 )}
               </div>
+              </motion.div>
             ))
           )}
         </div>
@@ -454,6 +472,7 @@ export function DealsBoard({
   }
 
   return (
+    <LayoutGroup id="quadro-de-negocios">
     <div
       // touch-pan-x: avisa o navegador que este container trata o gesto
       // horizontal — reduz a disputa com o swipe nativo de "voltar" do
@@ -522,6 +541,7 @@ export function DealsBoard({
         )}
       </div>
     </div>
+    </LayoutGroup>
   )
 }
 

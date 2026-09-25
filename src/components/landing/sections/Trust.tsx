@@ -31,7 +31,7 @@ export function Trust() {
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         >
           <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{trust.eyebrow}</p>
-          <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.75rem,3.4vw,2.75rem)] text-balance">
+          <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.16rem,2.17vw,1.73rem)] text-balance">
             <span className="text-surface-50">{trust.title}</span>{' '}
             <span className="text-surface-500">{trust.titleCinza}</span>
           </h2>
@@ -49,11 +49,11 @@ export function Trust() {
                 viewport={{ once: true, margin: '-10% 0px' }}
                 transition={{ duration: 0.7, delay: 0.1 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-900 text-[var(--landing-destaque)] ring-1 ring-surface-700">
-                  <Icon className="h-5 w-5" strokeWidth={1.8} aria-hidden />
+                <span className="flex h-[26px] w-[26px] items-center justify-center rounded-xl bg-surface-900 text-[var(--landing-destaque)] ring-1 ring-surface-700">
+                  <Icon className="h-[13px] w-[13px]" strokeWidth={1.8} aria-hidden />
                 </span>
-                <h3 className="mt-5 font-display text-[18px] font-semibold tracking-[-0.01em] text-surface-50">{item.title}</h3>
-                <p className="mt-2 max-w-[44ch] text-[15px] leading-relaxed text-surface-400">{item.text}</p>
+                <h3 className="mt-3.5 font-display text-[12px] font-semibold tracking-[-0.01em] text-surface-50">{item.title}</h3>
+                <p className="mt-2 max-w-[44ch] text-[12px] leading-relaxed text-surface-400">{item.text}</p>
               </motion.li>
             )
           })}

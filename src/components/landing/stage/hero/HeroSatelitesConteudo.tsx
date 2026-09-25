@@ -8,7 +8,7 @@ import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { ConversationActivitySection } from '@/components/conversations/ContactPanel/ConversationActivitySection'
 import { DealSummary } from '@/components/deals/DealSummary'
 import {
-  HERO, HERO_PIPELINE, heroDeal, heroNotifications, heroTimeline,
+  HERO, HERO_PIPELINE, heroDeal, heroHistoricoGanho, heroNotifications, heroTimeline,
 } from './heroRealData'
 import type { HeroCena, HeroState } from './heroStory'
 import { WhatsAppIphone } from './HeroWhatsAppIphone'
@@ -54,7 +54,10 @@ export function ConteudoNegocio({ at }: { at: HeroState }) {
       {deal.status === 'won' ? (
         <DealSummary
           density="card" closed deal={deal} pipeline={HERO_PIPELINE} onReopen={NOOP}
-          history={undefined} onToggleHistory={NOOP} showReopenHistory={false}
+          // As passagens abertas: quem moveu cada etapa (a IA avançou, a Ana
+          // fechou). Sem elas a janela encolhia para uma linha e o fechamento —
+          // o clímax da história — ficava quase invisível (25/09).
+          history={heroHistoricoGanho()} onToggleHistory={NOOP} showReopenHistory={false}
           testIdPrefix="hero-negocio" testIdKey={deal.id}
         />
       ) : (

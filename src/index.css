@@ -129,6 +129,11 @@
   --bandeja-conteudo-borda: rgba(0, 0, 0, .40);
   /* O conector anotação → alvo e o contorno do alvo. */
   --hero-conector: #2DD4BF;
+  /* O véu do holofote: escurece a tela do app fora do alvo. */
+  --hero-veu: rgba(2, 6, 6, .36);
+  /* O alvo aceso ganha brilho próprio (só no escuro). */
+  --hero-foco-brilho: brightness(1.22) saturate(1.08);
+  --hero-foco-halo: 0 0 44px 8px rgba(94, 234, 212, .10);
   /* Borda/divisor de cartões e seções da landing (no claro, os tokens de
      superfície usados como borda somem: surface-800 é branco). */
   --landing-borda: rgba(255, 255, 255, .08);
@@ -1016,6 +1021,9 @@ code, pre, kbd, samp {
   --bandeja-titulo: #4B5263;
   --bandeja-conteudo-borda: rgba(15, 23, 42, .10);
   --hero-conector: #0F766E;
+  --hero-veu: rgba(15, 23, 42, .22);
+  --hero-foco-brilho: none;
+  --hero-foco-halo: 0 0 0 0 transparent;
   --landing-borda: #DCE0E7;
   --landing-destaque: #0F766E;
   --landing-cartao: #FFFFFF;

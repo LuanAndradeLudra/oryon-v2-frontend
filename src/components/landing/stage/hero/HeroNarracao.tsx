@@ -32,7 +32,7 @@ export function HeroNarracao({ texto, className, pilulaRef }: {
       <motion.div
         ref={pilulaRef}
         layout={!semMovimento}
-        transition={{ layout: { duration: 0.42, ease: [0.16, 1, 0.3, 1] } }}
+        transition={{ layout: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }}
         style={{ borderRadius: 999 }}
         className={cn(
           'relative inline-flex max-w-full items-center gap-2.5 px-4 py-2',
@@ -52,7 +52,7 @@ export function HeroNarracao({ texto, className, pilulaRef }: {
             initial={{ opacity: 0, filter: 'blur(4px)' }}
             animate={{ opacity: 1, filter: 'blur(0px)' }}
             exit={{ opacity: 0, filter: 'blur(3px)' }}
-            transition={{ duration: semMovimento ? 0 : 0.3, ease: 'easeOut' }}
+            transition={{ duration: semMovimento ? 0 : 0.45, ease: 'easeOut' }}
           >
             {texto}
           </motion.span>

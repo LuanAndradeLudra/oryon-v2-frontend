@@ -66,6 +66,8 @@ type R = { x: number; y: number; w: number; h: number }
 type P = [number, number]
 
 const FOLGA = 12 // distância mínima entre o conector e qualquer moldura
+/** Onde a linha termina: a esta distância POR FORA da borda da moldura. */
+const FORA = 6
 const RAIO_CURVA = 12
 
 function relativo(r: DOMRect, base: DOMRect): R {
@@ -103,6 +105,9 @@ interface Geometria {
   /** O anel está à vista (não coberto por janela nem fora da tela do app). */
   anelVisivel: boolean
   caminho?: { d: string; fim: P; inicio: P; comprimento: number; lado: Lado; marca: [P, P] }
+  /** O HOLOFOTE: a área que escurece (o palco inteiro, ou a tela do recorte)
+   *  e o furo em luz plena sobre o alvo — em px da raiz. */
+  veu?: { area: R; furo: R; raio: number; esfumar: boolean }
 }
 
 function comprimento(pts: P[]) {
@@ -145,7 +150,7 @@ export function medirNoIframe(
 }
 
 /** Mede um alvo na própria landing (um item de uma janela satélite). */
-export function medirNoElemento(el: HTMLElement | null, moldura: HTMLElement | null, base: DOMRect): MedidaDoAlvo | null {
+export function medirNoElemento(el: HTMLElement | null, moldura: HTMLElement | null, base: DOMRect, molduraInteira = false): MedidaDoAlvo | null {
   if (!el || !moldura) return null
   const conteudo = moldura.querySelector<HTMLElement>('.hero-bandeja > div:last-child') ?? moldura
   // A opacidade da entrada/saída mora no filho animado da satélite.
@@ -156,7 +161,11 @@ export function medirNoElemento(el: HTMLElement | null, moldura: HTMLElement | n
     raio: (parseFloat(getComputedStyle(el).borderTopLeftRadius) || 8) * escala,
     visivel: opacidade > 0.9,
     moldura,
-    corte: relativo(conteudo.getBoundingClientRect(), base),
+    // Moldura inteira em foco: o recorte é a própria moldura (com folga),
+    // não só a área de conteúdo dela.
+    corte: molduraInteira
+      ? (() => { const r = relativo(el.getBoundingClientRect(), base); return { x: r.x - 8, y: r.y - 8, w: r.w + 16, h: r.h + 16 } })()
+      : relativo(conteudo.getBoundingClientRect(), base),
   }
 }
 
@@ -169,7 +178,7 @@ const ASSENTAR_MAX_MS = 1500
  * `palcoRef`, desenha também o conector; sem eles, só o contorno (recortes da
  * seção Plataforma, celular).
  */
-export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef }: {
+export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef, veuNaSecao = false }: {
   tomada: Tomada | null
   /** Mede o alvo a cada quadro (px relativos a `base`, o retângulo da raiz). */
   medir: (base: DOMRect) => MedidaDoAlvo | null
@@ -178,6 +187,8 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef }: {
   anotacaoRef?: RefObject<HTMLElement | null>
   /** O palco escalado — define os corredores laterais e os obstáculos. */
   palcoRef?: RefObject<HTMLElement | null>
+  /** O véu do holofote cobre a seção inteira (Hero), não só a tela do alvo. */
+  veuNaSecao?: boolean
 }) {
   const [geo, setGeo] = useState<Geometria | null>(null)
   const ladoTravado = useRef<{ id: number; lado: Lado } | null>(null)
@@ -264,11 +275,13 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef }: {
         const xDir = Math.max(...todos.map((o) => o.x + o.w)) + 20
         const topoConteudo = A.y + 34
         const rotas: Record<Lado, P[] | null> = {
-          esquerda: ty > topoConteudo ? [[N.x - 6, ny], [xEsq, ny], [xEsq, ty], [A.x, ty]] : null,
-          direita: ty > topoConteudo ? [[N.x + N.w + 6, ny], [xDir, ny], [xDir, ty], [A.x + A.w, ty]] : null,
+          // Tudo termina FORA da moldura (a 6 px da borda): nenhuma linha,
+          // ponto ou marca encosta nos elementos de dentro.
+          esquerda: ty > topoConteudo ? [[N.x - 6, ny], [xEsq, ny], [xEsq, ty], [A.x - FORA, ty]] : null,
+          direita: ty > topoConteudo ? [[N.x + N.w + 6, ny], [xDir, ny], [xDir, ty], [A.x + A.w + FORA, ty]] : null,
           topo: tx > N.x + 18 && tx < N.x + N.w - 18
-            ? [[tx, N.y + N.h + 4], [tx, A.y]]
-            : [[tx < N.x ? N.x - 6 : N.x + N.w + 6, ny], [tx, ny], [tx, A.y]],
+            ? [[tx, N.y + N.h + 4], [tx, A.y - FORA]]
+            : [[tx < N.x ? N.x - 6 : N.x + N.w + 6, ny], [tx, ny], [tx, A.y - FORA]],
         }
         // Preferência: a borda mais próxima do alvo (entre ela e o alvo há menos
         // interface para o olho atravessar); a escolha fica travada na tomada —
@@ -293,14 +306,41 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef }: {
         }
       }
 
-      const g: Geometria = { anel, raio: m.raio + 5, anelVisivel, caminho }
+      // O véu: com `veuNaSecao` (Hero), a SEÇÃO inteira escurece — título,
+      // palco, janelas —, e só o alvo fica aceso; a narração e o conector
+      // ficam por cima do véu. Sem ela (recortes da Plataforma), só a tela.
+      const secao = veuNaSecao ? raiz.closest('section') : null
+      // O FURO não pode revelar outra janela: se uma moldura por cima (o
+      // iPhone, uma satélite) invade o alvo por um lado, o furo recua até a
+      // borda dela — antes o iPhone ficava meio aceso, meio escuro.
+      let furo: R = { x: anel.x - 3, y: anel.y - 3, w: anel.w + 6, h: anel.h + 6 }
+      if (naAncora) {
+        for (const o of obstaculos) {
+          if (!intersecta(furo, o)) continue
+          const ox2 = o.x + o.w, oy2 = o.y + o.h, fx2 = furo.x + furo.w, fy2 = furo.y + furo.h
+          const cobreAltura = o.y <= furo.y + furo.h * 0.25 && oy2 >= fy2 - furo.h * 0.25
+          const cobreLargura = o.x <= furo.x + furo.w * 0.25 && ox2 >= fx2 - furo.w * 0.25
+          if (cobreAltura && o.x <= furo.x + 1) furo = { ...furo, x: ox2 + 4, w: fx2 - (ox2 + 4) }
+          else if (cobreAltura && ox2 >= fx2 - 1) furo = { ...furo, w: o.x - 4 - furo.x }
+          else if (cobreLargura && o.y <= furo.y + 1) furo = { ...furo, y: oy2 + 4, h: fy2 - (oy2 + 4) }
+          else if (cobreLargura && oy2 >= fy2 - 1) furo = { ...furo, h: o.y - 4 - furo.y }
+        }
+        furo = { ...furo, w: Math.max(0, furo.w), h: Math.max(0, furo.h) }
+      }
+      const veu: Geometria['veu'] = {
+        area: secao ? relativo(secao.getBoundingClientRect(), base) : corte,
+        furo,
+        raio: m.raio + 8,
+        esfumar: false,
+      }
+      const g: Geometria = { anel, raio: m.raio + 5, anelVisivel, caminho, veu }
       const chave = JSON.stringify([Math.round(anel.x), Math.round(anel.y), Math.round(anel.w), Math.round(anel.h), anelVisivel, caminho?.d])
       if (chave !== ultimo) { ultimo = chave; setGeo(g) }
     }
     const laco = () => { calcular(); quadro = requestAnimationFrame(laco) }
     laco()
     return () => { cancelAnimationFrame(quadro); setGeo(null) }
-  }, [id, raizRef, anotacaoRef, palcoRef])
+  }, [id, raizRef, anotacaoRef, palcoRef, veuNaSecao])
 
   if (!tomada || !geo) return null
   const saindo = tomada.saindo || !geo.anelVisivel
@@ -309,13 +349,49 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef }: {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 transition-opacity duration-300 ease-out"
+      className="pointer-events-none absolute inset-0 transition-opacity duration-[1100ms] ease-out"
       data-hero-foco={tomada.id}
       data-lado={c?.lado ?? 'nenhum'}
       data-saindo={saindo ? 'sim' : undefined}
       style={{ zIndex: 40, opacity: saindo ? 0 : 1 }}
     >
-      <style>{'@keyframes hero-foco-traco{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:0}}@keyframes hero-foco-anel{0%{opacity:0;transform:scale(1.06)}100%{opacity:1;transform:scale(1)}}@keyframes hero-foco-ponto{0%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:scale(1)}}@keyframes hero-foco-marca-h{0%{opacity:0;transform:scaleX(0)}100%{opacity:1;transform:scaleX(1)}}@keyframes hero-foco-marca-v{0%{opacity:0;transform:scaleY(0)}100%{opacity:1;transform:scaleY(1)}}'}</style>
+      <style>{'@keyframes hero-foco-traco{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:0}}@keyframes hero-foco-veu{0%{opacity:0}100%{opacity:1}}@keyframes hero-foco-ponto{0%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:scale(1)}}@keyframes hero-foco-marca-h{0%{opacity:0;transform:scaleX(0)}100%{opacity:1;transform:scaleX(1)}}@keyframes hero-foco-marca-v{0%{opacity:0;transform:scaleY(0)}100%{opacity:1;transform:scaleY(1)}}'}</style>
+      {/* O HOLOFOTE (25/09, pedido do PO): no lugar do anel teal — que vazava
+          sobre os vizinhos e parecia estado de seleção do próprio app —, a CENA
+          inteira escurece e só o alvo fica em luz plena. Nada é desenhado por
+          cima do alvo: linguagem de câmera, não de interface. As bordas do véu
+          se esfumam no fundo da página; o conector vem por cima dele. */}
+      {geo.veu && (
+        <div
+          aria-hidden
+          data-hero-veu
+          className="absolute overflow-hidden"
+          style={{
+            left: geo.veu.area.x, top: geo.veu.area.y, width: geo.veu.area.w, height: geo.veu.area.h,
+            ...(geo.veu.esfumar ? {
+              maskImage: 'linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent), linear-gradient(to bottom, transparent, #000 48px, #000 calc(100% - 48px), transparent)',
+              maskComposite: 'intersect',
+              WebkitMaskComposite: 'source-in',
+            } : null),
+          }}
+        >
+          <div
+            key={tomada.id}
+            className="absolute"
+            style={{
+              left: geo.veu.furo.x - geo.veu.area.x, top: geo.veu.furo.y - geo.veu.area.y,
+              width: geo.veu.furo.w, height: geo.veu.furo.h,
+              borderRadius: geo.veu.raio,
+              // Escuro: o alvo ganha LUZ (brilho sob o furo + halo sutil); o véu
+              // em volta não escurece mais. Claro: só o véu (tokens em index.css).
+              boxShadow: 'var(--hero-foco-halo), 0 0 26px 200vmax var(--hero-veu)',
+              backdropFilter: 'var(--hero-foco-brilho)',
+              WebkitBackdropFilter: 'var(--hero-foco-brilho)',
+              animation: `hero-foco-veu 1.4s ${c ? '.35s' : '0s'} cubic-bezier(.33,1,.68,1) both`,
+            }}
+          />
+        </div>
+      )}
       {c && (
         <svg className="absolute inset-0 h-full w-full overflow-visible" key={`${tomada.id}-${c.lado}`}>
           <path
@@ -329,7 +405,7 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef }: {
             style={{
               ['--c' as string]: c.comprimento,
               strokeDasharray: c.comprimento,
-              animation: 'hero-foco-traco .55s cubic-bezier(.16,1,.3,1) both',
+              animation: 'hero-foco-traco .85s cubic-bezier(.16,1,.3,1) both',
             }}
           />
           <circle cx={c.inicio[0]} cy={c.inicio[1]} r={2.5} fill="var(--hero-conector)" />
@@ -337,24 +413,15 @@ export function HeroFoco({ tomada, medir, raizRef, anotacaoRef, palcoRef }: {
           <line
             x1={c.marca[0][0]} y1={c.marca[0][1]} x2={c.marca[1][0]} y2={c.marca[1][1]}
             stroke="var(--hero-conector)" strokeWidth={3} strokeLinecap="round"
-            style={{ transformOrigin: `${c.fim[0]}px ${c.fim[1]}px`, animation: `hero-foco-marca-${c.lado === 'topo' ? 'h' : 'v'} .4s .45s cubic-bezier(.16,1,.3,1) both` }}
+            style={{ transformOrigin: `${c.fim[0]}px ${c.fim[1]}px`, animation: `hero-foco-marca-${c.lado === 'topo' ? 'h' : 'v'} .55s .7s cubic-bezier(.16,1,.3,1) both` }}
           />
-          <g style={{ transformOrigin: `${c.fim[0]}px ${c.fim[1]}px`, animation: 'hero-foco-ponto .3s .45s cubic-bezier(.16,1,.3,1) both' }}>
+          <g style={{ transformOrigin: `${c.fim[0]}px ${c.fim[1]}px`, animation: 'hero-foco-ponto .45s .7s cubic-bezier(.16,1,.3,1) both' }}>
             <circle cx={c.fim[0]} cy={c.fim[1]} r={7} fill="var(--hero-conector)" opacity={0.18} />
             <circle cx={c.fim[0]} cy={c.fim[1]} r={3.5} fill="var(--hero-conector)" />
           </g>
         </svg>
       )}
-      <div
-        key={tomada.id}
-        className="absolute"
-        style={{
-          left: geo.anel.x, top: geo.anel.y, width: geo.anel.w, height: geo.anel.h,
-          borderRadius: geo.raio,
-          boxShadow: '0 0 0 2px var(--hero-conector), 0 0 26px 4px color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
-          animation: `hero-foco-anel .45s ${c ? '.35s' : '0s'} cubic-bezier(.16,1,.3,1) both`,
-        }}
-      />
+
     </div>
   )
 }
