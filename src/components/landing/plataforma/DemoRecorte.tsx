@@ -47,7 +47,7 @@ function temaDaPagina(): 'dark' | 'light' {
 }
 
 export function DemoRecorte({
-  titulo, rota, estado, cues, recorte, className, onLimite,
+  titulo, rota, estado, cues, recorte, className, onLimite, foraDoRecorte = FORA_DO_RECORTE,
 }: {
   titulo: string
   /** Rota em que o app nasce. */
@@ -61,6 +61,9 @@ export function DemoRecorte({
   className?: string
   /** A largura máxima da moldura (px) para este viewport — o pai compõe a grade com ela. */
   onLimite?: (px: number) => void
+  /** Altura da tela reservada ao que fica fora do recorte (cabeçalho, frase do
+   *  recurso, folgas). Menor quando o conteúdo já está empilhado e rola. */
+  foraDoRecorte?: number
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -126,7 +129,7 @@ export function DemoRecorte({
   avisar.current = onLimite
   useLayoutEffect(() => {
     const medir = () => {
-      const orcamento = Math.min(ALTURA.max, Math.max(ALTURA.min, window.innerHeight - FORA_DO_RECORTE))
+      const orcamento = Math.min(ALTURA.max, Math.max(ALTURA.min, window.innerHeight - foraDoRecorte))
       // A borda da bandeja (12 px) e a barra de título (30 px) ficam fora da região.
       const porAltura = (orcamento - 36) * (regiao.w / regiao.h) + 12
       const porAmpliacao = regiao.w * (celular ? 1 : AMPLIACAO_MAX) + 12
@@ -135,7 +138,7 @@ export function DemoRecorte({
     medir()
     window.addEventListener('resize', medir)
     return () => window.removeEventListener('resize', medir)
-  }, [regiao.w, regiao.h, celular])
+  }, [regiao.w, regiao.h, celular, foraDoRecorte])
   const [tela, setTela] = useState(0)
   useLayoutEffect(() => {
     const el = telaRef.current

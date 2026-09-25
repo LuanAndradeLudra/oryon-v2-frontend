@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { LinkButton } from '@/components/ui/LinkButton'
 import { TemplatePreview } from '@/components/campaigns/TemplatePreview'
+import { StatStrip } from '@/components/campaigns/StatStrip'
 import { NotificationItem } from '@/components/notifications/NotificationItem'
 import { ConversationActivitySection } from '@/components/conversations/ContactPanel/ConversationActivitySection'
 import { DealSummary } from '@/components/deals/DealSummary'
@@ -13,7 +13,7 @@ import { MessageBubble } from '@/components/conversations/ChatWindow/MessageBubb
 import { contato, linkContato, plataforma } from '../landingCopy'
 import { DemoRecorte, type Recorte } from './DemoRecorte'
 import {
-  HERO, HERO_PIPELINE, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroDeal, heroMessages, heroNotifications, heroTimeline,
+  HERO, HERO_PIPELINE, HERO_TEMPLATE, HERO_TEMPLATE_VARIAVEIS, heroCampaigns, heroDeal, heroMessages, heroNotifications, heroTimeline,
 } from '../stage/hero/heroRealData'
 import { HERO_ROTAS, type HeroCena, type HeroState } from '../stage/hero/heroStory'
 import type { HeroCue } from '../stage/hero/useHeroTimeline'
@@ -43,9 +43,11 @@ const RECORTES: Record<string, Recorte> = {
   conversa: { x: 421, y: 44, w: 859, h: 676 },
   // Quadro do funil, panorâmico: Qualificação, Proposta e Negociação — o card
   // anda entre as duas primeiras, e a terceira mostra que o funil continua.
-  funil: { x: 318, y: 92, w: 790, h: 285 },
+  // A partir de x = 330: em 318 entrava uma fatia da coluna Entrada, que parecia corte acidental.
+  funil: { x: 330, y: 92, w: 780, h: 262 },
   // A gaveta do relatório da campanha.
-  relatorio: { x: 684, y: 0, w: 596, h: 640 },
+  // Até a legenda do gráfico (a 640 px ela saía cortada).
+  relatorio: { x: 684, y: 0, w: 596, h: 656 },
 }
 
 interface Historia { rota: string; estado: HeroState; cues: readonly Cue[]; recorte: Recorte; titulo: string }
@@ -81,15 +83,29 @@ const HISTORIAS: Record<string, Historia> = {
   campanhas: {
     titulo: 'Oryon · Disparos',
     rota: HERO_ROTAS.disparos, estado: 'inicio', recorte: RECORTES.relatorio,
+    // Direto no relatório: começando na lista de Disparos, o recorte (a metade
+    // direita da tela) mostrava só faixas vazias até a gaveta abrir.
     cues: [
-      { t: 0, state: 'inicio', composition: 'disparos' },
-      { t: 1600, composition: 'relatorio' },
+      { t: 0, state: 'inicio', composition: 'relatorio' },
       { t: 9600, composition: 'relatorio' },
     ],
   },
 }
 
 const NOOP = () => {}
+
+/** As contagens da campanha CONCLUÍDA — os mesmos números da notificação que
+ *  aparece em cima delas no cartão ("1.231 enviadas · 9 falhas"). */
+const CONTAGENS_CAMPANHA = (() => {
+  const st = heroCampaigns('ganho')[0].stats
+  const n = (v: number | undefined) => (v ?? 0).toLocaleString('pt-BR')
+  return [
+    { label: 'Entregues', value: n(st.delivered) },
+    { label: 'Lidas', value: n(st.read) },
+    { label: 'Respostas', value: n(st.replied) },
+    { label: 'Conversões', value: n(st.conversions) },
+  ]
+})()
 
 /** As passagens de etapa do negócio da história, como o painel do negócio as
  *  mostra (mesmas linhas do backend de demonstração, `deals/:id/history`). */
@@ -134,7 +150,18 @@ function VisualCartao({ bloco, i }: { bloco: string; i: number }) {
     case 'campanhas-0':
       return <div className="pointer-events-none"><TemplatePreview template={HERO_TEMPLATE} variables={HERO_TEMPLATE_VARIAVEIS} variant="frame" compact /></div>
     case 'campanhas-1':
-      return <div className="py-1">{heroNotifications('demanda').map((n) => <NotificationItem key={n.id} n={n} onClick={NOOP} />)}</div>
+      // A notificação de campanha concluída e as CONTAGENS dela, em pessoas.
+      // Componentes sem dependência de contexto do app: o cartão da
+      // tela Disparos exige o provedor de número do workspace e derrubava a
+      // landing (medido em 25/09).
+      return (
+        <div className="py-1">
+          {heroNotifications('demanda').filter((n) => n.type === 'campaign_complete').map((n) => <NotificationItem key={n.id} n={n} onClick={NOOP} />)}
+          <div className="px-4 pb-2 pt-1">
+            <StatStrip items={CONTAGENS_CAMPANHA} />
+          </div>
+        </div>
+      )
     default:
       return null
   }
@@ -157,35 +184,42 @@ function Revelar({ children, atraso = 0, className }: { children: ReactNode; atr
 }
 
 /**
- * COMPOSIÇÃO de cada recurso (25/09) — promessa, operação visível e dois
- * benefícios lidos como UMA história. O arranjo segue a proporção do recorte,
- * em vez de uma grade idêntica para todos:
- *  • `lado`  — a demonstração é a superfície principal e os benefícios formam
- *    uma coluna ao lado, esticada até a altura da moldura (topo e base
- *    alinhados). Conversas (recorte ~1,3 : 1) leva a moldura mais larga;
- *    o relatório de campanhas (vertical) divide o espaço mais por igual.
- *  • `largo` — recorte panorâmico (o quadro do funil): a moldura ocupa a
- *    coluna inteira e os benefícios fazem uma fileira logo abaixo.
- * Duas colunas só a partir de `xl` (a coluna de conteúdo passa de ~1000 px);
- * abaixo, empilha título → demonstração → benefícios, com folgas curtas.
+ * COMPOSIÇÃO de cada recurso (25/09, 3ª rodada) — promessa, operação visível e
+ * dois benefícios lidos como UMA história.
+ *
+ *  • A demonstração mora num PALCO: uma faixa tingida (`--landing-palco`) que
+ *    ocupa a coluna do recurso, com a moldura do app centrada — o padrão
+ *    medido na Attio (a interface num fundo levemente tingido que preenche a
+ *    largura). A folga do palco absorve a diferença de altura entre a moldura
+ *    e os benefícios: nada é esticado nem cortado.
+ *  • O arranjo segue a proporção do recorte e a largura REAL do artigo
+ *    (medida, não breakpoint): com 940 px ou mais, os recortes compactos
+ *    (Conversas, o relatório vertical de campanhas) levam os benefícios numa
+ *    coluna ao lado; o quadro panorâmico do funil leva os benefícios numa
+ *    fileira embaixo. Abaixo de 940 px, todos empilham: palco → benefícios.
  */
-const COMPOSICAO: Record<string, { tipo: 'lado' | 'largo'; demo?: string }> = {
-  atender: { tipo: 'lado', demo: '64%' },
-  equipe: { tipo: 'lado', demo: '64%' },
+const COMPOSICAO: Record<string, { tipo: 'lado' | 'largo'; palco?: number; beneficios?: number }> = {
+  // Conversas: a moldura mais larga (chat + painel do contato precisam de leitura).
+  atender: { tipo: 'lado', palco: 1.8, beneficios: 1 },
+  equipe: { tipo: 'lado', palco: 1.8, beneficios: 1 },
   funil: { tipo: 'largo' },
-  campanhas: { tipo: 'lado', demo: '55%' },
+  // O relatório é vertical: a moldura estreita, os benefícios com mais largura.
+  campanhas: { tipo: 'lado', palco: 1.15, beneficios: 1 },
 }
+
+/** Largura mínima do artigo para benefícios ao lado da demonstração. */
+const ARTIGO_LADO_MIN = 940
 
 type Bloco = (typeof plataforma.blocos)[number]
 
-/** Um benefício: o componente real em cima, a frase embaixo. */
+/** Um benefício: o componente real em cima, a frase embaixo — altura pelo conteúdo. */
 function Beneficio({ bloco, i, c, esticar }: { bloco: string; i: number; c: Bloco['cartoes'][number]; esticar: boolean }) {
   return (
-    <Revelar atraso={0.15 + i * 0.08} className={cn('flex', esticar && 'min-h-0 flex-1')}>
-      {/* Altura do visual pelo CONTEÚDO: a caixa fixa de 168 px deixava um item
-          de uma linha solto num vão e cortava o modelo de mensagem. */}
+    // Ao lado do palco, os dois cartões dividem a altura dele (flex-1): a
+    // folga vai para a área do visual, centrado — nunca um vão entre eles.
+    <Revelar atraso={0.15 + i * 0.08} className={cn('flex', esticar && 'flex-1')}>
       <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-[var(--landing-cartao)] ring-1 ring-[var(--landing-borda)]">
-        <div className={cn('flex flex-1 flex-col justify-center overflow-hidden border-b border-[var(--landing-borda)] bg-surface-950 py-1.5', esticar ? 'min-h-0' : 'min-h-[112px]')}>
+        <div className="flex min-h-[104px] flex-1 flex-col justify-center border-b border-[var(--landing-borda)] bg-surface-950 py-1.5">
           <div aria-hidden inert className="pointer-events-none select-none">
             <VisualCartao bloco={bloco} i={i} />
           </div>
@@ -199,47 +233,68 @@ function Beneficio({ bloco, i, c, esticar }: { bloco: string; i: number; c: Bloc
   )
 }
 
-function ArtigoRecurso({ b, registrar }: { b: Bloco; registrar: (el: HTMLElement | null) => void }) {
+function ArtigoRecurso({ b, n, registrar }: { b: Bloco; n: number; registrar: (el: HTMLElement | null) => void }) {
   const h = HISTORIAS[b.id]
   const comp = COMPOSICAO[b.id]
-  const largo = useMediaQuery('(min-width: 1280px)')
-  const lado = largo && comp.tipo === 'lado'
-  // A largura máxima que a moldura aguenta neste viewport (orçamento de
-  // altura + teto de ampliação), medida pelo próprio recorte.
+  const ref = useRef<HTMLElement | null>(null)
+  // Largura REAL do artigo — decide o arranjo (não o breakpoint da viewport).
+  const [largura, setLargura] = useState(0)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const medir = () => setLargura(el.clientWidth)
+    medir()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null
+    ro?.observe(el)
+    return () => ro?.disconnect()
+  }, [])
+  const lado = comp.tipo === 'lado' && largura >= ARTIGO_LADO_MIN
+  // A largura máxima que a moldura aguenta neste viewport (orçamento de altura
+  // + teto de ampliação), informada pelo próprio recorte.
   const [limite, setLimite] = useState(0)
-  const colunaDemo = limite ? `min(${limite}px, ${comp.demo ?? '100%'})` : comp.demo ?? '100%'
 
   return (
-    <article id={`plataforma-${b.id}`} data-bloco={b.id} ref={registrar} className="scroll-mt-28">
-      {/* A promessa */}
-      <Revelar className="max-w-[44rem]">
-        <p className="lg:hidden mb-3 text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">{b.indice}</p>
-        <h3 className="font-display font-semibold tracking-[-0.02em] leading-[1.25] text-[clamp(1.25rem,2.2vw,1.625rem)] text-balance">
-          <span className="text-surface-50">{b.destaque}</span>{' '}
-          <span className="text-surface-400">{b.texto}</span>
+    <article
+      id={`plataforma-${b.id}`}
+      data-bloco={b.id}
+      data-arranjo={lado ? 'lado' : 'abaixo'}
+      ref={(el) => { ref.current = el; registrar(el) }}
+      className="scroll-mt-24"
+    >
+      {/* A promessa (curta, no H3) e a explicação (parágrafo à parte). */}
+      <Revelar>
+        <p className="text-[12px] font-semibold uppercase tracking-[.12em] text-[var(--landing-destaque)]">
+          <span className="tabular-nums">{String(n).padStart(2, '0')}</span>
+          <span aria-hidden className="mx-2 text-surface-600">·</span>
+          {b.indice}
+        </p>
+        <h3 className="mt-3 font-display font-semibold tracking-[-0.022em] leading-[1.15] text-surface-50 text-[clamp(1.5rem,2.1vw,2rem)] text-balance">
+          {b.destaque}
         </h3>
+        <p className="mt-3 max-w-[58ch] text-[16px] sm:text-[17px] leading-relaxed text-surface-400 text-pretty">{b.texto}</p>
       </Revelar>
 
       <div
-        className={cn('mt-6 sm:mt-8 grid gap-4 sm:gap-5', lado && 'items-stretch gap-6')}
-        style={lado ? { gridTemplateColumns: `minmax(0, ${colunaDemo}) minmax(260px, 1fr)` } : undefined}
+        className={cn('mt-7 grid gap-4 sm:gap-5', lado && 'gap-5')}
+        style={lado ? { gridTemplateColumns: `minmax(0, ${comp.palco}fr) minmax(300px, ${comp.beneficios}fr)` } : undefined}
       >
-        {/* A operação, na tela */}
-        <Revelar atraso={0.1} className="min-w-0" >
-          <div style={{ maxWidth: limite || undefined }}>
-            <DemoRecorte titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite} />
+        {/* A operação, na tela — num palco que preenche a coluna. */}
+        <Revelar atraso={0.1} className="min-w-0">
+          <div className={cn(
+            'flex h-full items-center justify-center rounded-2xl bg-[var(--landing-palco)] p-2 ring-1 ring-[var(--landing-borda)] sm:px-[clamp(12px,2.2vw,32px)]',
+            // Recorte panorâmico: menos folga vertical (o quadro já é baixo).
+            comp.tipo === 'largo' ? 'sm:py-[clamp(10px,1.4vw,20px)]' : 'sm:py-[clamp(12px,2.2vw,32px)]',
+          )}>
+            <div className="w-full" style={{ maxWidth: limite || undefined }}>
+              <DemoRecorte titulo={h.titulo} rota={h.rota} estado={h.estado} cues={h.cues} recorte={h.recorte} onLimite={setLimite}
+                foraDoRecorte={lado ? undefined : 170} />
+            </div>
           </div>
         </Revelar>
 
-        {/* Os dois benefícios: coluna ao lado (esticada até a base da
-            moldura) ou fileira embaixo. */}
-        {/* Lado a lado, a MOLDURA define a altura da linha: a coluna tem altura
-            zero no cálculo da grade e estica até 100 % — topo e base alinhados
-            com a demonstração, e só a folga do visual absorve diferenças. */}
-        <div
-          className={lado ? 'flex min-h-full flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}
-          style={lado ? { height: 0 } : undefined}
-        >
+        {/* Os dois benefícios: coluna ao lado (topo e base na linha do palco) ou
+            fileira embaixo. Altura pelo conteúdo — nada cortado. */}
+        <div className={lado ? 'flex flex-col gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'}>
           {b.cartoes.map((c, i) => <Beneficio key={c.titulo} bloco={b.id} i={i} c={c} esticar={lado} />)}
         </div>
       </div>
@@ -264,10 +319,15 @@ export function SecaoPlataforma() {
   const irPara = (id: string) => blocosRef.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   return (
-    <section id="plataforma" data-section="plataforma" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28">
-      <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+    <section id="plataforma" data-section="plataforma" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-24">
+      {/* GRADE FLUIDA (25/09, 3ª rodada): até 1520 px, com margens que acompanham
+          a viewport (16–72 px). O índice é uma FAIXA da grade só a partir de
+          1280 px, separado dos artigos por um fio — abaixo disso ele
+          competiria com a demonstração, e cada artigo traz o próprio rótulo
+          numerado. */}
+      <div className="landing-container">
         {/* Cabeçalho da seção */}
-        <Revelar className="max-w-[46rem]">
+        <Revelar className="max-w-[64rem]">
           <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">
             {plataforma.eyebrow}
           </p>
@@ -277,11 +337,11 @@ export function SecaoPlataforma() {
           </h2>
         </Revelar>
 
-        <div className="mt-14 sm:mt-20 grid gap-10 lg:grid-cols-[180px_1fr] lg:gap-12">
+        <div className="mt-12 sm:mt-16 xl:grid xl:grid-cols-[clamp(212px,14vw,244px)_minmax(0,1fr)]">
           {/* Índice fixo */}
-          <nav aria-label="Recursos da plataforma" className="hidden lg:block">
-            <ol className="sticky top-28 flex flex-col gap-1">
-              {plataforma.blocos.map((b) => (
+          <nav aria-label="Recursos da plataforma" className="hidden xl:block">
+            <ol className="sticky top-[104px] flex flex-col gap-1 pr-4">
+              {plataforma.blocos.map((b, i) => (
                 <li key={b.id}>
                   <button
                     type="button"
@@ -300,6 +360,7 @@ export function SecaoPlataforma() {
                         ativo === b.id ? 'bg-brand-400 opacity-100' : 'bg-surface-700 opacity-60',
                       )}
                     />
+                    <span className="mr-2 tabular-nums text-[11px] text-surface-500">{String(i + 1).padStart(2, '0')}</span>
                     {b.indice}
                   </button>
                 </li>
@@ -307,14 +368,17 @@ export function SecaoPlataforma() {
             </ol>
           </nav>
 
-          {/* Os blocos */}
-          <div className="flex min-w-0 flex-col gap-24 sm:gap-36">
-            {plataforma.blocos.map((b) => (
-              <ArtigoRecurso key={b.id} b={b} registrar={(el) => { blocosRef.current[b.id] = el }} />
+          {/* Os recursos: separados por um fio; o fio vertical à esquerda liga o
+              índice à coluna (moldura de linhas finas, como a referência). */}
+          <div className="min-w-0 xl:border-l xl:border-[var(--landing-borda)] xl:pl-[clamp(32px,3.6vw,64px)]">
+            {plataforma.blocos.map((b, i) => (
+              <div key={b.id} className={cn(i > 0 && 'mt-16 border-t border-[var(--landing-borda)] pt-16 sm:mt-20 sm:pt-20')}>
+                <ArtigoRecurso b={b} n={i + 1} registrar={(el) => { blocosRef.current[b.id] = el }} />
+              </div>
             ))}
 
             {/* Fecho da seção: a ação de conversão. */}
-            <Revelar>
+            <Revelar className="mt-16 sm:mt-20">
               <div className="flex flex-col items-start gap-4 rounded-2xl bg-[var(--landing-cartao)] p-6 ring-1 ring-[var(--landing-borda)] sm:flex-row sm:items-center sm:justify-between sm:p-8">
                 <p className="max-w-[34ch] font-display text-[20px] font-semibold leading-snug tracking-[-0.01em] text-surface-50">
                   Veja o Oryon atendendo no seu WhatsApp.

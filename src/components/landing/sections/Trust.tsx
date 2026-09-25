@@ -22,9 +22,9 @@ export function Trust() {
       data-section="confianca"
       className="scroll-mt-16 border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28"
     >
-      <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+      <div className="landing-container">
         <motion.div
-          className="max-w-[46rem]"
+          className="max-w-[64rem]"
           initial={semMovimento ? false : { opacity: 0, y: 24, filter: 'blur(6px)' }}
           whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           viewport={{ once: true, margin: '-12% 0px' }}

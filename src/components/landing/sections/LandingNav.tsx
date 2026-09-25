@@ -22,7 +22,7 @@ export function LandingNav() {
         'bg-[color-mix(in_srgb,var(--color-surface-950)_72%,transparent)] backdrop-blur-md',
       )}
     >
-      <div className="mx-auto h-full w-full max-w-[1280px] px-4 sm:px-6 flex items-center gap-6">
+      <div className="landing-container h-full flex items-center gap-6">
         <a
           href="#inicio"
           aria-label={nav.homeLabel}

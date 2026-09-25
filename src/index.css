@@ -137,6 +137,9 @@
   --landing-destaque: #2DD4BF;
   /* Cartão da landing: a camada acima do chão (no claro, branco sobre #FAFAFC). */
   --landing-cartao: #0E1414;
+  /* O PALCO de uma demonstração na seção Plataforma: faixa tingida que ocupa a
+     coluna do recurso, com a moldura do app centrada (padrão da Attio). */
+  --landing-palco: #0A1010;
   /* Curva assinatura das transições públicas (Attio usa cubic-bezier(.32,.72,0,1)). */
   --ease-emph: cubic-bezier(.32, .72, 0, 1);
   --ink-fg: #060909;
@@ -1016,6 +1019,7 @@ code, pre, kbd, samp {
   --landing-borda: #DCE0E7;
   --landing-destaque: #0F766E;
   --landing-cartao: #FFFFFF;
+  --landing-palco: #F1F3F6;
   --ink-fg: #FFFFFF;
   /* No claro, levemente tingido no tom da faixa de cabeçalho das colunas
      (surface-900 = #F5F6F8), destacando-se do branco da lista. */
@@ -1733,4 +1737,14 @@ h1, h2, h3 {
 @media (prefers-reduced-motion: reduce) {
   .reveal, .ambient-ring, .ambient-bob, .ambient-roll { animation: none; }
   .reveal { opacity: 1; filter: none; transform: none; }
+}
+
+/* Landing (25/09, 3ª rodada): UM container para todas as seções da página
+   pública — até 1520 px, margens que acompanham a viewport (16–72 px). As
+   bordas esquerdas de menu, seções e rodapé se alinham. */
+@utility landing-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1520px;
+  padding-inline: clamp(16px, 4.5vw, 72px);
 }

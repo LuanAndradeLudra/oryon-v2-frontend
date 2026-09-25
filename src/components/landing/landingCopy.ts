@@ -112,16 +112,19 @@ export function linkContato(): string {
   return `https://wa.me/${contato.whatsapp}?text=${encodeURIComponent(contato.mensagem)}`
 }
 
+// Plataforma (25/09, 3ª rodada): `destaque` é a PROMESSA (o H3, curto); `texto`
+// é a explicação, num parágrafo à parte, e prepara a leitura da demonstração —
+// diz o que o visitante vai ver acontecer. Os cartões aprofundam, sem repetir.
 export const plataforma = {
   eyebrow: 'Plataforma',
   title: 'Tudo o que o atendimento precisa, trabalhando junto.',
-  titleCinza: 'Do primeiro "oi" no WhatsApp à venda fechada — com a IA no trabalho repetitivo e a sua equipe no controle.',
+  titleCinza: 'Do primeiro "oi" à venda fechada.',
   blocos: [
     {
       id: 'atender',
       indice: 'Atender com IA',
       destaque: 'Resposta na hora, a qualquer hora.',
-      texto: 'O Agente IA responde cada mensagem com os valores e as condições do seu catálogo — e atualiza o CRM sem ninguém digitar nada.',
+      texto: 'A cliente pede uma proposta e o Agente IA responde na hora, com os valores do seu catálogo — de dia ou de madrugada.',
       cartoes: [
         { titulo: 'O CRM se preenche sozinho.', texto: 'Situação do contato e etiquetas mudam durante a conversa, com registro de quem fez.' },
         { titulo: 'Informação certa, não inventada.', texto: 'O agente responde com o que está na sua base de conhecimento e no catálogo liberado a ele.' },
@@ -131,7 +134,7 @@ export const plataforma = {
       id: 'equipe',
       indice: 'Passar para a equipe',
       destaque: 'A pessoa certa, no momento certo.',
-      texto: 'Quando o cliente pede um humano, a IA chama quem deve atender, com o histórico completo — e fica em pausa enquanto a sua equipe conversa.',
+      texto: 'Quando a cliente pede para falar com alguém, a IA chama a pessoa certa, com o histórico completo, e sai de cena enquanto ela atende.',
       cartoes: [
         { titulo: 'Avisada na hora.', texto: 'A atendente recebe a notificação com o contexto do pedido, sem precisar perguntar nada de novo.' },
         { titulo: 'Quem fecha é a sua equipe.', texto: 'A IA prepara e avança o negócio; a decisão de fechar a venda é sempre de uma pessoa.' },
@@ -141,7 +144,7 @@ export const plataforma = {
       id: 'funil',
       indice: 'Vender pelo funil',
       destaque: 'O funil anda junto com a conversa.',
-      texto: 'Cada negócio muda de etapa conforme o atendimento avança — o funil mostra o que está acontecendo agora, não o que alguém lembrou de atualizar.',
+      texto: 'O negócio muda de etapa conforme a conversa avança — sem ninguém arrastar card nem lembrar de atualizar.',
       cartoes: [
         { titulo: 'Proposta com o seu catálogo.', texto: 'Itens, quantidades e valores saem do catálogo, direto no negócio.' },
         { titulo: 'Histórico de cada movimento.', texto: 'Quem moveu, quando e por quê — a IA e a equipe, lado a lado.' },
@@ -151,9 +154,9 @@ export const plataforma = {
       id: 'campanhas',
       indice: 'Reativar a base',
       destaque: 'Campanhas que viram conversas.',
-      texto: 'Dispare modelos aprovados pela Meta para a base inteira e acompanhe quem recebeu, leu e respondeu — cada resposta cai no atendimento com IA.',
+      texto: 'Dispare um modelo aprovado pela Meta para a base inteira e veja quem recebeu, leu e respondeu. Cada resposta cai no atendimento com IA.',
       cartoes: [
-        { titulo: 'Modelos aprovados pela Meta.', texto: 'Mensagens com botões e variáveis, do jeito que o cliente vê no WhatsApp.' },
+        { titulo: 'Do jeito que o cliente vê.', texto: 'O modelo chega com o nome dele e botões de resposta — um toque e a conversa começa.' },
         { titulo: 'Retorno medido, não estimado.', texto: 'Entregas, leituras e respostas de cada campanha, num relatório só.' },
       ],
     },

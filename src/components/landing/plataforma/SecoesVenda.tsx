@@ -46,7 +46,7 @@ function BotaoContato({ className, longo = true }: { className?: string; longo?:
 
 function Cabecalho({ eyebrow, titulo, cinza }: { eyebrow: string; titulo: string; cinza: string }) {
   return (
-    <Revelar className="max-w-[46rem]">
+    <Revelar className="max-w-[64rem]">
       <p className="inline-flex rounded-full bg-brand-500/10 px-2.5 py-1 text-[12px] font-semibold text-[var(--landing-destaque)] ring-1 ring-brand-500/20">{eyebrow}</p>
       <h2 className="mt-4 font-display font-bold tracking-[-0.025em] leading-[1.1] text-[clamp(1.75rem,3.4vw,2.75rem)] text-balance">
         <span className="text-surface-50">{titulo}</span>{' '}
@@ -64,7 +64,7 @@ export function SecaoImplantacao() {
   const semMovimento = useReducedMotion()
   return (
     <section id="implantacao" data-section="implantacao" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28">
-      <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+      <div className="landing-container">
         <Cabecalho eyebrow={implantacao.eyebrow} titulo={implantacao.title} cinza={implantacao.titleCinza} />
 
         <div className="relative mt-14 sm:mt-16">
@@ -141,7 +141,7 @@ function Pergunta({ pergunta, resposta }: { pergunta: string; resposta: string }
 export function SecaoPerguntas() {
   return (
     <section id="perguntas" data-section="perguntas" className="relative border-t border-[var(--landing-borda)] bg-surface-950 py-20 sm:py-28">
-      <div className="mx-auto grid w-full max-w-[1280px] gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.4fr] lg:gap-20">
+      <div className="landing-container grid gap-12 lg:grid-cols-[1fr_1.4fr] lg:gap-20">
         <div>
           <Cabecalho eyebrow={perguntas.eyebrow} titulo={perguntas.title} cinza={perguntas.titleCinza} />
           <Revelar atraso={0.2} className="mt-8">
